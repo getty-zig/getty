@@ -108,3 +108,7 @@ pub fn check_attributes(comptime T: type, attr_map: anytype, mode: enum { Ser, D
         }
     }
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}

@@ -11,18 +11,35 @@ pub fn Serialize(comptime T: type, attr_map: anytype) type {
     };
 }
 
-test "Basic" {
-    const Test = struct {
-        usingnamespace Serialize(
-            @This(),
-            .{
-                .Test = .{ .rename = "Foo" },
-                .x = .{ .rename = "a" },
-                .y = .{ .rename = "b" },
-            },
-        );
+const expect = std.testing.expect;
+
+test "Serialize - basic (struct)" {
+    const T = struct {
+        usingnamespace Serialize(@This(), .{});
 
         x: i32,
         y: i32,
     };
+}
+
+test "Serialize - with container attribute (struct)" {
+    const T = struct {
+        usingnamespace Serialize(@This(), .{ .T = .{ .rename = "A" } });
+
+        x: i32,
+        y: i32,
+    };
+}
+
+test "Serialize - with field attribute (struct)" {
+    const T = struct {
+        usingnamespace Serialize(@This(), .{ .x = .{ .rename = "a" } });
+
+        x: i32,
+        y: i32,
+    };
+}
+
+comptime {
+    std.testing.refAllDecls(@This());
 }
