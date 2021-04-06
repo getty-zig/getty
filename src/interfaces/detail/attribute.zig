@@ -13,7 +13,7 @@ pub const Style = enum {
 
 pub const Attributes = union(enum) {
     Container: union(enum) {
-        All: struct {
+        Common: struct {
             //bound: ,
             //content: ,
             rename: []const u8,
@@ -37,7 +37,7 @@ pub const Attributes = union(enum) {
     },
 
     Field: union(enum) {
-        All: struct {
+        Common: struct {
             //bound: ,
             //flatten: ,
             rename: []const u8,
@@ -57,7 +57,7 @@ pub const Attributes = union(enum) {
     },
 
     Variant: union(enum) {
-        All: struct {
+        Common: struct {
             //bound: ,
             rename: []const u8,
             rename_all: Style,
@@ -86,15 +86,15 @@ pub fn check_attributes(comptime T: type, attribute_map: anytype, mode: enum { S
     const attribute_map_info = @typeInfo(AttributeMap);
 
     const Container = TagPayload(Attributes, .Container);
-    const ContainerAll = TagPayload(Container, .All);
+    const ContainerCommon = TagPayload(Container, .Common);
     const ContainerMode = if (mode == .Serialize) TagPayload(Container, .Serialize) else TagPayload(Container, .Deserialize);
 
     const Field = TagPayload(Attributes, .Field);
-    const FieldAll = TagPayload(Field, .All);
+    const FieldCommon = TagPayload(Field, .Common);
     const FieldMode = if (mode == .Serialize) TagPayload(Field, .Serialize) else TagPayload(Field, .Deserialize);
 
     const Variant = TagPayload(Attributes, .Variant);
-    const VariantAll = TagPayload(Variant, .All);
+    const VariantCommon = TagPayload(Variant, .Common);
     const VariantMode = if (mode == .Serialize) TagPayload(Variant, .Serialize) else TagPayload(Variant, .Deserialize);
 
     // Ensure that the attribute map is a struct.
@@ -118,10 +118,10 @@ pub fn check_attributes(comptime T: type, attribute_map: anytype, mode: enum { S
 
             // TODO: type checks
             if (std.mem.eql(u8, ident.name, @typeName(T))) {
-                assert(@hasField(ContainerAll, name) or @hasField(ContainerMode, name));
+                assert(@hasField(ContainerCommon, name) or @hasField(ContainerMode, name));
             } else switch (attribute_map_info) {
-                .Struct => assert(@hasField(FieldAll, name) or @hasField(FieldMode, name)),
-                .Enum => assert(@hasField(VariantAll, name) or @hasField(VariantMode, name)),
+                .Struct => assert(@hasField(FieldCommon, name) or @hasField(FieldMode, name)),
+                .Enum => assert(@hasField(VariantCommon, name) or @hasField(VariantMode, name)),
                 else => unreachable,
             }
         }
