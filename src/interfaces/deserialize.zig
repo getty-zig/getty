@@ -2,7 +2,7 @@ const std = @import("std");
 const attr = @import("detail/attribute.zig");
 
 pub fn Deserialize(comptime T: type, attribute_map: anytype) type {
-    attr.check_attributes(T, attribute_map, .Deserialize);
+    attr.check_attributes(T, attribute_map, .De);
 
     return struct {
         pub fn deserialize(self: T) !void {

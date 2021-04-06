@@ -11,119 +11,100 @@ pub const Style = enum {
     upper,
 };
 
-pub const Attributes = union(enum) {
-    Container: union(enum) {
-        Common: struct {
+pub const Attributes = struct {
+    const Container = struct {
+        const Ser = struct {
             //bound: ,
             //content: ,
+            into: type,
             rename: []const u8,
             rename_all: Style,
             //remote: ,
             //tag: ,
             transparent: bool,
             //untagged: ,
-        },
+        };
 
-        Serialize: struct {
-            into: type,
-        },
-
-        Deserialize: struct {
+        const De = struct {
+            //bound: ,
+            //content: ,
             //default: ,
             deny_unknown_fields: bool,
             from: type,
+            into: type,
+            rename: []const u8,
+            rename_all: Style,
+            //remote: ,
+            //tag: ,
+            transparent: bool,
             try_from: type,
-        },
-    },
+            //untagged: ,
+        };
+    };
 
-    Field: union(enum) {
-        Common: struct {
+    const Field = struct {
+        const Ser = struct {
             //bound: ,
+            //flatten: ,
+            //getter: ,
+            rename: []const u8,
+            skip: bool,
+            //skip_serializing_if: fn,
+            with: []const u8,
+        };
+
+        const De = struct {
+            alias: []const u8,
+            //bound: ,
+            //default: ,
             //flatten: ,
             rename: []const u8,
             skip: bool,
             with: []const u8,
-        },
+        };
+    };
 
-        Serialize: struct {
-            //getter: ,
-            //skip_serializing_if: fn,
-        },
-
-        Deserialize: struct {
-            alias: []const u8,
-            //default: ,
-        },
-    },
-
-    Variant: union(enum) {
-        Common: struct {
+    const Variant = struct {
+        const Ser = struct {
             //bound: ,
             rename: []const u8,
             rename_all: Style,
             skip: bool,
             with: []const u8,
-        },
+        };
 
-        Serialize: struct {},
-
-        Deserialize: struct {
+        const De = struct {
             alias: []const u8,
+            //bound: ,
             other: bool,
-        },
-    },
+            rename: []const u8,
+            rename_all: Style,
+            skip: bool,
+            with: []const u8,
+        };
+    };
 };
 
-pub fn check_attributes(comptime T: type, attribute_map: anytype, mode: enum { Serialize, Deserialize }) void {
-    // Aliases
-    const assert = std.debug.assert;
+pub fn check_attributes(comptime T: type, attr_map: anytype, mode: enum { Ser, De }) void {
+    // Ensure attribute map is a struct.
+    std.debug.assert(@typeInfo(@TypeOf(attr_map)) == .Struct);
 
-    const fields = std.meta.fields;
-    const TagPayload = std.meta.TagPayload;
+    inline for (std.meta.fields(@TypeOf(attr_map))) |id| {
+        // Ensure the identifier is either a field/variant name in T or has the same name as T.
+        std.debug.assert(@hasField(T, id.name) or std.mem.eql(u8, id.name, @typeName(T)));
 
-    // Attribute map declarations
-    const AttributeMap = @TypeOf(attribute_map);
-    const attribute_map_info = @typeInfo(AttributeMap);
+        // Ensure the attribute list is a struct with at least one attribute.
+        std.debug.assert(@typeInfo(id.field_type) == .Struct and @typeInfo(id.field_type).Struct.fields.len > 0);
 
-    const Container = TagPayload(Attributes, .Container);
-    const ContainerCommon = TagPayload(Container, .Common);
-    const ContainerMode = if (mode == .Serialize) TagPayload(Container, .Serialize) else TagPayload(Container, .Deserialize);
-
-    const Field = TagPayload(Attributes, .Field);
-    const FieldCommon = TagPayload(Field, .Common);
-    const FieldMode = if (mode == .Serialize) TagPayload(Field, .Serialize) else TagPayload(Field, .Deserialize);
-
-    const Variant = TagPayload(Attributes, .Variant);
-    const VariantCommon = TagPayload(Variant, .Common);
-    const VariantMode = if (mode == .Serialize) TagPayload(Variant, .Serialize) else TagPayload(Variant, .Deserialize);
-
-    // Ensure that the attribute map is a struct.
-    assert(attribute_map_info == .Struct);
-
-    inline for (fields(AttributeMap)) |ident| {
-        const attributes_info = @typeInfo(ident.field_type);
-
-        // Ensure all identifiers are either in T or has the same name as T.
-        assert(@hasField(T, ident.name) or std.mem.eql(u8, ident.name, @typeName(T)));
-
-        // Ensure attribute list is a struct.
-        assert(attributes_info == .Struct);
-
-        // Ensure at least one attribute is given for each specified identifier.
-        assert(attributes_info.Struct.fields.len > 0);
-
-        // Ensure all attributes are valid.
-        inline for (fields(ident.field_type)) |attribute| {
-            const name = attribute.name;
-
-            // TODO: type checks
-            if (std.mem.eql(u8, ident.name, @typeName(T))) {
-                assert(@hasField(ContainerCommon, name) or @hasField(ContainerMode, name));
-            } else switch (attribute_map_info) {
-                .Struct => assert(@hasField(FieldCommon, name) or @hasField(FieldMode, name)),
-                .Enum => assert(@hasField(VariantCommon, name) or @hasField(VariantMode, name)),
+        inline for (std.meta.fields(id.field_type)) |attr| {
+            const AttrType = if (std.mem.eql(u8, id.name, @typeName(T))) Attributes.Container else switch (@typeInfo(T)) {
+                .Struct => Attributes.Field,
+                .Enum => Attributes.Variant,
                 else => unreachable,
-            }
+            };
+
+            // Ensure the attribute name is in the corresponding `Attribute` struct.
+            std.debug.assert(@hasField(@field(AttrType, @tagName(mode)), attr.name));
         }
     }
 }

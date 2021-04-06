@@ -2,7 +2,7 @@ const std = @import("std");
 const attr = @import("detail/attribute.zig");
 
 pub fn Serialize(comptime T: type, attribute_map: anytype) type {
-    attr.check_attributes(T, attribute_map, .Serialize);
+    attr.check_attributes(T, attribute_map, .Ser);
 
     return struct {
         pub fn serialize(self: T) !void {
