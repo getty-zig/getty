@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const Style = enum {
+pub const RenameStyle = enum {
     camel,
     kebab,
     lower,
@@ -18,7 +18,7 @@ pub const Attributes = struct {
             //content: ,
             into: type,
             rename: []const u8,
-            rename_all: Style,
+            rename_all: RenameStyle,
             //remote: ,
             //tag: ,
             transparent: bool,
@@ -33,7 +33,7 @@ pub const Attributes = struct {
             from: type,
             into: type,
             rename: []const u8,
-            rename_all: Style,
+            rename_all: RenameStyle,
             //remote: ,
             //tag: ,
             transparent: bool,
@@ -68,7 +68,7 @@ pub const Attributes = struct {
         const Ser = struct {
             //bound: ,
             rename: []const u8,
-            rename_all: Style,
+            rename_all: RenameStyle,
             skip: bool,
             with: []const u8,
         };
@@ -78,7 +78,7 @@ pub const Attributes = struct {
             //bound: ,
             other: bool,
             rename: []const u8,
-            rename_all: Style,
+            rename_all: RenameStyle,
             skip: bool,
             with: []const u8,
         };
