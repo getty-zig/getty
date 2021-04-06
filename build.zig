@@ -2,7 +2,7 @@ const Builder = @import("std").build.Builder;
 
 pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
-    const lib = b.addStaticLibrary("serde", "src/main.zig");
+    const lib = b.addStaticLibrary("getty", "src/main.zig");
     lib.setBuildMode(mode);
     lib.install();
 
