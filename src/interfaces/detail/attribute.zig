@@ -86,14 +86,14 @@ pub const Attributes = struct {
 };
 
 pub fn check_attributes(comptime T: type, attr_map: anytype, mode: enum { Ser, De }) void {
-    // Ensure attribute map is a struct.
+    // The attribute map must be a struct.
     std.debug.assert(@typeInfo(@TypeOf(attr_map)) == .Struct);
 
     inline for (std.meta.fields(@TypeOf(attr_map))) |id| {
-        // Ensure the identifier is either a field/variant name in T or has the same name as T.
+        // The identifier must either have the same name as T or a field/variant in T.
         std.debug.assert(@hasField(T, id.name) or std.mem.eql(u8, id.name, @typeName(T)));
 
-        // Ensure the attribute list is a struct with at least one attribute.
+        // The attribute list must be a struct with at least one attribute.
         std.debug.assert(@typeInfo(id.field_type) == .Struct and @typeInfo(id.field_type).Struct.fields.len > 0);
 
         inline for (std.meta.fields(id.field_type)) |attr| {
@@ -103,7 +103,7 @@ pub fn check_attributes(comptime T: type, attr_map: anytype, mode: enum { Ser, D
                 else => unreachable,
             };
 
-            // Ensure the attribute name is in the corresponding `Attribute` struct.
+            // The attribute name must exist in the corresponding `Attribute` struct.
             std.debug.assert(@hasField(@field(AttrType, @tagName(mode)), attr.name));
         }
     }
