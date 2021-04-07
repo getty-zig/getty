@@ -9,8 +9,8 @@ const print = @import("std").debug.print;
 const getty = @import("getty");
 
 const Point = struct {
-    usingnamespace getty.Serialize(@This(), .{});
-    usingnamespace getty.Deserialize(@This(), .{});
+    usingnamespace getty.derive.Serialize(@This(), .{});
+    usingnamespace getty.derive.Deserialize(@This(), .{});
 
     x: i32,
     y: i32,
