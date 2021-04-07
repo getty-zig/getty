@@ -5,7 +5,7 @@ pub fn Deserialize(comptime T: type, attr_map: anytype) type {
     attr.check_attributes(T, attr_map, .De);
 
     return struct {
-        pub fn deserialize(self: T) !void {
+        pub fn deserialize(self: *T) void {
             std.debug.print("Deserialize!\n", .{});
         }
     };

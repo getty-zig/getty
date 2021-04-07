@@ -5,7 +5,7 @@ pub fn Serialize(comptime T: type, attr_map: anytype) type {
     attr.check_attributes(T, attr_map, .Ser);
 
     return struct {
-        pub fn serialize(self: T) !void {
+        pub fn serialize(self: *T) void {
             std.debug.print("Serialize!\n", .{});
         }
     };
