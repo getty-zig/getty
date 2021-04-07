@@ -17,18 +17,13 @@ const Point = struct {
 };
 
 pub const main = fn() !void {
-    var point = Point{ .x = 1, .y = 2 };
+    const point = Point{ .x = 1, .y = 2 };
 
-    // Convert the Point to a JSON string.
-    var serialized = try getty.json.to_str(&point);
+    // Convert the Point to a JSON string and back.
+    const serialized = try getty.json.to_str(point);
+    const deserialized = try getty.json.from_str(serialized);
 
-    // Prints out {"x":1,"y":2}
-    print("{}\n", .{serialized});
-
-    // Convert the JSON string back to a Point.
-    var deserialized = try getty.json.from_str(&serialized);
-
-    // Prints out Point{ .x = 1, .y = 2 }
-    print("{}\n", .{deserialized});
+    print("{}\n", .{serialized});   // {"x":1,"y":2}
+    print("{}\n", .{deserialized}); // Point{ .x = 1, .y = 2 }
 };
 ```
