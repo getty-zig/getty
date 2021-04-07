@@ -90,10 +90,10 @@ pub fn check_attributes(comptime T: type, attr_map: anytype, mode: enum { Ser, D
     std.debug.assert(@typeInfo(@TypeOf(attr_map)) == .Struct);
 
     inline for (std.meta.fields(@TypeOf(attr_map))) |id| {
-        // The identifier must either have the same name as T or a field/variant in T.
+        // The fields in the map must either have the same name as T or a field/variant in T.
         std.debug.assert(@hasField(T, id.name) or std.mem.eql(u8, id.name, @typeName(T)));
 
-        // The attribute list must be a struct with at least one attribute.
+        // The attribute list for each field in the map must be a struct with at least one attribute.
         std.debug.assert(@typeInfo(id.field_type) == .Struct and @typeInfo(id.field_type).Struct.fields.len > 0);
 
         inline for (std.meta.fields(id.field_type)) |attr| {
