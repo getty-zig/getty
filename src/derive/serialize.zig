@@ -1,5 +1,5 @@
 const std = @import("std");
-const attr = @import("../interfaces/attribute.zig");
+const attr = @import("../attribute.zig");
 
 pub fn Serialize(comptime T: type, attr_map: anytype) type {
     attr.check_attributes(T, attr_map, .Ser);
