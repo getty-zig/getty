@@ -96,14 +96,16 @@ pub fn check_attributes(comptime T: type, attr_map: anytype, mode: enum { Ser, D
         // The attribute list for each field in the map must be a struct with at least one attribute.
         std.debug.assert(@typeInfo(id.field_type) == .Struct and @typeInfo(id.field_type).Struct.fields.len > 0);
 
-        inline for (std.meta.fields(id.field_type)) |attr| {
-            const AttrType = if (std.mem.eql(u8, id.name, @typeName(T))) Attributes.Container else switch (@typeInfo(T)) {
-                .Struct => Attributes.Field,
-                .Enum => Attributes.Variant,
-                else => unreachable,
-            };
+        const AttrType = if (std.mem.eql(u8, id.name, @typeName(T)))
+            Attributes.Container
+        else switch (@typeInfo(T)) {
+            .Struct => Attributes.Field,
+            .Enum => Attributes.Variant,
+            else => unreachable,
+        };
 
-            // The attribute name must exist in the corresponding `Attribute` struct.
+        // The attributes must exist in the corresponding `Attribute` struct.
+        inline for (std.meta.fields(id.field_type)) |attr| {
             std.debug.assert(@hasField(@field(AttrType, @tagName(mode)), attr.name));
         }
     }
