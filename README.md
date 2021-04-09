@@ -41,11 +41,12 @@ const Point = struct {
 ```
 
 In order for a `Point` to be serialized and deserialized by Getty, `Point` must
-implement the `Serialize` and `Deserialize` interfaces:
+implement the `Serialize` and `Deserialize` interfaces. In short, this means that
+`Point` must provide implementations for the following functions:
 
 ```zig
-fn serialize(*@This(), Serializer) !void     // Required by Serialize
-fn deserialize(*@This(), Deserializer) !void // Required by Deserialize
+fn serialize(*Point, Serializer) !void     // Required by Serialize
+fn deserialize(*Point, Deserializer) !void // Required by Deserialize
 ```
 
 Thus, to implement `Serialize` and `Deserialize` for `Point`:
@@ -60,15 +61,16 @@ const Point = struct {
     fn serialize(self: *Point, serializer: getty.ser.Serializer) void {
     	// ...
     }
-    
+
     fn deserialize(self: *Point, deserializer: getty.ser.Deserializer) void {
     	// ...
     }
 };
 ```
 
-Typically, you wouldn't manually write `serialize` and `deserialize` like this.
-Instead, you'd import an implementation from Getty:
+For convenience, Getty provides implementations for `serialize` and
+`deserialize` that will automatically handle serialization and deserialization
+for you! All you need to do is import them like so:
 
 ```zig
 const getty = @import("getty");
@@ -81,6 +83,3 @@ const Point = struct {
     y: i32,
 };
 ```
-
-These implementations will automatically handle serialization and
-deserialization for you!
