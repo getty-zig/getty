@@ -1,12 +1,40 @@
 const std = @import("std");
 const attr = @import("../attribute.zig");
 
+const Serializer = @import("../serialize.zig").Serializer;
+
 pub fn Serialize(comptime T: type, attr_map: anytype) type {
     attr.check_attributes(T, attr_map, .Ser);
 
     return struct {
-        pub fn serialize(self: *T) void {
-            std.debug.print("Serialize!\n", .{});
+        pub fn serialize(self: *T, serializer: Serializer) void {
+            switch (@typeInfo(T)) {
+                .AnyFrame => {},
+                .Array => {},
+                .Bool => std.debug.print("try serializer.serialize_bool()\n", .{}),
+                .BoundFn => {},
+                .ComptimeFloat => {},
+                .ComptimeInt => {},
+                .Enum => {},
+                .EnumLiteral => {},
+                .ErrorSet => {},
+                .ErrorUnion => {},
+                .Float => {},
+                .Fn => {},
+                .Frame => {},
+                .Int => {},
+                .NoReturn => {},
+                .Null => {},
+                .Opaque => {},
+                .Optional => {},
+                .Pointer => {},
+                .Struct => std.debug.print("try serializer.serialize_struct()\n", .{}),
+                .Type => {},
+                .Undefined => {},
+                .Union => {},
+                .Vector => {},
+                .Void => {},
+            }
         }
     };
 }

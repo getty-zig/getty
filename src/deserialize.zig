@@ -1,40 +1,46 @@
 const std = @import("std");
 
 const Deserialize = struct {
-    const Self = @This();
-    const Error = error{};
-
     const Address = usize;
-    //const VTable = struct { deserialize: fn (Address, Deserializer) Error!void };
-    const VTable = struct { deserialize: fn (Address) Error!void };
+    const Error = error{};
+    const VTable = struct { deserialize: fn (Address, Deserializer) Error!void };
 
-    vtable: *const VTable,
     object: Address,
+    vtable: *const VTable,
 
-    //fn deserialize(self: Self, deserializer: Deserializer) Error!void {
-    fn deserialize(self: Self) Error!void {
-        //self.vtable.deserialize(self.object, deserializer);
-        try self.vtable.deserialize(self.object);
-    }
-
-    fn init(obj: anytype) Self {
+    fn init(obj: anytype) @This() {
         const Pointer = @TypeOf(obj);
 
         const deserialize_fn = struct {
-            //fn deserialize(address: Address, deserializer: Deserializer) Error!void {
-            fn deserialize(address: Address) Error!void {
-                @call(
-                    .{ .modifier = .always_inline },
-                    std.meta.Child(Pointer).deserialize,
-                    //.{ @intToPtr(Pointer, address), deserializer },
-                    .{@intToPtr(Pointer, address)},
-                );
+            fn deserialize(address: Address, deserializer: Deserializer) Error!void {
+                @call(.{ .modifier = .always_inline }, std.meta.Child(Pointer).deserialize, .{ @intToPtr(Pointer, address), deserializer });
             }
         }.deserialize;
 
         return .{
-            .vtable = &comptime VTable{ .deserialize = deserialize_fn },
             .object = @ptrToInt(obj),
+            .vtable = &comptime VTable{ .deserialize = deserialize_fn },
+        };
+    }
+
+    fn deserialize(self: @This(), deserializer: Deserializer) Error!void {
+        try self.vtable.deserialize(self.object, deserializer);
+    }
+};
+
+pub const Deserializer = struct {
+    const Address = usize;
+    const VTable = struct {};
+
+    vtable: *const VTable,
+    object: Address,
+
+    fn init(obj: anytype) @This() {
+        const Pointer = @TypeOf(obj);
+
+        return .{
+            .object = @ptrToInt(obj),
+            .vtable = &comptime VTable{},
         };
     }
 };

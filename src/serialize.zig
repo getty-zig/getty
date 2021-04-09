@@ -1,41 +1,60 @@
 const std = @import("std");
 
 const Serialize = struct {
-    const Self = @This();
-    const Error = error{};
-
     const Address = usize;
-    //const VTable = struct { serialize: fn (Address, Serializer) Error!void };
-    const VTable = struct { serialize: fn (Address) Error!void };
+    const Error = error{};
+    const VTable = struct { serialize: fn (Address, Serializer) Error!void };
 
-    vtable: *const VTable,
     object: Address,
+    vtable: *const VTable,
 
-    //fn serialize(self: Self, serializer: Serializer) Error!void {
-    fn serialize(self: Self) Error!void {
-        //self.vtable.serialize(self.object, serializer);
-        try self.vtable.serialize(self.object);
-    }
-
-    fn init(obj: anytype) Self {
+    fn init(obj: anytype) @This() {
         const Pointer = @TypeOf(obj);
 
         const serialize_fn = struct {
-            //fn serialize(address: Address, serializer: Serializer) Error!void {
-            fn serialize(address: Address) Error!void {
-                @call(
-                    .{ .modifier = .always_inline },
-                    std.meta.Child(Pointer).serialize,
-                    //.{ @intToPtr(Pointer, address), serializer },
-                    .{@intToPtr(Pointer, address)},
-                );
+            fn serialize(address: Address, serializer: Serializer) Error!void {
+                @call(.{ .modifier = .always_inline }, std.meta.Child(Pointer).serialize, .{ @intToPtr(Pointer, address), serializer });
             }
         }.serialize;
 
         return .{
-            .vtable = &comptime VTable{ .serialize = serialize_fn },
             .object = @ptrToInt(obj),
+            .vtable = &comptime VTable{ .serialize = serialize_fn },
         };
+    }
+
+    fn serialize(self: @This(), serializer: Serializer) Error!void {
+        try self.vtable.serialize(self.object, serializer);
+    }
+};
+
+pub const Serializer = struct {
+    const Address = usize;
+    const Error = error{};
+    const VTable = struct {
+        serialize_bool: fn (Address, bool) Error!void
+    };
+
+    object: Address,
+    vtable: *const VTable,
+
+    fn init(obj: anytype) @This() {
+        const Pointer = @TypeOf(obj);
+
+        const serialize_bool_fn = struct {
+            fn serialize_bool(address: Address, v: bool) Error!void {
+                @call(.{ .modifier = .always_inline }, std.meta.Child(Pointer).serialize_bool, .{ @intToPtr(Pointer, address), v });
+            }
+        }.serialize_bool;
+
+        return .{
+            .object = @ptrToInt(obj),
+            .vtable = &comptime VTable{ .serialize_bool = serialize_bool_fn },
+        };
+    }
+
+    pub fn serialize_bool(self: @This(), v: bool) Error!void {
+        try self.vtable.serialize_bool(self.object, v);
     }
 };
 
@@ -48,7 +67,4 @@ test "Serialize - init" {
         x: i32,
         y: i32,
     };
-
-    var point = Point{ .x = 1, .y = 2 };
-    try Serialize.init(&point).serialize();
 }
