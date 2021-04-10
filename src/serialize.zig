@@ -67,4 +67,20 @@ test "Serialize - init" {
         x: i32,
         y: i32,
     };
+
+    const Ser = struct {
+        v: bool,
+
+        fn serialize_bool(self: *@This(), v: bool) void {
+            std.log.warn("serialize_bool\n", .{});
+        }
+    };
+
+    var point = Point{ .x = 1, .y = 2 };
+    var ser = Ser{ .v = true };
+
+    var s = Serialize.init(&point);
+    var serializer = Serializer.init(&ser);
+
+    try s.serialize(serializer);
 }
