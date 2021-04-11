@@ -1,10 +1,13 @@
 const std = @import("std");
-const attr = @import("../attribute.zig");
 
 /// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
 pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T)) type {
     return struct {
-        pub fn serialize(self: *T, serializer: Serializer) void {
+        pub fn _deserialize(self: *T) de.Deserialize(*T, deserialize) {
+            return .{ .context = self };
+        }
+
+        pub fn deserialize(self: *T, deserializer: de.Deserializer) void {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
@@ -163,8 +166,6 @@ fn Attributes(comptime T: type) type {
         },
     });
 }
-
-const expect = std.testing.expect;
 
 test "Deserialize - basic (struct)" {
     const T = struct {

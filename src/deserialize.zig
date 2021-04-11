@@ -1,56 +1,29 @@
 const std = @import("std");
 
-const Deserialize = struct {
-    const Address = usize;
-    const Error = error{};
-    const VTable = struct { deserialize: fn (Address, Deserializer) Error!void };
+pub fn Deserialize(comptime Context: type, deserialize_fn: fn (context: Context, deserializer: Deserializer) !void) type {
+    return struct {
+        const Self = @This();
 
-    object: Address,
-    vtable: *const VTable,
+        context: Context,
 
-    fn init(obj: anytype) @This() {
-        const Pointer = @TypeOf(obj);
+        pub fn deserialize(self: Self, deserializer: Deserializer) !void {
+            return try deserialize_fn(self.context, deserializer);
+        }
+    };
+}
 
-        const deserialize_fn = struct {
-            fn deserialize(address: Address, deserializer: Deserializer) Error!void {
-                @call(.{ .modifier = .always_inline }, std.meta.Child(Pointer).deserialize, .{ @intToPtr(Pointer, address), deserializer });
-            }
-        }.deserialize;
+pub fn Deserializer(
+    comptime Context: type,
+) type {
+    return struct {
+        const Self = @This();
 
-        return .{
-            .object = @ptrToInt(obj),
-            .vtable = &comptime VTable{ .deserialize = deserialize_fn },
-        };
-    }
-
-    fn deserialize(self: @This(), deserializer: Deserializer) Error!void {
-        try self.vtable.deserialize(self.object, deserializer);
-    }
-};
-
-pub const Deserializer = struct {
-    const Address = usize;
-    const VTable = struct {};
-
-    vtable: *const VTable,
-    object: Address,
-
-    fn init(obj: anytype) @This() {
-        const Pointer = @TypeOf(obj);
-
-        return .{
-            .object = @ptrToInt(obj),
-            .vtable = &comptime VTable{},
-        };
-    }
-};
-
-const derive = @import("derive/deserialize.zig");
+        context: Context,
+    };
+}
 
 test "Deserialize - init" {
     const Point = struct {
-        usingnamespace derive.Deserialize(@This(), .{});
-
         x: i32,
         y: i32,
     };

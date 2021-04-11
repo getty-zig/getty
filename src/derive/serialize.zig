@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const attr = @import("../attribute.zig");
-const Serializer = @import("../serialize.zig").Serializer;
-
 /// Provides a generic implementation of `getty.ser.Serialize.serialize`.
 pub fn Serialize(comptime T: type, comptime attributes: Attributes(T)) type {
     return struct {
-        pub fn serialize(self: *T, serializer: Serializer) void {
+        pub fn _serialize(self: *T) ser.Serialize(*T, serialize) {
+            return .{ .context = self };
+        }
+
+        pub fn serialize(self: *T, serializer: ser.Serializer) void {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
