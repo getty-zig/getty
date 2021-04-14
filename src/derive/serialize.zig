@@ -83,9 +83,9 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T)) type {
 /// ```
 /// const A = struct {
 ///    // struct {
-///    //     .A: struct { <container attributes> },
-///    //     .a: struct { <field attributes> },
-///    //     .b: struct { <field attributes> },
+///    //     A: struct { <container attributes> },
+///    //     a: struct { <field attributes> },
+///    //     b: struct { <field attributes> },
 ///    // };
 ///    usingnamespace Serialize(@This(), .{});
 ///
@@ -95,9 +95,9 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T)) type {
 ///
 /// const B = struct {
 ///    // struct {
-///    //     .B: struct { <container attributes> },
-///    //     .c: struct { <field attributes> },
-///    //     .d: struct { <field attributes> },
+///    //     B: struct { <container attributes> },
+///    //     c: struct { <field attributes> },
+///    //     d: struct { <field attributes> },
 ///    // };
 ///    usingnamespace Serialize(@This(), .{
 ///        .B = .{ .rename = "C", .rename_all = "lowercase" },
