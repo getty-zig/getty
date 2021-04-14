@@ -18,8 +18,7 @@ pub fn build(builder: *Builder) void {
     const test_files = [_][]const u8{
         "src/serialize.zig",
         "src/deserialize.zig",
-        "src/derive/serialize.zig",
-        "src/derive/deserialize.zig",
+        "src/derive.zig",
     };
 
     inline for (&modes) |m| {
