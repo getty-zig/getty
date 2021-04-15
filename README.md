@@ -1,9 +1,6 @@
 <p align="center">
   <h1 align="center">Getty</h1>
   <p align="center">A framework for serializing and deserializing Zig data types.</p>
-  <p align="center">
-    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
-  </p>
 </p>
 
 ```zig
