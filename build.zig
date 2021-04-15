@@ -4,48 +4,55 @@ const std = @import("std");
 const Builder = std.build.Builder;
 const Pkg = std.build.Pkg;
 
-pub fn build(builder: *Builder) void {
-    // Standard release options (Debug, ReleaseSafe, ReleaseSmall, ReleaseFast)
-    const mode = builder.standardReleaseOptions();
-    //const modes = [_]std.builtin.Mode{ .Debug, .ReleaseSafe, .ReleaseFast, .ReleaseSmall };
-    const modes = [_]std.builtin.Mode{.Debug};
+//const MODES = [_]std.builtin.Mode{ .Debug, .ReleaseSafe, .ReleaseFast, .ReleaseSmall };
+const MODES = [_]std.builtin.Mode{.Debug};
 
-    // Standard target options (any target is allowed; default is native)
+const PACKAGE_NAME = "getty";
+const PACKAGE_PATH = "src/main.zig";
+
+const TEST_FILES = [_][]const u8{
+    "src/serialize.zig",
+    "src/deserialize.zig",
+    "src/derive.zig",
+};
+
+pub fn build(builder: *Builder) void {
+    const mode = builder.standardReleaseOptions();
     const target = builder.standardTargetOptions(.{});
 
-    // Tests
-    const test_step = builder.step("test", "Run library tests.");
-    const test_files = [_][]const u8{
-        "src/serialize.zig",
-        "src/deserialize.zig",
-        "src/derive.zig",
-    };
+    tests(builder, target);
+    library(builder, mode);
+}
 
-    inline for (&modes) |m| {
-        const mode_str = switch (m) {
+fn tests(builder: *Builder, target: std.zig.CrossTarget) void {
+    const test_step = builder.step("test", "Run library tests.");
+
+    inline for (&MODES) |m| {
+        const mode = switch (m) {
             .Debug => "DEBUG",
             .ReleaseSafe => "RELEASE-SAFE",
             .ReleaseFast => "RELEASE-FAST",
             .ReleaseSmall => "RELEASE-SMALL",
         };
 
-        const step = builder.step("(" ++ mode_str ++ ")", "Run tests in " ++ mode_str ++ " mode.");
-        test_step.dependOn(step);
+        const step = builder.step("(" ++ mode ++ ")", "Run tests in " ++ mode ++ " mode.");
+        step.dependOn(test_step);
 
-        inline for (&test_files) |f| {
-            const tests = builder.addTest(f);
+        inline for (&TEST_FILES) |f| {
+            const t = builder.addTest(f);
 
-            tests.addPackagePath("getty", "src/main.zig");
-            tests.setBuildMode(m);
-            tests.setTarget(target);
-            //tests.setNamePrefix(mode_str ++ " ");
+            t.addPackagePath(PACKAGE_NAME, PACKAGE_PATH);
+            t.setBuildMode(m);
+            t.setTarget(target);
+            //.setNamePrefix(mode ++ " ");
 
-            step.dependOn(&tests.step);
+            step.dependOn(&t.step);
         }
     }
+}
 
-    // Library
-    const lib = builder.addStaticLibrary("getty", "src/main.zig");
+fn library(builder: *Builder, mode: builtin.Mode) void {
+    const lib = builder.addStaticLibrary(PACKAGE_NAME, PACKAGE_PATH);
     lib.setBuildMode(mode);
     lib.install();
 }
