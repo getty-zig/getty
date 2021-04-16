@@ -1,8 +1,6 @@
-const builtin = @import("builtin");
 const std = @import("std");
 
 const Builder = std.build.Builder;
-const Pkg = std.build.Pkg;
 
 //const MODES = [_]std.builtin.Mode{ .Debug, .ReleaseSafe, .ReleaseFast, .ReleaseSmall };
 const MODES = [_]std.builtin.Mode{.Debug};
@@ -36,7 +34,7 @@ fn tests(builder: *Builder, target: std.zig.CrossTarget) void {
         };
 
         const step = builder.step("(" ++ mode ++ ")", "Run tests in " ++ mode ++ " mode.");
-        step.dependOn(test_step);
+        test_step.dependOn(step);
 
         inline for (&TEST_FILES) |f| {
             const t = builder.addTest(f);
@@ -44,14 +42,14 @@ fn tests(builder: *Builder, target: std.zig.CrossTarget) void {
             t.addPackagePath(PACKAGE_NAME, PACKAGE_PATH);
             t.setBuildMode(m);
             t.setTarget(target);
-            //.setNamePrefix(mode ++ " ");
+            //t.setNamePrefix(mode ++ " ");
 
             step.dependOn(&t.step);
         }
     }
 }
 
-fn library(builder: *Builder, mode: builtin.Mode) void {
+fn library(builder: *Builder, mode: std.builtin.Mode) void {
     const lib = builder.addStaticLibrary(PACKAGE_NAME, PACKAGE_PATH);
     lib.setBuildMode(mode);
     lib.install();
