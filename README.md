@@ -4,8 +4,8 @@
 </p>
 
 ```zig
-const print = @import("std").debug.print;
 const getty = @import("getty");
+const print = @import("std").debug.print;
 
 const Point = struct {
     usingnamespace getty.Serialize(@This(), .{});
