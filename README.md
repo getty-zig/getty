@@ -15,7 +15,7 @@ const Point = struct {
     y: i32,
 };
 
-test "Convert a Point to a JSON string and back" {
+pub const main = fn() !void {
     var point = Point{ .x = 1, .y = 2 };
     var serialized = try getty.json.to_str(&point);
     var deserialized = try getty.json.from_str(&serialized);
