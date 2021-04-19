@@ -8,8 +8,8 @@ const getty = @import("getty");
 const print = @import("std").debug.print;
 
 const Point = struct {
-    usingnamespace getty.Serialize(@This(), .{});
-    usingnamespace getty.Deserialize(@This(), .{});
+    usingnamespace getty.Serialize(Point, .{});
+    usingnamespace getty.Deserialize(Point, .{});
 
     x: i32,
     y: i32,
@@ -17,8 +17,8 @@ const Point = struct {
 
 pub const main = fn() !void {
     var point = Point{ .x = 1, .y = 2 };
-    var serialized = try getty.json.to_str(&point);
-    var deserialized = try getty.json.from_str(&serialized);
+    var serialized = try getty.json.to_str(point);
+    var deserialized = try getty.json.from_str(serialized);
 
     print("{}\n", .{serialized});   // {"x":1,"y":2}
     print("{}\n", .{deserialized}); // Point{ .x = 1, .y = 2 }
