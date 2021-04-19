@@ -1,47 +1,20 @@
 const std = @import("std");
 
+const Error = error{Deserialize};
+
 const Deserialize = struct {
-    const Address = usize;
-    const Error = error{};
-    const VTable = struct { deserialize: fn (Address, Deserializer) Error!void };
+    deserializeFn: fn (self: *const @This(), deserializer: Deserializer) Error!void,
 
-    object: Address,
-    vtable: *const VTable,
-
-    fn init(obj: anytype) @This() {
-        const Pointer = @TypeOf(obj);
-
-        const deserialize_fn = struct {
-            fn deserialize(address: Address, deserializer: Deserializer) Error!void {
-                @call(.{ .modifier = .always_inline }, std.meta.Child(Pointer).deserialize, .{ @intToPtr(Pointer, address), deserializer });
-            }
-        }.deserialize;
-
-        return .{
-            .object = @ptrToInt(obj),
-            .vtable = &comptime VTable{ .deserialize = deserialize_fn },
-        };
-    }
-
-    fn deserialize(self: @This(), deserializer: Deserializer) Error!void {
-        try self.vtable.deserialize(self.object, deserializer);
+    fn deserialize(self: *const @This(), deserializer: Deserializer) Error!void {
+        std.debug.print("Deserialize.deserialize\n", .{});
     }
 };
 
-pub const Deserializer = struct {
-    const Address = usize;
-    const VTable = struct {};
+const Deserializer = struct {
+    deserializeBoolFn: fn (self: *const @This(), v: bool) void,
 
-    vtable: *const VTable,
-    object: Address,
-
-    fn init(obj: anytype) @This() {
-        const Pointer = @TypeOf(obj);
-
-        return .{
-            .object = @ptrToInt(obj),
-            .vtable = &comptime VTable{},
-        };
+    fn deserializeBool(self: *const @This(), v: bool) void {
+        std.debug.print("Deserializer.deserializeBool\n", .{});
     }
 };
 
@@ -49,23 +22,31 @@ const TestPoint = struct {
     x: i32,
     y: i32,
 
-    fn deserialize(self: *@This(), deserializer: Deserializer) void {
+    const de = Deserialize{ .deserializeFn = deserialize };
+
+    fn deserialize(self: *const Deserialize, deserializer: Deserializer) Error!void {
         std.log.warn("Deserialize", .{});
     }
 };
 
 const TestDeserializer = struct {
     v: bool,
+
+    const deserializer = Deserializer{
+        .deserializeBoolFn = deserializeBool,
+    };
+
+    fn deserializeBool(self: *const Deserializer, v: bool) void {
+        std.debug.print("TestDeserializer.serializeBool\n", .{});
+    }
 };
 
 test "Deserialize - init" {
     var p = TestPoint{ .x = 1, .y = 2 };
-    var s = TestDeserializer{ .v = true };
+    var d = TestDeserializer{ .v = true };
 
-    var deserialize = Deserialize.init(&p);
-    var deserializer = Deserializer.init(&s);
-
-    try deserialize.deserialize(deserializer);
+    var deserialize = &(@TypeOf(p).de);
+    try deserialize.deserialize(@TypeOf(d).deserializer);
 }
 
 comptime {

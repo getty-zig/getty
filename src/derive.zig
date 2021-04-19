@@ -3,9 +3,7 @@ const std = @import("std");
 /// Provides a generic implementation of `getty.ser.Serialize.serialize`.
 pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) type {
     return struct {
-        pub fn _serialize(self: *T) ser.Serialize(*T, serialize) {
-            return .{ .context = self };
-        }
+        pub const ser = Serialize{ .serializeFn = serialize };
 
         pub fn serialize(self: *T, serializer: ser.Serializer) void {
             switch (@typeInfo(T)) {
@@ -68,9 +66,7 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
 /// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
 pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) type {
     return struct {
-        pub fn _deserialize(self: *T) de.Deserialize(*T, deserialize) {
-            return .{ .context = self };
-        }
+        pub const de = Deserialize{ .deserializeFn = deserialize };
 
         pub fn deserialize(self: *T, deserializer: de.Deserializer) void {
             switch (@typeInfo(T)) {
