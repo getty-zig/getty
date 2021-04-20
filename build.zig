@@ -6,12 +6,14 @@ const Builder = std.build.Builder;
 const MODES = [_]std.builtin.Mode{.Debug};
 
 const PACKAGE_NAME = "getty";
-const PACKAGE_PATH = "src/main.zig";
+const PACKAGE_PATH = "src/lib.zig";
 
 const TEST_FILES = [_][]const u8{
-    "src/de.zig",
+    "src/de/Deserialize.zig",
+    "src/de/Deserializer.zig",
     "src/derive.zig",
-    "src/ser.zig",
+    "src/ser/Serialize.zig",
+    "src/ser/Serializer.zig",
 };
 
 pub fn build(builder: *Builder) void {

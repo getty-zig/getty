@@ -1,19 +1,15 @@
 const std = @import("std");
 const expect = std.testing.expect;
 
-const Ser = @import("ser.zig").Serialize;
-const Serializer = @import("ser.zig").Serializer;
-const SerError = @import("ser.zig").Error;
-const De = @import("de.zig").Deserialize;
-const Deserializer = @import("de.zig").Deserializer;
-const DeError = @import("de.zig").Error;
+const _ser = @import("ser.zig");
+const _de = @import("de.zig");
 
 /// Provides a generic implementation of `getty.ser.Serialize.serialize`.
 pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) type {
     return struct {
-        pub const ser = Ser{ .serialize_fn = serialize };
+        pub const ser = _ser.Serialize{ .serialize_fn = serialize };
 
-        pub fn serialize(self: *const Ser, serializer: Serializer) SerError!void {
+        pub fn serialize(self: *const _ser.Serialize, serializer: _ser.Serializer) _ser.Serialize.Error!void {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
@@ -74,9 +70,9 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
 /// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
 pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) type {
     return struct {
-        pub const de = De{ .deserialize_fn = deserialize };
+        pub const de = _de.Deserialize{ .deserialize_fn = deserialize };
 
-        pub fn deserialize(self: *const De, deserializer: Deserializer) DeError!void {
+        pub fn deserialize(self: *const _de.Deserialize, deserializer: _de.Deserializer) _de.Deserialize.Error!void {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
@@ -304,7 +300,7 @@ const TestSerializer = struct {
         self.output.deinit();
     }
 
-    const serializer = Serializer{
+    const serializer = _ser.Serializer{
         .bool_fn = serialize_bool,
         .i8_fn = serialize_i8,
         .i16_fn = serialize_i16,
@@ -321,59 +317,59 @@ const TestSerializer = struct {
         .f64_fn = serialize_f64,
     };
 
-    fn serialize_bool(self: *const Serializer, v: bool) SerError!void {
+    fn serialize_bool(self: *const _ser.Serializer, v: bool) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_bool", .{});
     }
 
-    fn serialize_i8(self: *const Serializer, v: i8) SerError!void {
+    fn serialize_i8(self: *const _ser.Serializer, v: i8) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_i8", .{});
     }
 
-    fn serialize_i16(self: *const Serializer, v: i16) SerError!void {
+    fn serialize_i16(self: *const _ser.Serializer, v: i16) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_i16", .{});
     }
 
-    fn serialize_i32(self: *const Serializer, v: i32) SerError!void {
+    fn serialize_i32(self: *const _ser.Serializer, v: i32) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_i32", .{});
     }
 
-    fn serialize_i64(self: *const Serializer, v: i64) SerError!void {
+    fn serialize_i64(self: *const _ser.Serializer, v: i64) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_i64", .{});
     }
 
-    fn serialize_i128(self: *const Serializer, v: i128) SerError!void {
+    fn serialize_i128(self: *const _ser.Serializer, v: i128) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_i128", .{});
     }
 
-    fn serialize_u8(self: *const Serializer, v: u8) SerError!void {
+    fn serialize_u8(self: *const _ser.Serializer, v: u8) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_u8", .{});
     }
 
-    fn serialize_u16(self: *const Serializer, v: u16) SerError!void {
+    fn serialize_u16(self: *const _ser.Serializer, v: u16) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_u16", .{});
     }
 
-    fn serialize_u32(self: *const Serializer, v: u32) SerError!void {
+    fn serialize_u32(self: *const _ser.Serializer, v: u32) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_u32", .{});
     }
 
-    fn serialize_u64(self: *const Serializer, v: u64) SerError!void {
+    fn serialize_u64(self: *const _ser.Serializer, v: u64) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_u64", .{});
     }
 
-    fn serialize_u128(self: *const Serializer, v: u128) SerError!void {
+    fn serialize_u128(self: *const _ser.Serializer, v: u128) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_u128", .{});
     }
 
-    fn serialize_f16(self: *const Serializer, v: f16) SerError!void {
+    fn serialize_f16(self: *const _ser.Serializer, v: f16) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_f16", .{});
     }
 
-    fn serialize_f32(self: *const Serializer, v: f32) SerError!void {
+    fn serialize_f32(self: *const _ser.Serializer, v: f32) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_f32", .{});
     }
 
-    fn serialize_f64(self: *const Serializer, v: f64) SerError!void {
+    fn serialize_f64(self: *const _ser.Serializer, v: f64) _ser.Serialize.Error!void {
         std.log.warn("TestSerializer.serialize_f64", .{});
     }
 };
