@@ -71,46 +71,46 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
     };
 }
 
-//// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
-////pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) type {
-////return struct {
-////pub const De = de.Deserialize(*@This(), deserialize);
+// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
+//pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) type {
+//return struct {
+//pub const De = de.Deserialize(*@This(), deserialize);
 
-////pub fn deserialize(self: *@This(), deserializer: _de.Deserializer) _de.Deserialize.Error!void {
-////switch (@typeInfo(T)) {
-////.AnyFrame => {},
-////.Array => {},
-////.Bool => {
-////std.log.warn("Deserialize.deserialize -> Bool", .{});
-////},
-////.BoundFn => {},
-////.ComptimeFloat => {},
-////.ComptimeInt => {},
-////.Enum => {},
-////.EnumLiteral => {},
-////.ErrorSet => {},
-////.ErrorUnion => {},
-////.Float => {},
-////.Fn => {},
-////.Frame => {},
-////.Int => {},
-////.NoReturn => {},
-////.Null => {},
-////.Opaque => {},
-////.Optional => {},
-////.Pointer => {},
-////.Struct => {
-////std.log.warn("Deserialize.deserialize -> Struct", .{});
-////},
-////.Type => {},
-////.Undefined => {},
-////.Union => {},
-////.Vector => {},
-////.Void => {},
-////}
-////}
-////};
-////}
+//pub fn deserialize(self: *@This(), deserializer: _de.Deserializer) _de.Deserialize.Error!void {
+//switch (@typeInfo(T)) {
+//.AnyFrame => {},
+//.Array => {},
+//.Bool => {
+//std.log.warn("Deserialize.deserialize -> Bool", .{});
+//},
+//.BoundFn => {},
+//.ComptimeFloat => {},
+//.ComptimeInt => {},
+//.Enum => {},
+//.EnumLiteral => {},
+//.ErrorSet => {},
+//.ErrorUnion => {},
+//.Float => {},
+//.Fn => {},
+//.Frame => {},
+//.Int => {},
+//.NoReturn => {},
+//.Null => {},
+//.Opaque => {},
+//.Optional => {},
+//.Pointer => {},
+//.Struct => {
+//std.log.warn("Deserialize.deserialize -> Struct", .{});
+//},
+//.Type => {},
+//.Undefined => {},
+//.Union => {},
+//.Vector => {},
+//.Void => {},
+//}
+//}
+//};
+//}
 
 /// Returns an attribute map type.
 ///

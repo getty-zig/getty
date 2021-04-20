@@ -9,11 +9,9 @@ const PACKAGE_NAME = "getty";
 const PACKAGE_PATH = "src/lib.zig";
 
 const TEST_FILES = [_][]const u8{
-    "src/de/Deserialize.zig",
-    "src/de/Deserializer.zig",
+    "src/de.zig",
     "src/derive.zig",
-    "src/ser/Serialize.zig",
-    "src/ser/Serializer.zig",
+    "src/ser.zig",
 };
 
 pub fn build(builder: *Builder) void {
