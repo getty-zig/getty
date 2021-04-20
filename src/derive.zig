@@ -1,15 +1,23 @@
 const std = @import("std");
+const expect = std.testing.expect;
+
+const Ser = @import("ser.zig").Serialize;
+const Serializer = @import("ser.zig").Serializer;
+const SerError = @import("ser.zig").Error;
+const De = @import("de.zig").Deserialize;
+const Deserializer = @import("de.zig").Deserializer;
+const DeError = @import("de.zig").Error;
 
 /// Provides a generic implementation of `getty.ser.Serialize.serialize`.
 pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) type {
     return struct {
-        pub const ser = Serialize{ .serializeFn = serialize };
+        pub const ser = Ser{ .serialize_fn = serialize };
 
-        pub fn serialize(self: *T, serializer: ser.Serializer) void {
+        pub fn serialize(self: *const Ser, serializer: Serializer) SerError!void {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
-                .Bool => std.log.warn("Serialize.serialize -> Bool\n", .{}),
+                .Bool => std.log.warn("Serialize.serialize -> Bool", .{}),
                 .BoundFn => {},
                 .ComptimeFloat => {},
                 .ComptimeInt => {},
@@ -27,7 +35,7 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
                 .Optional => {},
                 .Pointer => {},
                 .Struct => {
-                    std.log.warn("Serialize.serialize -> Struct\n", .{});
+                    std.log.warn("Serialize.serialize -> Struct", .{});
                     //if (std.meta.fields(@TypeOf(attributes)).len == 0) {
                     //const fields = std.meta.fields(T);
                     //var s = try serializer.serialize_struct(@typeName(T), fields.len);
@@ -49,7 +57,7 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
                     //}
 
                     //const container_name = @field(serializer, @typeName(T));
-                    //std.debug.warn("{}\n", .{container_name});
+                    //std.debug.warn("{}", .{container_name});
 
                     //s.end()
                 },
@@ -66,14 +74,14 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
 /// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
 pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) type {
     return struct {
-        pub const de = Deserialize{ .deserializeFn = deserialize };
+        pub const de = De{ .deserialize_fn = deserialize };
 
-        pub fn deserialize(self: *T, deserializer: de.Deserializer) void {
+        pub fn deserialize(self: *const De, deserializer: Deserializer) DeError!void {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
                 .Bool => {
-                    std.log.warn("Deserialize.deserialize -> Bool\n", .{});
+                    std.log.warn("Deserialize.deserialize -> Bool", .{});
                 },
                 .BoundFn => {},
                 .ComptimeFloat => {},
@@ -92,7 +100,7 @@ pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) ty
                 .Optional => {},
                 .Pointer => {},
                 .Struct => {
-                    std.log.warn("Deserialize.deserialize -> Struct\n", .{});
+                    std.log.warn("Deserialize.deserialize -> Struct", .{});
                 },
                 .Type => {},
                 .Undefined => {},
@@ -116,37 +124,6 @@ pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) ty
 /// or variant attributes. For the identifier field corresponding to the type
 /// name of `T`, the attributes consist of container attributes. All fields in
 /// `attributes` may be omitted.
-///
-/// # Examples
-///
-/// ```
-/// const A = struct {
-///    // struct {
-///    //     A: struct { <container attributes> },
-///    //     a: struct { <field attributes> },
-///    //     b: struct { <field attributes> },
-///    // };
-///    usingnamespace Deserialize(@This(), .{});
-///
-///     a: i32,
-///     b: i32,
-/// };
-///
-/// const B = struct {
-///    // struct {
-///    //     B: struct { <container attributes> },
-///    //     c: struct { <field attributes> },
-///    //     d: struct { <field attributes> },
-///    // };
-///    usingnamespace Deserialize(@This(), .{
-///        .B = .{ .rename = "C", .rename_all = "lowercase" },
-///        .c = .{ .rename = "z" },
-///    });
-///
-///     c: i32,
-///     d: i32,
-/// };
-/// ```
 fn Attributes(comptime T: type, mode: enum { ser, de }) type {
     const Container = switch (mode) {
         .ser => struct {
@@ -253,20 +230,27 @@ fn Attributes(comptime T: type, mode: enum { ser, de }) type {
     });
 }
 
-const expect = std.testing.expect;
-
 test "Serialize - basic (struct)" {
-    const T = struct {
+    const TestPoint = struct {
         usingnamespace Serialize(@This(), .{});
 
         x: i32,
         y: i32,
     };
+
+    var point = TestPoint{ .x = 1, .y = 2 };
+    var test_serializer = TestSerializer.init(std.testing.allocator);
+    defer test_serializer.deinit();
+
+    var serialize = &(@TypeOf(point).ser);
+    var serializer = &(@TypeOf(test_serializer).serializer);
+    try serialize.serialize(serializer.*);
+    try serializer.serialize_bool(true);
 }
 
 test "Serialize - with container attribute (struct)" {
-    const T = struct {
-        usingnamespace Serialize(@This(), .{ .T = .{ .rename = "A" } });
+    const TestPoint = struct {
+        usingnamespace Serialize(@This(), .{ .TestPoint = .{ .rename = "A" } });
 
         x: i32,
         y: i32,
@@ -274,7 +258,7 @@ test "Serialize - with container attribute (struct)" {
 }
 
 test "Serialize - with field attribute (struct)" {
-    const T = struct {
+    const TestPoint = struct {
         usingnamespace Serialize(@This(), .{ .x = .{ .rename = "a" } });
 
         x: i32,
@@ -283,7 +267,7 @@ test "Serialize - with field attribute (struct)" {
 }
 
 test "Deserialize - basic (struct)" {
-    const T = struct {
+    const TestPoint = struct {
         usingnamespace Deserialize(@This(), .{});
 
         x: i32,
@@ -292,8 +276,8 @@ test "Deserialize - basic (struct)" {
 }
 
 test "Deserialize - with container attribute (struct)" {
-    const T = struct {
-        usingnamespace Deserialize(@This(), .{ .T = .{ .rename = "A" } });
+    const TestPoint = struct {
+        usingnamespace Deserialize(@This(), .{ .TestPoint = .{ .rename = "A" } });
 
         x: i32,
         y: i32,
@@ -301,13 +285,98 @@ test "Deserialize - with container attribute (struct)" {
 }
 
 test "Deserialize - with field attribute (struct)" {
-    const T = struct {
+    const TestPoint = struct {
         usingnamespace Deserialize(@This(), .{ .x = .{ .rename = "a" } });
 
         x: i32,
         y: i32,
     };
 }
+
+const TestSerializer = struct {
+    output: std.ArrayList(u8),
+
+    fn init(allocator: *std.mem.Allocator) @This() {
+        return .{ .output = std.ArrayList(u8).init(allocator) };
+    }
+
+    fn deinit(self: @This()) void {
+        self.output.deinit();
+    }
+
+    const serializer = Serializer{
+        .bool_fn = serialize_bool,
+        .i8_fn = serialize_i8,
+        .i16_fn = serialize_i16,
+        .i32_fn = serialize_i32,
+        .i64_fn = serialize_i64,
+        .i128_fn = serialize_i128,
+        .u8_fn = serialize_u8,
+        .u16_fn = serialize_u16,
+        .u32_fn = serialize_u32,
+        .u64_fn = serialize_u64,
+        .u128_fn = serialize_u128,
+        .f16_fn = serialize_f16,
+        .f32_fn = serialize_f32,
+        .f64_fn = serialize_f64,
+    };
+
+    fn serialize_bool(self: *const Serializer, v: bool) SerError!void {
+        std.log.warn("TestSerializer.serialize_bool", .{});
+    }
+
+    fn serialize_i8(self: *const Serializer, v: i8) SerError!void {
+        std.log.warn("TestSerializer.serialize_i8", .{});
+    }
+
+    fn serialize_i16(self: *const Serializer, v: i16) SerError!void {
+        std.log.warn("TestSerializer.serialize_i16", .{});
+    }
+
+    fn serialize_i32(self: *const Serializer, v: i32) SerError!void {
+        std.log.warn("TestSerializer.serialize_i32", .{});
+    }
+
+    fn serialize_i64(self: *const Serializer, v: i64) SerError!void {
+        std.log.warn("TestSerializer.serialize_i64", .{});
+    }
+
+    fn serialize_i128(self: *const Serializer, v: i128) SerError!void {
+        std.log.warn("TestSerializer.serialize_i128", .{});
+    }
+
+    fn serialize_u8(self: *const Serializer, v: u8) SerError!void {
+        std.log.warn("TestSerializer.serialize_u8", .{});
+    }
+
+    fn serialize_u16(self: *const Serializer, v: u16) SerError!void {
+        std.log.warn("TestSerializer.serialize_u16", .{});
+    }
+
+    fn serialize_u32(self: *const Serializer, v: u32) SerError!void {
+        std.log.warn("TestSerializer.serialize_u32", .{});
+    }
+
+    fn serialize_u64(self: *const Serializer, v: u64) SerError!void {
+        std.log.warn("TestSerializer.serialize_u64", .{});
+    }
+
+    fn serialize_u128(self: *const Serializer, v: u128) SerError!void {
+        std.log.warn("TestSerializer.serialize_u128", .{});
+    }
+
+    fn serialize_f16(self: *const Serializer, v: f16) SerError!void {
+        std.log.warn("TestSerializer.serialize_f16", .{});
+    }
+
+    fn serialize_f32(self: *const Serializer, v: f32) SerError!void {
+        std.log.warn("TestSerializer.serialize_f32", .{});
+    }
+
+    fn serialize_f64(self: *const Serializer, v: f64) SerError!void {
+        std.log.warn("TestSerializer.serialize_f64", .{});
+    }
+};
 
 comptime {
     std.testing.refAllDecls(@This());
