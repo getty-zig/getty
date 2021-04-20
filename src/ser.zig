@@ -1,3 +1,13 @@
+//! Generic data structure serialization framework.
+//!
+//! The two most important interfaces in this module are `Serialize` and
+//! `Serializer`.
+//!
+//!  - A type that implements `Serialize` is a data structure that can be
+//!    serialized to any data format supported by Getty.
+//!  - A type that implements `Serializer` is a data format that can
+//!    serialize any data structure supported by Getty.
+
 const std = @import("std");
 
 pub const Error = error{Serialize};
