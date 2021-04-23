@@ -9,7 +9,7 @@ const std = @import("std");
 /// enums that users may import into their program.
 pub fn Serialize(
     comptime Context: type,
-    comptime serializeFn: fn (context: Context, comptime O: type, comptime E: type, serializer: anytype) type!type,
+    comptime serializeFn: fn (context: Context, comptime Ok: type, comptime Error: type, serializer: anytype) type!type,
 ) type {
     return struct {
         const Self = @This();
