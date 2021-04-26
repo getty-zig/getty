@@ -13,7 +13,7 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
             return .{ .context = self };
         }
 
-        pub fn serialize(self: *T, comptime Ok: type, comptime Error: type, serializer: anytype) Error!Ok {
+        pub fn serialize(self: *T, comptime S: type, serializer: *S) Error!Ok {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => {},
@@ -244,9 +244,6 @@ test "Serialize - basic (struct)" {
 
     var serialize = point.ser();
     var serializer = test_serializer.serializer();
-
-    try serialize.serialize(void, error{}, .{});
-    try serializer.serialize_bool(true);
 }
 
 test "Serialize - with container attribute (struct)" {

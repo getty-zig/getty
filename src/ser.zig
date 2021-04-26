@@ -1,5 +1,32 @@
 const std = @import("std");
 
+pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
+    switch (@typeInfo(@TypeOf(v))) {
+        .Bool => try serializer.serializer().serialize_bool(v),
+        .Int => |info| blk: {
+            const s = serializer.serializer();
+
+            break :blk switch (info.signedness) {
+                .signed => switch (info.bits) {
+                    8 => try s.serialize_i8(v),
+                    16 => try s.serialize_i16(v),
+                    32 => try s.serialize_i32(v),
+                    64 => try s.serialize_i64(v),
+                    else => unreachable,
+                },
+                .unsigned => switch (info.bits) {
+                    8 => try s.serialize_u8(v),
+                    16 => try s.serialize_u16(v),
+                    32 => try s.serialize_u32(v),
+                    64 => try s.serialize_u64(v),
+                    else => unreachable,
+                },
+            };
+        },
+        else => unreachable,
+    }
+}
+
 /// A data structure serializable into any data format supported by Getty.
 ///
 /// Getty provides `Serialize` implementations for many Zig primitive and
@@ -9,15 +36,15 @@ const std = @import("std");
 /// enums that users may import into their program.
 pub fn Serialize(
     comptime Context: type,
-    comptime serializeFn: fn (context: Context, comptime Ok: type, comptime Error: type, serializer: anytype) type!type,
+    comptime serializeFn: fn (context: Context, comptime S: type, serializer: anytype) type!type,
 ) type {
     return struct {
         const Self = @This();
 
         context: Context,
 
-        pub fn serialize(self: Self, comptime Ok: type, comptime Error: type, serializer: anytype) Error!Ok {
-            return try serializeFn(self.context, Ok, Error, serializer);
+        pub fn serialize(self: Self, comptime S: type, serializer: *S) S.Error!S.Ok {
+            return try serializeFn(self.context, S, serializer);
         }
     };
 }
@@ -138,124 +165,96 @@ pub fn Serializer(
     };
 }
 
-test "Serialize - init" {
-    var p = TestPoint{ .x = 1, .y = 2 };
-    var s = TestSerializer.init(std.testing.allocator);
-    defer s.deinit();
+test "Serialize - bool" {
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, true);
+        defer serialized.deinit();
 
-    var ser = p.ser();
-    var serializer = s.serializer();
-    try ser.serialize(void, error{}, .{});
-    try serializer.serialize_bool(true);
+        std.testing.expect(std.mem.eql(u8, serialized.items, "true"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, false);
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "false"));
+    }
 }
+
+test "Serialize - signed" {
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(i8, 127));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "127"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(i16, 32_767));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "32767"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(i32, 2_147_483_647));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "2147483647"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(i64, 9_223_372_036_854_775_807));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "9223372036854775807"));
+    }
+}
+
+test "Serialize - unsigned" {
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(u8, 255));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "255"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(u16, 65_535));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "65535"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(u32, 4_294_967_295));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "4294967295"));
+    }
+
+    {
+        var serialized = try json.toArrayList(std.testing.allocator, @as(u64, 18_446_744_073_709_551_615));
+        defer serialized.deinit();
+
+        std.testing.expect(std.mem.eql(u8, serialized.items, "18446744073709551615"));
+    }
+}
+
+const json = @import("serializers/json.zig");
 
 const TestPoint = struct {
     x: i32,
     y: i32,
 
-    const Ser = Serialize(*@This(), serialize);
+    const Ser = Serialize(@This(), serialize);
 
-    fn ser(self: *@This()) Ser {
+    fn ser(self: @This()) Ser {
         return .{ .context = self };
     }
 
-    fn serialize(self: *@This(), comptime Ok: type, comptime Error: type, serializer: anytype) Error!Ok {
-        std.debug.print("TestPoint.serialize\n", .{});
-    }
-};
-
-const TestSerializer = struct {
-    output: std.ArrayList(u8),
-
-    fn init(allocator: *std.mem.Allocator) @This() {
-        return .{ .output = std.ArrayList(u8).init(allocator) };
-    }
-
-    fn deinit(self: @This()) void {
-        self.output.deinit();
-    }
-
-    const Ok = void;
-    const Error = error{};
-
-    const S = Serializer(
-        *@This(),
-        Ok,
-        Error,
-        serialize_bool,
-        serialize_i8,
-        serialize_i16,
-        serialize_i32,
-        serialize_i64,
-        serialize_i128,
-        serialize_u8,
-        serialize_u16,
-        serialize_u32,
-        serialize_u64,
-        serialize_u128,
-        serialize_f16,
-        serialize_f32,
-        serialize_f64,
-    );
-
-    fn serializer(self: *@This()) S {
-        return .{ .context = self };
-    }
-
-    fn serialize_bool(self: *@This(), v: bool) Error!Ok {
-        std.log.warn("TestSerializer.serialize_bool", .{});
-    }
-
-    fn serialize_i8(self: *@This(), v: i8) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i8", .{});
-    }
-
-    fn serialize_i16(self: *@This(), v: i16) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i16", .{});
-    }
-
-    fn serialize_i32(self: *@This(), v: i32) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i32", .{});
-    }
-
-    fn serialize_i64(self: *@This(), v: i64) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i64", .{});
-    }
-
-    fn serialize_i128(self: *@This(), v: i128) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i128", .{});
-    }
-
-    fn serialize_u8(self: *@This(), v: u8) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u8", .{});
-    }
-
-    fn serialize_u16(self: *@This(), v: u16) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u16", .{});
-    }
-
-    fn serialize_u32(self: *@This(), v: u32) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u32", .{});
-    }
-
-    fn serialize_u64(self: *@This(), v: u64) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u64", .{});
-    }
-
-    fn serialize_u128(self: *@This(), v: u128) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u128", .{});
-    }
-
-    fn serialize_f16(self: *@This(), v: f16) Error!Ok {
-        std.log.warn("TestSerializer.serialize_f16", .{});
-    }
-
-    fn serialize_f32(self: *@This(), v: f32) Error!Ok {
-        std.log.warn("TestSerializer.serialize_f32", .{});
-    }
-
-    fn serialize_f64(self: *@This(), v: f64) Error!Ok {
-        std.log.warn("TestSerializer.serialize_f64", .{});
+    fn serialize(self: @This(), comptime S: type, serializer: *S) S.Error!S.Ok {
+        std.log.warn("TestPoint.serialize\n", .{});
     }
 };
 
