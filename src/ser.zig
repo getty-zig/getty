@@ -181,63 +181,22 @@ test "Serialize - bool" {
     }
 }
 
-test "Serialize - signed" {
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(i8, 127));
-        defer serialized.deinit();
+test "Serialize - integer" {
+    const types = [_]type{
+        i8, i16, i32, i64,
+        u8, u16, u32, u64,
+    };
 
-        std.testing.expect(std.mem.eql(u8, serialized.items, "127"));
-    }
+    inline for (types) |T| {
+        // UNREACHABLE: The buffer always has enough space.
+        var buffer: [20]u8 = undefined;
+        const max = std.math.maxInt(T);
+        const max_str = std.fmt.bufPrint(&buffer, "{d}", .{max}) catch unreachable;
 
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(i16, 32_767));
-        defer serialized.deinit();
+        var s = try json.toArrayList(std.testing.allocator, @as(T, max));
+        defer s.deinit();
 
-        std.testing.expect(std.mem.eql(u8, serialized.items, "32767"));
-    }
-
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(i32, 2_147_483_647));
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "2147483647"));
-    }
-
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(i64, 9_223_372_036_854_775_807));
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "9223372036854775807"));
-    }
-}
-
-test "Serialize - unsigned" {
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(u8, 255));
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "255"));
-    }
-
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(u16, 65_535));
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "65535"));
-    }
-
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(u32, 4_294_967_295));
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "4294967295"));
-    }
-
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, @as(u64, 18_446_744_073_709_551_615));
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "18446744073709551615"));
+        std.testing.expect(std.mem.eql(u8, s.items, max_str));
     }
 }
 
