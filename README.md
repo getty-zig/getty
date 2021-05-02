@@ -15,17 +15,15 @@ const Point = struct {
     y: i32,
 };
 
-pub const main = fn() !void {
+pub fn main() anyerror!void {
     var point = Point{ .x = 1, .y = 2 };
-    var gpa = std.heap.GeneralPurposeAllocator(.{}).init();
-    defer gpa.deinit();
 
     // Convert the Point to a JSON string.
-    var serialized = try getty.json.toArrayList(&gpa.allocator, point);
+    var serialized = try getty.json.toArrayList(std.heap.page_allocator, point);
     defer serialized.deinit();
 
     // Convert the JSON string back to a Point.
-    var deserialized = try json.from_str(serialized);
+    var deserialized = try getty.json.fromSlice(serialized.items);
 
     // Print results
     std.debug.print("{s}\n", .{serialized.items}); // {"x":1,"y":2}
