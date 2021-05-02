@@ -1,11 +1,12 @@
 const std = @import("std");
 
+// TODO: Replace unreachable's with a compile error or something.
 pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
-    switch (@typeInfo(@TypeOf(v))) {
-        .Bool => try serializer.serializer().serialize_bool(v),
-        .Int => |info| blk: {
-            const s = serializer.serializer();
+    const s = serializer.serializer();
 
+    switch (@typeInfo(@TypeOf(v))) {
+        .Bool => try s.serialize_bool(v),
+        .Int => |info| blk: {
             break :blk switch (info.signedness) {
                 .signed => switch (info.bits) {
                     8 => try s.serialize_i8(v),
@@ -22,6 +23,11 @@ pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
                     else => unreachable,
                 },
             };
+        },
+        .Float => |info| switch (info.bits) {
+            32 => try s.serialize_f32(v),
+            64 => try s.serialize_f64(v),
+            else => unreachable,
         },
         else => unreachable,
     }
@@ -188,14 +194,13 @@ test "Serialize - integer" {
     };
 
     inline for (types) |T| {
-        // UNREACHABLE: The buffer always has enough space.
-        var buffer: [20]u8 = undefined;
         const max = std.math.maxInt(T);
-        const max_str = std.fmt.bufPrint(&buffer, "{d}", .{max}) catch unreachable;
 
         var s = try json.toArrayList(std.testing.allocator, @as(T, max));
         defer s.deinit();
 
+        var buffer: [20]u8 = undefined;
+        const max_str = std.fmt.bufPrint(&buffer, "{d}", .{max}) catch unreachable;
         std.testing.expect(std.mem.eql(u8, s.items, max_str));
     }
 }
