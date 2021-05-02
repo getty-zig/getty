@@ -33,9 +33,7 @@ pub fn Json(comptime Writer: type) type {
             Error,
             serialize_bool,
             serialize_int,
-            serialize_f16,
-            serialize_f32,
-            serialize_f64,
+            serialize_float,
         );
 
         writer: Writer,
@@ -65,16 +63,11 @@ pub fn Json(comptime Writer: type) type {
             }
         }
 
-        fn serialize_f16(self: *Self, value: f16) Error!Ok {
-            std.log.warn("TestSerializer.serialize_f16", .{});
-        }
-
-        fn serialize_f32(self: *Self, value: f32) Error!Ok {
-            std.log.warn("TestSerializer.serialize_f32", .{});
-        }
-
-        fn serialize_f64(self: *Self, value: f64) Error!Ok {
-            std.log.warn("TestSerializer.serialize_f64", .{});
+        fn serialize_float(self: *Self, value: anytype) Error!Ok {
+            switch (@typeInfo(@TypeOf(value)).Int.bits) {
+                32, 64 => {},
+                else => @compileError("unsupported bit-width"),
+            }
         }
     };
 }

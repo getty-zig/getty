@@ -311,9 +311,7 @@ const TestSerializer = struct {
         Error,
         serialize_bool,
         serialize_int,
-        serialize_f16,
-        serialize_f32,
-        serialize_f64,
+        serialize_float,
     );
 
     fn serializer(self: *@This()) Serializer {
@@ -328,16 +326,8 @@ const TestSerializer = struct {
         std.log.warn("TestSerializer.serialize_int", .{});
     }
 
-    fn serialize_f16(self: *@This(), v: f16) Error!Ok {
-        std.log.warn("TestSerializer.serialize_f16", .{});
-    }
-
-    fn serialize_f32(self: *@This(), v: f32) Error!Ok {
-        std.log.warn("TestSerializer.serialize_f32", .{});
-    }
-
-    fn serialize_f64(self: *@This(), v: f64) Error!Ok {
-        std.log.warn("TestSerializer.serialize_f64", .{});
+    fn serialize_float(self: *@This(), v: anytype) Error!Ok {
+        std.log.warn("TestSerializer.serialize_float", .{});
     }
 };
 

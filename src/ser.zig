@@ -1,18 +1,13 @@
 const std = @import("std");
 
-// TODO: Replace unreachable's with a compile error or something.
 pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
     const s = serializer.serializer();
 
     switch (@typeInfo(@TypeOf(v))) {
         .Bool => try s.serialize_bool(v),
-        .Int => |info| try s.serialize_int(v),
-        .Float => |info| switch (info.bits) {
-            32 => try s.serialize_f32(v),
-            64 => try s.serialize_f64(v),
-            else => unreachable,
-        },
-        else => unreachable,
+        .Int => try s.serialize_int(v),
+        .Float => try s.serialize_float(v),
+        else => @compileError("unsupported serialize value"),
     }
 }
 
@@ -61,9 +56,7 @@ pub fn Serializer(
     comptime E: type,
     comptime boolFn: fn (context: Context, value: bool) E!O,
     comptime intFn: fn (context: Context, value: anytype) E!O,
-    comptime f16Fn: fn (context: Context, value: f16) E!O,
-    comptime f32Fn: fn (context: Context, value: f32) E!O,
-    comptime f64Fn: fn (context: Context, value: f64) E!O,
+    comptime floatFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -87,19 +80,13 @@ pub fn Serializer(
             try intFn(self.context, value);
         }
 
-        /// Serialize a `f16` value
-        pub fn serialize_f16(self: Self, value: f16) Error!Ok {
-            try f16Fn(self.context, value);
-        }
+        /// Serialize a float value
+        pub fn serialize_float(self: Self, value: anytype) Error!Ok {
+            if (@typeInfo(@TypeOf(value)) != .Float) {
+                @compileError("expected float, found " ++ @typeName(@TypeOf(value)));
+            }
 
-        /// Serialize a `f32` value
-        pub fn serialize_f32(self: Self, value: f32) Error!Ok {
-            try f32Fn(self.context, value);
-        }
-
-        /// Serialize a `f64` value
-        pub fn serialize_f64(self: Self, value: f64) Error!Ok {
-            try f64Fn(self.context, value);
+            try floatFn(self.context, value);
         }
     };
 }
