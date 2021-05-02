@@ -32,16 +32,7 @@ pub fn Json(comptime Writer: type) type {
             Ok,
             Error,
             serialize_bool,
-            serialize_i8,
-            serialize_i16,
-            serialize_i32,
-            serialize_i64,
-            serialize_i128,
-            serialize_u8,
-            serialize_u16,
-            serialize_u32,
-            serialize_u64,
-            serialize_u128,
+            serialize_int,
             serialize_f16,
             serialize_f32,
             serialize_f64,
@@ -63,60 +54,15 @@ pub fn Json(comptime Writer: type) type {
             self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
         }
 
-        fn serialize_i8(self: *Self, value: i8) Error!Ok {
-            var buffer: [4]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_i16(self: *Self, value: i16) Error!Ok {
-            var buffer: [6]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_i32(self: *Self, value: i32) Error!Ok {
-            var buffer: [11]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_i64(self: *Self, value: i64) Error!Ok {
-            var buffer: [20]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_i128(self: *Self, value: i128) Error!Ok {
-            std.log.warn("TestSerializer.serialize_i128", .{});
-        }
-
-        fn serialize_u8(self: *Self, value: u8) Error!Ok {
-            var buffer: [3]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_u16(self: *Self, value: u16) Error!Ok {
-            var buffer: [5]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_u32(self: *Self, value: u32) Error!Ok {
-            var buffer: [10]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_u64(self: *Self, value: u64) Error!Ok {
-            var buffer: [20]u8 = undefined;
-            const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
-        }
-
-        fn serialize_u128(self: *Self, value: u128) Error!Ok {
-            std.log.warn("TestSerializer.serialize_u128", .{});
+        fn serialize_int(self: *Self, value: anytype) Error!Ok {
+            switch (@typeInfo(@TypeOf(value)).Int.bits) {
+                8, 16, 32, 64 => {
+                    var buffer: [20]u8 = undefined;
+                    const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
+                    self.writer.writeAll(slice) catch return Error.Io;
+                },
+                else => @compileError("unsupported bit-width"),
+            }
         }
 
         fn serialize_f16(self: *Self, value: f16) Error!Ok {

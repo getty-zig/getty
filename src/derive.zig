@@ -310,16 +310,7 @@ const TestSerializer = struct {
         Ok,
         Error,
         serialize_bool,
-        serialize_i8,
-        serialize_i16,
-        serialize_i32,
-        serialize_i64,
-        serialize_i128,
-        serialize_u8,
-        serialize_u16,
-        serialize_u32,
-        serialize_u64,
-        serialize_u128,
+        serialize_int,
         serialize_f16,
         serialize_f32,
         serialize_f64,
@@ -333,44 +324,8 @@ const TestSerializer = struct {
         std.log.warn("TestSerializer.serialize_bool", .{});
     }
 
-    fn serialize_i8(self: *@This(), v: i8) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i8", .{});
-    }
-
-    fn serialize_i16(self: *@This(), v: i16) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i16", .{});
-    }
-
-    fn serialize_i32(self: *@This(), v: i32) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i32", .{});
-    }
-
-    fn serialize_i64(self: *@This(), v: i64) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i64", .{});
-    }
-
-    fn serialize_i128(self: *@This(), v: i128) Error!Ok {
-        std.log.warn("TestSerializer.serialize_i128", .{});
-    }
-
-    fn serialize_u8(self: *@This(), v: u8) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u8", .{});
-    }
-
-    fn serialize_u16(self: *@This(), v: u16) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u16", .{});
-    }
-
-    fn serialize_u32(self: *@This(), v: u32) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u32", .{});
-    }
-
-    fn serialize_u64(self: *@This(), v: u64) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u64", .{});
-    }
-
-    fn serialize_u128(self: *@This(), v: u128) Error!Ok {
-        std.log.warn("TestSerializer.serialize_u128", .{});
+    fn serialize_int(self: *@This(), v: anytype) Error!Ok {
+        std.log.warn("TestSerializer.serialize_int", .{});
     }
 
     fn serialize_f16(self: *@This(), v: f16) Error!Ok {

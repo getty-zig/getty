@@ -6,24 +6,7 @@ pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
 
     switch (@typeInfo(@TypeOf(v))) {
         .Bool => try s.serialize_bool(v),
-        .Int => |info| blk: {
-            break :blk switch (info.signedness) {
-                .signed => switch (info.bits) {
-                    8 => try s.serialize_i8(v),
-                    16 => try s.serialize_i16(v),
-                    32 => try s.serialize_i32(v),
-                    64 => try s.serialize_i64(v),
-                    else => unreachable,
-                },
-                .unsigned => switch (info.bits) {
-                    8 => try s.serialize_u8(v),
-                    16 => try s.serialize_u16(v),
-                    32 => try s.serialize_u32(v),
-                    64 => try s.serialize_u64(v),
-                    else => unreachable,
-                },
-            };
-        },
+        .Int => |info| try s.serialize_int(v),
         .Float => |info| switch (info.bits) {
             32 => try s.serialize_f32(v),
             64 => try s.serialize_f64(v),
@@ -76,20 +59,11 @@ pub fn Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime boolFn: fn (context: Context, v: bool) E!O,
-    comptime i8Fn: fn (context: Context, v: i8) E!O,
-    comptime i16Fn: fn (context: Context, v: i16) E!O,
-    comptime i32Fn: fn (context: Context, v: i32) E!O,
-    comptime i64Fn: fn (context: Context, v: i64) E!O,
-    comptime i128Fn: fn (context: Context, v: i128) E!O,
-    comptime u8Fn: fn (context: Context, v: u8) E!O,
-    comptime u16Fn: fn (context: Context, v: u16) E!O,
-    comptime u32Fn: fn (context: Context, v: u32) E!O,
-    comptime u64Fn: fn (context: Context, v: u64) E!O,
-    comptime u128Fn: fn (context: Context, v: u128) E!O,
-    comptime f16Fn: fn (context: Context, v: f16) E!O,
-    comptime f32Fn: fn (context: Context, v: f32) E!O,
-    comptime f64Fn: fn (context: Context, v: f64) E!O,
+    comptime boolFn: fn (context: Context, value: bool) E!O,
+    comptime intFn: fn (context: Context, value: anytype) E!O,
+    comptime f16Fn: fn (context: Context, value: f16) E!O,
+    comptime f32Fn: fn (context: Context, value: f32) E!O,
+    comptime f64Fn: fn (context: Context, value: f64) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -100,73 +74,32 @@ pub fn Serializer(
         context: Context,
 
         /// Serialize a `bool` value
-        pub fn serialize_bool(self: Self, v: bool) Error!Ok {
-            try boolFn(self.context, v);
+        pub fn serialize_bool(self: Self, value: bool) Error!Ok {
+            try boolFn(self.context, value);
         }
 
-        /// Serialize a `i8` value
-        pub fn serialize_i8(self: Self, v: i8) Error!Ok {
-            try i8Fn(self.context, v);
-        }
+        /// Serialize an integer value
+        pub fn serialize_int(self: Self, value: anytype) Error!Ok {
+            if (@typeInfo(@TypeOf(value)) != .Int) {
+                @compileError("expected integer, found " ++ @typeName(@TypeOf(value)));
+            }
 
-        /// Serialize a `i16` value
-        pub fn serialize_i16(self: Self, v: i16) Error!Ok {
-            try i16Fn(self.context, v);
-        }
-
-        /// Serialize a `i32` value
-        pub fn serialize_i32(self: Self, v: i32) Error!Ok {
-            try i32Fn(self.context, v);
-        }
-
-        /// Serialize a `i64` value
-        pub fn serialize_i64(self: Self, v: i64) Error!Ok {
-            try i64Fn(self.context, v);
-        }
-
-        /// Serialize a `i128` value
-        pub fn serialize_i128(self: Self, v: i128) Error!Ok {
-            try i128Fn(self.context, v);
-        }
-
-        /// Serialize a `u8` value
-        pub fn serialize_u8(self: Self, v: u8) Error!Ok {
-            try u8Fn(self.context, v);
-        }
-
-        /// Serialize a `u16` value
-        pub fn serialize_u16(self: Self, v: u16) Error!Ok {
-            try u16Fn(self.context, v);
-        }
-
-        /// Serialize a `u32` value
-        pub fn serialize_u32(self: Self, v: u32) Error!Ok {
-            try u32Fn(self.context, v);
-        }
-
-        /// Serialize a `u64` value
-        pub fn serialize_u64(self: Self, v: u64) Error!Ok {
-            try u64Fn(self.context, v);
-        }
-
-        /// Serialize a `u128` value
-        pub fn serialize_u128(self: Self, v: u128) Error!Ok {
-            try u128Fn(self.context, v);
+            try intFn(self.context, value);
         }
 
         /// Serialize a `f16` value
-        pub fn serialize_f16(self: Self, v: f16) Error!Ok {
-            try f16Fn(self.context, v);
+        pub fn serialize_f16(self: Self, value: f16) Error!Ok {
+            try f16Fn(self.context, value);
         }
 
         /// Serialize a `f32` value
-        pub fn serialize_f32(self: Self, v: f32) Error!Ok {
-            try f32Fn(self.context, v);
+        pub fn serialize_f32(self: Self, value: f32) Error!Ok {
+            try f32Fn(self.context, value);
         }
 
         /// Serialize a `f64` value
-        pub fn serialize_f64(self: Self, v: f64) Error!Ok {
-            try f64Fn(self.context, v);
+        pub fn serialize_f64(self: Self, value: f64) Error!Ok {
+            try f64Fn(self.context, value);
         }
     };
 }
