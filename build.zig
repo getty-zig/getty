@@ -12,7 +12,7 @@ const TEST_FILES = [_][]const u8{
     "src/de.zig",
     "src/derive.zig",
     "src/ser.zig",
-    "src/serializers/json.zig",
+    "src/json.zig",
 };
 
 pub fn build(builder: *Builder) void {

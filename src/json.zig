@@ -1,4 +1,4 @@
-const serialize = @import("../ser.zig").serialize;
+const ser = @import("ser.zig");
 const std = @import("std");
 
 const fmt = std.fmt;
@@ -32,7 +32,7 @@ pub fn Json(comptime Writer: type) type {
             Eof,
         };
 
-        pub const Serializer = @import("../ser.zig").Serializer(
+        pub const Serializer = ser.Serializer(
             *Self,
             Ok,
             Error,
@@ -88,11 +88,26 @@ pub fn Json(comptime Writer: type) type {
 pub fn toWriter(writer: anytype, value: anytype) !void {
     const Serializer = Json(@TypeOf(writer));
     var serializer = Serializer.init(writer);
-    try serialize(Serializer, &serializer, value);
+    try ser.serialize(Serializer, &serializer, value);
 }
 
 pub fn toArrayList(allocator: *mem.Allocator, value: anytype) !String {
     var array_list = String.init(allocator);
     try toWriter(array_list.writer(), value);
     return array_list;
+}
+
+const Point = struct {
+    x: i32,
+    y: i32,
+
+    pub fn serialize(self: @This(), comptime S: type, serializer: *S) S.Error!S.Ok {
+        std.log.warn("TestPoint.serialize\n", .{});
+    }
+};
+test "struct" {
+    var point = Point{ .x = 1, .y = 2 };
+
+    var p = try toArrayList(std.testing.allocator, point);
+    defer p.deinit();
 }

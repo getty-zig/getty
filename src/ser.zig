@@ -1,4 +1,4 @@
-const json = @import("serializers/json.zig");
+const json = @import("json.zig");
 const std = @import("std");
 
 const mem = std.mem;
