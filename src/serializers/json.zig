@@ -1,6 +1,11 @@
+const serialize = @import("../ser.zig").serialize;
 const std = @import("std");
 
-const serialize = @import("../ser.zig").serialize;
+const fmt = std.fmt;
+const math = std.math;
+const mem = std.mem;
+
+const String = std.ArrayList(u8);
 
 pub fn Json(comptime Writer: type) type {
     return struct {
@@ -56,7 +61,7 @@ pub fn Json(comptime Writer: type) type {
             switch (@typeInfo(@TypeOf(value)).Int.bits) {
                 8, 16, 32, 64 => {
                     var buffer: [20]u8 = undefined;
-                    const slice = std.fmt.bufPrint(&buffer, "{d}", .{value}) catch unreachable;
+                    const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
                     self.writer.writeAll(slice) catch return Error.Io;
                 },
                 else => @compileError("unsupported bit-width"),
@@ -65,7 +70,15 @@ pub fn Json(comptime Writer: type) type {
 
         fn serialize_float(self: *Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value)).Int.bits) {
-                32, 64 => {},
+                32, 64 => {
+                    if (math.isNan(value) or math.isInf(value)) {
+                        self.writer.writeAll("null") catch return Error.io;
+                    } else {
+                        var buffer: [1024]u8 = undefined;
+                        const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
+                        self.writer.writeAll(slice) catch return Error.Io;
+                    }
+                },
                 else => @compileError("unsupported bit-width"),
             }
         }
@@ -78,8 +91,8 @@ pub fn toWriter(writer: anytype, value: anytype) !void {
     try serialize(Serializer, &serializer, value);
 }
 
-pub fn toArrayList(allocator: *std.mem.Allocator, value: anytype) !std.ArrayList(u8) {
-    var array_list = std.ArrayList(u8).init(allocator);
+pub fn toArrayList(allocator: *mem.Allocator, value: anytype) !String {
+    var array_list = String.init(allocator);
     try toWriter(array_list.writer(), value);
     return array_list;
 }
