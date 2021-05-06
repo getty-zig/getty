@@ -39,6 +39,10 @@ pub fn Json(comptime Writer: type) type {
             serialize_bool,
             serialize_int,
             serialize_float,
+            serialize_str,
+            serialize_bytes,
+            serialize_sequence,
+            serialize_element,
         );
 
         writer: Writer,
@@ -53,11 +57,11 @@ pub fn Json(comptime Writer: type) type {
             };
         }
 
-        fn serialize_bool(self: *Self, value: bool) Error!Ok {
+        pub fn serialize_bool(self: *Self, value: bool) Error!Ok {
             self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
         }
 
-        fn serialize_int(self: *Self, value: anytype) Error!Ok {
+        pub fn serialize_int(self: *Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value)).Int.bits) {
                 8, 16, 32, 64 => {
                     var buffer: [20]u8 = undefined;
@@ -68,11 +72,11 @@ pub fn Json(comptime Writer: type) type {
             }
         }
 
-        fn serialize_float(self: *Self, value: anytype) Error!Ok {
+        pub fn serialize_float(self: *Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value)).Int.bits) {
                 32, 64 => {
                     if (math.isNan(value) or math.isInf(value)) {
-                        self.writer.writeAll("null") catch return Error.io;
+                        self.writer.writeAll("null") catch return Error.Io;
                     } else {
                         var buffer: [1024]u8 = undefined;
                         const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
@@ -81,6 +85,36 @@ pub fn Json(comptime Writer: type) type {
                 },
                 else => @compileError("unsupported bit-width"),
             }
+        }
+
+        // TODO: Format escaped strings
+        pub fn serialize_str(self: *Self, value: anytype) Error!Ok {
+            self.writer.writeByte('"') catch return Error.Io;
+            self.writer.writeAll(value) catch return Error.Io;
+            self.writer.writeByte('"') catch return Error.Io;
+        }
+
+        pub fn serialize_bytes(self: *Self, value: anytype) Error!Ok {
+            //use serde::ser::SerializeSeq;
+            //let mut seq = tri!(self.serialize_seq(Some(value.len())));
+            //for byte in value {
+            //tri!(seq.serialize_element(byte));
+            //}
+            //seq.end()
+
+            var sequence = try self.serialize_sequence(value.len);
+
+            for (&value) |byte| {
+                try sequence.serialize_element(byte);
+            }
+        }
+
+        pub fn serialize_sequence(self: *Self, value: anytype) Error!Ok {
+            self.writer.writeAll("sequence") catch return Error.Io;
+        }
+
+        pub fn serialize_element(self: *Self, value: anytype) Error!Ok {
+            self.writer.writeAll("element") catch return Error.Io;
         }
     };
 }
@@ -97,17 +131,9 @@ pub fn toArrayList(allocator: *mem.Allocator, value: anytype) !String {
     return array_list;
 }
 
-const Point = struct {
-    x: i32,
-    y: i32,
+test "String" {
+    const value = try toArrayList(std.testing.allocator, "hello");
+    defer value.deinit();
 
-    pub fn serialize(self: @This(), comptime S: type, serializer: *S) S.Error!S.Ok {
-        std.log.warn("TestPoint.serialize\n", .{});
-    }
-};
-test "struct" {
-    var point = Point{ .x = 1, .y = 2 };
-
-    var p = try toArrayList(std.testing.allocator, point);
-    defer p.deinit();
+    std.testing.expect(mem.eql(u8, value.items, "\"hello\""));
 }

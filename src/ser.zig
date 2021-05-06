@@ -7,12 +7,33 @@ const testing = std.testing;
 pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
     const s = serializer.serializer();
 
-    switch (@typeInfo(@TypeOf(v))) {
+    return switch (@typeInfo(@TypeOf(v))) {
         .Bool => try s.serialize_bool(v),
         .Int => try s.serialize_int(v),
         .Float => try s.serialize_float(v),
+        .Pointer => |info| blk: {
+            switch (info.size) {
+                .One => {
+                    const child_info = @typeInfo(info.child);
+
+                    if (child_info != .Array) @compileError("pointer does not point to an array");
+                    if (child_info.Array.child != u8) @compileError("pointer does not point to a byte array");
+                    if (child_info.Array.sentinel) |sentinel| {
+                        if (sentinel == 0) break :blk try s.serialize_str(v);
+                        break :blk try s.serialize_bytes(v);
+                    } else {
+                        break :blk try s.serialize_bytes(v);
+                    }
+                },
+                .Many => unreachable,
+                .Slice => unreachable,
+                .C => unreachable,
+            }
+
+            break :blk try s.serialize_str(v);
+        },
         else => @compileError("unsupported serialize value"),
-    }
+    };
 }
 
 /// A data structure serializable into any data format supported by Getty.
@@ -51,9 +72,9 @@ pub fn Serialize(
 ///
 ///  - Primitives
 ///    - bool
-///    - i8, i16, i32, i64, i128
-///    - u8, u16, u32, u64, u128
-///    - f32, f64
+///    - iN (where N is any supported signed integer bit-width)
+///    - uN (where N is any supported unsigned integer bit-width)
+///    - fN (where N is any supported floating-point bit-width)
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
@@ -61,6 +82,10 @@ pub fn Serializer(
     comptime boolFn: fn (context: Context, value: bool) E!O,
     comptime intFn: fn (context: Context, value: anytype) E!O,
     comptime floatFn: fn (context: Context, value: anytype) E!O,
+    comptime strFn: fn (context: Context, value: anytype) E!O,
+    comptime bytesFn: fn (context: Context, value: anytype) E!O,
+    comptime sequenceFn: fn (context: Context, value: anytype) E!O,
+    comptime elementFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -70,27 +95,35 @@ pub fn Serializer(
 
         context: Context,
 
-        /// Serialize a `bool` value
+        /// Serialize a boolean value
         pub fn serialize_bool(self: Self, value: bool) Error!Ok {
             try boolFn(self.context, value);
         }
 
         /// Serialize an integer value
         pub fn serialize_int(self: Self, value: anytype) Error!Ok {
-            if (@typeInfo(@TypeOf(value)) != .Int) {
-                @compileError("expected integer, found " ++ @typeName(@TypeOf(value)));
-            }
-
             try intFn(self.context, value);
         }
 
         /// Serialize a float value
         pub fn serialize_float(self: Self, value: anytype) Error!Ok {
-            if (@typeInfo(@TypeOf(value)) != .Float) {
-                @compileError("expected float, found " ++ @typeName(@TypeOf(value)));
-            }
-
             try floatFn(self.context, value);
+        }
+
+        pub fn serialize_str(self: Self, value: anytype) Error!Ok {
+            try strFn(self.context, value);
+        }
+
+        pub fn serialize_bytes(self: Self, value: anytype) Error!Ok {
+            try bytesFn(self.context, value);
+        }
+
+        pub fn serialize_sequence(self: Self, value: anytype) Error!Ok {
+            try sequenceFn(self.context, value);
+        }
+
+        pub fn serialize_element(self: Self, value: anytype) Error!Ok {
+            try elementFn(self.context, value);
         }
     };
 }
