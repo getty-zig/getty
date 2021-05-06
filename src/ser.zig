@@ -1,4 +1,8 @@
+const json = @import("serializers/json.zig");
 const std = @import("std");
+
+const mem = std.mem;
+const testing = std.testing;
 
 pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
     const s = serializer.serializer();
@@ -92,19 +96,13 @@ pub fn Serializer(
 }
 
 test "Serialize - bool" {
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, true);
-        defer serialized.deinit();
+    var t = try json.toArrayList(testing.allocator, true);
+    defer t.deinit();
+    var f = try json.toArrayList(testing.allocator, false);
+    defer f.deinit();
 
-        std.testing.expect(std.mem.eql(u8, serialized.items, "true"));
-    }
-
-    {
-        var serialized = try json.toArrayList(std.testing.allocator, false);
-        defer serialized.deinit();
-
-        std.testing.expect(std.mem.eql(u8, serialized.items, "false"));
-    }
+    testing.expect(mem.eql(u8, t.items, "true"));
+    testing.expect(mem.eql(u8, f.items, "false"));
 }
 
 test "Serialize - integer" {
@@ -115,17 +113,22 @@ test "Serialize - integer" {
 
     inline for (types) |T| {
         const max = std.math.maxInt(T);
+        const min = std.math.minInt(T);
 
-        var s = try json.toArrayList(std.testing.allocator, @as(T, max));
-        defer s.deinit();
+        var max_buf: [20]u8 = undefined;
+        var min_buf: [20]u8 = undefined;
+        const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
+        const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
 
-        var buffer: [20]u8 = undefined;
-        const max_str = std.fmt.bufPrint(&buffer, "{d}", .{max}) catch unreachable;
-        std.testing.expect(std.mem.eql(u8, s.items, max_str));
+        const max_str = try json.toArrayList(testing.allocator, @as(T, max));
+        defer max_str.deinit();
+        const min_str = try json.toArrayList(testing.allocator, @as(T, min));
+        defer min_str.deinit();
+
+        testing.expect(mem.eql(u8, max_str.items, max_expected));
+        testing.expect(mem.eql(u8, min_str.items, min_expected));
     }
 }
-
-const json = @import("serializers/json.zig");
 
 const TestPoint = struct {
     x: i32,
@@ -143,5 +146,5 @@ const TestPoint = struct {
 };
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }
