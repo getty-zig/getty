@@ -16,14 +16,15 @@ pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
                 .One => {
                     const child_info = @typeInfo(info.child);
 
-                    if (child_info != .Array) @compileError("pointer does not point to an array");
-                    if (child_info.Array.child != u8) @compileError("pointer does not point to a byte array");
-                    if (child_info.Array.sentinel) |sentinel| {
-                        if (sentinel == 0) break :blk try s.serialize_str(v);
-                        break :blk try s.serialize_bytes(v);
-                    } else {
-                        break :blk try s.serialize_bytes(v);
+                    if (child_info != .Array or child_info.Array.child != u8) {
+                        @compileError("pointer does not point to a byte array");
                     }
+
+                    break :blk if (child_info.Array.sentinel) |sentinel| {
+                        if (sentinel == 0) try s.serialize_str(v) else try s.serialize_bytes(v);
+                    } else {
+                        try s.serialize_bytes(v);
+                    };
                 },
                 .Many => unreachable,
                 .Slice => unreachable,
