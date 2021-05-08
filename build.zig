@@ -9,7 +9,7 @@ const PACKAGE_NAME = "getty";
 const PACKAGE_PATH = "src/lib.zig";
 
 const TEST_FILES = [_][]const u8{
-    "src/de.zig",
+    //"src/de.zig",
     "src/derive.zig",
     "src/ser.zig",
     "src/json.zig",

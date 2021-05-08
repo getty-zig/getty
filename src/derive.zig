@@ -71,47 +71,6 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
     };
 }
 
-// Provides a generic implementation of `getty.de.Deserialize.deserialize`.
-//pub fn Deserialize(comptime T: type, comptime attributes: Attributes(T, .de)) type {
-//return struct {
-//pub const De = de.Deserialize(*@This(), deserialize);
-
-//pub fn deserialize(self: *@This(), deserializer: _de.Deserializer) _de.Deserialize.Error!void {
-//switch (@typeInfo(T)) {
-//.AnyFrame => {},
-//.Array => {},
-//.Bool => {
-//std.log.warn("Deserialize.deserialize -> Bool", .{});
-//},
-//.BoundFn => {},
-//.ComptimeFloat => {},
-//.ComptimeInt => {},
-//.Enum => {},
-//.EnumLiteral => {},
-//.ErrorSet => {},
-//.ErrorUnion => {},
-//.Float => {},
-//.Fn => {},
-//.Frame => {},
-//.Int => {},
-//.NoReturn => {},
-//.Null => {},
-//.Opaque => {},
-//.Optional => {},
-//.Pointer => {},
-//.Struct => {
-//std.log.warn("Deserialize.deserialize -> Struct", .{});
-//},
-//.Type => {},
-//.Undefined => {},
-//.Union => {},
-//.Vector => {},
-//.Void => {},
-//}
-//}
-//};
-//}
-
 /// Returns an attribute map type.
 ///
 /// `T` is a type that wants to implement the `Deserialize` interface.
@@ -263,73 +222,6 @@ test "Serialize - with field attribute (struct)" {
         y: i32,
     };
 }
-
-//test "Deserialize - basic (struct)" {
-//const TestPoint = struct {
-//usingnamespace Deserialize(@This(), .{});
-
-//x: i32,
-//y: i32,
-//};
-//}
-
-//test "Deserialize - with container attribute (struct)" {
-//const TestPoint = struct {
-//usingnamespace Deserialize(@This(), .{ .TestPoint = .{ .rename = "A" } });
-
-//x: i32,
-//y: i32,
-//};
-//}
-
-//test "Deserialize - with field attribute (struct)" {
-//const TestPoint = struct {
-//usingnamespace Deserialize(@This(), .{ .x = .{ .rename = "a" } });
-
-//x: i32,
-//y: i32,
-//};
-//}
-
-const TestSerializer = struct {
-    output: std.ArrayList(u8),
-
-    fn init(allocator: *std.mem.Allocator) @This() {
-        return .{ .output = std.ArrayList(u8).init(allocator) };
-    }
-
-    fn deinit(self: @This()) void {
-        self.output.deinit();
-    }
-
-    const Ok = void;
-    const Error = error{};
-
-    const Serializer = ser.Serializer(
-        *@This(),
-        Ok,
-        Error,
-        serialize_bool,
-        serialize_int,
-        serialize_float,
-    );
-
-    fn serializer(self: *@This()) Serializer {
-        return .{ .context = self };
-    }
-
-    fn serialize_bool(self: *@This(), v: bool) Error!Ok {
-        std.log.warn("TestSerializer.serialize_bool", .{});
-    }
-
-    fn serialize_int(self: *@This(), v: anytype) Error!Ok {
-        std.log.warn("TestSerializer.serialize_int", .{});
-    }
-
-    fn serialize_float(self: *@This(), v: anytype) Error!Ok {
-        std.log.warn("TestSerializer.serialize_float", .{});
-    }
-};
 
 comptime {
     std.testing.refAllDecls(@This());
