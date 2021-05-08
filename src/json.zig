@@ -122,7 +122,7 @@ pub fn Json(comptime Writer: type) type {
 pub fn toWriter(writer: anytype, value: anytype) !void {
     const Serializer = Json(@TypeOf(writer));
     var serializer = Serializer.init(writer);
-    try ser.serialize(Serializer, &serializer, value);
+    try ser.serialize(&serializer, value);
 }
 
 pub fn toArrayList(allocator: *mem.Allocator, value: anytype) !String {

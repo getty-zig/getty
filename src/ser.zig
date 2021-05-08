@@ -4,7 +4,10 @@ const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
 
-pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
+pub fn serialize(serializer: anytype, v: anytype) switch (@typeInfo(@TypeOf(serializer))) {
+    .Pointer => |info| info.child.Error!info.child.Ok,
+    else => @compileError("expected pointer, found " ++ @typeName(@TypeOf(serializer))),
+} {
     const s = serializer.serializer();
 
     return switch (@typeInfo(@TypeOf(v))) {
@@ -46,15 +49,18 @@ pub fn serialize(comptime S: type, serializer: *S, v: anytype) S.Error!S.Ok {
 /// enums that users may import into their program.
 pub fn Serialize(
     comptime Context: type,
-    comptime serializeFn: fn (context: Context, comptime S: type, serializer: anytype) type!type,
+    comptime serializeFn: fn (context: Context, serializer: anytype) type!type,
 ) type {
     return struct {
         const Self = @This();
 
         context: Context,
 
-        pub fn serialize(self: Self, comptime S: type, serializer: *S) S.Error!S.Ok {
-            return try serializeFn(self.context, S, serializer);
+        pub fn serialize(self: Self, serializer: anytype) switch (@typeInfo(@TypeOf(serializer))) {
+            .Pointer => |info| info.child.Error!info.child.Ok,
+            else => @compileError("expected pointer, found " ++ @typeName(@TypeOf(serializer))),
+        } {
+            return try serializeFn(self.context, serializer);
         }
     };
 }

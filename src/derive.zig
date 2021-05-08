@@ -1,69 +1,43 @@
-const std = @import("std");
-const expect = std.testing.expect;
-
-const ser = @import("ser.zig");
 const de = @import("de.zig");
+const ser = @import("ser.zig");
+const std = @import("std");
+
+const testing = std.testing;
 
 /// Provides a generic implementation of `getty.ser.Serialize.serialize`.
 pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) type {
     return struct {
-        pub const Ser = ser.Serialize(*T, serialize);
+        pub const Ser = ser.Serialize(serialize);
 
         pub fn ser(self: *T) Ser {
             return .{ .context = self };
         }
 
-        pub fn serialize(self: *T, comptime S: type, serializer: *S) Error!Ok {
+        pub fn serialize(self: *T, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
-                .Array => {},
+                .Array => std.log.warn("Serialize.serialize -> Array", .{}),
                 .Bool => std.log.warn("Serialize.serialize -> Bool", .{}),
                 .BoundFn => {},
                 .ComptimeFloat => {},
                 .ComptimeInt => {},
-                .Enum => {},
+                .Enum => std.log.warn("Serialize.serialize -> Enum", .{}),
                 .EnumLiteral => {},
                 .ErrorSet => {},
                 .ErrorUnion => {},
-                .Float => {},
+                .Float => std.log.warn("Serialize.serialize -> Float", .{}),
                 .Fn => {},
                 .Frame => {},
-                .Int => {},
+                .int => std.log.warn("Serialize.serialize -> Int", .{}),
                 .NoReturn => {},
                 .Null => {},
                 .Opaque => {},
                 .Optional => {},
                 .Pointer => {},
-                .Struct => {
-                    std.log.warn("Serialize.serialize -> Struct", .{});
-                    //if (std.meta.fields(@TypeOf(attributes)).len == 0) {
-                    //const fields = std.meta.fields(T);
-                    //var s = try serializer.serialize_struct(@typeName(T), fields.len);
-
-                    //for (fields) |field| {
-                    //try s.serialize_field(field.name, @field(self, field.name));
-                    //}
-                    //} else {
-                    //const fields = std.meta.fields(@TypeOf(attributes));
-
-                    //for (fields) |field| {
-                    //if (std.mem.eql(u8, field.name, @typeName(T)) {
-                    // Container attribute
-
-                    //} else {
-                    // Field/variant attribute
-                    //}
-                    //}
-                    //}
-
-                    //const container_name = @field(serializer, @typeName(T));
-                    //std.debug.warn("{}", .{container_name});
-
-                    //s.end()
-                },
+                .Struct => std.log.warn("Serialize.serialize -> Struct", .{}),
                 .Type => {},
                 .Undefined => {},
-                .Union => {},
+                .Union => std.log.warn("Serialize.serialize -> Union", .{}),
                 .Vector => {},
                 .Void => {},
             }
@@ -73,7 +47,8 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
 
 /// Returns an attribute map type.
 ///
-/// `T` is a type that wants to implement the `Deserialize` interface.
+/// `T` is a type that wants to implement the `Serialize` or `Deserialize`
+/// interface.
 ///
 /// The returned type is a struct that contains fields corresponding to each
 /// field/variant in `T`, as well as a field named after `T`. These identifier
@@ -196,13 +171,6 @@ test "Serialize - basic (struct)" {
         x: i32,
         y: i32,
     };
-
-    var point = TestPoint{ .x = 1, .y = 2 };
-    var test_serializer = TestSerializer.init(std.testing.allocator);
-    defer test_serializer.deinit();
-
-    var serialize = point.ser();
-    var serializer = test_serializer.serializer();
 }
 
 test "Serialize - with container attribute (struct)" {
@@ -224,5 +192,5 @@ test "Serialize - with field attribute (struct)" {
 }
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }
