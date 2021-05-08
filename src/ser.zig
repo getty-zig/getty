@@ -170,21 +170,6 @@ test "Serialize - integer" {
     }
 }
 
-const TestPoint = struct {
-    x: i32,
-    y: i32,
-
-    const Ser = Serialize(@This(), serialize);
-
-    fn ser(self: @This()) Ser {
-        return .{ .context = self };
-    }
-
-    fn serialize(self: @This(), comptime S: type, serializer: *S) S.Error!S.Ok {
-        std.log.warn("TestPoint.serialize\n", .{});
-    }
-};
-
 comptime {
     testing.refAllDecls(@This());
 }
