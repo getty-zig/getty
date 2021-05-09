@@ -1,4 +1,3 @@
-const json = @import("json.zig");
 const std = @import("std");
 
 pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
@@ -31,28 +30,6 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
             break :blk try s.serialize_str(v);
         },
         else => @compileError("unsupported serialize value"),
-    };
-}
-
-/// A data structure serializable into any data format supported by Getty.
-///
-/// Getty provides `Serialize` implementations for many Zig primitive and
-/// standard library types.
-///
-/// Additionally, Getty provides `Serialize` implementations for structs and
-/// enums that users may import into their program.
-pub fn Serialize(
-    comptime Context: type,
-    comptime serializeFn: fn (context: Context, serializer: anytype) type!type,
-) type {
-    return struct {
-        const Self = @This();
-
-        context: Context,
-
-        pub fn serialize(self: Self, serializer: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
-            return try serializeFn(self.context, serializer);
-        }
     };
 }
 
@@ -125,6 +102,8 @@ pub fn Serializer(
         }
     };
 }
+
+const json = @import("json.zig");
 
 const eql = std.mem.eql;
 const expect = std.testing.expect;

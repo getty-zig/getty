@@ -10,7 +10,7 @@ const PACKAGE_PATH = "src/lib.zig";
 
 const TEST_FILES = [_][]const u8{
     //"src/de.zig",
-    "src/derive.zig",
+    "src/attributes.zig",
     "src/ser.zig",
     "src/json.zig",
 };

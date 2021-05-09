@@ -2,46 +2,14 @@ const de = @import("de.zig");
 const ser = @import("ser.zig");
 const std = @import("std");
 
-const testing = std.testing;
+pub const Mode = enum {
+    ser,
+    de,
+};
 
-/// Provides a generic implementation of `getty.ser.Serialize.serialize`.
-pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) type {
+pub fn Attributes(comptime T: type, comptime mode: Mode, attributes: _Attributes(T, mode)) type {
     return struct {
-        pub const Ser = ser.Serialize(serialize);
-
-        pub fn ser(self: *T) Ser {
-            return .{ .context = self };
-        }
-
-        pub fn serialize(self: *T, serializer: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
-            switch (@typeInfo(T)) {
-                .AnyFrame => {},
-                .Array => std.log.warn("Serialize.serialize -> Array", .{}),
-                .Bool => std.log.warn("Serialize.serialize -> Bool", .{}),
-                .BoundFn => {},
-                .ComptimeFloat => {},
-                .ComptimeInt => {},
-                .Enum => std.log.warn("Serialize.serialize -> Enum", .{}),
-                .EnumLiteral => {},
-                .ErrorSet => {},
-                .ErrorUnion => {},
-                .Float => std.log.warn("Serialize.serialize -> Float", .{}),
-                .Fn => {},
-                .Frame => {},
-                .int => std.log.warn("Serialize.serialize -> Int", .{}),
-                .NoReturn => {},
-                .Null => {},
-                .Opaque => {},
-                .Optional => {},
-                .Pointer => {},
-                .Struct => std.log.warn("Serialize.serialize -> Struct", .{}),
-                .Type => {},
-                .Undefined => {},
-                .Union => std.log.warn("Serialize.serialize -> Union", .{}),
-                .Vector => {},
-                .Void => {},
-            }
-        }
+        pub const _attributes = attributes;
     };
 }
 
@@ -58,7 +26,7 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
 /// or variant attributes. For the identifier field corresponding to the type
 /// name of `T`, the attributes consist of container attributes. All fields in
 /// `attributes` may be omitted.
-fn Attributes(comptime T: type, mode: enum { ser, de }) type {
+fn _Attributes(comptime T: type, comptime mode: Mode) type {
     const Container = switch (mode) {
         .ser => struct {
             //bound: ,
@@ -166,7 +134,7 @@ fn Attributes(comptime T: type, mode: enum { ser, de }) type {
 
 test "Serialize - basic (struct)" {
     const TestPoint = struct {
-        usingnamespace Serialize(@This(), .{});
+        usingnamespace Attributes(@This(), .ser, .{});
 
         x: i32,
         y: i32,
@@ -175,7 +143,7 @@ test "Serialize - basic (struct)" {
 
 test "Serialize - with container attribute (struct)" {
     const TestPoint = struct {
-        usingnamespace Serialize(@This(), .{ .TestPoint = .{ .rename = "A" } });
+        usingnamespace Attributes(@This(), .ser, .{ .TestPoint = .{ .rename = "A" } });
 
         x: i32,
         y: i32,
@@ -184,13 +152,9 @@ test "Serialize - with container attribute (struct)" {
 
 test "Serialize - with field attribute (struct)" {
     const TestPoint = struct {
-        usingnamespace Serialize(@This(), .{ .x = .{ .rename = "a" } });
+        usingnamespace Attributes(@This(), .ser, .{ .x = .{ .rename = "a" } });
 
         x: i32,
         y: i32,
     };
-}
-
-comptime {
-    testing.refAllDecls(@This());
 }
