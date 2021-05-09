@@ -131,9 +131,13 @@ pub fn toArrayList(allocator: *mem.Allocator, value: anytype) !String {
     return array_list;
 }
 
+const eql = std.mem.eql;
+const expect = std.testing.expect;
+const testing_allocator = std.testing.allocator;
+
 test "String" {
-    const value = try toArrayList(std.testing.allocator, "hello");
+    const value = try toArrayList(testing_allocator, "hello");
     defer value.deinit();
 
-    std.testing.expect(mem.eql(u8, value.items, "\"hello\""));
+    try expect(eql(u8, value.items, "\"hello\""));
 }

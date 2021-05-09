@@ -1,9 +1,6 @@
 const json = @import("json.zig");
 const std = @import("std");
 
-const mem = std.mem;
-const testing = std.testing;
-
 pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
     const s = serializer.serializer();
 
@@ -129,14 +126,18 @@ pub fn Serializer(
     };
 }
 
+const eql = std.mem.eql;
+const expect = std.testing.expect;
+const testing_allocator = std.testing.allocator;
+
 test "Serialize - bool" {
-    var t = try json.toArrayList(testing.allocator, true);
+    var t = try json.toArrayList(testing_allocator, true);
     defer t.deinit();
-    var f = try json.toArrayList(testing.allocator, false);
+    var f = try json.toArrayList(testing_allocator, false);
     defer f.deinit();
 
-    testing.expect(mem.eql(u8, t.items, "true"));
-    testing.expect(mem.eql(u8, f.items, "false"));
+    try expect(eql(u8, t.items, "true"));
+    try expect(eql(u8, f.items, "false"));
 }
 
 test "Serialize - integer" {
@@ -154,16 +155,12 @@ test "Serialize - integer" {
         const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
         const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
 
-        const max_str = try json.toArrayList(testing.allocator, @as(T, max));
+        const max_str = try json.toArrayList(testing_allocator, @as(T, max));
         defer max_str.deinit();
-        const min_str = try json.toArrayList(testing.allocator, @as(T, min));
+        const min_str = try json.toArrayList(testing_allocator, @as(T, min));
         defer min_str.deinit();
 
-        testing.expect(mem.eql(u8, max_str.items, max_expected));
-        testing.expect(mem.eql(u8, min_str.items, min_expected));
+        try expect(eql(u8, max_str.items, max_expected));
+        try expect(eql(u8, min_str.items, min_expected));
     }
-}
-
-comptime {
-    testing.refAllDecls(@This());
 }
