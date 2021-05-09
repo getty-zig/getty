@@ -4,10 +4,7 @@ const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
 
-pub fn serialize(serializer: anytype, v: anytype) switch (@typeInfo(@TypeOf(serializer))) {
-    .Pointer => |info| info.child.Error!info.child.Ok,
-    else => @compileError("expected pointer, found " ++ @typeName(@TypeOf(serializer))),
-} {
+pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
     const s = serializer.serializer();
 
     return switch (@typeInfo(@TypeOf(v))) {
@@ -20,7 +17,7 @@ pub fn serialize(serializer: anytype, v: anytype) switch (@typeInfo(@TypeOf(seri
                     const child_info = @typeInfo(info.child);
 
                     if (child_info != .Array or child_info.Array.child != u8) {
-                        @compileError("pointer does not point to a byte array");
+                        @compileError("expected pointer to byte array, found " ++ @typeName(info.child));
                     }
 
                     break :blk if (child_info.Array.sentinel) |sentinel| {
@@ -56,10 +53,7 @@ pub fn Serialize(
 
         context: Context,
 
-        pub fn serialize(self: Self, serializer: anytype) switch (@typeInfo(@TypeOf(serializer))) {
-            .Pointer => |info| info.child.Error!info.child.Ok,
-            else => @compileError("expected pointer, found " ++ @typeName(@TypeOf(serializer))),
-        } {
+        pub fn serialize(self: Self, serializer: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
             return try serializeFn(self.context, serializer);
         }
     };

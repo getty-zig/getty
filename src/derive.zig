@@ -13,7 +13,7 @@ pub fn Serialize(comptime T: type, comptime attributes: Attributes(T, .ser)) typ
             return .{ .context = self };
         }
 
-        pub fn serialize(self: *T, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+        pub fn serialize(self: *T, serializer: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
             switch (@typeInfo(T)) {
                 .AnyFrame => {},
                 .Array => std.log.warn("Serialize.serialize -> Array", .{}),
