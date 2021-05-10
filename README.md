@@ -1,5 +1,6 @@
 <p align="center">
   <h1 align="center">Getty</h1>
+  <p align="center"><b>NOTE: Getty is still in early development. Things might break or change.</b></p>
   <p align="center">A framework for serializing and deserializing Zig data types.</p>
 </p>
 
