@@ -2,19 +2,15 @@ const std = @import("std");
 
 pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
     const s = serializer.serializer();
-    const V = @TypeOf(v);
 
-    return switch (@typeInfo(V)) {
+    return switch (@typeInfo(@TypeOf(v))) {
+        .Array => try s.serialize_bytes(v),
         .Bool => try s.serialize_bool(v),
-        .Int => try s.serialize_int(v),
+        //.ComptimeInt => {},
+        //.ComptimeFloat => {},
         .Float => try s.serialize_float(v),
-        .Pointer => blk: {
-            if (!comptime std.meta.trait.isZigString(V)) {
-                @compileError("expected Zig string, found " ++ @typeName(V));
-            }
-
-            break :blk try s.serialize_str(v);
-        },
+        .Int => try s.serialize_int(v),
+        .Pointer => try s.serialize_str(v),
         else => @compileError("unsupported serialize value"),
     };
 }
@@ -45,7 +41,7 @@ pub fn Serializer(
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime strFn: fn (context: Context, value: anytype) E!O,
     comptime bytesFn: fn (context: Context, value: anytype) E!O,
-    comptime sequenceFn: fn (context: Context, value: anytype) E!O,
+    comptime sequenceFn: fn (context: Context, length: usize) E!O,
     comptime elementFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
@@ -72,15 +68,23 @@ pub fn Serializer(
         }
 
         pub fn serialize_str(self: Self, value: anytype) Error!Ok {
+            if (!comptime std.meta.trait.isZigString(@TypeOf(value))) {
+                @compileError("expected string, found " ++ @typeName(@TypeOf(value)));
+            }
+
             try strFn(self.context, value);
         }
 
         pub fn serialize_bytes(self: Self, value: anytype) Error!Ok {
+            if (std.meta.Child(@TypeOf(value)) != u8) {
+                @compileError("expected byte array, found " ++ @typeName(@TypeOf(value)));
+            }
+
             try bytesFn(self.context, value);
         }
 
-        pub fn serialize_sequence(self: Self, value: anytype) Error!Ok {
-            try sequenceFn(self.context, value);
+        pub fn serialize_sequence(self: Self, length: usize) Error!Ok {
+            try sequenceFn(self.context, length);
         }
 
         pub fn serialize_element(self: Self, value: anytype) Error!Ok {

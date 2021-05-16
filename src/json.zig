@@ -95,26 +95,31 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serialize_bytes(self: *Self, value: anytype) Error!Ok {
-            //use serde::ser::SerializeSeq;
-            //let mut seq = tri!(self.serialize_seq(Some(value.len())));
-            //for byte in value {
-            //tri!(seq.serialize_element(byte));
-            //}
-            //seq.end()
-
-            var sequence = try self.serialize_sequence(value.len);
+            try self.serialize_sequence(value.len);
 
             for (&value) |byte| {
-                try sequence.serialize_element(byte);
+                try self.serialize_element(byte);
+            }
+
+            // TODO: Make this another function
+            self.writer.writeByte(']') catch return Error.Io;
+        }
+
+        pub fn serialize_sequence(self: *Self, length: usize) Error!Ok {
+            self.writer.writeAll("[") catch return Error.Io;
+
+            if (length == 0) {
+                self.writer.writeAll("]") catch return Error.Io;
             }
         }
 
-        pub fn serialize_sequence(self: *Self, value: anytype) Error!Ok {
-            self.writer.writeAll("sequence") catch return Error.Io;
-        }
-
         pub fn serialize_element(self: *Self, value: anytype) Error!Ok {
-            self.writer.writeAll("element") catch return Error.Io;
+            // TODO: Make this non-ArrayList specific
+            if (!std.mem.endsWith(u8, self.writer.context.items, "[")) {
+                self.writer.writeByte(',') catch return Error.Io;
+            }
+
+            try ser.serialize(self, value);
         }
     };
 }
@@ -140,4 +145,12 @@ test "String" {
     defer value.deinit();
 
     try expect(eql(u8, value.items, "\"hello\""));
+}
+
+test "Byte array" {
+    const array = [_]u8{ 1, 2, 3 };
+    const value = try toArrayList(testing_allocator, array);
+    defer value.deinit();
+
+    try expect(eql(u8, value.items, "[1,2,3]"));
 }
