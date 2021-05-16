@@ -25,6 +25,6 @@ pub fn main() anyerror!void {
 
     // Print results
     std.debug.print("{s}\n", .{serialized.items}); // {"x":1,"y":2}
-    std.debug.print("{}\n", .{deserialized});      // Point{ .x = 1, .y = 2 }
+    std.debug.print("{s}\n", .{deserialized});     // Point{ .x = 1, .y = 2 }
 };
 ```
