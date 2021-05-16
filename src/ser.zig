@@ -2,29 +2,15 @@ const std = @import("std");
 
 pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
     const s = serializer.serializer();
+    const V = @TypeOf(v);
 
-    return switch (@typeInfo(@TypeOf(v))) {
+    return switch (@typeInfo(V)) {
         .Bool => try s.serialize_bool(v),
         .Int => try s.serialize_int(v),
         .Float => try s.serialize_float(v),
-        .Pointer => |info| blk: {
-            switch (info.size) {
-                .One => {
-                    const child_info = @typeInfo(info.child);
-
-                    if (child_info != .Array or child_info.Array.child != u8) {
-                        @compileError("expected pointer to byte array, found " ++ @typeName(info.child));
-                    }
-
-                    break :blk if (child_info.Array.sentinel) |sentinel| {
-                        if (sentinel == 0) try s.serialize_str(v) else try s.serialize_bytes(v);
-                    } else {
-                        try s.serialize_bytes(v);
-                    };
-                },
-                .Many => unreachable,
-                .Slice => unreachable,
-                .C => unreachable,
+        .Pointer => blk: {
+            if (!comptime std.meta.trait.isZigString(V)) {
+                @compileError("expected Zig string, found " ++ @typeName(V));
             }
 
             break :blk try s.serialize_str(v);
