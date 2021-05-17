@@ -101,16 +101,11 @@ pub fn Json(comptime Writer: type) type {
                 try self.serialize_element(byte);
             }
 
-            // TODO: Make this another function
             self.writer.writeByte(']') catch return Error.Io;
         }
 
         pub fn serialize_sequence(self: *Self, length: usize) Error!Ok {
-            self.writer.writeAll("[") catch return Error.Io;
-
-            if (length == 0) {
-                self.writer.writeAll("]") catch return Error.Io;
-            }
+            self.writer.writeByte('[') catch return Error.Io;
         }
 
         pub fn serialize_element(self: *Self, value: anytype) Error!Ok {
@@ -148,9 +143,13 @@ test "String" {
 }
 
 test "Byte array" {
-    const array = [_]u8{ 1, 2, 3 };
+    //const array = [_]u8{};
+    const array = [_]u8{1};
+    //const array = [_]u8{ 1, 2, 3 };
     const value = try toArrayList(testing_allocator, array);
     defer value.deinit();
 
-    try expect(eql(u8, value.items, "[1,2,3]"));
+    //try expect(eql(u8, value.items, "[]"));
+    try expect(eql(u8, value.items, "[1]"));
+    //try expect(eql(u8, value.items, "[1,2,3]"));
 }
