@@ -41,7 +41,7 @@ pub fn Serializer(
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime strFn: fn (context: Context, value: anytype) E!O,
     comptime bytesFn: fn (context: Context, value: anytype) E!O,
-    comptime sequenceFn: fn (context: Context, length: usize) E!O,
+    comptime seqFn: fn (context: Context, length: usize) E!O,
     comptime elementFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
@@ -52,21 +52,22 @@ pub fn Serializer(
 
         context: Context,
 
-        /// Serialize a boolean value
+        /// Serialize a boolean value.
         pub fn serialize_bool(self: Self, value: bool) Error!Ok {
             try boolFn(self.context, value);
         }
 
-        /// Serialize an integer value
+        /// Serialize an integer value.
         pub fn serialize_int(self: Self, value: anytype) Error!Ok {
             try intFn(self.context, value);
         }
 
-        /// Serialize a float value
+        /// Serialize a float value.
         pub fn serialize_float(self: Self, value: anytype) Error!Ok {
             try floatFn(self.context, value);
         }
 
+        /// Serialize a Zig string.
         pub fn serialize_str(self: Self, value: anytype) Error!Ok {
             if (!comptime std.meta.trait.isZigString(@TypeOf(value))) {
                 @compileError("expected string, found " ++ @typeName(@TypeOf(value)));
@@ -75,6 +76,12 @@ pub fn Serializer(
             try strFn(self.context, value);
         }
 
+        /// Serialize a chunk of raw byte data.
+        ///
+        /// Enables serializers to serialize byte slices more compactly or more
+        /// efficiently than other types of slices. If no efficient implementation
+        /// is available, a reasonable implementation would be to forward to
+        /// `serialize_seq`.
         pub fn serialize_bytes(self: Self, value: anytype) Error!Ok {
             if (std.meta.Child(@TypeOf(value)) != u8) {
                 @compileError("expected byte array, found " ++ @typeName(@TypeOf(value)));
@@ -83,8 +90,15 @@ pub fn Serializer(
             try bytesFn(self.context, value);
         }
 
-        pub fn serialize_sequence(self: Self, length: usize) Error!Ok {
-            try sequenceFn(self.context, length);
+        /// Begin to serialize a variably sized sequence. This call must be
+        /// followed by zero or more calls to `serialize_element`, then a call to
+        /// `end`.
+        ///
+        /// The argument is the number of elements in the sequence, which may or may
+        /// not be computable before the sequence is iterated. Some serializers only
+        /// support sequences whose length is known up front.
+        pub fn serialize_seq(self: Self, length: usize) Error!Ok {
+            try seqFn(self.context, length);
         }
 
         pub fn serialize_element(self: Self, value: anytype) Error!Ok {

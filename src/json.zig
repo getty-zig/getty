@@ -41,7 +41,7 @@ pub fn Json(comptime Writer: type) type {
             serialize_float,
             serialize_str,
             serialize_bytes,
-            serialize_sequence,
+            serialize_seq,
             serialize_element,
         );
 
@@ -95,7 +95,7 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serialize_bytes(self: *Self, value: anytype) Error!Ok {
-            try self.serialize_sequence(value.len);
+            try self.serialize_seq(value.len);
 
             for (&value) |byte| {
                 try self.serialize_element(byte);
@@ -104,7 +104,7 @@ pub fn Json(comptime Writer: type) type {
             self.writer.writeByte(']') catch return Error.Io;
         }
 
-        pub fn serialize_sequence(self: *Self, length: usize) Error!Ok {
+        pub fn serialize_seq(self: *Self, length: usize) Error!Ok {
             self.writer.writeByte('[') catch return Error.Io;
         }
 
