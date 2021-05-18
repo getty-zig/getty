@@ -1,3 +1,6 @@
+<p align="center">:zap: <strong>Getty is in early development. Things might break or change!</strong> :zap:</p>
+<br/>
+
 <p align="center">
   <img alt="Getty" src="https://github.com/getty-zig/logo/blob/main/getty-full.svg" width="400px">
   <br/>
