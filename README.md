@@ -38,11 +38,11 @@ pub fn main() anyerror!void {
 
 ## Overview
 
-Getty is a framework for serializing and deserializing Zig data types.
+Getty is a serialization and deserialization framework for the Zig programming language.
 
-There are two components that comprise Getty: a **data model** and an interface for **data formats**. Together, these components enable the serialization and deserialization of any supported data type by any conforming data format.
+There are two components in Getty: a **data model** and a **data format interface**. Together, they allow any supported data type to be serialized or deserialized by any conforming data format.
 
-Where many other languages rely on runtime reflection for serializing data, Getty makes use of Zig's powerful compile-time features. Not only does this avoid any overhead of reflection, it also allows for all data types supported by Getty (and therefore all data structures composed of those types) to be *automatically* serializable and deserializable.
+Getty takes advantage of Zig's powerful compile-time features when serializing and deserializing data. Because of this, Getty avoids any overhead associated with more costly methods, such as runtime reflection. In addition, `comptime` enables all data types supported by Getty (and therefore all data structures composed of those types) to *automatically* become serializable and deserializable.
 
 ## Contributing
 
