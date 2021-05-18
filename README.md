@@ -47,7 +47,3 @@ Where many other languages rely on runtime reflection for serializing data, Gett
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-This project is released under the [MIT](LICENSE) license.
