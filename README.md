@@ -1,6 +1,7 @@
 <p align="center">
+  <p align="center">:bangbang: <b>Getty is still in early development. Things might break or change.</b> :bangbang:</p>
+  <br />
   <h1 align="center">Getty</h1>
-  <p align="center"><b>NOTE: Getty is still in early development. Things might break or change.</b></p>
   <p align="center">A framework for serializing and deserializing Zig data types.</p>
 </p>
 
