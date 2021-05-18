@@ -54,7 +54,9 @@ Where many other languages rely on runtime reflection for serializing data, Gett
 
 <!-- ## Examples -->
 
-<!-- ## Contributing -->
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
