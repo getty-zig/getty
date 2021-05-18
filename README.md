@@ -32,7 +32,7 @@ pub fn main() anyerror!void {
 
 ## Table of Contents
 
-<img align="right" width="170" src="https://github.com/getty-zig/logo/blob/main/getty-white.svg" />
+<img align="right" width="170" src="https://github.com/getty-zig/logo/blob/main/getty-full-white.svg" />
 
 - [Overview](#overview)
 - [Data Model](#data-model)
