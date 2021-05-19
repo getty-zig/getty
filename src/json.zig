@@ -73,7 +73,7 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serialize_float(self: *Self, value: anytype) Error!Ok {
-            switch (@typeInfo(@TypeOf(value)).Int.bits) {
+            switch (@typeInfo(@TypeOf(value)).Float.bits) {
                 32, 64 => {
                     if (math.isNan(value) or math.isInf(value)) {
                         self.writer.writeAll("null") catch return Error.Io;
