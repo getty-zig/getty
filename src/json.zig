@@ -62,14 +62,22 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serialize_int(self: *Self, value: anytype) Error!Ok {
-            switch (@typeInfo(@TypeOf(value)).Int.bits) {
-                8, 16, 32, 64 => {
-                    var buffer: [20]u8 = undefined;
-                    const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
-                    self.writer.writeAll(slice) catch return Error.Io;
+            switch (@typeInfo(@TypeOf(value))) {
+                .ComptimeInt => {
+                    const max = std.math.maxInt(u64);
+                    const min = std.math.minInt(i64);
+                    std.debug.assert(value >= min and value <= max);
                 },
-                else => @compileError("unsupported bit-width"),
+                .Int => |info| switch (info.bits) {
+                    8, 16, 32, 64 => {},
+                    else => @compileError("unsupported bit-width"),
+                },
+                else => unreachable,
             }
+
+            var buffer: [20]u8 = undefined;
+            const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
+            self.writer.writeAll(slice) catch return Error.Io;
         }
 
         pub fn serialize_float(self: *Self, value: anytype) Error!Ok {

@@ -6,12 +6,11 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     return switch (@typeInfo(@TypeOf(v))) {
         .Array => try s.serialize_bytes(v),
         .Bool => try s.serialize_bool(v),
-        //.ComptimeInt => {},
         //.ComptimeFloat => {},
         .Float => try s.serialize_float(v),
-        .Int => try s.serialize_int(v),
+        .ComptimeInt, .Int => try s.serialize_int(v),
         .Pointer => try s.serialize_str(v),
-        else => @compileError("unsupported serialize value"),
+        else => @compileError("unsupported serialize value " ++ @typeName(@TypeOf(v))),
     };
 }
 
@@ -129,21 +128,23 @@ test "Serialize - integer" {
         u8, u16, u32, u64,
     };
 
-    inline for (types) |T| {
-        const max = std.math.maxInt(T);
-        const min = std.math.minInt(T);
+    inline for (types) |Int| {
+        const max = std.math.maxInt(Int);
+        const min = std.math.minInt(Int);
 
         var max_buf: [20]u8 = undefined;
         var min_buf: [20]u8 = undefined;
         const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
         const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
 
-        const max_str = try json.toArrayList(testing_allocator, @as(T, max));
-        defer max_str.deinit();
-        const min_str = try json.toArrayList(testing_allocator, @as(T, min));
-        defer min_str.deinit();
+        inline for (&[_]type{ Int, comptime_int }) |T| {
+            const max_str = try json.toArrayList(testing_allocator, @as(T, max));
+            defer max_str.deinit();
+            const min_str = try json.toArrayList(testing_allocator, @as(T, min));
+            defer min_str.deinit();
 
-        try expect(eql(u8, max_str.items, max_expected));
-        try expect(eql(u8, min_str.items, min_expected));
+            try expect(eql(u8, max_str.items, max_expected));
+            try expect(eql(u8, min_str.items, min_expected));
+        }
     }
 }
