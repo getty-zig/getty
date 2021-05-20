@@ -27,15 +27,15 @@ pub fn main() anyerror!void {
     var point = Point{ .x = 1, .y = 2 };
 
     // Convert the Point to a JSON string.
-    var serialized = try json.toArrayList(std.heap.page_allocator, point);
-    defer serialized.deinit();
+    var serialized = try json.toString(std.heap.page_allocator, point);
+    defer std.heap.page_allocator.free(serialized);
 
     // Convert the JSON string back to a Point.
-    var deserialized = try json.fromSlice(serialized.items);
+    var deserialized = try json.fromSlice(serialized);
 
     // Print results
-    std.debug.print("{s}\n", .{serialized.items}); // {"x":1,"y":2}
-    std.debug.print("{s}\n", .{deserialized});     // Point{ .x = 1, .y = 2 }
+    std.debug.print("{s}\n", .{serialized});   // {"x":1,"y":2}
+    std.debug.print("{s}\n", .{deserialized}); // Point{ .x = 1, .y = 2 }
 };
 ```
 
