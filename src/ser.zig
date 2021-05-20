@@ -125,13 +125,13 @@ const expect = std.testing.expect;
 const testing_allocator = std.testing.allocator;
 
 test "Serialize - bool" {
-    var t = try json.toArrayList(testing_allocator, true);
-    defer t.deinit();
-    var f = try json.toArrayList(testing_allocator, false);
-    defer f.deinit();
+    var t = try json.toString(testing_allocator, true);
+    defer testing_allocator.free(t);
+    var f = try json.toString(testing_allocator, false);
+    defer testing_allocator.free(f);
 
-    try expect(eql(u8, t.items, "true"));
-    try expect(eql(u8, f.items, "false"));
+    try expect(eql(u8, t, "true"));
+    try expect(eql(u8, f, "false"));
 }
 
 test "Serialize - integer" {
@@ -149,13 +149,13 @@ test "Serialize - integer" {
         const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
         const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
 
-        const max_encoded = try json.toArrayList(testing_allocator, @as(T, max));
-        defer max_encoded.deinit();
-        const min_encoded = try json.toArrayList(testing_allocator, @as(T, min));
-        defer min_encoded.deinit();
+        const max_encoded = try json.toString(testing_allocator, @as(T, max));
+        defer testing_allocator.free(max_encoded);
+        const min_encoded = try json.toString(testing_allocator, @as(T, min));
+        defer testing_allocator.free(min_encoded);
 
-        try expect(eql(u8, max_encoded.items, max_expected));
-        try expect(eql(u8, min_encoded.items, min_expected));
+        try expect(eql(u8, max_encoded, max_expected));
+        try expect(eql(u8, min_encoded, min_expected));
     }
 }
 
@@ -184,13 +184,13 @@ test "Serialize - Unicode code point" {
             try min_expected.appendSlice(&min_buf);
             try min_expected.append('"');
 
-            const max_encoded = try json.toArrayList(testing_allocator, max);
-            defer max_encoded.deinit();
-            const min_encoded = try json.toArrayList(testing_allocator, min);
-            defer min_encoded.deinit();
+            const max_encoded = try json.toString(testing_allocator, max);
+            defer testing_allocator.free(max_encoded);
+            const min_encoded = try json.toString(testing_allocator, min);
+            defer testing_allocator.free(min_encoded);
 
-            try expect(eql(u8, max_encoded.items, max_expected.items));
-            try expect(eql(u8, min_encoded.items, min_expected.items));
+            try expect(eql(u8, max_encoded, max_expected.items));
+            try expect(eql(u8, min_encoded, min_expected.items));
         }
     }
 }

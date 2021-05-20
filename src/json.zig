@@ -139,10 +139,11 @@ pub fn toWriter(writer: anytype, value: anytype) !void {
     try ser.serialize(&serializer, value);
 }
 
-pub fn toArrayList(allocator: *mem.Allocator, value: anytype) !String {
+pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
     var array_list = String.init(allocator);
+    errdefer array_list.deinit();
     try toWriter(array_list.writer(), value);
-    return array_list;
+    return array_list.toOwnedSlice();
 }
 
 const eql = std.mem.eql;
@@ -150,20 +151,20 @@ const expect = std.testing.expect;
 const testing_allocator = std.testing.allocator;
 
 test "String" {
-    const value = try toArrayList(testing_allocator, "hello");
-    defer value.deinit();
+    const value = try toString(testing_allocator, "hello");
+    defer testing_allocator.free(value);
 
-    try expect(eql(u8, value.items, "\"hello\""));
+    try expect(eql(u8, value, "\"hello\""));
 }
 
 test "Byte array" {
     //const array = [_]u8{};
     const array = [_]u8{1};
     //const array = [_]u8{ 1, 2, 3 };
-    const value = try toArrayList(testing_allocator, array);
-    defer value.deinit();
+    const value = try toString(testing_allocator, array);
+    defer testing_allocator.free(value);
 
-    //try expect(eql(u8, value.items, "[]"));
-    try expect(eql(u8, value.items, "[1]"));
-    //try expect(eql(u8, value.items, "[1,2,3]"));
+    //try expect(eql(u8, value, "[]"));
+    try expect(eql(u8, value, "[1]"));
+    //try expect(eql(u8, value, "[1,2,3]"));
 }
