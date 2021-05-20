@@ -5,8 +5,6 @@ const fmt = std.fmt;
 const math = std.math;
 const mem = std.mem;
 
-const String = std.ArrayList(u8);
-
 pub fn Json(comptime Writer: type) type {
     return struct {
         const Self = @This();
@@ -140,7 +138,7 @@ pub fn toWriter(writer: anytype, value: anytype) !void {
 }
 
 pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
-    var array_list = String.init(allocator);
+    var array_list = std.ArrayList(u8).init(allocator);
     errdefer array_list.deinit();
     try toWriter(array_list.writer(), value);
     return array_list.toOwnedSlice();
