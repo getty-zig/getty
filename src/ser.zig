@@ -140,23 +140,21 @@ test "Serialize - integer" {
         u8, u16, u32, u64,
     };
 
-    inline for (types) |Int| {
-        const max = std.math.maxInt(Int);
-        const min = std.math.minInt(Int);
+    inline for (types) |T| {
+        const max = std.math.maxInt(T);
+        const min = std.math.minInt(T);
 
         var max_buf: [20]u8 = undefined;
         var min_buf: [20]u8 = undefined;
         const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
         const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
 
-        inline for (&[_]type{ Int, comptime_int }) |T| {
-            const max_str = try json.toArrayList(testing_allocator, @as(T, max));
-            defer max_str.deinit();
-            const min_str = try json.toArrayList(testing_allocator, @as(T, min));
-            defer min_str.deinit();
+        const max_encoded = try json.toArrayList(testing_allocator, @as(T, max));
+        defer max_encoded.deinit();
+        const min_encoded = try json.toArrayList(testing_allocator, @as(T, min));
+        defer min_encoded.deinit();
 
-            try expect(eql(u8, max_str.items, max_expected));
-            try expect(eql(u8, min_str.items, min_expected));
-        }
+        try expect(eql(u8, max_encoded.items, max_expected));
+        try expect(eql(u8, min_encoded.items, min_expected));
     }
 }
