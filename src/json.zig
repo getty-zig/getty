@@ -37,6 +37,7 @@ pub fn Json(comptime Writer: type) type {
             Ok,
             Error,
             serialize_bool,
+            serialize_char,
             serialize_int,
             serialize_float,
             serialize_str,
@@ -59,6 +60,13 @@ pub fn Json(comptime Writer: type) type {
 
         pub fn serialize_bool(self: *Self, value: bool) Error!Ok {
             self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
+        }
+
+        pub fn serialize_char(self: *Self, comptime value: comptime_int) Error!Ok {
+            const length = comptime std.unicode.utf8CodepointSequenceLength(value) catch unreachable;
+            var buffer: [length]u8 = undefined;
+            const written = std.unicode.utf8Encode(value, &buffer) catch unreachable; // guaranteed to be encodable thanks to ser.serialize_char
+            self.writer.writeAll(&buffer) catch return Error.Io;
         }
 
         pub fn serialize_int(self: *Self, value: anytype) Error!Ok {

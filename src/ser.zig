@@ -6,9 +6,15 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     return switch (@typeInfo(@TypeOf(v))) {
         .Array => try s.serialize_bytes(v),
         .Bool => try s.serialize_bool(v),
-        //.ComptimeFloat => {},
         .Float => try s.serialize_float(v),
-        .ComptimeInt, .Int => try s.serialize_int(v),
+        .ComptimeInt => {
+            if (v >= 0 and v <= std.math.maxInt(u21) and std.unicode.utf8ValidCodepoint(v)) {
+                try s.serialize_char(v);
+            } else {
+                try s.serialize_int(v);
+            }
+        },
+        .Int => try s.serialize_int(v),
         .Pointer => try s.serialize_str(v),
         else => @compileError("unsupported serialize value " ++ @typeName(@TypeOf(v))),
     };
@@ -36,6 +42,7 @@ pub fn Serializer(
     comptime O: type,
     comptime E: type,
     comptime boolFn: fn (context: Context, value: bool) E!O,
+    comptime charFn: fn (context: Context, value: comptime_int) E!O,
     comptime intFn: fn (context: Context, value: anytype) E!O,
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime strFn: fn (context: Context, value: anytype) E!O,
@@ -56,9 +63,14 @@ pub fn Serializer(
             try boolFn(self.context, value);
         }
 
+        /// Serialize a Unicode code point.
+        pub fn serialize_char(self: Self, comptime value: comptime_int) Error!Ok {
+            return try charFn(self.context, value);
+        }
+
         /// Serialize an integer value.
         pub fn serialize_int(self: Self, value: anytype) Error!Ok {
-            try intFn(self.context, value);
+            return try intFn(self.context, value);
         }
 
         /// Serialize a float value.
