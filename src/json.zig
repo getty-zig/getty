@@ -136,8 +136,7 @@ pub fn Json(comptime Writer: type) type {
 }
 
 pub fn toWriter(writer: anytype, value: anytype) !void {
-    const Serializer = Json(@TypeOf(writer));
-    var serializer = Serializer.init(writer);
+    var serializer = Json(@TypeOf(writer)).init(writer);
     try ser.serialize(&serializer, value);
 }
 
