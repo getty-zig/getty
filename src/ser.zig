@@ -158,3 +158,39 @@ test "Serialize - integer" {
         try expect(eql(u8, min_encoded.items, min_expected));
     }
 }
+
+test "Serialize - Unicode code point" {
+    comptime var bits = 1;
+    inline while (bits < 21) : (bits += 1) {
+        const Unsigned = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
+
+        inline for (&[_]type{Unsigned}) |T| {
+            const max = std.math.maxInt(T);
+            const min = std.math.minInt(T);
+
+            var max_buf: [std.unicode.utf8CodepointSequenceLength(max) catch unreachable]u8 = undefined;
+            _ = std.unicode.utf8Encode(max, &max_buf) catch unreachable;
+            var max_expected = std.ArrayList(u8).init(testing_allocator);
+            defer max_expected.deinit();
+            try max_expected.append('"');
+            try max_expected.appendSlice(&max_buf);
+            try max_expected.append('"');
+
+            var min_buf: [std.unicode.utf8CodepointSequenceLength(min) catch unreachable]u8 = undefined;
+            _ = std.unicode.utf8Encode(min, &min_buf) catch unreachable;
+            var min_expected = std.ArrayList(u8).init(testing_allocator);
+            defer min_expected.deinit();
+            try min_expected.append('"');
+            try min_expected.appendSlice(&min_buf);
+            try min_expected.append('"');
+
+            const max_encoded = try json.toArrayList(testing_allocator, max);
+            defer max_encoded.deinit();
+            const min_encoded = try json.toArrayList(testing_allocator, min);
+            defer min_encoded.deinit();
+
+            try expect(eql(u8, max_encoded.items, max_expected.items));
+            try expect(eql(u8, min_encoded.items, min_expected.items));
+        }
+    }
+}

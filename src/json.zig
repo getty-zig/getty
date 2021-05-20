@@ -63,10 +63,9 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serialize_char(self: *Self, comptime value: comptime_int) Error!Ok {
-            const length = comptime std.unicode.utf8CodepointSequenceLength(value) catch unreachable;
-            var buffer: [length]u8 = undefined;
-            const written = std.unicode.utf8Encode(value, &buffer) catch unreachable; // guaranteed to be encodable thanks to ser.serialize_char
-            self.writer.writeAll(&buffer) catch return Error.Io;
+            var buffer: [std.unicode.utf8CodepointSequenceLength(value) catch unreachable]u8 = undefined;
+            const written = std.unicode.utf8Encode(value, &buffer) catch unreachable; // guaranteed to be encodable thanks to ser.serialize
+            return self.serialize_str(&buffer);
         }
 
         pub fn serialize_int(self: *Self, value: anytype) Error!Ok {
