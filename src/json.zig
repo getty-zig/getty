@@ -40,8 +40,6 @@ pub fn Json(comptime Writer: type) type {
             serializeFloat,
             serializeNull,
             serializeSlice,
-            serializeSeq,
-            serializeElement,
         );
 
         writer: Writer,
@@ -75,9 +73,6 @@ pub fn Json(comptime Writer: type) type {
         pub fn serializeSlice(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
-
-        pub fn serializeSeq(self: *Self, length: usize) Error!Ok {}
-        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {}
     };
 }
 
@@ -160,4 +155,17 @@ test "Serialize - array" {
 
     try expect(eql(u8, array_result, "[65,66,67]"));
     try expect(eql(u8, string_result, "\"ABC\""));
+}
+
+test "Serialize - optional" {
+    const some: ?i8 = 1;
+    const none: ?i8 = null;
+
+    const some_result = try toString(testing_allocator, some);
+    defer testing_allocator.free(some_result);
+    const none_result = try toString(testing_allocator, none);
+    defer testing_allocator.free(none_result);
+
+    try expect(eql(u8, some_result, "1"));
+    try expect(eql(u8, none_result, "null"));
 }

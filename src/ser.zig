@@ -11,7 +11,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
         .Float, .ComptimeFloat => try s.serializeFloat(v),
         .Int, .ComptimeInt => try s.serializeInt(v),
         .Null => try s.serializeNull(v),
-        //.Optional => try s.serializeOptional(v),
+        .Optional => if (v) |payload| try serialize(serializer, payload) else try serialize(serializer, null),
         .Pointer => |info| switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
                 .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), v)),
@@ -53,8 +53,6 @@ pub fn Serializer(
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime nullFn: fn (context: Context, value: anytype) E!O,
     comptime sliceFn: fn (context: Context, value: anytype) E!O,
-    comptime seqFn: fn (context: Context, length: usize) E!O,
-    comptime elementFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -87,21 +85,6 @@ pub fn Serializer(
         /// Serialize a slice value.
         pub fn serializeSlice(self: Self, value: anytype) Error!Ok {
             return try sliceFn(self.context, value);
-        }
-
-        /// Begin to serialize a variably sized sequence. This call must be
-        /// followed by zero or more calls to `serializeElement`, then a call to
-        /// `end`.
-        ///
-        /// The argument is the number of elements in the sequence, which may or may
-        /// not be computable before the sequence is iterated. Some serializers only
-        /// support sequences whose length is known up front.
-        pub fn serializeSeq(self: Self, length: usize) Error!Ok {
-            return try seqFn(self.context, length);
-        }
-
-        pub fn serializeElement(self: Self, value: anytype) Error!Ok {
-            return try elementFn(self.context, value);
         }
     };
 }
