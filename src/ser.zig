@@ -22,7 +22,10 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
         },
         //.Struct => |S| {},
         //.Union => {},
-        //.Vector => |info| {},
+        .Vector => |info| {
+            const array: [info.len]info.child = v;
+            try serialize(serializer, &array);
+        },
         else => @compileError("unsupported serialize type: " ++ @typeName(@TypeOf(v))),
     };
 }

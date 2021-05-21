@@ -176,3 +176,10 @@ test "Serialize - error set" {
 
     try expect(eql(u8, result, "\"Error\""));
 }
+
+test "Serialize - vector" {
+    const result = try toString(testing_allocator, @splat(2, @as(u32, 1)));
+    defer testing_allocator.free(result);
+
+    try expect(eql(u8, result, "[1,1]"));
+}
