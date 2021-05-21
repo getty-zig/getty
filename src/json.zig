@@ -2,6 +2,7 @@ const ser = @import("ser.zig");
 const std = @import("std");
 
 const fmt = std.fmt;
+const json = std.json;
 const math = std.math;
 const mem = std.mem;
 
@@ -35,11 +36,9 @@ pub fn Json(comptime Writer: type) type {
             Ok,
             Error,
             serializeBool,
-            serializeChar,
             serializeInt,
             serializeFloat,
-            serializeStr,
-            serializeBytes,
+            serializeSlice,
             serializeSeq,
             serializeElement,
         );
@@ -57,79 +56,37 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serializeBool(self: *Self, value: bool) Error!Ok {
-            self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
-        }
-
-        pub fn serializeChar(self: *Self, comptime value: comptime_int) Error!Ok {
-            var buffer: [std.unicode.utf8CodepointSequenceLength(value) catch unreachable]u8 = undefined;
-            const written = std.unicode.utf8Encode(value, &buffer) catch unreachable; // guaranteed to be encodable thanks to ser.serialize
-            return self.serializeStr(&buffer);
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
         // TODO: Dow we need the bit-width check for Ints? I think JSON only
         // knows about 64-bit ints so we can just check for that.
         pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
-            switch (@typeInfo(@TypeOf(value))) {
-                .ComptimeInt => {
-                    const max = std.math.maxInt(u64);
-                    const min = std.math.minInt(i64);
-                    std.debug.assert(value >= min and value <= max);
-                },
-                .Int => |info| switch (info.bits) {
-                    8, 16, 32, 64 => {},
-                    else => @compileError("unsupported bit-width"),
-                },
-                else => unreachable,
-            }
-
-            var buffer: [20]u8 = undefined;
-            const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
-            self.writer.writeAll(slice) catch return Error.Io;
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
         pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
-            switch (@typeInfo(@TypeOf(value)).Float.bits) {
-                32, 64 => {
-                    if (math.isNan(value) or math.isInf(value)) {
-                        self.writer.writeAll("null") catch return Error.Io;
-                    } else {
-                        var buffer: [1024]u8 = undefined;
-                        const slice = fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
-                        self.writer.writeAll(slice) catch return Error.Io;
-                    }
-                },
-                else => @compileError("unsupported bit-width"),
-            }
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
         // TODO: Format escaped strings
-        pub fn serializeStr(self: *Self, value: anytype) Error!Ok {
-            self.writer.writeByte('"') catch return Error.Io;
-            self.writer.writeAll(value) catch return Error.Io;
-            self.writer.writeByte('"') catch return Error.Io;
-        }
-
-        pub fn serializeBytes(self: *Self, value: anytype) Error!Ok {
-            try self.serializeSeq(value.len);
-
-            for (&value) |byte| {
-                try self.serializeElement(byte);
-            }
-
-            self.writer.writeByte(']') catch return Error.Io;
+        pub fn serializeSlice(self: *Self, value: anytype) Error!Ok {
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
         pub fn serializeSeq(self: *Self, length: usize) Error!Ok {
-            self.writer.writeByte('[') catch return Error.Io;
+            //self.writer.writeByte('[') catch return Error.Io;
+            //@compileError("Unused");
         }
 
         pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
             // TODO: Make this non-ArrayList specific
-            if (!std.mem.endsWith(u8, self.writer.context.items, "[")) {
-                self.writer.writeByte(',') catch return Error.Io;
-            }
+            //if (!std.mem.endsWith(u8, self.writer.context.items, "[")) {
+            //self.writer.writeByte(',') catch return Error.Io;
+            //}
 
-            try ser.serialize(self, value);
+            //try ser.serialize(self, value);
+            //@compileError("Unused");
         }
     };
 }
@@ -150,6 +107,43 @@ const eql = std.mem.eql;
 const expect = std.testing.expect;
 const testing_allocator = std.testing.allocator;
 
+test "Serialize - bool" {
+    var t = try toString(testing_allocator, true);
+    defer testing_allocator.free(t);
+    var f = try toString(testing_allocator, false);
+    defer testing_allocator.free(f);
+
+    try expect(eql(u8, t, "true"));
+    try expect(eql(u8, f, "false"));
+}
+
+test "Serialize - integer" {
+    comptime var bits = 0;
+
+    inline while (bits < 64) : (bits += 1) {
+        const Signed = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
+        const Unsigned = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
+
+        inline for (&[_]type{ Signed, Unsigned }) |T| {
+            const max = std.math.maxInt(T);
+            const min = std.math.minInt(T);
+
+            var max_buf: [20]u8 = undefined;
+            var min_buf: [20]u8 = undefined;
+            const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
+            const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
+
+            const max_encoded = try toString(testing_allocator, @as(T, max));
+            defer testing_allocator.free(max_encoded);
+            const min_encoded = try toString(testing_allocator, @as(T, min));
+            defer testing_allocator.free(min_encoded);
+
+            try expect(eql(u8, max_encoded, max_expected));
+            try expect(eql(u8, min_encoded, min_expected));
+        }
+    }
+}
+
 test "String" {
     const value = try toString(testing_allocator, "hello");
     defer testing_allocator.free(value);
@@ -157,14 +151,16 @@ test "String" {
     try expect(eql(u8, value, "\"hello\""));
 }
 
-test "Byte array" {
-    //const array = [_]u8{};
-    const array = [_]u8{1};
-    //const array = [_]u8{ 1, 2, 3 };
-    const value = try toString(testing_allocator, array);
-    defer testing_allocator.free(value);
+test "Array" {
+    const array = [_]u32{ 'A', 'B', 'C' };
+    const byte_array = [_]u8{ 'A', 'B', 'C' };
 
-    //try expect(eql(u8, value, "[]"));
-    try expect(eql(u8, value, "[1]"));
-    //try expect(eql(u8, value, "[1,2,3]"));
+    const array_value = try toString(testing_allocator, array);
+    defer testing_allocator.free(array_value);
+
+    const string_value = try toString(testing_allocator, byte_array);
+    defer testing_allocator.free(string_value);
+
+    try expect(eql(u8, array_value, "[65,66,67]"));
+    try expect(eql(u8, string_value, "\"ABC\""));
 }
