@@ -38,6 +38,7 @@ pub fn Json(comptime Writer: type) type {
             serializeBool,
             serializeInt,
             serializeFloat,
+            serializeNull,
             serializeSlice,
             serializeSeq,
             serializeElement,
@@ -59,8 +60,6 @@ pub fn Json(comptime Writer: type) type {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
-        // TODO: Dow we need the bit-width check for Ints? I think JSON only
-        // knows about 64-bit ints so we can just check for that.
         pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
@@ -69,25 +68,16 @@ pub fn Json(comptime Writer: type) type {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
-        // TODO: Format escaped strings
+        pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
+        }
+
         pub fn serializeSlice(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
-        pub fn serializeSeq(self: *Self, length: usize) Error!Ok {
-            //self.writer.writeByte('[') catch return Error.Io;
-            //@compileError("Unused");
-        }
-
-        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
-            // TODO: Make this non-ArrayList specific
-            //if (!std.mem.endsWith(u8, self.writer.context.items, "[")) {
-            //self.writer.writeByte(',') catch return Error.Io;
-            //}
-
-            //try ser.serialize(self, value);
-            //@compileError("Unused");
-        }
+        pub fn serializeSeq(self: *Self, length: usize) Error!Ok {}
+        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {}
     };
 }
 
@@ -106,6 +96,13 @@ pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
 const eql = std.mem.eql;
 const expect = std.testing.expect;
 const testing_allocator = std.testing.allocator;
+
+test "Serialize - null" {
+    var result = try toString(testing_allocator, null);
+    defer testing_allocator.free(result);
+
+    try expect(eql(u8, result, "null"));
+}
 
 test "Serialize - bool" {
     var t = try toString(testing_allocator, true);
@@ -144,14 +141,14 @@ test "Serialize - integer" {
     }
 }
 
-test "String" {
+test "Serialize - string" {
     const value = try toString(testing_allocator, "hello");
     defer testing_allocator.free(value);
 
     try expect(eql(u8, value, "\"hello\""));
 }
 
-test "Array" {
+test "Serialize - array" {
     const array = [_]u32{ 'A', 'B', 'C' };
     const byte_array = [_]u8{ 'A', 'B', 'C' };
 

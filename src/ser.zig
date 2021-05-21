@@ -10,7 +10,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
         //.ErrorSet => {},
         .Float, .ComptimeFloat => try s.serializeFloat(v),
         .Int, .ComptimeInt => try s.serializeInt(v),
-        //.Null => try s.serializeNull(v),
+        .Null => try s.serializeNull(v),
         //.Optional => try s.serializeOptional(v),
         .Pointer => |info| switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
@@ -51,6 +51,7 @@ pub fn Serializer(
     comptime boolFn: fn (context: Context, value: bool) E!O,
     comptime intFn: fn (context: Context, value: anytype) E!O,
     comptime floatFn: fn (context: Context, value: anytype) E!O,
+    comptime nullFn: fn (context: Context, value: anytype) E!O,
     comptime sliceFn: fn (context: Context, value: anytype) E!O,
     comptime seqFn: fn (context: Context, length: usize) E!O,
     comptime elementFn: fn (context: Context, value: anytype) E!O,
@@ -76,6 +77,11 @@ pub fn Serializer(
         /// Serialize a float value.
         pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
             return try floatFn(self.context, value);
+        }
+
+        /// Serialize a null value.
+        pub fn serializeNull(self: Self, value: anytype) Error!Ok {
+            return try nullFn(self.context, value);
         }
 
         /// Serialize a slice value.
