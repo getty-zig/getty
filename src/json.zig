@@ -34,14 +34,14 @@ pub fn Json(comptime Writer: type) type {
             *Self,
             Ok,
             Error,
-            serialize_bool,
-            serialize_char,
-            serialize_int,
-            serialize_float,
-            serialize_str,
-            serialize_bytes,
-            serialize_seq,
-            serialize_element,
+            serializeBool,
+            serializeChar,
+            serializeInt,
+            serializeFloat,
+            serializeStr,
+            serializeBytes,
+            serializeSeq,
+            serializeElement,
         );
 
         writer: Writer,
@@ -56,17 +56,19 @@ pub fn Json(comptime Writer: type) type {
             };
         }
 
-        pub fn serialize_bool(self: *Self, value: bool) Error!Ok {
+        pub fn serializeBool(self: *Self, value: bool) Error!Ok {
             self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
         }
 
-        pub fn serialize_char(self: *Self, comptime value: comptime_int) Error!Ok {
+        pub fn serializeChar(self: *Self, comptime value: comptime_int) Error!Ok {
             var buffer: [std.unicode.utf8CodepointSequenceLength(value) catch unreachable]u8 = undefined;
             const written = std.unicode.utf8Encode(value, &buffer) catch unreachable; // guaranteed to be encodable thanks to ser.serialize
-            return self.serialize_str(&buffer);
+            return self.serializeStr(&buffer);
         }
 
-        pub fn serialize_int(self: *Self, value: anytype) Error!Ok {
+        // TODO: Dow we need the bit-width check for Ints? I think JSON only
+        // knows about 64-bit ints so we can just check for that.
+        pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .ComptimeInt => {
                     const max = std.math.maxInt(u64);
@@ -85,7 +87,7 @@ pub fn Json(comptime Writer: type) type {
             self.writer.writeAll(slice) catch return Error.Io;
         }
 
-        pub fn serialize_float(self: *Self, value: anytype) Error!Ok {
+        pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value)).Float.bits) {
                 32, 64 => {
                     if (math.isNan(value) or math.isInf(value)) {
@@ -101,27 +103,27 @@ pub fn Json(comptime Writer: type) type {
         }
 
         // TODO: Format escaped strings
-        pub fn serialize_str(self: *Self, value: anytype) Error!Ok {
+        pub fn serializeStr(self: *Self, value: anytype) Error!Ok {
             self.writer.writeByte('"') catch return Error.Io;
             self.writer.writeAll(value) catch return Error.Io;
             self.writer.writeByte('"') catch return Error.Io;
         }
 
-        pub fn serialize_bytes(self: *Self, value: anytype) Error!Ok {
-            try self.serialize_seq(value.len);
+        pub fn serializeBytes(self: *Self, value: anytype) Error!Ok {
+            try self.serializeSeq(value.len);
 
             for (&value) |byte| {
-                try self.serialize_element(byte);
+                try self.serializeElement(byte);
             }
 
             self.writer.writeByte(']') catch return Error.Io;
         }
 
-        pub fn serialize_seq(self: *Self, length: usize) Error!Ok {
+        pub fn serializeSeq(self: *Self, length: usize) Error!Ok {
             self.writer.writeByte('[') catch return Error.Io;
         }
 
-        pub fn serialize_element(self: *Self, value: anytype) Error!Ok {
+        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
             // TODO: Make this non-ArrayList specific
             if (!std.mem.endsWith(u8, self.writer.context.items, "[")) {
                 self.writer.writeByte(',') catch return Error.Io;

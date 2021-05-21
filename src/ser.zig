@@ -4,18 +4,18 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     const s = serializer.serializer();
 
     return switch (@typeInfo(@TypeOf(v))) {
-        .Array => try s.serialize_bytes(v),
-        .Bool => try s.serialize_bool(v),
-        .Float => try s.serialize_float(v),
+        .Array => try s.serializeBytes(v),
+        .Bool => try s.serializeBool(v),
+        .Float => try s.serializeFloat(v),
         .ComptimeInt => {
             if (v >= 0 and v <= std.math.maxInt(u21) and std.unicode.utf8ValidCodepoint(v)) {
-                try s.serialize_char(v);
+                try s.serializeChar(v);
             } else {
-                try s.serialize_int(v);
+                try s.serializeInt(v);
             }
         },
-        .Int => try s.serialize_int(v),
-        .Pointer => try s.serialize_str(v),
+        .Int => try s.serializeInt(v),
+        .Pointer => try s.serializeStr(v),
         else => @compileError("unsupported serialize value " ++ @typeName(@TypeOf(v))),
     };
 }
@@ -59,27 +59,27 @@ pub fn Serializer(
         context: Context,
 
         /// Serialize a boolean value.
-        pub fn serialize_bool(self: Self, value: bool) Error!Ok {
+        pub fn serializeBool(self: Self, value: bool) Error!Ok {
             try boolFn(self.context, value);
         }
 
         /// Serialize a Unicode code point.
-        pub fn serialize_char(self: Self, comptime value: comptime_int) Error!Ok {
+        pub fn serializeChar(self: Self, comptime value: comptime_int) Error!Ok {
             return try charFn(self.context, value);
         }
 
         /// Serialize an integer value.
-        pub fn serialize_int(self: Self, value: anytype) Error!Ok {
+        pub fn serializeInt(self: Self, value: anytype) Error!Ok {
             return try intFn(self.context, value);
         }
 
         /// Serialize a float value.
-        pub fn serialize_float(self: Self, value: anytype) Error!Ok {
+        pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
             try floatFn(self.context, value);
         }
 
         /// Serialize a Zig string.
-        pub fn serialize_str(self: Self, value: anytype) Error!Ok {
+        pub fn serializeStr(self: Self, value: anytype) Error!Ok {
             if (!comptime std.meta.trait.isZigString(@TypeOf(value))) {
                 @compileError("expected string, found " ++ @typeName(@TypeOf(value)));
             }
@@ -92,8 +92,8 @@ pub fn Serializer(
         /// Enables serializers to serialize byte slices more compactly or more
         /// efficiently than other types of slices. If no efficient implementation
         /// is available, a reasonable implementation would be to forward to
-        /// `serialize_seq`.
-        pub fn serialize_bytes(self: Self, value: anytype) Error!Ok {
+        /// `serializeSeq`.
+        pub fn serializeBytes(self: Self, value: anytype) Error!Ok {
             if (std.meta.Child(@TypeOf(value)) != u8) {
                 @compileError("expected byte array, found " ++ @typeName(@TypeOf(value)));
             }
@@ -102,17 +102,17 @@ pub fn Serializer(
         }
 
         /// Begin to serialize a variably sized sequence. This call must be
-        /// followed by zero or more calls to `serialize_element`, then a call to
+        /// followed by zero or more calls to `serializeElement`, then a call to
         /// `end`.
         ///
         /// The argument is the number of elements in the sequence, which may or may
         /// not be computable before the sequence is iterated. Some serializers only
         /// support sequences whose length is known up front.
-        pub fn serialize_seq(self: Self, length: usize) Error!Ok {
+        pub fn serializeSeq(self: Self, length: usize) Error!Ok {
             try seqFn(self.context, length);
         }
 
-        pub fn serialize_element(self: Self, value: anytype) Error!Ok {
+        pub fn serializeElement(self: Self, value: anytype) Error!Ok {
             try elementFn(self.context, value);
         }
     };
