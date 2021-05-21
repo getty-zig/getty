@@ -7,7 +7,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
         .Array => try serialize(serializer, &v),
         .Bool => try s.serializeBool(v),
         //.Enum => try s.serializeEnum(v),
-        //.ErrorSet => {},
+        .ErrorSet => try serialize(serializer, @as([]const u8, @errorName(v))),
         .Float, .ComptimeFloat => try s.serializeFloat(v),
         .Int, .ComptimeInt => try s.serializeInt(v),
         .Null => try s.serializeNull(v),

@@ -169,3 +169,10 @@ test "Serialize - optional" {
     try expect(eql(u8, some_result, "1"));
     try expect(eql(u8, none_result, "null"));
 }
+
+test "Serialize - error set" {
+    const result = try toString(testing_allocator, error{Error}.Error);
+    defer testing_allocator.free(result);
+
+    try expect(eql(u8, result, "\"Error\""));
+}
