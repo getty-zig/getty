@@ -16,7 +16,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
         },
         .Int => try s.serializeInt(v),
         .Pointer => try s.serializeStr(v),
-        else => @compileError("unsupported serialize value " ++ @typeName(@TypeOf(v))),
+        else => @compileError("unsupported serialize type: " ++ @typeName(@TypeOf(v))),
     };
 }
 
