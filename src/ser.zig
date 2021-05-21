@@ -65,7 +65,7 @@ pub fn Serializer(
 
         /// Serialize a boolean value.
         pub fn serializeBool(self: Self, value: bool) Error!Ok {
-            try boolFn(self.context, value);
+            return try boolFn(self.context, value);
         }
 
         /// Serialize an integer value.
@@ -75,16 +75,12 @@ pub fn Serializer(
 
         /// Serialize a float value.
         pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
-            try floatFn(self.context, value);
+            return try floatFn(self.context, value);
         }
 
         /// Serialize a slice value.
         pub fn serializeSlice(self: Self, value: anytype) Error!Ok {
-            //if (!comptime std.meta.trait.isZigString(@TypeOf(value))) {
-            //@compileError("expected string, found " ++ @typeName(@TypeOf(value)));
-            //}
-
-            try sliceFn(self.context, value);
+            return try sliceFn(self.context, value);
         }
 
         /// Begin to serialize a variably sized sequence. This call must be
@@ -95,11 +91,11 @@ pub fn Serializer(
         /// not be computable before the sequence is iterated. Some serializers only
         /// support sequences whose length is known up front.
         pub fn serializeSeq(self: Self, length: usize) Error!Ok {
-            try seqFn(self.context, length);
+            return try seqFn(self.context, length);
         }
 
         pub fn serializeElement(self: Self, value: anytype) Error!Ok {
-            try elementFn(self.context, value);
+            return try elementFn(self.context, value);
         }
     };
 }
