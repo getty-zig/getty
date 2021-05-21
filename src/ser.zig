@@ -38,7 +38,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
                     else => try serialize(serializer, v.*),
                 },
                 .Slice => blk: {
-                    break :blk if (std.meta.trait.isZigString(T)) {
+                    break :blk if (info.child == u8 and std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(v)) {
                         try s.serializeString(v);
                     } else {
                         try s.serializeSequence(v);
