@@ -105,13 +105,13 @@ test "Serialize - null" {
 }
 
 test "Serialize - bool" {
-    var t = try toString(testing_allocator, true);
-    defer testing_allocator.free(t);
-    var f = try toString(testing_allocator, false);
-    defer testing_allocator.free(f);
+    var true_result = try toString(testing_allocator, true);
+    defer testing_allocator.free(true_result);
+    var false_result = try toString(testing_allocator, false);
+    defer testing_allocator.free(false_result);
 
-    try expect(eql(u8, t, "true"));
-    try expect(eql(u8, f, "false"));
+    try expect(eql(u8, true_result, "true"));
+    try expect(eql(u8, false_result, "false"));
 }
 
 test "Serialize - integer" {
@@ -130,34 +130,34 @@ test "Serialize - integer" {
             const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
             const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
 
-            const max_encoded = try toString(testing_allocator, @as(T, max));
-            defer testing_allocator.free(max_encoded);
-            const min_encoded = try toString(testing_allocator, @as(T, min));
-            defer testing_allocator.free(min_encoded);
+            const max_result = try toString(testing_allocator, @as(T, max));
+            defer testing_allocator.free(max_result);
+            const min_result = try toString(testing_allocator, @as(T, min));
+            defer testing_allocator.free(min_result);
 
-            try expect(eql(u8, max_encoded, max_expected));
-            try expect(eql(u8, min_encoded, min_expected));
+            try expect(eql(u8, max_result, max_expected));
+            try expect(eql(u8, min_result, min_expected));
         }
     }
 }
 
 test "Serialize - string" {
-    const value = try toString(testing_allocator, "hello");
-    defer testing_allocator.free(value);
+    const result = try toString(testing_allocator, "hello");
+    defer testing_allocator.free(result);
 
-    try expect(eql(u8, value, "\"hello\""));
+    try expect(eql(u8, result, "\"hello\""));
 }
 
 test "Serialize - array" {
     const array = [_]u32{ 'A', 'B', 'C' };
     const byte_array = [_]u8{ 'A', 'B', 'C' };
 
-    const array_value = try toString(testing_allocator, array);
-    defer testing_allocator.free(array_value);
+    const array_result = try toString(testing_allocator, array);
+    defer testing_allocator.free(array_result);
 
-    const string_value = try toString(testing_allocator, byte_array);
-    defer testing_allocator.free(string_value);
+    const string_result = try toString(testing_allocator, byte_array);
+    defer testing_allocator.free(string_result);
 
-    try expect(eql(u8, array_value, "[65,66,67]"));
-    try expect(eql(u8, string_value, "\"ABC\""));
+    try expect(eql(u8, array_result, "[65,66,67]"));
+    try expect(eql(u8, string_result, "\"ABC\""));
 }
