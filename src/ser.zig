@@ -4,16 +4,16 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     const T = @TypeOf(v);
     const s = serializer.serializer();
 
-    return switch (@typeInfo(T)) {
-        .Array => try serialize(serializer, &v),
-        .Bool => try s.serializeBool(v),
-        //.Enum => try s.serializeEnum(v),
-        .ErrorSet => try serialize(serializer, @as([]const u8, @errorName(v))),
-        .Float, .ComptimeFloat => try s.serializeFloat(v),
-        .Int, .ComptimeInt => try s.serializeInt(v),
-        .Null => try s.serializeNull(v),
-        .Optional => if (v) |payload| try serialize(serializer, payload) else try serialize(serializer, null),
-        .Pointer => |info| switch (info.size) {
+    switch (@typeInfo(T)) {
+        .Array => return try serialize(serializer, &v),
+        .Bool => return try s.serializeBool(v),
+        //.Enum => {},
+        .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(v))),
+        .Float, .ComptimeFloat => return try s.serializeFloat(v),
+        .Int, .ComptimeInt => return try s.serializeInt(v),
+        .Null => return try s.serializeNull(v),
+        .Optional => if (v) |payload| return try serialize(serializer, payload) else return try serialize(serializer, null),
+        .Pointer => |info| return switch (info.size) {
             .One => switch (@typeInfo(info.child)) {
                 .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), v)),
                 else => try serialize(serializer, v.*),
@@ -22,13 +22,28 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
         //.Struct => |S| {},
-        //.Union => {},
+        .Union => {
+            if (comptime std.meta.trait.hasFn("serialize")(T)) {
+                return try v.serialize(serializer);
+            }
+
+            const info = @typeInfo(T).Union;
+            if (info.tag_type) |Tag| {
+                inline for (info.fields) |field| {
+                    if (@field(Tag, field.name) == v) {
+                        return try serialize(serializer, @field(v, field.name));
+                    }
+                }
+            } else {
+                @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
+            }
+        },
         .Vector => |info| {
             const array: [info.len]info.child = v;
-            try serialize(serializer, &array);
+            return try serialize(serializer, &array);
         },
         else => @compileError("unsupported serialize type: " ++ @typeName(T)),
-    };
+    }
 }
 
 /// A data format that can serialize any data structure supported by Getty.

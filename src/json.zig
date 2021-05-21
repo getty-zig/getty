@@ -183,3 +183,17 @@ test "Serialize - vector" {
 
     try expect(eql(u8, result, "[1,1]"));
 }
+
+test "Serialize - tagged union" {
+    const Union = union(enum) { int: i32, boolean: bool };
+    var int_union = Union{ .int = 42 };
+    var bool_union = Union{ .boolean = true };
+
+    const int_result = try toString(testing_allocator, int_union);
+    defer testing_allocator.free(int_result);
+    const bool_result = try toString(testing_allocator, bool_union);
+    defer testing_allocator.free(bool_result);
+
+    try expect(eql(u8, int_result, "42"));
+    try expect(eql(u8, bool_result, "true"));
+}
