@@ -26,17 +26,17 @@ const Point = struct {
 pub fn main() anyerror!void {
     var point = Point{ .x = 1, .y = 2 };
 
-    // Convert the Point to a JSON string.
+    // Convert Point to JSON string.
     var serialized = try json.toString(std.heap.page_allocator, point);
     defer std.heap.page_allocator.free(serialized);
 
-    // Convert the JSON string back to a Point.
+    // Convert JSON string to Point.
     var deserialized = try json.fromSlice(serialized);
 
-    // Print results
+    // Print results.
     std.debug.print("{s}\n", .{serialized});   // {"x":1,"y":2}
     std.debug.print("{s}\n", .{deserialized}); // Point{ .x = 1, .y = 2 }
-};
+}
 ```
 
 ## Overview
