@@ -5,29 +5,54 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     const s = serializer.serializer();
 
     switch (@typeInfo(T)) {
-        .Array => return try serialize(serializer, &v),
-        .Bool => return try s.serializeBool(v),
+        .Array => {
+            return try serialize(serializer, &v);
+        },
+        .Bool => {
+            return try s.serializeBool(v);
+        },
         //.Enum => {},
-        .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(v))),
-        .Float, .ComptimeFloat => return try s.serializeFloat(v),
-        .Int, .ComptimeInt => return try s.serializeInt(v),
-        .Null => return try s.serializeNull(v),
-        .Optional => if (v) |payload| return try serialize(serializer, payload) else return try serialize(serializer, null),
-        .Pointer => |info| return switch (info.size) {
-            .One => switch (@typeInfo(info.child)) {
-                .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), v)),
-                else => try serialize(serializer, v.*),
-            },
-            .Slice => try s.serializeSlice(v),
-            else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+        .ErrorSet => {
+            return try serialize(serializer, @as([]const u8, @errorName(v)));
+        },
+        .Float, .ComptimeFloat => {
+            return try s.serializeFloat(v);
+        },
+        .Int, .ComptimeInt => {
+            return try s.serializeInt(v);
+        },
+        .Null => {
+            return try s.serializeNull(v);
+        },
+        .Optional => {
+            if (v) |payload| {
+                return try serialize(serializer, payload);
+            } else {
+                return try serialize(serializer, null);
+            }
+        },
+        .Pointer => |info| {
+            return switch (info.size) {
+                .One => switch (@typeInfo(info.child)) {
+                    .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), v)),
+                    else => try serialize(serializer, v.*),
+                },
+                .Slice => blk: {
+                    break :blk if (std.meta.trait.isZigString(T)) {
+                        try s.serializeString(v);
+                    } else {
+                        try s.serializeSequence(v);
+                    };
+                },
+                else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+            };
         },
         //.Struct => |S| {},
-        .Union => {
+        .Union => |info| {
             if (comptime std.meta.trait.hasFn("serialize")(T)) {
                 return try v.serialize(serializer);
             }
 
-            const info = @typeInfo(T).Union;
             if (info.tag_type) |Tag| {
                 inline for (info.fields) |field| {
                     if (@field(Tag, field.name) == v) {
@@ -71,7 +96,8 @@ pub fn Serializer(
     comptime intFn: fn (context: Context, value: anytype) E!O,
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime nullFn: fn (context: Context, value: anytype) E!O,
-    comptime sliceFn: fn (context: Context, value: anytype) E!O,
+    comptime stringFn: fn (context: Context, value: anytype) E!O,
+    comptime sequenceFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -101,9 +127,14 @@ pub fn Serializer(
             return try nullFn(self.context, value);
         }
 
-        /// Serialize a slice value.
-        pub fn serializeSlice(self: Self, value: anytype) Error!Ok {
-            return try sliceFn(self.context, value);
+        /// Serialize a string value.
+        pub fn serializeString(self: Self, value: anytype) Error!Ok {
+            return try stringFn(self.context, value);
+        }
+
+        /// Serialize a non-string slice value.
+        pub fn serializeSequence(self: Self, value: anytype) Error!Ok {
+            return try sequenceFn(self.context, value);
         }
     };
 }

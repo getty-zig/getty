@@ -39,7 +39,8 @@ pub fn Json(comptime Writer: type) type {
             serializeInt,
             serializeFloat,
             serializeNull,
-            serializeSlice,
+            serializeString,
+            serializeSequence,
         );
 
         writer: Writer,
@@ -70,7 +71,11 @@ pub fn Json(comptime Writer: type) type {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
-        pub fn serializeSlice(self: *Self, value: anytype) Error!Ok {
+        pub fn serializeString(self: *Self, value: anytype) Error!Ok {
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
+        }
+
+        pub fn serializeSequence(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
     };
@@ -143,18 +148,11 @@ test "Serialize - string" {
     try expect(eql(u8, result, "\"hello\""));
 }
 
-test "Serialize - array" {
-    const array = [_]u32{ 'A', 'B', 'C' };
-    const byte_array = [_]u8{ 'A', 'B', 'C' };
+test "Serialize - sequence" {
+    const result = try toString(testing_allocator, [_]u32{ 'A', 'B', 'C' });
+    defer testing_allocator.free(result);
 
-    const array_result = try toString(testing_allocator, array);
-    defer testing_allocator.free(array_result);
-
-    const string_result = try toString(testing_allocator, byte_array);
-    defer testing_allocator.free(string_result);
-
-    try expect(eql(u8, array_result, "[65,66,67]"));
-    try expect(eql(u8, string_result, "\"ABC\""));
+    try expect(eql(u8, result, "[65,66,67]"));
 }
 
 test "Serialize - optional" {
