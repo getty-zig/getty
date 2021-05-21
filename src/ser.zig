@@ -74,20 +74,29 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
 /// A data format that can serialize any data structure supported by Getty.
 ///
 /// The interface defines the serialization half of the [Getty data model],
-/// which is a way to categorize every Zig data structure into one of TODO
+/// which is a way to categorize every Zig data structure into one of 12
 /// possible types. Each method of the `Serializer` interface corresponds to
 /// one of the types of the data model.
 ///
-/// Implementations of `Serialize` map themselves into this data model by
-/// invoking exactly one of the `Serializer` methods.
+/// Serializable data types map themselves into this data model by invoking
+/// exactly one of the `Serializer` methods.
 ///
 /// The types that make up the Getty data model are:
 ///
 ///  - Primitives
 ///    - bool
-///    - iN (where N is any supported signed integer bit-width)
-///    - uN (where N is any supported unsigned integer bit-width)
-///    - fN (where N is any supported floating-point bit-width)
+///    - float
+///    - integer
+///  - Non-primitives
+///    - array
+///    - error set
+///    - enum
+///    - null
+///    - optional
+///    - pointer (one, slice)
+///    - struct
+///    - tagged union
+///    - vector
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
@@ -132,7 +141,13 @@ pub fn Serializer(
             return try stringFn(self.context, value);
         }
 
-        /// Serialize a non-string slice value.
+        /// Serialize a variably sized heterogeneous sequence of values.
+        ///
+        /// Implementations are typically structured as follows:
+        ///
+        ///   1. Start with a prefix character suited for the type being serialized.
+        ///   2. Serialize the elements of the sequence.
+        ///   3. End with a suffix character suited for the type being serialized.
         pub fn serializeSequence(self: Self, value: anytype) Error!Ok {
             return try sequenceFn(self.context, value);
         }
