@@ -1,9 +1,10 @@
 const std = @import("std");
 
 pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
+    const T = @TypeOf(v);
     const s = serializer.serializer();
 
-    return switch (@typeInfo(@TypeOf(v))) {
+    return switch (@typeInfo(T)) {
         .Array => try serialize(serializer, &v),
         .Bool => try s.serializeBool(v),
         //.Enum => try s.serializeEnum(v),
@@ -18,7 +19,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
                 else => try serialize(serializer, v.*),
             },
             .Slice => try s.serializeSlice(v),
-            else => @compileError("unsupported serialize type: " ++ @typeName(@TypeOf(v))),
+            else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
         //.Struct => |S| {},
         //.Union => {},
@@ -26,7 +27,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
             const array: [info.len]info.child = v;
             try serialize(serializer, &array);
         },
-        else => @compileError("unsupported serialize type: " ++ @typeName(@TypeOf(v))),
+        else => @compileError("unsupported serialize type: " ++ @typeName(T)),
     };
 }
 
