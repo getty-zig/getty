@@ -71,7 +71,7 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
                 @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
             }
         },
-        .Vector => |info| return try serialize(serializer, &@as([info.len]info.child, value)),
+        .Vector => |info| return try s.serializeSequence(@as([info.len]info.child, value)),
         else => @compileError("unsupported serialize type: " ++ @typeName(T)),
     }
 }
