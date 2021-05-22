@@ -7,7 +7,16 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig fmt --check src/*.zig
+  test_debug:
+    name: test (debug)
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -18,11 +27,39 @@ jobs:
         with:
           version: master
       - run: zig build test
-  lint:
-    runs-on: ubuntu-latest
+  test_release_safe:
+    name: test (release-safe)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v2
       - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - run: zig fmt --check src/*.zig
+      - run: zig build -Drelease-safe=true test
+  test_release_small:
+    name: test (release-small)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig build -Drelease-small=true test
+  test_release_fast:
+    name: test (release-fast)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+      - run: zig build -Drelease-fast=true test
