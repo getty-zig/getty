@@ -42,7 +42,10 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
         .Null => return try s.serializeNull(value),
         .Optional => return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null),
         .Pointer => |info| return switch (info.size) {
-            .One => try serialize(serializer, value.*),
+            .One => switch (@typeInfo(info.child)) {
+                .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
+                else => try serialize(serializer, value.*),
+            },
             .Slice => blk: {
                 if (trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
                     break :blk try s.serializeString(value);
