@@ -22,26 +22,26 @@ fn SerializerErrorUnion(comptime T: type) type {
 ///    - struct
 ///    - tagged union
 ///    - vector
-pub fn serialize(serializer: anytype, v: anytype) SerializerErrorUnion(@TypeOf(serializer)) {
-    const T = @TypeOf(v);
+pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@TypeOf(serializer)) {
+    const T = @TypeOf(value);
     const s = serializer.serializer();
 
     switch (@typeInfo(T)) {
-        .Array => return try s.serializeSequence(v),
-        .Bool => return try s.serializeBool(v),
+        .Array => return try s.serializeSequence(value),
+        .Bool => return try s.serializeBool(value),
         //.Enum => {},
-        .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(v))),
-        .Float, .ComptimeFloat => return try s.serializeFloat(v),
-        .Int, .ComptimeInt => return try s.serializeInt(v),
-        .Null => return try s.serializeNull(v),
-        .Optional => return if (v) |payload| try serialize(serializer, payload) else try serialize(serializer, null),
+        .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(value))),
+        .Float, .ComptimeFloat => return try s.serializeFloat(value),
+        .Int, .ComptimeInt => return try s.serializeInt(value),
+        .Null => return try s.serializeNull(value),
+        .Optional => return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null),
         .Pointer => |info| return switch (info.size) {
-            .One => try serialize(serializer, v.*),
+            .One => try serialize(serializer, value.*),
             .Slice => blk: {
-                break :blk if (std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(v)) {
-                    try s.serializeString(v);
+                break :blk if (std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(value)) {
+                    try s.serializeString(value);
                 } else {
-                    try s.serializeSequence(v);
+                    try s.serializeSequence(value);
                 };
             },
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
