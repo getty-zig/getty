@@ -157,3 +157,149 @@ pub fn Serializer(
         }
     };
 }
+
+const eql = std.mem.eql;
+const expect = std.testing.expect;
+
+const TestSerializer = struct {
+    const Self = @This();
+
+    pub const Ok = []const u8;
+    pub const Error = error{Error};
+
+    pub const S = Serializer(
+        *Self,
+        Ok,
+        Error,
+        serializeBool,
+        serializeInt,
+        serializeFloat,
+        serializeNull,
+        serializeString,
+        serializeSequence,
+    );
+
+    pub fn serializer(self: *Self) S {
+        return .{ .context = self };
+    }
+
+    pub fn serializeBool(self: *Self, value: bool) Error!Ok {
+        return "bool";
+    }
+
+    pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
+        return "int";
+    }
+
+    pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
+        return "float";
+    }
+
+    pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
+        return "null";
+    }
+
+    pub fn serializeString(self: *Self, value: anytype) Error!Ok {
+        return "string";
+    }
+
+    pub fn serializeSequence(self: *Self, value: anytype) Error!Ok {
+        return "sequence";
+    }
+};
+
+test "serialize - array" {
+    var serializer = TestSerializer{};
+    const result = try serialize(&serializer, [_]u8{ 'A', 'B', 'C' });
+
+    try expect(eql(u8, result, "sequence"));
+}
+
+test "serialize - bool" {
+    var serializer = TestSerializer{};
+
+    for (&[_]bool{ true, false }) |b| {
+        const result = try serialize(&serializer, b);
+        try expect(eql(u8, result, "bool"));
+    }
+}
+
+test "Serialize - error set" {
+    var serializer = TestSerializer{};
+    const result = try serialize(&serializer, error{Error}.Error);
+
+    try expect(eql(u8, result, "string"));
+}
+
+test "Serialize - integer" {
+    var serializer = TestSerializer{};
+
+    comptime var bits = 0;
+    inline while (bits < 64) : (bits += 1) {
+        const Signed = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
+        const Unsigned = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
+
+        inline for (&[_]type{ Signed, Unsigned }) |T| {
+            const max = std.math.maxInt(T);
+            const min = std.math.minInt(T);
+
+            var max_buf: [20]u8 = undefined;
+            var min_buf: [20]u8 = undefined;
+            const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
+            const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
+
+            const max_result = try serialize(&serializer, @as(T, max));
+            const min_result = try serialize(&serializer, @as(T, min));
+
+            try expect(eql(u8, max_result, "int"));
+            try expect(eql(u8, min_result, "int"));
+        }
+    }
+}
+
+test "Serialize - null" {
+    var serializer = TestSerializer{};
+    var result = try serialize(&serializer, null);
+
+    try expect(eql(u8, result, "null"));
+}
+
+test "Serialize - optional" {
+    var serializer = TestSerializer{};
+
+    const some: ?i8 = 1;
+    const none: ?i8 = null;
+
+    const some_result = try serialize(&serializer, some);
+    const none_result = try serialize(&serializer, none);
+
+    try expect(eql(u8, some_result, "int"));
+    try expect(eql(u8, none_result, "null"));
+}
+
+test "Serialize - string" {
+    var serializer = TestSerializer{};
+    const result = try serialize(&serializer, "ABC");
+
+    try expect(eql(u8, result, "string"));
+}
+
+test "Serialize - tagged union" {
+    var serializer = TestSerializer{};
+
+    const Union = union(enum) { int: i32, boolean: bool };
+    var int_union = Union{ .int = 42 };
+    var bool_union = Union{ .boolean = true };
+    const int_result = try serialize(&serializer, int_union);
+    const bool_result = try serialize(&serializer, bool_union);
+
+    try expect(eql(u8, int_result, "int"));
+    try expect(eql(u8, bool_result, "bool"));
+}
+
+test "Serialize - vector" {
+    var serializer = TestSerializer{};
+    const result = try serialize(&serializer, @splat(2, @as(u32, 1)));
+
+    try expect(eql(u8, result, "sequence"));
+}
