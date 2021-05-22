@@ -67,6 +67,10 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
                         return try serialize(serializer, @field(value, field.name));
                     }
                 }
+
+                // UNREACHABLE: Since we go over every field in the union, we
+                // always find the field that matches the passed-in value.
+                unreachable;
             } else {
                 @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
             }
