@@ -164,7 +164,14 @@ const expect = std.testing.expect;
 const TestSerializer = struct {
     const Self = @This();
 
-    const Ok = []const u8;
+    const Ok = enum {
+        Bool,
+        Int,
+        Float,
+        Null,
+        String,
+        Sequence,
+    };
     const Error = error{Error};
 
     const S = Serializer(
@@ -184,27 +191,27 @@ const TestSerializer = struct {
     }
 
     fn serializeBool(self: *Self, value: bool) Error!Ok {
-        return "bool";
+        return .Bool;
     }
 
     fn serializeInt(self: *Self, value: anytype) Error!Ok {
-        return "int";
+        return .Int;
     }
 
     fn serializeFloat(self: *Self, value: anytype) Error!Ok {
-        return "float";
+        return .Float;
     }
 
     fn serializeNull(self: *Self, value: anytype) Error!Ok {
-        return "null";
+        return .Null;
     }
 
     fn serializeString(self: *Self, value: anytype) Error!Ok {
-        return "string";
+        return .String;
     }
 
     fn serializeSequence(self: *Self, value: anytype) Error!Ok {
-        return "sequence";
+        return .Sequence;
     }
 };
 
@@ -212,7 +219,7 @@ test "Serialize - array" {
     var serializer = TestSerializer{};
     const result = try serialize(&serializer, [_]u8{ 'A', 'B', 'C' });
 
-    try expect(eql(u8, result, "sequence"));
+    try expect(result == .Sequence);
 }
 
 test "Serialize - bool" {
@@ -220,7 +227,7 @@ test "Serialize - bool" {
 
     for (&[_]bool{ true, false }) |b| {
         const result = try serialize(&serializer, b);
-        try expect(eql(u8, result, "bool"));
+        try expect(result == .Bool);
     }
 }
 
@@ -228,7 +235,7 @@ test "Serialize - error set" {
     var serializer = TestSerializer{};
     const result = try serialize(&serializer, error{Error}.Error);
 
-    try expect(eql(u8, result, "string"));
+    try expect(result == .String);
 }
 
 test "Serialize - integer" {
@@ -251,8 +258,8 @@ test "Serialize - integer" {
             const max_result = try serialize(&serializer, @as(T, max));
             const min_result = try serialize(&serializer, @as(T, min));
 
-            try expect(eql(u8, max_result, "int"));
-            try expect(eql(u8, min_result, "int"));
+            try expect(max_result == .Int);
+            try expect(min_result == .Int);
         }
     }
 }
@@ -261,7 +268,7 @@ test "Serialize - null" {
     var serializer = TestSerializer{};
     var result = try serialize(&serializer, null);
 
-    try expect(eql(u8, result, "null"));
+    try expect(result == .Null);
 }
 
 test "Serialize - optional" {
@@ -273,15 +280,15 @@ test "Serialize - optional" {
     const some_result = try serialize(&serializer, some);
     const none_result = try serialize(&serializer, none);
 
-    try expect(eql(u8, some_result, "int"));
-    try expect(eql(u8, none_result, "null"));
+    try expect(some_result == .Int);
+    try expect(none_result == .Null);
 }
 
 test "Serialize - string" {
     var serializer = TestSerializer{};
     const result = try serialize(&serializer, "ABC");
 
-    try expect(eql(u8, result, "string"));
+    try expect(result == .String);
 }
 
 test "Serialize - tagged union" {
@@ -293,13 +300,13 @@ test "Serialize - tagged union" {
     const int_result = try serialize(&serializer, int_union);
     const bool_result = try serialize(&serializer, bool_union);
 
-    try expect(eql(u8, int_result, "int"));
-    try expect(eql(u8, bool_result, "bool"));
+    try expect(int_result == .Int);
+    try expect(bool_result == .Bool);
 }
 
 test "Serialize - vector" {
     var serializer = TestSerializer{};
     const result = try serialize(&serializer, @splat(2, @as(u32, 1)));
 
-    try expect(eql(u8, result, "sequence"));
+    try expect(result == .Sequence);
 }
