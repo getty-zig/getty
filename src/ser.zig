@@ -334,3 +334,7 @@ test "Serialize - vector" {
 
     try expect(result == .Sequence);
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}

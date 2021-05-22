@@ -101,3 +101,7 @@ pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
     try toWriter(array_list.writer(), value);
     return array_list.toOwnedSlice();
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}

@@ -337,3 +337,7 @@ test "Serialize - with field attribute (struct)" {
         y: i32,
     };
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}
