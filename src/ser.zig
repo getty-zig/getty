@@ -47,7 +47,7 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
                 else => try serialize(serializer, value.*),
             },
             .Slice => blk: {
-                if (trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
+                if (info.child == u8 and trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
                     break :blk try s.serializeString(value);
                 } else {
                     break :blk try s.serializeSequence(value);
