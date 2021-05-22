@@ -49,30 +49,45 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
         //.Struct => |S| {},
         .Union => |info| {
             if (comptime std.meta.trait.hasFn("serialize")(T)) {
-                return try v.serialize(serializer);
+                return try value.serialize(serializer);
             }
 
             if (info.tag_type) |Tag| {
                 inline for (info.fields) |field| {
-                    if (@field(Tag, field.name) == v) {
-                        return try serialize(serializer, @field(v, field.name));
+                    if (@field(Tag, field.name) == value) {
+                        return try serialize(serializer, @field(value, field.name));
                     }
                 }
             } else {
                 @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
             }
         },
-        .Vector => |info| return try serialize(serializer, &@as([info.len]info.child, v)),
+        .Vector => |info| return try serialize(serializer, &@as([info.len]info.child, value)),
         else => @compileError("unsupported serialize type: " ++ @typeName(T)),
     }
 }
 
 /// A data format that can serialize any data type supported by Getty.
 ///
-/// The interface defines the serialization half of Getty's data model, which
-/// is a way to categorize most Zig data types into one of 12 possible types.
-/// Serializable data types map themselves into this data model by invoking one
-/// of the `Serializer` methods.
+/// To implement the interface, the following must be provided within your
+/// struct:
+///
+///   - An `Ok` declaration representing the successful return type of your
+///     serialization functions.
+///
+///   - An `Error` declaration representing the error set in the return type of
+///     your serialization functions.
+///
+///   - A `serialize` function of type `fn(*@This()) Serializer` that returns a
+///     struct instance of the type returned from this interface function, with
+///     `context` set to the implementation instance passed in.
+///
+///   - Implementations of any required methods.
+///
+/// Note that while many required methods take values of `anytype`, due to the
+/// checks performed in `serialize`, implementations have compile-time
+/// guarantees that the passed-in value is of a type one would naturally
+/// expect.
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
