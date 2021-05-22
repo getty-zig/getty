@@ -41,11 +41,11 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
         .Pointer => |info| return switch (info.size) {
             .One => try serialize(serializer, value.*),
             .Slice => blk: {
-                break :blk if (trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
-                    try s.serializeString(value);
+                if (trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
+                    break :blk try s.serializeString(value);
                 } else {
-                    try s.serializeSequence(value);
-                };
+                    break :blk try s.serializeSequence(value);
+                }
             },
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
