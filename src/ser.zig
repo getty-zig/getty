@@ -1,5 +1,9 @@
 const std = @import("std");
 
+fn SerializerErrorUnion(comptime T: type) type {
+    return @typeInfo(T).Pointer.child.Error!@typeInfo(T).Pointer.child.Ok;
+}
+
 /// Serializes values that are of a type supported by Getty.
 ///
 /// The types that make up the Getty data model are:
@@ -18,7 +22,7 @@ const std = @import("std");
 ///    - struct
 ///    - tagged union
 ///    - vector
-pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
+pub fn serialize(serializer: anytype, v: anytype) SerializerErrorUnion(@TypeOf(serializer)) {
     const T = @TypeOf(v);
     const s = serializer.serializer();
 
