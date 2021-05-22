@@ -40,6 +40,7 @@ pub fn Json(comptime Writer: type) type {
             serializeNull,
             serializeString,
             serializeSequence,
+            serializeStruct,
         );
 
         writer: Writer,
@@ -75,6 +76,10 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serializeSequence(self: *Self, value: anytype) Error!Ok {
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
+        }
+
+        pub fn serializeStruct(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
     };

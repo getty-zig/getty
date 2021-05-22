@@ -55,7 +55,13 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
             },
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
-        //.Struct => |S| {},
+        .Struct => {
+            if (comptime trait.hasFn("serialize")(T)) {
+                return try value.serialize(serializer);
+            } else {
+                return try s.serializeStruct(value);
+            }
+        },
         .Union => |info| {
             if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
@@ -111,6 +117,7 @@ pub fn Serializer(
     comptime nullFn: fn (context: Context, value: anytype) E!O,
     comptime stringFn: fn (context: Context, value: anytype) E!O,
     comptime sequenceFn: fn (context: Context, value: anytype) E!O,
+    comptime structFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -155,6 +162,10 @@ pub fn Serializer(
         pub fn serializeSequence(self: Self, value: anytype) Error!Ok {
             return try sequenceFn(self.context, value);
         }
+
+        pub fn serializeStruct(self: Self, value: anytype) Error!Ok {
+            return try structFn(self.context, value);
+        }
     };
 }
 
@@ -171,6 +182,7 @@ const TestSerializer = struct {
         Null,
         String,
         Sequence,
+        Struct,
     };
     const Error = error{Error};
 
@@ -184,6 +196,7 @@ const TestSerializer = struct {
         serializeNull,
         serializeString,
         serializeSequence,
+        serializeStruct,
     );
 
     fn serializer(self: *Self) S {
@@ -212,6 +225,10 @@ const TestSerializer = struct {
 
     fn serializeSequence(self: *Self, value: anytype) Error!Ok {
         return .Sequence;
+    }
+
+    fn serializeStruct(self: *Self, value: anytype) Error!Ok {
+        return .Struct;
     }
 };
 
@@ -289,6 +306,13 @@ test "Serialize - string" {
     const result = try serialize(&serializer, "ABC");
 
     try expect(result == .String);
+}
+
+test "Serialize - struct" {
+    var serializer = TestSerializer{};
+    const result = try serialize(&serializer, struct {}{});
+
+    try expect(result == .Struct);
 }
 
 test "Serialize - tagged union" {
