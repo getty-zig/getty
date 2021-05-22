@@ -6,7 +6,7 @@
   <br/>
   <br/>
   <a alt="Version" href="https://github.com/getty-zig/getty/releases/latest"><img src="https://img.shields.io/badge/version-N/A-e2725b.svg"></a>
-  <a alt="Zig" href="https://ziglang.org"><img src="https://img.shields.io/badge/Zig-master-fd9930.svg"></a>
+  <a alt="Zig" href="https://ziglang.org/download"><img src="https://img.shields.io/badge/Zig-master-fd9930.svg"></a>
   <a alt="License" href="https://github.com/getty-zig/getty/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-2598c9"></a>
 </p>
 
