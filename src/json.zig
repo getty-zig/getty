@@ -97,11 +97,12 @@ const eql = std.mem.eql;
 const expect = std.testing.expect;
 const testing_allocator = std.testing.allocator;
 
-test "Serialize - null" {
-    var result = try toString(testing_allocator, null);
+test "Serialize - array" {
+    const result = try toString(testing_allocator, [_]u8{ 'A', 'B', 'C' });
     defer testing_allocator.free(result);
 
-    try expect(eql(u8, result, "null"));
+    // It's not [65,66,67] b/c std.json encodes it as a string
+    try expect(eql(u8, result, "\"ABC\""));
 }
 
 test "Serialize - bool" {
@@ -112,6 +113,13 @@ test "Serialize - bool" {
 
     try expect(eql(u8, true_result, "true"));
     try expect(eql(u8, false_result, "false"));
+}
+
+test "Serialize - error set" {
+    const result = try toString(testing_allocator, error{Error}.Error);
+    defer testing_allocator.free(result);
+
+    try expect(eql(u8, result, "\"Error\""));
 }
 
 test "Serialize - integer" {
@@ -141,19 +149,11 @@ test "Serialize - integer" {
     }
 }
 
-test "Serialize - string" {
-    const result = try toString(testing_allocator, "ABC");
+test "Serialize - null" {
+    var result = try toString(testing_allocator, null);
     defer testing_allocator.free(result);
 
-    try expect(eql(u8, result, "\"ABC\""));
-}
-
-test "Serialize - sequence" {
-    const result = try toString(testing_allocator, [_]u8{ 'A', 'B', 'C' });
-    defer testing_allocator.free(result);
-
-    // It's not [65,66,67] b/c std.json encodes it as a string
-    try expect(eql(u8, result, "\"ABC\""));
+    try expect(eql(u8, result, "null"));
 }
 
 test "Serialize - optional" {
@@ -169,18 +169,11 @@ test "Serialize - optional" {
     try expect(eql(u8, none_result, "null"));
 }
 
-test "Serialize - error set" {
-    const result = try toString(testing_allocator, error{Error}.Error);
+test "Serialize - string" {
+    const result = try toString(testing_allocator, "ABC");
     defer testing_allocator.free(result);
 
-    try expect(eql(u8, result, "\"Error\""));
-}
-
-test "Serialize - vector" {
-    const result = try toString(testing_allocator, @splat(2, @as(u32, 1)));
-    defer testing_allocator.free(result);
-
-    try expect(eql(u8, result, "[1,1]"));
+    try expect(eql(u8, result, "\"ABC\""));
 }
 
 test "Serialize - tagged union" {
@@ -195,4 +188,11 @@ test "Serialize - tagged union" {
 
     try expect(eql(u8, int_result, "42"));
     try expect(eql(u8, bool_result, "true"));
+}
+
+test "Serialize - vector" {
+    const result = try toString(testing_allocator, @splat(2, @as(u32, 1)));
+    defer testing_allocator.free(result);
+
+    try expect(eql(u8, result, "[1,1]"));
 }
