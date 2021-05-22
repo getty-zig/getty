@@ -1,11 +1,10 @@
 const ser = @import("ser.zig");
 const std = @import("std");
 
-const fmt = std.fmt;
 const json = std.json;
-const math = std.math;
 const mem = std.mem;
 
+/// A JSON serializer.
 pub fn Json(comptime Writer: type) type {
     return struct {
         const Self = @This();
@@ -20,14 +19,14 @@ pub fn Json(comptime Writer: type) type {
 
             /// Input data was semantically incorrect.
             ///
-            /// For example, JSON containing a number is semantically incorrect when the
-            /// type being deserialized into holds a String.
+            /// For example, JSON containing a number is semantically incorrect
+            /// when the type being deserialized into holds a String.
             Data,
 
             /// Prematurely reached the end of the input data.
             ///
-            /// Callers that process streaming input may be interested in retrying the
-            /// deserialization once more data is available.
+            /// Callers that process streaming input may be interested in
+            /// retrying the deserialization once more data is available.
             Eof,
         };
 
@@ -81,20 +80,27 @@ pub fn Json(comptime Writer: type) type {
     };
 }
 
+/// Serializes a value using the JSON serializer into a provided writer.
 pub fn toWriter(writer: anytype, value: anytype) !void {
     var serializer = Json(@TypeOf(writer)).init(writer);
     try ser.serialize(&serializer, value);
 }
 
+/// Returns an owned slice of a serialized JSON string.
+///
+/// The caller is responsible for freeing the returned memory.
 pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
     var array_list = std.ArrayList(u8).init(allocator);
     errdefer array_list.deinit();
+
     try toWriter(array_list.writer(), value);
     return array_list.toOwnedSlice();
 }
 
 const eql = std.mem.eql;
 const expect = std.testing.expect;
+const fmt = std.fmt;
+const math = std.math;
 const testing_allocator = std.testing.allocator;
 
 test "Serialize - array" {
