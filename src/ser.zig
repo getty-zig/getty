@@ -4,7 +4,10 @@ const trait = std.meta.trait;
 const unicode = std.unicode;
 
 fn SerializerErrorUnion(comptime T: type) type {
-    return @typeInfo(T).Pointer.child.Error!@typeInfo(T).Pointer.child.Ok;
+    return switch (@typeInfo(T)) {
+        .Pointer => @typeInfo(T).Pointer.child.Error!@typeInfo(T).Pointer.child.Ok,
+        else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
+    };
 }
 
 /// Serializes values that are of a type supported by Getty.
