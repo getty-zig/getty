@@ -5,47 +5,18 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     const s = serializer.serializer();
 
     switch (@typeInfo(T)) {
-        .Array => {
-            return try serialize(serializer, &v);
-        },
-        .Bool => {
-            return try s.serializeBool(v);
-        },
+        .Array => return try s.serializeSequence(v),
+        .Bool => return try s.serializeBool(v),
         //.Enum => {},
-        .ErrorSet => {
-            return try serialize(serializer, @as([]const u8, @errorName(v)));
-        },
-        .Float, .ComptimeFloat => {
-            return try s.serializeFloat(v);
-        },
-        .Int, .ComptimeInt => {
-            return try s.serializeInt(v);
-        },
-        .Null => {
-            return try s.serializeNull(v);
-        },
-        .Optional => {
-            if (v) |payload| {
-                return try serialize(serializer, payload);
-            } else {
-                return try serialize(serializer, null);
-            }
-        },
-        .Pointer => |info| {
-            return switch (info.size) {
-                .One => switch (@typeInfo(info.child)) {
-                    .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), v)),
-                    else => try serialize(serializer, v.*),
-                },
-                .Slice => blk: {
-                    break :blk if (info.child == u8 and std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(v)) {
-                        try s.serializeString(v);
-                    } else {
-                        try s.serializeSequence(v);
-                    };
-                },
-                else => @compileError("unsupported serialize type: " ++ @typeName(T)),
-            };
+        .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(v))),
+        .Float, .ComptimeFloat => return try s.serializeFloat(v),
+        .Int, .ComptimeInt => return try s.serializeInt(v),
+        .Null => return try s.serializeNull(v),
+        .Optional => return if (v) |payload| try serialize(serializer, payload) else try serialize(serializer, null),
+        .Pointer => |info| return switch (info.size) {
+            .One => try serialize(serializer, v.*),
+            .Slice => if (std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(v)) try s.serializeString(v) else try s.serializeSequence(v),
+            else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
         //.Struct => |S| {},
         .Union => |info| {

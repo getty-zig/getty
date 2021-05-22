@@ -142,17 +142,18 @@ test "Serialize - integer" {
 }
 
 test "Serialize - string" {
-    const result = try toString(testing_allocator, "hello");
+    const result = try toString(testing_allocator, "ABC");
     defer testing_allocator.free(result);
 
-    try expect(eql(u8, result, "\"hello\""));
+    try expect(eql(u8, result, "\"ABC\""));
 }
 
 test "Serialize - sequence" {
-    const result = try toString(testing_allocator, [_]u32{ 'A', 'B', 'C' });
+    const result = try toString(testing_allocator, [_]u8{ 'A', 'B', 'C' });
     defer testing_allocator.free(result);
 
-    try expect(eql(u8, result, "[65,66,67]"));
+    // It's not [65,66,67] b/c std.json encodes it as a string
+    try expect(eql(u8, result, "\"ABC\""));
 }
 
 test "Serialize - optional" {
