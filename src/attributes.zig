@@ -7,6 +7,72 @@ pub const Mode = enum {
     de,
 };
 
+/// Returns an attribute map type.
+///
+/// The returned type is a struct that contains:
+///
+///  - Fields named after each field/variant in `T`.
+///  - One field named after `T` itself.
+///
+/// These "identifier fields" are themselves structs. Their fields depend on
+/// whether they are named after a field/variant or the container type. In the
+/// former case, the inner fields correspond to field/variant attributes. In
+/// the latter case, the inner fields correspond to container attributes.
+///
+/// All fields in the returned type may be omitted.
+///
+/// ## Example
+///
+/// Consider the following type:
+///
+/// ```
+/// const Point = struct {
+///     x: i32,
+///     y: i32,
+/// };
+/// ```
+///
+/// In this case, `getty.Attributes` would expect for its second parameter a
+/// value of the following type:
+///
+/// ```
+/// struct {
+///     Point: struct {
+///         into: []const u8 = "",
+///         rename: []const u8 = @typeName(Point),
+///         rename_all: []const u8 = "",
+///         transparent: bool = false,
+///     },
+///
+///     x: struct {
+///         rename: []const u8 = @typeName(Point),
+///         skip: bool = false,
+///         with: []const u8 = "",
+///     },
+///
+///     y: struct {
+///         rename: []const u8 = @typeName(Point),
+///         skip: bool = false,
+///         with: []const u8 = "",
+///     },
+/// }
+/// ```
+///
+/// Thus, an example usage could look like this:
+///
+/// ```
+/// const getty = @import("getty");
+///
+/// const Point = struct {
+///     usingnamespace getty.Attributes(@This(), .{
+///         .Point = .{ .rename = "MyPoint" },
+///         .x = .{ .skip = true },
+///     });
+///
+///     x: i32,
+///     y: i32,
+/// };
+/// ```
 pub fn Attributes(comptime T: type, comptime mode: Mode, attributes: _Attributes(T, mode)) type {
     return struct {
         pub const _attributes = attributes;
@@ -15,17 +81,7 @@ pub fn Attributes(comptime T: type, comptime mode: Mode, attributes: _Attributes
 
 /// Returns an attribute map type.
 ///
-/// `T` is a type that wants to implement the `Serialize` or `Deserialize`
-/// interface.
-///
-/// The returned type is a struct that contains fields corresponding to each
-/// field/variant in `T`, as well as a field named after `T`. These identifier
-/// fields are structs containing various attributes. The attributes within an
-/// identifier field depend on the identifier field. For identifier fields that
-/// correspond to a field or variant in `T`, the attributes consists of field
-/// or variant attributes. For the identifier field corresponding to the type
-/// name of `T`, the attributes consist of container attributes. All fields in
-/// `attributes` may be omitted.
+/// See `Attributes` for more information.
 fn _Attributes(comptime T: type, comptime mode: Mode) type {
     const Container = switch (mode) {
         .ser => struct {
