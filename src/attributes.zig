@@ -44,22 +44,18 @@ pub const Case = enum {
 /// ```
 /// struct {
 ///     Point: struct {
-///         into: []const u8 = "",
-///         rename: []const u8 = @typeName(Point),
-///         rename_all: []const u8 = "",
-///         transparent: bool = false,
+///         rename_all: ?Case = null,
+///         // ... other container attributes
 ///     },
 ///
 ///     x: struct {
-///         rename: []const u8 = @typeName(Point),
 ///         skip: bool = false,
-///         with: []const u8 = "",
+///         // ... other field attributes
 ///     },
 ///
 ///     y: struct {
-///         rename: []const u8 = @typeName(Point),
 ///         skip: bool = false,
-///         with: []const u8 = "",
+///         // ... other field attributes
 ///     },
 /// }
 /// ```
@@ -71,7 +67,7 @@ pub const Case = enum {
 ///
 /// const Point = struct {
 ///     usingnamespace getty.Attributes(@This(), .{
-///         .Point = .{ .rename = "MyPoint" },
+///         .Point = .{ .rename = "MyPoint", .rename_all = .upper },
 ///         .x = .{ .skip = true },
 ///     });
 ///
