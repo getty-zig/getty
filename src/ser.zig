@@ -1,5 +1,23 @@
 const std = @import("std");
 
+/// Serializes values that are of a type supported by Getty.
+///
+/// The types that make up the Getty data model are:
+///
+///  - Primitives
+///    - bool
+///    - float
+///    - integer
+///  - Non-primitives
+///    - array
+///    - enum
+///    - error set
+///    - null
+///    - optional
+///    - pointer (one, slice)
+///    - struct
+///    - tagged union
+///    - vector
 pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer)).Pointer.child.Error!@typeInfo(@TypeOf(serializer)).Pointer.child.Ok {
     const T = @TypeOf(v);
     const s = serializer.serializer();
@@ -15,7 +33,13 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
         .Optional => return if (v) |payload| try serialize(serializer, payload) else try serialize(serializer, null),
         .Pointer => |info| return switch (info.size) {
             .One => try serialize(serializer, v.*),
-            .Slice => if (std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(v)) try s.serializeString(v) else try s.serializeSequence(v),
+            .Slice => blk: {
+                break :blk if (std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(v)) {
+                    try s.serializeString(v);
+                } else {
+                    try s.serializeSequence(v);
+                };
+            },
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
         //.Struct => |S| {},
@@ -39,32 +63,12 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
     }
 }
 
-/// A data format that can serialize any data structure supported by Getty.
+/// A data format that can serialize any data type supported by Getty.
 ///
-/// The interface defines the serialization half of the [Getty data model],
-/// which is a way to categorize every Zig data structure into one of 12
-/// possible types. Each method of the `Serializer` interface corresponds to
-/// one of the types of the data model.
-///
-/// Serializable data types map themselves into this data model by invoking
-/// exactly one of the `Serializer` methods.
-///
-/// The types that make up the Getty data model are:
-///
-///  - Primitives
-///    - bool
-///    - float
-///    - integer
-///  - Non-primitives
-///    - array
-///    - error set
-///    - enum
-///    - null
-///    - optional
-///    - pointer (one, slice)
-///    - struct
-///    - tagged union
-///    - vector
+/// The interface defines the serialization half of Getty's data model, which
+/// is a way to categorize most Zig data types into one of 12 possible types.
+/// Serializable data types map themselves into this data model by invoking one
+/// of the `Serializer` methods.
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
