@@ -208,14 +208,14 @@ const TestSerializer = struct {
     }
 };
 
-test "serialize - array" {
+test "Serialize - array" {
     var serializer = TestSerializer{};
     const result = try serialize(&serializer, [_]u8{ 'A', 'B', 'C' });
 
     try expect(eql(u8, result, "sequence"));
 }
 
-test "serialize - bool" {
+test "Serialize - bool" {
     var serializer = TestSerializer{};
 
     for (&[_]bool{ true, false }) |b| {
