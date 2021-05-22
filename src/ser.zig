@@ -1,5 +1,8 @@
 const std = @import("std");
 
+const trait = std.meta.trait;
+const unicode = std.unicode;
+
 fn SerializerErrorUnion(comptime T: type) type {
     return @typeInfo(T).Pointer.child.Error!@typeInfo(T).Pointer.child.Ok;
 }
@@ -38,7 +41,7 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
         .Pointer => |info| return switch (info.size) {
             .One => try serialize(serializer, value.*),
             .Slice => blk: {
-                break :blk if (std.meta.trait.isZigString(T) and std.unicode.utf8ValidateSlice(value)) {
+                break :blk if (trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
                     try s.serializeString(value);
                 } else {
                     try s.serializeSequence(value);
@@ -48,7 +51,7 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
         },
         //.Struct => |S| {},
         .Union => |info| {
-            if (comptime std.meta.trait.hasFn("serialize")(T)) {
+            if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
             }
 
