@@ -164,10 +164,10 @@ const expect = std.testing.expect;
 const TestSerializer = struct {
     const Self = @This();
 
-    pub const Ok = []const u8;
-    pub const Error = error{Error};
+    const Ok = []const u8;
+    const Error = error{Error};
 
-    pub const S = Serializer(
+    const S = Serializer(
         *Self,
         Ok,
         Error,
@@ -179,31 +179,31 @@ const TestSerializer = struct {
         serializeSequence,
     );
 
-    pub fn serializer(self: *Self) S {
+    fn serializer(self: *Self) S {
         return .{ .context = self };
     }
 
-    pub fn serializeBool(self: *Self, value: bool) Error!Ok {
+    fn serializeBool(self: *Self, value: bool) Error!Ok {
         return "bool";
     }
 
-    pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
+    fn serializeInt(self: *Self, value: anytype) Error!Ok {
         return "int";
     }
 
-    pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
+    fn serializeFloat(self: *Self, value: anytype) Error!Ok {
         return "float";
     }
 
-    pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
+    fn serializeNull(self: *Self, value: anytype) Error!Ok {
         return "null";
     }
 
-    pub fn serializeString(self: *Self, value: anytype) Error!Ok {
+    fn serializeString(self: *Self, value: anytype) Error!Ok {
         return "string";
     }
 
-    pub fn serializeSequence(self: *Self, value: anytype) Error!Ok {
+    fn serializeSequence(self: *Self, value: anytype) Error!Ok {
         return "sequence";
     }
 };
