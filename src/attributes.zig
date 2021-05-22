@@ -284,7 +284,7 @@ fn _Attributes(comptime T: type) type {
             .name = field.name,
             .field_type = Inner,
             .default_value = inner,
-            .is_comptime = true,
+            .is_comptime = false,
             .alignment = 4,
         };
     }
@@ -293,7 +293,7 @@ fn _Attributes(comptime T: type) type {
         .name = @typeName(T),
         .field_type = Container,
         .default_value = container,
-        .is_comptime = true,
+        .is_comptime = false,
         .alignment = 4,
     };
 
