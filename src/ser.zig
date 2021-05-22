@@ -34,10 +34,7 @@ pub fn serialize(serializer: anytype, v: anytype) @typeInfo(@TypeOf(serializer))
                 @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
             }
         },
-        .Vector => |info| {
-            const array: [info.len]info.child = v;
-            return try serialize(serializer, &array);
-        },
+        .Vector => |info| return try serialize(serializer, &@as([info.len]info.child, v)),
         else => @compileError("unsupported serialize type: " ++ @typeName(T)),
     }
 }
