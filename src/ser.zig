@@ -46,13 +46,13 @@ pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@Type
                 .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
                 else => try serialize(serializer, value.*),
             },
-            .Slice => blk: {
-                if (info.child == u8 and trait.isZigString(T) and unicode.utf8ValidateSlice(value)) {
-                    break :blk try s.serializeString(value);
-                } else {
-                    break :blk try s.serializeSequence(value);
-                }
-            },
+            // The extra () are needed b/c the compiler would otherwise
+            // complain that `utf8ValidateSlice` can't evaluate `value` as
+            // it's not a constant expression.
+            .Slice => if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value))
+                try s.serializeString(value)
+            else
+                try s.serializeSequence(value),
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
         .Struct => {
