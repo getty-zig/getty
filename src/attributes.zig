@@ -13,68 +13,14 @@ pub const Case = enum {
     screaming_kebab,
 };
 
-/// Returns an attribute map type.
+/// Specifies container and field/variant attributes for a struct or enum.
 ///
-/// The returned type is a struct that contains:
+/// The function returns an anonymous struct that contains a declaration named
+/// `_getty_attributes`. This declaration should be imported into the caller's
+/// struct or enum via `usingnamespace`.
 ///
-///  - Fields named after each field/variant in `T`.
-///  - One field named after `T` itself.
-///
-/// These "identifier fields" are themselves structs. Their fields depend on
-/// whether they are named after a field/variant or the container type. In the
-/// former case, the inner fields correspond to field/variant attributes. In
-/// the latter case, the inner fields correspond to container attributes.
-///
-/// All fields in the returned type may be omitted.
-///
-/// ## Example
-///
-/// Consider the following type:
-///
-/// ```
-/// const Point = struct {
-///     x: i32,
-///     y: i32,
-/// };
-/// ```
-///
-/// In this case, `getty.Attributes` would expect for its second parameter a
-/// value of the following type:
-///
-/// ```
-/// struct {
-///     Point: struct {
-///         rename_all: ?Case = null,
-///         // ... other container attributes
-///     },
-///
-///     x: struct {
-///         skip: bool = false,
-///         // ... other field attributes
-///     },
-///
-///     y: struct {
-///         skip: bool = false,
-///         // ... other field attributes
-///     },
-/// }
-/// ```
-///
-/// Thus, an example usage could look like this:
-///
-/// ```
-/// const getty = @import("getty");
-///
-/// const Point = struct {
-///     usingnamespace getty.Attributes(@This(), .{
-///         .Point = .{ .rename = "MyPoint", .rename_all = .upper },
-///         .x = .{ .skip = true },
-///     });
-///
-///     x: i32,
-///     y: i32,
-/// };
-/// ```
+/// For more information on the anonymous struct returned, see the
+/// documentation for `_Attributes`.
 pub fn Attributes(comptime T: type, attributes: anytype) type {
     return struct {
         pub const _getty_attributes: _Attributes(T, attributes) = attributes;
@@ -92,7 +38,73 @@ pub fn Attributes(comptime T: type, attributes: anytype) type {
 
 /// Returns an attribute map type.
 ///
-/// See `Attributes` for more information.
+/// The returned type is a struct that contains fields corresponding to either
+/// fields in the struct/enum for which attributes are being specified or the
+/// struct/enum itself. Only the valid fields of the attributes passed in will
+/// be present in the returned type.
+///
+/// These "identifier fields" are themselves structs. Their fields depend on
+/// whether they correspond to a field/variant or the container type. In the
+/// former case, the inner fields correspond to field/variant attributes. In
+/// the latter case, the inner fields correspond to container attributes.
+///
+/// All fields in the returned type may be omitted.
+///
+/// ## Example
+///
+/// Consider the following type:
+///
+/// ```
+/// const Point = struct {
+///     usingnamespace getty.Attributes(Point, .{ .x = .{ .rename = "a" } } );
+///
+///     x: i32,
+///     y: i32,
+/// };
+/// ```
+///
+/// `getty.Attributes` would expect as its second parameter a value of the
+/// following type:
+///
+/// ```
+/// struct {
+///     x: struct {
+///         .rename: ?[]const u8 = null,
+///         // ... other field attributes
+///     },
+/// }
+/// ```
+///
+/// Now, suppose you specify a container attribute as well:
+///
+/// ```
+/// const Point = struct {
+///     usingnamespace getty.Attributes(Point, .{
+///         .Point = .{ .rename = "MyPoint" },
+///         .x = .{ .rename = "a" },
+///     } );
+///
+///     x: i32,
+///     y: i32,
+/// };
+/// ```
+///
+/// Then, `getty.Attributes` would expect as its second parameter a value of the
+/// following type:
+///
+/// ```
+/// struct {
+///     Point: struct {
+///         rename: ?[]const u8 = null,
+///         // ... other container attributes
+///     },
+///
+///     x: struct {
+///         rename: ?[]const u8 = null,
+///         // ... other field attributes
+///     },
+/// }
+/// ```
 fn _Attributes(comptime T: type, attributes: anytype) type {
     const A = @TypeOf(attributes);
 
