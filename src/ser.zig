@@ -3,6 +3,94 @@ const std = @import("std");
 const trait = std.meta.trait;
 const unicode = std.unicode;
 
+/// A data format that can serialize any data type supported by Getty.
+///
+/// To implement the interface, the following must be provided within your
+/// struct:
+///
+///   - An `Ok` declaration representing the successful return type of your
+///     serialization functions.
+///
+///   - An `Error` declaration representing the error set in the return type of
+///     your serialization functions.
+///
+///   - A `serialize` function of type `fn(*@This()) Serializer` that returns a
+///     struct instance of the type returned from this interface function, with
+///     `context` set to the implementation instance passed in.
+///
+///   - Implementations of any required methods.
+///
+/// Note that while many required methods take values of `anytype`, due to the
+/// checks performed in `serialize`, implementations have compile-time
+/// guarantees that the passed-in value is of a type one would naturally
+/// expect.
+pub fn Serializer(
+    comptime Context: type,
+    comptime O: type,
+    comptime E: type,
+    comptime boolFn: fn (context: Context, value: bool) E!O,
+    comptime intFn: fn (context: Context, value: anytype) E!O,
+    comptime floatFn: fn (context: Context, value: anytype) E!O,
+    comptime nullFn: fn (context: Context, value: anytype) E!O,
+    comptime stringFn: fn (context: Context, value: anytype) E!O,
+    comptime sequenceFn: fn (context: Context, value: anytype) E!O,
+    comptime structFn: fn (context: Context, value: anytype) E!fn () void,
+    comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!O,
+) type {
+    return struct {
+        const Self = @This();
+
+        pub const Ok = O;
+        pub const Error = E;
+
+        context: Context,
+
+        /// Serialize a boolean value.
+        pub fn serializeBool(self: Self, value: bool) Error!Ok {
+            return try boolFn(self.context, value);
+        }
+
+        /// Serialize an integer value.
+        pub fn serializeInt(self: Self, value: anytype) Error!Ok {
+            return try intFn(self.context, value);
+        }
+
+        /// Serialize a float value.
+        pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
+            return try floatFn(self.context, value);
+        }
+
+        /// Serialize a null value.
+        pub fn serializeNull(self: Self, value: anytype) Error!Ok {
+            return try nullFn(self.context, value);
+        }
+
+        /// Serialize a string value.
+        pub fn serializeString(self: Self, value: anytype) Error!Ok {
+            return try stringFn(self.context, value);
+        }
+
+        /// Serialize a variably sized heterogeneous sequence of values.
+        ///
+        /// Implementations are typically structured as follows:
+        ///
+        ///   1. Start with a prefix character suited for the type being serialized.
+        ///   2. Serialize the elements of the sequence.
+        ///   3. End with a suffix character suited for the type being serialized.
+        pub fn serializeSequence(self: Self, value: anytype) Error!Ok {
+            return try sequenceFn(self.context, value);
+        }
+
+        pub fn serializeStruct(self: Self, value: anytype) Error!fn () void {
+            return try structFn(self.context, value);
+        }
+
+        pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!Ok {
+            return try fieldFn(self.context, value);
+        }
+    };
+}
+
 /// Serializes values that are of a type supported by Getty.
 ///
 /// The types that make up the Getty data model are:
@@ -55,11 +143,20 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 try s.serializeSequence(value),
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
-        .Struct => {
+        .Struct => |info| {
             if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
             } else {
-                return try s.serializeStruct(value);
+                const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
+
+                const end = try s.serializeStruct(value);
+                defer end();
+
+                inline for (info.fields) |field| {
+                    _ = try s.serializeField(info.name, value);
+                }
+
+                return .Null;
             }
         },
         .Union => |info| {
@@ -86,89 +183,6 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
     }
 }
 
-/// A data format that can serialize any data type supported by Getty.
-///
-/// To implement the interface, the following must be provided within your
-/// struct:
-///
-///   - An `Ok` declaration representing the successful return type of your
-///     serialization functions.
-///
-///   - An `Error` declaration representing the error set in the return type of
-///     your serialization functions.
-///
-///   - A `serialize` function of type `fn(*@This()) Serializer` that returns a
-///     struct instance of the type returned from this interface function, with
-///     `context` set to the implementation instance passed in.
-///
-///   - Implementations of any required methods.
-///
-/// Note that while many required methods take values of `anytype`, due to the
-/// checks performed in `serialize`, implementations have compile-time
-/// guarantees that the passed-in value is of a type one would naturally
-/// expect.
-pub fn Serializer(
-    comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime boolFn: fn (context: Context, value: bool) E!O,
-    comptime intFn: fn (context: Context, value: anytype) E!O,
-    comptime floatFn: fn (context: Context, value: anytype) E!O,
-    comptime nullFn: fn (context: Context, value: anytype) E!O,
-    comptime stringFn: fn (context: Context, value: anytype) E!O,
-    comptime sequenceFn: fn (context: Context, value: anytype) E!O,
-    comptime structFn: fn (context: Context, value: anytype) E!O,
-) type {
-    return struct {
-        const Self = @This();
-
-        pub const Ok = O;
-        pub const Error = E;
-
-        context: Context,
-
-        /// Serialize a boolean value.
-        pub fn serializeBool(self: Self, value: bool) Error!Ok {
-            return try boolFn(self.context, value);
-        }
-
-        /// Serialize an integer value.
-        pub fn serializeInt(self: Self, value: anytype) Error!Ok {
-            return try intFn(self.context, value);
-        }
-
-        /// Serialize a float value.
-        pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
-            return try floatFn(self.context, value);
-        }
-
-        /// Serialize a null value.
-        pub fn serializeNull(self: Self, value: anytype) Error!Ok {
-            return try nullFn(self.context, value);
-        }
-
-        /// Serialize a string value.
-        pub fn serializeString(self: Self, value: anytype) Error!Ok {
-            return try stringFn(self.context, value);
-        }
-
-        /// Serialize a variably sized heterogeneous sequence of values.
-        ///
-        /// Implementations are typically structured as follows:
-        ///
-        ///   1. Start with a prefix character suited for the type being serialized.
-        ///   2. Serialize the elements of the sequence.
-        ///   3. End with a suffix character suited for the type being serialized.
-        pub fn serializeSequence(self: Self, value: anytype) Error!Ok {
-            return try sequenceFn(self.context, value);
-        }
-
-        pub fn serializeStruct(self: Self, value: anytype) Error!Ok {
-            return try structFn(self.context, value);
-        }
-    };
-}
-
 const eql = std.mem.eql;
 const expect = std.testing.expect;
 
@@ -183,6 +197,7 @@ const TestSerializer = struct {
         String,
         Sequence,
         Struct,
+        Field,
     };
     const Error = error{Error};
 
@@ -197,6 +212,7 @@ const TestSerializer = struct {
         serializeString,
         serializeSequence,
         serializeStruct,
+        serializeField,
     );
 
     fn serializer(self: *Self) S {
@@ -227,8 +243,14 @@ const TestSerializer = struct {
         return .Sequence;
     }
 
-    fn serializeStruct(self: *Self, value: anytype) Error!Ok {
-        return .Struct;
+    fn serializeStruct(self: *Self, value: anytype) Error!fn () void {
+        return struct {
+            pub fn end() void {}
+        }.end;
+    }
+
+    fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
+        return .Field;
     }
 };
 
@@ -312,7 +334,7 @@ test "Serialize - struct" {
     var serializer = TestSerializer{};
     const result = try serialize(&serializer, struct {}{});
 
-    try expect(result == .Struct);
+    try expect(result == .Null);
 }
 
 test "Serialize - tagged union" {
