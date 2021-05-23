@@ -75,16 +75,35 @@ pub const Case = enum {
 ///     y: i32,
 /// };
 /// ```
-pub fn Attributes(comptime T: type, attributes: _Attributes(T)) type {
+pub fn Attributes(comptime T: type, attributes: anytype) type {
     return struct {
-        pub const _attributes = attributes;
+        pub const _getty_attributes: _Attributes(T, attributes) = attributes;
+
+        // This isn't needed for actual usage. But when testing, invalid
+        // fields/values aren't picked up unless we reference
+        // _getty_attributes.
+        comptime {
+            inline for (std.meta.declarations(@This())) |decl| {
+                _ = decl;
+            }
+        }
     };
 }
 
 /// Returns an attribute map type.
 ///
 /// See `Attributes` for more information.
-fn _Attributes(comptime T: type) type {
+fn _Attributes(comptime T: type, attributes: anytype) type {
+    const A = @TypeOf(attributes);
+
+    if (@typeInfo(A) != .Struct) {
+        @compileError("expected attribute map, found " ++ @typeName(A));
+    }
+
+    if (std.meta.fields(A).len == 0) {
+        return struct {};
+    }
+
     const Container = struct {
         //content: ?[]const u8 = null,
 
@@ -277,25 +296,29 @@ fn _Attributes(comptime T: type) type {
     const container = Container{};
     const inner = Inner{};
 
-    comptime var fields: [std.meta.fields(T).len + 1]std.builtin.TypeInfo.StructField = undefined;
+    comptime var fields: [std.meta.fields(A).len]std.builtin.TypeInfo.StructField = undefined;
 
-    inline for (std.meta.fields(T)) |field, i| {
-        fields[i] = .{
-            .name = field.name,
-            .field_type = Inner,
-            .default_value = inner,
-            .is_comptime = false,
-            .alignment = 4,
-        };
+    inline for (std.meta.fields(A)) |field, i| {
+        if (comptime std.meta.trait.hasField(field.name)(T)) {
+            fields[i] = .{
+                .name = field.name,
+                .field_type = Inner,
+                .default_value = inner,
+                .is_comptime = false,
+                .alignment = 4,
+            };
+        } else if (comptime std.mem.eql(u8, field.name, @typeName(T))) {
+            fields[i] = .{
+                .name = field.name,
+                .field_type = Container,
+                .default_value = container,
+                .is_comptime = false,
+                .alignment = 4,
+            };
+        } else {
+            @compileError("invalid field: " ++ field.name);
+        }
     }
-
-    fields[fields.len - 1] = .{
-        .name = @typeName(T),
-        .field_type = Container,
-        .default_value = container,
-        .is_comptime = false,
-        .alignment = 4,
-    };
 
     return @Type(std.builtin.TypeInfo{
         .Struct = .{
