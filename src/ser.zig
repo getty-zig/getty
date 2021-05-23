@@ -3,13 +3,6 @@ const std = @import("std");
 const trait = std.meta.trait;
 const unicode = std.unicode;
 
-fn SerializerErrorUnion(comptime T: type) type {
-    return switch (@typeInfo(T)) {
-        .Pointer => @typeInfo(T).Pointer.child.Error!@typeInfo(T).Pointer.child.Ok,
-        else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
-    };
-}
-
 /// Serializes values that are of a type supported by Getty.
 ///
 /// The types that make up the Getty data model are:
@@ -28,7 +21,14 @@ fn SerializerErrorUnion(comptime T: type) type {
 ///    - struct
 ///    - tagged union
 ///    - vector
-pub fn serialize(serializer: anytype, value: anytype) SerializerErrorUnion(@TypeOf(serializer)) {
+pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(serializer))) {
+    .Pointer => blk: {
+        const T = @TypeOf(serializer);
+        const info = @typeInfo(T);
+        break :blk info.Pointer.child.Error!info.Pointer.child.Ok;
+    },
+    else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
+} {
     const T = @TypeOf(value);
     const s = serializer.serializer();
 
