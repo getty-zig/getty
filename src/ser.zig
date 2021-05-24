@@ -180,22 +180,26 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
     }
 }
 
-const expect = std.testing.expect;
+const expectEqualSlices = std.testing.expectEqualSlices;
 
 const TestSerializer = struct {
     const Self = @This();
 
-    const Ok = enum {
+    const Elem = enum {
+        None,
         Bool,
-        Int,
-        Float,
-        Null,
-        String,
-        Sequence,
-        Struct,
         Field,
+        Float,
+        Int,
+        Null,
+        Sequence,
+        String,
+        StructEnd,
+        StructStart,
     };
-    const Error = error{Error};
+
+    const Ok = void;
+    const Error = std.mem.Allocator.Error;
 
     const S = Serializer(
         *Self,
@@ -211,149 +215,124 @@ const TestSerializer = struct {
         serializeField,
     );
 
+    buf: [4]Elem = undefined,
+    idx: usize = 0,
+
     fn serializer(self: *Self) S {
         return .{ .context = self };
     }
 
     fn serializeBool(self: *Self, value: bool) Error!Ok {
-        return .Bool;
+        self.buf[self.idx] = .Bool;
+        self.idx += 1;
     }
 
     fn serializeInt(self: *Self, value: anytype) Error!Ok {
-        return .Int;
+        self.buf[self.idx] = .Int;
+        self.idx += 1;
     }
 
     fn serializeFloat(self: *Self, value: anytype) Error!Ok {
-        return .Float;
+        self.buf[self.idx] = .Float;
+        self.idx += 1;
     }
 
     fn serializeNull(self: *Self, value: anytype) Error!Ok {
-        return .Null;
+        self.buf[self.idx] = .Null;
+        self.idx += 1;
     }
 
     fn serializeString(self: *Self, value: anytype) Error!Ok {
-        return .String;
+        self.buf[self.idx] = .String;
+        self.idx += 1;
     }
 
     fn serializeSequence(self: *Self, value: anytype) Error!Ok {
-        return .Sequence;
+        self.buf[self.idx] = .Sequence;
+        self.idx += 1;
     }
 
     fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
+        self.buf[self.idx] = .StructStart;
+        self.idx += 1;
+
         return struct {
             pub fn end(s: *Self) Error!Ok {
-                return .Struct;
+                s.buf[s.idx] = .StructEnd;
+                s.idx += 1;
             }
         }.end;
     }
 
     fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
-        return .Field;
+        self.buf[self.idx] = .Field;
+        self.idx += 1;
     }
 };
 
 test "Serialize - array" {
-    var serializer = TestSerializer{};
-    const result = try serialize(&serializer, [_]u8{ 'A', 'B', 'C' });
-
-    try expect(result == .Sequence);
+    var s = TestSerializer{};
+    try serialize(&s, [_]u8{ 1, 2, 3 });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Sequence});
 }
 
 test "Serialize - bool" {
-    var serializer = TestSerializer{};
-
-    for (&[_]bool{ true, false }) |b| {
-        const result = try serialize(&serializer, b);
-        try expect(result == .Bool);
-    }
+    var s = TestSerializer{};
+    try serialize(&s, true);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Bool});
 }
 
 test "Serialize - error set" {
-    var serializer = TestSerializer{};
-    const result = try serialize(&serializer, error{Error}.Error);
-
-    try expect(result == .String);
+    var s = TestSerializer{};
+    try serialize(&s, error.Elem);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
 }
 
 test "Serialize - integer" {
-    var serializer = TestSerializer{};
-
-    comptime var bits = 0;
-    inline while (bits < 64) : (bits += 1) {
-        const Signed = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
-        const Unsigned = @Type(.{ .Int = .{ .signedness = .unsigned, .bits = bits } });
-
-        inline for (&[_]type{ Signed, Unsigned }) |T| {
-            const max = std.math.maxInt(T);
-            const min = std.math.minInt(T);
-
-            var max_buf: [20]u8 = undefined;
-            var min_buf: [20]u8 = undefined;
-            const max_expected = std.fmt.bufPrint(&max_buf, "{}", .{max}) catch unreachable;
-            const min_expected = std.fmt.bufPrint(&min_buf, "{}", .{min}) catch unreachable;
-
-            const max_result = try serialize(&serializer, @as(T, max));
-            const min_result = try serialize(&serializer, @as(T, min));
-
-            try expect(max_result == .Int);
-            try expect(min_result == .Int);
-        }
-    }
+    var s = TestSerializer{};
+    try serialize(&s, 1);
+    try serialize(&s, @as(u8, 1));
+    try serialize(&s, @as(i8, 1));
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .Int, .Int, .Int });
 }
 
 test "Serialize - null" {
-    var serializer = TestSerializer{};
-    var result = try serialize(&serializer, null);
-
-    try expect(result == .Null);
+    var s = TestSerializer{};
+    try serialize(&s, null);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Null});
 }
 
 test "Serialize - optional" {
-    var serializer = TestSerializer{};
-
-    const some: ?i8 = 1;
-    const none: ?i8 = null;
-
-    const some_result = try serialize(&serializer, some);
-    const none_result = try serialize(&serializer, none);
-
-    try expect(some_result == .Int);
-    try expect(none_result == .Null);
+    var s = TestSerializer{};
+    try serialize(&s, @as(?i8, 1));
+    try serialize(&s, @as(?i8, null));
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Null });
 }
 
 test "Serialize - string" {
-    var serializer = TestSerializer{};
-    const result = try serialize(&serializer, "ABC");
-
-    try expect(result == .String);
+    var s = TestSerializer{};
+    try serialize(&s, "A");
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
 }
 
 test "Serialize - struct" {
-    var serializer = TestSerializer{};
-    const Struct = struct {};
-    const result = try serialize(&serializer, Struct{});
-
-    try expect(result == .Struct);
+    var s = TestSerializer{};
+    try serialize(&s, struct { x: i32, y: i32 }{ .x = 0, .y = 0 });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .StructStart, .Field, .Field, .StructEnd });
 }
 
 test "Serialize - tagged union" {
-    var serializer = TestSerializer{};
-
-    const Union = union(enum) { int: i32, boolean: bool };
-    var int_union = Union{ .int = 42 };
-    var bool_union = Union{ .boolean = true };
-    const int_result = try serialize(&serializer, int_union);
-    const bool_result = try serialize(&serializer, bool_union);
-
-    try expect(int_result == .Int);
-    try expect(bool_result == .Bool);
+    const Union = union(enum) { Int: i32, Bool: bool };
+    var s = TestSerializer{};
+    try serialize(&s, Union{ .Int = 42 });
+    try serialize(&s, Union{ .Bool = true });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Bool });
 }
 
 test "Serialize - vector" {
-    var serializer = TestSerializer{};
-    const result = try serialize(&serializer, @splat(2, @as(u32, 1)));
-
-    try expect(result == .Sequence);
+    var s = TestSerializer{};
+    try serialize(&s, @splat(2, @as(u32, 1)));
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Sequence});
 }
 
 comptime {
