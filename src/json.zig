@@ -84,8 +84,14 @@ pub fn Json(comptime Writer: type) type {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
-        pub fn serializeStruct(self: *Self, value: anytype) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
+        pub fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
+            self.writer.writeByte('{') catch return Error.Io;
+
+            return struct {
+                pub fn end(s: *Self) Error!Ok {
+                    s.writer.writeByte('}') catch return Error.Io;
+                }
+            }.end;
         }
 
         pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
@@ -183,6 +189,18 @@ test "string" {
 
     try toWriter(array_list.writer(), "Hello, World!");
     try std.testing.expect(std.mem.eql(u8, array_list.items, "\"Hello, World!\""));
+}
+
+test "struct" {
+    var array_list = std.ArrayList(u8).init(std.testing.allocator);
+    defer array_list.deinit();
+
+    const Point = struct { x: i32, y: i32 };
+    var point = Point{ .x = 1, .y = 2 };
+
+    try toWriter(array_list.writer(), point);
+
+    try std.testing.expectEqualSlices(u8, array_list.items, "{\"x\":1,\"y\":2}");
 }
 
 comptime {

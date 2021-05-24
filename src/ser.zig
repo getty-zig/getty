@@ -34,7 +34,7 @@ pub fn Serializer(
     comptime nullFn: fn (context: Context, value: anytype) E!O,
     comptime stringFn: fn (context: Context, value: anytype) E!O,
     comptime sequenceFn: fn (context: Context, value: anytype) E!O,
-    comptime structFn: fn (context: Context, value: anytype) E!fn () void,
+    comptime structFn: fn (context: Context) E!fn (Context) E!O,
     comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!O,
 ) type {
     return struct {
@@ -81,8 +81,8 @@ pub fn Serializer(
             return try sequenceFn(self.context, value);
         }
 
-        pub fn serializeStruct(self: Self, value: anytype) Error!fn () void {
-            return try structFn(self.context, value);
+        pub fn serializeStruct(self: Self) Error!fn (Context) Error!Ok {
+            return try structFn(self.context);
         }
 
         pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!Ok {
@@ -134,9 +134,9 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
                 else => try serialize(serializer, value.*),
             },
-            // The extra () are needed b/c the compiler would otherwise
-            // complain that `utf8ValidateSlice` can't evaluate `value` as
-            // it's not a constant expression.
+            // The extra parentheses are needed b/c the compiler would
+            // otherwise complain that `utf8ValidateSlice` can't evaluate
+            // `value` as it's not a constant expression.
             .Slice => if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value))
                 try s.serializeString(value)
             else
@@ -149,14 +149,11 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             } else {
                 const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
-                const end = try s.serializeStruct(value);
-                defer end();
-
+                const end = try s.serializeStruct();
                 inline for (info.fields) |field| {
-                    _ = try s.serializeField(info.name, value);
+                    try s.serializeField(field.name, @field(value, field.name));
                 }
-
-                return .Null;
+                return try end(serializer);
             }
         },
         .Union => |info| {
@@ -243,9 +240,11 @@ const TestSerializer = struct {
         return .Sequence;
     }
 
-    fn serializeStruct(self: *Self, value: anytype) Error!fn () void {
+    fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
         return struct {
-            pub fn end() void {}
+            pub fn end(s: *Self) Error!Ok {
+                return .Struct;
+            }
         }.end;
     }
 
@@ -332,9 +331,10 @@ test "Serialize - string" {
 
 test "Serialize - struct" {
     var serializer = TestSerializer{};
-    const result = try serialize(&serializer, struct {}{});
+    const Struct = struct {};
+    const result = try serialize(&serializer, Struct{});
 
-    try expect(result == .Null);
+    try expect(result == .Struct);
 }
 
 test "Serialize - tagged union" {
