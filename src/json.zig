@@ -2,7 +2,6 @@ const ser = @import("ser.zig");
 const std = @import("std");
 
 const json = std.json;
-const mem = std.mem;
 
 pub fn Json(comptime Writer: type) type {
     return struct {
@@ -117,7 +116,7 @@ pub fn toWriter(writer: anytype, value: anytype) !void {
 /// Returns an owned slice of a serialized JSON string.
 ///
 /// The caller is responsible for freeing the returned memory.
-pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
+pub fn toString(allocator: *std.mem.Allocator, value: anytype) ![]const u8 {
     var array_list = std.ArrayList(u8).init(allocator);
     errdefer array_list.deinit();
 
@@ -125,19 +124,21 @@ pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
     return array_list.toOwnedSlice();
 }
 
+const expectEqualSlices = std.testing.expectEqualSlices;
+
 test "bool" {
     {
         var array_list = std.ArrayList(u8).init(std.testing.allocator);
         defer array_list.deinit();
         try toWriter(array_list.writer(), true);
-        try std.testing.expect(std.mem.eql(u8, array_list.items, "true"));
+        try expectEqualSlices(u8, array_list.items, "true");
     }
 
     {
         var array_list = std.ArrayList(u8).init(std.testing.allocator);
         defer array_list.deinit();
         try toWriter(array_list.writer(), false);
-        try std.testing.expect(std.mem.eql(u8, array_list.items, "false"));
+        try expectEqualSlices(u8, array_list.items, "false");
     }
 }
 
@@ -147,7 +148,7 @@ test "int" {
         defer array_list.deinit();
 
         try toWriter(array_list.writer(), 'A');
-        try std.testing.expect(std.mem.eql(u8, array_list.items, "65"));
+        try expectEqualSlices(u8, array_list.items, "65");
     }
 
     {
@@ -155,7 +156,7 @@ test "int" {
         defer array_list.deinit();
 
         try toWriter(array_list.writer(), std.math.maxInt(u32));
-        try std.testing.expect(std.mem.eql(u8, array_list.items, "4294967295"));
+        try expectEqualSlices(u8, array_list.items, "4294967295");
     }
 
     {
@@ -163,7 +164,7 @@ test "int" {
         defer array_list.deinit();
 
         try toWriter(array_list.writer(), std.math.maxInt(u64));
-        try std.testing.expect(std.mem.eql(u8, array_list.items, "18446744073709551615"));
+        try expectEqualSlices(u8, array_list.items, "18446744073709551615");
     }
 
     {
@@ -171,7 +172,7 @@ test "int" {
         defer array_list.deinit();
 
         try toWriter(array_list.writer(), std.math.minInt(i32));
-        try std.testing.expect(std.mem.eql(u8, array_list.items, "-2147483648"));
+        try expectEqualSlices(u8, array_list.items, "-2147483648");
     }
 }
 
@@ -180,7 +181,7 @@ test "null" {
     defer array_list.deinit();
 
     try toWriter(array_list.writer(), null);
-    try std.testing.expect(std.mem.eql(u8, array_list.items, "null"));
+    try expectEqualSlices(u8, array_list.items, "null");
 }
 
 test "string" {
@@ -188,7 +189,7 @@ test "string" {
     defer array_list.deinit();
 
     try toWriter(array_list.writer(), "Hello, World!");
-    try std.testing.expect(std.mem.eql(u8, array_list.items, "\"Hello, World!\""));
+    try expectEqualSlices(u8, array_list.items, "\"Hello, World!\"");
 }
 
 test "struct" {
@@ -200,7 +201,7 @@ test "struct" {
 
     try toWriter(array_list.writer(), point);
 
-    try std.testing.expectEqualSlices(u8, array_list.items, "{\"x\":1,\"y\":2}");
+    try expectEqualSlices(u8, array_list.items, "{\"x\":1,\"y\":2}");
 }
 
 comptime {

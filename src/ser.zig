@@ -180,7 +180,6 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
     }
 }
 
-const eql = std.mem.eql;
 const expect = std.testing.expect;
 
 const TestSerializer = struct {
