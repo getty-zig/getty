@@ -4,7 +4,6 @@ const std = @import("std");
 const json = std.json;
 const mem = std.mem;
 
-/// A JSON serializer.
 pub fn Json(comptime Writer: type) type {
     return struct {
         const Self = @This();
@@ -58,11 +57,13 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serializeBool(self: *Self, value: bool) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
+            self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
         }
 
         pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
+            var buffer: [20]u8 = undefined;
+            const number = std.fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
+            self.writer.writeAll(number) catch return Error.Io;
         }
 
         pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
@@ -70,11 +71,13 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
+            self.writer.writeAll("null") catch return Error.Io;
         }
 
         pub fn serializeString(self: *Self, value: anytype) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
+            self.writer.writeByte('"') catch return Error.Io;
+            self.writer.writeAll(value) catch return Error.Io;
+            self.writer.writeByte('"') catch return Error.Io;
         }
 
         pub fn serializeSequence(self: *Self, value: anytype) Error!Ok {
@@ -114,6 +117,72 @@ pub fn toString(allocator: *mem.Allocator, value: anytype) ![]const u8 {
 
     try toWriter(array_list.writer(), value);
     return array_list.toOwnedSlice();
+}
+
+test "bool" {
+    {
+        var array_list = std.ArrayList(u8).init(std.testing.allocator);
+        defer array_list.deinit();
+        try toWriter(array_list.writer(), true);
+        try std.testing.expect(std.mem.eql(u8, array_list.items, "true"));
+    }
+
+    {
+        var array_list = std.ArrayList(u8).init(std.testing.allocator);
+        defer array_list.deinit();
+        try toWriter(array_list.writer(), false);
+        try std.testing.expect(std.mem.eql(u8, array_list.items, "false"));
+    }
+}
+
+test "int" {
+    {
+        var array_list = std.ArrayList(u8).init(std.testing.allocator);
+        defer array_list.deinit();
+
+        try toWriter(array_list.writer(), 'A');
+        try std.testing.expect(std.mem.eql(u8, array_list.items, "65"));
+    }
+
+    {
+        var array_list = std.ArrayList(u8).init(std.testing.allocator);
+        defer array_list.deinit();
+
+        try toWriter(array_list.writer(), std.math.maxInt(u32));
+        try std.testing.expect(std.mem.eql(u8, array_list.items, "4294967295"));
+    }
+
+    {
+        var array_list = std.ArrayList(u8).init(std.testing.allocator);
+        defer array_list.deinit();
+
+        try toWriter(array_list.writer(), std.math.maxInt(u64));
+        try std.testing.expect(std.mem.eql(u8, array_list.items, "18446744073709551615"));
+    }
+
+    {
+        var array_list = std.ArrayList(u8).init(std.testing.allocator);
+        defer array_list.deinit();
+
+        try toWriter(array_list.writer(), std.math.minInt(i32));
+        try std.testing.expect(std.mem.eql(u8, array_list.items, "-2147483648"));
+    }
+}
+
+test "null" {
+    var array_list = std.ArrayList(u8).init(std.testing.allocator);
+    defer array_list.deinit();
+
+    try toWriter(array_list.writer(), null);
+    try std.testing.expect(std.mem.eql(u8, array_list.items, "null"));
+}
+
+test "string" {
+    var array_list = std.ArrayList(u8).init(std.testing.allocator);
+    defer array_list.deinit();
+
+    try toWriter(array_list.writer(), "Hello, World!");
+    try std.testing.expect(std.mem.eql(u8, array_list.items, "\"Hello, World!\""));
 }
 
 comptime {
