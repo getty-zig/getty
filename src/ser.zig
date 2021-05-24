@@ -86,7 +86,7 @@ pub fn Serializer(
         }
 
         pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!Ok {
-            return try fieldFn(self.context, value);
+            return try fieldFn(self.context, key, value);
         }
     };
 }

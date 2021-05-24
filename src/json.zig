@@ -41,9 +41,11 @@ pub fn Json(comptime Writer: type) type {
             serializeString,
             serializeSequence,
             serializeStruct,
+            serializeField,
         );
 
         writer: Writer,
+        written: usize = 0,
 
         pub fn serializer(self: *Self) Serializer {
             return .{ .context = self };
@@ -81,6 +83,18 @@ pub fn Json(comptime Writer: type) type {
 
         pub fn serializeStruct(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
+        }
+
+        pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
+            if (self.written > 0) {
+                self.writer.writeByte(',') catch return Error.Io;
+            }
+
+            self.written += 1;
+
+            ser.serialize(self, key) catch return Error.Io;
+            self.writer.writeByte(':') catch return Error.Io;
+            ser.serialize(self, value) catch return Error.Io;
         }
     };
 }
