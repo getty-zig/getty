@@ -33,9 +33,10 @@ pub fn Serializer(
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime nullFn: fn (context: Context, value: anytype) E!O,
     comptime stringFn: fn (context: Context, value: anytype) E!O,
-    comptime sequenceFn: fn (context: Context, value: anytype) E!O,
+    comptime sequenceFn: fn (context: Context) E!fn (Context) E!O,
     comptime structFn: fn (context: Context) E!fn (Context) E!O,
     comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!O,
+    comptime elementFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -77,8 +78,8 @@ pub fn Serializer(
         ///   1. Start with a prefix character suited for the type being serialized.
         ///   2. Serialize the elements of the sequence.
         ///   3. End with a suffix character suited for the type being serialized.
-        pub fn serializeSequence(self: Self, value: anytype) Error!Ok {
-            return try sequenceFn(self.context, value);
+        pub fn serializeSequence(self: Self) Error!fn (Context) Error!Ok {
+            return try sequenceFn(self.context);
         }
 
         pub fn serializeStruct(self: Self) Error!fn (Context) Error!Ok {
@@ -87,6 +88,10 @@ pub fn Serializer(
 
         pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!Ok {
             return try fieldFn(self.context, key, value);
+        }
+
+        pub fn serializeElement(self: Self, value: anytype) Error!Ok {
+            return try elementFn(self.context, value);
         }
     };
 }
@@ -120,7 +125,13 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
     const s = serializer.serializer();
 
     switch (@typeInfo(T)) {
-        .Array => return try s.serializeSequence(value),
+        .Array => {
+            const end = try s.serializeSequence();
+            for (value) |v| {
+                try s.serializeElement(v);
+            }
+            return try end(serializer);
+        },
         .Bool => return try s.serializeBool(value),
         //.Enum => {},
         .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(value))),
@@ -136,10 +147,17 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             // The extra parentheses are needed b/c the compiler would
             // otherwise complain that `utf8ValidateSlice` can't evaluate
             // `value` as it's not a constant expression.
-            .Slice => if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value))
-                try s.serializeString(value)
-            else
-                try s.serializeSequence(value),
+            .Slice => blk: {
+                if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value)) {
+                    break :blk try s.serializeString(value);
+                }
+
+                const end = try s.serializeSequence();
+                for (value) |v| {
+                    try s.serializeElement(v);
+                }
+                break :blk try end(serializer);
+            },
             else => @compileError("unsupported serialize type: " ++ @typeName(T)),
         },
         .Struct => |info| {
@@ -174,7 +192,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
             }
         },
-        .Vector => |info| return try s.serializeSequence(@as([info.len]info.child, value)),
+        .Vector => |info| return try serialize(serializer, @as([info.len]info.child, value)),
         else => @compileError("unsupported serialize type: " ++ @typeName(T)),
     }
 }
@@ -184,14 +202,17 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 const TestSerializer = struct {
     const Self = @This();
 
+    // TODO: Update naming convention (pascal is deprecated)
     const Elem = enum {
         None,
         Bool,
+        Element,
         Field,
         Float,
         Int,
         Null,
-        Sequence,
+        SequenceEnd,
+        SequenceStart,
         String,
         StructEnd,
         StructStart,
@@ -212,6 +233,7 @@ const TestSerializer = struct {
         serializeSequence,
         serializeStruct,
         serializeField,
+        serializeElement,
     );
 
     buf: [4]Elem = undefined,
@@ -246,9 +268,16 @@ const TestSerializer = struct {
         self.idx += 1;
     }
 
-    fn serializeSequence(self: *Self, value: anytype) Error!Ok {
-        self.buf[self.idx] = .Sequence;
+    fn serializeSequence(self: *Self) Error!fn (*Self) Error!Ok {
+        self.buf[self.idx] = .SequenceStart;
         self.idx += 1;
+
+        return struct {
+            pub fn end(s: *Self) Error!Ok {
+                s.buf[s.idx] = .SequenceEnd;
+                s.idx += 1;
+            }
+        }.end;
     }
 
     fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
@@ -267,12 +296,17 @@ const TestSerializer = struct {
         self.buf[self.idx] = .Field;
         self.idx += 1;
     }
+
+    fn serializeElement(self: *Self, value: anytype) Error!Ok {
+        self.buf[self.idx] = .Element;
+        self.idx += 1;
+    }
 };
 
 test "Serialize - array" {
     var s = TestSerializer{};
-    try serialize(&s, [_]u8{ 1, 2, 3 });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Sequence});
+    try serialize(&s, [_]u8{ 1, 2 });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
 }
 
 test "Serialize - bool" {
@@ -331,7 +365,7 @@ test "Serialize - tagged union" {
 test "Serialize - vector" {
     var s = TestSerializer{};
     try serialize(&s, @splat(2, @as(u32, 1)));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Sequence});
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
 }
 
 comptime {

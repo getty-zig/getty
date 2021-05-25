@@ -40,6 +40,7 @@ pub fn Json(comptime Writer: type) type {
             serializeSequence,
             serializeStruct,
             serializeField,
+            serializeElement,
         );
 
         writer: Writer,
@@ -79,8 +80,14 @@ pub fn Json(comptime Writer: type) type {
             self.writer.writeByte('"') catch return Error.Io;
         }
 
-        pub fn serializeSequence(self: *Self, value: anytype) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
+        pub fn serializeSequence(self: *Self) Error!fn (*Self) Error!Ok {
+            self.writer.writeByte('[') catch return Error.Io;
+
+            return struct {
+                pub fn end(s: *Self) Error!Ok {
+                    s.writer.writeByte(']') catch return Error.Io;
+                }
+            }.end;
         }
 
         pub fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
@@ -102,6 +109,16 @@ pub fn Json(comptime Writer: type) type {
 
             ser.serialize(self, key) catch return Error.Io;
             self.writer.writeByte(':') catch return Error.Io;
+            ser.serialize(self, value) catch return Error.Io;
+        }
+
+        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
+            if (self.written > 0) {
+                self.writer.writeByte(',') catch return Error.Io;
+            }
+
+            self.written += 1;
+
             ser.serialize(self, value) catch return Error.Io;
         }
     };
@@ -202,6 +219,14 @@ test "struct" {
     try toWriter(array_list.writer(), point);
 
     try expectEqualSlices(u8, array_list.items, "{\"x\":1,\"y\":2}");
+}
+
+test "array" {
+    var array_list = std.ArrayList(u8).init(std.testing.allocator);
+    defer array_list.deinit();
+
+    try toWriter(array_list.writer(), [_]u8{ 1, 2, 3 });
+    try expectEqualSlices(u8, array_list.items, "[1,2,3]");
 }
 
 comptime {
