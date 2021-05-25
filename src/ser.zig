@@ -116,8 +116,8 @@ pub fn Serializer(
 ///    - vector
 pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(serializer))) {
     .Pointer => blk: {
-        const info = @typeInfo(@TypeOf(serializer));
-        break :blk info.Pointer.child.Error!info.Pointer.child.Ok;
+        const Child = @typeInfo(@TypeOf(serializer)).Pointer.child;
+        break :blk Child.Error!Child.Ok;
     },
     else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
 } {
@@ -132,46 +132,60 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             }
             return try end(serializer);
         },
-        .Bool => return try s.serializeBool(value),
-        //.Enum => {},
-        .ErrorSet => return try serialize(serializer, @as([]const u8, @errorName(value))),
-        .Float, .ComptimeFloat => return try s.serializeFloat(value),
-        .Int, .ComptimeInt => return try s.serializeInt(value),
-        .Null => return try s.serializeNull(value),
-        .Optional => return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null),
-        .Pointer => |info| return switch (info.size) {
-            .One => switch (@typeInfo(info.child)) {
-                .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
-                else => try serialize(serializer, value.*),
-            },
-            // The extra parentheses are needed b/c the compiler would
-            // otherwise complain that `utf8ValidateSlice` can't evaluate
-            // `value` as it's not a constant expression.
-            .Slice => blk: {
-                if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value)) {
-                    break :blk try s.serializeString(value);
-                }
+        .Bool => {
+            return try s.serializeBool(value);
+        },
+        .Enum => {
+            @compileError("TODO: enums");
+        },
+        .ErrorSet => {
+            return try serialize(serializer, @as([]const u8, @errorName(value)));
+        },
+        .Float, .ComptimeFloat => {
+            return try s.serializeFloat(value);
+        },
+        .Int, .ComptimeInt => {
+            return try s.serializeInt(value);
+        },
+        .Null => {
+            return try s.serializeNull(value);
+        },
+        .Optional => {
+            return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null);
+        },
+        .Pointer => |info| {
+            return switch (info.size) {
+                .One => switch (@typeInfo(info.child)) {
+                    .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
+                    else => try serialize(serializer, value.*),
+                },
+                .Slice => blk: {
+                    if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value)) {
+                        break :blk try s.serializeString(value);
+                    }
 
-                const end = try s.serializeSequence();
-                for (value) |v| {
-                    try s.serializeElement(v);
-                }
-                break :blk try end(serializer);
-            },
-            else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+                    const end = try s.serializeSequence();
+                    for (value) |v| {
+                        try s.serializeElement(v);
+                    }
+                    break :blk try end(serializer);
+                },
+                else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+            };
         },
         .Struct => |info| {
             if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
-            } else {
-                const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
-
-                const end = try s.serializeStruct();
-                inline for (info.fields) |field| {
-                    try s.serializeField(field.name, @field(value, field.name));
-                }
-                return try end(serializer);
             }
+
+            // TODO: coerce this to @TypeOf(_getty_attributes)
+            const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
+
+            const end = try s.serializeStruct();
+            inline for (info.fields) |field| {
+                try s.serializeField(field.name, @field(value, field.name));
+            }
+            return try end(serializer);
         },
         .Union => |info| {
             if (comptime trait.hasFn("serialize")(T)) {
@@ -192,7 +206,9 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
             }
         },
-        .Vector => |info| return try serialize(serializer, @as([info.len]info.child, value)),
+        .Vector => |info| {
+            return try serialize(serializer, @as([info.len]info.child, value));
+        },
         else => @compileError("unsupported serialize type: " ++ @typeName(T)),
     }
 }
