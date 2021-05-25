@@ -33,14 +33,14 @@ pub fn Json(comptime Writer: type) type {
             Ok,
             Error,
             serializeBool,
-            serializeInt,
-            serializeFloat,
-            serializeNull,
-            serializeString,
-            serializeSequence,
-            serializeStruct,
-            serializeField,
             serializeElement,
+            serializeField,
+            serializeFloat,
+            serializeInt,
+            serializeNull,
+            serializeSequence,
+            serializeString,
+            serializeStruct,
         );
 
         writer: Writer,
@@ -60,44 +60,14 @@ pub fn Json(comptime Writer: type) type {
             self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
         }
 
-        pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
-            var buffer: [20]u8 = undefined;
-            const number = std.fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
-            self.writer.writeAll(number) catch return Error.Io;
-        }
+        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
+            if (self.written > 0) {
+                self.writer.writeByte(',') catch return Error.Io;
+            }
 
-        pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
-            json.stringify(value, .{}, self.writer) catch return Error.Io;
-        }
+            self.written += 1;
 
-        pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
-            self.writer.writeAll("null") catch return Error.Io;
-        }
-
-        pub fn serializeString(self: *Self, value: anytype) Error!Ok {
-            self.writer.writeByte('"') catch return Error.Io;
-            self.writer.writeAll(value) catch return Error.Io;
-            self.writer.writeByte('"') catch return Error.Io;
-        }
-
-        pub fn serializeSequence(self: *Self) Error!fn (*Self) Error!Ok {
-            self.writer.writeByte('[') catch return Error.Io;
-
-            return struct {
-                pub fn end(s: *Self) Error!Ok {
-                    s.writer.writeByte(']') catch return Error.Io;
-                }
-            }.end;
-        }
-
-        pub fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
-            self.writer.writeByte('{') catch return Error.Io;
-
-            return struct {
-                pub fn end(s: *Self) Error!Ok {
-                    s.writer.writeByte('}') catch return Error.Io;
-                }
-            }.end;
+            ser.serialize(self, value) catch return Error.Io;
         }
 
         pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
@@ -112,14 +82,44 @@ pub fn Json(comptime Writer: type) type {
             ser.serialize(self, value) catch return Error.Io;
         }
 
-        pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
-            if (self.written > 0) {
-                self.writer.writeByte(',') catch return Error.Io;
-            }
+        pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
+            json.stringify(value, .{}, self.writer) catch return Error.Io;
+        }
 
-            self.written += 1;
+        pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
+            var buffer: [20]u8 = undefined;
+            const number = std.fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
+            self.writer.writeAll(number) catch return Error.Io;
+        }
 
-            ser.serialize(self, value) catch return Error.Io;
+        pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
+            self.writer.writeAll("null") catch return Error.Io;
+        }
+
+        pub fn serializeSequence(self: *Self) Error!fn (*Self) Error!Ok {
+            self.writer.writeByte('[') catch return Error.Io;
+
+            return struct {
+                pub fn end(s: *Self) Error!Ok {
+                    s.writer.writeByte(']') catch return Error.Io;
+                }
+            }.end;
+        }
+
+        pub fn serializeString(self: *Self, value: anytype) Error!Ok {
+            self.writer.writeByte('"') catch return Error.Io;
+            self.writer.writeAll(value) catch return Error.Io;
+            self.writer.writeByte('"') catch return Error.Io;
+        }
+
+        pub fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
+            self.writer.writeByte('{') catch return Error.Io;
+
+            return struct {
+                pub fn end(s: *Self) Error!Ok {
+                    s.writer.writeByte('}') catch return Error.Io;
+                }
+            }.end;
         }
     };
 }

@@ -29,14 +29,14 @@ pub fn Serializer(
     comptime O: type,
     comptime E: type,
     comptime boolFn: fn (context: Context, value: bool) E!O,
-    comptime intFn: fn (context: Context, value: anytype) E!O,
-    comptime floatFn: fn (context: Context, value: anytype) E!O,
-    comptime nullFn: fn (context: Context, value: anytype) E!O,
-    comptime stringFn: fn (context: Context, value: anytype) E!O,
-    comptime sequenceFn: fn (context: Context) E!fn (Context) E!O,
-    comptime structFn: fn (context: Context) E!fn (Context) E!O,
-    comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!O,
     comptime elementFn: fn (context: Context, value: anytype) E!O,
+    comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!O,
+    comptime floatFn: fn (context: Context, value: anytype) E!O,
+    comptime intFn: fn (context: Context, value: anytype) E!O,
+    comptime nullFn: fn (context: Context, value: anytype) E!O,
+    comptime sequenceFn: fn (context: Context) E!fn (Context) E!O,
+    comptime stringFn: fn (context: Context, value: anytype) E!O,
+    comptime structFn: fn (context: Context) E!fn (Context) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -51,9 +51,14 @@ pub fn Serializer(
             return try boolFn(self.context, value);
         }
 
-        /// Serialize an integer value.
-        pub fn serializeInt(self: Self, value: anytype) Error!Ok {
-            return try intFn(self.context, value);
+        /// Serialize a sequence element value.
+        pub fn serializeElement(self: Self, value: anytype) Error!Ok {
+            return try elementFn(self.context, value);
+        }
+
+        /// Serialize a struct field value.
+        pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!Ok {
+            return try fieldFn(self.context, key, value);
         }
 
         /// Serialize a float value.
@@ -61,9 +66,19 @@ pub fn Serializer(
             return try floatFn(self.context, value);
         }
 
+        /// Serialize an integer value.
+        pub fn serializeInt(self: Self, value: anytype) Error!Ok {
+            return try intFn(self.context, value);
+        }
+
         /// Serialize a null value.
         pub fn serializeNull(self: Self, value: anytype) Error!Ok {
             return try nullFn(self.context, value);
+        }
+
+        /// Serialize a variably sized heterogeneous sequence of values.
+        pub fn serializeSequence(self: Self) Error!fn (Context) Error!Ok {
+            return try sequenceFn(self.context);
         }
 
         /// Serialize a string value.
@@ -71,27 +86,9 @@ pub fn Serializer(
             return try stringFn(self.context, value);
         }
 
-        /// Serialize a variably sized heterogeneous sequence of values.
-        ///
-        /// Implementations are typically structured as follows:
-        ///
-        ///   1. Start with a prefix character suited for the type being serialized.
-        ///   2. Serialize the elements of the sequence.
-        ///   3. End with a suffix character suited for the type being serialized.
-        pub fn serializeSequence(self: Self) Error!fn (Context) Error!Ok {
-            return try sequenceFn(self.context);
-        }
-
+        // Serialize a struct value.
         pub fn serializeStruct(self: Self) Error!fn (Context) Error!Ok {
             return try structFn(self.context);
-        }
-
-        pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!Ok {
-            return try fieldFn(self.context, key, value);
-        }
-
-        pub fn serializeElement(self: Self, value: anytype) Error!Ok {
-            return try elementFn(self.context, value);
         }
     };
 }
@@ -242,14 +239,14 @@ const TestSerializer = struct {
         Ok,
         Error,
         serializeBool,
-        serializeInt,
-        serializeFloat,
-        serializeNull,
-        serializeString,
-        serializeSequence,
-        serializeStruct,
-        serializeField,
         serializeElement,
+        serializeField,
+        serializeFloat,
+        serializeInt,
+        serializeNull,
+        serializeSequence,
+        serializeString,
+        serializeStruct,
     );
 
     buf: [4]Elem = undefined,
@@ -264,8 +261,13 @@ const TestSerializer = struct {
         self.idx += 1;
     }
 
-    fn serializeInt(self: *Self, value: anytype) Error!Ok {
-        self.buf[self.idx] = .Int;
+    fn serializeElement(self: *Self, value: anytype) Error!Ok {
+        self.buf[self.idx] = .Element;
+        self.idx += 1;
+    }
+
+    fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
+        self.buf[self.idx] = .Field;
         self.idx += 1;
     }
 
@@ -274,13 +276,13 @@ const TestSerializer = struct {
         self.idx += 1;
     }
 
-    fn serializeNull(self: *Self, value: anytype) Error!Ok {
-        self.buf[self.idx] = .Null;
+    fn serializeInt(self: *Self, value: anytype) Error!Ok {
+        self.buf[self.idx] = .Int;
         self.idx += 1;
     }
 
-    fn serializeString(self: *Self, value: anytype) Error!Ok {
-        self.buf[self.idx] = .String;
+    fn serializeNull(self: *Self, value: anytype) Error!Ok {
+        self.buf[self.idx] = .Null;
         self.idx += 1;
     }
 
@@ -296,6 +298,11 @@ const TestSerializer = struct {
         }.end;
     }
 
+    fn serializeString(self: *Self, value: anytype) Error!Ok {
+        self.buf[self.idx] = .String;
+        self.idx += 1;
+    }
+
     fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
         self.buf[self.idx] = .StructStart;
         self.idx += 1;
@@ -306,16 +313,6 @@ const TestSerializer = struct {
                 s.idx += 1;
             }
         }.end;
-    }
-
-    fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
-        self.buf[self.idx] = .Field;
-        self.idx += 1;
-    }
-
-    fn serializeElement(self: *Self, value: anytype) Error!Ok {
-        self.buf[self.idx] = .Element;
-        self.idx += 1;
     }
 };
 
