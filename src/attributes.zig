@@ -40,8 +40,8 @@ pub fn Attributes(comptime T: type, attributes: anytype) type {
 ///
 /// The returned type is a struct that contains fields corresponding to either
 /// fields in the struct/enum for which attributes are being specified or the
-/// struct/enum itself. Only the valid fields of the attributes passed in will
-/// be present in the returned type.
+/// the word "Container." Only the fields of the attributes passed in (assuming
+/// they are all valid) will be present in the returned type.
 ///
 /// These "identifier fields" are themselves structs. Their fields depend on
 /// whether they correspond to a field/variant or the container type. In the
@@ -80,7 +80,7 @@ pub fn Attributes(comptime T: type, attributes: anytype) type {
 /// ```
 /// const Point = struct {
 ///     usingnamespace getty.Attributes(Point, .{
-///         .Point = .{ .rename = "MyPoint" },
+///         .Container = .{ .rename = "MyPoint" },
 ///         .x = .{ .rename = "a" },
 ///     } );
 ///
@@ -319,9 +319,9 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
                 .is_comptime = false,
                 .alignment = 4,
             };
-        } else if (comptime std.mem.eql(u8, field.name, @typeName(T))) {
+        } else if (comptime std.mem.eql(u8, field.name, "Container")) {
             fields[i] = .{
-                .name = field.name,
+                .name = "Container",
                 .field_type = Container,
                 .default_value = container,
                 .is_comptime = false,
@@ -354,7 +354,7 @@ test "Serialize - basic (struct)" {
 test "Serialize - with container attribute (struct)" {
     const TestPoint = struct {
         usingnamespace Attributes(@This(), .{
-            .TestPoint = .{ .rename = "A" },
+            .Container = .{ .rename = "A" },
         });
 
         x: i32,
