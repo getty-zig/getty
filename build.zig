@@ -20,7 +20,7 @@ pub fn build(b: *Builder) void {
 }
 
 fn tests(b: *Builder, mode: std.builtin.Mode, target: std.zig.CrossTarget) void {
-    const step = b.step("test", "Run library tests.");
+    const step = b.step("test", "Run library tests");
 
     inline for (&test_files) |f| {
         const t = b.addTest(f);
