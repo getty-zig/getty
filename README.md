@@ -32,7 +32,7 @@ pub fn main() anyerror!void {
     defer std.heap.page_allocator.free(serialized);
 
     // Convert JSON string to Point.
-    var deserialized = try json.fromString(serialized);
+    var deserialized = try json.fromString(Point, serialized);
 
     // Print results.
     std.debug.print("{s}\n", .{serialized});   // {"x":1,"y":2}
