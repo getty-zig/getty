@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const trait = std.meta.trait;
-const unicode = std.unicode;
 
 /// A data format that can serialize any data type supported by Getty.
 ///
@@ -160,7 +159,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                     else => try serialize(serializer, value.*),
                 },
                 .Slice => blk: {
-                    if ((comptime trait.isZigString(T)) and unicode.utf8ValidateSlice(value)) {
+                    if ((comptime trait.isZigString(T)) and std.unicode.utf8ValidateSlice(value)) {
                         break :blk try s.serializeString(value);
                     }
 
@@ -214,6 +213,91 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
 }
 
 const expectEqualSlices = std.testing.expectEqualSlices;
+
+test "Serialize - array" {
+    var s = TestSerializer{};
+    try serialize(&s, [_]u8{ 1, 2 });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+}
+
+test "Serialize - bool" {
+    var s = TestSerializer{};
+    try serialize(&s, true);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Bool});
+}
+
+test "Serialize - error set" {
+    var s = TestSerializer{};
+    try serialize(&s, error.Elem);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
+}
+
+test "Serialize - integer" {
+    var s = TestSerializer{};
+    try serialize(&s, 1);
+    try serialize(&s, @as(u8, 1));
+    try serialize(&s, @as(i8, 1));
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .Int, .Int, .Int });
+}
+
+test "Serialize - null" {
+    var s = TestSerializer{};
+    try serialize(&s, null);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Null});
+}
+
+test "Serialize - optional" {
+    var s = TestSerializer{};
+    try serialize(&s, @as(?i8, 1));
+    try serialize(&s, @as(?i8, null));
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Null });
+}
+
+test "Serialize - string" {
+    var s = TestSerializer{};
+    try serialize(&s, "A");
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
+}
+
+test "Serialize - struct" {
+    var s = TestSerializer{};
+    try serialize(&s, struct { x: i32, y: i32 }{ .x = 0, .y = 0 });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .StructStart, .Field, .Field, .StructEnd });
+}
+
+test "Serialize - struct (custom)" {
+    var s = TestSerializer{};
+
+    const Point = struct {
+        pub fn serialize(self: *@This(), serializer: anytype) !void {
+            var end = try serializer.serializeStruct();
+            try serializer.serializeField("x", @field(self, "x"));
+            return end(serializer);
+        }
+
+        x: i32,
+        y: i32,
+    };
+
+    var point = Point{ .x = 1, .y = 2 };
+
+    try serialize(&s, &point);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .StructStart, .Field, .StructEnd });
+}
+
+test "Serialize - tagged union" {
+    const Union = union(enum) { Int: i32, Bool: bool };
+    var s = TestSerializer{};
+    try serialize(&s, Union{ .Int = 42 });
+    try serialize(&s, Union{ .Bool = true });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Bool });
+}
+
+test "Serialize - vector" {
+    var s = TestSerializer{};
+    try serialize(&s, @splat(2, @as(u32, 1)));
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+}
 
 const TestSerializer = struct {
     const Self = @This();
@@ -318,91 +402,6 @@ const TestSerializer = struct {
         }.end;
     }
 };
-
-test "Serialize - array" {
-    var s = TestSerializer{};
-    try serialize(&s, [_]u8{ 1, 2 });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
-}
-
-test "Serialize - bool" {
-    var s = TestSerializer{};
-    try serialize(&s, true);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Bool});
-}
-
-test "Serialize - error set" {
-    var s = TestSerializer{};
-    try serialize(&s, error.Elem);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
-}
-
-test "Serialize - integer" {
-    var s = TestSerializer{};
-    try serialize(&s, 1);
-    try serialize(&s, @as(u8, 1));
-    try serialize(&s, @as(i8, 1));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .Int, .Int, .Int });
-}
-
-test "Serialize - null" {
-    var s = TestSerializer{};
-    try serialize(&s, null);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Null});
-}
-
-test "Serialize - optional" {
-    var s = TestSerializer{};
-    try serialize(&s, @as(?i8, 1));
-    try serialize(&s, @as(?i8, null));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Null });
-}
-
-test "Serialize - string" {
-    var s = TestSerializer{};
-    try serialize(&s, "A");
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
-}
-
-test "Serialize - struct" {
-    var s = TestSerializer{};
-    try serialize(&s, struct { x: i32, y: i32 }{ .x = 0, .y = 0 });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .StructStart, .Field, .Field, .StructEnd });
-}
-
-test "Serialize - struct (custom)" {
-    var s = TestSerializer{};
-
-    const Point = struct {
-        pub fn serialize(self: *@This(), serializer: anytype) !void {
-            var end = try serializer.serializeStruct();
-            try serializer.serializeField("x", @field(self, "x"));
-            return end(serializer);
-        }
-
-        x: i32,
-        y: i32,
-    };
-
-    var point = Point{ .x = 1, .y = 2 };
-
-    try serialize(&s, &point);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .StructStart, .Field, .StructEnd });
-}
-
-test "Serialize - tagged union" {
-    const Union = union(enum) { Int: i32, Bool: bool };
-    var s = TestSerializer{};
-    try serialize(&s, Union{ .Int = 42 });
-    try serialize(&s, Union{ .Bool = true });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Bool });
-}
-
-test "Serialize - vector" {
-    var s = TestSerializer{};
-    try serialize(&s, @splat(2, @as(u32, 1)));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
-}
 
 comptime {
     std.testing.refAllDecls(@This());
