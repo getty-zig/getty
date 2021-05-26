@@ -112,10 +112,7 @@ pub fn Serializer(
 ///    - tagged union
 ///    - vector
 pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(serializer))) {
-    .Pointer => blk: {
-        const Child = @typeInfo(@TypeOf(serializer)).Pointer.child;
-        break :blk Child.Error!Child.Ok;
-    },
+    .Pointer => |info| info.child.Error!info.child.Ok,
     else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
 } {
     const T = @TypeOf(value);
