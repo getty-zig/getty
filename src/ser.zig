@@ -154,6 +154,12 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             return switch (info.size) {
                 .One => switch (@typeInfo(info.child)) {
                     .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
+                    .Struct => blk: {
+                        break :blk if (comptime trait.hasFn("serialize")(info.child))
+                            try value.serialize(serializer)
+                        else
+                            try serialize(serializer, value.*);
+                    },
                     else => try serialize(serializer, value.*),
                 },
                 .Slice => blk: {
@@ -365,6 +371,26 @@ test "Serialize - struct" {
     var s = TestSerializer{};
     try serialize(&s, struct { x: i32, y: i32 }{ .x = 0, .y = 0 });
     try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .StructStart, .Field, .Field, .StructEnd });
+}
+
+test "Serialize - struct (custom)" {
+    var s = TestSerializer{};
+
+    const Point = struct {
+        pub fn serialize(self: *@This(), serializer: anytype) !void {
+            var end = try serializer.serializeStruct();
+            try serializer.serializeField("x", @field(self, "x"));
+            return end(serializer);
+        }
+
+        x: i32,
+        y: i32,
+    };
+
+    var point = Point{ .x = 1, .y = 2 };
+
+    try serialize(&s, &point);
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .StructStart, .Field, .StructEnd });
 }
 
 test "Serialize - tagged union" {
