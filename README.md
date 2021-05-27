@@ -2,7 +2,7 @@
 <br/>
 
 <p align="center">
-  <img alt="Getty" src="https://github.com/getty-zig/logo/blob/main/getty-solid.svg" width="400px">
+  <img alt="Getty" src="https://github.com/getty-zig/logo/blob/main/getty-solid.svg" width="410px">
   <br/>
   <br/>
   <a alt="Version" href="https://github.com/getty-zig/getty/releases/latest"><img src="https://img.shields.io/badge/version-N/A-e2725b.svg"></a>
