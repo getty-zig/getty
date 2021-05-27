@@ -211,19 +211,34 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 test "Serialize - array" {
     var s = TestSerializer{};
     try serialize(&s, [_]u8{ 1, 2 });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .SequenceStart,
+        .Element,
+        .Element,
+        .SequenceEnd,
+    });
 }
 
 test "Serialize - bool" {
     var s = TestSerializer{};
     try serialize(&s, true);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.Bool});
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .Bool,
+        .Undefined,
+        .Undefined,
+        .Undefined,
+    });
 }
 
 test "Serialize - error set" {
     var s = TestSerializer{};
     try serialize(&s, error.Elem);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .String,
+        .Undefined,
+        .Undefined,
+        .Undefined,
+    });
 }
 
 test "Serialize - integer" {
@@ -231,7 +246,12 @@ test "Serialize - integer" {
     try serialize(&s, 1);
     try serialize(&s, @as(u8, 1));
     try serialize(&s, @as(i8, 1));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .Int, .Int, .Int });
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .Int,
+        .Int,
+        .Int,
+        .Undefined,
+    });
 }
 
 test "Serialize - null" {
@@ -244,19 +264,34 @@ test "Serialize - optional" {
     var s = TestSerializer{};
     try serialize(&s, @as(?i8, 1));
     try serialize(&s, @as(?i8, null));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Null });
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .Int,
+        .Null,
+        .Undefined,
+        .Undefined,
+    });
 }
 
 test "Serialize - string" {
     var s = TestSerializer{};
     try serialize(&s, "A");
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..1], &.{.String});
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .String,
+        .Undefined,
+        .Undefined,
+        .Undefined,
+    });
 }
 
 test "Serialize - struct" {
     var s = TestSerializer{};
     try serialize(&s, struct { x: i32, y: i32 }{ .x = 0, .y = 0 });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .StructStart, .Field, .Field, .StructEnd });
+    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{
+        .StructStart,
+        .Field,
+        .Field,
+        .StructEnd,
+    });
 }
 
 test "Serialize - struct (custom)" {
@@ -276,7 +311,12 @@ test "Serialize - struct (custom)" {
     var point = Point{ .x = 1, .y = 2 };
 
     try serialize(&s, &point);
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..3], &.{ .StructStart, .Field, .StructEnd });
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .StructStart,
+        .Field,
+        .StructEnd,
+        .Undefined,
+    });
 }
 
 test "Serialize - tagged union" {
@@ -284,21 +324,30 @@ test "Serialize - tagged union" {
     var s = TestSerializer{};
     try serialize(&s, Union{ .Int = 42 });
     try serialize(&s, Union{ .Bool = true });
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..2], &.{ .Int, .Bool });
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .Int,
+        .Bool,
+        .Undefined,
+        .Undefined,
+    });
 }
 
 test "Serialize - vector" {
     var s = TestSerializer{};
     try serialize(&s, @splat(2, @as(u32, 1)));
-    try expectEqualSlices(TestSerializer.Elem, s.buf[0..4], &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .SequenceStart,
+        .Element,
+        .Element,
+        .SequenceEnd,
+    });
 }
 
 const TestSerializer = struct {
     const Self = @This();
 
-    // TODO: Update naming convention (pascal is deprecated)
     const Elem = enum {
-        None,
+        Undefined,
         Bool,
         Element,
         Field,
@@ -330,7 +379,7 @@ const TestSerializer = struct {
         serializeStruct,
     );
 
-    buf: [4]Elem = undefined,
+    buf: [4]Elem = .{.Undefined} ** 4,
     idx: usize = 0,
 
     fn serializer(self: *Self) S {
