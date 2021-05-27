@@ -44,7 +44,7 @@ pub fn Json(comptime Writer: type) type {
         );
 
         writer: Writer,
-        written: usize = 0,
+        _written: usize = 0,
 
         pub fn serializer(self: *Self) Serializer {
             return .{ .context = self };
@@ -61,21 +61,21 @@ pub fn Json(comptime Writer: type) type {
         }
 
         pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
-            if (self.written > 0) {
+            if (self._written > 0) {
                 self.writer.writeByte(',') catch return Error.Io;
             }
 
-            self.written += 1;
+            self._written += 1;
 
             ser.serialize(self, value) catch return Error.Io;
         }
 
         pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
-            if (self.written > 0) {
+            if (self._written > 0) {
                 self.writer.writeByte(',') catch return Error.Io;
             }
 
-            self.written += 1;
+            self._written += 1;
 
             ser.serialize(self, key) catch return Error.Io;
             self.writer.writeByte(':') catch return Error.Io;
