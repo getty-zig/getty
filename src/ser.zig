@@ -150,12 +150,6 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             return switch (info.size) {
                 .One => switch (@typeInfo(info.child)) {
                     .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
-                    .Struct => blk: {
-                        break :blk if (comptime trait.hasFn("serialize")(info.child))
-                            try value.serialize(serializer)
-                        else
-                            try serialize(serializer, value.*);
-                    },
                     else => try serialize(serializer, value.*),
                 },
                 .Slice => blk: {
@@ -269,7 +263,7 @@ test "Serialize - struct (custom)" {
     var s = TestSerializer{};
 
     const Point = struct {
-        pub fn serialize(self: *@This(), serializer: anytype) !void {
+        pub fn serialize(self: @This(), serializer: anytype) !void {
             var end = try serializer.serializeStruct();
             try serializer.serializeField("x", @field(self, "x"));
             return end(serializer);
