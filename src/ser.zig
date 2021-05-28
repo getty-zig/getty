@@ -134,11 +134,10 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             return try s.serializeBool(value);
         },
         .Enum, .EnumLiteral => {
-            if (comptime trait.hasFn("serialize")(T)) {
-                return try value.serialize(serializer);
-            }
-
-            return try s.serializeVariant(value);
+            return if (comptime trait.hasFn("serialize")(T))
+                try value.serialize(serializer)
+            else
+                try s.serializeVariant(value);
         },
         .ErrorSet => {
             return try serialize(serializer, @as([]const u8, @errorName(value)));
@@ -164,13 +163,13 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 .Slice => blk: {
                     if ((comptime trait.isZigString(T)) and std.unicode.utf8ValidateSlice(value)) {
                         break :blk try s.serializeString(value);
+                    } else {
+                        const end = try s.serializeSequence();
+                        for (value) |v| {
+                            try s.serializeElement(v);
+                        }
+                        break :blk try end(serializer);
                     }
-
-                    const end = try s.serializeSequence();
-                    for (value) |v| {
-                        try s.serializeElement(v);
-                    }
-                    break :blk try end(serializer);
                 },
                 else => @compileError("unsupported serialize type: " ++ @typeName(T)),
             };
@@ -178,34 +177,34 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
         .Struct => |info| {
             if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
-            }
+            } else {
+                // TODO: coerce this to @TypeOf(_getty_attributes)
+                const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
-            // TODO: coerce this to @TypeOf(_getty_attributes)
-            const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
-
-            const end = try s.serializeStruct();
-            inline for (info.fields) |field| {
-                try s.serializeField(field.name, @field(value, field.name));
+                const end = try s.serializeStruct();
+                inline for (info.fields) |field| {
+                    try s.serializeField(field.name, @field(value, field.name));
+                }
+                return try end(serializer);
             }
-            return try end(serializer);
         },
         .Union => |info| {
             if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
-            }
-
-            if (info.tag_type) |Tag| {
-                inline for (info.fields) |field| {
-                    if (@field(Tag, field.name) == value) {
-                        return try serialize(serializer, @field(value, field.name));
-                    }
-                }
-
-                // UNREACHABLE: Since we go over every field in the union, we
-                // always find the field that matches the passed-in value.
-                unreachable;
             } else {
-                @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
+                if (info.tag_type) |Tag| {
+                    inline for (info.fields) |field| {
+                        if (@field(Tag, field.name) == value) {
+                            return try serialize(serializer, @field(value, field.name));
+                        }
+                    }
+
+                    // UNREACHABLE: Since we go over every field in the union, we
+                    // always find the field that matches the passed-in value.
+                    unreachable;
+                } else {
+                    @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
+                }
             }
         },
         .Vector => |info| {
