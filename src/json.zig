@@ -41,6 +41,7 @@ pub fn Json(comptime Writer: type) type {
             serializeSequence,
             serializeString,
             serializeStruct,
+            serializeVariant,
         );
 
         writer: Writer,
@@ -121,6 +122,9 @@ pub fn Json(comptime Writer: type) type {
                 }
             }.end;
         }
+        pub fn serializeVariant(self: *Self, value: anytype) Error!Ok {
+            self.serializeString(@tagName(value)) catch return Error.Io;
+        }
     };
 }
 
@@ -142,6 +146,14 @@ pub fn toString(allocator: *std.mem.Allocator, value: anytype) ![]const u8 {
 }
 
 const expectEqualSlices = std.testing.expectEqualSlices;
+
+test "array" {
+    var array_list = std.ArrayList(u8).init(std.testing.allocator);
+    defer array_list.deinit();
+
+    try toWriter(array_list.writer(), [_]u8{ 1, 2, 3 });
+    try expectEqualSlices(u8, array_list.items, "[1,2,3]");
+}
 
 test "bool" {
     {
@@ -221,12 +233,20 @@ test "struct" {
     try expectEqualSlices(u8, array_list.items, "{\"x\":1,\"y\":2}");
 }
 
-test "array" {
+test "enum" {
     var array_list = std.ArrayList(u8).init(std.testing.allocator);
     defer array_list.deinit();
 
-    try toWriter(array_list.writer(), [_]u8{ 1, 2, 3 });
-    try expectEqualSlices(u8, array_list.items, "[1,2,3]");
+    try toWriter(array_list.writer(), enum { Foo }.Foo);
+    try expectEqualSlices(u8, array_list.items, "\"Foo\"");
+}
+
+test "enum literal" {
+    var array_list = std.ArrayList(u8).init(std.testing.allocator);
+    defer array_list.deinit();
+
+    try toWriter(array_list.writer(), .Foo);
+    try expectEqualSlices(u8, array_list.items, "\"Foo\"");
 }
 
 comptime {

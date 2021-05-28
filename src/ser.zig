@@ -36,6 +36,7 @@ pub fn Serializer(
     comptime sequenceFn: fn (context: Context) E!fn (Context) E!O,
     comptime stringFn: fn (context: Context, value: anytype) E!O,
     comptime structFn: fn (context: Context) E!fn (Context) E!O,
+    comptime variantFn: fn (context: Context, value: anytype) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -89,6 +90,10 @@ pub fn Serializer(
         pub fn serializeStruct(self: Self) Error!fn (Context) Error!Ok {
             return try structFn(self.context);
         }
+        // Serialize an enum value.
+        pub fn serializeVariant(self: Self, value: anytype) Error!Ok {
+            return try variantFn(self.context, value);
+        }
     };
 }
 
@@ -128,8 +133,12 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
         .Bool => {
             return try s.serializeBool(value);
         },
-        .Enum => {
-            @compileError("TODO: enums");
+        .Enum, .EnumLiteral => {
+            if (comptime trait.hasFn("serialize")(T)) {
+                return try value.serialize(serializer);
+            }
+
+            return try s.serializeVariant(value);
         },
         .ErrorSet => {
             return try serialize(serializer, @as([]const u8, @errorName(value)));
@@ -332,6 +341,28 @@ test "Serialize - tagged union" {
     });
 }
 
+test "Serialize - enum" {
+    var s = TestSerializer{};
+    try serialize(&s, enum { Foo }.Foo);
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .Variant,
+        .Undefined,
+        .Undefined,
+        .Undefined,
+    });
+}
+
+test "Serialize - enum literal" {
+    var s = TestSerializer{};
+    try serialize(&s, .Foo);
+    try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
+        .Variant,
+        .Undefined,
+        .Undefined,
+        .Undefined,
+    });
+}
+
 test "Serialize - vector" {
     var s = TestSerializer{};
     try serialize(&s, @splat(2, @as(u32, 1)));
@@ -359,6 +390,7 @@ const TestSerializer = struct {
         String,
         StructEnd,
         StructStart,
+        Variant,
     };
 
     const Ok = void;
@@ -377,6 +409,7 @@ const TestSerializer = struct {
         serializeSequence,
         serializeString,
         serializeStruct,
+        serializeVariant,
     );
 
     buf: [4]Elem = .{.Undefined} ** 4,
@@ -443,6 +476,11 @@ const TestSerializer = struct {
                 s.idx += 1;
             }
         }.end;
+    }
+
+    fn serializeVariant(self: *Self, value: anytype) Error!Ok {
+        self.buf[self.idx] = .Variant;
+        self.idx += 1;
     }
 };
 
