@@ -161,7 +161,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                     else => try serialize(serializer, value.*),
                 },
                 .Slice => blk: {
-                    if ((comptime trait.isZigString(T)) and std.unicode.utf8ValidateSlice(value)) {
+                    if (comptime trait.isZigString(T)) {
                         break :blk try s.serializeString(value);
                     } else {
                         const end = try s.serializeSequence();
@@ -282,7 +282,7 @@ test "Serialize - optional" {
 
 test "Serialize - string" {
     var s = TestSerializer{};
-    try serialize(&s, "A");
+    try serialize(&s, "h\x65llo");
     try expectEqualSlices(TestSerializer.Elem, &s.buf, &.{
         .String,
         .Undefined,
