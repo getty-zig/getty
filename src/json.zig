@@ -122,6 +122,7 @@ pub fn Json(comptime Writer: type) type {
                 }
             }.end;
         }
+
         pub fn serializeVariant(self: *Self, value: anytype) Error!Ok {
             self.serializeString(@tagName(value)) catch return Error.Io;
         }
