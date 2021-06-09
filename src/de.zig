@@ -2,7 +2,7 @@ const std = @import("std");
 
 fn DeserializerFn(comptime Context: type, comptime Error: type) type {
     return @TypeOf(struct {
-        fn f(context: Context, visitor: anytype) Error!std.meta.Child(@TypeOf(visitor)).Ok {
+        fn f(context: Context, visitor: anytype) Error!@TypeOf(visitor).Ok {
             unreachable;
         }
     }.f);
@@ -29,39 +29,39 @@ pub fn Deserializer(
 
         pub const Error = E;
 
-        //pub fn deserializeAny(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeAny(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try anyFn(self.context, visitor);
         //}
 
-        pub fn deserializeBool(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeBool(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
             return try boolFn(self.context, visitor);
         }
 
-        //pub fn deserializeInt(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeInt(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try intFn(self.context, visitor);
         //}
 
-        //pub fn deserializeFloat(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeFloat(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try floatFn(self.context, visitor);
         //}
 
-        //pub fn deserializeOption(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeOption(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try optionFn(self.context, visitor);
         //}
 
-        //pub fn deserializeSequence(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try sequenceFn(self.context, visitor);
         //}
 
-        //pub fn deserializeString(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeString(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try stringFn(self.context, visitor);
         //}
 
-        //pub fn deserializeStruct(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try structFn(self.context, visitor);
         //}
 
-        //pub fn deserializeVariant(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //pub fn deserializeVariant(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
         //return try variantFn(self.context, visitor);
         //}
     };
@@ -91,7 +91,7 @@ pub fn Visitor(
         pub const Ok = O;
         pub const Error = E;
 
-        pub fn visitBool(self: *Self, value: bool) E!O {
+        pub fn visitBool(self: Self, value: bool) E!O {
             return try boolFn(self.context, value);
         }
     };
@@ -115,7 +115,7 @@ const TestDeserializer = struct {
         return .{ .context = self };
     }
 
-    pub fn deserializeBool(self: *Self, visitor: anytype) Error!std.meta.Child(@TypeOf(visitor)).Ok {
+    pub fn deserializeBool(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         return visitor.visitBool(true) catch return Error.DeserializationError;
     }
 };
@@ -155,10 +155,10 @@ const PublishStateVisitor = struct {
 
 test {
     var test_deserializer = TestDeserializer{ .input = "hello" };
-    var deserializer = test_deserializer.deserializer();
+    const deserializer = test_deserializer.deserializer();
 
     var print_visitor = PublishStateVisitor{};
-    const visitor = &print_visitor.visitor();
+    const visitor = print_visitor.visitor();
 
     var publish_state = try deserializer.deserializeBool(visitor);
 }
