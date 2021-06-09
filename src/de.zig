@@ -12,7 +12,15 @@ fn DeserializerFn(comptime Context: type, comptime Error: type) type {
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
-    comptime deserializeBoolFn: DeserializerFn(Context, E),
+    //comptime anyFn: DeserializerFn(Context, E),
+    comptime boolFn: DeserializerFn(Context, E),
+    //comptime intFn: DeserializerFn(Context, E),
+    //comptime floatFn: DeserializerFn(Context, E),
+    //comptime optionFn: DeserializerFn(Context, E),
+    //comptime sequenceFn: DeserializerFn(Context, E),
+    //comptime stringFn: DeserializerFn(Context, E),
+    //comptime structFn: DeserializerFn(Context, E),
+    //comptime variantFn: DeserializerFn(Context, E),
 ) type {
     return struct {
         context: Context,
@@ -21,9 +29,41 @@ pub fn Deserializer(
 
         pub const Error = E;
 
-        pub fn deserializeBool(self: *Self, visitor: anytype) E!std.meta.Child(@TypeOf(visitor)).Ok {
-            return try deserializeBoolFn(self.context, visitor);
+        //pub fn deserializeAny(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try anyFn(self.context, visitor);
+        //}
+
+        pub fn deserializeBool(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+            return try boolFn(self.context, visitor);
         }
+
+        //pub fn deserializeInt(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try intFn(self.context, visitor);
+        //}
+
+        //pub fn deserializeFloat(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try floatFn(self.context, visitor);
+        //}
+
+        //pub fn deserializeOption(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try optionFn(self.context, visitor);
+        //}
+
+        //pub fn deserializeSequence(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try sequenceFn(self.context, visitor);
+        //}
+
+        //pub fn deserializeString(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try stringFn(self.context, visitor);
+        //}
+
+        //pub fn deserializeStruct(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try structFn(self.context, visitor);
+        //}
+
+        //pub fn deserializeVariant(self: *Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        //return try variantFn(self.context, visitor);
+        //}
     };
 }
 
@@ -33,7 +73,15 @@ pub fn Visitor(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime visitBoolFn: fn (Context, bool) E!O,
+    comptime boolFn: fn (Context, bool) E!O,
+    //comptime intFn: fn (Context, anytype) E!O,
+    //comptime floatFn: fn (Context, anytype) E!O,
+    //comptime nullFn: fn (Context, anytype) E!O,
+    //comptime someFn: fn (Context, anytype) E!O,
+    //comptime sequenceFn: fn (Context, anytype) E!O,
+    //comptime stringFn: fn (Context, anytype) E!O,
+    //comptime structFn: fn (Context, anytype) E!O,
+    //comptime variantFn: fn (Context, anytype) E!O,
 ) type {
     return struct {
         context: Context,
@@ -44,7 +92,7 @@ pub fn Visitor(
         pub const Error = E;
 
         pub fn visitBool(self: *Self, value: bool) E!O {
-            return try visitBoolFn(self.context, value);
+            return try boolFn(self.context, value);
         }
     };
 }
