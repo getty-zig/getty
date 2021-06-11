@@ -154,13 +154,38 @@ const PublishStateVisitor = struct {
 };
 
 test {
-    var test_deserializer = TestDeserializer{ .input = "hello" };
-    const deserializer = test_deserializer.deserializer();
+    {
+        var test_deserializer = TestDeserializer{ .input = "true" };
+        const deserializer = test_deserializer.deserializer();
+        var print_visitor = PublishStateVisitor{};
+        const visitor = print_visitor.visitor();
 
-    var print_visitor = PublishStateVisitor{};
-    const visitor = print_visitor.visitor();
+        var publish_state = try deserializer.deserializeBool(visitor);
+        try std.testing.expect(publish_state == .Published);
+    }
 
-    var publish_state = try deserializer.deserializeBool(visitor);
+    {
+        var test_deserializer = TestDeserializer{ .input = "false" };
+        const deserializer = test_deserializer.deserializer();
+        var print_visitor = PublishStateVisitor{};
+        const visitor = print_visitor.visitor();
+
+        var publish_state = try deserializer.deserializeBool(visitor);
+        try std.testing.expect(publish_state == .Unpublished);
+    }
+
+    {
+        var test_deserializer = TestDeserializer{ .input = "" };
+        const deserializer = test_deserializer.deserializer();
+        var print_visitor = PublishStateVisitor{};
+        const visitor = print_visitor.visitor();
+
+        if (deserializer.deserializeBool(visitor)) |_| {
+            unreachable;
+        } else |err| {
+            try std.testing.expect(err == TestDeserializer.Error.DeserializationError);
+        }
+    }
 }
 
 comptime {
