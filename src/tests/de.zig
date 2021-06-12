@@ -84,29 +84,35 @@ test "bool" {
     const visitor = print_visitor.visitor();
 
     {
-        var test_deserializer = Deserializer{ .input = "true" };
-        const deserializer = test_deserializer.deserializer();
+        const test_cases = [_]struct { input: []const u8, output: PublishState }{
+            .{ .input = "true", .output = .Published },
+            .{ .input = "false", .output = .Unpublished },
+        };
 
-        var publish_state = try deserializer.deserializeBool(visitor);
-        try std.testing.expect(publish_state == .Published);
+        for (test_cases) |t| {
+            var test_deserializer = Deserializer{ .input = t.input };
+            const deserializer = test_deserializer.deserializer();
+
+            var state = try deserializer.deserializeBool(visitor);
+            try std.testing.expect(state == t.output);
+        }
     }
 
     {
-        var test_deserializer = Deserializer{ .input = "false" };
-        const deserializer = test_deserializer.deserializer();
+        const test_cases = [_]struct { input: []const u8, output: Deserializer.Error }{
+            .{ .input = "", .output = error.DeserializationError },
+            .{ .input = "foo", .output = error.DeserializationError },
+        };
 
-        var publish_state = try deserializer.deserializeBool(visitor);
-        try std.testing.expect(publish_state == .Unpublished);
-    }
+        for (test_cases) |t| {
+            var test_deserializer = Deserializer{ .input = t.input };
+            const deserializer = test_deserializer.deserializer();
 
-    {
-        var test_deserializer = Deserializer{ .input = "" };
-        const deserializer = test_deserializer.deserializer();
-
-        if (deserializer.deserializeBool(visitor)) |_| {
-            unreachable;
-        } else |err| {
-            try std.testing.expect(err == Deserializer.Error.DeserializationError);
+            if (deserializer.deserializeBool(visitor)) |_| {
+                unreachable;
+            } else |err| {
+                try std.testing.expect(err == t.output);
+            }
         }
     }
 }
@@ -115,27 +121,17 @@ test "int" {
     var print_visitor = PublishStateVisitor{};
     const visitor = print_visitor.visitor();
 
-    {
-        var test_deserializer = Deserializer{ .input = "0" };
+    const test_cases = [_]struct { input: []const u8, output: PublishState }{
+        .{ .input = "0", .output = .Unpublished },
+        .{ .input = "1", .output = .Published },
+        .{ .input = "-1", .output = .Unpublished },
+    };
+
+    for (test_cases) |t| {
+        var test_deserializer = Deserializer{ .input = t.input };
         const deserializer = test_deserializer.deserializer();
 
         var publish_state = try deserializer.deserializeInt(visitor);
-        try std.testing.expect(publish_state == .Unpublished);
-    }
-
-    {
-        var test_deserializer = Deserializer{ .input = "1" };
-        const deserializer = test_deserializer.deserializer();
-
-        var publish_state = try deserializer.deserializeInt(visitor);
-        try std.testing.expect(publish_state == .Published);
-    }
-
-    {
-        var test_deserializer = Deserializer{ .input = "-1" };
-        const deserializer = test_deserializer.deserializer();
-
-        var publish_state = try deserializer.deserializeInt(visitor);
-        try std.testing.expect(publish_state == .Unpublished);
+        try std.testing.expect(publish_state == t.output);
     }
 }
