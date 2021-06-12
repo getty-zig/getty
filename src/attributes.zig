@@ -342,37 +342,6 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
     });
 }
 
-test "Serialize - basic (struct)" {
-    const TestPoint = struct {
-        usingnamespace Attributes(@This(), .{});
-
-        x: i32,
-        y: i32,
-    };
-}
-
-test "Serialize - with container attribute (struct)" {
-    const TestPoint = struct {
-        usingnamespace Attributes(@This(), .{
-            .Container = .{ .rename = "A" },
-        });
-
-        x: i32,
-        y: i32,
-    };
-}
-
-test "Serialize - with field attribute (struct)" {
-    const TestPoint = struct {
-        usingnamespace Attributes(@This(), .{
-            .x = .{ .rename = "a" },
-        });
-
-        x: i32,
-        y: i32,
-    };
-}
-
 comptime {
     std.testing.refAllDecls(@This());
 }
