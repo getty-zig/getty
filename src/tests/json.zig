@@ -4,7 +4,40 @@ const getty_json = @import("getty").json;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const String = std.ArrayList(u8);
 
-test "array" {
+test "toWriter" {
+    const test_cases = [_]struct { input: anytype, output: []const u8 }{
+        // Bool
+        .{ .input = true, .output = "true" },
+        .{ .input = false, .output = "false" },
+
+        // Integer
+        .{ .input = 'A', .output = "65" },
+        .{ .input = comptime std.math.maxInt(u32), .output = "4294967295" },
+        .{ .input = comptime std.math.maxInt(u64), .output = "18446744073709551615" },
+        .{ .input = comptime std.math.minInt(i32), .output = "-2147483648" },
+
+        // Null
+        .{ .input = null, .output = "null" },
+
+        // String
+        .{ .input = "Hello, World!", .output = "\"Hello, World!\"" },
+
+        // Enum
+        .{ .input = enum { Foo }.Foo, .output = "\"Foo\"" },
+        .{ .input = .Foo, .output = "\"Foo\"" },
+    };
+
+    inline for (test_cases) |t| {
+        var array_list = String.init(std.testing.allocator);
+        defer array_list.deinit();
+
+        try getty_json.toWriter(array_list.writer(), t.input);
+        try expectEqualSlices(u8, array_list.items, t.output);
+    }
+}
+
+// FIXME: Merge into test "toWriter" blocked by #5877.
+test "toWriter - array" {
     var array_list = String.init(std.testing.allocator);
     defer array_list.deinit();
 
@@ -12,73 +45,8 @@ test "array" {
     try expectEqualSlices(u8, array_list.items, "[1,2,3]");
 }
 
-test "bool" {
-    {
-        var array_list = String.init(std.testing.allocator);
-        defer array_list.deinit();
-        try getty_json.toWriter(array_list.writer(), true);
-        try expectEqualSlices(u8, array_list.items, "true");
-    }
-
-    {
-        var array_list = String.init(std.testing.allocator);
-        defer array_list.deinit();
-        try getty_json.toWriter(array_list.writer(), false);
-        try expectEqualSlices(u8, array_list.items, "false");
-    }
-}
-
-test "int" {
-    {
-        var array_list = String.init(std.testing.allocator);
-        defer array_list.deinit();
-
-        try getty_json.toWriter(array_list.writer(), 'A');
-        try expectEqualSlices(u8, array_list.items, "65");
-    }
-
-    {
-        var array_list = String.init(std.testing.allocator);
-        defer array_list.deinit();
-
-        try getty_json.toWriter(array_list.writer(), std.math.maxInt(u32));
-        try expectEqualSlices(u8, array_list.items, "4294967295");
-    }
-
-    {
-        var array_list = String.init(std.testing.allocator);
-        defer array_list.deinit();
-
-        try getty_json.toWriter(array_list.writer(), std.math.maxInt(u64));
-        try expectEqualSlices(u8, array_list.items, "18446744073709551615");
-    }
-
-    {
-        var array_list = String.init(std.testing.allocator);
-        defer array_list.deinit();
-
-        try getty_json.toWriter(array_list.writer(), std.math.minInt(i32));
-        try expectEqualSlices(u8, array_list.items, "-2147483648");
-    }
-}
-
-test "null" {
-    var array_list = String.init(std.testing.allocator);
-    defer array_list.deinit();
-
-    try getty_json.toWriter(array_list.writer(), null);
-    try expectEqualSlices(u8, array_list.items, "null");
-}
-
-test "string" {
-    var array_list = String.init(std.testing.allocator);
-    defer array_list.deinit();
-
-    try getty_json.toWriter(array_list.writer(), "Hello, World!");
-    try expectEqualSlices(u8, array_list.items, "\"Hello, World!\"");
-}
-
-test "struct" {
+// FIXME: Merge into test "toWriter" blocked by #5877.
+test "toWriter - struct" {
     var array_list = String.init(std.testing.allocator);
     defer array_list.deinit();
 
@@ -88,20 +56,4 @@ test "struct" {
     try getty_json.toWriter(array_list.writer(), point);
 
     try expectEqualSlices(u8, array_list.items, "{\"x\":1,\"y\":2}");
-}
-
-test "enum" {
-    var array_list = String.init(std.testing.allocator);
-    defer array_list.deinit();
-
-    try getty_json.toWriter(array_list.writer(), enum { Foo }.Foo);
-    try expectEqualSlices(u8, array_list.items, "\"Foo\"");
-}
-
-test "enum literal" {
-    var array_list = String.init(std.testing.allocator);
-    defer array_list.deinit();
-
-    try getty_json.toWriter(array_list.writer(), .Foo);
-    try expectEqualSlices(u8, array_list.items, "\"Foo\"");
 }
