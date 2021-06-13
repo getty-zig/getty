@@ -56,7 +56,7 @@ const Deserializer = struct {
     }
 
     pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        @compileError("TODO: option");
+        @compileError("TODO: optional");
     }
 
     pub fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
@@ -121,7 +121,7 @@ const PublishStateVisitor = struct {
         }
     }
 
-    pub fn visitFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+    pub fn visitFloat(self: *Self, value: anytype) Error!Ok {
         if (value > 0.0) {
             return .Published;
         } else {
@@ -129,27 +129,27 @@ const PublishStateVisitor = struct {
         }
     }
 
-    pub fn visitNull(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        @compileError("TODO: null");
+    pub fn visitNull(self: *Self) Error!Ok {
+        return .Unpublished;
     }
 
-    pub fn visitSome(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        @compileError("TODO: some");
+    pub fn visitSome(self: *Self, value: anytype) Error!Ok {
+        return .Published;
     }
 
-    pub fn visitSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+    pub fn visitSequence(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: sequence");
     }
 
-    pub fn visitString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+    pub fn visitString(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: string");
     }
 
-    pub fn visitStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+    pub fn visitStruct(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: struct");
     }
 
-    pub fn visitVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+    pub fn visitVariant(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: variant");
     }
 };

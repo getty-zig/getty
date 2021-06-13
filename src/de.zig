@@ -76,7 +76,7 @@ pub fn Visitor(
     comptime boolFn: fn (Context, bool) E!O,
     comptime intFn: fn (Context, anytype) E!O,
     comptime floatFn: fn (Context, anytype) E!O,
-    comptime nullFn: fn (Context, anytype) E!O,
+    comptime nullFn: fn (Context) E!O,
     comptime someFn: fn (Context, anytype) E!O,
     comptime sequenceFn: fn (Context, anytype) E!O,
     comptime stringFn: fn (Context, anytype) E!O,
@@ -103,8 +103,8 @@ pub fn Visitor(
             return try floatFn(self.context, value);
         }
 
-        pub fn visitNull(self: Self, value: anytype) E!O {
-            return try nullFn(self.context, value);
+        pub fn visitNull(self: Self) E!O {
+            return try nullFn(self.context);
         }
 
         pub fn visitSome(self: Self, value: anytype) E!O {
