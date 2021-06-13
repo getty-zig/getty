@@ -51,7 +51,8 @@ const Deserializer = struct {
     }
 
     pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        @compileError("TODO: float");
+        const value = std.json.parse(f64, &std.json.TokenStream.init(self.input), .{}) catch return Error.DeserializationError;
+        return visitor.visitInt(value) catch return Error.DeserializationError;
     }
 
     pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
@@ -121,7 +122,11 @@ const PublishStateVisitor = struct {
     }
 
     pub fn visitFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        @compileError("TODO: float");
+        if (value > 0.0) {
+            return .Published;
+        } else {
+            return .Unpublished;
+        }
     }
 
     pub fn visitNull(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
@@ -202,6 +207,26 @@ test "int" {
         const deserializer = test_deserializer.deserializer();
 
         var publish_state = try deserializer.deserializeInt(visitor);
+        try std.testing.expect(publish_state == t.output);
+    }
+}
+
+test "float" {
+    var print_visitor = PublishStateVisitor{};
+    const visitor = print_visitor.visitor();
+
+    const test_cases = [_]struct { input: []const u8, output: PublishState }{
+        .{ .input = "0.0", .output = .Unpublished },
+        .{ .input = "1.0", .output = .Published },
+        .{ .input = "-1.0", .output = .Unpublished },
+        .{ .input = "3.1415", .output = .Published },
+    };
+
+    for (test_cases) |t| {
+        var test_deserializer = Deserializer{ .input = t.input };
+        const deserializer = test_deserializer.deserializer();
+
+        var publish_state = try deserializer.deserializeFloat(visitor);
         try std.testing.expect(publish_state == t.output);
     }
 }
