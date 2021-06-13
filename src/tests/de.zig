@@ -14,12 +14,23 @@ const Deserializer = struct {
     pub const D = de.Deserializer(
         *Self,
         Error,
+        deserializeAny,
         deserializeBool,
         deserializeInt,
+        deserializeFloat,
+        deserializeOption,
+        deserializeSequence,
+        deserializeString,
+        deserializeStruct,
+        deserializeVariant,
     );
 
     pub fn deserializer(self: *Self) D {
         return .{ .context = self };
+    }
+
+    pub fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: any");
     }
 
     /// Implements `boolFn` for `getty.de.Deserializer`.
@@ -37,6 +48,30 @@ const Deserializer = struct {
     pub fn deserializeInt(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         const value = std.json.parse(i64, &std.json.TokenStream.init(self.input), .{}) catch return Error.DeserializationError;
         return visitor.visitInt(value) catch return Error.DeserializationError;
+    }
+
+    pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: float");
+    }
+
+    pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: option");
+    }
+
+    pub fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: sequence");
+    }
+
+    pub fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: string");
+    }
+
+    pub fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: struct");
+    }
+
+    pub fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: variant");
     }
 };
 
@@ -57,6 +92,13 @@ const PublishStateVisitor = struct {
         Error,
         visitBool,
         visitInt,
+        visitFloat,
+        visitNull,
+        visitSome,
+        visitSequence,
+        visitString,
+        visitStruct,
+        visitVariant,
     );
 
     pub fn visitor(self: *Self) V {
@@ -76,6 +118,34 @@ const PublishStateVisitor = struct {
         } else {
             return .Unpublished;
         }
+    }
+
+    pub fn visitFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: float");
+    }
+
+    pub fn visitNull(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: null");
+    }
+
+    pub fn visitSome(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: some");
+    }
+
+    pub fn visitSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: sequence");
+    }
+
+    pub fn visitString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: string");
+    }
+
+    pub fn visitStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: struct");
+    }
+
+    pub fn visitVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        @compileError("TODO: variant");
     }
 };
 
