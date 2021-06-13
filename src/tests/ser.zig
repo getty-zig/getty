@@ -4,24 +4,24 @@ const ser = @import("getty").ser;
 const testing = std.testing;
 const expectEqualSlices = testing.expectEqualSlices;
 
+const Elem = enum {
+    Undefined,
+    Bool,
+    Element,
+    Field,
+    Float,
+    Int,
+    Null,
+    SequenceEnd,
+    SequenceStart,
+    String,
+    StructEnd,
+    StructStart,
+    Variant,
+};
+
 pub const Serializer = struct {
     const Self = @This();
-
-    const Elem = enum {
-        Undefined,
-        Bool,
-        Element,
-        Field,
-        Float,
-        Int,
-        Null,
-        SequenceEnd,
-        SequenceStart,
-        String,
-        StructEnd,
-        StructStart,
-        Variant,
-    };
 
     pub const Ok = void;
     pub const Error = std.mem.Allocator.Error;
@@ -114,10 +114,52 @@ pub const Serializer = struct {
     }
 };
 
+// TODO: Handle multiple serializations (e.g., .{ .Int, .Int, ... }).
+test "Serialize" {
+    const Union = union(enum) { Int: i32, Bool: bool };
+    const test_cases = [_]struct { input: anytype, output: []const Elem }{
+        // Bool
+        .{ .input = true, .output = &.{ .Bool, .Undefined, .Undefined, .Undefined } },
+
+        // Error set
+        .{ .input = error.Elem, .output = &.{ .String, .Undefined, .Undefined, .Undefined } },
+
+        // Integer
+        .{ .input = 1, .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
+        .{ .input = @as(u8, 1), .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
+        .{ .input = @as(i8, -1), .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
+
+        // Null
+        .{ .input = null, .output = &.{ .Null, .Undefined, .Undefined, .Undefined } },
+
+        // Optional
+        .{ .input = @as(?i8, 1), .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
+        .{ .input = @as(?i8, null), .output = &.{ .Null, .Undefined, .Undefined, .Undefined } },
+
+        // String
+        .{ .input = "h\x65llo", .output = &.{ .String, .Undefined, .Undefined, .Undefined } },
+        .{ .input = &[_]u8{65}, .output = &.{ .String, .Undefined, .Undefined, .Undefined } },
+
+        // Enum
+        .{ .input = enum { Foo }.Foo, .output = &.{ .Variant, .Undefined, .Undefined, .Undefined } },
+        .{ .input = .Foo, .output = &.{ .Variant, .Undefined, .Undefined, .Undefined } },
+
+        // Vector
+        .{ .input = @splat(2, @as(u32, 1)), .output = &.{ .SequenceStart, .Element, .Element, .SequenceEnd } },
+    };
+
+    inline for (test_cases) |t| {
+        var s = Serializer{};
+        try ser.serialize(&s, t.input);
+        try expectEqualSlices(Elem, &s.buf, t.output);
+    }
+}
+
+// FIXME: Merge into test "Serialize" blocked by #5877.
 test "Serialize - array" {
     var s = Serializer{};
     try ser.serialize(&s, [_]u8{ 1, 2 });
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
+    try expectEqualSlices(Elem, &s.buf, &.{
         .SequenceStart,
         .Element,
         .Element,
@@ -125,74 +167,11 @@ test "Serialize - array" {
     });
 }
 
-test "Serialize - bool" {
-    var s = Serializer{};
-    try ser.serialize(&s, true);
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .Bool,
-        .Undefined,
-        .Undefined,
-        .Undefined,
-    });
-}
-
-test "Serialize - error set" {
-    var s = Serializer{};
-    try ser.serialize(&s, error.Elem);
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .String,
-        .Undefined,
-        .Undefined,
-        .Undefined,
-    });
-}
-
-test "Serialize - integer" {
-    var s = Serializer{};
-    try ser.serialize(&s, 1);
-    try ser.serialize(&s, @as(u8, 1));
-    try ser.serialize(&s, @as(i8, 1));
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .Int,
-        .Int,
-        .Int,
-        .Undefined,
-    });
-}
-
-test "Serialize - null" {
-    var s = Serializer{};
-    try ser.serialize(&s, null);
-    try expectEqualSlices(Serializer.Elem, s.buf[0..1], &.{.Null});
-}
-
-test "Serialize - optional" {
-    var s = Serializer{};
-    try ser.serialize(&s, @as(?i8, 1));
-    try ser.serialize(&s, @as(?i8, null));
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .Int,
-        .Null,
-        .Undefined,
-        .Undefined,
-    });
-}
-
-test "Serialize - string" {
-    var s = Serializer{};
-    try ser.serialize(&s, "h\x65llo");
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .String,
-        .Undefined,
-        .Undefined,
-        .Undefined,
-    });
-}
-
+// FIXME: Merge into test "Serialize" blocked by #5877.
 test "Serialize - struct" {
     var s = Serializer{};
     try ser.serialize(&s, struct { x: i32, y: i32 }{ .x = 0, .y = 0 });
-    try expectEqualSlices(Serializer.Elem, s.buf[0..4], &.{
+    try expectEqualSlices(Elem, &s.buf, &.{
         .StructStart,
         .Field,
         .Field,
@@ -200,6 +179,7 @@ test "Serialize - struct" {
     });
 }
 
+// FIXME: Merge into test "Serialize" blocked by #5877.
 test "Serialize - struct (custom)" {
     var s = Serializer{};
 
@@ -217,7 +197,7 @@ test "Serialize - struct (custom)" {
     var point = Point{ .x = 1, .y = 2 };
 
     try ser.serialize(&s, &point);
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
+    try expectEqualSlices(Elem, &s.buf, &.{
         .StructStart,
         .Field,
         .StructEnd,
@@ -225,48 +205,16 @@ test "Serialize - struct (custom)" {
     });
 }
 
+// FIXME: Merge into test "Serialize" blocked by #5877 (probably).
 test "Serialize - tagged union" {
     const Union = union(enum) { Int: i32, Bool: bool };
     var s = Serializer{};
     try ser.serialize(&s, Union{ .Int = 42 });
     try ser.serialize(&s, Union{ .Bool = true });
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
+    try expectEqualSlices(Elem, &s.buf, &.{
         .Int,
         .Bool,
         .Undefined,
         .Undefined,
-    });
-}
-
-test "Serialize - enum" {
-    var s = Serializer{};
-    try ser.serialize(&s, enum { Foo }.Foo);
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .Variant,
-        .Undefined,
-        .Undefined,
-        .Undefined,
-    });
-}
-
-test "Serialize - enum literal" {
-    var s = Serializer{};
-    try ser.serialize(&s, .Foo);
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .Variant,
-        .Undefined,
-        .Undefined,
-        .Undefined,
-    });
-}
-
-test "Serialize - vector" {
-    var s = Serializer{};
-    try ser.serialize(&s, @splat(2, @as(u32, 1)));
-    try expectEqualSlices(Serializer.Elem, &s.buf, &.{
-        .SequenceStart,
-        .Element,
-        .Element,
-        .SequenceEnd,
     });
 }
