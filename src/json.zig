@@ -28,6 +28,7 @@ pub fn Json(comptime Writer: type) type {
             Eof,
         };
 
+        /// Implements `getty.ser.Serializer`.
         pub const Serializer = ser.Serializer(
             *Self,
             Ok,
@@ -57,10 +58,12 @@ pub fn Json(comptime Writer: type) type {
             };
         }
 
+        /// Implements `boolFn` for `getty.ser.Serializer`.
         pub fn serializeBool(self: *Self, value: bool) Error!Ok {
             self.writer.writeAll(if (value) "true" else "false") catch return Error.Io;
         }
 
+        /// Implements `elementFn` for `getty.ser.Serializer`.
         pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
             if (self._written > 0) {
                 self.writer.writeByte(',') catch return Error.Io;
@@ -71,6 +74,7 @@ pub fn Json(comptime Writer: type) type {
             ser.serialize(self, value) catch return Error.Io;
         }
 
+        /// Implements `fieldFn` for `getty.ser.Serializer`.
         pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
             if (self._written > 0) {
                 self.writer.writeByte(',') catch return Error.Io;
@@ -83,20 +87,24 @@ pub fn Json(comptime Writer: type) type {
             ser.serialize(self, value) catch return Error.Io;
         }
 
+        /// Implements `floatFn` for `getty.ser.Serializer`.
         pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
             json.stringify(value, .{}, self.writer) catch return Error.Io;
         }
 
+        /// Implements `intFn` for `getty.ser.Serializer`.
         pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
             var buffer: [20]u8 = undefined;
             const number = std.fmt.bufPrint(&buffer, "{}", .{value}) catch unreachable;
             self.writer.writeAll(number) catch return Error.Io;
         }
 
+        /// Implements `nullFn` for `getty.ser.Serializer`.
         pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
             self.writer.writeAll("null") catch return Error.Io;
         }
 
+        /// Implements `sequenceFn` for `getty.ser.Serializer`.
         pub fn serializeSequence(self: *Self) Error!fn (*Self) Error!Ok {
             self.writer.writeByte('[') catch return Error.Io;
 
@@ -107,12 +115,14 @@ pub fn Json(comptime Writer: type) type {
             }.end;
         }
 
+        /// Implements `stringFn` for `getty.ser.Serializer`.
         pub fn serializeString(self: *Self, value: anytype) Error!Ok {
             self.writer.writeByte('"') catch return Error.Io;
             self.writer.writeAll(value) catch return Error.Io;
             self.writer.writeByte('"') catch return Error.Io;
         }
 
+        /// Implements `structFn` for `getty.ser.Serializer`.
         pub fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
             self.writer.writeByte('{') catch return Error.Io;
 
@@ -123,6 +133,7 @@ pub fn Json(comptime Writer: type) type {
             }.end;
         }
 
+        /// Implements `variantFn` for `getty.ser.Serializer`.
         pub fn serializeVariant(self: *Self, value: anytype) Error!Ok {
             self.serializeString(@tagName(value)) catch return Error.Io;
         }

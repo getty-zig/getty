@@ -21,11 +21,15 @@ const Elem = enum {
 };
 
 pub const Serializer = struct {
+    buf: [4]Elem = .{.Undefined} ** 4,
+    idx: usize = 0,
+
     const Self = @This();
 
     pub const Ok = void;
     pub const Error = std.mem.Allocator.Error;
 
+    /// Implements `getty.ser.Serializer`.
     pub const S = ser.Serializer(
         *Self,
         Ok,
@@ -42,43 +46,47 @@ pub const Serializer = struct {
         serializeVariant,
     );
 
-    buf: [4]Elem = .{.Undefined} ** 4,
-    idx: usize = 0,
-
     pub fn serializer(self: *Self) S {
         return .{ .context = self };
     }
 
+    /// Implements `boolFn` for `getty.ser.Serializer`.
     pub fn serializeBool(self: *Self, value: bool) Error!Ok {
         self.buf[self.idx] = .Bool;
         self.idx += 1;
     }
 
+    /// Implements `elementFn` for `getty.ser.Serializer`.
     pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
         self.buf[self.idx] = .Element;
         self.idx += 1;
     }
 
+    /// Implements `fieldFn` for `getty.ser.Serializer`.
     pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
         self.buf[self.idx] = .Field;
         self.idx += 1;
     }
 
+    /// Implements `floatFn` for `getty.ser.Serializer`.
     pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
         self.buf[self.idx] = .Float;
         self.idx += 1;
     }
 
+    /// Implements `intFn` for `getty.ser.Serializer`.
     pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
         self.buf[self.idx] = .Int;
         self.idx += 1;
     }
 
+    /// Implements `nullFn` for `getty.ser.Serializer`.
     pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
         self.buf[self.idx] = .Null;
         self.idx += 1;
     }
 
+    /// Implements `sequenceFn` for `getty.ser.Serializer`.
     pub fn serializeSequence(self: *Self) Error!fn (*Self) Error!Ok {
         self.buf[self.idx] = .SequenceStart;
         self.idx += 1;
@@ -91,11 +99,13 @@ pub const Serializer = struct {
         }.end;
     }
 
+    /// Implements `stringFn` for `getty.ser.Serializer`.
     pub fn serializeString(self: *Self, value: anytype) Error!Ok {
         self.buf[self.idx] = .String;
         self.idx += 1;
     }
 
+    /// Implements `structFn` for `getty.ser.Serializer`.
     pub fn serializeStruct(self: *Self) Error!fn (*Self) Error!Ok {
         self.buf[self.idx] = .StructStart;
         self.idx += 1;
@@ -108,6 +118,7 @@ pub const Serializer = struct {
         }.end;
     }
 
+    /// Implements `variantFn` for `getty.ser.Serializer`.
     pub fn serializeVariant(self: *Self, value: anytype) Error!Ok {
         self.buf[self.idx] = .Variant;
         self.idx += 1;

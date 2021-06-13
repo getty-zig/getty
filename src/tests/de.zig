@@ -29,6 +29,7 @@ const Deserializer = struct {
         return .{ .context = self };
     }
 
+    /// Implements `anyFn` for `getty.de.Deserializer`.
     pub fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         @compileError("TODO: any");
     }
@@ -50,27 +51,33 @@ const Deserializer = struct {
         return visitor.visitInt(value) catch return Error.DeserializationError;
     }
 
+    /// Implements `floatFn` for `getty.de.Deserializer`.
     pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         const value = std.json.parse(f64, &std.json.TokenStream.init(self.input), .{}) catch return Error.DeserializationError;
         return visitor.visitInt(value) catch return Error.DeserializationError;
     }
 
+    /// Implements `optionFn` for `getty.de.Deserializer`.
     pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         @compileError("TODO: optional");
     }
 
+    /// Implements `sequenceFn` for `getty.de.Deserializer`.
     pub fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         @compileError("TODO: sequence");
     }
 
+    /// Implements `stringFn` for `getty.de.Deserializer`.
     pub fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         @compileError("TODO: string");
     }
 
+    /// Implements `structFn` for `getty.de.Deserializer`.
     pub fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         @compileError("TODO: struct");
     }
 
+    /// Implements `variantFn` for `getty.de.Deserializer`.
     pub fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
         @compileError("TODO: variant");
     }
@@ -87,6 +94,7 @@ const PublishStateVisitor = struct {
     const Ok = PublishState;
     const Error = error{VisitorError};
 
+    /// Implements `getty.de.Visitor`.
     const V = de.Visitor(
         *Self,
         Ok,
@@ -106,6 +114,7 @@ const PublishStateVisitor = struct {
         return .{ .context = self };
     }
 
+    /// Implements `boolFn` for `getty.de.Visitor`.
     fn visitBool(self: *Self, value: bool) Error!Ok {
         return switch (value) {
             true => .Published,
@@ -113,6 +122,7 @@ const PublishStateVisitor = struct {
         };
     }
 
+    /// Implements `intFn` for `getty.de.Visitor`.
     fn visitInt(self: *Self, value: anytype) Error!Ok {
         if (value > 0) {
             return .Published;
@@ -121,6 +131,7 @@ const PublishStateVisitor = struct {
         }
     }
 
+    /// Implements `floatFn` for `getty.de.Visitor`.
     pub fn visitFloat(self: *Self, value: anytype) Error!Ok {
         if (value > 0.0) {
             return .Published;
@@ -129,26 +140,32 @@ const PublishStateVisitor = struct {
         }
     }
 
+    /// Implements `nullFn` for `getty.de.Visitor`.
     pub fn visitNull(self: *Self) Error!Ok {
         return .Unpublished;
     }
 
+    /// Implements `someFn` for `getty.de.Visitor`.
     pub fn visitSome(self: *Self, value: anytype) Error!Ok {
         return .Published;
     }
 
+    /// Implements `sequenceFn` for `getty.de.Visitor`.
     pub fn visitSequence(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: sequence");
     }
 
+    /// Implements `stringFn` for `getty.de.Visitor`.
     pub fn visitString(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: string");
     }
 
+    /// Implements `structFn` for `getty.de.Visitor`.
     pub fn visitStruct(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: struct");
     }
 
+    /// Implements `variantFn` for `getty.de.Visitor`.
     pub fn visitVariant(self: *Self, value: anytype) Error!Ok {
         @compileError("TODO: variant");
     }
