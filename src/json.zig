@@ -100,7 +100,7 @@ pub fn Json(comptime Writer: type) type {
         }
 
         /// Implements `nullFn` for `getty.ser.Serializer`.
-        pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
+        pub fn serializeNull(self: *Self) Error!Ok {
             self.writer.writeAll("null") catch return Error.Io;
         }
 

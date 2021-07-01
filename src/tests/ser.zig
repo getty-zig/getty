@@ -84,7 +84,7 @@ pub const Serializer = struct {
     }
 
     /// Implements `nullFn` for `getty.ser.Serializer`.
-    pub fn serializeNull(self: *Self, value: anytype) Error!Ok {
+    pub fn serializeNull(self: *Self) Error!Ok {
         self.buf[self.idx] = .Null;
         self.idx += 1;
     }

@@ -32,7 +32,7 @@ pub fn Serializer(
     comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!O,
     comptime floatFn: fn (context: Context, value: anytype) E!O,
     comptime intFn: fn (context: Context, value: anytype) E!O,
-    comptime nullFn: fn (context: Context, value: anytype) E!O,
+    comptime nullFn: fn (context: Context) E!O,
     comptime sequenceFn: fn (context: Context) E!fn (Context) E!O,
     comptime stringFn: fn (context: Context, value: anytype) E!O,
     comptime structFn: fn (context: Context) E!fn (Context) E!O,
@@ -72,8 +72,8 @@ pub fn Serializer(
         }
 
         /// Serialize a null value.
-        pub fn serializeNull(self: Self, value: anytype) Error!Ok {
-            return try nullFn(self.context, value);
+        pub fn serializeNull(self: Self) Error!Ok {
+            return try nullFn(self.context);
         }
 
         /// Serialize a variably sized heterogeneous sequence of values.
@@ -149,7 +149,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             return try s.serializeInt(value);
         },
         .Null => {
-            return try s.serializeNull(value);
+            return try s.serializeNull();
         },
         .Optional => {
             return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null);
