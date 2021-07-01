@@ -130,36 +130,141 @@ pub const Serializer = struct {
 
 // TODO: Handle multiple serializations (e.g., .{ .Int, .Int, ... }).
 test "Serialize" {
-    const Union = union(enum) { Int: i32, Bool: bool };
-    const test_cases = [_]struct { input: anytype, output: []const Elem }{
-        // Bool
-        .{ .input = true, .output = &.{ .Bool, .Undefined, .Undefined, .Undefined } },
-
-        // Error set
-        .{ .input = error.Elem, .output = &.{ .String, .Undefined, .Undefined, .Undefined } },
-
-        // Integer
-        .{ .input = 1, .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
-        .{ .input = @as(u8, 1), .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
-        .{ .input = @as(i8, -1), .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
-
-        // Null
-        .{ .input = null, .output = &.{ .Null, .Undefined, .Undefined, .Undefined } },
-
-        // Optional
-        .{ .input = @as(?i8, 1), .output = &.{ .Int, .Undefined, .Undefined, .Undefined } },
-        .{ .input = @as(?i8, null), .output = &.{ .Null, .Undefined, .Undefined, .Undefined } },
-
-        // String
-        .{ .input = "h\x65llo", .output = &.{ .String, .Undefined, .Undefined, .Undefined } },
-        .{ .input = &[_]u8{65}, .output = &.{ .String, .Undefined, .Undefined, .Undefined } },
-
-        // Enum
-        .{ .input = enum { Foo }.Foo, .output = &.{ .Variant, .Undefined, .Undefined, .Undefined } },
-        .{ .input = .Foo, .output = &.{ .Variant, .Undefined, .Undefined, .Undefined } },
-
-        // Vector
-        .{ .input = @splat(2, @as(u32, 1)), .output = &.{ .SequenceStart, .Element, .Element, .SequenceEnd } },
+    const test_cases = [_]struct {
+        name: []const u8,
+        input: anytype,
+        output: []const Elem,
+    }{
+        .{
+            .name = "Boolean",
+            .input = true,
+            .output = &.{
+                .Bool,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Error value",
+            .input = error.Elem,
+            .output = &.{
+                .String,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Integer (comptime)",
+            .input = 1,
+            .output = &.{
+                .Int,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Integer (unsigned)",
+            .input = @as(u8, 1),
+            .output = &.{
+                .Int,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Integer (signed)",
+            .input = @as(i8, -1),
+            .output = &.{
+                .Int,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Null",
+            .input = null,
+            .output = &.{
+                .Null,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Optional (some)",
+            .input = @as(?i8, 1),
+            .output = &.{
+                .Int,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Optional (none)",
+            .input = @as(?i8, null),
+            .output = &.{
+                .Null,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "String literal",
+            .input = "h\x65llo",
+            .output = &.{
+                .String,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "String (byte slice)",
+            .input = &[_]u8{65},
+            .output = &.{
+                .String,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Enum (variant instance)",
+            .input = enum { Foo }.Foo,
+            .output = &.{
+                .Variant,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Enum (literal)",
+            .input = .Foo,
+            .output = &.{
+                .Variant,
+                .Undefined,
+                .Undefined,
+                .Undefined,
+            },
+        },
+        .{
+            .name = "Vector",
+            .input = @splat(2, @as(u32, 1)),
+            .output = &.{
+                .SequenceStart,
+                .Element,
+                .Element,
+                .SequenceEnd,
+            },
+        },
     };
 
     inline for (test_cases) |t| {
