@@ -51,31 +51,34 @@ pub const Serializer = struct {
     }
 
     /// Implements `boolFn` for `getty.ser.Serializer`.
-    pub fn serializeBool(self: *Self, value: bool) Error!Ok {
+    pub fn serializeBool(self: *Self, _: bool) Error!Ok {
         self.buf[self.idx] = .Bool;
         self.idx += 1;
     }
 
     /// Implements `elementFn` for `getty.ser.Serializer`.
-    pub fn serializeElement(self: *Self, value: anytype) Error!Ok {
+    pub fn serializeElement(self: *Self, _: anytype) Error!Ok {
         self.buf[self.idx] = .Element;
         self.idx += 1;
     }
 
     /// Implements `fieldFn` for `getty.ser.Serializer`.
     pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
+        _ = key;
+        _ = value;
+
         self.buf[self.idx] = .Field;
         self.idx += 1;
     }
 
     /// Implements `floatFn` for `getty.ser.Serializer`.
-    pub fn serializeFloat(self: *Self, value: anytype) Error!Ok {
+    pub fn serializeFloat(self: *Self, _: anytype) Error!Ok {
         self.buf[self.idx] = .Float;
         self.idx += 1;
     }
 
     /// Implements `intFn` for `getty.ser.Serializer`.
-    pub fn serializeInt(self: *Self, value: anytype) Error!Ok {
+    pub fn serializeInt(self: *Self, _: anytype) Error!Ok {
         self.buf[self.idx] = .Int;
         self.idx += 1;
     }
@@ -100,7 +103,7 @@ pub const Serializer = struct {
     }
 
     /// Implements `stringFn` for `getty.ser.Serializer`.
-    pub fn serializeString(self: *Self, value: anytype) Error!Ok {
+    pub fn serializeString(self: *Self, _: anytype) Error!Ok {
         self.buf[self.idx] = .String;
         self.idx += 1;
     }
@@ -119,7 +122,7 @@ pub const Serializer = struct {
     }
 
     /// Implements `variantFn` for `getty.ser.Serializer`.
-    pub fn serializeVariant(self: *Self, value: anytype) Error!Ok {
+    pub fn serializeVariant(self: *Self, _: anytype) Error!Ok {
         self.buf[self.idx] = .Variant;
         self.idx += 1;
     }

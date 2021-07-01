@@ -2,7 +2,7 @@ const std = @import("std");
 
 fn DeserializerFn(comptime Context: type, comptime Error: type) type {
     return @TypeOf(struct {
-        fn f(context: Context, visitor: anytype) Error!@TypeOf(visitor).Ok {
+        fn f(_: Context, visitor: anytype) Error!@TypeOf(visitor).Ok {
             unreachable;
         }
     }.f);

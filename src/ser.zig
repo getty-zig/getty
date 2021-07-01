@@ -179,7 +179,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 return try value.serialize(serializer);
             } else {
                 // TODO: coerce this to @TypeOf(_getty_attributes)
-                const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
+                //const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
                 const end = try s.serializeStruct();
                 inline for (info.fields) |field| {

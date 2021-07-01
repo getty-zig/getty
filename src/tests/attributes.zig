@@ -1,7 +1,7 @@
 const Attributes = @import("getty").Attributes;
 
 test "Serialize - basic (struct)" {
-    const Point = struct {
+    _ = struct {
         usingnamespace Attributes(@This(), .{});
 
         x: i32,
@@ -10,7 +10,7 @@ test "Serialize - basic (struct)" {
 }
 
 test "Serialize - with container attribute (struct)" {
-    const Point = struct {
+    _ = struct {
         usingnamespace Attributes(@This(), .{
             .Container = .{ .rename = "A" },
         });
@@ -21,7 +21,7 @@ test "Serialize - with container attribute (struct)" {
 }
 
 test "Serialize - with field attribute (struct)" {
-    const Point = struct {
+    _ = struct {
         usingnamespace Attributes(@This(), .{
             .x = .{ .rename = "a" },
         });
