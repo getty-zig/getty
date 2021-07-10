@@ -1,128 +1,138 @@
 const std = @import("std");
 const de = @import("getty").de;
 
-const eql = std.mem.eql;
+fn Deserializer(comptime T: type) type {
+    return struct {
+        value: T,
 
-const Deserializer = struct {
-    input: []const u8,
+        const Self = @This();
 
-    const Self = @This();
-
-    pub const Error = error{DeserializationError};
-
-    /// Implements `getty.de.Deserializer`.
-    pub const D = de.Deserializer(
-        *Self,
-        Error,
-        deserializeAny,
-        deserializeBool,
-        deserializeInt,
-        deserializeFloat,
-        deserializeOption,
-        deserializeSequence,
-        deserializeString,
-        deserializeStruct,
-        deserializeVariant,
-    );
-
-    pub fn deserializer(self: *Self) D {
-        return .{ .context = self };
-    }
-
-    /// Implements `anyFn` for `getty.de.Deserializer`.
-    pub fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
-
-        @compileError("TODO: any");
-    }
-
-    /// Implements `boolFn` for `getty.de.Deserializer`.
-    pub fn deserializeBool(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        if (eql(u8, self.input, "true")) {
-            return visitor.visitBool(true) catch return Error.DeserializationError;
-        } else if (eql(u8, self.input, "false")) {
-            return visitor.visitBool(false) catch return Error.DeserializationError;
+        pub fn init(value: T) Self {
+            return .{ .value = value };
         }
 
-        return Error.DeserializationError;
-    }
+        /// Implements `getty.de.Deserializer`.
+        pub const Error = error{
+            DeserializationError,
+        };
 
-    /// Implements `intFn` for `getty.de.Deserializer`.
-    ///
-    /// TODO: Update self.input
-    pub fn deserializeInt(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        const value = std.json.parse(i64, &std.json.TokenStream.init(self.input), .{}) catch return Error.DeserializationError;
-        return visitor.visitInt(value) catch return Error.DeserializationError;
-    }
+        pub const D = de.Deserializer(
+            *Self,
+            Error,
+            deserializeAny,
+            deserializeBool,
+            deserializeInt,
+            deserializeFloat,
+            deserializeOption,
+            deserializeSequence,
+            deserializeString,
+            deserializeStruct,
+            deserializeVariant,
+        );
 
-    /// Implements `floatFn` for `getty.de.Deserializer`.
-    ///
-    /// Float parsing is hard.
-    pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
+        pub fn deserializer(self: *Self) D {
+            return .{ .context = self };
+        }
 
-        @compileError("Unimplemented: float");
-    }
+        /// Implements `anyFn` for `getty.de.Deserializer`.
+        pub fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            return switch (@typeInfo(T)) {
+                .Bool => visitor.visitBool(self.value),
+                .Int => visitor.visitInt(self.value),
+                .Pointer => |info| {
+                    return switch (info.size) {
+                        .One => switch (@typeInfo(info.child)) {
+                            .Array => blk: {
+                                var child_deserializer = Deserializer([]const std.meta.Elem(info.child)).init(self.value);
+                                const child_d = child_deserializer.deserializer();
 
-    /// Implements `optionFn` for `getty.de.Deserializer`.
-    pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
+                                break :blk child_d.deserializeAny(visitor);
+                            },
+                            else => try self.deserializeAny(serializer, value.*),
+                        },
+                        .Slice => blk: {
+                            if (comptime std.meta.trait.isZigString(T)) {
+                                break :blk visitor.visitString(self.value) catch Error.DeserializationError;
+                            } else {
+                                @compileError("non-String slice: " ++ @typeName(T));
+                            }
+                        },
+                        else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+                    };
+                },
+                .Null => visitor.visitNull(),
+                else => @compileError("Unimplemented"),
+            } catch Error.DeserializationError;
+        }
 
-        @compileError("TODO: option");
+        /// Implements `boolFn` for `getty.de.Deserializer`.
+        pub fn deserializeBool(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            return self.deserializeAny(visitor);
+        }
 
-        //if (std.mem.startsWith(u8, self.input, "null")) {
-        //self.input = self.input["null".len..];
-        //return visitor.visitNull();
-        //}
+        /// Implements `intFn` for `getty.de.Deserializer`.
+        pub fn deserializeInt(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            return self.deserializeAny(visitor);
+        }
 
-        //return visitor.visitSome();
-    }
+        /// Implements `floatFn` for `getty.de.Deserializer`.
+        ///
+        /// Float parsing is hard.
+        pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            return self.deserializeAny(visitor);
+        }
 
-    /// Implements `sequenceFn` for `getty.de.Deserializer`.
-    pub fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
+        /// Implements `optionFn` for `getty.de.Deserializer`.
+        pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            if (self.value == null) {
+                return visitor.visitNull() catch return Error.DeserializationError;
+            } else {
+                return visitor.visitSome(self.value) catch return Error.DeserializationError;
+            }
+        }
 
-        @compileError("TODO: sequence");
-    }
+        /// Implements `sequenceFn` for `getty.de.Deserializer`.
+        pub fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            return self.deserializeAny(visitor);
+        }
 
-    /// Implements `stringFn` for `getty.de.Deserializer`.
-    pub fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
+        /// Implements `stringFn` for `getty.de.Deserializer`.
+        pub fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            return self.deserializeAny(visitor);
+        }
 
-        @compileError("TODO: string");
-    }
+        /// Implements `structFn` for `getty.de.Deserializer`.
+        pub fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            _ = self;
 
-    /// Implements `structFn` for `getty.de.Deserializer`.
-    pub fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
+            @compileError("TODO: struct");
+        }
 
-        @compileError("TODO: struct");
-    }
+        /// Implements `variantFn` for `getty.de.Deserializer`.
+        pub fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            _ = self;
 
-    /// Implements `variantFn` for `getty.de.Deserializer`.
-    pub fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-        _ = self;
-        _ = visitor;
+            @compileError("TODO: variant");
+        }
+    };
+}
 
-        @compileError("TODO: variant");
-    }
+const Token = enum {
+    Bool,
+    Int,
+    Float,
+    Null,
+    Some,
+    Sequence,
+    String,
+    Struct,
+    Variant,
 };
 
-const PublishState = enum {
-    Published,
-    Unpublished,
-};
-
-const PublishStateVisitor = struct {
+const Visitor = struct {
     const Self = @This();
 
-    const Ok = PublishState;
+    const Ok = Token;
     const Error = error{VisitorError};
 
     /// Implements `getty.de.Visitor`.
@@ -146,41 +156,42 @@ const PublishStateVisitor = struct {
     }
 
     /// Implements `boolFn` for `getty.de.Visitor`.
-    fn visitBool(_: *Self, value: bool) Error!Ok {
-        return switch (value) {
-            true => .Published,
-            false => .Unpublished,
-        };
+    pub fn visitBool(self: *Self, value: bool) Error!Ok {
+        _ = self;
+        _ = value;
+
+        return .Bool;
     }
 
     /// Implements `intFn` for `getty.de.Visitor`.
-    fn visitInt(_: *Self, value: anytype) Error!Ok {
-        if (value > 0) {
-            return .Published;
-        } else {
-            return .Unpublished;
-        }
+    pub fn visitInt(self: *Self, value: anytype) Error!Ok {
+        _ = self;
+        _ = value;
+
+        return .Int;
     }
 
     /// Implements `floatFn` for `getty.de.Visitor`.
-    pub fn visitFloat(_: *Self, value: anytype) Error!Ok {
-        if (value > 0.0) {
-            return .Published;
-        } else {
-            return .Unpublished;
-        }
+    pub fn visitFloat(self: *Self, value: anytype) Error!Ok {
+        _ = self;
+        _ = value;
+
+        return .Float;
     }
 
     /// Implements `nullFn` for `getty.de.Visitor`.
-    pub fn visitNull(_: *Self) Error!Ok {
-        return .Unpublished;
+    pub fn visitNull(self: *Self) Error!Ok {
+        _ = self;
+
+        return .Null;
     }
 
     /// Implements `someFn` for `getty.de.Visitor`.
-    pub fn visitSome(_: *Self, value: anytype) Error!Ok {
+    pub fn visitSome(self: *Self, value: anytype) Error!Ok {
+        _ = self;
         _ = value;
 
-        return .Published;
+        return .Some;
     }
 
     /// Implements `sequenceFn` for `getty.de.Visitor`.
@@ -188,7 +199,7 @@ const PublishStateVisitor = struct {
         _ = self;
         _ = value;
 
-        @compileError("TODO: sequence");
+        return .Sequence;
     }
 
     /// Implements `stringFn` for `getty.de.Visitor`.
@@ -196,7 +207,7 @@ const PublishStateVisitor = struct {
         _ = self;
         _ = value;
 
-        @compileError("TODO: string");
+        return .String;
     }
 
     /// Implements `structFn` for `getty.de.Visitor`.
@@ -204,7 +215,7 @@ const PublishStateVisitor = struct {
         _ = self;
         _ = value;
 
-        @compileError("TODO: struct");
+        return .Struct;
     }
 
     /// Implements `variantFn` for `getty.de.Visitor`.
@@ -212,63 +223,61 @@ const PublishStateVisitor = struct {
         _ = self;
         _ = value;
 
-        @compileError("TODO: variant");
+        return .Variant;
     }
 };
 
-test "bool" {
-    var print_visitor = PublishStateVisitor{};
-    const visitor = print_visitor.visitor();
-
-    {
-        const test_cases = [_]struct { input: []const u8, output: PublishState }{
-            .{ .input = "true", .output = .Published },
-            .{ .input = "false", .output = .Unpublished },
-        };
-
-        for (test_cases) |t| {
-            var test_deserializer = Deserializer{ .input = t.input };
-            const deserializer = test_deserializer.deserializer();
-
-            var state = try deserializer.deserializeBool(visitor);
-            try std.testing.expect(state == t.output);
-        }
-    }
-
-    {
-        const test_cases = [_]struct { input: []const u8, output: Deserializer.Error }{
-            .{ .input = "", .output = error.DeserializationError },
-            .{ .input = "foo", .output = error.DeserializationError },
-        };
-
-        for (test_cases) |t| {
-            var test_deserializer = Deserializer{ .input = t.input };
-            const deserializer = test_deserializer.deserializer();
-
-            if (deserializer.deserializeBool(visitor)) |_| {
-                unreachable;
-            } else |err| {
-                try std.testing.expect(err == t.output);
-            }
-        }
-    }
+test "Boolean" {
+    try t(true, .Bool);
 }
 
-test "int" {
-    var print_visitor = PublishStateVisitor{};
-    const visitor = print_visitor.visitor();
+test "Integer" {
+    //try t(1, .Int); // TODO: Let comptime types be tested
+    try t(@as(u8, 1), .Int);
+    try t(@as(i8, -1), .Int);
+}
 
-    const test_cases = [_]struct { input: []const u8, output: PublishState }{
-        .{ .input = "0", .output = .Unpublished },
-        .{ .input = "1", .output = .Published },
-        .{ .input = "-1", .output = .Unpublished },
+test "String" {
+    try t("a", .String);
+    try t(&[_]u8{'a'}, .String);
+}
+
+test "Optional" {
+    try t(@as(?i8, 1), .Some);
+    try t(@as(?i8, null), .Null);
+}
+
+fn t(input: anytype, output: Token) !void {
+    var visitor = Visitor{};
+    const v = visitor.visitor();
+
+    var deserializer = Deserializer(@TypeOf(input)).init(input);
+    const d = deserializer.deserializer();
+
+    const o = switch (@typeInfo(@TypeOf(input))) {
+        .Bool => try d.deserializeBool(v),
+        .Int => try d.deserializeInt(v),
+        .Pointer => |info| switch (info.size) {
+            .One => {
+                switch (@typeInfo(info.child)) {
+                    .Array => try t(@as([]const std.meta.Elem(info.child), input), output),
+                    else => try t(input.*, output),
+                }
+
+                return;
+            },
+            .Slice => blk: {
+                if (comptime std.meta.trait.isZigString(@TypeOf(input))) {
+                    break :blk try d.deserializeString(v);
+                } else {
+                    @compileError("Non-string slice");
+                }
+            },
+            else => @compileError("unsupported serialize type: " ++ @typeName(@TypeOf(input))),
+        },
+        .Optional => try d.deserializeOption(v),
+        else => unreachable,
     };
 
-    for (test_cases) |t| {
-        var test_deserializer = Deserializer{ .input = t.input };
-        const deserializer = test_deserializer.deserializer();
-
-        var publish_state = try deserializer.deserializeInt(visitor);
-        try std.testing.expect(publish_state == t.output);
-    }
+    try std.testing.expect(o == output);
 }
