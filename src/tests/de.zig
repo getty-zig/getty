@@ -279,3 +279,7 @@ fn t(input: anytype, output: Token) !void {
 
     try std.testing.expect(o == output);
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}

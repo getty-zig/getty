@@ -1,9 +1,6 @@
 const std = @import("std");
 const ser = @import("getty").ser;
 
-const testing = std.testing;
-const expectEqualSlices = testing.expectEqualSlices;
-
 const Elem = enum {
     Undefined,
     Bool,
@@ -243,7 +240,7 @@ fn t(input: anytype, output: []const Elem) !void {
     var s = Serializer{};
     try ser.serialize(&s, input);
 
-    try expectEqualSlices(Elem, &s.buf, output);
+    try std.testing.expectEqualSlices(Elem, &s.buf, output);
 }
 
 comptime {
