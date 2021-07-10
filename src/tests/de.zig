@@ -76,8 +76,6 @@ fn Deserializer(comptime T: type) type {
         }
 
         /// Implements `floatFn` for `getty.de.Deserializer`.
-        ///
-        /// Float parsing is hard.
         pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
             return self.deserializeAny(visitor);
         }

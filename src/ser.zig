@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const trait = std.meta.trait;
-
 /// A data format that can serialize any data type supported by Getty.
 ///
 /// To implement the interface, the following must be provided within your
@@ -186,7 +184,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             return try s.serializeBool(value);
         },
         .Enum, .EnumLiteral => {
-            return if (comptime trait.hasFn("serialize")(T))
+            return if (comptime std.meta.trait.hasFn("serialize")(T))
                 try value.serialize(serializer)
             else
                 try s.serializeVariant(value);
@@ -213,9 +211,11 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                     else => try serialize(serializer, value.*),
                 },
                 .Slice => blk: {
-                    if (comptime trait.isZigString(T)) {
+                    if (comptime std.meta.trait.isZigString(T)) {
                         break :blk try s.serializeString(value);
                     } else {
+                        // TODO: For this and structs, what do we return if the
+                        // serializer's Ok isn't void?
                         var seq = try s.serializeSequence();
                         for (value) |elem| {
                             try seq.serializeElement(elem);
@@ -227,11 +227,11 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             };
         },
         .Struct => |info| {
-            if (comptime trait.hasFn("serialize")(T)) {
+            if (comptime std.meta.trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
             } else {
                 // TODO: coerce this to @TypeOf(_getty_attributes)
-                //const attributes = if (comptime trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
+                //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
                 const st = try s.serializeStruct();
                 inline for (info.fields) |field| {
@@ -241,7 +241,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             }
         },
         .Union => |info| {
-            if (comptime trait.hasFn("serialize")(T)) {
+            if (comptime std.meta.trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
             } else {
                 if (info.tag_type) |Tag| {
