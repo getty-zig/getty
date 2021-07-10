@@ -110,7 +110,7 @@ pub fn Serializer(
     };
 }
 
-pub fn SequenceInterface(
+pub fn SerializeSequence(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -137,7 +137,7 @@ pub fn SequenceInterface(
     };
 }
 
-pub fn StructInterface(
+pub fn SerializeStruct(
     comptime Context: type,
     comptime O: type,
     comptime E: type,

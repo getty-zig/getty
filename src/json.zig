@@ -113,8 +113,8 @@ pub fn Json(comptime Writer: type) type {
             self.serializeString(@tagName(value)) catch return Error.Io;
         }
 
-        /// Implements `getty.ser.Sequence`.
-        pub const SI = ser.SequenceInterface(
+        /// Implements `getty.ser.SerializeSequence`.
+        pub const SI = ser.SerializeSequence(
             *Self,
             Ok,
             Error,
@@ -126,7 +126,7 @@ pub fn Json(comptime Writer: type) type {
             return .{ .context = self };
         }
 
-        /// Implements `elementFn` for `getty.ser.Sequence`.
+        /// Implements `elementFn` for `getty.ser.SerializeSequence`.
         ///
         /// FIXME: Pretty sure the _written usage is wrong for elements and
         /// fields.
@@ -140,13 +140,13 @@ pub fn Json(comptime Writer: type) type {
             ser.serialize(self, value) catch return Error.Io;
         }
 
-        /// Implements `endFn` for `getty.ser.Sequence`.
+        /// Implements `endFn` for `getty.ser.SerializeSequence`.
         pub fn seqEnd(self: *Self) Error!Ok {
             self.writer.writeByte(']') catch return Error.Io;
         }
 
-        /// Implements `getty.ser.Struct`.
-        pub const SS = ser.StructInterface(
+        /// Implements `getty.ser.SerializeStruct`.
+        pub const SS = ser.SerializeStruct(
             *Self,
             Ok,
             Error,
@@ -158,7 +158,7 @@ pub fn Json(comptime Writer: type) type {
             return .{ .context = self };
         }
 
-        /// Implements `fieldFn` for `getty.ser.Struct`.
+        /// Implements `fieldFn` for `getty.ser.SerializeStruct`.
         pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!void {
             if (self._written > 0) {
                 self.writer.writeByte(',') catch return Error.Io;
@@ -171,7 +171,7 @@ pub fn Json(comptime Writer: type) type {
             ser.serialize(self, value) catch return Error.Io;
         }
 
-        /// Implements `endFn` for `getty.ser.Struct`.
+        /// Implements `endFn` for `getty.ser.SerializeStruct`.
         pub fn structEnd(self: *Self) Error!Ok {
             self.writer.writeByte('}') catch return Error.Io;
         }

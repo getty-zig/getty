@@ -113,8 +113,8 @@ pub const Serializer = struct {
         self.idx += 1;
     }
 
-    /// Implements `getty.ser.Sequence`.
-    pub const SI = ser.SequenceInterface(
+    /// Implements `getty.ser.SerializeSequence`.
+    pub const SI = ser.SerializeSequence(
         *Self,
         Ok,
         Error,
@@ -126,7 +126,7 @@ pub const Serializer = struct {
         return .{ .context = self };
     }
 
-    /// Implements `elementFn` for `getty.ser.Sequence`.
+    /// Implements `elementFn` for `getty.ser.SerializeSequence`.
     pub fn serializeElement(self: *Self, value: anytype) Error!void {
         _ = value;
 
@@ -134,14 +134,14 @@ pub const Serializer = struct {
         self.idx += 1;
     }
 
-    /// Implements `endFn` for `getty.ser.Sequence`.
+    /// Implements `endFn` for `getty.ser.SerializeSequence`.
     pub fn seqEnd(self: *Self) Error!Ok {
         self.buf[self.idx] = .SequenceEnd;
         self.idx += 1;
     }
 
-    /// Implements `getty.ser.Struct`.
-    pub const SS = ser.StructInterface(
+    /// Implements `getty.ser.SerializeStruct`.
+    pub const SS = ser.SerializeStruct(
         *Self,
         Ok,
         Error,
@@ -153,7 +153,7 @@ pub const Serializer = struct {
         return .{ .context = self };
     }
 
-    /// Implements `fieldFn` for `getty.ser.Struct`.
+    /// Implements `fieldFn` for `getty.ser.SerializeStruct`.
     pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!void {
         _ = key;
         _ = value;
@@ -162,7 +162,7 @@ pub const Serializer = struct {
         self.idx += 1;
     }
 
-    /// Implements `endFn` for `getty.ser.Struct`.
+    /// Implements `endFn` for `getty.ser.SerializeStruct`.
     pub fn structEnd(self: *Self) Error!Ok {
         self.buf[self.idx] = .StructEnd;
         self.idx += 1;
