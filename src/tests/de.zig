@@ -37,7 +37,7 @@ fn Deserializer(comptime T: type) type {
         /// Implements `anyFn` for `getty.de.Deserializer`.
         pub fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
             return switch (@typeInfo(T)) {
-                .Bool => visitor.visitBool(self.value),
+                .Bool => visitor.visitBool(true),
                 .Int => visitor.visitInt(self.value),
                 .Pointer => |info| {
                     return switch (info.size) {
@@ -61,6 +61,8 @@ fn Deserializer(comptime T: type) type {
                     };
                 },
                 .Null => visitor.visitNull(),
+                .Struct => visitor.visitStruct(self.value),
+                .Enum => visitor.visitVariant(self.value),
                 else => @compileError("Unimplemented"),
             } catch Error.DeserializationError;
         }
@@ -85,7 +87,7 @@ fn Deserializer(comptime T: type) type {
             if (self.value == null) {
                 return visitor.visitNull() catch return Error.DeserializationError;
             } else {
-                return visitor.visitSome(self.value) catch return Error.DeserializationError;
+                return visitor.visitSome(self.value.?) catch return Error.DeserializationError;
             }
         }
 
@@ -101,16 +103,12 @@ fn Deserializer(comptime T: type) type {
 
         /// Implements `structFn` for `getty.de.Deserializer`.
         pub fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            _ = self;
-
-            @compileError("TODO: struct");
+            return self.deserializeAny(visitor);
         }
 
         /// Implements `variantFn` for `getty.de.Deserializer`.
         pub fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            _ = self;
-
-            @compileError("TODO: variant");
+            return self.deserializeAny(visitor);
         }
     };
 }
@@ -240,9 +238,18 @@ test "String" {
     try t(&[_]u8{'a'}, .String);
 }
 
+test "Struct" {
+    try t(.{ .a = "foo", .b = "bar" }, .Struct);
+}
+
 test "Optional" {
     try t(@as(?i8, 1), .Some);
     try t(@as(?i8, null), .Null);
+}
+
+test "Enum" {
+    //try t(.Foo, .Variant); // TODO: parameter of type '(enum literal)' must be declared comptime
+    try t(enum { Foo }.Foo, .Variant);
 }
 
 fn t(input: anytype, output: Token) !void {
@@ -254,7 +261,9 @@ fn t(input: anytype, output: Token) !void {
 
     const o = switch (@typeInfo(@TypeOf(input))) {
         .Bool => try d.deserializeBool(v),
+        .Enum => try d.deserializeVariant(v),
         .Int => try d.deserializeInt(v),
+        .Optional => try d.deserializeOption(v),
         .Pointer => |info| switch (info.size) {
             .One => {
                 switch (@typeInfo(info.child)) {
@@ -273,7 +282,7 @@ fn t(input: anytype, output: Token) !void {
             },
             else => @compileError("unsupported serialize type: " ++ @typeName(@TypeOf(input))),
         },
-        .Optional => try d.deserializeOption(v),
+        .Struct => try d.deserializeStruct(v),
         else => unreachable,
     };
 
