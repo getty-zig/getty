@@ -170,7 +170,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
     else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
 } {
     const T = @TypeOf(value);
-    const s = serializer.serializer();
+    const s = serializer.getSerializer();
 
     switch (@typeInfo(T)) {
         .Array => {

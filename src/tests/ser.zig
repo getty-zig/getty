@@ -52,7 +52,7 @@ pub const Serializer = struct {
         //serializeVoid,
     );
 
-    pub fn serializer(self: *Self) S {
+    pub fn getSerializer(self: *Self) S {
         return .{ .context = self };
     }
 
