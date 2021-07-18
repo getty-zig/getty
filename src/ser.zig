@@ -43,17 +43,17 @@ pub fn Serializer(
     comptime SequenceType: type,
     comptime StructType: type,
     // comptime TupleType: type,
-    comptime boolFn: fn (context: Context, value: bool) E!O,
-    comptime floatFn: fn (context: Context, value: anytype) E!O,
-    comptime intFn: fn (context: Context, value: anytype) E!O,
-    // comptime mapFn: fn (context: Context, value: anytype) E!MapType,
-    comptime nullFn: fn (context: Context) E!O,
-    comptime sequenceFn: fn (context: Context) E!SequenceType,
-    comptime stringFn: fn (context: Context, value: anytype) E!O,
-    comptime structFn: fn (context: Context) E!StructType,
-    // comptime tupleFn: fn (context: Context, value: anytype) E!TupleType,
-    comptime variantFn: fn (context: Context, value: anytype) E!O,
-    // comptime voidFn: fn (context: Context) E!O,
+    comptime boolFn: fn (Context, value: bool) E!O,
+    comptime floatFn: fn (Context, value: anytype) E!O,
+    comptime intFn: fn (Context, value: anytype) E!O,
+    // comptime mapFn: fn (Context, value: anytype) E!MapType,
+    comptime nullFn: fn (Context) E!O,
+    comptime sequenceFn: fn (Context, ?usize) E!SequenceType,
+    comptime stringFn: fn (Context, value: anytype) E!O,
+    comptime structFn: fn (Context) E!StructType,
+    // comptime tupleFn: fn (Context, value: anytype) E!TupleType,
+    comptime variantFn: fn (Context, value: anytype) E!O,
+    // comptime voidFn: fn (Context) E!O,
 ) type {
     return struct {
         context: Context,
@@ -89,8 +89,8 @@ pub fn Serializer(
         }
 
         /// Serialize a variably sized heterogeneous sequence of values.
-        pub fn serializeSequence(self: Self) Error!Sequence {
-            return try sequenceFn(self.context);
+        pub fn serializeSequence(self: Self, length: ?usize) Error!Sequence {
+            return try sequenceFn(self.context, length);
         }
 
         /// Serialize a string value.
@@ -114,8 +114,8 @@ pub fn SerializeSequence(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime elementFn: fn (context: Context, value: anytype) E!void,
-    comptime endFn: fn (context: Context) E!O,
+    comptime elementFn: fn (Context, anytype) E!void,
+    comptime endFn: fn (Context) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -141,8 +141,8 @@ pub fn SerializeStruct(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime fieldFn: fn (context: Context, comptime key: []const u8, value: anytype) E!void,
-    comptime endFn: fn (context: Context) E!O,
+    comptime fieldFn: fn (Context, comptime []const u8, anytype) E!void,
+    comptime endFn: fn (Context) E!O,
 ) type {
     return struct {
         const Self = @This();
@@ -174,7 +174,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
 
     switch (@typeInfo(T)) {
         .Array => {
-            var seq = try s.serializeSequence();
+            var seq = try s.serializeSequence(value.len);
             for (value) |elem| {
                 try seq.serializeElement(elem);
             }
@@ -216,7 +216,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                     } else {
                         // TODO: For this and structs, what do we return if the
                         // serializer's Ok isn't void?
-                        var seq = try s.serializeSequence();
+                        var seq = try s.serializeSequence(value.len);
                         for (value) |elem| {
                             try seq.serializeElement(elem);
                         }

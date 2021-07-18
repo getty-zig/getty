@@ -81,7 +81,9 @@ pub const Serializer = struct {
     }
 
     /// Implements `sequenceFn` for `getty.ser.Serializer`.
-    pub fn serializeSequence(self: *Self) Error!Sequence {
+    pub fn serializeSequence(self: *Self, length: ?usize) Error!Sequence {
+        _ = length;
+
         self.buf[self.idx] = .SequenceStart;
         self.idx += 1;
 
