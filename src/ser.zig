@@ -228,7 +228,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
         },
         .Struct => |info| {
             if (comptime std.meta.trait.hasFn("serialize")(T)) {
-                return try value.serialize(serializer);
+                return try value.serialize(s);
             } else {
                 // TODO: coerce this to @TypeOf(_getty_attributes)
                 //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
