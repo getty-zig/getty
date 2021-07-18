@@ -12,104 +12,105 @@ fn Deserializer(comptime T: type) type {
         }
 
         /// Implements `getty.de.Deserializer`.
-        pub const Error = error{
-            DeserializationError,
-        };
-
         pub const D = de.Deserializer(
             *Self,
             Error,
-            deserializeAny,
-            deserializeBool,
-            deserializeInt,
-            deserializeFloat,
-            deserializeOption,
-            deserializeSequence,
-            deserializeString,
-            deserializeStruct,
-            deserializeVariant,
+            _D.deserializeAny,
+            _D.deserializeBool,
+            _D.deserializeInt,
+            _D.deserializeFloat,
+            _D.deserializeOption,
+            _D.deserializeSequence,
+            _D.deserializeString,
+            _D.deserializeStruct,
+            _D.deserializeVariant,
         );
 
         pub fn deserializer(self: *Self) D {
             return .{ .context = self };
         }
 
-        /// Implements `anyFn` for `getty.de.Deserializer`.
-        pub fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return switch (@typeInfo(T)) {
-                .Bool => visitor.visitBool(true),
-                .Int => visitor.visitInt(self.value),
-                .Pointer => |info| {
-                    return switch (info.size) {
-                        .One => switch (@typeInfo(info.child)) {
-                            .Array => blk: {
-                                var child_deserializer = Deserializer([]const std.meta.Elem(info.child)).init(self.value);
-                                const child_d = child_deserializer.deserializer();
+        pub const Error = error{
+            DeserializationError,
+        };
 
-                                break :blk child_d.deserializeAny(visitor);
+        const _D = struct {
+            /// Implements `anyFn` for `getty.de.Deserializer`.
+            fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return switch (@typeInfo(T)) {
+                    .Bool => visitor.visitBool(true),
+                    .Int => visitor.visitInt(self.value),
+                    .Pointer => |info| {
+                        return switch (info.size) {
+                            .One => switch (@typeInfo(info.child)) {
+                                .Array => blk: {
+                                    var child_deserializer = Deserializer([]const std.meta.Elem(info.child)).init(self.value);
+                                    const child_d = child_deserializer.deserializer();
+                                    break :blk child_d.deserializeAny(visitor);
+                                },
+                                else => try deserializeAny(self, serializer, value.*),
                             },
-                            else => try self.deserializeAny(serializer, value.*),
-                        },
-                        .Slice => blk: {
-                            if (comptime std.meta.trait.isZigString(T)) {
-                                break :blk visitor.visitString(self.value) catch Error.DeserializationError;
-                            } else {
-                                @compileError("non-String slice: " ++ @typeName(T));
-                            }
-                        },
-                        else => @compileError("unsupported serialize type: " ++ @typeName(T)),
-                    };
-                },
-                .Null => visitor.visitNull(),
-                .Struct => visitor.visitStruct(self.value),
-                .Enum => visitor.visitVariant(self.value),
-                else => @compileError("Unimplemented"),
-            } catch Error.DeserializationError;
-        }
-
-        /// Implements `boolFn` for `getty.de.Deserializer`.
-        pub fn deserializeBool(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
-
-        /// Implements `intFn` for `getty.de.Deserializer`.
-        pub fn deserializeInt(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
-
-        /// Implements `floatFn` for `getty.de.Deserializer`.
-        pub fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
-
-        /// Implements `optionFn` for `getty.de.Deserializer`.
-        pub fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            if (self.value == null) {
-                return visitor.visitNull() catch return Error.DeserializationError;
-            } else {
-                return visitor.visitSome(self.value.?) catch return Error.DeserializationError;
+                            .Slice => blk: {
+                                if (comptime std.meta.trait.isZigString(T)) {
+                                    break :blk visitor.visitString(self.value) catch Error.DeserializationError;
+                                } else {
+                                    @compileError("non-String slice: " ++ @typeName(T));
+                                }
+                            },
+                            else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+                        };
+                    },
+                    .Null => visitor.visitNull(),
+                    .Struct => visitor.visitStruct(self.value),
+                    .Enum => visitor.visitVariant(self.value),
+                    else => @compileError("Unimplemented"),
+                } catch Error.DeserializationError;
             }
-        }
 
-        /// Implements `sequenceFn` for `getty.de.Deserializer`.
-        pub fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
+            /// Implements `boolFn` for `getty.de.Deserializer`.
+            fn deserializeBool(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
 
-        /// Implements `stringFn` for `getty.de.Deserializer`.
-        pub fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
+            /// Implements `intFn` for `getty.de.Deserializer`.
+            fn deserializeInt(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
 
-        /// Implements `structFn` for `getty.de.Deserializer`.
-        pub fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
+            /// Implements `floatFn` for `getty.de.Deserializer`.
+            fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
 
-        /// Implements `variantFn` for `getty.de.Deserializer`.
-        pub fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
-            return self.deserializeAny(visitor);
-        }
+            /// Implements `optionFn` for `getty.de.Deserializer`.
+            fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                if (self.value == null) {
+                    return visitor.visitNull() catch return Error.DeserializationError;
+                } else {
+                    return visitor.visitSome(self.value.?) catch return Error.DeserializationError;
+                }
+            }
+
+            /// Implements `sequenceFn` for `getty.de.Deserializer`.
+            fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
+
+            /// Implements `stringFn` for `getty.de.Deserializer`.
+            fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
+
+            /// Implements `structFn` for `getty.de.Deserializer`.
+            fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
+
+            /// Implements `variantFn` for `getty.de.Deserializer`.
+            fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+                return deserializeAny(self, visitor);
+            }
+        };
     };
 }
 
@@ -136,91 +137,93 @@ const Visitor = struct {
         *Self,
         Ok,
         Error,
-        visitBool,
-        visitInt,
-        visitFloat,
-        visitNull,
-        visitSome,
-        visitSequence,
-        visitString,
-        visitStruct,
-        visitVariant,
+        _V.visitBool,
+        _V.visitInt,
+        _V.visitFloat,
+        _V.visitNull,
+        _V.visitSome,
+        _V.visitSequence,
+        _V.visitString,
+        _V.visitStruct,
+        _V.visitVariant,
     );
 
     pub fn visitor(self: *Self) V {
         return .{ .context = self };
     }
 
-    /// Implements `boolFn` for `getty.de.Visitor`.
-    pub fn visitBool(self: *Self, value: bool) Error!Ok {
-        _ = self;
-        _ = value;
+    const _V = struct {
+        /// Implements `boolFn` for `getty.de.Visitor`.
+        fn visitBool(self: *Self, value: bool) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Bool;
-    }
+            return .Bool;
+        }
 
-    /// Implements `intFn` for `getty.de.Visitor`.
-    pub fn visitInt(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `intFn` for `getty.de.Visitor`.
+        fn visitInt(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Int;
-    }
+            return .Int;
+        }
 
-    /// Implements `floatFn` for `getty.de.Visitor`.
-    pub fn visitFloat(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `floatFn` for `getty.de.Visitor`.
+        fn visitFloat(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Float;
-    }
+            return .Float;
+        }
 
-    /// Implements `nullFn` for `getty.de.Visitor`.
-    pub fn visitNull(self: *Self) Error!Ok {
-        _ = self;
+        /// Implements `nullFn` for `getty.de.Visitor`.
+        fn visitNull(self: *Self) Error!Ok {
+            _ = self;
 
-        return .Null;
-    }
+            return .Null;
+        }
 
-    /// Implements `someFn` for `getty.de.Visitor`.
-    pub fn visitSome(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `someFn` for `getty.de.Visitor`.
+        fn visitSome(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Some;
-    }
+            return .Some;
+        }
 
-    /// Implements `sequenceFn` for `getty.de.Visitor`.
-    pub fn visitSequence(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `sequenceFn` for `getty.de.Visitor`.
+        fn visitSequence(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Sequence;
-    }
+            return .Sequence;
+        }
 
-    /// Implements `stringFn` for `getty.de.Visitor`.
-    pub fn visitString(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `stringFn` for `getty.de.Visitor`.
+        fn visitString(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .String;
-    }
+            return .String;
+        }
 
-    /// Implements `structFn` for `getty.de.Visitor`.
-    pub fn visitStruct(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `structFn` for `getty.de.Visitor`.
+        fn visitStruct(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Struct;
-    }
+            return .Struct;
+        }
 
-    /// Implements `variantFn` for `getty.de.Visitor`.
-    pub fn visitVariant(self: *Self, value: anytype) Error!Ok {
-        _ = self;
-        _ = value;
+        /// Implements `variantFn` for `getty.de.Visitor`.
+        fn visitVariant(self: *Self, value: anytype) Error!Ok {
+            _ = self;
+            _ = value;
 
-        return .Variant;
-    }
+            return .Variant;
+        }
+    };
 };
 
 test "Boolean" {
