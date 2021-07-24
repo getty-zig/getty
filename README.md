@@ -11,8 +11,6 @@
   <a href="https://github.com/getty-zig/getty/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
 </p>
 
-</p>
-
 <p align="center">A framework for serializing and deserializing Zig data types.</p>
 
 ## Quick Start
