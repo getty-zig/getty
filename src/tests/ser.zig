@@ -123,7 +123,7 @@ pub const Serializer = struct {
         _SE.end,
     );
 
-    fn getSequence(self: *Self) SE {
+    pub fn getSequence(self: *Self) SE {
         return .{ .context = self };
     }
 
@@ -152,7 +152,7 @@ pub const Serializer = struct {
         _ST.end,
     );
 
-    fn getStruct(self: *Self) ST {
+    pub fn getStruct(self: *Self) ST {
         return .{ .context = self };
     }
 
