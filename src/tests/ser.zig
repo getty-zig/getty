@@ -5,15 +5,20 @@ const Elem = enum {
     Undefined,
     Bool,
     Element,
+    Entry,
     Field,
     Float,
     Int,
+    Key,
+    MapEnd,
+    MapStart,
     Null,
     SequenceEnd,
     SequenceStart,
     String,
     StructEnd,
     StructStart,
+    Value,
     Variant,
 };
 
@@ -26,17 +31,17 @@ pub const Serializer = struct {
     pub const Ok = void;
     pub const Error = std.mem.Allocator.Error;
 
-    //pub const Map = SM;
+    pub const Map = *Self;
     pub const Sequence = *Self;
-    pub const Struct = ST;
-    //pub const Tuple = ST;
+    pub const Struct = *Self;
+    //pub const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
     pub const S = ser.Serializer(
         *Self,
         Ok,
         Error,
-        //Map,
+        Map,
         Sequence,
         Struct,
         //Tuple,
@@ -46,6 +51,7 @@ pub const Serializer = struct {
         _S.serializeNull,
         _S.serializeSequence,
         _S.serializeString,
+        _S.serializeMap,
         _S.serializeStruct,
         //_S.serializeTuple,
         _S.serializeVariant,
@@ -98,11 +104,24 @@ pub const Serializer = struct {
         }
 
         /// Implements `structFn` for `getty.ser.Serializer`.
-        fn serializeStruct(self: *Self) Error!Struct {
+        fn serializeMap(self: *Self, length: ?usize) Error!Map {
+            _ = length;
+
+            self.buf[self.idx] = .MapStart;
+            self.idx += 1;
+
+            return self;
+        }
+
+        /// Implements `structFn` for `getty.ser.Serializer`.
+        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!Struct {
+            _ = name;
+            _ = length;
+
             self.buf[self.idx] = .StructStart;
             self.idx += 1;
 
-            return self.getStruct();
+            return self;
         }
 
         /// Implements `variantFn` for `getty.ser.Serializer`.
@@ -139,6 +158,54 @@ pub const Serializer = struct {
         /// Implements `endFn` for `getty.ser.SerializeSequence`.
         fn end(self: *Self) Error!Ok {
             self.buf[self.idx] = .SequenceEnd;
+            self.idx += 1;
+        }
+    };
+
+    /// Implements `getty.ser.SerializeMap`.
+    const SM = ser.SerializeMap(
+        *Self,
+        Ok,
+        Error,
+        _SM.serializeKey,
+        _SM.serializeValue,
+        _SM.serializeEntry,
+        _SM.end,
+    );
+
+    pub fn getMap(self: *Self) SM {
+        return .{ .context = self };
+    }
+
+    const _SM = struct {
+        /// Implements `keyFn` for `getty.ser.SerializeMap`.
+        fn serializeKey(self: *Self, key: anytype) Error!void {
+            _ = key;
+
+            self.buf[self.idx] = .Key;
+            self.idx += 1;
+        }
+
+        /// Implements `valueFn` for `getty.ser.SerializeMap`.
+        fn serializeValue(self: *Self, value: anytype) Error!void {
+            _ = value;
+
+            self.buf[self.idx] = .Value;
+            self.idx += 1;
+        }
+
+        /// Implements `entryFn` for `getty.ser.SerializeMap`.
+        fn serializeEntry(self: *Self, key: anytype, value: anytype) Error!void {
+            _ = key;
+            _ = value;
+
+            self.buf[self.idx] = .Entry;
+            self.idx += 1;
+        }
+
+        /// Implements `endFn` for `getty.ser.SerializeMap`.
+        fn end(self: *Self) Error!Ok {
+            self.buf[self.idx] = .MapEnd;
             self.idx += 1;
         }
     };
@@ -220,9 +287,9 @@ test "Struct" {
 
         /// Skips serializing `y`.
         pub fn serialize(self: @This(), serializer: anytype) !void {
-            const st = try serializer.serializeStruct();
-            try st.serializeField("x", @field(self, "x"));
-            try st.end();
+            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).getStruct();
+            try s.serializeField("x", @field(self, "x"));
+            try s.end();
         }
     };
 

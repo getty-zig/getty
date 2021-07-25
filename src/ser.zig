@@ -39,18 +39,18 @@ pub fn Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    // comptime MapType: type,
+    comptime MapType: type,
     comptime SequenceType: type,
     comptime StructType: type,
     // comptime TupleType: type,
     comptime boolFn: fn (Context, value: bool) E!O,
     comptime floatFn: fn (Context, value: anytype) E!O,
     comptime intFn: fn (Context, value: anytype) E!O,
-    // comptime mapFn: fn (Context, value: anytype) E!MapType,
     comptime nullFn: fn (Context) E!O,
     comptime sequenceFn: fn (Context, ?usize) E!SequenceType,
     comptime stringFn: fn (Context, value: anytype) E!O,
-    comptime structFn: fn (Context) E!StructType,
+    comptime mapFn: fn (Context, ?usize) E!MapType,
+    comptime structFn: fn (Context, comptime []const u8, usize) E!StructType,
     // comptime tupleFn: fn (Context, value: anytype) E!TupleType,
     comptime variantFn: fn (Context, value: anytype) E!O,
     // comptime voidFn: fn (Context) E!O,
@@ -63,7 +63,7 @@ pub fn Serializer(
         pub const Ok = O;
         pub const Error = E;
 
-        //pub const Map = MapType;
+        pub const Map = MapType;
         pub const Sequence = SequenceType;
         pub const Struct = StructType;
         //pub const Tuple = TupleType;
@@ -98,9 +98,14 @@ pub fn Serializer(
             return try stringFn(self.context, value);
         }
 
+        // Serialize a map value.
+        pub fn serializeMap(self: Self, length: ?usize) Error!Map {
+            return try mapFn(self.context, length);
+        }
+
         // Serialize a struct value.
-        pub fn serializeStruct(self: Self) Error!Struct {
-            return try structFn(self.context);
+        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
+            return try structFn(self.context, name, length);
         }
 
         // Serialize an enum value.
@@ -131,6 +136,45 @@ pub fn SerializeSequence(
         }
 
         /// Finish serializing a sequence.
+        pub fn end(self: Self) Error!Ok {
+            return try endFn(self.context);
+        }
+    };
+}
+
+pub fn SerializeMap(
+    comptime Context: type,
+    comptime O: type,
+    comptime E: type,
+    comptime keyFn: fn (Context, anytype) E!void,
+    comptime valueFn: fn (Context, anytype) E!void,
+    comptime entryFn: fn (Context, anytype, anytype) E!void,
+    comptime endFn: fn (Context) E!O,
+) type {
+    return struct {
+        const Self = @This();
+
+        pub const Ok = O;
+        pub const Error = E;
+
+        context: Context,
+
+        /// Serialize a map key.
+        pub fn serializeKey(self: Self, key: anytype) Error!void {
+            try keyFn(self.context, key);
+        }
+
+        /// Serialize a map value.
+        pub fn serializeValue(self: Self, value: anytype) Error!void {
+            try valueFn(self.context, value);
+        }
+
+        /// Serialize a map entry consisting of a key and a value.
+        pub fn serializeEntry(self: Self, key: anytype, value: anytype) Error!void {
+            try entryFn(self.context, key, value);
+        }
+
+        /// Finish serializing a struct.
         pub fn end(self: Self) Error!Ok {
             return try endFn(self.context);
         }
@@ -234,7 +278,8 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 // TODO: coerce this to @TypeOf(_getty_attributes)
                 //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
-                const st = try s.serializeStruct();
+                const st = (try s.serializeStruct(@typeName(T), std.meta.fields(T).len)).getStruct();
+
                 inline for (info.fields) |field| {
                     try st.serializeField(field.name, @field(value, field.name));
                 }
