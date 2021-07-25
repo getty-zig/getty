@@ -27,7 +27,7 @@ pub const Serializer = struct {
     pub const Error = std.mem.Allocator.Error;
 
     //pub const Map = SM;
-    pub const Sequence = SE;
+    pub const Sequence = *Self;
     pub const Struct = ST;
     //pub const Tuple = ST;
 
@@ -88,7 +88,7 @@ pub const Serializer = struct {
             self.buf[self.idx] = .SequenceStart;
             self.idx += 1;
 
-            return self.getSequence();
+            return self;
         }
 
         /// Implements `stringFn` for `getty.ser.Serializer`.

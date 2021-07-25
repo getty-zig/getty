@@ -174,7 +174,8 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
 
     switch (@typeInfo(T)) {
         .Array => {
-            var seq = try s.serializeSequence(value.len);
+            const seq = (try s.serializeSequence(value.len)).getSequence();
+
             for (value) |elem| {
                 try seq.serializeElement(elem);
             }
