@@ -31,6 +31,22 @@ pub const Serializer = struct {
     pub const Ok = void;
     pub const Error = std.mem.Allocator.Error;
 
+    pub fn interface(self: *Self, comptime name: []const u8) blk: {
+        if (std.mem.eql(u8, name, "map")) {
+            break :blk M;
+        } else if (std.mem.eql(u8, name, "serializer")) {
+            break :blk S;
+        } else if (std.mem.eql(u8, name, "sequence")) {
+            break :blk SE;
+        } else if (std.mem.eql(u8, name, "struct")) {
+            break :blk ST;
+        } else {
+            @compileError("Unknown interface name");
+        }
+    } {
+        return .{ .context = self };
+    }
+
     pub const Map = *Self;
     pub const Sequence = *Self;
     pub const Struct = *Self;
@@ -57,10 +73,6 @@ pub const Serializer = struct {
         _S.serializeVariant,
         //_S.serializeVoid,
     );
-
-    pub fn getSerializer(self: *Self) S {
-        return .{ .context = self };
-    }
 
     const _S = struct {
         /// Implements `boolFn` for `getty.ser.Serializer`.
@@ -142,10 +154,6 @@ pub const Serializer = struct {
         _SE.end,
     );
 
-    pub fn getSequence(self: *Self) SE {
-        return .{ .context = self };
-    }
-
     const _SE = struct {
         /// Implements `elementFn` for `getty.ser.SerializeSequence`.
         fn serializeElement(self: *Self, value: anytype) Error!void {
@@ -172,10 +180,6 @@ pub const Serializer = struct {
         _SM.serializeEntry,
         _SM.end,
     );
-
-    pub fn getMap(self: *Self) SM {
-        return .{ .context = self };
-    }
 
     const _SM = struct {
         /// Implements `keyFn` for `getty.ser.SerializeMap`.
@@ -218,10 +222,6 @@ pub const Serializer = struct {
         _ST.serializeField,
         _ST.end,
     );
-
-    pub fn getStruct(self: *Self) ST {
-        return .{ .context = self };
-    }
 
     const _ST = struct {
         /// Implements `fieldFn` for `getty.ser.SerializeStruct`.
@@ -287,7 +287,7 @@ test "Struct" {
 
         /// Skips serializing `y`.
         pub fn serialize(self: @This(), serializer: anytype) !void {
-            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).getStruct();
+            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).interface("struct");
             try s.serializeField("x", @field(self, "x"));
             try s.end();
         }

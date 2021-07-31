@@ -214,11 +214,11 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
     else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
 } {
     const T = @TypeOf(value);
-    const s = serializer.getSerializer();
+    const s = serializer.interface("serializer");
 
     switch (@typeInfo(T)) {
         .Array => {
-            const seq = (try s.serializeSequence(value.len)).getSequence();
+            const seq = (try s.serializeSequence(value.len)).interface("sequence");
 
             for (value) |elem| {
                 try seq.serializeElement(elem);
@@ -278,7 +278,7 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 // TODO: coerce this to @TypeOf(_getty_attributes)
                 //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
-                const st = (try s.serializeStruct(@typeName(T), std.meta.fields(T).len)).getStruct();
+                const st = (try s.serializeStruct(@typeName(T), std.meta.fields(T).len)).interface("struct");
 
                 inline for (info.fields) |field| {
                     try st.serializeField(field.name, @field(value, field.name));
