@@ -31,18 +31,18 @@ pub const Serializer = struct {
     const Ok = void;
     const Error = std.mem.Allocator.Error;
 
-    pub fn interface(self: *Self, comptime name: []const u8) blk: {
-        if (std.mem.eql(u8, name, "map")) {
-            break :blk M;
-        } else if (std.mem.eql(u8, name, "serializer")) {
-            break :blk S;
-        } else if (std.mem.eql(u8, name, "sequence")) {
-            break :blk SE;
-        } else if (std.mem.eql(u8, name, "struct")) {
-            break :blk ST;
-        } else {
-            @compileError("Unknown interface name");
-        }
+    const Interface = enum {
+        Map,
+        Serializer,
+        Sequence,
+        Struct,
+    };
+
+    pub fn interface(self: *Self, comptime iface: Interface) switch (iface) {
+        .Map => M,
+        .Serializer => S,
+        .Sequence => SE,
+        .Struct => ST,
     } {
         return .{ .context = self };
     }
@@ -287,7 +287,7 @@ test "Struct" {
 
         /// Skips serializing `y`.
         pub fn serialize(self: @This(), serializer: anytype) !void {
-            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).interface("struct");
+            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).interface(.Struct);
             try s.serializeField("x", @field(self, "x"));
             try s.end();
         }
@@ -313,7 +313,7 @@ test "Vector" {
 
 fn t(input: anytype, output: []const Elem) !void {
     var s = Serializer{};
-    const serializer = s.interface("serializer");
+    const serializer = s.interface(.Serializer);
 
     try ser.serialize(&serializer, input);
     try std.testing.expectEqualSlices(Elem, &s.buf, output);

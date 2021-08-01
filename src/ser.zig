@@ -223,7 +223,7 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
 
     switch (@typeInfo(T)) {
         .Array => {
-            const seq = (try serializer.serializeSequence(value.len)).interface("sequence");
+            const seq = (try serializer.serializeSequence(value.len)).interface(.Sequence);
 
             for (value) |elem| {
                 try seq.serializeElement(elem);
@@ -283,7 +283,7 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
                 // TODO: coerce this to @TypeOf(_getty_attributes)
                 //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
-                const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).interface("struct");
+                const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).interface(.Struct);
 
                 inline for (info.fields) |field| {
                     try st.serializeField(field.name, @field(value, field.name));
