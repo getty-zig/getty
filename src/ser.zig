@@ -223,7 +223,8 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
             for (value) |elem| {
                 try seq.serializeElement(elem);
             }
-            try seq.end();
+
+            return try seq.end();
         },
         .Bool => {
             return try serializer.serializeBool(value);
@@ -262,10 +263,12 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
                         // TODO: For this and structs, what do we return if the
                         // serializer's Ok isn't void?
                         var seq = try serializer.serializeSequence(value.len);
+
                         for (value) |elem| {
                             try seq.serializeElement(elem);
                         }
-                        try seq.end();
+
+                        return try seq.end();
                     }
                 },
                 else => @compileError("unsupported serialize type: " ++ @typeName(T)),
@@ -283,7 +286,8 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
                 inline for (info.fields) |field| {
                     try st.serializeField(field.name, @field(value, field.name));
                 }
-                try st.end();
+
+                return try st.end();
             }
         },
         .Union => |info| {
