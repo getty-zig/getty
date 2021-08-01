@@ -13,33 +13,6 @@
 
 <p align="center">A framework for serializing and deserializing Zig data types.</p>
 
-## Quick Start
-
-```zig
-const std = @import("std");
-const json = @import("getty_json");
-
-const Point = struct {
-    x: i32,
-    y: i32,
-};
-
-pub fn main() anyerror!void {
-    var point = Point{ .x = 1, .y = 2 };
-
-    // Convert Point to JSON string
-    var serialized = try json.toString(std.heap.page_allocator, point);
-    defer std.heap.page_allocator.free(serialized);
-
-    // Convert JSON string to Point
-    var deserialized = try json.fromString(Point, serialized);
-
-    // Print results
-    std.debug.print("{s}\n", .{serialized});   // {"x":1,"y":2}
-    std.debug.print("{s}\n", .{deserialized}); // Point{ .x = 1, .y = 2 }
-}
-```
-
 ## Overview
 
 Getty is a serialization and deserialization framework for the Zig programming language.
@@ -55,6 +28,79 @@ of the overhead that often arises when using more traditional serialization
 methods, such as runtime reflection. Furthermore, `comptime` allows for all
 data types supported by Getty (and therefore all data structures composed of
 those types) to *automatically* become serializable and deserializable.
+
+<!-- ## Quick Start
+
+```zig
+const std = @import("std");
+const getty = @import("getty");
+
+/// Serializes a subset of Getty's data model into a boolean value.
+///
+/// TODO: Put this somewhere not in the readme
+/// TODO: Add associated types
+const Serializer = struct {
+    const Self = @This();
+
+    const Ok = bool;
+    const Error = error{};
+
+    /// Implements `getty.ser.Serializer`.
+    pub fn serializer(self: *Self) S {
+        return .{ .context = self };
+    }
+
+    const S = getty.ser.Serializer(
+        *Self,
+        Ok,
+        Error,
+        Self,
+        Self,
+        Self,
+        _S.serializeBool,
+        _S.serializeFloat,
+        _S.serializeInt,
+        _S.serializeNull,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+    );
+
+    const _S = struct {
+        fn serializeBool(_: *Self, value: bool) Error!Ok {
+            return value;
+        }
+
+        fn serializeFloat(_: *Self, value: anytype) Error!Ok {
+            return if (value > 0.0) true else false;
+        }
+
+        fn serializeInt(_: *Self, value: anytype) Error!Ok {
+            return if (value > 0) true else false;
+        }
+
+        fn serializeNull(_: *Self) Error!Ok {
+            return false;
+        }
+    };
+};
+
+pub fn main() anyerror!void {
+    // Create serializer
+    var serializer = Serializer{};
+    const s = serializer.serializer();
+
+    // Convert integers into bools
+    const t = try getty.serialize(&s, 1);
+    const f = try getty.serialize(&s, 0);
+
+    // Print results
+    std.debug.print("{}\n", .{t}); // true
+    std.debug.print("{}\n", .{f}); // false
+}
+``` -->
 
 ## Contributing
 
