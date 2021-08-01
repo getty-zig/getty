@@ -63,31 +63,26 @@ pub const Serializer = struct {
     }
 
     const _S = struct {
-        /// Implements `boolFn` for `getty.ser.Serializer`.
         fn serializeBool(self: *Self, _: bool) Error!Ok {
             self.buf[self.idx] = .Bool;
             self.idx += 1;
         }
 
-        /// Implements `floatFn` for `getty.ser.Serializer`.
         fn serializeFloat(self: *Self, _: anytype) Error!Ok {
             self.buf[self.idx] = .Float;
             self.idx += 1;
         }
 
-        /// Implements `intFn` for `getty.ser.Serializer`.
         fn serializeInt(self: *Self, _: anytype) Error!Ok {
             self.buf[self.idx] = .Int;
             self.idx += 1;
         }
 
-        /// Implements `nullFn` for `getty.ser.Serializer`.
         fn serializeNull(self: *Self) Error!Ok {
             self.buf[self.idx] = .Null;
             self.idx += 1;
         }
 
-        /// Implements `sequenceFn` for `getty.ser.Serializer`.
         fn serializeSequence(self: *Self, length: ?usize) Error!Sequence {
             _ = length;
 
@@ -97,13 +92,11 @@ pub const Serializer = struct {
             return self;
         }
 
-        /// Implements `stringFn` for `getty.ser.Serializer`.
         fn serializeString(self: *Self, _: anytype) Error!Ok {
             self.buf[self.idx] = .String;
             self.idx += 1;
         }
 
-        /// Implements `structFn` for `getty.ser.Serializer`.
         fn serializeMap(self: *Self, length: ?usize) Error!Map {
             _ = length;
 
@@ -113,7 +106,6 @@ pub const Serializer = struct {
             return self;
         }
 
-        /// Implements `structFn` for `getty.ser.Serializer`.
         fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!Struct {
             _ = name;
             _ = length;
@@ -124,7 +116,6 @@ pub const Serializer = struct {
             return self;
         }
 
-        /// Implements `variantFn` for `getty.ser.Serializer`.
         fn serializeVariant(self: *Self, value: anytype) Error!Ok {
             _ = value;
 
@@ -147,7 +138,6 @@ pub const Serializer = struct {
     }
 
     const _SE = struct {
-        /// Implements `elementFn` for `getty.ser.Sequence`.
         fn serializeElement(self: *Self, value: anytype) Error!void {
             _ = value;
 
@@ -155,7 +145,6 @@ pub const Serializer = struct {
             self.idx += 1;
         }
 
-        /// Implements `endFn` for `getty.ser.Sequence`.
         fn end(self: *Self) Error!Ok {
             self.buf[self.idx] = .SequenceEnd;
             self.idx += 1;
@@ -178,7 +167,6 @@ pub const Serializer = struct {
     }
 
     const _SM = struct {
-        /// Implements `keyFn` for `getty.ser.Map`.
         fn serializeKey(self: *Self, key: anytype) Error!void {
             _ = key;
 
@@ -186,7 +174,6 @@ pub const Serializer = struct {
             self.idx += 1;
         }
 
-        /// Implements `valueFn` for `getty.ser.Map`.
         fn serializeValue(self: *Self, value: anytype) Error!void {
             _ = value;
 
@@ -194,7 +181,6 @@ pub const Serializer = struct {
             self.idx += 1;
         }
 
-        /// Implements `entryFn` for `getty.ser.Map`.
         fn serializeEntry(self: *Self, key: anytype, value: anytype) Error!void {
             _ = key;
             _ = value;
@@ -203,7 +189,6 @@ pub const Serializer = struct {
             self.idx += 1;
         }
 
-        /// Implements `endFn` for `getty.ser.Map`.
         fn end(self: *Self) Error!Ok {
             self.buf[self.idx] = .MapEnd;
             self.idx += 1;
@@ -224,7 +209,6 @@ pub const Serializer = struct {
     }
 
     const _ST = struct {
-        /// Implements `fieldFn` for `getty.ser.Struct`.
         fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!void {
             _ = key;
             _ = value;
@@ -233,7 +217,6 @@ pub const Serializer = struct {
             self.idx += 1;
         }
 
-        /// Implements `endFn` for `getty.ser.Struct`.
         fn end(self: *Self) Error!Ok {
             self.buf[self.idx] = .StructEnd;
             self.idx += 1;

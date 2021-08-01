@@ -35,7 +35,6 @@ fn Deserializer(comptime T: type) type {
         };
 
         const _D = struct {
-            /// Implements `anyFn` for `getty.de.Deserializer`.
             fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return switch (@typeInfo(T)) {
                     .Bool => visitor.visitBool(true),
@@ -67,22 +66,18 @@ fn Deserializer(comptime T: type) type {
                 } catch Error.DeserializationError;
             }
 
-            /// Implements `boolFn` for `getty.de.Deserializer`.
             fn deserializeBool(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
 
-            /// Implements `intFn` for `getty.de.Deserializer`.
             fn deserializeInt(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
 
-            /// Implements `floatFn` for `getty.de.Deserializer`.
             fn deserializeFloat(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
 
-            /// Implements `optionFn` for `getty.de.Deserializer`.
             fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 if (self.value == null) {
                     return visitor.visitNull() catch return Error.DeserializationError;
@@ -91,22 +86,18 @@ fn Deserializer(comptime T: type) type {
                 }
             }
 
-            /// Implements `sequenceFn` for `getty.de.Deserializer`.
             fn deserializeSequence(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
 
-            /// Implements `stringFn` for `getty.de.Deserializer`.
             fn deserializeString(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
 
-            /// Implements `structFn` for `getty.de.Deserializer`.
             fn deserializeStruct(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
 
-            /// Implements `variantFn` for `getty.de.Deserializer`.
             fn deserializeVariant(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 return deserializeAny(self, visitor);
             }
@@ -153,7 +144,6 @@ const Visitor = struct {
     }
 
     const _V = struct {
-        /// Implements `boolFn` for `getty.de.Visitor`.
         fn visitBool(self: *Self, value: bool) Error!Ok {
             _ = self;
             _ = value;
@@ -161,7 +151,6 @@ const Visitor = struct {
             return .Bool;
         }
 
-        /// Implements `intFn` for `getty.de.Visitor`.
         fn visitInt(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
@@ -169,7 +158,6 @@ const Visitor = struct {
             return .Int;
         }
 
-        /// Implements `floatFn` for `getty.de.Visitor`.
         fn visitFloat(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
@@ -177,14 +165,12 @@ const Visitor = struct {
             return .Float;
         }
 
-        /// Implements `nullFn` for `getty.de.Visitor`.
         fn visitNull(self: *Self) Error!Ok {
             _ = self;
 
             return .Null;
         }
 
-        /// Implements `someFn` for `getty.de.Visitor`.
         fn visitSome(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
@@ -192,7 +178,6 @@ const Visitor = struct {
             return .Some;
         }
 
-        /// Implements `sequenceFn` for `getty.de.Visitor`.
         fn visitSequence(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
@@ -200,7 +185,6 @@ const Visitor = struct {
             return .Sequence;
         }
 
-        /// Implements `stringFn` for `getty.de.Visitor`.
         fn visitString(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
@@ -208,7 +192,6 @@ const Visitor = struct {
             return .String;
         }
 
-        /// Implements `structFn` for `getty.de.Visitor`.
         fn visitStruct(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
@@ -216,7 +199,6 @@ const Visitor = struct {
             return .Struct;
         }
 
-        /// Implements `variantFn` for `getty.de.Visitor`.
         fn visitVariant(self: *Self, value: anytype) Error!Ok {
             _ = self;
             _ = value;
