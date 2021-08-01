@@ -39,19 +39,19 @@ pub fn Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime MapType: type,
-    comptime SequenceType: type,
-    comptime StructType: type,
-    // comptime TupleType: type,
+    comptime M: type,
+    comptime SE: type,
+    comptime ST: type,
+    // comptime T: type,
     comptime boolFn: fn (Context, value: bool) E!O,
     comptime floatFn: fn (Context, value: anytype) E!O,
     comptime intFn: fn (Context, value: anytype) E!O,
     comptime nullFn: fn (Context) E!O,
-    comptime sequenceFn: fn (Context, ?usize) E!SequenceType,
+    comptime sequenceFn: fn (Context, ?usize) E!SE,
     comptime stringFn: fn (Context, value: anytype) E!O,
-    comptime mapFn: fn (Context, ?usize) E!MapType,
-    comptime structFn: fn (Context, comptime []const u8, usize) E!StructType,
-    // comptime tupleFn: fn (Context, value: anytype) E!TupleType,
+    comptime mapFn: fn (Context, ?usize) E!M,
+    comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
+    // comptime tupleFn: fn (Context, value: anytype) E!T,
     comptime variantFn: fn (Context, value: anytype) E!O,
     // comptime voidFn: fn (Context) E!O,
 ) type {
@@ -62,11 +62,6 @@ pub fn Serializer(
 
         pub const Ok = O;
         pub const Error = E;
-
-        pub const Map = MapType;
-        pub const Sequence = SequenceType;
-        pub const Struct = StructType;
-        //pub const Tuple = TupleType;
 
         /// Serialize a boolean value.
         pub fn serializeBool(self: Self, value: bool) Error!Ok {
@@ -89,7 +84,7 @@ pub fn Serializer(
         }
 
         /// Serialize a variably sized heterogeneous sequence of valueserializer.
-        pub fn serializeSequence(self: Self, length: ?usize) Error!Sequence {
+        pub fn serializeSequence(self: Self, length: ?usize) Error!SE {
             return try sequenceFn(self.context, length);
         }
 
@@ -99,12 +94,12 @@ pub fn Serializer(
         }
 
         // Serialize a map value.
-        pub fn serializeMap(self: Self, length: ?usize) Error!Map {
+        pub fn serializeMap(self: Self, length: ?usize) Error!M {
             return try mapFn(self.context, length);
         }
 
         // Serialize a struct value.
-        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
+        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!ST {
             return try structFn(self.context, name, length);
         }
 
@@ -115,7 +110,7 @@ pub fn Serializer(
     };
 }
 
-pub fn SerializeSequence(
+pub fn Sequence(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -142,7 +137,7 @@ pub fn SerializeSequence(
     };
 }
 
-pub fn SerializeMap(
+pub fn Map(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -181,7 +176,7 @@ pub fn SerializeMap(
     };
 }
 
-pub fn SerializeStruct(
+pub fn Struct(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
