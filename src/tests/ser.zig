@@ -31,22 +31,6 @@ pub const Serializer = struct {
     const Ok = void;
     const Error = std.mem.Allocator.Error;
 
-    const Interface = enum {
-        Map,
-        Serializer,
-        Sequence,
-        Struct,
-    };
-
-    pub fn interface(self: *Self, comptime iface: Interface) switch (iface) {
-        .Map => M,
-        .Serializer => S,
-        .Sequence => SE,
-        .Struct => ST,
-    } {
-        return .{ .context = self };
-    }
-
     pub const Map = *Self;
     pub const Sequence = *Self;
     pub const Struct = *Self;
@@ -73,6 +57,10 @@ pub const Serializer = struct {
         _S.serializeVariant,
         //_S.serializeVoid,
     );
+
+    pub fn serializer(self: *Self) S {
+        return .{ .context = self };
+    }
 
     const _S = struct {
         /// Implements `boolFn` for `getty.ser.Serializer`.
@@ -154,6 +142,10 @@ pub const Serializer = struct {
         _SE.end,
     );
 
+    pub fn sequence(self: *Self) SE {
+        return .{ .context = self };
+    }
+
     const _SE = struct {
         /// Implements `elementFn` for `getty.ser.SerializeSequence`.
         fn serializeElement(self: *Self, value: anytype) Error!void {
@@ -180,6 +172,10 @@ pub const Serializer = struct {
         _SM.serializeEntry,
         _SM.end,
     );
+
+    pub fn map(self: *Self) SM {
+        return .{ .context = self };
+    }
 
     const _SM = struct {
         /// Implements `keyFn` for `getty.ser.SerializeMap`.
@@ -222,6 +218,10 @@ pub const Serializer = struct {
         _ST.serializeField,
         _ST.end,
     );
+
+    pub fn structure(self: *Self) ST {
+        return .{ .context = self };
+    }
 
     const _ST = struct {
         /// Implements `fieldFn` for `getty.ser.SerializeStruct`.
@@ -287,7 +287,7 @@ test "Struct" {
 
         /// Skips serializing `y`.
         pub fn serialize(self: @This(), serializer: anytype) !void {
-            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).interface(.Struct);
+            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).structure();
             try s.serializeField("x", @field(self, "x"));
             try s.end();
         }
@@ -313,7 +313,7 @@ test "Vector" {
 
 fn t(input: anytype, output: []const Elem) !void {
     var s = Serializer{};
-    const serializer = s.interface(.Serializer);
+    const serializer = s.serializer();
 
     try ser.serialize(&serializer, input);
     try std.testing.expectEqualSlices(Elem, &s.buf, output);
