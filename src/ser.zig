@@ -6,16 +6,16 @@ const std = @import("std");
 /// struct:
 ///
 ///   - An `Ok` declaration representing the successful return type of your
-///     serialization functions.
+///     serialization functionserializer.
 ///
 ///   - An `Error` declaration representing the error set in the return type of
-///     your serialization functions.
+///     your serialization functionserializer.
 ///
 ///   - A `serialize` function of type `fn(*@This()) Serializer` that returns a
 ///     struct instance of the type returned from this interface function, with
 ///     `context` set to the implementation instance passed in.
 ///
-///   - Implementations of all required methods.
+///   - Implementations of all required methodserializer.
 ///
 /// Note that while many required methods take values of `anytype`, due to the
 /// checks performed in `serialize`, implementations have compile-time
@@ -88,7 +88,7 @@ pub fn Serializer(
             return try nullFn(self.context);
         }
 
-        /// Serialize a variably sized heterogeneous sequence of values.
+        /// Serialize a variably sized heterogeneous sequence of valueserializer.
         pub fn serializeSequence(self: Self, length: ?usize) Error!Sequence {
             return try sequenceFn(self.context, length);
         }
@@ -209,16 +209,21 @@ pub fn SerializeStruct(
 }
 
 /// Serializes values that are of a type supported by Getty.
-pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(serializer))) {
-    .Pointer => |info| info.child.Error!info.child.Ok,
-    else => @compileError("expected pointer to serializer, found " ++ @typeName(T)),
+pub fn serialize(serializer: anytype, value: anytype) blk: {
+    const S = @TypeOf(serializer);
+    const info = @typeInfo(S);
+
+    if (@typeInfo(S) != .Pointer) {
+        @compileError("expected pointer to serializer, found " ++ @typeName(S));
+    }
+
+    break :blk info.Pointer.child.Error!info.Pointer.child.Ok;
 } {
     const T = @TypeOf(value);
-    const s = serializer.interface("serializer");
 
     switch (@typeInfo(T)) {
         .Array => {
-            const seq = (try s.serializeSequence(value.len)).interface("sequence");
+            const seq = (try serializer.serializeSequence(value.len)).interface("sequence");
 
             for (value) |elem| {
                 try seq.serializeElement(elem);
@@ -226,25 +231,25 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
             try seq.end();
         },
         .Bool => {
-            return try s.serializeBool(value);
+            return try serializer.serializeBool(value);
         },
         .Enum, .EnumLiteral => {
             return if (comptime std.meta.trait.hasFn("serialize")(T))
                 try value.serialize(serializer)
             else
-                try s.serializeVariant(value);
+                try serializer.serializeVariant(value);
         },
         .ErrorSet => {
             return try serialize(serializer, @as([]const u8, @errorName(value)));
         },
         .Float, .ComptimeFloat => {
-            return try s.serializeFloat(value);
+            return try serializer.serializeFloat(value);
         },
         .Int, .ComptimeInt => {
-            return try s.serializeInt(value);
+            return try serializer.serializeInt(value);
         },
         .Null => {
-            return try s.serializeNull();
+            return try serializer.serializeNull();
         },
         .Optional => {
             return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null);
@@ -257,11 +262,11 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
                 },
                 .Slice => blk: {
                     if (comptime std.meta.trait.isZigString(T)) {
-                        break :blk try s.serializeString(value);
+                        break :blk try serializer.serializeString(value);
                     } else {
                         // TODO: For this and structs, what do we return if the
                         // serializer's Ok isn't void?
-                        var seq = try s.serializeSequence(value.len);
+                        var seq = try serializer.serializeSequence(value.len);
                         for (value) |elem| {
                             try seq.serializeElement(elem);
                         }
@@ -273,12 +278,12 @@ pub fn serialize(serializer: anytype, value: anytype) switch (@typeInfo(@TypeOf(
         },
         .Struct => |info| {
             if (comptime std.meta.trait.hasFn("serialize")(T)) {
-                return try value.serialize(s);
+                return try value.serialize(serializer);
             } else {
                 // TODO: coerce this to @TypeOf(_getty_attributes)
                 //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
 
-                const st = (try s.serializeStruct(@typeName(T), std.meta.fields(T).len)).interface("struct");
+                const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).interface("struct");
 
                 inline for (info.fields) |field| {
                     try st.serializeField(field.name, @field(value, field.name));

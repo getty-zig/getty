@@ -28,8 +28,8 @@ pub const Serializer = struct {
 
     const Self = @This();
 
-    pub const Ok = void;
-    pub const Error = std.mem.Allocator.Error;
+    const Ok = void;
+    const Error = std.mem.Allocator.Error;
 
     pub fn interface(self: *Self, comptime name: []const u8) blk: {
         if (std.mem.eql(u8, name, "map")) {
@@ -313,8 +313,9 @@ test "Vector" {
 
 fn t(input: anytype, output: []const Elem) !void {
     var s = Serializer{};
-    try ser.serialize(&s, input);
+    const serializer = s.interface("serializer");
 
+    try ser.serialize(&serializer, input);
     try std.testing.expectEqualSlices(Elem, &s.buf, output);
 }
 
