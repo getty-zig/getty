@@ -176,7 +176,7 @@ pub fn Map(
     };
 }
 
-pub fn Struct(
+pub fn Structure(
     comptime Context: type,
     comptime O: type,
     comptime E: type,

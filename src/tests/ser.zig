@@ -33,7 +33,7 @@ pub const Serializer = struct {
 
     pub const Map = *Self;
     pub const Sequence = *Self;
-    pub const Struct = *Self;
+    pub const Structure = *Self;
     //pub const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
@@ -43,7 +43,7 @@ pub const Serializer = struct {
         Error,
         Map,
         Sequence,
-        Struct,
+        Structure,
         //Tuple,
         _S.serializeBool,
         _S.serializeFloat,
@@ -106,7 +106,7 @@ pub const Serializer = struct {
             return self;
         }
 
-        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!Struct {
+        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!Structure {
             _ = name;
             _ = length;
 
@@ -195,8 +195,8 @@ pub const Serializer = struct {
         }
     };
 
-    /// Implements `getty.ser.Struct`.
-    const ST = ser.Struct(
+    /// Implements `getty.ser.Structure`.
+    const ST = ser.Structure(
         *Self,
         Ok,
         Error,
