@@ -34,7 +34,6 @@ pub const Serializer = struct {
     pub const Map = *Self;
     pub const Sequence = *Self;
     pub const Structure = *Self;
-    //pub const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
     pub const S = ser.Serializer(
@@ -44,7 +43,6 @@ pub const Serializer = struct {
         Map,
         Sequence,
         Structure,
-        //Tuple,
         _S.serializeBool,
         _S.serializeFloat,
         _S.serializeInt,
@@ -53,7 +51,6 @@ pub const Serializer = struct {
         _S.serializeString,
         _S.serializeMap,
         _S.serializeStruct,
-        //_S.serializeTuple,
         _S.serializeVariant,
         //_S.serializeVoid,
     );

@@ -34,7 +34,6 @@ const std = @import("std");
 ///     8. sequence
 ///     9. map
 ///     10. struct
-///     11. tuple
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
@@ -42,7 +41,6 @@ pub fn Serializer(
     comptime M: type,
     comptime SE: type,
     comptime ST: type,
-    // comptime T: type,
     comptime boolFn: fn (Context, value: bool) E!O,
     comptime floatFn: fn (Context, value: anytype) E!O,
     comptime intFn: fn (Context, value: anytype) E!O,
@@ -51,7 +49,6 @@ pub fn Serializer(
     comptime stringFn: fn (Context, value: anytype) E!O,
     comptime mapFn: fn (Context, ?usize) E!M,
     comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
-    // comptime tupleFn: fn (Context, value: anytype) E!T,
     comptime variantFn: fn (Context, value: anytype) E!O,
     // comptime voidFn: fn (Context) E!O,
 ) type {
