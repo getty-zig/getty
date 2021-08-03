@@ -39,6 +39,10 @@ pub const Serializer = struct {
     pub const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
+    pub fn serializer(self: *Self) S {
+        return .{ .context = self };
+    }
+
     pub const S = ser.Serializer(
         *Self,
         Ok,
@@ -58,10 +62,6 @@ pub const Serializer = struct {
         _S.serializeTuple,
         _S.serializeVariant,
     );
-
-    pub fn serializer(self: *Self) S {
-        return .{ .context = self };
-    }
 
     const _S = struct {
         fn serializeBool(self: *Self, _: bool) Error!Ok {
@@ -135,6 +135,10 @@ pub const Serializer = struct {
     };
 
     /// Implements `getty.ser.Sequence`.
+    pub fn sequence(self: *Self) SE {
+        return .{ .context = self };
+    }
+
     const SE = ser.Sequence(
         *Self,
         Ok,
@@ -142,10 +146,6 @@ pub const Serializer = struct {
         _SE.serializeElement,
         _SE.end,
     );
-
-    pub fn sequence(self: *Self) SE {
-        return .{ .context = self };
-    }
 
     const _SE = struct {
         fn serializeElement(self: *Self, value: anytype) Error!void {
@@ -162,6 +162,10 @@ pub const Serializer = struct {
     };
 
     /// Implements `getty.ser.Map`.
+    pub fn map(self: *Self) M {
+        return .{ .context = self };
+    }
+
     const M = ser.Map(
         *Self,
         Ok,
@@ -171,10 +175,6 @@ pub const Serializer = struct {
         _M.serializeEntry,
         _M.end,
     );
-
-    pub fn map(self: *Self) M {
-        return .{ .context = self };
-    }
 
     const _M = struct {
         fn serializeKey(self: *Self, key: anytype) Error!void {
@@ -206,6 +206,10 @@ pub const Serializer = struct {
     };
 
     /// Implements `getty.ser.Structure`.
+    pub fn structure(self: *Self) ST {
+        return .{ .context = self };
+    }
+
     const ST = ser.Structure(
         *Self,
         Ok,
@@ -213,10 +217,6 @@ pub const Serializer = struct {
         _ST.serializeField,
         _ST.end,
     );
-
-    pub fn structure(self: *Self) ST {
-        return .{ .context = self };
-    }
 
     const _ST = struct {
         fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!void {
