@@ -34,6 +34,7 @@ const std = @import("std");
 ///     8. sequence
 ///     9. map
 ///     10. struct
+///     11. tuple
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
@@ -41,6 +42,7 @@ pub fn Serializer(
     comptime M: type,
     comptime SE: type,
     comptime ST: type,
+    comptime T: type,
     comptime boolFn: fn (Context, value: bool) E!O,
     comptime floatFn: fn (Context, value: anytype) E!O,
     comptime intFn: fn (Context, value: anytype) E!O,
@@ -49,8 +51,8 @@ pub fn Serializer(
     comptime stringFn: fn (Context, value: anytype) E!O,
     comptime mapFn: fn (Context, ?usize) E!M,
     comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
+    comptime tupleFn: fn (Context, ?usize) E!T,
     comptime variantFn: fn (Context, value: anytype) E!O,
-    // comptime voidFn: fn (Context) E!O,
 ) type {
     return struct {
         context: Context,
@@ -98,6 +100,10 @@ pub fn Serializer(
         // Serialize a struct value.
         pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!ST {
             return try structFn(self.context, name, length);
+        }
+
+        pub fn serializeTuple(self: Self, length: ?usize) Error!T {
+            return try tupleFn(self.context, length);
         }
 
         // Serialize an enum value.
@@ -200,6 +206,8 @@ pub fn Structure(
     };
 }
 
+pub const Tuple = Sequence;
+
 /// Serializes values that are of a type supported by Getty.
 pub fn serialize(serializer: anytype, value: anytype) blk: {
     const S = @TypeOf(serializer);
@@ -216,11 +224,9 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
     switch (@typeInfo(T)) {
         .Array => {
             const seq = (try serializer.serializeSequence(value.len)).sequence();
-
             for (value) |elem| {
                 try seq.serializeElement(elem);
             }
-
             return try seq.end();
         },
         .Bool => {
@@ -257,14 +263,10 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
                     if (comptime std.meta.trait.isZigString(T)) {
                         break :blk try serializer.serializeString(value);
                     } else {
-                        // TODO: For this and structs, what do we return if the
-                        // serializer's Ok isn't void?
                         var seq = try serializer.serializeSequence(value.len);
-
                         for (value) |elem| {
                             try seq.serializeElement(elem);
                         }
-
                         return try seq.end();
                     }
                 },
@@ -274,17 +276,23 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
         .Struct => |info| {
             if (comptime std.meta.trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
-            } else {
-                // TODO: coerce this to @TypeOf(_getty_attributes)
-                //const attributes = if (comptime std.meta.trait.hasDecls(T, .{"_getty_attributes"})) T._getty_attributes else null;
+            }
 
-                const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).structure();
-
-                inline for (info.fields) |field| {
-                    try st.serializeField(field.name, @field(value, field.name));
-                }
-
-                return try st.end();
+            switch (info.is_tuple) {
+                true => {
+                    const tuple = (try serializer.serializeTuple(std.meta.fields(T).len)).tuple();
+                    inline for (info.fields) |field| {
+                        try tuple.serializeElement(@field(value, field.name));
+                    }
+                    return try tuple.end();
+                },
+                false => {
+                    const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).structure();
+                    inline for (info.fields) |field| {
+                        try st.serializeField(field.name, @field(value, field.name));
+                    }
+                    return try st.end();
+                },
             }
         },
         .Union => |info| {

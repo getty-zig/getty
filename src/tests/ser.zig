@@ -18,6 +18,8 @@ const Elem = enum {
     String,
     StructEnd,
     StructStart,
+    TupleEnd,
+    TupleStart,
     Value,
     Variant,
 };
@@ -34,6 +36,7 @@ pub const Serializer = struct {
     pub const Map = *Self;
     pub const Sequence = *Self;
     pub const Structure = *Self;
+    pub const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
     pub const S = ser.Serializer(
@@ -43,6 +46,7 @@ pub const Serializer = struct {
         Map,
         Sequence,
         Structure,
+        Tuple,
         _S.serializeBool,
         _S.serializeFloat,
         _S.serializeInt,
@@ -51,8 +55,8 @@ pub const Serializer = struct {
         _S.serializeString,
         _S.serializeMap,
         _S.serializeStruct,
+        _S.serializeTuple,
         _S.serializeVariant,
-        //_S.serializeVoid,
     );
 
     pub fn serializer(self: *Self) S {
@@ -113,6 +117,15 @@ pub const Serializer = struct {
             return self;
         }
 
+        fn serializeTuple(self: *Self, length: ?usize) Error!Tuple {
+            _ = length;
+
+            self.buf[self.idx] = .TupleStart;
+            self.idx += 1;
+
+            return self;
+        }
+
         fn serializeVariant(self: *Self, value: anytype) Error!Ok {
             _ = value;
 
@@ -149,21 +162,21 @@ pub const Serializer = struct {
     };
 
     /// Implements `getty.ser.Map`.
-    const SM = ser.Map(
+    const M = ser.Map(
         *Self,
         Ok,
         Error,
-        _SM.serializeKey,
-        _SM.serializeValue,
-        _SM.serializeEntry,
-        _SM.end,
+        _M.serializeKey,
+        _M.serializeValue,
+        _M.serializeEntry,
+        _M.end,
     );
 
-    pub fn map(self: *Self) SM {
+    pub fn map(self: *Self) M {
         return .{ .context = self };
     }
 
-    const _SM = struct {
+    const _M = struct {
         fn serializeKey(self: *Self, key: anytype) Error!void {
             _ = key;
 
@@ -216,6 +229,33 @@ pub const Serializer = struct {
 
         fn end(self: *Self) Error!Ok {
             self.buf[self.idx] = .StructEnd;
+            self.idx += 1;
+        }
+    };
+
+    /// Implements `getty.ser.Tuple`.
+    pub fn tuple(self: *Self) T {
+        return .{ .context = self };
+    }
+
+    const T = ser.Tuple(
+        *Self,
+        Ok,
+        Error,
+        _T.serializeElement,
+        _T.end,
+    );
+
+    const _T = struct {
+        fn serializeElement(self: *Self, value: anytype) Error!void {
+            _ = value;
+
+            self.buf[self.idx] = .Element;
+            self.idx += 1;
+        }
+
+        fn end(self: *Self) Error!Ok {
+            self.buf[self.idx] = .TupleEnd;
             self.idx += 1;
         }
     };
@@ -285,6 +325,10 @@ test "Tagged union" {
 
     try t(Union{ .Int = 0 }, &.{ .Int, .Undefined, .Undefined, .Undefined });
     try t(Union{ .Bool = true }, &.{ .Bool, .Undefined, .Undefined, .Undefined });
+}
+
+test "Tuple" {
+    try t(.{ 1, true }, &.{ .TupleStart, .Element, .Element, .TupleEnd });
 }
 
 test "Vector" {
