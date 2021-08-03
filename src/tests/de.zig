@@ -1,6 +1,10 @@
 const std = @import("std");
 const de = @import("getty").de;
 
+const meta = std.meta;
+const trait = meta.trait;
+const testing = std.testing;
+
 fn Deserializer(comptime T: type) type {
     return struct {
         value: T,
@@ -43,14 +47,14 @@ fn Deserializer(comptime T: type) type {
                         return switch (info.size) {
                             .One => switch (@typeInfo(info.child)) {
                                 .Array => blk: {
-                                    var child_deserializer = Deserializer([]const std.meta.Elem(info.child)).init(self.value);
+                                    var child_deserializer = Deserializer([]const meta.Elem(info.child)).init(self.value);
                                     const child_d = child_deserializer.deserializer();
                                     break :blk child_d.deserializeAny(visitor);
                                 },
                                 else => try deserializeAny(self, serializer, value.*),
                             },
                             .Slice => blk: {
-                                if (comptime std.meta.trait.isZigString(T)) {
+                                if (comptime trait.isZigString(T)) {
                                     break :blk visitor.visitString(self.value) catch Error.DeserializationError;
                                 } else {
                                     @compileError("non-String slice: " ++ @typeName(T));
@@ -252,14 +256,14 @@ fn t(input: anytype, output: Token) !void {
         .Pointer => |info| switch (info.size) {
             .One => {
                 switch (@typeInfo(info.child)) {
-                    .Array => try t(@as([]const std.meta.Elem(info.child), input), output),
+                    .Array => try t(@as([]const meta.Elem(info.child), input), output),
                     else => try t(input.*, output),
                 }
 
                 return;
             },
             .Slice => blk: {
-                if (comptime std.meta.trait.isZigString(@TypeOf(input))) {
+                if (comptime trait.isZigString(@TypeOf(input))) {
                     break :blk try d.deserializeString(v);
                 } else {
                     @compileError("Non-string slice");
@@ -271,9 +275,9 @@ fn t(input: anytype, output: Token) !void {
         else => unreachable,
     };
 
-    try std.testing.expect(o == output);
+    try testing.expect(o == output);
 }
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }

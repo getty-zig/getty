@@ -1,6 +1,10 @@
 const std = @import("std");
 const ser = @import("getty").ser;
 
+const mem = std.mem;
+const meta = std.meta;
+const testing = std.testing;
+
 const Elem = enum {
     Undefined,
     Bool,
@@ -31,7 +35,7 @@ pub const Serializer = struct {
     const Self = @This();
 
     const Ok = void;
-    const Error = std.mem.Allocator.Error;
+    const Error = mem.Allocator.Error;
 
     pub const Map = *Self;
     pub const Sequence = *Self;
@@ -307,7 +311,7 @@ test "Struct" {
 
         /// Skips serializing `y`.
         pub fn serialize(self: @This(), serializer: anytype) !void {
-            const s = (try serializer.serializeStruct(@typeName(@This()), std.meta.fields(@This()).len)).structure();
+            const s = (try serializer.serializeStruct(@typeName(@This()), meta.fields(@This()).len)).structure();
             try s.serializeField("x", @field(self, "x"));
             try s.end();
         }
@@ -340,9 +344,9 @@ fn t(input: anytype, output: []const Elem) !void {
     const serializer = s.serializer();
 
     try ser.serialize(&serializer, input);
-    try std.testing.expectEqualSlices(Elem, &s.buf, output);
+    try testing.expectEqualSlices(Elem, &s.buf, output);
 }
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }

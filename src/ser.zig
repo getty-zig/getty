@@ -1,5 +1,9 @@
 const std = @import("std");
 
+const meta = std.meta;
+const testing = std.testing;
+const trait = meta.trait;
+
 /// A data format that can serialize any data type supported by Getty.
 ///
 /// To implement the interface, the following must be provided within your
@@ -233,7 +237,7 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
             return try serializer.serializeBool(value);
         },
         .Enum, .EnumLiteral => {
-            return if (comptime std.meta.trait.hasFn("serialize")(T))
+            return if (comptime trait.hasFn("serialize")(T))
                 try value.serialize(serializer)
             else
                 try serializer.serializeVariant(value);
@@ -256,11 +260,11 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
         .Pointer => |info| {
             return switch (info.size) {
                 .One => switch (@typeInfo(info.child)) {
-                    .Array => try serialize(serializer, @as([]const std.meta.Elem(info.child), value)),
+                    .Array => try serialize(serializer, @as([]const meta.Elem(info.child), value)),
                     else => try serialize(serializer, value.*),
                 },
                 .Slice => blk: {
-                    if (comptime std.meta.trait.isZigString(T)) {
+                    if (comptime trait.isZigString(T)) {
                         break :blk try serializer.serializeString(value);
                     } else {
                         var seq = try serializer.serializeSequence(value.len);
@@ -274,20 +278,20 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
             };
         },
         .Struct => |info| {
-            if (comptime std.meta.trait.hasFn("serialize")(T)) {
+            if (comptime trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
             }
 
             switch (info.is_tuple) {
                 true => {
-                    const tuple = (try serializer.serializeTuple(std.meta.fields(T).len)).tuple();
+                    const tuple = (try serializer.serializeTuple(meta.fields(T).len)).tuple();
                     inline for (info.fields) |field| {
                         try tuple.serializeElement(@field(value, field.name));
                     }
                     return try tuple.end();
                 },
                 false => {
-                    const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).structure();
+                    const st = (try serializer.serializeStruct(@typeName(T), meta.fields(T).len)).structure();
                     inline for (info.fields) |field| {
                         try st.serializeField(field.name, @field(value, field.name));
                     }
@@ -296,7 +300,7 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
             }
         },
         .Union => |info| {
-            if (comptime std.meta.trait.hasFn("serialize")(T)) {
+            if (comptime meta.trait.hasFn("serialize")(T)) {
                 return try value.serialize(serializer);
             } else {
                 if (info.tag_type) |Tag| {
@@ -322,5 +326,5 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
 }
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }

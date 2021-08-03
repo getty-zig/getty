@@ -2,6 +2,13 @@ const de = @import("de.zig");
 const ser = @import("ser.zig");
 const std = @import("std");
 
+const mem = std.mem;
+const meta = std.meta;
+const trait = meta.trait;
+const testing = std.testing;
+
+const TypeInfo = std.builtin.TypeInfo;
+
 pub const Case = enum {
     lower,
     upper,
@@ -29,7 +36,7 @@ pub fn Attributes(comptime T: type, attributes: anytype) type {
         // fields/values aren't picked up unless we reference
         // _getty_attributes.
         comptime {
-            inline for (std.meta.declarations(@This())) |decl| {
+            inline for (meta.declarations(@This())) |decl| {
                 _ = decl;
             }
         }
@@ -112,7 +119,7 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
         @compileError("expected attribute map, found " ++ @typeName(A));
     }
 
-    if (std.meta.fields(A).len == 0) {
+    if (meta.fields(A).len == 0) {
         return struct {};
     }
 
@@ -308,10 +315,10 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
     const container = Container{};
     const inner = Inner{};
 
-    comptime var fields: [std.meta.fields(A).len]std.builtin.TypeInfo.StructField = undefined;
+    comptime var fields: [meta.fields(A).len]TypeInfo.StructField = undefined;
 
-    inline for (std.meta.fields(A)) |field, i| {
-        if (comptime std.meta.trait.hasField(field.name)(T)) {
+    inline for (meta.fields(A)) |field, i| {
+        if (comptime meta.trait.hasField(field.name)(T)) {
             fields[i] = .{
                 .name = field.name,
                 .field_type = Inner,
@@ -319,7 +326,7 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
                 .is_comptime = false,
                 .alignment = 4,
             };
-        } else if (comptime std.mem.eql(u8, field.name, @typeName(T))) {
+        } else if (comptime mem.eql(u8, field.name, @typeName(T))) {
             fields[i] = .{
                 .name = @typeName(T),
                 .field_type = Container,
@@ -332,16 +339,16 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
         }
     }
 
-    return @Type(std.builtin.TypeInfo{
+    return @Type(TypeInfo{
         .Struct = .{
             .layout = .Auto,
             .fields = &fields,
-            .decls = &[_]std.builtin.TypeInfo.Declaration{},
+            .decls = &[_]TypeInfo.Declaration{},
             .is_tuple = false,
         },
     });
 }
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }

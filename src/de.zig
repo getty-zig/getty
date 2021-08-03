@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const testing = std.testing;
+
 fn DeserializerFn(comptime Context: type, comptime Error: type) type {
     return @TypeOf(struct {
         fn f(_: Context, visitor: anytype) Error!@TypeOf(visitor).Ok {
@@ -130,5 +132,5 @@ pub fn Visitor(
 }
 
 comptime {
-    std.testing.refAllDecls(@This());
+    testing.refAllDecls(@This());
 }
