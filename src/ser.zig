@@ -218,7 +218,7 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
     const info = @typeInfo(S);
 
     if (@typeInfo(S) != .Pointer) {
-        @compileError("expected pointer to serializer, found " ++ @typeName(S));
+        @compileError("expected pointer to serializer, found `" ++ @typeName(S) ++ "`");
     }
 
     break :blk info.Pointer.child.Error!info.Pointer.child.Ok;
@@ -274,7 +274,7 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
                         return try seq.end();
                     }
                 },
-                else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+                else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
             };
         },
         .Struct => |info| {
@@ -314,14 +314,14 @@ pub fn serialize(serializer: anytype, value: anytype) blk: {
                     // always find the field that matches the passed-in value.
                     unreachable;
                 } else {
-                    @compileError("unsupported serialize type: Untagged " ++ @typeName(T));
+                    @compileError("type `" ++ @typeName(T) ++ "` is not supported");
                 }
             }
         },
         .Vector => |info| {
             return try serialize(serializer, @as([info.len]info.child, value));
         },
-        else => @compileError("unsupported serialize type: " ++ @typeName(T)),
+        else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     }
 }
 
