@@ -10,7 +10,6 @@ fn DeserializerFn(comptime Context: type, comptime Error: type) type {
     }.f);
 }
 
-/// An interface for deserializing input into Getty's data model.
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
@@ -69,8 +68,6 @@ pub fn Deserializer(
     };
 }
 
-/// An interface for deserializing Getty data types into higher-level,
-/// user-defined types.
 pub fn Visitor(
     comptime Context: type,
     comptime O: type,

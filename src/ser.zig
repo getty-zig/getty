@@ -6,20 +6,25 @@ const trait = meta.trait;
 
 /// A data format that can serialize any data type supported by Getty.
 ///
-/// To implement the interface, the following must be provided within your
-/// struct:
+/// This interface is generic over the following:
 ///
-///   - An `Ok` declaration representing the successful return type of your
-///     serialization functionserializer.
+///   - An `O` type representing the successful return type of some of
+///     `Serializer`'s required methods.
 ///
-///   - An `Error` declaration representing the error set in the return type of
-///     your serialization functionserializer.
+///   - An `E` type representing the error set in the return type of
+///     all of `Serializer`'s required methods.
 ///
-///   - A `serialize` function of type `fn(*@This()) Serializer` that returns a
-///     struct instance of the type returned from this interface function, with
-///     `context` set to the implementation instance passed in.
+///   - An `M` type representing a type that implements the `getty.ser.Map`
+///     interface.
 ///
-///   - Implementations of all required methodserializer.
+///   - An `SE` type representing a type that implements the
+///     `getty.ser.Sequence` interface.
+///
+///   - An `ST` type representing a type that implements the
+///     `getty.ser.Struct` interface.
+///
+///   - An `T` type representing a type that implements the
+///     `getty.ser.Tuple` interface.
 ///
 /// Note that while many required methods take values of `anytype`, due to the
 /// checks performed in `serialize`, implementations have compile-time
