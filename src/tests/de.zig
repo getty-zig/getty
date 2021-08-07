@@ -11,12 +11,20 @@ fn Deserializer(comptime T: type) type {
 
         const Self = @This();
 
+        const Error = error{
+            DeserializationError,
+        };
+
         pub fn init(value: T) Self {
             return .{ .value = value };
         }
 
         /// Implements `getty.de.Deserializer`.
-        pub const D = de.Deserializer(
+        pub fn deserializer(self: *Self) D {
+            return .{ .context = self };
+        }
+
+        const D = de.Deserializer(
             *Self,
             Error,
             _D.deserializeAny,
@@ -29,14 +37,6 @@ fn Deserializer(comptime T: type) type {
             _D.deserializeStruct,
             _D.deserializeVariant,
         );
-
-        pub fn deserializer(self: *Self) D {
-            return .{ .context = self };
-        }
-
-        pub const Error = error{
-            DeserializationError,
-        };
 
         const _D = struct {
             fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
@@ -128,6 +128,10 @@ const Visitor = struct {
     const Error = error{VisitorError};
 
     /// Implements `getty.de.Visitor`.
+    pub fn visitor(self: *Self) V {
+        return .{ .context = self };
+    }
+
     const V = de.Visitor(
         *Self,
         Ok,
@@ -142,10 +146,6 @@ const Visitor = struct {
         _V.visitStruct,
         _V.visitVariant,
     );
-
-    pub fn visitor(self: *Self) V {
-        return .{ .context = self };
-    }
 
     const _V = struct {
         fn visitBool(self: *Self, value: bool) Error!Ok {

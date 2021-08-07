@@ -28,7 +28,7 @@ const Elem = enum {
     Variant,
 };
 
-pub const Serializer = struct {
+const Serializer = struct {
     buf: [4]Elem = .{.Undefined} ** 4,
     idx: usize = 0,
 
@@ -37,17 +37,17 @@ pub const Serializer = struct {
     const Ok = void;
     const Error = mem.Allocator.Error;
 
-    pub const Map = *Self;
-    pub const Sequence = *Self;
-    pub const Structure = *Self;
-    pub const Tuple = *Self;
+    const Map = *Self;
+    const Sequence = *Self;
+    const Structure = *Self;
+    const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
     pub fn serializer(self: *Self) S {
         return .{ .context = self };
     }
 
-    pub const S = ser.Serializer(
+    const S = ser.Serializer(
         *Self,
         Ok,
         Error,
