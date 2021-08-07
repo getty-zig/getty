@@ -31,7 +31,7 @@ fn Deserializer(comptime T: type) type {
             _D.deserializeBool,
             _D.deserializeInt,
             _D.deserializeFloat,
-            _D.deserializeOption,
+            _D.deserializeOptional,
             _D.deserializeSequence,
             _D.deserializeString,
             _D.deserializeStruct,
@@ -82,7 +82,7 @@ fn Deserializer(comptime T: type) type {
                 return deserializeAny(self, visitor);
             }
 
-            fn deserializeOption(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
+            fn deserializeOptional(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Ok {
                 if (self.value == null) {
                     return visitor.visitNull() catch return Error.DeserializationError;
                 } else {
@@ -252,7 +252,7 @@ fn t(input: anytype, output: Token) !void {
         .Bool => try d.deserializeBool(v),
         .Enum => try d.deserializeVariant(v),
         .Int => try d.deserializeInt(v),
-        .Optional => try d.deserializeOption(v),
+        .Optional => try d.deserializeOptional(v),
         .Pointer => |info| switch (info.size) {
             .One => {
                 switch (@typeInfo(info.child)) {

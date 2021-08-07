@@ -17,7 +17,7 @@ pub fn Deserializer(
     comptime boolFn: DeserializerFn(Context, E),
     comptime intFn: DeserializerFn(Context, E),
     comptime floatFn: DeserializerFn(Context, E),
-    comptime optionFn: DeserializerFn(Context, E),
+    comptime optionalFn: DeserializerFn(Context, E),
     comptime sequenceFn: DeserializerFn(Context, E),
     comptime stringFn: DeserializerFn(Context, E),
     comptime structFn: DeserializerFn(Context, E),
@@ -46,8 +46,8 @@ pub fn Deserializer(
             return try floatFn(self.context, visitor);
         }
 
-        pub fn deserializeOption(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
-            return try optionFn(self.context, visitor);
+        pub fn deserializeOptional(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+            return try optionalFn(self.context, visitor);
         }
 
         pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
