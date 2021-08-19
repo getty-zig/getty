@@ -499,6 +499,65 @@ test "Integer (II)" {
     }
 }
 
+test "Float (II)" {
+    const T = f32;
+
+    // f32 to f32
+    {
+        const value: T = std.math.f32_max;
+
+        var deserializer = Deserializer(T).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(T, &d);
+        const Result = @TypeOf(result);
+
+        try std.testing.expectEqual(result, std.math.f32_max);
+        try std.testing.expectEqual(Result, T);
+    }
+
+    // f32 to f64
+    {
+        const value: T = std.math.f32_max;
+
+        var deserializer = Deserializer(T).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(f64, &d);
+        const Result = @TypeOf(result);
+
+        try std.testing.expectEqual(result, std.math.f32_max);
+        try std.testing.expectEqual(Result, f64);
+    }
+
+    // f32 to f16 (pass)
+    {
+        const value: T = std.math.f16_max;
+
+        var deserializer = Deserializer(T).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(f16, &d);
+        const Result = @TypeOf(result);
+
+        try std.testing.expectEqual(result, std.math.f16_max);
+        try std.testing.expectEqual(Result, f16);
+    }
+
+    // f32 to f16 (fail)
+    {
+        const value: T = std.math.f32_max;
+
+        var deserializer = Deserializer(T).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(f16, &d);
+
+        try std.testing.expectEqual(result, @floatCast(f16, std.math.f32_max));
+        try std.testing.expectEqual(@TypeOf(result), f16);
+    }
+}
+
 comptime {
     testing.refAllDecls(@This());
 }

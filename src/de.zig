@@ -318,6 +318,44 @@ pub const BoolVisitor = struct {
     };
 };
 
+pub fn FloatVisitor(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        /// Implements `getty.de.Visitor`.
+        pub fn visitor(self: *Self) V {
+            return .{ .context = self };
+        }
+
+        const V = Visitor(
+            *Self,
+            _V.Value,
+            undefined,
+            _V.visitFloat,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+        );
+
+        const _V = struct {
+            const Value = T;
+
+            fn visitFloat(self: *Self, comptime Error: type, value: anytype) Error!Value {
+                _ = self;
+
+                // This cast is safe, but it may cause the numeric value to
+                // lose precision.
+                return @floatCast(T, value);
+            }
+        };
+    };
+}
+
 pub fn IntVisitor(comptime T: type) type {
     return struct {
         const Self = @This();
@@ -370,6 +408,10 @@ pub fn deserialize(comptime T: type, deserializer: anytype) blk: {
         .Bool => {
             var v = BoolVisitor{};
             return try deserializer.deserializeBool(v.visitor());
+        },
+        .Float => {
+            var v = FloatVisitor(T){};
+            return try deserializer.deserializeFloat(v.visitor());
         },
         .Int => {
             var v = IntVisitor(T){};
