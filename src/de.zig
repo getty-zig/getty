@@ -250,6 +250,139 @@ pub fn DeserializeSeed(
     };
 }
 
+pub const VoidVisitor = struct {
+    const Self = @This();
+
+    /// Implements `getty.de.Visitor`.
+    pub fn visitor(self: *Self) V {
+        return .{ .context = self };
+    }
+
+    const V = Visitor(
+        *Self,
+        _V.Value,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        _V.visitVoid,
+    );
+
+    const _V = struct {
+        const Value = void;
+
+        fn visitVoid(self: *Self, comptime Error: type) Error!Value {
+            _ = self;
+
+            return {};
+        }
+    };
+};
+
+pub const BoolVisitor = struct {
+    const Self = @This();
+
+    /// Implements `getty.de.Visitor`.
+    pub fn visitor(self: *Self) V {
+        return .{ .context = self };
+    }
+
+    const V = Visitor(
+        *Self,
+        _V.Value,
+        _V.visitBool,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+    );
+
+    const _V = struct {
+        const Value = bool;
+
+        fn visitBool(self: *Self, comptime Error: type, value: bool) Error!Value {
+            _ = self;
+
+            return value;
+        }
+    };
+};
+
+pub fn IntVisitor(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        /// Implements `getty.de.Visitor`.
+        pub fn visitor(self: *Self) V {
+            return .{ .context = self };
+        }
+
+        const V = Visitor(
+            *Self,
+            _V.Value,
+            undefined,
+            undefined,
+            _V.visitInt,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+        );
+
+        const _V = struct {
+            const Value = T;
+
+            fn visitInt(self: *Self, comptime Error: type, value: anytype) Error!Value {
+                _ = self;
+
+                return std.math.cast(T, value) catch |err| switch (err) {
+                    error.Overflow => Error.DeserializationError,
+                };
+            }
+        };
+    };
+}
+
+pub fn deserialize(comptime T: type, deserializer: anytype) blk: {
+    const D = @TypeOf(deserializer);
+    const info = @typeInfo(D);
+
+    if (info != .Pointer) {
+        @compileError("expected pointer to deserializer, found `" ++ @typeName(D) ++ "`");
+    }
+
+    break :blk info.Pointer.child.Error!T;
+} {
+    switch (@typeInfo(T)) {
+        .Bool => {
+            var v = BoolVisitor{};
+            return try deserializer.deserializeBool(v.visitor());
+        },
+        .Int => {
+            var v = IntVisitor(T){};
+            return try deserializer.deserializeInt(v.visitor());
+        },
+        .Void => {
+            var v = VoidVisitor{};
+            return try deserializer.deserializeVoid(v.visitor());
+        },
+        else => unreachable,
+    }
+}
+
 comptime {
     testing.refAllDecls(@This());
 }

@@ -372,6 +372,133 @@ fn t(input: anytype, expected: bool) !void {
     try testing.expect(got == expected);
 }
 
+test "Void (II)" {
+    const value: void = {};
+
+    var deserializer = Deserializer(void).init(value);
+    const d = deserializer.deserializer();
+
+    const result = try de.deserialize(void, &d);
+
+    try std.testing.expect(result == {});
+}
+
+test "Bool (II)" {
+    const T = bool;
+
+    {
+        const value = false;
+
+        var deserializer = Deserializer(T).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(T, &d);
+
+        try std.testing.expect(result == false);
+    }
+
+    {
+        const value = true;
+
+        var deserializer = Deserializer(T).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(T, &d);
+
+        try std.testing.expect(result == true);
+    }
+}
+
+test "Integer (II)" {
+    {
+        const T = i8;
+
+        // signed to signed
+        {
+            const value: T = 1;
+
+            var deserializer = Deserializer(T).init(value);
+            const d = deserializer.deserializer();
+
+            const result = try de.deserialize(T, &d);
+            const Result = @TypeOf(result);
+
+            try std.testing.expectEqual(result, 1);
+            try std.testing.expectEqual(Result, T);
+        }
+
+        // signed to unsigned (pass)
+        {
+            const value: T = 1;
+
+            var deserializer = Deserializer(T).init(value);
+            const d = deserializer.deserializer();
+
+            const result = try de.deserialize(u8, &d);
+            const Result = @TypeOf(result);
+
+            try std.testing.expectEqual(result, 1);
+            try std.testing.expectEqual(Result, u8);
+        }
+
+        // signed to unsigned (fail)
+        {
+            const value: T = std.math.minInt(T);
+
+            var deserializer = Deserializer(T).init(value);
+            const d = deserializer.deserializer();
+
+            const err = de.deserialize(u8, &d) catch |err| err;
+
+            try std.testing.expectError(@TypeOf(d).Error.DeserializationError, err);
+        }
+    }
+
+    {
+        const T = u8;
+
+        // unsigned to unsigned
+        {
+            const value: T = 1;
+
+            var deserializer = Deserializer(T).init(value);
+            const d = deserializer.deserializer();
+
+            const result = try de.deserialize(T, &d);
+            const Result = @TypeOf(result);
+
+            try std.testing.expectEqual(result, 1);
+            try std.testing.expectEqual(Result, T);
+        }
+
+        // unsigned to signed (pass)
+        {
+            const value: T = 1;
+
+            var deserializer = Deserializer(T).init(value);
+            const d = deserializer.deserializer();
+
+            const result = try de.deserialize(i8, &d);
+            const Result = @TypeOf(result);
+
+            try std.testing.expectEqual(result, 1);
+            try std.testing.expectEqual(Result, i8);
+        }
+
+        // unsigned to signed (fail)
+        {
+            const value: T = std.math.maxInt(T);
+
+            var deserializer = Deserializer(T).init(value);
+            const d = deserializer.deserializer();
+
+            const err = de.deserialize(i8, &d) catch |err| err;
+
+            try std.testing.expectError(@TypeOf(d).Error.DeserializationError, err);
+        }
+    }
+}
+
 comptime {
     testing.refAllDecls(@This());
 }
