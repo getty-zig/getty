@@ -165,16 +165,12 @@ pub fn Visitor(
             return try boolFn(self.context, Error, input);
         }
 
-        pub fn visitVariant(self: Self, comptime Error: type, input: anytype) Error!Value {
-            return try variantFn(self.context, Error, input);
+        pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try floatFn(self.context, Error, input);
         }
 
         pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
             return try intFn(self.context, Error, input);
-        }
-
-        pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
-            return try floatFn(self.context, Error, input);
         }
 
         pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
@@ -196,6 +192,10 @@ pub fn Visitor(
 
         pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
             return try stringFn(self.context, Error, input);
+        }
+
+        pub fn visitVariant(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try variantFn(self.context, Error, input);
         }
 
         pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
