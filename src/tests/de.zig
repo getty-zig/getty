@@ -556,6 +556,20 @@ test "Float (II)" {
         try std.testing.expectEqual(result, @floatCast(f16, std.math.f32_max));
         try std.testing.expectEqual(@TypeOf(result), f16);
     }
+
+    // i32 to f32
+    {
+        const value = std.math.maxInt(i32);
+
+        var deserializer = Deserializer(i32).init(value);
+        const d = deserializer.deserializer();
+
+        const result = try de.deserialize(T, &d);
+        const Result = @TypeOf(result);
+
+        try std.testing.expectEqual(result, @intToFloat(T, value));
+        try std.testing.expectEqual(Result, T);
+    }
 }
 
 comptime {

@@ -332,7 +332,7 @@ pub fn FloatVisitor(comptime T: type) type {
             _V.Value,
             undefined,
             _V.visitFloat,
-            undefined,
+            _V.visitInt,
             undefined,
             undefined,
             undefined,
@@ -351,6 +351,13 @@ pub fn FloatVisitor(comptime T: type) type {
                 // This cast is safe, but it may cause the numeric value to
                 // lose precision.
                 return @floatCast(T, value);
+            }
+
+            fn visitInt(self: *Self, comptime Error: type, value: anytype) Error!Value {
+                _ = self;
+
+                // This cast is always safe.
+                return @intToFloat(T, value);
             }
         };
     };
@@ -404,25 +411,15 @@ pub fn deserialize(comptime T: type, deserializer: anytype) blk: {
 
     break :blk info.Pointer.child.Error!T;
 } {
-    switch (@typeInfo(T)) {
-        .Bool => {
-            var v = BoolVisitor{};
-            return try deserializer.deserializeBool(v.visitor());
-        },
-        .Float => {
-            var v = FloatVisitor(T){};
-            return try deserializer.deserializeFloat(v.visitor());
-        },
-        .Int => {
-            var v = IntVisitor(T){};
-            return try deserializer.deserializeInt(v.visitor());
-        },
-        .Void => {
-            var v = VoidVisitor{};
-            return try deserializer.deserializeVoid(v.visitor());
-        },
+    var visitor = switch (@typeInfo(T)) {
+        .Bool => BoolVisitor{},
+        .Float => FloatVisitor(T){},
+        .Int => IntVisitor(T){},
+        .Void => VoidVisitor{},
         else => unreachable,
-    }
+    };
+
+    return try deserializer.deserializeAny(visitor.visitor());
 }
 
 comptime {
