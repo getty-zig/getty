@@ -378,7 +378,7 @@ test "Void (II)" {
     var deserializer = Deserializer(void).init(value);
     const d = deserializer.deserializer();
 
-    const result = try de.deserialize(void, &d);
+    const result = try de.deserialize(void, d);
 
     try std.testing.expect(result == {});
 }
@@ -392,7 +392,7 @@ test "Bool (II)" {
         var deserializer = Deserializer(T).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(T, &d);
+        const result = try de.deserialize(T, d);
 
         try std.testing.expect(result == false);
     }
@@ -403,7 +403,7 @@ test "Bool (II)" {
         var deserializer = Deserializer(T).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(T, &d);
+        const result = try de.deserialize(T, d);
 
         try std.testing.expect(result == true);
     }
@@ -420,7 +420,7 @@ test "Integer (II)" {
             var deserializer = Deserializer(T).init(value);
             const d = deserializer.deserializer();
 
-            const result = try de.deserialize(T, &d);
+            const result = try de.deserialize(T, d);
             const Result = @TypeOf(result);
 
             try std.testing.expectEqual(result, 1);
@@ -434,7 +434,7 @@ test "Integer (II)" {
             var deserializer = Deserializer(T).init(value);
             const d = deserializer.deserializer();
 
-            const result = try de.deserialize(u8, &d);
+            const result = try de.deserialize(u8, d);
             const Result = @TypeOf(result);
 
             try std.testing.expectEqual(result, 1);
@@ -448,7 +448,7 @@ test "Integer (II)" {
             var deserializer = Deserializer(T).init(value);
             const d = deserializer.deserializer();
 
-            const err = de.deserialize(u8, &d) catch |err| err;
+            const err = de.deserialize(u8, d) catch |err| err;
 
             try std.testing.expectError(@TypeOf(d).Error.DeserializationError, err);
         }
@@ -464,7 +464,7 @@ test "Integer (II)" {
             var deserializer = Deserializer(T).init(value);
             const d = deserializer.deserializer();
 
-            const result = try de.deserialize(T, &d);
+            const result = try de.deserialize(T, d);
             const Result = @TypeOf(result);
 
             try std.testing.expectEqual(result, 1);
@@ -478,7 +478,7 @@ test "Integer (II)" {
             var deserializer = Deserializer(T).init(value);
             const d = deserializer.deserializer();
 
-            const result = try de.deserialize(i8, &d);
+            const result = try de.deserialize(i8, d);
             const Result = @TypeOf(result);
 
             try std.testing.expectEqual(result, 1);
@@ -492,7 +492,7 @@ test "Integer (II)" {
             var deserializer = Deserializer(T).init(value);
             const d = deserializer.deserializer();
 
-            const err = de.deserialize(i8, &d) catch |err| err;
+            const err = de.deserialize(i8, d) catch |err| err;
 
             try std.testing.expectError(@TypeOf(d).Error.DeserializationError, err);
         }
@@ -509,7 +509,7 @@ test "Float (II)" {
         var deserializer = Deserializer(T).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(T, &d);
+        const result = try de.deserialize(T, d);
         const Result = @TypeOf(result);
 
         try std.testing.expectEqual(result, std.math.f32_max);
@@ -523,7 +523,7 @@ test "Float (II)" {
         var deserializer = Deserializer(T).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(f64, &d);
+        const result = try de.deserialize(f64, d);
         const Result = @TypeOf(result);
 
         try std.testing.expectEqual(result, std.math.f32_max);
@@ -537,7 +537,7 @@ test "Float (II)" {
         var deserializer = Deserializer(T).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(f16, &d);
+        const result = try de.deserialize(f16, d);
         const Result = @TypeOf(result);
 
         try std.testing.expectEqual(result, std.math.f16_max);
@@ -551,7 +551,7 @@ test "Float (II)" {
         var deserializer = Deserializer(T).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(f16, &d);
+        const result = try de.deserialize(f16, d);
 
         try std.testing.expectEqual(result, @floatCast(f16, std.math.f32_max));
         try std.testing.expectEqual(@TypeOf(result), f16);
@@ -564,7 +564,7 @@ test "Float (II)" {
         var deserializer = Deserializer(i32).init(value);
         const d = deserializer.deserializer();
 
-        const result = try de.deserialize(T, &d);
+        const result = try de.deserialize(T, d);
         const Result = @TypeOf(result);
 
         try std.testing.expectEqual(result, @intToFloat(T, value));

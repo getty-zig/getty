@@ -401,16 +401,7 @@ pub fn IntVisitor(comptime T: type) type {
     };
 }
 
-pub fn deserialize(comptime T: type, deserializer: anytype) blk: {
-    const D = @TypeOf(deserializer);
-    const info = @typeInfo(D);
-
-    if (info != .Pointer) {
-        @compileError("expected pointer to deserializer, found `" ++ @typeName(D) ++ "`");
-    }
-
-    break :blk info.Pointer.child.Error!T;
-} {
+pub fn deserialize(comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     var visitor = switch (@typeInfo(T)) {
         .Bool => BoolVisitor{},
         .Float => FloatVisitor(T){},
