@@ -3,11 +3,13 @@ const std = @import("std");
 const testing = std.testing;
 
 fn DeserializerFn(comptime Context: type, comptime Error: type) type {
-    return @TypeOf(struct {
-        fn f(_: Context, visitor: anytype) Error!@TypeOf(visitor).Ok {
+    const S = struct {
+        fn f(_: Context, visitor: anytype) Error!@TypeOf(visitor).Value {
             unreachable;
         }
-    }.f);
+    };
+
+    return @TypeOf(S.f);
 }
 
 pub fn Deserializer(
@@ -15,13 +17,17 @@ pub fn Deserializer(
     comptime E: type,
     comptime anyFn: DeserializerFn(Context, E),
     comptime boolFn: DeserializerFn(Context, E),
-    comptime intFn: DeserializerFn(Context, E),
     comptime floatFn: DeserializerFn(Context, E),
+    //comptime identifierFn: DeserializerFn(Context, E),
+    comptime intFn: DeserializerFn(Context, E),
+    comptime mapFn: DeserializerFn(Context, E),
     comptime optionalFn: DeserializerFn(Context, E),
     comptime sequenceFn: DeserializerFn(Context, E),
     comptime stringFn: DeserializerFn(Context, E),
     comptime structFn: DeserializerFn(Context, E),
+    //comptime tupleFn: DeserializerFn(Context, E),
     comptime variantFn: DeserializerFn(Context, E),
+    comptime voidFn: DeserializerFn(Context, E),
 ) type {
     return struct {
         context: Context,
@@ -30,100 +36,216 @@ pub fn Deserializer(
 
         pub const Error = E;
 
-        pub fn deserializeAny(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeAny(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try anyFn(self.context, visitor);
         }
 
-        pub fn deserializeBool(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeBool(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try boolFn(self.context, visitor);
         }
 
-        pub fn deserializeInt(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
-            return try intFn(self.context, visitor);
-        }
-
-        pub fn deserializeFloat(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeFloat(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try floatFn(self.context, visitor);
         }
 
-        pub fn deserializeOptional(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeInt(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try intFn(self.context, visitor);
+        }
+
+        pub fn deserializeMap(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try mapFn(self.context, visitor);
+        }
+
+        pub fn deserializeOptional(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try optionalFn(self.context, visitor);
         }
 
-        pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try sequenceFn(self.context, visitor);
         }
 
-        pub fn deserializeString(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeString(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try stringFn(self.context, visitor);
         }
 
-        pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try structFn(self.context, visitor);
         }
 
-        pub fn deserializeVariant(self: Self, visitor: anytype) E!@TypeOf(visitor).Ok {
+        pub fn deserializeVariant(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try variantFn(self.context, visitor);
+        }
+
+        pub fn deserializeVoid(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try voidFn(self.context, visitor);
         }
     };
 }
 
 pub fn Visitor(
     comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime boolFn: fn (Context, bool) E!O,
-    comptime intFn: fn (Context, anytype) E!O,
-    comptime floatFn: fn (Context, anytype) E!O,
-    comptime nullFn: fn (Context) E!O,
-    comptime someFn: fn (Context, anytype) E!O,
-    comptime sequenceFn: fn (Context, anytype) E!O,
-    comptime stringFn: fn (Context, anytype) E!O,
-    comptime structFn: fn (Context, anytype) E!O,
-    comptime variantFn: fn (Context, anytype) E!O,
+    comptime V: type,
+    comptime boolFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type, v: bool) Error!V {
+            _ = c;
+            _ = v;
+            unreachable;
+        }
+    }.f),
+    comptime floatFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
+            _ = c;
+            _ = v;
+            unreachable;
+        }
+    }.f),
+    comptime intFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
+            _ = c;
+            _ = v;
+            unreachable;
+        }
+    }.f),
+    comptime mapFn: @TypeOf(struct {
+        fn f(c: Context, m: anytype) @TypeOf(m).Error!V {
+            _ = c;
+            _ = m;
+            unreachable;
+        }
+    }.f),
+    comptime nullFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type) Error!V {
+            _ = c;
+            unreachable;
+        }
+    }.f),
+    comptime sequenceFn: @TypeOf(struct {
+        fn f(c: Context, s: anytype) @TypeOf(s).Error!V {
+            _ = c;
+            _ = s;
+            unreachable;
+        }
+    }.f),
+    comptime someFn: @TypeOf(struct {
+        fn f(c: Context, d: anytype) @TypeOf(d).Error!V {
+            _ = c;
+            _ = d;
+            unreachable;
+        }
+    }.f),
+    comptime stringFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
+            _ = c;
+            _ = v;
+            unreachable;
+        }
+    }.f),
+    comptime variantFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
+            _ = c;
+            _ = v;
+            unreachable;
+        }
+    }.f),
+    comptime voidFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type) Error!V {
+            _ = c;
+            unreachable;
+        }
+    }.f),
 ) type {
     return struct {
         context: Context,
 
         const Self = @This();
 
-        pub const Ok = O;
+        pub const Value = V;
+
+        pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
+            return try boolFn(self.context, Error, input);
+        }
+
+        pub fn visitVariant(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try variantFn(self.context, Error, input);
+        }
+
+        pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try intFn(self.context, Error, input);
+        }
+
+        pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try floatFn(self.context, Error, input);
+        }
+
+        pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+            return try mapFn(self.context, mapAccess);
+        }
+
+        pub fn visitNull(self: Self, comptime Error: type) Error!Value {
+            return try nullFn(self.context, Error);
+        }
+
+        pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            return try sequenceFn(self.context, sequenceAccess);
+        }
+
+        // TODO: what is the point of visitSome?
+        pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            return try someFn(self.context, deserializer);
+        }
+
+        pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try stringFn(self.context, Error, input);
+        }
+
+        pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
+            return try voidFn(self.context, Error);
+        }
+    };
+}
+
+pub fn SequenceAccess(
+    comptime Context: type,
+    comptime E: type,
+    comptime nextElementSeedFn: @TypeOf(struct {
+        fn f(c: Context, seed: anytype) E!?@TypeOf(seed).Value {
+            _ = c;
+            unreachable;
+        }
+    }.f),
+) type {
+    return struct {
+        context: Context,
+
+        const Self = @This();
+
         pub const Error = E;
 
-        pub fn visitBool(self: Self, value: bool) E!O {
-            return try boolFn(self.context, value);
+        pub fn nextElementSeed(self: Self, seed: anytype) Error!?@TypeOf(seed).Value {
+            return try nextElementSeedFn(self.context, seed);
         }
+    };
+}
 
-        pub fn visitInt(self: Self, value: anytype) E!O {
-            return try intFn(self.context, value);
+pub fn DeserializeSeed(
+    comptime Context: type,
+    comptime V: type,
+    comptime deserializeFn: @TypeOf(struct {
+        fn f(c: Context, d: anytype) @TypeOf(d).Error!Value {
+            _ = c;
+            unreachable;
         }
+    }.f),
+) type {
+    return struct {
+        context: Context,
 
-        pub fn visitFloat(self: Self, value: anytype) E!O {
-            return try floatFn(self.context, value);
-        }
+        const Self = @This();
 
-        pub fn visitNull(self: Self) E!O {
-            return try nullFn(self.context);
-        }
+        pub const Value = V;
 
-        pub fn visitSome(self: Self, value: anytype) E!O {
-            return try someFn(self.context, value);
-        }
-
-        pub fn visitSequence(self: Self, value: anytype) E!O {
-            return try sequenceFn(self.context, value);
-        }
-
-        pub fn visitString(self: Self, value: anytype) E!O {
-            return try stringFn(self.context, value);
-        }
-
-        pub fn visitStruct(self: Self, value: anytype) E!O {
-            return try structFn(self.context, value);
-        }
-
-        pub fn visitVariant(self: Self, value: anytype) E!O {
-            return try variantFn(self.context, value);
+        pub fn deserialize(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            return try deserializeFn(self.context, deserializer);
         }
     };
 }
