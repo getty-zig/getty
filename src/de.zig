@@ -12,6 +12,27 @@ fn DeserializerFn(comptime Context: type, comptime Error: type) type {
     return @TypeOf(S.f);
 }
 
+/// A data format that can deserialize any data type supported by Getty.
+///
+/// This interface is generic over the following:
+///
+///   - An `E` type representing the error set in the return type of
+///     all of `Deserializer`'s required methods.
+///
+/// Data model:
+///
+///   - bool
+///   - float
+///   - identifier
+///   - int
+///   - map
+///   - optional
+///   - sequence
+///   - string
+///   - struct
+///   - tuple
+///   - variant
+///   - void
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,

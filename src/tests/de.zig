@@ -5,6 +5,7 @@ const meta = std.meta;
 const trait = meta.trait;
 const testing = std.testing;
 
+/// A data format that deserializes Zig data types supported by Getty.
 fn Deserializer(comptime T: type) type {
     return struct {
         value: T,
