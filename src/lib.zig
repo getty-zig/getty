@@ -1,9 +1,9 @@
 pub const de = struct {
     // Interfaces
-    pub usingnamespace @import("de/interfaces/access.zig");
     pub usingnamespace @import("de/interfaces/deserializer.zig");
     pub usingnamespace @import("de/interfaces/seed.zig");
     pub usingnamespace @import("de/interfaces/visitor.zig");
+    pub const SequenceAccess = @import("de/interfaces/access/sequence.zig").Access;
 
     // Implementations
     pub usingnamespace @import("de/impls/seed.zig");
