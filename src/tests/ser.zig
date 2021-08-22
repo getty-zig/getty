@@ -1,5 +1,6 @@
 const std = @import("std");
-const ser = @import("getty").ser;
+const getty = @import("getty");
+const ser = getty.ser;
 
 const mem = std.mem;
 const meta = std.meta;
@@ -343,7 +344,7 @@ fn t(input: anytype, output: []const Elem) !void {
     var s = Serializer{};
     const serializer = s.serializer();
 
-    try ser.serialize(&serializer, input);
+    try getty.serialize(&serializer, input);
     try testing.expectEqualSlices(Elem, &s.buf, output);
 }
 
