@@ -1,6 +1,6 @@
 const de = @import("../../../lib.zig").de;
 
-pub fn IntVisitor(comptime T: type) type {
+pub fn Visitor(comptime T: type) type {
     return struct {
         const Self = @This();
 
