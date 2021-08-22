@@ -1,4 +1,4 @@
-const de = @import("../lib.zig").de;
+const Seed = @import("../../lib.zig").de.Seed;
 
 pub fn SequenceAccess(
     comptime Context: type,
@@ -22,7 +22,7 @@ pub fn SequenceAccess(
         }
 
         pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
-            var seed = de.Seed(Value){};
+            var seed = Seed(Value){};
             const ds = seed.deserializeSeed();
 
             return (try self.nextElementSeed(ds)).?;
