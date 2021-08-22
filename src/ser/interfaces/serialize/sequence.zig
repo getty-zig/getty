@@ -1,4 +1,4 @@
-pub fn Sequence(
+pub fn Serialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
