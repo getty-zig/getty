@@ -30,14 +30,14 @@ fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
     return input;
 }
 
-fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
+fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
     _ = self;
     _ = input;
 
     @panic("Unsupported");
 }
 
-fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
+fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
     _ = self;
     _ = input;
 
