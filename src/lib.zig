@@ -12,7 +12,7 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interfaces/map.zig");
     pub usingnamespace @import("ser/interfaces/serializer.zig");
     pub usingnamespace @import("ser/interfaces/sequence.zig");
-    pub usingnamespace @import("ser/interfaces/struct.zig");
+    pub usingnamespace @import("ser/interfaces/structure.zig");
 
     pub const Tuple = Sequence;
 };
