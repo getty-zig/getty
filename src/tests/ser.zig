@@ -341,11 +341,11 @@ test "Vector" {
 }
 
 fn t(input: anytype, output: []const Elem) !void {
-    var s = Serializer{};
-    const serializer = s.serializer();
+    var serializer = Serializer{};
+    const s = serializer.serializer();
 
-    try getty.serialize(&serializer, input);
-    try testing.expectEqualSlices(Elem, &s.buf, output);
+    try getty.serialize(s, input);
+    try testing.expectEqualSlices(Elem, &serializer.buf, output);
 }
 
 comptime {

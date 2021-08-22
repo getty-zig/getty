@@ -4,16 +4,7 @@ const meta = std.meta;
 const trait = meta.trait;
 
 /// Serializes values that are of a type supported by Getty.
-pub fn serialize(serializer: anytype, value: anytype) blk: {
-    const S = @TypeOf(serializer);
-    const info = @typeInfo(S);
-
-    if (@typeInfo(S) != .Pointer) {
-        @compileError("expected pointer to serializer, found `" ++ @typeName(S) ++ "`");
-    }
-
-    break :blk info.Pointer.child.Error!info.Pointer.child.Ok;
-} {
+pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     switch (@typeInfo(T)) {
