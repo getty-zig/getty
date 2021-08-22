@@ -245,6 +245,13 @@ pub fn SequenceAccess(
         pub fn nextElementSeed(self: Self, seed: anytype) Error!?@TypeOf(seed).Value {
             return try nextElementSeedFn(self.context, seed);
         }
+
+        pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
+            var seed = Seed(Value){};
+            const ds = seed.deserializeSeed();
+
+            return (try self.nextElementSeed(ds)).?;
+        }
     };
 }
 
@@ -268,6 +275,31 @@ pub fn DeserializeSeed(
         pub fn deserialize(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return try deserializeFn(self.context, deserializer);
         }
+    };
+}
+
+pub fn Seed(comptime Value: type) type {
+    return struct {
+        const Self = @This();
+
+        /// Implements `getty.de.DeserializeSeed`.
+        pub fn deserializeSeed(self: *Self) DS {
+            return .{ .context = self };
+        }
+
+        const DS = DeserializeSeed(
+            *Self,
+            Value,
+            _DS._deserialize,
+        );
+
+        const _DS = struct {
+            fn _deserialize(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+                _ = self;
+
+                return try deserialize(Value, deserializer);
+            }
+        };
     };
 }
 
@@ -317,24 +349,82 @@ pub const BoolVisitor = struct {
         *Self,
         _V.Value,
         _V.visitBool,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+        _V.visitFloat,
+        _V.visitInt,
+        _V.visitMap,
+        _V.visitNull,
+        _V.visitSequence,
+        _V.visitSome,
+        _V.visitString,
+        _V.visitVariant,
+        _V.visitVoid,
     );
 
     const _V = struct {
         const Value = bool;
 
-        fn visitBool(self: *Self, comptime Error: type, value: bool) Error!Value {
+        fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
             _ = self;
 
-            return value;
+            return input;
+        }
+
+        fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            _ = self;
+            _ = input;
+
+            @panic("Unsupported");
+        }
+
+        fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            _ = self;
+            _ = input;
+
+            @panic("Unsupported");
+        }
+
+        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+            _ = self;
+
+            @panic("Unsupported");
+        }
+
+        fn visitNull(self: *Self, comptime Error: type) Error!Value {
+            _ = self;
+
+            @panic("Unsupported");
+        }
+
+        fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            _ = self;
+
+            @panic("Unsupported");
+        }
+
+        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            _ = self;
+
+            @panic("Unsupported");
+        }
+
+        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            _ = self;
+            _ = input;
+
+            @panic("Unsupported");
+        }
+
+        fn visitVariant(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            _ = self;
+            _ = input;
+
+            @panic("Unsupported");
+        }
+
+        fn visitVoid(self: *Self, comptime Error: type) Error!Value {
+            _ = self;
+
+            @panic("Unsupported");
         }
     };
 };
@@ -366,18 +456,15 @@ pub fn FloatVisitor(comptime T: type) type {
         const _V = struct {
             const Value = T;
 
-            fn visitFloat(self: *Self, comptime Error: type, value: anytype) Error!Value {
-                _ = self;
+            fn visitFloat(_: *Self, comptime Error: type, input: anytype) Error!Value {
+                comptime std.debug.assert(@typeInfo(@TypeOf(input)) == .Float);
 
-                // This cast is safe, but it may cause the numeric value to
-                // lose precision.
                 return @floatCast(T, value);
             }
 
-            fn visitInt(self: *Self, comptime Error: type, value: anytype) Error!Value {
-                _ = self;
+            fn visitInt(_: *Self, comptime Error: type, input: anytype) Error!Value {
+                comptime std.debug.assert(@typeInfo(@TypeOf(input)) == .Int);
 
-                // This cast is always safe.
                 return @intToFloat(T, value);
             }
         };
@@ -397,7 +484,7 @@ pub fn IntVisitor(comptime T: type) type {
             *Self,
             _V.Value,
             undefined,
-            undefined,
+            _V.visitFloat,
             _V.visitInt,
             undefined,
             undefined,
@@ -411,12 +498,16 @@ pub fn IntVisitor(comptime T: type) type {
         const _V = struct {
             const Value = T;
 
-            fn visitInt(self: *Self, comptime Error: type, value: anytype) Error!Value {
-                _ = self;
+            fn visitFloat(_: *Self, comptime Error: type, input: anytype) Error!Value {
+                comptime std.debug.assert(@typeInfo(@TypeOf(input)) == .Float);
 
-                return std.math.cast(T, value) catch |err| switch (err) {
-                    error.Overflow => Error.DeserializationError,
-                };
+                return @floatToInt(T, value);
+            }
+
+            fn visitInt(_: *Self, comptime Error: type, input: anytype) Error!Value {
+                comptime std.debug.assert(@typeInfo(@TypeOf(input)) == .Int);
+
+                return @intCast(T, value);
             }
         };
     };
@@ -425,8 +516,8 @@ pub fn IntVisitor(comptime T: type) type {
 pub fn deserialize(comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     var visitor = switch (@typeInfo(T)) {
         .Bool => BoolVisitor{},
-        .Float => FloatVisitor(T){},
-        .Int => IntVisitor(T){},
+        .Float, .ComptimeFloat => FloatVisitor(T){},
+        .Int, .ComptimeInt => IntVisitor(T){},
         .Void => VoidVisitor{},
         else => unreachable,
     };
