@@ -38,7 +38,7 @@ those types) to *automatically* become serializable and deserializable.
 gyro add -s github getty-zig/getty
 ```
 
-### Git submodules
+### Git
 
 ```sh
 git submodule add https://github.com/getty-zig/getty
