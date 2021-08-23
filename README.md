@@ -62,6 +62,7 @@ into our data format. We'll use the following specification:
 
   <details>
   <summary>Booleans</summary>
+  <br>
   <ul>
     <li><code>true</code> → <code>true</code></li>
     <li><code>false</code> → <code>true</code></li>
@@ -70,6 +71,7 @@ into our data format. We'll use the following specification:
 
   <details>
   <summary>Enums</summary>
+  <br>
   <ul>
     <li>All variants → <code>true</code></li>
   </ul>
@@ -77,6 +79,7 @@ into our data format. We'll use the following specification:
 
   <details>
   <summary>Floats</summary>
+  <br>
   <ul>
     <li>Value is <code>> 0.0</code> → <code>true</code></li>
     <li>Value is <code>≤ 0.0</code> → <code>false</code></li>
@@ -85,6 +88,7 @@ into our data format. We'll use the following specification:
 
   <details>
   <summary>Integers</summary>
+  <br>
   <ul>
     <li>Value is <code>> 0</code> → <code>true</code></li>
     <li>Value is <code>≤ 0</code> → <code>false</code></li>
@@ -92,30 +96,16 @@ into our data format. We'll use the following specification:
   </details>
 
   <details>
-  <summary>Maps</summary>
-  <ul>
-    <li># of keys is <code>> 0</code> → <code>true</code></li>
-    <li># of keys is <code>0</code> → <code>false</code></li>
-  </ul>
-  </details>
-
-  <details>
   <summary>Null</summary>
+  <br>
   <ul>
     <li><code>null</code> → <code>true</code></li>
   </ul>
   </details>
 
   <details>
-  <summary>Sequences</summary>
-  <ul>
-    <li>Length is <code>> 0</code> → <code>true</code></li>
-    <li>Length is <code>0</code> → <code>false</code></li>
-  </ul>
-  </details>
-
-  <details>
   <summary>Strings</summary>
+  <br>
   <ul>
     <li>Length is <code>> 0</code> → <code>true</code></li>
     <li>Length is <code>0</code> → <code>false</code></li>
@@ -123,18 +113,10 @@ into our data format. We'll use the following specification:
   </details>
 
   <details>
-  <summary>Structs</summary>
+  <summary>Maps, Sequences, Structs, and Tuples</summary>
+  <br>
   <ul>
-    <li># of fields is <code>> 0</code> → <code>true</code></li>
-    <li># of fieldsis <code>0</code> → <code>false</code></li>
-  </ul>
-  </details>
-
-  <details>
-  <summary>Tuples</summary>
-  <ul>
-    <li>Length is <code>> 0</code> → <code>true</code></li>
-    <li>Length <code>0</code> → <code>false</code></li>
+    <li>Not supported for brevity.
   </ul>
   </details>
 </details>
@@ -149,7 +131,7 @@ const Serializer = struct {
 
     // Define associated types for `getty.Serializer`.
     const Ok = bool;
-    const Error = error{};
+    const Error = error{Data};
     const Map = Self;
     const Seq = Self;
     const Struct = Self;
@@ -169,31 +151,40 @@ const Serializer = struct {
     }
 
     fn serializeMap(self: *Self, keys: ?usize) Error!Ok {
-        return self.serializeSequence(keys);
+        _ = self;
+        _ = keys;
+
+        @panic("Not supported");
     }
 
     fn serializeNull(_: *Self) Error!Ok {
         return false;
     }
 
-    fn serializeSequence(_: *Self, length: ?usize) Error!Ok {
-        if (length) |len| {
-            if (len > 0) return true;
-        }
+    fn serializeSequence(self: *Self, length: ?usize) Error!Ok {
+        _ = self;
+        _ = length;
 
-        return false;
+        @panic("Not supported");
     }
 
     fn serializeString(self: *Self, value: anytype) Error!Ok {
         return try self.serializeSequence(value.len);
     }
 
-    fn serializeStruct(self: *Self, comptime _: []const u8, fields: usize) Error!Ok {
-        return try self.serializeSequence(fields);
+    fn serializeStruct(self: *Self, comptime name: []const u8, fields: usize) Error!Ok {
+        _ = self;
+        _ = name;
+        _ = fields;
+
+        @panic("Not supported");
     }
 
     fn serializeTuple(self: *Self, length: ?usize) Error!Ok {
-        return try self.serializeSequence(length);
+        _ = self;
+        _ = length;
+
+        @panic("Not supported");
     }
 
     fn serializeVariant(_: *Self, value: anytype) Error!Ok {
@@ -229,7 +220,7 @@ const Serializer = struct {
 };
 ```
 
-And that's it! We can now serialize all the things!
+And that's it! We can now serialize (almost) all the things!
 
 ```zig
 const equal = @import("std").testing.expectEqual;
@@ -238,6 +229,14 @@ test {
     var serializer = Serializer{};
     const s = serializer.serializer();
 
+    // Bools
+    try equal(true, try getty.serialize(s, true));
+    try equal(false, try getty.serialize(s, false));
+
+    // Floats
+    try equal(true, try getty.serialize(s, 1.0));
+    try equal(false, try getty.serialize(s, 0.0));
+
     // Integers
     try equal(true, try getty.serialize(s, 1));
     try equal(false, try getty.serialize(s, 0));
@@ -245,14 +244,6 @@ test {
     // Strings
     try equal(true, try getty.serialize(s, "Getty"));
     try equal(false, try getty.serialize(s, ""));
-
-    // Sequences
-    try equal(true, try getty.serialize(s, [_]i32{1, 2, 3}));
-    try equal(false, try getty.serialize(s, [_]i32{}));
-
-    // Structs
-    try equal(true, try getty.serialize(s, struct{ n: i32 }{ .n = 1 }));
-    try equal(false, try getty.serialize(s, struct{}{}));
 }
 ```
 
