@@ -54,7 +54,7 @@ serializer. For this example, we'll keep things simple and use a format that
 consists of just the values `true` and `false`.
 
 Next, we need to specify how to convert each type within Getty's data model
-into our data format. In this example, we'll use the following specification:
+into our data format. We'll use the following specification:
 
 <details>
   <summary><b>Specification</b></summary>
@@ -65,14 +65,14 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li><code>true</code> → <code>true</code></li>
     <li><code>false</code> → <code>true</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
   <summary>Enums</summary>
   <ul>
     <li>All variants → <code>true</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -80,7 +80,7 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li>Value is <code>> 0.0</code> → <code>true</code></li>
     <li>Value is <code>≤ 0.0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -88,7 +88,7 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li>Value is <code>> 0</code> → <code>true</code></li>
     <li>Value is <code>≤ 0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -96,14 +96,14 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li># of keys is <code>> 0</code> → <code>true</code></li>
     <li># of keys is <code>0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
   <summary>Null</summary>
   <ul>
     <li><code>null</code> → <code>true</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -111,7 +111,7 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li>Length is <code>> 0</code> → <code>true</code></li>
     <li>Length is <code>0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -119,7 +119,7 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li>Length is <code>> 0</code> → <code>true</code></li>
     <li>Length is <code>0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -127,7 +127,7 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li># of fields is <code>> 0</code> → <code>true</code></li>
     <li># of fieldsis <code>0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 
   <details>
@@ -135,11 +135,11 @@ into our data format. In this example, we'll use the following specification:
   <ul>
     <li>Length is <code>> 0</code> → <code>true</code></li>
     <li>Length <code>0</code> → <code>false</code></li>
-  </ul> 
+  </ul>
   </details>
 </details>
 
-With the specification finished, all that's left to do is to write our serializer!
+With that out of the way, all that's left to do is write our serializer!
 
 ```zig
 const getty = @import("getty");
@@ -199,7 +199,7 @@ const Serializer = struct {
 
         return true;
     }
-    
+
     // Implement `getty.Serializer`.
     pub fn serializer(self: *Self) S {
         return .{ .context = self };
@@ -238,8 +238,8 @@ pub fn main() anyerror!void {
     const s = serializer.serializer();
 
     // Serialize integers
-    const t = try getty.serialize(&s, 1);
-    const f = try getty.serialize(&s, 0);
+    const t = try getty.serialize(s, 1);
+    const f = try getty.serialize(s, 0);
 
     // Print results
     std.debug.print("{}\n", .{t}); // true
@@ -253,7 +253,7 @@ pub fn main() anyerror!void {
 pub fn Serializer(
     // Implementer type
     comptime Context: type,
-    
+
     // Associated types
     comptime O: type,
     comptime E: type,
@@ -261,7 +261,7 @@ pub fn Serializer(
     comptime SE: type,
     comptime ST: type,
     comptime T: type,
-    
+
     // Methods
     comptime boolFn: fn (Context, value: bool) E!O,
     comptime floatFn: fn (Context, value: anytype) E!O,
@@ -296,7 +296,7 @@ that returns a value of the interface type. For example:
 const MyType = struct {
     // Define implementor type
     const Self = @This();
-    
+
     // Define required methods
     fn foo() void {}
 
