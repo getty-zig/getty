@@ -150,6 +150,20 @@ const Serializer = struct {
         return if (value > 0) true else false;
     }
 
+    fn serializeNull(_: *Self) Error!Ok {
+        return false;
+    }
+
+    fn serializeString(self: *Self, value: anytype) Error!Ok {
+        return if (value.len > 0) true else false;
+    }
+
+    fn serializeVariant(_: *Self, value: anytype) Error!Ok {
+        _ = value;
+
+        return true;
+    }
+
     fn serializeMap(self: *Self, keys: ?usize) Error!Ok {
         _ = self;
         _ = keys;
@@ -157,19 +171,11 @@ const Serializer = struct {
         @panic("Not supported");
     }
 
-    fn serializeNull(_: *Self) Error!Ok {
-        return false;
-    }
-
     fn serializeSequence(self: *Self, length: ?usize) Error!Ok {
         _ = self;
         _ = length;
 
         @panic("Not supported");
-    }
-
-    fn serializeString(self: *Self, value: anytype) Error!Ok {
-        return try self.serializeSequence(value.len);
     }
 
     fn serializeStruct(self: *Self, comptime name: []const u8, fields: usize) Error!Ok {
@@ -185,12 +191,6 @@ const Serializer = struct {
         _ = length;
 
         @panic("Not supported");
-    }
-
-    fn serializeVariant(_: *Self, value: anytype) Error!Ok {
-        _ = value;
-
-        return true;
     }
 
     // Implement `getty.Serializer`.
