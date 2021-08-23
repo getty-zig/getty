@@ -50,11 +50,11 @@ git commit -am "Add Getty module"
 Let's now take a whirlwind tour of Getty by writing a serializer!
 
 The first thing we need to do is specify the data format supported by our
-serializer. For this example, we'll keep it simple and use a format that
+serializer. For this example, we'll keep things simple and use a format that
 consists of just the values `true` and `false`.
 
-Next, we'll need to specify how to convert each type within Getty's data model
-into our data format. For this example, we'll use the following specification:
+Next, we need to specify how to convert each type within Getty's data model
+into our data format. In this example, we'll use the following specification:
 
 <details>
   <summary><b>Specification</b></summary>
@@ -139,10 +139,9 @@ into our data format. For this example, we'll use the following specification:
   </details>
 </details>
 
-Finally, all that's left is to write our serializer!
+With the specification finished, all that's left to do is to write our serializer!
 
 ```zig
-const std = @import("std");
 const getty = @import("getty");
 
 const Serializer = struct {
@@ -228,15 +227,17 @@ const Serializer = struct {
 };
 ```
 
-And now we can serialize all the things!
+And that's it! We can now serialize all the things!
 
 ```zig
+const std = @import("std");
+
 pub fn main() anyerror!void {
     // Create serializer
     var serializer = Serializer{};
     const s = serializer.serializer();
 
-    // Convert integers into bools
+    // Serialize integers
     const t = try getty.serialize(&s, 1);
     const f = try getty.serialize(&s, 0);
 
