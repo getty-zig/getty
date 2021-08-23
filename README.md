@@ -149,7 +149,7 @@ const Serializer = struct {
 
     // Define associated types for `getty.Serializer`.
     const Ok = bool;
-    const Error = error{Data};
+    const Error = error{};
     const Map = Self;
     const Seq = Self;
     const Struct = Self;
@@ -168,8 +168,8 @@ const Serializer = struct {
         return if (value > 0) true else false;
     }
 
-    fn serializeMap(_: *Self, num_keys: ?usize) Error!Ok {
-        return if (num_keys > 0) true else false;
+    fn serializeMap(self: *Self, keys: ?usize) Error!Ok {
+        return self.serializeSequence(keys);
     }
 
     fn serializeNull(_: *Self) Error!Ok {
@@ -177,21 +177,23 @@ const Serializer = struct {
     }
 
     fn serializeSequence(_: *Self, length: ?usize) Error!Ok {
-        return if (length > 0) true else false;
+        if (length) |len| {
+            if (len > 0) return true;
+        }
+
+        return false;
     }
 
-    fn serializeString(_: *Self, value: anytype) Error!Ok {
-        return if (value.len > 0) true else false;
+    fn serializeString(self: *Self, value: anytype) Error!Ok {
+        return try self.serializeSequence(value.len);
     }
 
-    fn serializeStruct(_: *Self, comptime name: []const u8, num_fields: usize) Error!Ok {
-        _ = name;
-
-        return if (num_fields > 0) true else false;
+    fn serializeStruct(self: *Self, comptime _: []const u8, fields: usize) Error!Ok {
+        return try self.serializeSequence(fields);
     }
 
-    fn serializeTuple(_: *Self, length: ?usize) Error!Ok {
-        return if (length > 0) true else false;
+    fn serializeTuple(self: *Self, length: ?usize) Error!Ok {
+        return try self.serializeSequence(length);
     }
 
     fn serializeVariant(_: *Self, value: anytype) Error!Ok {
@@ -205,7 +207,7 @@ const Serializer = struct {
         return .{ .context = self };
     }
 
-    const S = getty.ser.Serializer(
+    const S = getty.Serializer(
         *Self,
         Ok,
         Error,
@@ -232,25 +234,23 @@ And that's it! We can now serialize all the things!
 ```zig
 const equal = @import("std").testing.expectEqual;
 
-var serializer = Serializer{};
-const s = serializer.serializer();
+test {
+    var serializer = Serializer{};
+    const s = serializer.serializer();
 
-test "Integers" {
+    // Integers
     try equal(true, try getty.serialize(s, 1));
     try equal(false, try getty.serialize(s, 0));
-}
 
-test "Strings" {
+    // Strings
     try equal(true, try getty.serialize(s, "Getty"));
     try equal(false, try getty.serialize(s, ""));
-}
 
-test "Sequences" {
+    // Sequences
     try equal(true, try getty.serialize(s, [_]i32{1, 2, 3}));
     try equal(false, try getty.serialize(s, [_]i32{}));
-}
 
-test "Structs" {
+    // Structs
     try equal(true, try getty.serialize(s, struct{ n: i32 }{ .n = 1 }));
     try equal(false, try getty.serialize(s, struct{}{}));
 }
