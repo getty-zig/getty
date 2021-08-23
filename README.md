@@ -230,20 +230,29 @@ const Serializer = struct {
 And that's it! We can now serialize all the things!
 
 ```zig
-const std = @import("std");
+const equal = @import("std").testing.expectEqual;
 
-pub fn main() anyerror!void {
-    // Create serializer
-    var serializer = Serializer{};
-    const s = serializer.serializer();
+var serializer = Serializer{};
+const s = serializer.serializer();
 
-    // Serialize integers
-    const t = try getty.serialize(s, 1);
-    const f = try getty.serialize(s, 0);
+test "Integers" {
+    try equal(true, try getty.serialize(s, 1));
+    try equal(false, try getty.serialize(s, 0));
+}
 
-    // Print results
-    std.debug.print("{}\n", .{t}); // true
-    std.debug.print("{}\n", .{f}); // false
+test "Strings" {
+    try equal(true, try getty.serialize(s, "Getty"));
+    try equal(false, try getty.serialize(s, ""));
+}
+
+test "Sequences" {
+    try equal(true, try getty.serialize(s, [_]i32{1, 2, 3}));
+    try equal(false, try getty.serialize(s, [_]i32{}));
+}
+
+test "Structs" {
+    try equal(true, try getty.serialize(s, struct{ n: i32 }{ .n = 1 }));
+    try equal(false, try getty.serialize(s, struct{}{}));
 }
 ```
 
