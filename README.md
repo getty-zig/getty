@@ -15,12 +15,13 @@
 
 ## Overview
 
-Getty is a serialization and deserialization framework for the Zig programming language.
+Getty is a serialization and deserialization framework for the Zig programming
+language.
 
-At its core, Getty is composed of two components: a **data model** and a **data
-format interface**. Together, they allow for any supported data type to be
+At its core, Getty revolves around two concepts: a **data model** and **data
+format interfaces**. Together, they allow for any supported data type to be
 serialized into any conforming data format, and likewise for any conforming
-data format to be deserialized into any supported data type.
+data format to be deserialized into any Zig data type.
 
 Getty takes advantage of Zig's powerful compile-time features when serializing
 and deserializing data. As a result, Getty is able to avoid most, if not all,
@@ -29,23 +30,178 @@ methods, such as runtime reflection. Furthermore, `comptime` allows for all
 data types supported by Getty (and therefore all data structures composed of
 those types) to *automatically* become serializable and deserializable.
 
-<!-- ## Quick Start
+## Installation
+
+### Gyro
+
+```sh
+gyro add -s github getty-zig/getty
+```
+
+### Git submodules
+
+```sh
+git submodule add https://github.com/getty-zig/getty
+git commit -am "Add Getty module"
+```
+
+## Quick Start
+
+Let's now take a whirlwind tour of Getty by writing a serializer!
+
+The first thing we need to do is specify the data format supported by our
+serializer. For this example, we'll keep it simple and use a format that
+consists of just the values `true` and `false`.
+
+Next, we'll need to specify how to convert each type within Getty's data model
+into our data format. For this example, we'll use the following specification:
+
+<details>
+  <summary><b>Specification</b></summary>
+  <br>
+
+  <details>
+  <summary>Booleans</summary>
+  <ul>
+    <li><code>true</code> → <code>true</code></li>
+    <li><code>false</code> → <code>true</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Enums</summary>
+  <ul>
+    <li>All variants → <code>true</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Floats</summary>
+  <ul>
+    <li>Value is <code>> 0.0</code> → <code>true</code></li>
+    <li>Value is <code>≤ 0.0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Integers</summary>
+  <ul>
+    <li>Value is <code>> 0</code> → <code>true</code></li>
+    <li>Value is <code>≤ 0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Maps</summary>
+  <ul>
+    <li># of keys is <code>> 0</code> → <code>true</code></li>
+    <li># of keys is <code>0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Null</summary>
+  <ul>
+    <li><code>null</code> → <code>true</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Sequences</summary>
+  <ul>
+    <li>Length is <code>> 0</code> → <code>true</code></li>
+    <li>Length is <code>0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Strings</summary>
+  <ul>
+    <li>Length is <code>> 0</code> → <code>true</code></li>
+    <li>Length is <code>0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Structs</summary>
+  <ul>
+    <li># of fields is <code>> 0</code> → <code>true</code></li>
+    <li># of fieldsis <code>0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+
+  <details>
+  <summary>Tuples</summary>
+  <ul>
+    <li>Length is <code>> 0</code> → <code>true</code></li>
+    <li>Length <code>0</code> → <code>false</code></li>
+  </ul> 
+  </details>
+</details>
+
+Finally, all that's left is to write our serializer!
 
 ```zig
 const std = @import("std");
 const getty = @import("getty");
 
-/// Serializes a subset of Getty's data model into a boolean value.
-///
-/// TODO: Put this somewhere not in the readme
-/// TODO: Add associated types
 const Serializer = struct {
     const Self = @This();
 
+    // Define associated types for `getty.Serializer`.
     const Ok = bool;
-    const Error = error{};
+    const Error = error{Data};
+    const Map = Self;
+    const Seq = Self;
+    const Struct = Self;
+    const Tuple = Self;
 
-    /// Implements `getty.ser.Serializer`.
+    // Define required methods for `getty.Serializer`.
+    fn serializeBool(_: *Self, value: bool) Error!Ok {
+        return value;
+    }
+
+    fn serializeFloat(_: *Self, value: anytype) Error!Ok {
+        return if (value > 0.0) true else false;
+    }
+
+    fn serializeInt(_: *Self, value: anytype) Error!Ok {
+        return if (value > 0) true else false;
+    }
+
+    fn serializeMap(_: *Self, num_keys: ?usize) Error!Ok {
+        return if (num_keys > 0) true else false;
+    }
+
+    fn serializeNull(_: *Self) Error!Ok {
+        return false;
+    }
+
+    fn serializeSequence(_: *Self, length: ?usize) Error!Ok {
+        return if (length > 0) true else false;
+    }
+
+    fn serializeString(_: *Self, value: anytype) Error!Ok {
+        return if (value.len > 0) true else false;
+    }
+
+    fn serializeStruct(_: *Self, comptime name: []const u8, num_fields: usize) Error!Ok {
+        _ = name;
+
+        return if (num_fields > 0) true else false;
+    }
+
+    fn serializeTuple(_: *Self, length: ?usize) Error!Ok {
+        return if (length > 0) true else false;
+    }
+
+    fn serializeVariant(_: *Self, value: anytype) Error!Ok {
+        _ = value;
+
+        return true;
+    }
+    
+    // Implement `getty.Serializer`.
     pub fn serializer(self: *Self) S {
         return .{ .context = self };
     }
@@ -54,39 +210,27 @@ const Serializer = struct {
         *Self,
         Ok,
         Error,
-        Self,
-        Self,
-        Self,
-        _S.serializeBool,
-        _S.serializeFloat,
-        _S.serializeInt,
-        _S.serializeNull,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+        Map,
+        Seq,
+        Struct,
+        Tuple,
+        serializeBool,
+        serializeFloat,
+        serializeInt,
+        serializeMap,
+        serializeNull,
+        serializeSequence,
+        serializeString,
+        serializeStruct,
+        serializeTuple,
+        serializeVariant,
     );
-
-    const _S = struct {
-        fn serializeBool(_: *Self, value: bool) Error!Ok {
-            return value;
-        }
-
-        fn serializeFloat(_: *Self, value: anytype) Error!Ok {
-            return if (value > 0.0) true else false;
-        }
-
-        fn serializeInt(_: *Self, value: anytype) Error!Ok {
-            return if (value > 0) true else false;
-        }
-
-        fn serializeNull(_: *Self) Error!Ok {
-            return false;
-        }
-    };
 };
+```
 
+And now we can serialize all the things!
+
+```zig
 pub fn main() anyerror!void {
     // Create serializer
     var serializer = Serializer{};
@@ -100,6 +244,66 @@ pub fn main() anyerror!void {
     std.debug.print("{}\n", .{t}); // true
     std.debug.print("{}\n", .{f}); // false
 }
+```
+
+<!-- let's look at the `getty.Serializer` interface, which we'll be implementing:
+
+```zig
+pub fn Serializer(
+    // Implementer type
+    comptime Context: type,
+    
+    // Associated types
+    comptime O: type,
+    comptime E: type,
+    comptime M: type,
+    comptime SE: type,
+    comptime ST: type,
+    comptime T: type,
+    
+    // Methods
+    comptime boolFn: fn (Context, value: bool) E!O,
+    comptime floatFn: fn (Context, value: anytype) E!O,
+    comptime intFn: fn (Context, value: anytype) E!O,
+    comptime nullFn: fn (Context) E!O,
+    comptime sequenceFn: fn (Context, ?usize) E!SE,
+    comptime stringFn: fn (Context, value: anytype) E!O,
+    comptime mapFn: fn (Context, ?usize) E!M,
+    comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
+    comptime tupleFn: fn (Context, ?usize) E!T,
+    comptime variantFn: fn (Context, value: anytype) E!O,
+) type
+```
+
+As you can see, interfaces in Getty are just functions.
+
+The parameters of an interface specify what the interface requires from its
+implementers. In this case, `getty.Serializer` requires:
+
+1. The type of the implementer
+2. Various associated types
+3. Various methods
+
+The return type of an interface is called the **interface type**. Whenever you
+want to take a `getty.Serializer` as a function argument or call the
+`serializeBool` method of a `getty.Serializer`, this type is what you use.
+
+To implement an interface, you provide a function in your implementing type
+that returns a value of the interface type. For example:
+
+```zig
+const MyType = struct {
+    // Define implementor type
+    const Self = @This();
+    
+    // Define required methods
+    fn foo() void {}
+
+    // Implement `Interface`
+    pub fn interface(self: *Self) Interface(*Self, foo) {
+        return .{ .context = self };
+    }
+};
 ``` -->
 
 ## Contributing
