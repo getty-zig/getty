@@ -99,7 +99,7 @@ into our data format. We'll use the following specification:
   <summary>Null</summary>
   <br>
   <ul>
-    <li><code>null</code> → <code>true</code></li>
+    <li><code>null</code> → <code>false</code></li>
   </ul>
   </details>
 
