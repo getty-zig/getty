@@ -301,28 +301,12 @@ test "String" {
 }
 
 test "Struct" {
-    const A = struct {
+    const Struct = struct {
         x: i32,
         y: i32,
     };
 
-    const B = struct {
-        x: i32,
-        y: i32,
-
-        /// Skips serializing `y`.
-        pub fn serialize(self: @This(), serializer: anytype) !void {
-            const s = (try serializer.serializeStruct(@typeName(@This()), meta.fields(@This()).len)).structure();
-            try s.serializeField("x", @field(self, "x"));
-            try s.end();
-        }
-    };
-
-    const a = A{ .x = 0, .y = 0 };
-    const b = B{ .x = 0, .y = 0 };
-
-    try t(a, &.{ .StructStart, .Field, .Field, .StructEnd });
-    try t(b, &.{ .StructStart, .Field, .StructEnd, .Undefined });
+    try t(Struct{ .x = 0, .y = 0 }, &.{ .StructStart, .Field, .Field, .StructEnd });
 }
 
 test "Tagged union" {

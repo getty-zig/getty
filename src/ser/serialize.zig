@@ -23,10 +23,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
             return try serializer.serializeBool(value);
         },
         .Enum, .EnumLiteral => {
-            return if (comptime trait.hasFn("serialize")(T))
-                try value.serialize(serializer)
-            else
-                try serializer.serializeVariant(value);
+            try serializer.serializeVariant(value);
         },
         .ErrorSet => {
             return try serialize(serializer, @as([]const u8, @errorName(value)));
@@ -53,7 +50,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
                     if (comptime trait.isZigString(T)) {
                         break :blk try serializer.serializeString(value);
                     } else {
-                        var seq = try serializer.serializeSequence(value.len);
+                        var seq = (try serializer.serializeSequence(value.len)).sequence();
                         for (value) |elem| {
                             try seq.serializeElement(elem);
                         }
@@ -64,10 +61,6 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
             };
         },
         .Struct => |info| {
-            if (comptime trait.hasFn("serialize")(T)) {
-                return try value.serialize(serializer);
-            }
-
             switch (info.is_tuple) {
                 true => {
                     const tuple = (try serializer.serializeTuple(meta.fields(T).len)).tuple();
@@ -86,22 +79,18 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
             }
         },
         .Union => |info| {
-            if (comptime trait.hasFn("serialize")(T)) {
-                return try value.serialize(serializer);
-            } else {
-                if (info.tag_type) |Tag| {
-                    inline for (info.fields) |field| {
-                        if (@field(Tag, field.name) == value) {
-                            return try serialize(serializer, @field(value, field.name));
-                        }
+            if (info.tag_type) |Tag| {
+                inline for (info.fields) |field| {
+                    if (@field(Tag, field.name) == value) {
+                        return try serialize(serializer, @field(value, field.name));
                     }
-
-                    // UNREACHABLE: Since we go over every field in the union, we
-                    // always find the field that matches the passed-in value.
-                    unreachable;
-                } else {
-                    @compileError("type `" ++ @typeName(T) ++ "` is not supported");
                 }
+
+                // UNREACHABLE: Since we go over every field in the union, we
+                // always find the field that matches the passed-in value.
+                unreachable;
+            } else {
+                @compileError("type `" ++ @typeName(T) ++ "` is not supported");
             }
         },
         .Vector => |info| {
