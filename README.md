@@ -178,7 +178,7 @@ const Serializer = struct {
         @panic("Not supported");
     }
 
-    fn serializeStruct(self: *Self, comptime name: []const u8, fields: usize) Error!Ok {
+    fn serializeStruct(self: *Self, name: []const u8, fields: usize) Error!Ok {
         _ = self;
         _ = name;
         _ = fields;
