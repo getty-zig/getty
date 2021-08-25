@@ -22,19 +22,19 @@
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
-    comptime anyFn: DeserializerFn(Context, E),
-    comptime boolFn: DeserializerFn(Context, E),
-    comptime floatFn: DeserializerFn(Context, E),
-    //comptime identifierFn: DeserializerFn(Context, E),
-    comptime intFn: DeserializerFn(Context, E),
-    comptime mapFn: DeserializerFn(Context, E),
-    comptime optionalFn: DeserializerFn(Context, E),
-    comptime sequenceFn: DeserializerFn(Context, E),
-    comptime stringFn: DeserializerFn(Context, E),
-    comptime structFn: DeserializerFn(Context, E),
-    //comptime tupleFn: DeserializerFn(Context, E),
-    comptime variantFn: DeserializerFn(Context, E),
-    comptime voidFn: DeserializerFn(Context, E),
+    comptime anyFn: Fn(Context, E),
+    comptime boolFn: Fn(Context, E),
+    comptime floatFn: Fn(Context, E),
+    //comptime identifierFn: Fn(Context, E),
+    comptime intFn: Fn(Context, E),
+    comptime mapFn: Fn(Context, E),
+    comptime optionalFn: Fn(Context, E),
+    comptime sequenceFn: Fn(Context, E),
+    comptime stringFn: Fn(Context, E),
+    comptime structFn: Fn(Context, E),
+    //comptime tupleFn: Fn(Context, E),
+    comptime variantFn: Fn(Context, E),
+    comptime voidFn: Fn(Context, E),
 ) type {
     return struct {
         context: Context,
@@ -89,7 +89,7 @@ pub fn Deserializer(
     };
 }
 
-fn DeserializerFn(comptime Context: type, comptime Error: type) type {
+fn Fn(comptime Context: type, comptime Error: type) type {
     const S = struct {
         fn f(_: Context, visitor: anytype) Error!@TypeOf(visitor).Value {
             unreachable;
