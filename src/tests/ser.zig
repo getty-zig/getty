@@ -340,6 +340,14 @@ test "Vector" {
     try t(@splat(2, @as(u32, 1)), &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
 }
 
+test "Array List" {
+    var list = std.ArrayList(u32).init(std.testing.allocator);
+    defer list.deinit();
+    try list.appendSlice(&[_]u32{ 1, 2 });
+
+    try t(list, &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+}
+
 fn t(input: anytype, output: []const Elem) !void {
     var serializer = Serializer{};
     const s = serializer.serializer();

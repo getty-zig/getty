@@ -7,6 +7,10 @@ const trait = meta.trait;
 pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
+    if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+        return try serialize(serializer, value.items);
+    }
+
     switch (@typeInfo(T)) {
         .Array => {
             const seq = (try serializer.serializeSequence(value.len)).sequence();
@@ -105,4 +109,12 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
         },
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     }
+}
+
+fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
+    if (actual.len >= expected.len and std.mem.eql(u8, actual[0..expected.len], expected)) {
+        return true;
+    }
+
+    return false;
 }
