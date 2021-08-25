@@ -1,9 +1,22 @@
 const std = @import("std");
-const ArrayListVisitor = @import("../lib.zig").ser.ArrayListVisitor;
-const StringHashMapVisitor = @import("../lib.zig").ser.StringHashMapVisitor;
-
 const meta = std.meta;
-const trait = meta.trait;
+
+const ArrayListVisitor = @import("../lib.zig").ser.ArrayListVisitor;
+const BoolVisitor = @import("../lib.zig").ser.BoolVisitor;
+const EnumVisitor = @import("../lib.zig").ser.EnumVisitor;
+const ErrorVisitor = @import("../lib.zig").ser.ErrorVisitor;
+const FloatVisitor = @import("../lib.zig").ser.FloatVisitor;
+const IntVisitor = @import("../lib.zig").ser.IntVisitor;
+const NullVisitor = @import("../lib.zig").ser.NullVisitor;
+const OptionalVisitor = @import("../lib.zig").ser.OptionalVisitor;
+const PointerVisitor = @import("../lib.zig").ser.PointerVisitor;
+const SequenceVisitor = @import("../lib.zig").ser.SequenceVisitor;
+const StringVisitor = @import("../lib.zig").ser.StringVisitor;
+const StringHashMapVisitor = @import("../lib.zig").ser.StringHashMapVisitor;
+const StructVisitor = @import("../lib.zig").ser.StructVisitor;
+const TupleVisitor = @import("../lib.zig").ser.TupleVisitor;
+const UnionVisitor = @import("../lib.zig").ser.UnionVisitor;
+const VectorVisitor = @import("../lib.zig").ser.VectorVisitor;
 
 pub fn serializeWith(serializer: anytype, value: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try visitor.serialize(serializer, value);
@@ -14,106 +27,40 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
     const T = @TypeOf(value);
 
     if (comptime match("std.array_list.ArrayList", @typeName(T))) {
-        var array_list_visitor = ArrayListVisitor{};
-        const visitor = array_list_visitor.visitor();
-
-        return try serializeWith(serializer, value, visitor);
+        var visitor = ArrayListVisitor{};
+        return try serializeWith(serializer, value, visitor.visitor());
+    } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
+        var visitor = StringHashMapVisitor{};
+        return try serializeWith(serializer, value, visitor.visitor());
     }
 
-    if (comptime match("std.hash_map.HashMap", @typeName(T))) {
-        var string_hash_map_visitor = StringHashMapVisitor{};
-        const visitor = string_hash_map_visitor.visitor();
-
-        return try serializeWith(serializer, value, visitor);
-    }
-
-    switch (@typeInfo(T)) {
-        .Array => {
-            const seq = (try serializer.serializeSequence(value.len)).sequence();
-            for (value) |elem| {
-                try seq.serializeElement(elem);
-            }
-            return try seq.end();
+    var visitor = switch (@typeInfo(T)) {
+        .Array => SequenceVisitor{},
+        .Bool => BoolVisitor{},
+        .Enum, .EnumLiteral => EnumVisitor{},
+        .ErrorSet => ErrorVisitor{},
+        .Float, .ComptimeFloat => FloatVisitor{},
+        .Int, .ComptimeInt => IntVisitor{},
+        .Null => NullVisitor{},
+        .Optional => OptionalVisitor{},
+        .Pointer => |info| switch (info.size) {
+            .One => PointerVisitor{},
+            .Slice => switch (comptime std.meta.trait.isZigString(T)) {
+                true => StringVisitor{},
+                false => SequenceVisitor{},
+            },
+            else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
         },
-        .Bool => {
-            return try serializer.serializeBool(value);
+        .Struct => |info| switch (info.is_tuple) {
+            true => TupleVisitor{},
+            false => StructVisitor{},
         },
-        .Enum, .EnumLiteral => {
-            try serializer.serializeVariant(value);
-        },
-        .ErrorSet => {
-            return try serialize(serializer, @as([]const u8, @errorName(value)));
-        },
-        .Float, .ComptimeFloat => {
-            return try serializer.serializeFloat(value);
-        },
-        .Int, .ComptimeInt => {
-            return try serializer.serializeInt(value);
-        },
-        .Null => {
-            return try serializer.serializeNull();
-        },
-        .Optional => {
-            return if (value) |v| try serialize(serializer, v) else try serialize(serializer, null);
-        },
-        .Pointer => |info| {
-            return switch (info.size) {
-                .One => switch (@typeInfo(info.child)) {
-                    .Array => try serialize(serializer, @as([]const meta.Elem(info.child), value)),
-                    else => try serialize(serializer, value.*),
-                },
-                .Slice => blk: {
-                    if (comptime trait.isZigString(T)) {
-                        break :blk try serializer.serializeString(value);
-                    } else {
-                        var seq = (try serializer.serializeSequence(value.len)).sequence();
-                        for (value) |elem| {
-                            try seq.serializeElement(elem);
-                        }
-                        return try seq.end();
-                    }
-                },
-                else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
-            };
-        },
-        .Struct => |info| {
-            switch (info.is_tuple) {
-                true => {
-                    const tuple = (try serializer.serializeTuple(meta.fields(T).len)).tuple();
-                    inline for (info.fields) |field| {
-                        try tuple.serializeElement(@field(value, field.name));
-                    }
-                    return try tuple.end();
-                },
-                false => {
-                    const st = (try serializer.serializeStruct(@typeName(T), meta.fields(T).len)).structure();
-                    inline for (info.fields) |field| {
-                        try st.serializeField(field.name, @field(value, field.name));
-                    }
-                    return try st.end();
-                },
-            }
-        },
-        .Union => |info| {
-            if (info.tag_type) |Tag| {
-                inline for (info.fields) |field| {
-                    if (@field(Tag, field.name) == value) {
-                        return try serialize(serializer, @field(value, field.name));
-                    }
-                }
-
-                // UNREACHABLE: Since we go over every field in the union, we
-                // always find the field that matches the passed-in value.
-                unreachable;
-            } else {
-                @compileError("type `" ++ @typeName(T) ++ "` is not supported");
-            }
-        },
-        .Vector => |info| {
-            return try serialize(serializer, @as([info.len]info.child, value));
-        },
+        .Union => UnionVisitor{},
+        .Vector => VectorVisitor{},
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
-    }
+    };
+
+    return try serializeWith(serializer, value, visitor.visitor());
 }
 
 fn match(comptime expected: []const u8, comptime actual: []const u8) bool {

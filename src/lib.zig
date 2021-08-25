@@ -10,7 +10,21 @@ pub const ser = struct {
 
     const Implementations = struct {
         pub const ArrayListVisitor = @import("ser/impls/visitors/array_list.zig");
+        pub const BoolVisitor = @import("ser/impls/visitors/bool.zig");
+        pub const ErrorVisitor = @import("ser/impls/visitors/error.zig");
+        pub const EnumVisitor = @import("ser/impls/visitors/enum.zig");
+        pub const FloatVisitor = @import("ser/impls/visitors/float.zig");
+        pub const IntVisitor = @import("ser/impls/visitors/int.zig");
+        pub const OptionalVisitor = @import("ser/impls/visitors/optional.zig");
+        pub const PointerVisitor = @import("ser/impls/visitors/pointer.zig");
+        pub const NullVisitor = @import("ser/impls/visitors/null.zig");
+        pub const SequenceVisitor = @import("ser/impls/visitors/sequence.zig");
+        pub const StringVisitor = @import("ser/impls/visitors/string.zig");
         pub const StringHashMapVisitor = @import("ser/impls/visitors/string_hash_map.zig");
+        pub const StructVisitor = @import("ser/impls/visitors/struct.zig");
+        pub const TupleVisitor = @import("ser/impls/visitors/tuple.zig");
+        pub const UnionVisitor = @import("ser/impls/visitors/union.zig");
+        pub const VectorVisitor = @import("ser/impls/visitors/vector.zig");
     };
 
     pub usingnamespace Interfaces;
