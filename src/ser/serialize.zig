@@ -1,25 +1,30 @@
 const std = @import("std");
+const ArrayListVisitor = @import("../lib.zig").ser.ArrayListVisitor;
+const StringHashMapVisitor = @import("../lib.zig").ser.StringHashMapVisitor;
 
 const meta = std.meta;
 const trait = meta.trait;
+
+pub fn serializeWith(serializer: anytype, value: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    return try visitor.serialize(serializer, value);
+}
 
 /// Serializes values that are of a type supported by Getty.
 pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     if (comptime match("std.array_list.ArrayList", @typeName(T))) {
-        return try serialize(serializer, value.items);
+        var array_list_visitor = ArrayListVisitor{};
+        const visitor = array_list_visitor.visitor();
+
+        return try serializeWith(serializer, value, visitor);
     }
 
     if (comptime match("std.hash_map.HashMap", @typeName(T))) {
-        const st = (try serializer.serializeMap(value.count())).map();
-        {
-            var iterator = value.iterator();
-            while (iterator.next()) |entry| {
-                try st.serializeEntry(entry.key_ptr.*, entry.value_ptr.*);
-            }
-        }
-        return try st.end();
+        var string_hash_map_visitor = StringHashMapVisitor{};
+        const visitor = string_hash_map_visitor.visitor();
+
+        return try serializeWith(serializer, value, visitor);
     }
 
     switch (@typeInfo(T)) {
