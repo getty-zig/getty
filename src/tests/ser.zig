@@ -10,7 +10,6 @@ const Elem = enum {
     Undefined,
     Bool,
     Element,
-    Entry,
     Field,
     Float,
     Int,
@@ -197,11 +196,8 @@ const Serializer = struct {
         }
 
         fn serializeEntry(self: *Self, key: anytype, value: anytype) Error!void {
-            _ = key;
-            _ = value;
-
-            self.buf[self.idx] = .Entry;
-            self.idx += 1;
+            try serializeKey(self, key);
+            try serializeValue(self, value);
         }
 
         fn end(self: *Self) Error!Ok {
@@ -330,6 +326,15 @@ test "Array List" {
     try list.appendSlice(&[_]u32{ 1, 2 });
 
     try t(list, &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+}
+
+test "Hash map" {
+    var map = std.StringHashMap(i32).init(std.testing.allocator);
+    defer map.deinit();
+
+    try map.put("x", 1);
+
+    try t(map, &.{ .MapStart, .Key, .Value, .MapEnd });
 }
 
 fn t(input: anytype, output: []const Elem) !void {

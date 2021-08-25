@@ -11,6 +11,17 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
         return try serialize(serializer, value.items);
     }
 
+    if (comptime match("std.hash_map.HashMap", @typeName(T))) {
+        const st = (try serializer.serializeMap(value.count())).map();
+        {
+            var iterator = value.iterator();
+            while (iterator.next()) |entry| {
+                try st.serializeEntry(entry.key_ptr.*, entry.value_ptr.*);
+            }
+        }
+        return try st.end();
+    }
+
     switch (@typeInfo(T)) {
         .Array => {
             const seq = (try serializer.serializeSequence(value.len)).sequence();
