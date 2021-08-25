@@ -302,7 +302,7 @@ test "Struct" {
         y: i32,
     };
 
-    try t(Struct{ .x = 0, .y = 0 }, &.{ .StructStart, .Field, .Field, .StructEnd });
+    try t(Struct{ .x = 1, .y = 2 }, &.{ .StructStart, .Field, .Field, .StructEnd });
 }
 
 test "Tagged union" {
@@ -320,7 +320,7 @@ test "Vector" {
     try t(@splat(2, @as(u32, 1)), &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
 }
 
-test "Array List" {
+test "Array list" {
     var list = std.ArrayList(u32).init(std.testing.allocator);
     defer list.deinit();
     try list.appendSlice(&[_]u32{ 1, 2 });
