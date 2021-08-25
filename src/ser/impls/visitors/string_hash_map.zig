@@ -11,10 +11,10 @@ const V = ser.Visitor(
     serialize,
 );
 
-fn serialize(_: *StringHashMapVisitor, serializer: anytype, input: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const st = (try serializer.serializeMap(input.count())).map();
+fn serialize(_: *StringHashMapVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    const st = (try serializer.serializeMap(value.count())).map();
     {
-        var iterator = input.iterator();
+        var iterator = value.iterator();
         while (iterator.next()) |entry| {
             try st.serializeEntry(entry.key_ptr.*, entry.value_ptr.*);
         }

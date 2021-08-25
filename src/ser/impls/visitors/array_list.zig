@@ -11,6 +11,6 @@ const V = getty.ser.Visitor(
     serialize,
 );
 
-fn serialize(_: *ArrayListVisitor, serializer: anytype, input: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try getty.serialize(serializer, input.items);
+fn serialize(_: *ArrayListVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    return try getty.serialize(serializer, value.items);
 }
