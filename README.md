@@ -45,7 +45,7 @@ git submodule add https://github.com/getty-zig/getty
 git commit -am "Add Getty module"
 ```
 
-## Quick Start
+<!-- ## Quick Start
 
 Let's now take a whirlwind tour of Getty by writing a serializer!
 
@@ -245,7 +245,7 @@ test {
     try equal(true, try getty.serialize(s, "Getty"));
     try equal(false, try getty.serialize(s, ""));
 }
-```
+``` -->
 
 <!-- let's look at the `getty.Serializer` interface, which we'll be implementing:
 
