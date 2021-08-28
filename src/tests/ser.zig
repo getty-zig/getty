@@ -85,6 +85,15 @@ const Serializer = struct {
             self.idx += 1;
         }
 
+        fn serializeMap(self: *Self, length: ?usize) Error!Map {
+            _ = length;
+
+            self.buf[self.idx] = .MapStart;
+            self.idx += 1;
+
+            return self;
+        }
+
         fn serializeNull(self: *Self) Error!Ok {
             self.buf[self.idx] = .Null;
             self.idx += 1;
@@ -102,15 +111,6 @@ const Serializer = struct {
         fn serializeString(self: *Self, _: anytype) Error!Ok {
             self.buf[self.idx] = .String;
             self.idx += 1;
-        }
-
-        fn serializeMap(self: *Self, length: ?usize) Error!Map {
-            _ = length;
-
-            self.buf[self.idx] = .MapStart;
-            self.idx += 1;
-
-            return self;
         }
 
         fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!Structure {
