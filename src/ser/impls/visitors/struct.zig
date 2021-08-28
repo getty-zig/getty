@@ -17,7 +17,9 @@ fn serialize(_: *StructVisitor, serializer: anytype, value: anytype) @TypeOf(ser
 
     const st = (try serializer.serializeStruct(@typeName(T), meta.fields(T).len)).structure();
     inline for (@typeInfo(T).Struct.fields) |field| {
-        try st.serializeField(field.name, @field(value, field.name));
+        if (field.field_type != void) {
+            try st.serializeField(field.name, @field(value, field.name));
+        }
     }
     return try st.end();
 }
