@@ -25,7 +25,7 @@ fn serialize(_: *UnionVisitor, serializer: anytype, value: anytype) @TypeOf(seri
                 // always find the field that matches the passed-in value.
                 unreachable;
             } else {
-                @compileError("type `" ++ @typeName(T) ++ "` is not supported");
+                @compileError("type `" ++ @typeName(@TypeOf(value)) ++ "` is not supported");
             }
         },
         else => unreachable,
