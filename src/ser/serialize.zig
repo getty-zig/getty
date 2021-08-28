@@ -18,11 +18,23 @@ const TupleVisitor = @import("../lib.zig").ser.TupleVisitor;
 const UnionVisitor = @import("../lib.zig").ser.UnionVisitor;
 const VectorVisitor = @import("../lib.zig").ser.VectorVisitor;
 
+/// Serialize values outside of Getty's data model.
+///
+/// This function enables custom serialization for data types within Getty's
+/// data model and serialization for data types outside of Getty's data model.
 pub fn serializeWith(serializer: anytype, value: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try visitor.serialize(serializer, value);
 }
 
-/// Serializes values that are of a type supported by Getty.
+/// Serialize values within Getty's data model.
+///
+/// Each value is serialized according to a visitor provided by Getty. The
+/// visitor itself is specific to the type of the value being serialized, and
+/// defines how the value is to be serialized (generally, in an expected
+/// fashion).
+///
+/// Some commonly-used data types that fall outside of Getty's data model are
+/// also supported, such as `std.ArrayList` and `std.StringHashMap`.
 pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
