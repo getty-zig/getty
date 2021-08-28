@@ -17,6 +17,7 @@ const StructVisitor = @import("../lib.zig").ser.StructVisitor;
 const TupleVisitor = @import("../lib.zig").ser.TupleVisitor;
 const UnionVisitor = @import("../lib.zig").ser.UnionVisitor;
 const VectorVisitor = @import("../lib.zig").ser.VectorVisitor;
+const VoidVisitor = @import("../lib.zig").ser.VoidVisitor;
 
 /// Serialize values outside of Getty's data model.
 ///
@@ -69,6 +70,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
         },
         .Union => UnionVisitor{},
         .Vector => VectorVisitor{},
+        .Void => VoidVisitor{},
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     };
 

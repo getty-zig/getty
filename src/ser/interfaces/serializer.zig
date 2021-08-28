@@ -56,6 +56,7 @@ pub fn Serializer(
     comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
     comptime tupleFn: fn (Context, ?usize) E!T,
     comptime variantFn: fn (Context, value: anytype) E!O,
+    comptime voidFn: fn (Context) E!O,
 ) type {
     return struct {
         context: Context,
@@ -112,6 +113,11 @@ pub fn Serializer(
         // Serialize an enum value.
         pub fn serializeVariant(self: Self, value: anytype) Error!Ok {
             return try variantFn(self.context, value);
+        }
+
+        // Serialize a void value.
+        pub fn serializeVoid(self: Self) Error!Ok {
+            return try voidFn(self.context);
         }
     };
 }

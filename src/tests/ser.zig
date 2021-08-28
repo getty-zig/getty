@@ -26,6 +26,7 @@ const Elem = enum {
     TupleStart,
     Value,
     Variant,
+    Void,
 };
 
 const Serializer = struct {
@@ -65,6 +66,7 @@ const Serializer = struct {
         _S.serializeStruct,
         _S.serializeTuple,
         _S.serializeVariant,
+        _S.serializeVoid,
     );
 
     const _S = struct {
@@ -134,6 +136,11 @@ const Serializer = struct {
             _ = value;
 
             self.buf[self.idx] = .Variant;
+            self.idx += 1;
+        }
+
+        fn serializeVoid(self: *Self) Error!Ok {
+            self.buf[self.idx] = .Void;
             self.idx += 1;
         }
     };
@@ -318,6 +325,10 @@ test "Tuple" {
 
 test "Vector" {
     try t(@splat(2, @as(u32, 1)), &.{ .SequenceStart, .Element, .Element, .SequenceEnd });
+}
+
+test "Void" {
+    try t({}, &.{ .Void, .Undefined, .Undefined, .Undefined });
 }
 
 test "Array list" {

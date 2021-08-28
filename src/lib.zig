@@ -25,6 +25,7 @@ pub const ser = struct {
         pub const TupleVisitor = @import("ser/impls/visitors/tuple.zig");
         pub const UnionVisitor = @import("ser/impls/visitors/union.zig");
         pub const VectorVisitor = @import("ser/impls/visitors/vector.zig");
+        pub const VoidVisitor = @import("ser/impls/visitors/void.zig");
     };
 
     pub usingnamespace Interfaces;
