@@ -1,4 +1,4 @@
-const getty = @import("../../../lib.zig");
+const Visitor = @import("../../../lib.zig").ser.Visitor;
 
 const NullVisitor = @This();
 
@@ -6,7 +6,7 @@ pub fn visitor(self: *NullVisitor) V {
     return .{ .context = self };
 }
 
-const V = getty.ser.Visitor(
+const V = Visitor(
     *NullVisitor,
     serialize,
 );

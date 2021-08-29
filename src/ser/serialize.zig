@@ -1,23 +1,25 @@
+const ser = @import("../lib.zig").ser;
 const std = @import("std");
-const meta = std.meta;
 
-const ArrayListVisitor = @import("../lib.zig").ser.ArrayListVisitor;
-const BoolVisitor = @import("../lib.zig").ser.BoolVisitor;
-const EnumVisitor = @import("../lib.zig").ser.EnumVisitor;
-const ErrorVisitor = @import("../lib.zig").ser.ErrorVisitor;
-const FloatVisitor = @import("../lib.zig").ser.FloatVisitor;
-const IntVisitor = @import("../lib.zig").ser.IntVisitor;
-const NullVisitor = @import("../lib.zig").ser.NullVisitor;
-const OptionalVisitor = @import("../lib.zig").ser.OptionalVisitor;
-const PointerVisitor = @import("../lib.zig").ser.PointerVisitor;
-const SequenceVisitor = @import("../lib.zig").ser.SequenceVisitor;
-const StringVisitor = @import("../lib.zig").ser.StringVisitor;
-const StringHashMapVisitor = @import("../lib.zig").ser.StringHashMapVisitor;
-const StructVisitor = @import("../lib.zig").ser.StructVisitor;
-const TupleVisitor = @import("../lib.zig").ser.TupleVisitor;
-const UnionVisitor = @import("../lib.zig").ser.UnionVisitor;
-const VectorVisitor = @import("../lib.zig").ser.VectorVisitor;
-const VoidVisitor = @import("../lib.zig").ser.VoidVisitor;
+const ArrayListVisitor = ser.ArrayListVisitor;
+const BoolVisitor = ser.BoolVisitor;
+const EnumVisitor = ser.EnumVisitor;
+const ErrorVisitor = ser.ErrorVisitor;
+const FloatVisitor = ser.FloatVisitor;
+const IntVisitor = ser.IntVisitor;
+const NullVisitor = ser.NullVisitor;
+const OptionalVisitor = ser.OptionalVisitor;
+const PointerVisitor = ser.PointerVisitor;
+const SequenceVisitor = ser.SequenceVisitor;
+const StringVisitor = ser.StringVisitor;
+const StringHashMapVisitor = ser.StringHashMapVisitor;
+const StructVisitor = ser.StructVisitor;
+const TupleVisitor = ser.TupleVisitor;
+const UnionVisitor = ser.UnionVisitor;
+const VectorVisitor = ser.VectorVisitor;
+const VoidVisitor = ser.VoidVisitor;
+
+const meta = std.meta;
 
 /// Serialize values outside of Getty's data model.
 ///

@@ -1,4 +1,4 @@
-const ser = @import("../../../lib.zig").ser;
+const Visitor = @import("../../../lib.zig").ser.Visitor;
 
 const StringHashMapVisitor = @This();
 
@@ -6,7 +6,7 @@ pub fn visitor(self: *StringHashMapVisitor) V {
     return .{ .context = self };
 }
 
-const V = ser.Visitor(
+const V = Visitor(
     *StringHashMapVisitor,
     serialize,
 );
