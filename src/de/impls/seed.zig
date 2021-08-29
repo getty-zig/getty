@@ -1,5 +1,4 @@
 const getty = @import("../../lib.zig");
-const de = getty.de;
 
 pub fn Seed(comptime Value: type) type {
     return struct {
@@ -10,7 +9,7 @@ pub fn Seed(comptime Value: type) type {
             return .{ .context = self };
         }
 
-        const DS = de.DeserializeSeed(
+        const DS = getty.de.DeserializeSeed(
             *Self,
             Value,
             _DS.deserialize,

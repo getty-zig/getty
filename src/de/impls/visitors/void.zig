@@ -1,4 +1,4 @@
-const de = @import("../../../lib.zig").de;
+const Visitor = @import("../../../lib.zig").de.Visitor;
 
 const Self = @This();
 
@@ -9,7 +9,7 @@ pub fn visitor(self: *Self) V {
     return .{ .context = self };
 }
 
-const V = de.Visitor(
+const V = Visitor(
     *Self,
     Value,
     visitBool,
