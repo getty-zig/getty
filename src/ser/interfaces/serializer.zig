@@ -29,7 +29,7 @@ pub fn Serializer(
         pub const Ok = O;
         pub const Error = E;
 
-        /// Serialize a boolean value.
+        /// Serializes a `bool` value.
         pub fn serializeBool(self: Self, value: bool) Error!Ok {
             return try boolFn(self.context, value);
         }
@@ -44,7 +44,7 @@ pub fn Serializer(
             return try enumFn(self.context, value);
         }
 
-        /// Serialize a float value.
+        /// Serializes a float-point value.
         pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Float, .ComptimeFloat => {},
@@ -54,7 +54,7 @@ pub fn Serializer(
             return try floatFn(self.context, value);
         }
 
-        /// Serialize an integer value.
+        /// Serializes an integer value.
         pub fn serializeInt(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Int, .ComptimeInt => {},
@@ -64,22 +64,22 @@ pub fn Serializer(
             return try intFn(self.context, value);
         }
 
-        // Serialize a map value.
+        /// Starts the serialization process for a map.
         pub fn serializeMap(self: Self, length: ?usize) Error!Map {
             return try mapFn(self.context, length);
         }
 
-        /// Serialize a null value.
+        /// Serializes a `null` value.
         pub fn serializeNull(self: Self) Error!Ok {
             return try nullFn(self.context);
         }
 
-        /// Serialize a variably sized heterogeneous sequence of values.
+        /// Starts the serialization process for a sequence.
         pub fn serializeSequence(self: Self, length: ?usize) Error!Sequence {
             return try sequenceFn(self.context, length);
         }
 
-        /// Serialize a string value.
+        /// Serializes a string value.
         pub fn serializeString(self: Self, value: anytype) Error!Ok {
             if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
                 @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
@@ -88,16 +88,17 @@ pub fn Serializer(
             return try stringFn(self.context, value);
         }
 
-        // Serialize a struct value.
+        /// Starts the serialization process for a struct.
         pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
             return try structFn(self.context, name, length);
         }
 
+        /// Starts the serialization process for a tuple.
         pub fn serializeTuple(self: Self, length: ?usize) Error!Tuple {
             return try tupleFn(self.context, length);
         }
 
-        // Serialize a void value.
+        /// Serializes a `void` value.
         pub fn serializeVoid(self: Self) Error!Ok {
             return try voidFn(self.context);
         }
