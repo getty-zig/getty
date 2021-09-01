@@ -145,33 +145,6 @@ const Serializer = struct {
         }
     };
 
-    /// Implements `getty.ser.Sequence`.
-    pub fn sequence(self: *Self) SE {
-        return .{ .context = self };
-    }
-
-    const SE = ser.Sequence(
-        *Self,
-        Ok,
-        Error,
-        _SE.serializeElement,
-        _SE.end,
-    );
-
-    const _SE = struct {
-        fn serializeElement(self: *Self, value: anytype) Error!void {
-            _ = value;
-
-            self.buf[self.idx] = .Element;
-            self.idx += 1;
-        }
-
-        fn end(self: *Self) Error!Ok {
-            self.buf[self.idx] = .SequenceEnd;
-            self.idx += 1;
-        }
-    };
-
     /// Implements `getty.ser.Map`.
     pub fn map(self: *Self) M {
         return .{ .context = self };
@@ -209,6 +182,33 @@ const Serializer = struct {
 
         fn end(self: *Self) Error!Ok {
             self.buf[self.idx] = .MapEnd;
+            self.idx += 1;
+        }
+    };
+
+    /// Implements `getty.ser.Sequence`.
+    pub fn sequence(self: *Self) SE {
+        return .{ .context = self };
+    }
+
+    const SE = ser.Sequence(
+        *Self,
+        Ok,
+        Error,
+        _SE.serializeElement,
+        _SE.end,
+    );
+
+    const _SE = struct {
+        fn serializeElement(self: *Self, value: anytype) Error!void {
+            _ = value;
+
+            self.buf[self.idx] = .Element;
+            self.idx += 1;
+        }
+
+        fn end(self: *Self) Error!Ok {
+            self.buf[self.idx] = .SequenceEnd;
             self.idx += 1;
         }
     };
