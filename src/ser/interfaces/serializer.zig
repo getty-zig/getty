@@ -26,36 +26,22 @@ const std = @import("std");
 /// checks performed in `serialize`, implementations have compile-time
 /// guarantees that the passed-in value is of a type one would naturally
 /// expect.
-///
-/// Data model:
-///
-///     1. bool
-///     2. integer
-///     3. float
-///     4. string
-///     5. option
-///     6. void
-///     7. variant
-///     8. sequence
-///     9. map
-///     10. struct
-///     11. tuple
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime M: type,
-    comptime SE: type,
-    comptime ST: type,
+    comptime Map: type,
+    comptime Sequence: type,
+    comptime Struct: type,
     comptime Tuple: type,
     comptime boolFn: fn (Context, bool) E!O,
     comptime floatFn: fn (Context, anytype) E!O,
     comptime intFn: fn (Context, anytype) E!O,
-    comptime mapFn: fn (Context, ?usize) E!M,
+    comptime mapFn: fn (Context, ?usize) E!Map,
     comptime nullFn: fn (Context) E!O,
-    comptime sequenceFn: fn (Context, ?usize) E!SE,
+    comptime sequenceFn: fn (Context, ?usize) E!Sequence,
     comptime stringFn: fn (Context, anytype) E!O,
-    comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
+    comptime structFn: fn (Context, comptime []const u8, usize) E!Struct,
     comptime tupleFn: fn (Context, ?usize) E!Tuple,
     comptime variantFn: fn (Context, anytype) E!O,
     comptime voidFn: fn (Context) E!O,
@@ -94,7 +80,7 @@ pub fn Serializer(
         }
 
         // Serialize a map value.
-        pub fn serializeMap(self: Self, length: ?usize) Error!M {
+        pub fn serializeMap(self: Self, length: ?usize) Error!Map {
             return try mapFn(self.context, length);
         }
 
@@ -104,7 +90,7 @@ pub fn Serializer(
         }
 
         /// Serialize a variably sized heterogeneous sequence of values.
-        pub fn serializeSequence(self: Self, length: ?usize) Error!SE {
+        pub fn serializeSequence(self: Self, length: ?usize) Error!Sequence {
             return try sequenceFn(self.context, length);
         }
 
@@ -118,7 +104,7 @@ pub fn Serializer(
         }
 
         // Serialize a struct value.
-        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!ST {
+        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
             return try structFn(self.context, name, length);
         }
 
