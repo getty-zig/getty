@@ -38,7 +38,7 @@ pub fn Serializer(
         pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Enum, .EnumLiteral => {},
-                else => @compileError("expected enum, found '" ++ @typeName(@TypeOf(value)) ++ "'"),
+                else => @compileError("expected enum, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
             }
 
             return try enumFn(self.context, value);
@@ -48,7 +48,7 @@ pub fn Serializer(
         pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Float, .ComptimeFloat => {},
-                else => @compileError("expected float, found '" ++ @typeName(@TypeOf(value)) ++ "'"),
+                else => @compileError("expected float, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
             }
 
             return try floatFn(self.context, value);
@@ -58,7 +58,7 @@ pub fn Serializer(
         pub fn serializeInt(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Int, .ComptimeInt => {},
-                else => @compileError("expected float, found '" ++ @typeName(@TypeOf(value)) ++ "'"),
+                else => @compileError("expected float, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
             }
 
             return try intFn(self.context, value);
@@ -82,7 +82,7 @@ pub fn Serializer(
         /// Serialize a string value.
         pub fn serializeString(self: Self, value: anytype) Error!Ok {
             if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
-                @compileError("expected string, found '" ++ @typeName(@TypeOf(value)) ++ "'");
+                @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
             }
 
             return try stringFn(self.context, value);

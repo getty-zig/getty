@@ -116,7 +116,7 @@ fn _Attributes(comptime T: type, attributes: anytype) type {
     const A = @TypeOf(attributes);
 
     if (@typeInfo(A) != .Struct) {
-        @compileError("expected attribute map, found " ++ @typeName(A));
+        @compileError("expected attribute map, found `" ++ @typeName(A) ++ "`");
     }
 
     if (meta.fields(A).len == 0) {
