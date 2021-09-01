@@ -20,10 +20,6 @@ fn serialize(_: *UnionVisitor, serializer: anytype, value: anytype) @TypeOf(seri
                         return try getty.serialize(serializer, @field(value, field.name));
                     }
                 }
-
-                // UNREACHABLE: Since we go over every field in the union, we
-                // always find the field that matches the passed-in value.
-                unreachable;
             } else {
                 @compileError("type `" ++ @typeName(@TypeOf(value)) ++ "` is not supported");
             }
