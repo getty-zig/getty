@@ -49,10 +49,10 @@ pub fn Serializer(
     comptime boolFn: fn (Context, bool) E!O,
     comptime floatFn: fn (Context, anytype) E!O,
     comptime intFn: fn (Context, anytype) E!O,
+    comptime mapFn: fn (Context, ?usize) E!M,
     comptime nullFn: fn (Context) E!O,
     comptime sequenceFn: fn (Context, ?usize) E!SE,
     comptime stringFn: fn (Context, anytype) E!O,
-    comptime mapFn: fn (Context, ?usize) E!M,
     comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
     comptime tupleFn: fn (Context, ?usize) E!T,
     comptime variantFn: fn (Context, anytype) E!O,
@@ -81,6 +81,11 @@ pub fn Serializer(
             return try intFn(self.context, value);
         }
 
+        // Serialize a map value.
+        pub fn serializeMap(self: Self, length: ?usize) Error!M {
+            return try mapFn(self.context, length);
+        }
+
         /// Serialize a null value.
         pub fn serializeNull(self: Self) Error!Ok {
             return try nullFn(self.context);
@@ -94,11 +99,6 @@ pub fn Serializer(
         /// Serialize a string value.
         pub fn serializeString(self: Self, value: anytype) Error!Ok {
             return try stringFn(self.context, value);
-        }
-
-        // Serialize a map value.
-        pub fn serializeMap(self: Self, length: ?usize) Error!M {
-            return try mapFn(self.context, length);
         }
 
         // Serialize a struct value.
