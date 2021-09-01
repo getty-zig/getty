@@ -12,5 +12,5 @@ const V = Visitor(
 );
 
 fn serialize(_: *EnumVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try serializer.serializeVariant(value);
+    return try serializer.serializeEnum(value);
 }

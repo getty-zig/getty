@@ -10,6 +10,7 @@ const Elem = enum {
     Undefined,
     Bool,
     Element,
+    Enum,
     Field,
     Float,
     Int,
@@ -25,7 +26,6 @@ const Elem = enum {
     TupleEnd,
     TupleStart,
     Value,
-    Variant,
     Void,
 };
 
@@ -57,6 +57,7 @@ const Serializer = struct {
         Structure,
         Tuple,
         _S.serializeBool,
+        _S.serializeEnum,
         _S.serializeFloat,
         _S.serializeInt,
         _S.serializeMap,
@@ -65,13 +66,19 @@ const Serializer = struct {
         _S.serializeString,
         _S.serializeStruct,
         _S.serializeTuple,
-        _S.serializeVariant,
         _S.serializeVoid,
     );
 
     const _S = struct {
         fn serializeBool(self: *Self, _: bool) Error!Ok {
             self.buf[self.idx] = .Bool;
+            self.idx += 1;
+        }
+
+        fn serializeEnum(self: *Self, value: anytype) Error!Ok {
+            _ = value;
+
+            self.buf[self.idx] = .Enum;
             self.idx += 1;
         }
 
@@ -130,13 +137,6 @@ const Serializer = struct {
             self.idx += 1;
 
             return self;
-        }
-
-        fn serializeVariant(self: *Self, value: anytype) Error!Ok {
-            _ = value;
-
-            self.buf[self.idx] = .Variant;
-            self.idx += 1;
         }
 
         fn serializeVoid(self: *Self) Error!Ok {
@@ -279,8 +279,8 @@ test "Boolean" {
 }
 
 test "Enum" {
-    try t(enum { Foo }.Foo, &.{ .Variant, .Undefined, .Undefined, .Undefined });
-    try t(.Foo, &.{ .Variant, .Undefined, .Undefined, .Undefined });
+    try t(.Foo, &.{ .Enum, .Undefined, .Undefined, .Undefined });
+    try t(enum { Foo }.Foo, &.{ .Enum, .Undefined, .Undefined, .Undefined });
 }
 
 test "Error value" {
