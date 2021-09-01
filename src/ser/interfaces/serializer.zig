@@ -1,3 +1,5 @@
+const std = @import("std");
+
 /// A data format that can serialize any data type supported by Getty.
 ///
 /// This interface is generic over the following:
@@ -45,7 +47,7 @@ pub fn Serializer(
     comptime M: type,
     comptime SE: type,
     comptime ST: type,
-    comptime T: type,
+    comptime Tuple: type,
     comptime boolFn: fn (Context, bool) E!O,
     comptime floatFn: fn (Context, anytype) E!O,
     comptime intFn: fn (Context, anytype) E!O,
@@ -54,7 +56,7 @@ pub fn Serializer(
     comptime sequenceFn: fn (Context, ?usize) E!SE,
     comptime stringFn: fn (Context, anytype) E!O,
     comptime structFn: fn (Context, comptime []const u8, usize) E!ST,
-    comptime tupleFn: fn (Context, ?usize) E!T,
+    comptime tupleFn: fn (Context, ?usize) E!Tuple,
     comptime variantFn: fn (Context, anytype) E!O,
     comptime voidFn: fn (Context) E!O,
 ) type {
@@ -73,11 +75,21 @@ pub fn Serializer(
 
         /// Serialize a float value.
         pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
+            switch (@typeInfo(@TypeOf(value))) {
+                .Float, .ComptimeFloat => {},
+                else => @compileError("expected float, found '" ++ @typeName(@TypeOf(value)) ++ "'"),
+            }
+
             return try floatFn(self.context, value);
         }
 
         /// Serialize an integer value.
         pub fn serializeInt(self: Self, value: anytype) Error!Ok {
+            switch (@typeInfo(@TypeOf(value))) {
+                .Int, .ComptimeInt => {},
+                else => @compileError("expected float, found '" ++ @typeName(@TypeOf(value)) ++ "'"),
+            }
+
             return try intFn(self.context, value);
         }
 
@@ -91,13 +103,17 @@ pub fn Serializer(
             return try nullFn(self.context);
         }
 
-        /// Serialize a variably sized heterogeneous sequence of valueserializer.
+        /// Serialize a variably sized heterogeneous sequence of values.
         pub fn serializeSequence(self: Self, length: ?usize) Error!SE {
             return try sequenceFn(self.context, length);
         }
 
         /// Serialize a string value.
         pub fn serializeString(self: Self, value: anytype) Error!Ok {
+            if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
+                @compileError("expected string, found '" ++ @typeName(@TypeOf(value)) ++ "'");
+            }
+
             return try stringFn(self.context, value);
         }
 
@@ -106,12 +122,17 @@ pub fn Serializer(
             return try structFn(self.context, name, length);
         }
 
-        pub fn serializeTuple(self: Self, length: ?usize) Error!T {
+        pub fn serializeTuple(self: Self, length: ?usize) Error!Tuple {
             return try tupleFn(self.context, length);
         }
 
         // Serialize an enum value.
         pub fn serializeVariant(self: Self, value: anytype) Error!Ok {
+            switch (@typeInfo(@TypeOf(value))) {
+                .Enum, .EnumLiteral => {},
+                else => @compileError("expected enum, found '" ++ @typeName(@TypeOf(value)) ++ "'"),
+            }
+
             return try variantFn(self.context, value);
         }
 
