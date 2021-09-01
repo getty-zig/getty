@@ -19,7 +19,6 @@ pub fn Serializer(
     comptime stringFn: fn (Context, anytype) E!O,
     comptime structFn: fn (Context, comptime []const u8, usize) E!Struct,
     comptime tupleFn: fn (Context, ?usize) E!Tuple,
-    comptime unionFn: fn (Context, anytype) E!O,
     comptime voidFn: fn (Context) E!O,
 ) type {
     return struct {
@@ -96,16 +95,6 @@ pub fn Serializer(
 
         pub fn serializeTuple(self: Self, length: ?usize) Error!Tuple {
             return try tupleFn(self.context, length);
-        }
-
-        /// Serialize a union value.
-        pub fn serializeUnion(self: Self, value: anytype) Error!Ok {
-            switch (@typeInfo(@TypeOf(value))) {
-                .Union => |info| if (info.tag_type) |_| {} else @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
-                else => @compileError("expected union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
-            }
-
-            return try unionFn(self.context, value);
         }
 
         // Serialize a void value.

@@ -25,7 +25,6 @@ const Elem = enum {
     StructStart,
     TupleEnd,
     TupleStart,
-    Union,
     Value,
     Void,
 };
@@ -67,7 +66,6 @@ const Serializer = struct {
         _S.serializeString,
         _S.serializeStruct,
         _S.serializeTuple,
-        _S.serializeUnion,
         _S.serializeVoid,
     );
 
@@ -139,11 +137,6 @@ const Serializer = struct {
             self.idx += 1;
 
             return self;
-        }
-
-        fn serializeUnion(self: *Self, _: anytype) Error!Ok {
-            self.buf[self.idx] = .Union;
-            self.idx += 1;
         }
 
         fn serializeVoid(self: *Self) Error!Ok {
