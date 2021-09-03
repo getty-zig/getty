@@ -13,6 +13,7 @@ const V = Visitor(
     *Self,
     Value,
     visitBool,
+    visitEnum,
     visitFloat,
     visitInt,
     visitMap,
@@ -20,7 +21,6 @@ const V = Visitor(
     visitSequence,
     visitSome,
     visitString,
-    visitVariant,
     visitVoid,
 );
 
@@ -28,6 +28,13 @@ fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
     _ = self;
 
     return input;
+}
+
+fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
+    _ = self;
+    _ = input;
+
+    @panic("Unsupported");
 }
 
 fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
@@ -69,13 +76,6 @@ fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Val
 }
 
 fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
-    _ = self;
-    _ = input;
-
-    @panic("Unsupported");
-}
-
-fn visitVariant(self: *Self, comptime Error: type, input: anytype) Error!Value {
     _ = self;
     _ = input;
 

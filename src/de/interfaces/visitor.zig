@@ -8,6 +8,13 @@ pub fn Visitor(
             unreachable;
         }
     }.f),
+    comptime enumFn: @TypeOf(struct {
+        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
+            _ = c;
+            _ = v;
+            unreachable;
+        }
+    }.f),
     comptime floatFn: @TypeOf(struct {
         fn f(c: Context, comptime Error: type, v: anytype) Error!V {
             _ = c;
@@ -50,13 +57,6 @@ pub fn Visitor(
         }
     }.f),
     comptime stringFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
-            _ = c;
-            _ = v;
-            unreachable;
-        }
-    }.f),
-    comptime variantFn: @TypeOf(struct {
         fn f(c: Context, comptime Error: type, v: anytype) Error!V {
             _ = c;
             _ = v;
@@ -110,8 +110,8 @@ pub fn Visitor(
             return try stringFn(self.context, Error, input);
         }
 
-        pub fn visitVariant(self: Self, comptime Error: type, input: anytype) Error!Value {
-            return try variantFn(self.context, Error, input);
+        pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try enumFn(self.context, Error, input);
         }
 
         pub fn visitVoid(self: Self, comptime Error: type) Error!Value {

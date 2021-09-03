@@ -8,6 +8,7 @@
 /// Data model:
 ///
 ///   - bool
+///   - enum
 ///   - float
 ///   - identifier
 ///   - int
@@ -17,13 +18,13 @@
 ///   - string
 ///   - struct
 ///   - tuple
-///   - variant
 ///   - void
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
     comptime anyFn: Fn(Context, E),
     comptime boolFn: Fn(Context, E),
+    comptime enumFn: Fn(Context, E),
     comptime floatFn: Fn(Context, E),
     //comptime identifierFn: Fn(Context, E),
     comptime intFn: Fn(Context, E),
@@ -33,7 +34,6 @@ pub fn Deserializer(
     comptime stringFn: Fn(Context, E),
     comptime structFn: Fn(Context, E),
     //comptime tupleFn: Fn(Context, E),
-    comptime variantFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
 ) type {
     return struct {
@@ -49,6 +49,10 @@ pub fn Deserializer(
 
         pub fn deserializeBool(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try boolFn(self.context, visitor);
+        }
+
+        pub fn deserializeEnum(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try enumFn(self.context, visitor);
         }
 
         pub fn deserializeFloat(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
@@ -77,10 +81,6 @@ pub fn Deserializer(
 
         pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try structFn(self.context, visitor);
-        }
-
-        pub fn deserializeVariant(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try variantFn(self.context, visitor);
         }
 
         pub fn deserializeVoid(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

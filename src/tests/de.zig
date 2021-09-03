@@ -7,6 +7,7 @@ const testing = std.testing;
 
 const Token = enum {
     Bool,
+    Enum,
     Float,
     Int,
     //Map,
@@ -15,7 +16,6 @@ const Token = enum {
     Sequence,
     String,
     //Struct,
-    Variant,
     Void,
 };
 
@@ -28,7 +28,7 @@ const Deserializer = struct {
     const boolValue = true;
     const floatValue = 1.0;
     const intValue = 1;
-    const variantValue = .Foobar;
+    const enumValue = .Foobar;
     const stringValue = "Foobar";
 
     pub fn init(token: Token) Self {
@@ -115,7 +115,7 @@ const Deserializer = struct {
                 .Some => visitor.visitSome(self.deserializer()),
                 .String => visitor.visitString(Error, stringValue),
                 //.Struct => ,
-                .Variant => visitor.visitVariant(Error, variantValue),
+                .Enum => visitor.visitEnum(Error, enumValue),
                 .Void => visitor.visitVoid(Error),
             } catch Error.Input;
         }
@@ -135,6 +135,7 @@ pub const TrueVisitor = struct {
         *Self,
         _V.Value,
         _V.visitBool,
+        _V.visitEnum,
         _V.visitFloat,
         _V.visitInt,
         _V.visitMap,
@@ -142,7 +143,6 @@ pub const TrueVisitor = struct {
         _V.visitSequence,
         _V.visitSome,
         _V.visitString,
-        _V.visitVariant,
         _V.visitVoid,
     );
 
@@ -156,7 +156,7 @@ pub const TrueVisitor = struct {
             return true;
         }
 
-        fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
             _ = input;
 
@@ -164,6 +164,13 @@ pub const TrueVisitor = struct {
         }
 
         fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            _ = self;
+            _ = input;
+
+            return true;
+        }
+
+        fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
             _ = input;
 
@@ -204,13 +211,6 @@ pub const TrueVisitor = struct {
         }
 
         fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            return true;
-        }
-
-        fn visitVariant(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
             _ = input;
 

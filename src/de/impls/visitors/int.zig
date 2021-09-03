@@ -13,6 +13,7 @@ pub fn Visitor(comptime T: type) type {
             *Self,
             Value,
             visitBool,
+            visitEnum,
             visitFloat,
             visitInt,
             visitMap,
@@ -20,11 +21,17 @@ pub fn Visitor(comptime T: type) type {
             visitSequence,
             visitSome,
             visitString,
-            visitVariant,
             visitVoid,
         );
 
         fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
+            _ = self;
+            _ = input;
+
+            @panic("Unsupported");
+        }
+
+        fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
             _ = input;
 
@@ -68,13 +75,6 @@ pub fn Visitor(comptime T: type) type {
         }
 
         fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            @panic("Unsupported");
-        }
-
-        fn visitVariant(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
             _ = input;
 
