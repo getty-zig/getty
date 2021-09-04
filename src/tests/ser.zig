@@ -356,6 +356,6 @@ fn t(input: anytype, output: []const Elem) !void {
     try testing.expectEqualSlices(Elem, &serializer.buf, output);
 }
 
-comptime {
+test {
     testing.refAllDecls(@This());
 }

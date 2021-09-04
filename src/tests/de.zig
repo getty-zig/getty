@@ -1,22 +1,22 @@
 const std = @import("std");
-const de = @import("getty").de;
+const getty = @import("getty");
 
 const meta = std.meta;
 const trait = meta.trait;
 const testing = std.testing;
 
-const Token = enum {
-    Bool,
-    Enum,
-    Float,
-    Int,
+const Token = union(enum) {
+    Bool: bool,
+    Enum: enum { foo, bar },
+    Float: f32,
+    Int: i64,
     //Map,
     Null,
     Some,
     Sequence,
-    String,
+    String: []const u8,
     //Struct,
-    Void,
+    Void: void,
 };
 
 /// A data format that deserializes `Token` values.
@@ -25,10 +25,6 @@ const Deserializer = struct {
 
     const Self = @This();
 
-    const boolValue = true;
-    const floatValue = 1.0;
-    const intValue = 1;
-    const enumValue = .Foobar;
     const stringValue = "Foobar";
 
     pub fn init(token: Token) Self {
@@ -40,7 +36,7 @@ const Deserializer = struct {
         return .{ .context = self };
     }
 
-    const D = de.Deserializer(
+    const D = getty.de.Deserializer(
         *Self,
         _D.Error,
         _D.deserializeBool,
@@ -60,28 +56,30 @@ const Deserializer = struct {
 
         fn deserializeBool(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Bool => try visitor.visitBool(Error, boolValue),
+                .Bool => |value| try visitor.visitBool(Error, value),
                 else => Error.Input,
             };
         }
 
         fn deserializeEnum(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Enum => try visitor.visitEnum(Error, enumValue),
+                .Enum => |value| try visitor.visitEnum(Error, value),
                 else => Error.Input,
             };
         }
 
         fn deserializeFloat(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Float => try visitor.visitFloat(Error, floatValue),
+                .Float => |value| try visitor.visitFloat(Error, value),
+                .Int => |value| try visitor.visitInt(Error, value),
                 else => Error.Input,
             };
         }
 
         fn deserializeInt(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Int => try visitor.visitInt(Error, intValue),
+                .Float => |value| try visitor.visitFloat(Error, value),
+                .Int => |value| try visitor.visitInt(Error, value),
                 else => Error.Input,
             };
         }
@@ -123,7 +121,7 @@ const Deserializer = struct {
                     return .{ .context = sv };
                 }
 
-                const SA = de.SequenceAccess(
+                const SA = getty.de.SequenceAccess(
                     *SV,
                     Error,
                     _SA.nextElementSeed,
@@ -161,133 +159,67 @@ const Deserializer = struct {
     };
 };
 
-/// A visitor that produces `true` for every input.
-pub const TrueVisitor = struct {
-    const Self = @This();
-
-    /// Implements `getty.de.Visitor`.
-    pub fn visitor(self: *Self) V {
-        return .{ .context = self };
+test "bool" {
+    {
+        var d = Deserializer.init(Token{ .Bool = true });
+        try testing.expectEqual(true, try getty.deserialize(bool, d.deserializer()));
     }
 
-    const V = de.Visitor(
-        *Self,
-        _V.Value,
-        _V.visitBool,
-        _V.visitEnum,
-        _V.visitFloat,
-        _V.visitInt,
-        _V.visitMap,
-        _V.visitNull,
-        _V.visitSequence,
-        _V.visitSome,
-        _V.visitString,
-        _V.visitVoid,
-    );
-
-    const _V = struct {
-        const Value = bool;
-
-        fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
-            _ = self;
-            _ = input;
-
-            return true;
-        }
-
-        fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            return true;
-        }
-
-        fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            return true;
-        }
-
-        fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            return true;
-        }
-
-        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-            _ = self;
-
-            return true;
-        }
-
-        fn visitNull(self: *Self, comptime Error: type) Error!Value {
-            _ = self;
-
-            return true;
-        }
-
-        // When this is called, the visitor knows how to access elements of the
-        // sequence, but the elements aren't yet deserialized. Thus, we need to:
-        //
-        //   1. Access them (via `nextElementSeed`).
-        //
-        //   2. Deserialize them into Getty's data model (in `nextelementSeed`
-        //      and by a deserializer within a `DeserializeSeed`).
-        //
-        //   3. Deserialize them once more into the visitor's value.
-        fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-            _ = self;
-
-            return (try sequenceAccess.nextElement(Value)).?;
-        }
-
-        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            _ = self;
-
-            return true;
-        }
-
-        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            return true;
-        }
-
-        fn visitVoid(self: *Self, comptime Error: type) Error!Value {
-            _ = self;
-
-            return true;
-        }
-    };
-};
-
-test "Integration" {
-    inline for (std.meta.fields(Token)) |field| {
-        const input = @intToEnum(Token, field.value);
-
-        var deserializer = Deserializer.init(input);
-        const d = deserializer.deserializer();
-
-        var visitor = TrueVisitor{};
-        const v = visitor.visitor();
-
-        switch (input) {
-            .Bool => try testing.expectEqual(true, try d.deserializeBool(v)),
-            .Enum => try testing.expectEqual(true, try d.deserializeEnum(v)),
-            .Float => try testing.expectEqual(true, try d.deserializeFloat(v)),
-            .Int => try testing.expectEqual(true, try d.deserializeInt(v)),
-            .Null => try testing.expectEqual(true, try d.deserializeOptional(v)),
-            .Sequence => try testing.expectEqual(true, try d.deserializeSequence(v)),
-            .Some => try testing.expectEqual(true, try d.deserializeOptional(v)),
-            .String => try testing.expectEqual(true, try d.deserializeString(v)),
-            .Void => try testing.expectEqual(true, try d.deserializeVoid(v)),
-        }
+    {
+        var d = Deserializer.init(Token{ .Bool = false });
+        try testing.expectEqual(false, try getty.deserialize(bool, d.deserializer()));
     }
 }
 
-comptime {
+test "int" {
+    {
+        var d = Deserializer.init(Token{ .Int = 42 });
+        try testing.expectEqual(@as(i64, 42), try getty.deserialize(i64, d.deserializer()));
+    }
+
+    {
+        var d = Deserializer.init(Token{ .Int = 42 });
+        try testing.expectEqual(@as(i128, 42), try getty.deserialize(i128, d.deserializer()));
+    }
+
+    {
+        var d = Deserializer.init(Token{ .Float = 42.0 });
+        try testing.expectEqual(@as(i64, 42), try getty.deserialize(i64, d.deserializer()));
+    }
+
+    {
+        var d = Deserializer.init(Token{ .Float = 42.0 });
+        try testing.expectEqual(@as(i128, 42.0), try getty.deserialize(i128, d.deserializer()));
+    }
+}
+
+test "float" {
+    //{
+    //var d = Deserializer.init(Token{ .Float = 3.14 });
+    //try testing.expectEqual(@floatCast(f64, 3.14), try getty.deserialize(f64, d.deserializer()));
+    //}
+
+    //{
+    //var d = Deserializer.init(Token{ .Float = 3.14 });
+    //try testing.expectEqual(@floatCast(f128, 3.14), try getty.deserialize(f128, d.deserializer()));
+    //}
+
+    {
+        var d = Deserializer.init(Token{ .Int = 3 });
+        try testing.expectEqual(@intToFloat(f64, 3), try getty.deserialize(f64, d.deserializer()));
+    }
+
+    {
+        var d = Deserializer.init(Token{ .Int = 3 });
+        try testing.expectEqual(@intToFloat(f128, 3), try getty.deserialize(f128, d.deserializer()));
+    }
+}
+
+test "void" {
+    var d = Deserializer.init(Token{ .Void = {} });
+    try testing.expectEqual({}, try getty.deserialize(void, d.deserializer()));
+}
+
+test {
     testing.refAllDecls(@This());
 }
