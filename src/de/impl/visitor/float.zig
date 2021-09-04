@@ -1,4 +1,4 @@
-const de = @import("../../../lib.zig").de;
+const @"de.Visitor" = @import("../../interface.zig").Visitor;
 
 pub fn Visitor(comptime T: type) type {
     return struct {
@@ -10,7 +10,7 @@ pub fn Visitor(comptime T: type) type {
         }
 
         /// Implements `getty.de.Visitor`.
-        const V = de.Visitor(
+        const V = @"de.Visitor"(
             *Self,
             Value,
             visitBool,

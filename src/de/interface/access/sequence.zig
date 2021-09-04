@@ -1,4 +1,4 @@
-const Seed = @import("../../../lib.zig").de.Seed;
+const Seed = @import("../../impl.zig").Seed;
 
 pub fn Access(
     comptime Context: type,

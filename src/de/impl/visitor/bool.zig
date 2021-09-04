@@ -1,4 +1,4 @@
-const Visitor = @import("../../../lib.zig").de.Visitor;
+const Visitor = @import("../../interface.zig").Visitor;
 
 const Self = @This();
 

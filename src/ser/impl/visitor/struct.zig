@@ -1,4 +1,4 @@
-const Visitor = @import("../../../lib.zig").ser.Visitor;
+const Visitor = @import("../../interface.zig").Visitor;
 const fields = @import("std").meta.fields;
 
 const StructVisitor = @This();
