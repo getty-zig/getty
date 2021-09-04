@@ -46,5 +46,6 @@ pub const de = struct {
     pub const BoolVisitor = @import("de/impls/visitors/bool.zig");
     pub const FloatVisitor = @import("de/impls/visitors/float.zig").Visitor;
     pub const IntVisitor = @import("de/impls/visitors/int.zig").Visitor;
+    pub const OptionalVisitor = @import("de/impls/visitors/optional.zig");
     pub const VoidVisitor = @import("de/impls/visitors/void.zig");
 };

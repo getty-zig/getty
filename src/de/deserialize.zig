@@ -14,6 +14,10 @@ pub fn deserialize(comptime T: type, deserializer: anytype) @TypeOf(deserializer
             var visitor = de.IntVisitor(T){};
             return try deserializer.deserializeInt(visitor.visitor());
         },
+        .Optional => {
+            var visitor = de.OptionalVisitor(T){};
+            return try deserializer.deserializeOptional(visitor.visitor());
+        },
         .Void => {
             var visitor = de.VoidVisitor{};
             return try deserializer.deserializeVoid(visitor.visitor());
