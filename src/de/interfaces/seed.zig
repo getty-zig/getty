@@ -2,7 +2,7 @@ pub fn DeserializeSeed(
     comptime Context: type,
     comptime V: type,
     comptime deserializeFn: @TypeOf(struct {
-        fn f(c: Context, d: anytype) @TypeOf(d).Error!Value {
+        fn f(c: Context, d: anytype) @TypeOf(d).Error!V {
             _ = c;
             unreachable;
         }
