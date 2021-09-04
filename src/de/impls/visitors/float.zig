@@ -5,6 +5,11 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
+        pub fn visitor(self: *Self) V {
+            return .{ .context = self };
+        }
+
+        /// Implements `getty.de.Visitor`.
         const V = de.Visitor(
             *Self,
             Value,
