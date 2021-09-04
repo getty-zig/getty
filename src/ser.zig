@@ -1,25 +1,34 @@
-const ser = @import("../lib.zig").ser;
 const std = @import("std");
 
-const ArrayListVisitor = ser.ArrayListVisitor;
-const BoolVisitor = ser.BoolVisitor;
-const EnumVisitor = ser.EnumVisitor;
-const ErrorVisitor = ser.ErrorVisitor;
-const FloatVisitor = ser.FloatVisitor;
-const IntVisitor = ser.IntVisitor;
-const NullVisitor = ser.NullVisitor;
-const OptionalVisitor = ser.OptionalVisitor;
-const PointerVisitor = ser.PointerVisitor;
-const SequenceVisitor = ser.SequenceVisitor;
-const StringVisitor = ser.StringVisitor;
-const StringHashMapVisitor = ser.StringHashMapVisitor;
-const StructVisitor = ser.StructVisitor;
-const TupleVisitor = ser.TupleVisitor;
-const UnionVisitor = ser.UnionVisitor;
-const VectorVisitor = ser.VectorVisitor;
-const VoidVisitor = ser.VoidVisitor;
-
 const meta = std.meta;
+
+// Interfaces
+pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+pub const Visitor = @import("ser/interfaces/visitor.zig").Visitor;
+
+pub const Map = @import("ser/interfaces/serialize/map.zig").Serialize;
+pub const Sequence = @import("ser/interfaces/serialize/sequence.zig").Serialize;
+pub const Structure = @import("ser/interfaces/serialize/structure.zig").Serialize;
+pub const Tuple = Sequence;
+
+// Implementations
+pub const ArrayListVisitor = @import("ser/impls/visitors/array_list.zig");
+pub const BoolVisitor = @import("ser/impls/visitors/bool.zig");
+pub const ErrorVisitor = @import("ser/impls/visitors/error.zig");
+pub const EnumVisitor = @import("ser/impls/visitors/enum.zig");
+pub const FloatVisitor = @import("ser/impls/visitors/float.zig");
+pub const IntVisitor = @import("ser/impls/visitors/int.zig");
+pub const OptionalVisitor = @import("ser/impls/visitors/optional.zig");
+pub const PointerVisitor = @import("ser/impls/visitors/pointer.zig");
+pub const NullVisitor = @import("ser/impls/visitors/null.zig");
+pub const SequenceVisitor = @import("ser/impls/visitors/sequence.zig");
+pub const StringVisitor = @import("ser/impls/visitors/string.zig");
+pub const StringHashMapVisitor = @import("ser/impls/visitors/string_hash_map.zig");
+pub const StructVisitor = @import("ser/impls/visitors/struct.zig");
+pub const TupleVisitor = @import("ser/impls/visitors/tuple.zig");
+pub const UnionVisitor = @import("ser/impls/visitors/union.zig");
+pub const VectorVisitor = @import("ser/impls/visitors/vector.zig");
+pub const VoidVisitor = @import("ser/impls/visitors/void.zig");
 
 /// Serialize values outside of Getty's data model.
 ///
