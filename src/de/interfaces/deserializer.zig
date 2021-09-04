@@ -22,7 +22,6 @@
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
-    comptime anyFn: Fn(Context, E),
     comptime boolFn: Fn(Context, E),
     comptime enumFn: Fn(Context, E),
     comptime floatFn: Fn(Context, E),
@@ -42,10 +41,6 @@ pub fn Deserializer(
         const Self = @This();
 
         pub const Error = E;
-
-        pub fn deserializeAny(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try anyFn(self.context, visitor);
-        }
 
         pub fn deserializeBool(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try boolFn(self.context, visitor);

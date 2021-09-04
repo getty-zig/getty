@@ -1,13 +1,23 @@
 const de = @import("../lib.zig").de;
 
 pub fn deserialize(comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
-    var visitor = switch (@typeInfo(T)) {
-        .Bool => de.BoolVisitor{},
-        .Float, .ComptimeFloat => de.FloatVisitor(T){},
-        .Int, .ComptimeInt => de.IntVisitor(T){},
-        .Void => de.VoidVisitor{},
+    switch (@typeInfo(T)) {
+        .Bool => {
+            var visitor = de.BoolVisitor{};
+            return try deserializer.deserializeBool(visitor.visitor());
+        },
+        .Float, .ComptimeFloat => {
+            var visitor = de.FloatVisitor(T){};
+            return try deserializer.deserializeFloat(visitor.visitor());
+        },
+        .Int, .ComptimeInt => {
+            var visitor = de.IntVisitor(T){};
+            return try deserializer.deserializeInt(visitor.visitor());
+        },
+        .Void => {
+            var visitor = de.VoidVisitor{};
+            return try deserializer.deserializeVoid(visitor.visitor());
+        },
         else => unreachable,
-    };
-
-    return try deserializer.deserializeAny(visitor.visitor());
+    }
 }

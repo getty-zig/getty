@@ -43,81 +43,120 @@ const Deserializer = struct {
     const D = de.Deserializer(
         *Self,
         _D.Error,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
-        _D.deserializeAny,
+        _D.deserializeBool,
+        _D.deserializeEnum,
+        _D.deserializeFloat,
+        _D.deserializeInt,
+        undefined, // map
+        _D.deserializeOptional,
+        _D.deserializeSequence,
+        _D.deserializeString,
+        undefined, // struct
+        _D.deserializeVoid,
     );
 
     const _D = struct {
         const Error = error{Input};
 
-        fn deserializeAny(self: *Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeBool(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Bool => visitor.visitBool(Error, boolValue),
-                .Float => visitor.visitFloat(Error, floatValue),
-                .Int => visitor.visitInt(Error, intValue),
-                //.Map => ,
-                .Null => visitor.visitNull(Error),
-                .Sequence => blk: {
-                    // Example:
-                    //
-                    // For the sequence [1, 2, 3], `nextElementSeed` would do the following:
-                    //
-                    //   1. If ']' is encountered, `null` is returned to
-                    //      indicate the end of the sequence.
-                    //
-                    //   2. If an element is encountered, then it is
-                    //      deserialized and the deserialized value is returned.
-                    //
-                    //   3. If ',' is encountered, the comma and any subsequent
-                    //      whitespace is eaten. If ']' is encountered, an
-                    //      error is returned for having a trailing comma. If,
-                    //      instead, an element is encountered, then go to 2).
-                    var sequenceValue = struct {
-                        d: D,
+                .Bool => try visitor.visitBool(Error, boolValue),
+                else => Error.Input,
+            };
+        }
 
-                        const SV = @This();
+        fn deserializeEnum(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Enum => try visitor.visitEnum(Error, enumValue),
+                else => Error.Input,
+            };
+        }
 
-                        /// Implements `getty.de.SequenceAccess`.
-                        pub fn sequenceAccess(sv: *SV) SA {
-                            return .{ .context = sv };
-                        }
+        fn deserializeFloat(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Float => try visitor.visitFloat(Error, floatValue),
+                else => Error.Input,
+            };
+        }
 
-                        const SA = de.SequenceAccess(
-                            *SV,
-                            Error,
-                            _SA.nextElementSeed,
-                        );
+        fn deserializeInt(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Int => try visitor.visitInt(Error, intValue),
+                else => Error.Input,
+            };
+        }
 
-                        const _SA = struct {
-                            fn nextElementSeed(sv: *SV, seed: anytype) Error!?@TypeOf(seed).Value {
-                                sv.d.context.value = .Bool;
+        fn deserializeOptional(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Null => try visitor.visitNull(Error),
+                .Some => try visitor.visitSome(self.deserializer()),
+                else => Error.Input,
+            };
+        }
 
-                                // Immediately deserialize because we know the
-                                // token is `Token.Sequence` at this point, so
-                                // there's no parsing to be done.
-                                return try seed.deserialize(sv.d);
-                            }
-                        };
-                    }{ .d = self.deserializer() };
-                    const sa = sequenceValue.sequenceAccess();
+        fn deserializeSequence(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            if (self.value != .Sequence) {
+                return Error.Input;
+            }
 
-                    break :blk try visitor.visitSequence(sa);
-                },
-                .Some => visitor.visitSome(self.deserializer()),
-                .String => visitor.visitString(Error, stringValue),
-                //.Struct => ,
-                .Enum => visitor.visitEnum(Error, enumValue),
-                .Void => visitor.visitVoid(Error),
-            } catch Error.Input;
+            // Example:
+            //
+            // For the sequence [1, 2, 3], `nextElementSeed` would do the following:
+            //
+            //   1. If ']' is encountered, `null` is returned to
+            //      indicate the end of the sequence.
+            //
+            //   2. If an element is encountered, then it is
+            //      deserialized and the deserialized value is returned.
+            //
+            //   3. If ',' is encountered, the comma and any subsequent
+            //      whitespace is eaten. If ']' is encountered, an
+            //      error is returned for having a trailing comma. If,
+            //      instead, an element is encountered, then go to 2).
+            var sequenceValue = struct {
+                d: D,
+
+                const SV = @This();
+
+                /// Implements `getty.de.SequenceAccess`.
+                pub fn sequenceAccess(sv: *SV) SA {
+                    return .{ .context = sv };
+                }
+
+                const SA = de.SequenceAccess(
+                    *SV,
+                    Error,
+                    _SA.nextElementSeed,
+                );
+
+                const _SA = struct {
+                    fn nextElementSeed(sv: *SV, seed: anytype) !?@TypeOf(seed).Value {
+                        sv.d.context.value = .Bool;
+
+                        // Immediately deserialize because we know the
+                        // token is `Token.Sequence` at this point, so
+                        // there's no parsing to be done.
+                        return try seed.deserialize(sv.d);
+                    }
+                };
+            }{ .d = self.deserializer() };
+            const sa = sequenceValue.sequenceAccess();
+
+            return try visitor.visitSequence(sa);
+        }
+
+        fn deserializeString(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .String => try visitor.visitString(Error, stringValue),
+                else => Error.Input,
+            };
+        }
+
+        fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Void => try visitor.visitVoid(Error),
+                else => Error.Input,
+            };
         }
     };
 };
@@ -229,14 +268,22 @@ test "Integration" {
     inline for (std.meta.fields(Token)) |field| {
         const input = @intToEnum(Token, field.value);
 
-        if (input == .Sequence) {
-            var deserializer = Deserializer.init(input);
-            const d = deserializer.deserializer();
+        var deserializer = Deserializer.init(input);
+        const d = deserializer.deserializer();
 
-            var visitor = TrueVisitor{};
-            const v = visitor.visitor();
+        var visitor = TrueVisitor{};
+        const v = visitor.visitor();
 
-            try testing.expectEqual(true, try d.deserializeAny(v));
+        switch (input) {
+            .Bool => try testing.expectEqual(true, try d.deserializeBool(v)),
+            .Enum => try testing.expectEqual(true, try d.deserializeEnum(v)),
+            .Float => try testing.expectEqual(true, try d.deserializeFloat(v)),
+            .Int => try testing.expectEqual(true, try d.deserializeInt(v)),
+            .Null => try testing.expectEqual(true, try d.deserializeOptional(v)),
+            .Sequence => try testing.expectEqual(true, try d.deserializeSequence(v)),
+            .Some => try testing.expectEqual(true, try d.deserializeOptional(v)),
+            .String => try testing.expectEqual(true, try d.deserializeString(v)),
+            .Void => try testing.expectEqual(true, try d.deserializeVoid(v)),
         }
     }
 }
