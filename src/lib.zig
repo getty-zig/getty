@@ -49,3 +49,9 @@ pub const de = struct {
     pub const OptionalVisitor = @import("de/impls/visitors/optional.zig");
     pub const VoidVisitor = @import("de/impls/visitors/void.zig");
 };
+
+const testing = @import("std").testing;
+
+test {
+    testing.refAllDecls(@This());
+}
