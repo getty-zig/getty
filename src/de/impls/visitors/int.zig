@@ -24,6 +24,8 @@ pub fn Visitor(comptime T: type) type {
             visitVoid,
         );
 
+        const Value = T;
+
         fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
             _ = self;
             _ = input;
