@@ -41,15 +41,11 @@ pub fn Visitor(comptime T: type) type {
         }
 
         fn visitFloat(_: *Self, comptime Error: type, input: anytype) Error!Value {
-            comptime std.debug.assert(@typeInfo(@TypeOf(input)) == .Float);
-
-            return @floatToInt(T, value);
+            return @floatToInt(T, input);
         }
 
         fn visitInt(_: *Self, comptime Error: type, input: anytype) Error!Value {
-            comptime std.debug.assert(@typeInfo(@TypeOf(input)) == .Int);
-
-            return @intCast(T, value);
+            return @intCast(T, input);
         }
 
         fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {

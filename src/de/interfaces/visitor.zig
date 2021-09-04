@@ -1,3 +1,5 @@
+const assert = @import("std").debug.assert;
+
 pub fn Visitor(
     comptime Context: type,
     comptime V: type,
@@ -82,10 +84,14 @@ pub fn Visitor(
         }
 
         pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+            comptime assert(@typeInfo(@TypeOf(input)) == .Float or @typeInfo(@TypeOf(input)) == .ComptimeFloat);
+
             return try floatFn(self.context, Error, input);
         }
 
         pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+            comptime assert(@typeInfo(@TypeOf(input)) == .Int or @typeInfo(@TypeOf(input)) == .ComptimeInt);
+
             return try intFn(self.context, Error, input);
         }
 
