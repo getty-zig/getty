@@ -1,4 +1,5 @@
 const de = @import("../../../lib.zig").de;
+const math = @import("std").math;
 
 pub fn Visitor(comptime T: type) type {
     return struct {
@@ -41,6 +42,10 @@ pub fn Visitor(comptime T: type) type {
         }
 
         fn visitFloat(_: *Self, comptime Error: type, input: anytype) Error!Value {
+            if (math.round(input) != input or (input > math.maxInt(T) or input < math.minInt(T))) {
+                @panic("Failure during float-to-int cast");
+            }
+
             return @floatToInt(T, input);
         }
 
