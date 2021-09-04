@@ -25,7 +25,7 @@ const meta = std.meta;
 ///
 /// This function enables custom serialization for data types within Getty's
 /// data model and serialization for data types outside of Getty's data model.
-pub fn serializeWith(serializer: anytype, value: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+pub fn serializeWith(serializer: anytype, visitor: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try visitor.serialize(serializer, value);
 }
 
@@ -43,10 +43,10 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
 
     if (comptime match("std.array_list.ArrayList", @typeName(T))) {
         var visitor = ArrayListVisitor{};
-        return try serializeWith(serializer, value, visitor.visitor());
+        return try serializeWith(serializer, visitor.visitor(), value);
     } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
         var visitor = StringHashMapVisitor{};
-        return try serializeWith(serializer, value, visitor.visitor());
+        return try serializeWith(serializer, visitor.visitor(), value);
     }
 
     var visitor = switch (@typeInfo(T)) {
@@ -76,7 +76,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     };
 
-    return try serializeWith(serializer, value, visitor.visitor());
+    return try serializeWith(serializer, visitor.visitor(), value);
 }
 
 fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
