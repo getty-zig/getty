@@ -1,8 +1,11 @@
 const testing = @import("std").testing;
 
-pub const de = @import("de.zig");
+pub const de = struct {
+    pub usingnamespace @import("de.zig").interface;
+    pub usingnamespace @import("de.zig").impl;
+};
 
-pub const deserialize = de.deserialize;
+pub const deserialize = @import("de.zig").deserialize;
 
 pub const ser = struct {
     pub usingnamespace @import("ser.zig").interface;

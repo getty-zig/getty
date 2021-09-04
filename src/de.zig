@@ -1,28 +1,31 @@
-pub usingnamespace @import("de/interface.zig");
-pub usingnamespace @import("de/impl.zig");
+pub const interface = struct {
+    pub usingnamespace @import("de/interface.zig");
+};
 
-const de = @This();
+pub const impl = struct {
+    pub usingnamespace @import("de/impl.zig");
+};
 
 pub fn deserialize(comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     switch (@typeInfo(T)) {
         .Bool => {
-            var visitor = de.BoolVisitor{};
+            var visitor = impl.BoolVisitor{};
             return try deserializer.deserializeBool(visitor.visitor());
         },
         .Float, .ComptimeFloat => {
-            var visitor = de.FloatVisitor(T){};
+            var visitor = impl.FloatVisitor(T){};
             return try deserializer.deserializeFloat(visitor.visitor());
         },
         .Int, .ComptimeInt => {
-            var visitor = de.IntVisitor(T){};
+            var visitor = impl.IntVisitor(T){};
             return try deserializer.deserializeInt(visitor.visitor());
         },
         .Optional => {
-            var visitor = de.OptionalVisitor(T){};
+            var visitor = impl.OptionalVisitor(T){};
             return try deserializer.deserializeOptional(visitor.visitor());
         },
         .Void => {
-            var visitor = de.VoidVisitor{};
+            var visitor = impl.VoidVisitor{};
             return try deserializer.deserializeVoid(visitor.visitor());
         },
         else => unreachable,
