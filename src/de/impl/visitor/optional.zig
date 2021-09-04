@@ -75,7 +75,7 @@ pub fn Visitor(comptime T: type) type {
         fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
 
-            return getty.deserialize(@typeInfo(Value).Optional.child, deserializer);
+            return try getty.deserialize(@typeInfo(Value).Optional.child, deserializer);
         }
 
         fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
