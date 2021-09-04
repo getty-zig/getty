@@ -1,5 +1,5 @@
-pub usingnamespace @import("de/interface/interface.zig");
-pub usingnamespace @import("de/impl/impl.zig");
+pub usingnamespace @import("de/interface.zig");
+pub usingnamespace @import("de/impl.zig");
 
 const de = @This();
 
