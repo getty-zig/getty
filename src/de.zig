@@ -1,8 +1,8 @@
 // Interfaces
-pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
-pub const DeserializeSeed = @import("de/interfaces/seed.zig").DeserializeSeed;
-pub const SequenceAccess = @import("de/interfaces/access/sequence.zig").Access;
-pub const Visitor = @import("de/interfaces/visitor.zig").Visitor;
+pub const Deserializer = @import("de/interface/deserializer.zig").Deserializer;
+pub const DeserializeSeed = @import("de/interface/seed.zig").DeserializeSeed;
+pub const SequenceAccess = @import("de/interface/access/sequence.zig").Access;
+pub const Visitor = @import("de/interface/visitor.zig").Visitor;
 
 // Implementations
 pub const Seed = @import("de/impls/seed.zig").Seed;
