@@ -38,20 +38,20 @@ const Serializer = struct {
     const Ok = void;
     const Error = mem.Allocator.Error;
 
-    const Map = *Self;
-    const Sequence = *Self;
-    const Structure = *Self;
-    const Tuple = *Self;
+    const MapSerialize = *Self;
+    const SequenceSerialize = *Self;
+    const StructSerialize = *Self;
+    const TupleSerialize = *Self;
 
     /// Implements `getty.ser.Serializer`.
     pub usingnamespace ser.Serializer(
         *Self,
         Ok,
         Error,
-        Map,
-        Sequence,
-        Structure,
-        Tuple,
+        MapSerialize,
+        SequenceSerialize,
+        StructSerialize,
+        TupleSerialize,
         _S.serializeBool,
         _S.serializeEnum,
         _S.serializeFloat,
@@ -88,7 +88,7 @@ const Serializer = struct {
             self.idx += 1;
         }
 
-        fn serializeMap(self: *Self, length: ?usize) Error!Map {
+        fn serializeMap(self: *Self, length: ?usize) Error!MapSerialize {
             _ = length;
 
             self.buf[self.idx] = .MapStart;
@@ -102,7 +102,7 @@ const Serializer = struct {
             self.idx += 1;
         }
 
-        fn serializeSequence(self: *Self, length: ?usize) Error!Sequence {
+        fn serializeSequence(self: *Self, length: ?usize) Error!SequenceSerialize {
             _ = length;
 
             self.buf[self.idx] = .SequenceStart;
@@ -116,7 +116,7 @@ const Serializer = struct {
             self.idx += 1;
         }
 
-        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!Structure {
+        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!StructSerialize {
             _ = name;
             _ = length;
 
@@ -126,7 +126,7 @@ const Serializer = struct {
             return self;
         }
 
-        fn serializeTuple(self: *Self, length: ?usize) Error!Tuple {
+        fn serializeTuple(self: *Self, length: ?usize) Error!TupleSerialize {
             _ = length;
 
             self.buf[self.idx] = .TupleStart;
