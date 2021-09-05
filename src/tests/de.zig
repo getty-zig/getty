@@ -8,7 +8,7 @@ const testing = std.testing;
 const Token = union(enum) {
     Bool: bool,
     Enum: enum { foo, bar },
-    Float: f32,
+    Float: f64,
     Int: i64,
     //Map,
     Null,
@@ -152,58 +152,80 @@ const Deserializer = struct {
 };
 
 test "bool" {
-    {
-        var d = Deserializer.init(Token{ .Bool = true });
-        try testing.expectEqual(true, try getty.deserialize(bool, d.deserializer()));
-    }
+    const tests = .{
+        .{
+            .desc = "true",
+            .input = Token{ .Bool = true },
+            .Output = bool,
+            .output = true,
+        },
+        .{
+            .desc = "false",
+            .input = Token{ .Bool = false },
+            .Output = bool,
+            .output = false,
+        },
+    };
 
-    {
-        var d = Deserializer.init(Token{ .Bool = false });
-        try testing.expectEqual(false, try getty.deserialize(bool, d.deserializer()));
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
     }
 }
 
 test "int" {
-    {
-        var d = Deserializer.init(Token{ .Int = 42 });
-        try testing.expectEqual(@as(i64, 42), try getty.deserialize(i64, d.deserializer()));
-    }
+    const tests = .{
+        .{
+            .desc = "conversion to equal bit size",
+            .input = Token{ .Int = 1 },
+            .output = @as(i64, 1),
+        },
+        .{
+            .desc = "conversion to higher bit size",
+            .input = Token{ .Int = 1 },
+            .output = @as(i128, 1),
+        },
+        .{
+            .desc = "conversion from float",
+            .input = Token{ .Float = 1.0 },
+            .output = @as(i64, 1),
+        },
+        .{
+            .desc = "conversion to different sign",
+            .input = Token{ .Int = std.math.maxInt(i64) },
+            .Output = u64,
+            .output = @as(u64, std.math.maxInt(i64)),
+        },
+    };
 
-    {
-        var d = Deserializer.init(Token{ .Int = 42 });
-        try testing.expectEqual(@as(i128, 42), try getty.deserialize(i128, d.deserializer()));
-    }
-
-    {
-        var d = Deserializer.init(Token{ .Float = 42.0 });
-        try testing.expectEqual(@as(i64, 42), try getty.deserialize(i64, d.deserializer()));
-    }
-
-    {
-        var d = Deserializer.init(Token{ .Float = 42.0 });
-        try testing.expectEqual(@as(i128, 42.0), try getty.deserialize(i128, d.deserializer()));
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
     }
 }
 
 test "float" {
-    //{
-    //var d = Deserializer.init(Token{ .Float = 3.14 });
-    //try testing.expectEqual(@floatCast(f64, 3.14), try getty.deserialize(f64, d.deserializer()));
-    //}
+    const tests = .{
+        .{
+            .desc = "conversion to equal bit size",
+            .input = Token{ .Float = 3.14 },
+            .output = @as(f64, 3.14),
+        },
+        .{
+            .desc = "conversion to higher bit size",
+            .input = Token{ .Float = 1.0 },
+            .output = @as(f128, 1.0),
+        },
+        .{
+            .desc = "conversion from integer",
+            .input = Token{ .Int = 1 },
+            .output = @intToFloat(f64, 1),
+        },
+    };
 
-    //{
-    //var d = Deserializer.init(Token{ .Float = 3.14 });
-    //try testing.expectEqual(@floatCast(f128, 3.14), try getty.deserialize(f128, d.deserializer()));
-    //}
-
-    {
-        var d = Deserializer.init(Token{ .Int = 3 });
-        try testing.expectEqual(@intToFloat(f64, 3), try getty.deserialize(f64, d.deserializer()));
-    }
-
-    {
-        var d = Deserializer.init(Token{ .Int = 3 });
-        try testing.expectEqual(@intToFloat(f128, 3), try getty.deserialize(f128, d.deserializer()));
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
     }
 }
 
