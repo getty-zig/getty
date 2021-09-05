@@ -1,8 +1,6 @@
 const std = @import("std");
 const getty = @import("getty");
 
-const meta = std.meta;
-const trait = meta.trait;
 const testing = std.testing;
 
 const Token = union(enum) {
