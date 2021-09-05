@@ -9,8 +9,8 @@ const Token = union(enum) {
     Float: f64,
     Int: i64,
     //Map,
-    Null,
-    Some,
+    Null: ?bool,
+    Some: ?bool,
     Sequence,
     String: []const u8,
     //Struct,
@@ -81,7 +81,14 @@ const Deserializer = struct {
         fn deserializeOptional(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
                 .Null => try visitor.visitNull(Error),
-                .Some => try visitor.visitSome(self.deserializer()),
+                .Some => blk: {
+                    // we know Some is a ?bool, so simulate parsing the
+                    // optional into its child type.
+                    const value = self.value.Some.?;
+                    self.value = .{ .Bool = value };
+
+                    break :blk try visitor.visitSome(self.deserializer());
+                },
                 else => Error.Input,
             };
         }
@@ -171,6 +178,31 @@ test "bool" {
     }
 }
 
+test "float" {
+    const tests = .{
+        .{
+            .desc = "conversion to equal bit size",
+            .input = Token{ .Float = 3.14 },
+            .output = @as(f64, 3.14),
+        },
+        .{
+            .desc = "conversion to higher bit size",
+            .input = Token{ .Float = 1.0 },
+            .output = @as(f128, 1.0),
+        },
+        .{
+            .desc = "conversion from integer",
+            .input = Token{ .Int = 1 },
+            .output = @intToFloat(f64, 1),
+        },
+    };
+
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+    }
+}
+
 test "int" {
     const tests = .{
         .{
@@ -202,22 +234,17 @@ test "int" {
     }
 }
 
-test "float" {
+test "optional" {
     const tests = .{
         .{
-            .desc = "conversion to equal bit size",
-            .input = Token{ .Float = 3.14 },
-            .output = @as(f64, 3.14),
+            .desc = "null",
+            .input = Token{ .Null = null },
+            .output = @as(?bool, null),
         },
         .{
-            .desc = "conversion to higher bit size",
-            .input = Token{ .Float = 1.0 },
-            .output = @as(f128, 1.0),
-        },
-        .{
-            .desc = "conversion from integer",
-            .input = Token{ .Int = 1 },
-            .output = @intToFloat(f64, 1),
+            .desc = "some",
+            .input = Token{ .Some = true },
+            .output = @as(?bool, true),
         },
     };
 
