@@ -1,4 +1,4 @@
-pub fn SequenceSerialize(
+pub fn SeqSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -25,7 +25,7 @@ pub fn SequenceSerialize(
     };
 
     return struct {
-        pub fn sequenceSerialize(self: Context) T {
+        pub fn seqSerialize(self: Context) T {
             return .{ .context = self };
         }
     };
