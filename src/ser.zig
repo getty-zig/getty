@@ -1,10 +1,7 @@
 const std = @import("std");
 
-pub const interface = struct {
+pub const ser = struct {
     pub usingnamespace @import("ser/interface.zig");
-};
-
-pub const impl = struct {
     pub usingnamespace @import("ser/impl.zig");
 };
 
@@ -29,37 +26,37 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
     const T = @TypeOf(value);
 
     if (comptime match("std.array_list.ArrayList", @typeName(T))) {
-        var visitor = impl.ArrayListVisitor{};
+        var visitor = ser.ArrayListVisitor{};
         return try serializeWith(serializer, visitor.visitor(), value);
     } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
-        var visitor = impl.StringHashMapVisitor{};
+        var visitor = ser.StringHashMapVisitor{};
         return try serializeWith(serializer, visitor.visitor(), value);
     }
 
     var visitor = switch (@typeInfo(T)) {
-        .Array => impl.SequenceVisitor{},
-        .Bool => impl.BoolVisitor{},
-        .Enum, .EnumLiteral => impl.EnumVisitor{},
-        .ErrorSet => impl.ErrorVisitor{},
-        .Float, .ComptimeFloat => impl.FloatVisitor{},
-        .Int, .ComptimeInt => impl.IntVisitor{},
-        .Null => impl.NullVisitor{},
-        .Optional => impl.OptionalVisitor{},
+        .Array => ser.SequenceVisitor{},
+        .Bool => ser.BoolVisitor{},
+        .Enum, .EnumLiteral => ser.EnumVisitor{},
+        .ErrorSet => ser.ErrorVisitor{},
+        .Float, .ComptimeFloat => ser.FloatVisitor{},
+        .Int, .ComptimeInt => ser.IntVisitor{},
+        .Null => ser.NullVisitor{},
+        .Optional => ser.OptionalVisitor{},
         .Pointer => |info| switch (info.size) {
-            .One => impl.PointerVisitor{},
+            .One => ser.PointerVisitor{},
             .Slice => switch (comptime std.meta.trait.isZigString(T)) {
-                true => impl.StringVisitor{},
-                false => impl.SequenceVisitor{},
+                true => ser.StringVisitor{},
+                false => ser.SequenceVisitor{},
             },
             else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
         },
         .Struct => |info| switch (info.is_tuple) {
-            true => impl.TupleVisitor{},
-            false => impl.StructVisitor{},
+            true => ser.TupleVisitor{},
+            false => ser.StructVisitor{},
         },
-        .Union => impl.UnionVisitor{},
-        .Vector => impl.VectorVisitor{},
-        .Void => impl.VoidVisitor{},
+        .Union => ser.UnionVisitor{},
+        .Vector => ser.VectorVisitor{},
+        .Void => ser.VoidVisitor{},
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     };
 
