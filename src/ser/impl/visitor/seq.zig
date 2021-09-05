@@ -8,7 +8,7 @@ pub usingnamespace Visitor(
 );
 
 fn serialize(_: *SequenceVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const seq = (try serializer.serializeSequence(value.len)).seqSerialize();
+    const seq = (try serializer.serializeSeq(value.len)).seqSerialize();
     for (value) |elem| {
         try seq.serializeElement(elem);
     }

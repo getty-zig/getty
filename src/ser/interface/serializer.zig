@@ -5,20 +5,20 @@ pub fn Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime Map: type,
-    comptime Sequence: type,
-    comptime Struct: type,
-    comptime Tuple: type,
+    comptime MapSerialize: type,
+    comptime SeqAccess: type,
+    comptime StructSerialize: type,
+    comptime TupleSerialize: type,
     comptime boolFn: fn (Context, bool) E!O,
     comptime enumFn: fn (Context, anytype) E!O,
     comptime floatFn: fn (Context, anytype) E!O,
     comptime intFn: fn (Context, anytype) E!O,
-    comptime mapFn: fn (Context, ?usize) E!Map,
+    comptime mapFn: fn (Context, ?usize) E!MapSerialize,
     comptime nullFn: fn (Context) E!O,
-    comptime sequenceFn: fn (Context, ?usize) E!Sequence,
+    comptime sequenceFn: fn (Context, ?usize) E!SeqAccess,
     comptime stringFn: fn (Context, anytype) E!O,
-    comptime structFn: fn (Context, comptime []const u8, usize) E!Struct,
-    comptime tupleFn: fn (Context, ?usize) E!Tuple,
+    comptime structFn: fn (Context, comptime []const u8, usize) E!StructSerialize,
+    comptime tupleFn: fn (Context, ?usize) E!TupleSerialize,
     comptime voidFn: fn (Context) E!O,
 ) type {
     const T = struct {
@@ -65,7 +65,7 @@ pub fn Serializer(
         }
 
         /// Starts the serialization process for a map.
-        pub fn serializeMap(self: Self, length: ?usize) Error!Map {
+        pub fn serializeMap(self: Self, length: ?usize) Error!MapSerialize {
             return try mapFn(self.context, length);
         }
 
@@ -75,7 +75,7 @@ pub fn Serializer(
         }
 
         /// Starts the serialization process for a sequence.
-        pub fn serializeSequence(self: Self, length: ?usize) Error!Sequence {
+        pub fn serializeSeq(self: Self, length: ?usize) Error!SeqAccess {
             return try sequenceFn(self.context, length);
         }
 
@@ -89,12 +89,12 @@ pub fn Serializer(
         }
 
         /// Starts the serialization process for a struct.
-        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
+        pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!StructSerialize {
             return try structFn(self.context, name, length);
         }
 
         /// Starts the serialization process for a tuple.
-        pub fn serializeTuple(self: Self, length: ?usize) Error!Tuple {
+        pub fn serializeTuple(self: Self, length: ?usize) Error!TupleSerialize {
             return try tupleFn(self.context, length);
         }
 

@@ -34,7 +34,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
     }
 
     var visitor = switch (@typeInfo(T)) {
-        .Array => ser.SequenceVisitor{},
+        .Array => ser.SeqVisitor{},
         .Bool => ser.BoolVisitor{},
         .Enum, .EnumLiteral => ser.EnumVisitor{},
         .ErrorSet => ser.ErrorVisitor{},
@@ -46,7 +46,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
             .One => ser.PointerVisitor{},
             .Slice => switch (comptime std.meta.trait.isZigString(T)) {
                 true => ser.StringVisitor{},
-                false => ser.SequenceVisitor{},
+                false => ser.SeqVisitor{},
             },
             else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
         },
