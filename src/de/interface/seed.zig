@@ -1,4 +1,4 @@
-pub fn DeserializeSeed(
+pub fn Seed(
     comptime Context: type,
     comptime V: type,
     comptime deserializeFn: @TypeOf(struct {
@@ -21,7 +21,7 @@ pub fn DeserializeSeed(
     };
 
     return struct {
-        pub fn deserializeSeed(self: Context) T {
+        pub fn seed(self: Context) T {
             return .{ .context = self };
         }
     };

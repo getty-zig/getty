@@ -1,4 +1,4 @@
-const Seed = @import("../../impl.zig").Seed;
+const DefaultSeed = @import("../../impl.zig").DefaultSeed;
 
 pub fn SequenceAccess(
     comptime Context: type,
@@ -22,8 +22,8 @@ pub fn SequenceAccess(
         }
 
         pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
-            var seed = Seed(Value){};
-            const ds = seed.deserializeSeed();
+            var seed = DefaultSeed(Value){};
+            const ds = seed.seed();
 
             return (try self.nextElementSeed(ds)).?;
         }

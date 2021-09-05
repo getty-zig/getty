@@ -1,11 +1,11 @@
 const getty = @import("../../lib.zig");
 
-pub fn Seed(comptime Value: type) type {
+pub fn DefaultSeed(comptime Value: type) type {
     return struct {
         const Self = @This();
 
-        /// Implements `getty.de.DeserializeSeed`.
-        pub usingnamespace getty.de.DeserializeSeed(
+        /// Implements `getty.de.Seed`.
+        pub usingnamespace getty.de.Seed(
             *Self,
             Value,
             _DS.deserialize,
