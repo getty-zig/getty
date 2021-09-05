@@ -5,7 +5,7 @@ pub fn Serialize(
     comptime fieldFn: fn (Context, comptime []const u8, anytype) E!void,
     comptime endFn: fn (Context) E!O,
 ) type {
-    return struct {
+    const T = struct {
         const Self = @This();
 
         pub const Ok = O;
@@ -21,6 +21,12 @@ pub fn Serialize(
         /// Finish serializing a struct.
         pub fn end(self: Self) Error!Ok {
             return try endFn(self.context);
+        }
+    };
+
+    return struct {
+        pub fn structure(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

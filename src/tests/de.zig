@@ -32,11 +32,7 @@ const Deserializer = struct {
     }
 
     /// Implements `getty.de.Deserializer`.
-    pub fn deserializer(self: *Self) D {
-        return .{ .context = self };
-    }
-
-    const D = getty.de.Deserializer(
+    pub usingnamespace getty.de.Deserializer(
         *Self,
         _D.Error,
         _D.deserializeBool,
@@ -112,16 +108,12 @@ const Deserializer = struct {
             //      error is returned for having a trailing comma. If,
             //      instead, an element is encountered, then go to 2).
             var sequenceValue = struct {
-                d: D,
+                d: @typeInfo(@TypeOf(Self)).Fn.return_type.?,
 
                 const SV = @This();
 
                 /// Implements `getty.de.SequenceAccess`.
-                pub fn sequenceAccess(sv: *SV) SA {
-                    return .{ .context = sv };
-                }
-
-                const SA = getty.de.SequenceAccess(
+                pub usingnamespace getty.de.SequenceAccess(
                     *SV,
                     Error,
                     _SA.nextElementSeed,

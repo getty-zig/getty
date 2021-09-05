@@ -2,11 +2,7 @@ const Visitor = @import("../../interface.zig").Visitor;
 
 const StringVisitor = @This();
 
-pub fn visitor(self: *StringVisitor) V {
-    return .{ .context = self };
-}
-
-const V = Visitor(
+pub usingnamespace Visitor(
     *StringVisitor,
     serialize,
 );

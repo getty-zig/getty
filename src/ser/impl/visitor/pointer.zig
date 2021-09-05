@@ -3,11 +3,7 @@ const Elem = @import("std").meta.Elem;
 
 const PointerVisitor = @This();
 
-pub fn visitor(self: *PointerVisitor) V {
-    return .{ .context = self };
-}
-
-const V = getty.ser.Visitor(
+pub usingnamespace getty.ser.Visitor(
     *PointerVisitor,
     serialize,
 );

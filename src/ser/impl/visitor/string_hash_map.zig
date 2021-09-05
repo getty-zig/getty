@@ -2,11 +2,7 @@ const Visitor = @import("../../interface.zig").Visitor;
 
 const StringHashMapVisitor = @This();
 
-pub fn visitor(self: *StringHashMapVisitor) V {
-    return .{ .context = self };
-}
-
-const V = Visitor(
+pub usingnamespace Visitor(
     *StringHashMapVisitor,
     serialize,
 );

@@ -72,7 +72,7 @@ pub fn Visitor(
         }
     }.f),
 ) type {
-    return struct {
+    const T = struct {
         context: Context,
 
         const Self = @This();
@@ -122,6 +122,12 @@ pub fn Visitor(
 
         pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
             return try voidFn(self.context, Error);
+        }
+    };
+
+    return struct {
+        pub fn visitor(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

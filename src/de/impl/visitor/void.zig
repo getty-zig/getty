@@ -5,11 +5,7 @@ const Self = @This();
 const Value = void;
 
 /// Implements `getty.de.Visitor`.
-pub fn visitor(self: *Self) V {
-    return .{ .context = self };
-}
-
-const V = Visitor(
+pub usingnamespace Visitor(
     *Self,
     Value,
     visitBool,

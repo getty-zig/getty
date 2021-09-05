@@ -3,11 +3,7 @@ const fields = @import("std").meta.fields;
 
 const StructVisitor = @This();
 
-pub fn visitor(self: *StructVisitor) V {
-    return .{ .context = self };
-}
-
-const V = Visitor(
+pub usingnamespace Visitor(
     *StructVisitor,
     serialize,
 );

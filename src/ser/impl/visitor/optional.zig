@@ -2,11 +2,7 @@ const getty = @import("../../../lib.zig");
 
 const OptionalVisitor = @This();
 
-pub fn visitor(self: *OptionalVisitor) V {
-    return .{ .context = self };
-}
-
-const V = getty.ser.Visitor(
+pub usingnamespace getty.ser.Visitor(
     *OptionalVisitor,
     serialize,
 );

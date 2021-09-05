@@ -3,13 +3,19 @@ pub fn Visitor(
     comptime Context: type,
     serializeFn: Fn(Context),
 ) type {
-    return struct {
+    const T = struct {
         context: Context,
 
         const Self = @This();
 
         pub fn serialize(self: Self, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
             return try serializeFn(self.context, serializer, value);
+        }
+    };
+
+    return struct {
+        pub fn visitor(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

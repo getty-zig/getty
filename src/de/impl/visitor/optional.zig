@@ -5,11 +5,7 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub fn visitor(self: *Self) V {
-            return .{ .context = self };
-        }
-
-        const V = getty.de.Visitor(
+        pub usingnamespace getty.de.Visitor(
             *Self,
             Value,
             visitBool,

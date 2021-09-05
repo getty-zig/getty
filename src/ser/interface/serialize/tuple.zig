@@ -13,19 +13,19 @@ pub fn Serialize(
 
         context: Context,
 
-        /// Serialize a sequence element.
+        /// Serialize a tuple element.
         pub fn serializeElement(self: Self, value: anytype) Error!void {
             try elementFn(self.context, value);
         }
 
-        /// Finish serializing a sequence.
+        /// Finish serializing a tuple.
         pub fn end(self: Self) Error!Ok {
             return try endFn(self.context);
         }
     };
 
     return struct {
-        pub fn sequence(self: Context) T {
+        pub fn tuple(self: Context) T {
             return .{ .context = self };
         }
     };

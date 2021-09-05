@@ -3,11 +3,7 @@ const fields = @import("std").meta.fields;
 
 const TupleVisitor = @This();
 
-pub fn visitor(self: *TupleVisitor) V {
-    return .{ .context = self };
-}
-
-const V = Visitor(
+pub usingnamespace Visitor(
     *TupleVisitor,
     serialize,
 );

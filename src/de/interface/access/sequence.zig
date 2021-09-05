@@ -10,7 +10,7 @@ pub fn Access(
         }
     }.f),
 ) type {
-    return struct {
+    const T = struct {
         context: Context,
 
         const Self = @This();
@@ -26,6 +26,12 @@ pub fn Access(
             const ds = seed.deserializeSeed();
 
             return (try self.nextElementSeed(ds)).?;
+        }
+    };
+
+    return struct {
+        pub fn sequenceAccess(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

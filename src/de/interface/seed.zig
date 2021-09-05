@@ -8,7 +8,7 @@ pub fn DeserializeSeed(
         }
     }.f),
 ) type {
-    return struct {
+    const T = struct {
         context: Context,
 
         const Self = @This();
@@ -17,6 +17,12 @@ pub fn DeserializeSeed(
 
         pub fn deserialize(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return try deserializeFn(self.context, deserializer);
+        }
+    };
+
+    return struct {
+        pub fn deserializeSeed(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

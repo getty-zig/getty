@@ -1,4 +1,4 @@
-const @"de.Visitor" = @import("../../interface.zig").Visitor;
+const interface = @import("../../interface.zig");
 const math = @import("std").math;
 
 pub fn Visitor(comptime T: type) type {
@@ -6,11 +6,7 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub fn visitor(self: *Self) V {
-            return .{ .context = self };
-        }
-
-        const V = @"de.Visitor"(
+        pub usingnamespace interface.Visitor(
             *Self,
             Value,
             visitBool,

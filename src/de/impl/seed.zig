@@ -5,11 +5,7 @@ pub fn Seed(comptime Value: type) type {
         const Self = @This();
 
         /// Implements `getty.de.DeserializeSeed`.
-        pub fn deserializeSeed(self: *Self) DS {
-            return .{ .context = self };
-        }
-
-        const DS = getty.de.DeserializeSeed(
+        pub usingnamespace getty.de.DeserializeSeed(
             *Self,
             Value,
             _DS.deserialize,

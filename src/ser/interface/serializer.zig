@@ -21,7 +21,7 @@ pub fn Serializer(
     comptime tupleFn: fn (Context, ?usize) E!Tuple,
     comptime voidFn: fn (Context) E!O,
 ) type {
-    return struct {
+    const T = struct {
         context: Context,
 
         const Self = @This();
@@ -101,6 +101,12 @@ pub fn Serializer(
         /// Serializes a `void` value.
         pub fn serializeVoid(self: Self) Error!Ok {
             return try voidFn(self.context);
+        }
+    };
+
+    return struct {
+        pub fn serializer(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

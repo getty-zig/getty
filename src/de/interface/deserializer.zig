@@ -35,7 +35,7 @@ pub fn Deserializer(
     //comptime tupleFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
 ) type {
-    return struct {
+    const T = struct {
         context: Context,
 
         const Self = @This();
@@ -80,6 +80,12 @@ pub fn Deserializer(
 
         pub fn deserializeVoid(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try voidFn(self.context, visitor);
+        }
+    };
+
+    return struct {
+        pub fn deserializer(self: Context) T {
+            return .{ .context = self };
         }
     };
 }

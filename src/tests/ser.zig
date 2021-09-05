@@ -44,11 +44,7 @@ const Serializer = struct {
     const Tuple = *Self;
 
     /// Implements `getty.ser.Serializer`.
-    pub fn serializer(self: *Self) S {
-        return .{ .context = self };
-    }
-
-    const S = ser.Serializer(
+    pub usingnamespace ser.Serializer(
         *Self,
         Ok,
         Error,
@@ -146,11 +142,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Map`.
-    pub fn map(self: *Self) M {
-        return .{ .context = self };
-    }
-
-    const M = ser.Map(
+    pub usingnamespace ser.Map(
         *Self,
         Ok,
         Error,
@@ -187,11 +179,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Sequence`.
-    pub fn sequence(self: *Self) SE {
-        return .{ .context = self };
-    }
-
-    const SE = ser.Sequence(
+    pub usingnamespace ser.Sequence(
         *Self,
         Ok,
         Error,
@@ -214,11 +202,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Structure`.
-    pub fn structure(self: *Self) ST {
-        return .{ .context = self };
-    }
-
-    const ST = ser.Structure(
+    pub usingnamespace ser.Structure(
         *Self,
         Ok,
         Error,
@@ -242,11 +226,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Tuple`.
-    pub fn tuple(self: *Self) T {
-        return .{ .context = self };
-    }
-
-    const T = ser.Tuple(
+    pub usingnamespace ser.Tuple(
         *Self,
         Ok,
         Error,
