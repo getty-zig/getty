@@ -1,6 +1,6 @@
 const Seed = @import("../../impl.zig").Seed;
 
-pub fn Access(
+pub fn SeqAccess(
     comptime Context: type,
     comptime E: type,
     comptime nextElementSeedFn: @TypeOf(struct {
@@ -30,7 +30,7 @@ pub fn Access(
     };
 
     return struct {
-        pub fn sequenceAccess(self: Context) T {
+        pub fn seqAccess(self: Context) T {
             return .{ .context = self };
         }
     };

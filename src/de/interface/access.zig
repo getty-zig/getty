@@ -1,1 +1,1 @@
-pub const SequenceAccess = @import("access/sequence.zig").Access;
+pub usingnamespace @import("access/seq.zig");

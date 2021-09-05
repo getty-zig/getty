@@ -112,8 +112,8 @@ const Deserializer = struct {
 
                 const SV = @This();
 
-                /// Implements `getty.de.SequenceAccess`.
-                pub usingnamespace getty.de.SequenceAccess(
+                /// Implements `getty.de.SeqAccess`.
+                pub usingnamespace getty.de.SeqAccess(
                     *SV,
                     Error,
                     _SA.nextElementSeed,
@@ -130,7 +130,7 @@ const Deserializer = struct {
                     }
                 };
             }{ .d = self.deserializer() };
-            const sa = sequenceValue.sequenceAccess();
+            const sa = sequenceValue.seqAccess();
 
             return try visitor.visitSequence(sa);
         }

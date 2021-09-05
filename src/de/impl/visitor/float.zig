@@ -60,7 +60,7 @@ pub fn Visitor(comptime T: type) type {
             @panic("Unsupported");
         }
 
-        fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+        fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             _ = self;
 
             @panic("Unsupported");
