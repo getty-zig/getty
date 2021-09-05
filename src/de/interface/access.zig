@@ -1,1 +1,1 @@
-pub usingnamespace @import("access/seq.zig");
+pub usingnamespace @import("access/sequence.zig");

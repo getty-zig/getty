@@ -58,7 +58,7 @@ const Serializer = struct {
         _S.serializeInt,
         _S.serializeMap,
         _S.serializeNull,
-        _S.serializeSeq,
+        _S.serializeSequence,
         _S.serializeString,
         _S.serializeStruct,
         _S.serializeTuple,
@@ -102,7 +102,7 @@ const Serializer = struct {
             self.idx += 1;
         }
 
-        fn serializeSeq(self: *Self, length: ?usize) Error!Sequence {
+        fn serializeSequence(self: *Self, length: ?usize) Error!Sequence {
             _ = length;
 
             self.buf[self.idx] = .SequenceStart;
@@ -178,8 +178,8 @@ const Serializer = struct {
         }
     };
 
-    /// Implements `getty.ser.SeqSerialize`.
-    pub usingnamespace ser.SeqSerialize(
+    /// Implements `getty.ser.SequenceSerialize`.
+    pub usingnamespace ser.SequenceSerialize(
         *Self,
         Ok,
         Error,

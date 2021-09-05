@@ -103,8 +103,8 @@ pub fn Visitor(
             return try nullFn(self.context, Error);
         }
 
-        pub fn visitSequence(self: Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
-            return try sequenceFn(self.context, seqAccess);
+        pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            return try sequenceFn(self.context, sequenceAccess);
         }
 
         // TODO: what is the point of visitSome?
