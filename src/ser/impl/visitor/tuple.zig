@@ -11,7 +11,7 @@ pub usingnamespace Visitor(
 fn serialize(_: *TupleVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
-    const tuple = (try serializer.serializeTuple(fields(T).len)).tuple();
+    const tuple = (try serializer.serializeTuple(fields(T).len)).tupleSerialize();
     inline for (@typeInfo(T).Struct.fields) |field| {
         try tuple.serializeElement(@field(value, field.name));
     }

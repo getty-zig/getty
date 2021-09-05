@@ -1,4 +1,4 @@
-pub fn Serialize(
+pub fn MapSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -37,7 +37,7 @@ pub fn Serialize(
     };
 
     return struct {
-        pub fn map(self: Context) T {
+        pub fn mapSerialize(self: Context) T {
             return .{ .context = self };
         }
     };

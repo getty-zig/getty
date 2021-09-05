@@ -8,7 +8,7 @@ pub usingnamespace Visitor(
 );
 
 fn serialize(_: *StringHashMapVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const st = (try serializer.serializeMap(value.count())).map();
+    const st = (try serializer.serializeMap(value.count())).mapSerialize();
     {
         var iterator = value.iterator();
         while (iterator.next()) |entry| {

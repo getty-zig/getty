@@ -142,7 +142,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Map`.
-    pub usingnamespace ser.Map(
+    pub usingnamespace ser.MapSerialize(
         *Self,
         Ok,
         Error,
@@ -179,7 +179,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Sequence`.
-    pub usingnamespace ser.Sequence(
+    pub usingnamespace ser.SequenceSerialize(
         *Self,
         Ok,
         Error,
@@ -202,7 +202,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Structure`.
-    pub usingnamespace ser.Structure(
+    pub usingnamespace ser.StructSerialize(
         *Self,
         Ok,
         Error,
@@ -226,7 +226,7 @@ const Serializer = struct {
     };
 
     /// Implements `getty.ser.Tuple`.
-    pub usingnamespace ser.Tuple(
+    pub usingnamespace ser.TupleSerialize(
         *Self,
         Ok,
         Error,

@@ -1,4 +1,4 @@
-pub fn Serialize(
+pub fn TupleSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -25,7 +25,7 @@ pub fn Serialize(
     };
 
     return struct {
-        pub fn tuple(self: Context) T {
+        pub fn tupleSerialize(self: Context) T {
             return .{ .context = self };
         }
     };
