@@ -1,3 +1,4 @@
+pub const ArrayVisitor = @import("visitor/array.zig").Visitor;
 pub const BoolVisitor = @import("visitor/bool.zig");
 pub const FloatVisitor = @import("visitor/float.zig").Visitor;
 pub const IntVisitor = @import("visitor/int.zig").Visitor;

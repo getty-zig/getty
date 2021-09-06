@@ -11,7 +11,7 @@ const Token = union(enum) {
     //Map,
     Null: ?bool,
     Some: ?bool,
-    Sequence,
+    Sequence: [2]bool,
     String: []const u8,
     //Struct,
     Void: void,
@@ -98,44 +98,57 @@ const Deserializer = struct {
                 return Error.Input;
             }
 
-            // Example:
-            //
-            // For the sequence [1, 2, 3], `nextElementSeed` would do the following:
-            //
-            //   1. If ']' is encountered, `null` is returned to
-            //      indicate the end of the sequence.
-            //
-            //   2. If an element is encountered, then it is
-            //      deserialized and the deserialized value is returned.
-            //
-            //   3. If ',' is encountered, the comma and any subsequent
-            //      whitespace is eaten. If ']' is encountered, an
-            //      error is returned for having a trailing comma. If,
-            //      instead, an element is encountered, then go to 2).
             var sequenceValue = struct {
-                d: @typeInfo(@TypeOf(Self)).Fn.return_type.?,
+                d: @typeInfo(@TypeOf(Self.deserializer)).Fn.return_type.?,
+                i: usize = 0,
 
                 const SV = @This();
 
-                /// Implements `getty.de.SeqAccess`.
-                pub usingnamespace getty.de.SeqAccess(
+                /// Implements `getty.de.SequenceAccess`.
+                pub usingnamespace getty.de.SequenceAccess(
                     *SV,
                     Error,
                     _SA.nextElementSeed,
                 );
 
                 const _SA = struct {
+                    /// Sequence accesses specify how to access *and* deserialize
+                    /// elements of a sequence.
+                    ///
+                    /// In this case, since we know every sequence is a
+                    /// [2]bool, we just do an index check and then deserialize
+                    /// the current bool using a new deserializer. We could
+                    /// have also simply called `deserializeBool` directly
+                    /// instead of creating a new deserializer if the seed
+                    /// doesn't need to be used.
+                    ///
+                    /// For a deserializer that works with JSON or some other
+                    /// string data format, instead of incrementing an index
+                    /// like we do here, wed'd simply parse up until the next
+                    /// character before we return from the function. For
+                    /// example:
+                    ///
+                    ///   1. If ']' is encountered, `null` is returned to
+                    ///      indicate the end of the sequence.
+                    ///
+                    ///   2. If an element is encountered, then it is
+                    ///      deserialized and the deserialized value is returned.
+                    ///
+                    ///   3. If ',' is encountered, the comma and any subsequent
+                    ///      whitespace is eaten. If ']' is encountered, an
+                    ///      error is returned for having a trailing comma. If,
+                    ///      instead, an element is encountered, then go to 2).
                     fn nextElementSeed(sv: *SV, seed: anytype) !?@TypeOf(seed).Value {
-                        sv.d.context.value = .Bool;
+                        if (sv.i == sv.d.context.value.Sequence.len) return null;
+                        defer sv.i += 1;
 
-                        // Immediately deserialize because we know the
-                        // token is `Token.Sequence` at this point, so
-                        // there's no parsing to be done.
-                        return try seed.deserialize(sv.d);
+                        var deserializer = Self.init(Token{ .Bool = sv.d.context.value.Sequence[sv.i] });
+                        const d = deserializer.deserializer();
+                        return try seed.deserialize(d);
                     }
                 };
             }{ .d = self.deserializer() };
-            const sa = sequenceValue.seqAccess();
+            const sa = sequenceValue.sequenceAccess();
 
             return try visitor.visitSequence(sa);
         }
@@ -155,6 +168,28 @@ const Deserializer = struct {
         }
     };
 };
+
+test "array" {
+    const tests = .{
+        .{
+            .desc = "non-empty",
+            .input = Token{ .Sequence = .{ true, true } },
+            .Output = [2]bool,
+            .output = [2]bool{ true, true },
+        },
+        .{
+            .desc = "non-empty",
+            .input = Token{ .Sequence = .{ false, false } },
+            .Output = [2]bool,
+            .output = [2]bool{ false, false },
+        },
+    };
+
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+    }
+}
 
 test "bool" {
     const tests = .{

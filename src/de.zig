@@ -5,6 +5,10 @@ pub const de = struct {
 
 pub fn deserialize(comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     switch (@typeInfo(T)) {
+        .Array => {
+            var visitor = de.ArrayVisitor(T){};
+            return try deserializer.deserializeSequence(visitor.visitor());
+        },
         .Bool => {
             var visitor = de.BoolVisitor{};
             return try deserializer.deserializeBool(visitor.visitor());
