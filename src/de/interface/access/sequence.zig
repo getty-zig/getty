@@ -25,7 +25,7 @@ pub fn SequenceAccess(
             var seed = DefaultSeed(Value){};
             const ds = seed.seed();
 
-            return (try self.nextElementSeed(ds)).?;
+            return (try self.nextElementSeed(ds)) orelse null;
         }
     };
 
