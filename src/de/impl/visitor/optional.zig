@@ -1,5 +1,7 @@
 const getty = @import("../../../lib.zig");
 
+const Child = @import("std").meta.Child;
+
 pub fn Visitor(comptime T: type) type {
     return struct {
         const Self = @This();
@@ -71,7 +73,7 @@ pub fn Visitor(comptime T: type) type {
         fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
 
-            return try getty.deserialize(@typeInfo(Value).Optional.child, deserializer);
+            return try getty.deserialize(Child(T), deserializer);
         }
 
         fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
