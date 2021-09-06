@@ -68,7 +68,7 @@ pub fn Visitor(comptime Value: type) type {
             var arr: Value = undefined;
 
             for (arr) |*v| {
-                while (try sequenceAccess.nextElement(std.meta.Child(@TypeOf(v)))) |elem| {
+                if (try sequenceAccess.nextElement(std.meta.Child(@TypeOf(v)))) |elem| {
                     v.* = elem;
                 }
             }
