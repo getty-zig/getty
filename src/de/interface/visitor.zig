@@ -110,6 +110,9 @@ pub fn Visitor(
         }
 
         pub fn visitSlice(self: Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {
+            comptime assert(@typeInfo(@TypeOf(input)) == .Pointer);
+            comptime assert(@typeInfo(@TypeOf(input)).Pointer.size == .Slice);
+
             return try sliceFn(self.context, allocator, Error, input);
         }
 
