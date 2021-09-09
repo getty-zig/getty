@@ -33,6 +33,13 @@ pub fn deserialize(
             var visitor = de.OptionalVisitor(T){};
             return try deserializer.deserializeOptional(allocator, visitor.visitor());
         },
+        .Pointer => |info| switch (info.size) {
+            .Slice => {
+                var visitor = de.SliceVisitor(T){};
+                return try deserializer.deserializeSlice(allocator.?, visitor.visitor());
+            },
+            else => unreachable,
+        },
         .Void => {
             var visitor = de.VoidVisitor{};
             return try deserializer.deserializeVoid(visitor.visitor());

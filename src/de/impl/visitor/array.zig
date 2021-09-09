@@ -17,6 +17,7 @@ pub fn Visitor(comptime Value: type) type {
             visitMap,
             visitNull,
             visitSequence,
+            visitSlice,
             visitSome,
             visitVoid,
         );
@@ -73,6 +74,14 @@ pub fn Visitor(comptime Value: type) type {
             }
 
             return arr;
+        }
+
+        fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
+            _ = self;
+            _ = allocator;
+            _ = input;
+
+            @panic("Unsupported");
         }
 
         fn visitSome(self: *Self, allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {

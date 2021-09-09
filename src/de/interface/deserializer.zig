@@ -44,6 +44,13 @@ pub fn Deserializer(
             unreachable;
         }
     }.f),
+    comptime sliceFn: @TypeOf(struct {
+        fn f(c: Context, a: *Allocator, v: anytype) E!@TypeOf(v).Value {
+            _ = c;
+            _ = a;
+            unreachable;
+        }
+    }.f),
     comptime structFn: Fn(Context, E),
     //comptime tupleFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
@@ -81,6 +88,10 @@ pub fn Deserializer(
 
         pub fn deserializeSequence(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
             return try sequenceFn(self.context, allocator, visitor);
+        }
+
+        pub fn deserializeSlice(self: Self, allocator: *Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try sliceFn(self.context, allocator, visitor);
         }
 
         pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

@@ -52,6 +52,14 @@ pub fn Visitor(
             unreachable;
         }
     }.f),
+    comptime sliceFn: @TypeOf(struct {
+        fn f(c: Context, a: *Allocator, comptime E: type, input: anytype) E!V {
+            _ = c;
+            _ = a;
+            _ = input;
+            unreachable;
+        }
+    }.f),
     comptime someFn: @TypeOf(struct {
         fn f(c: Context, a: ?*Allocator, d: anytype) @TypeOf(d).Error!V {
             _ = c;
@@ -99,6 +107,10 @@ pub fn Visitor(
 
         pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
             return try sequenceFn(self.context, sequenceAccess);
+        }
+
+        pub fn visitSlice(self: Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {
+            return try sliceFn(self.context, allocator, Error, input);
         }
 
         // TODO: what is the point of visitSome?

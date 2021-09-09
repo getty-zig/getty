@@ -1,6 +1,5 @@
+const std = @import("std");
 const interface = @import("../../interface.zig");
-
-const Allocator = @import("std").mem.Allocator;
 
 pub fn Visitor(comptime T: type) type {
     return struct {
@@ -40,14 +39,16 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
+            _ = input;
 
-            return @floatCast(T, input);
+            @panic("Unsupported");
         }
 
         fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
+            _ = input;
 
-            return @intToFloat(T, input);
+            @panic("Unsupported");
         }
 
         fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
@@ -68,15 +69,15 @@ pub fn Visitor(comptime T: type) type {
             @panic("Unsupported");
         }
 
-        fn visitSlice(self: *Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {
+        fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
             _ = self;
             _ = allocator;
             _ = input;
 
-            @panic("Unsupported");
+            return allocator.dupe(std.meta.Child(Value), input) catch unreachable;
         }
 
-        fn visitSome(self: *Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn visitSome(self: *Self, allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
             _ = allocator;
 

@@ -11,6 +11,7 @@ const Token = union(enum) {
     Null: ?bool,
     Some: ?bool,
     Sequence: [2]bool,
+    Slice: []const u8,
     Void: void,
 };
 
@@ -35,6 +36,7 @@ const Deserializer = struct {
         undefined, // map
         _D.deserializeOptional,
         _D.deserializeSequence,
+        _D.deserializeSlice,
         undefined, // struct
         _D.deserializeVoid,
     );
@@ -83,6 +85,13 @@ const Deserializer = struct {
 
                     break :blk try visitor.visitSome(allocator, self.deserializer());
                 },
+                else => Error.Input,
+            };
+        }
+
+        fn deserializeSlice(self: *Self, allocator: *std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Slice => |value| try visitor.visitSlice(allocator, Error, value),
                 else => Error.Input,
             };
         }
@@ -233,12 +242,11 @@ test "int" {
             .input = Token{ .Int = 1 },
             .output = @as(i64, 1),
         },
-        // FIXME: Apparently i128 is too big for the compiler now?
-        //.{
-        //.desc = "conversion to higher bit size",
-        //.input = Token{ .Int = 1 },
-        //.output = @as(i128, 1),
-        //},
+        .{
+            .desc = "conversion to higher bit size",
+            .input = Token{ .Int = 1 },
+            .output = @as(i128, 1),
+        },
         .{
             .desc = "conversion from float",
             .input = Token{ .Float = 1.0 },
@@ -255,6 +263,24 @@ test "int" {
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
         try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
+    }
+}
+
+test "slice" {
+    const tests = .{
+        .{
+            .desc = "[]const u8",
+            .input = Token{ .Slice = "Hello, World" },
+            .output = @as([]const u8, "Hello, World"),
+        },
+    };
+
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        const result = try getty.deserialize(std.testing.allocator, @TypeOf(t.output), d.deserializer());
+        defer std.testing.allocator.free(result);
+
+        try testing.expect(std.mem.eql(u8, t.output, result));
     }
 }
 

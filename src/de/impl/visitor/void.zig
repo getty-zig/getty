@@ -16,6 +16,7 @@ pub usingnamespace Visitor(
     visitMap,
     visitNull,
     visitSequence,
+    visitSlice,
     visitSome,
     visitVoid,
 );
@@ -62,6 +63,14 @@ fn visitNull(self: *Self, comptime Error: type) Error!Value {
 
 fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
     _ = self;
+
+    @panic("Unsupported");
+}
+
+fn visitSlice(self: *Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {
+    _ = self;
+    _ = allocator;
+    _ = input;
 
     @panic("Unsupported");
 }
