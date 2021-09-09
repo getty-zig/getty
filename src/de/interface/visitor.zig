@@ -5,71 +5,71 @@ pub fn Visitor(
     comptime Context: type,
     comptime V: type,
     comptime boolFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type, v: bool) Error!V {
-            _ = c;
-            _ = v;
+        fn f(self: Context, comptime Error: type, input: bool) Error!V {
+            _ = self;
+            _ = input;
             unreachable;
         }
     }.f),
     comptime enumFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
-            _ = c;
-            _ = v;
+        fn f(self: Context, comptime Error: type, input: anytype) Error!V {
+            _ = self;
+            _ = input;
             unreachable;
         }
     }.f),
     comptime floatFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
-            _ = c;
-            _ = v;
+        fn f(self: Context, comptime Error: type, input: anytype) Error!V {
+            _ = self;
+            _ = input;
             unreachable;
         }
     }.f),
     comptime intFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
-            _ = c;
-            _ = v;
+        fn f(self: Context, comptime Error: type, input: anytype) Error!V {
+            _ = self;
+            _ = input;
             unreachable;
         }
     }.f),
     comptime mapFn: @TypeOf(struct {
-        fn f(c: Context, m: anytype) @TypeOf(m).Error!V {
-            _ = c;
-            _ = m;
+        fn f(self: Context, mapAccess: anytype) @TypeOf(mapAccess).Error!V {
+            _ = self;
+            _ = mapAccess;
             unreachable;
         }
     }.f),
     comptime nullFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type) Error!V {
-            _ = c;
+        fn f(self: Context, comptime Error: type) Error!V {
+            _ = self;
             unreachable;
         }
     }.f),
     comptime sequenceFn: @TypeOf(struct {
-        fn f(c: Context, s: anytype) @TypeOf(s).Error!V {
-            _ = c;
-            _ = s;
+        fn f(self: Context, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!V {
+            _ = self;
+            _ = sequenceAccess;
             unreachable;
         }
     }.f),
     comptime sliceFn: @TypeOf(struct {
-        fn f(c: Context, a: *Allocator, comptime E: type, input: anytype) E!V {
-            _ = c;
-            _ = a;
+        fn f(self: Context, allocator: *Allocator, comptime E: type, input: anytype) E!V {
+            _ = self;
+            _ = allocator;
             _ = input;
             unreachable;
         }
     }.f),
     comptime someFn: @TypeOf(struct {
-        fn f(c: Context, a: ?*Allocator, d: anytype) @TypeOf(d).Error!V {
-            _ = c;
-            _ = a;
+        fn f(self: Context, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
+            _ = self;
+            _ = allocator;
             unreachable;
         }
     }.f),
     comptime voidFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type) Error!V {
-            _ = c;
+        fn f(self: Context, comptime Error: type) Error!V {
+            _ = self;
             unreachable;
         }
     }.f),
