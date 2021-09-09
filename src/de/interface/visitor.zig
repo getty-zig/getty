@@ -58,13 +58,6 @@ pub fn Visitor(
             unreachable;
         }
     }.f),
-    comptime stringFn: @TypeOf(struct {
-        fn f(c: Context, comptime Error: type, v: anytype) Error!V {
-            _ = c;
-            _ = v;
-            unreachable;
-        }
-    }.f),
     comptime voidFn: @TypeOf(struct {
         fn f(c: Context, comptime Error: type) Error!V {
             _ = c;
@@ -110,10 +103,6 @@ pub fn Visitor(
         // TODO: what is the point of visitSome?
         pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return try someFn(self.context, deserializer);
-        }
-
-        pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-            return try stringFn(self.context, Error, input);
         }
 
         pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {

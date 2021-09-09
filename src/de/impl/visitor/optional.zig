@@ -18,7 +18,6 @@ pub fn Visitor(comptime T: type) type {
             visitNull,
             visitSequence,
             visitSome,
-            visitString,
             visitVoid,
         );
 
@@ -74,13 +73,6 @@ pub fn Visitor(comptime T: type) type {
             _ = self;
 
             return try getty.deserialize(Child(T), deserializer);
-        }
-
-        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            @panic("Unsupported");
         }
 
         fn visitVoid(self: *Self, comptime Error: type) Error!Value {

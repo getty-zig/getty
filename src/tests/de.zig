@@ -8,12 +8,9 @@ const Token = union(enum) {
     Enum: enum { foo, bar },
     Float: f64,
     Int: i64,
-    //Map,
     Null: ?bool,
     Some: ?bool,
     Sequence: [2]bool,
-    String: []const u8,
-    //Struct,
     Void: void,
 };
 
@@ -22,8 +19,6 @@ const Deserializer = struct {
     value: Token,
 
     const Self = @This();
-
-    const stringValue = "Foobar";
 
     pub fn init(token: Token) Self {
         return .{ .value = token };
@@ -40,7 +35,6 @@ const Deserializer = struct {
         undefined, // map
         _D.deserializeOptional,
         _D.deserializeSequence,
-        _D.deserializeString,
         undefined, // struct
         _D.deserializeVoid,
     );
@@ -153,13 +147,6 @@ const Deserializer = struct {
             return try visitor.visitSequence(sa);
         }
 
-        fn deserializeString(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
-            return switch (self.value) {
-                .String => try visitor.visitString(Error, stringValue),
-                else => Error.Input,
-            };
-        }
-
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
                 .Void => try visitor.visitVoid(Error),
@@ -245,11 +232,12 @@ test "int" {
             .input = Token{ .Int = 1 },
             .output = @as(i64, 1),
         },
-        .{
-            .desc = "conversion to higher bit size",
-            .input = Token{ .Int = 1 },
-            .output = @as(i128, 1),
-        },
+        // FIXME: Apparently i128 is too big for the compiler now?
+        //.{
+        //.desc = "conversion to higher bit size",
+        //.input = Token{ .Int = 1 },
+        //.output = @as(i128, 1),
+        //},
         .{
             .desc = "conversion from float",
             .input = Token{ .Float = 1.0 },

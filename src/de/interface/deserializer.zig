@@ -30,7 +30,6 @@ pub fn Deserializer(
     comptime mapFn: Fn(Context, E),
     comptime optionalFn: Fn(Context, E),
     comptime sequenceFn: Fn(Context, E),
-    comptime stringFn: Fn(Context, E),
     comptime structFn: Fn(Context, E),
     //comptime tupleFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
@@ -68,10 +67,6 @@ pub fn Deserializer(
 
         pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
             return try sequenceFn(self.context, visitor);
-        }
-
-        pub fn deserializeString(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try stringFn(self.context, visitor);
         }
 
         pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

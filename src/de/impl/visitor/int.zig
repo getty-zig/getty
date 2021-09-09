@@ -17,7 +17,6 @@ pub fn Visitor(comptime T: type) type {
             visitNull,
             visitSequence,
             visitSome,
-            visitString,
             visitVoid,
         );
 
@@ -69,13 +68,6 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
-
-            @panic("Unsupported");
-        }
-
-        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
 
             @panic("Unsupported");
         }
