@@ -113,7 +113,6 @@ pub fn Visitor(
             return try sliceFn(self.context, allocator, Error, input);
         }
 
-        // TODO: what is the point of visitSome?
         pub fn visitSome(self: Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return try someFn(self.context, allocator, deserializer);
         }
