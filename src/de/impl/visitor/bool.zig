@@ -1,3 +1,4 @@
+const Allocator = @import("std").mem.Allocator;
 const Visitor = @import("../../interface.zig").Visitor;
 
 const Self = @This();
@@ -64,8 +65,9 @@ fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value
     @panic("Unsupported");
 }
 
-fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+fn visitSome(self: *Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
     _ = self;
+    _ = allocator;
 
     @panic("Unsupported");
 }

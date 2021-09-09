@@ -75,8 +75,9 @@ pub fn Visitor(comptime Value: type) type {
             return arr;
         }
 
-        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn visitSome(self: *Self, allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
+            _ = allocator;
 
             @panic("Unsupported");
         }

@@ -1,3 +1,4 @@
+const Allocator = @import("std").mem.Allocator;
 const assert = @import("std").debug.assert;
 
 pub fn Visitor(
@@ -52,9 +53,9 @@ pub fn Visitor(
         }
     }.f),
     comptime someFn: @TypeOf(struct {
-        fn f(c: Context, d: anytype) @TypeOf(d).Error!V {
+        fn f(c: Context, a: ?*Allocator, d: anytype) @TypeOf(d).Error!V {
             _ = c;
-            _ = d;
+            _ = a;
             unreachable;
         }
     }.f),
@@ -101,8 +102,8 @@ pub fn Visitor(
         }
 
         // TODO: what is the point of visitSome?
-        pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try someFn(self.context, deserializer);
+        pub fn visitSome(self: Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            return try someFn(self.context, allocator, deserializer);
         }
 
         pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {

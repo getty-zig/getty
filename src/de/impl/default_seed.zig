@@ -1,5 +1,7 @@
 const getty = @import("../../lib.zig");
 
+const Allocator = @import("std").mem.Allocator;
+
 pub fn DefaultSeed(comptime Value: type) type {
     return struct {
         const Self = @This();
@@ -12,10 +14,10 @@ pub fn DefaultSeed(comptime Value: type) type {
         );
 
         const _DS = struct {
-            fn deserialize(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            fn deserialize(self: *Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 _ = self;
 
-                return try getty.deserialize(Value, deserializer);
+                return try getty.deserialize(allocator, Value, deserializer);
             }
         };
     };

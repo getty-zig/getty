@@ -1,3 +1,5 @@
+const Allocator = @import("std").mem.Allocator;
+
 /// A data format that can deserialize any data type supported by Getty.
 ///
 /// This interface is generic over the following:
@@ -28,8 +30,20 @@ pub fn Deserializer(
     //comptime identifierFn: Fn(Context, E),
     comptime intFn: Fn(Context, E),
     comptime mapFn: Fn(Context, E),
-    comptime optionalFn: Fn(Context, E),
-    comptime sequenceFn: Fn(Context, E),
+    comptime optionalFn: @TypeOf(struct {
+        fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
+            _ = c;
+            _ = a;
+            unreachable;
+        }
+    }.f),
+    comptime sequenceFn: @TypeOf(struct {
+        fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
+            _ = c;
+            _ = a;
+            unreachable;
+        }
+    }.f),
     comptime structFn: Fn(Context, E),
     //comptime tupleFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
@@ -61,12 +75,12 @@ pub fn Deserializer(
             return try mapFn(self.context, visitor);
         }
 
-        pub fn deserializeOptional(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try optionalFn(self.context, visitor);
+        pub fn deserializeOptional(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try optionalFn(self.context, allocator, visitor);
         }
 
-        pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try sequenceFn(self.context, visitor);
+        pub fn deserializeSequence(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try sequenceFn(self.context, allocator, visitor);
         }
 
         pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

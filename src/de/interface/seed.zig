@@ -1,9 +1,12 @@
+const Allocator = @import("std").mem.Allocator;
+
 pub fn Seed(
     comptime Context: type,
     comptime V: type,
     comptime deserializeFn: @TypeOf(struct {
-        fn f(c: Context, d: anytype) @TypeOf(d).Error!V {
+        fn f(c: Context, a: ?*Allocator, d: anytype) @TypeOf(d).Error!V {
             _ = c;
+            _ = a;
             unreachable;
         }
     }.f),
@@ -15,8 +18,8 @@ pub fn Seed(
 
         pub const Value = V;
 
-        pub fn deserialize(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try deserializeFn(self.context, deserializer);
+        pub fn deserialize(self: Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            return try deserializeFn(self.context, allocator, deserializer);
         }
     };
 

@@ -72,7 +72,7 @@ const Deserializer = struct {
             };
         }
 
-        fn deserializeOptional(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeOptional(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
                 .Null => try visitor.visitNull(Error),
                 .Some => blk: {
@@ -81,19 +81,20 @@ const Deserializer = struct {
                     const value = self.value.Some.?;
                     self.value = .{ .Bool = value };
 
-                    break :blk try visitor.visitSome(self.deserializer());
+                    break :blk try visitor.visitSome(allocator, self.deserializer());
                 },
                 else => Error.Input,
             };
         }
 
-        fn deserializeSequence(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeSequence(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
             if (self.value != .Sequence) {
                 return Error.Input;
             }
 
             var sequenceValue = struct {
-                d: @typeInfo(@TypeOf(Self.deserializer)).Fn.return_type.?,
+                allocator: ?*std.mem.Allocator,
+                seq: [2]bool,
                 i: usize = 0,
 
                 const SV = @This();
@@ -133,15 +134,15 @@ const Deserializer = struct {
                     ///      error is returned for having a trailing comma. If,
                     ///      instead, an element is encountered, then go to 2).
                     fn nextElementSeed(sv: *SV, seed: anytype) !?@TypeOf(seed).Value {
-                        if (sv.i == sv.d.context.value.Sequence.len) return null;
+                        if (sv.i == sv.seq.len) return null;
                         defer sv.i += 1;
 
-                        var deserializer = Self.init(Token{ .Bool = sv.d.context.value.Sequence[sv.i] });
+                        var deserializer = Self.init(Token{ .Bool = sv.seq[sv.i] });
                         const d = deserializer.deserializer();
-                        return try seed.deserialize(d);
+                        return try seed.deserialize(sv.allocator, d);
                     }
                 };
-            }{ .d = self.deserializer() };
+            }{ .allocator = allocator, .seq = self.value.Sequence };
             const sa = sequenceValue.sequenceAccess();
 
             return try visitor.visitSequence(sa);
@@ -174,7 +175,7 @@ test "array" {
 
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
-        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+        try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
     }
 }
 
@@ -196,7 +197,7 @@ test "bool" {
 
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
-        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+        try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
     }
 }
 
@@ -221,7 +222,7 @@ test "float" {
 
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
-        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+        try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
     }
 }
 
@@ -253,7 +254,7 @@ test "int" {
 
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
-        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+        try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
     }
 }
 
@@ -273,13 +274,13 @@ test "optional" {
 
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
-        try testing.expectEqual(t.output, try getty.deserialize(@TypeOf(t.output), d.deserializer()));
+        try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
     }
 }
 
 test "void" {
     var d = Deserializer.init(Token{ .Void = {} });
-    try testing.expectEqual({}, try getty.deserialize(void, d.deserializer()));
+    try testing.expectEqual({}, try getty.deserialize(null, void, d.deserializer()));
 }
 
 test {
