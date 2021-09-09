@@ -151,10 +151,12 @@ const Deserializer = struct {
                         return try seed.deserialize(sv.allocator, d);
                     }
                 };
-            }{ .allocator = allocator, .seq = self.value.Sequence };
-            const sa = sequenceValue.sequenceAccess();
+            }{
+                .allocator = allocator,
+                .seq = self.value.Sequence,
+            };
 
-            return try visitor.visitSequence(sa);
+            return try visitor.visitSequence(sequenceValue.sequenceAccess());
         }
 
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
