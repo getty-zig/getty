@@ -40,6 +40,10 @@ pub fn deserialize(
             },
             else => unreachable,
         },
+        .Struct => {
+            var visitor = de.StructVisitor(T){};
+            return try deserializer.deserializeStruct(visitor.visitor());
+        },
         .Void => {
             var visitor = de.VoidVisitor{};
             return try deserializer.deserializeVoid(visitor.visitor());

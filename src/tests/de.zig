@@ -12,6 +12,7 @@ const Token = union(enum) {
     Some: ?bool,
     Sequence: [2]bool,
     Slice: []const u8,
+    Struct: struct { x: i64, y: i64 },
     Void: void,
 };
 
@@ -33,11 +34,13 @@ const Deserializer = struct {
         _D.deserializeEnum,
         _D.deserializeFloat,
         _D.deserializeInt,
-        undefined, // map
+        undefined,
+        //_D.deserializeMap,
         _D.deserializeOptional,
         _D.deserializeSequence,
         _D.deserializeSlice,
-        undefined, // struct
+        undefined,
+        //_D.deserializeStruct,
         _D.deserializeVoid,
     );
 
@@ -159,11 +162,47 @@ const Deserializer = struct {
             return try visitor.visitSequence(sequenceValue.sequenceAccess());
         }
 
+        //fn deserializeMap(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+        //_ = self;
+
+        //var access = struct {
+        //i: i64 = 0,
+
+        //pub usingnamespace getty.de.MapAccess(
+        //*@This(),
+        //Error,
+        //nextKeySeed,
+        //undefined,
+        //);
+
+        //fn nextKeySeed(a: *@This(), seed: anytype) !?@TypeOf(seed).Value {
+        //defer a.i += 1;
+
+        //var deserializer = Self.init(Token{ .Int = a.i + 1 });
+        //const d = deserializer.deserializer();
+        //return try seed.deserialize(std.testing.allocator, d);
+        //}
+
+        //fn nextValueSeed(mv: *@This(), seed: anytype) !@TypeOf(seed).Value {
+        //}
+        //}{};
+        //return try visitor.visitMap(access.mapAccess());
+        //}
+
+        //fn deserializeStruct(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+        //if (self.value != .Struct) {
+        //return Error.Input;
+        //}
+
+        //return try deserializeMap(self, visitor);
+        //}
+
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
-            return switch (self.value) {
-                .Void => try visitor.visitVoid(Error),
-                else => Error.Input,
-            };
+            if (self.value != .Void) {
+                return Error.Input;
+            }
+
+            return try visitor.visitVoid(Error);
         }
     };
 };
@@ -285,6 +324,21 @@ test "slice" {
         try testing.expect(std.mem.eql(u8, t.output, result));
     }
 }
+
+//test "struct" {
+//const tests = .{
+//.{
+//.desc = "basic",
+//.input = Token{ .Struct = .{ .x = 1, .y = 2 } },
+//.output = .{ .x = 1, .y = 2 },
+//},
+//};
+
+//inline for (tests) |t| {
+//var d = Deserializer.init(t.input);
+//try testing.expectEqual(t.output, try getty.deserialize(std.testing.allocator, @TypeOf(t.output), d.deserializer()));
+//}
+//}
 
 test "optional" {
     const tests = .{

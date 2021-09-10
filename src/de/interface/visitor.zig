@@ -85,6 +85,10 @@ pub fn Visitor(
             return try boolFn(self.context, Error, input);
         }
 
+        pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+            return try enumFn(self.context, Error, input);
+        }
+
         pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
             comptime assert(@typeInfo(@TypeOf(input)) == .Float or @typeInfo(@TypeOf(input)) == .ComptimeFloat);
 
@@ -118,10 +122,6 @@ pub fn Visitor(
 
         pub fn visitSome(self: Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return try someFn(self.context, allocator, deserializer);
-        }
-
-        pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
-            return try enumFn(self.context, Error, input);
         }
 
         pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
