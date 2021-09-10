@@ -7,6 +7,6 @@ pub usingnamespace Visitor(
     serialize,
 );
 
-fn serialize(_: *BoolVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *BoolVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try serializer.serializeBool(value);
 }

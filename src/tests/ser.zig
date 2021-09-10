@@ -332,7 +332,7 @@ fn t(input: anytype, output: []const Elem) !void {
     var serializer = Serializer{};
     const s = serializer.serializer();
 
-    try getty.serialize(s, input);
+    try getty.serialize(input, s);
     try testing.expectEqualSlices(Elem, &serializer.buf, output);
 }
 

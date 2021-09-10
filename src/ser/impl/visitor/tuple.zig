@@ -8,7 +8,7 @@ pub usingnamespace Visitor(
     serialize,
 );
 
-fn serialize(_: *TupleVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *TupleVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     const tuple = (try serializer.serializeTuple(fields(T).len)).tupleSerialize();

@@ -7,6 +7,6 @@ pub usingnamespace getty.ser.Visitor(
     serialize,
 );
 
-fn serialize(_: *ArrayListVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try getty.serialize(serializer, value.items);
+fn serialize(_: *ArrayListVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    return try getty.serialize(value.items, serializer);
 }

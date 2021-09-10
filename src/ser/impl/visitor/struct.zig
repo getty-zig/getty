@@ -8,7 +8,7 @@ pub usingnamespace Visitor(
     serialize,
 );
 
-fn serialize(_: *StructVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *StructVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     const st = (try serializer.serializeStruct(@typeName(T), fields(T).len)).structSerialize();

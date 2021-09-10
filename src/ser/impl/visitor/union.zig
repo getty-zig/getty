@@ -7,13 +7,13 @@ pub usingnamespace getty.ser.Visitor(
     serialize,
 );
 
-fn serialize(_: *UnionVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *UnionVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     switch (@typeInfo(@TypeOf(value))) {
         .Union => |info| {
             if (info.tag_type) |Tag| {
                 inline for (info.fields) |field| {
                     if (@field(Tag, field.name) == value) {
-                        return try getty.serialize(serializer, @field(value, field.name));
+                        return try getty.serialize(@field(value, field.name), serializer);
                     }
                 }
             } else {

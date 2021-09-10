@@ -7,6 +7,6 @@ pub usingnamespace Visitor(
     serialize,
 );
 
-fn serialize(_: *FloatVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *FloatVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try serializer.serializeFloat(value);
 }

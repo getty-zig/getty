@@ -8,8 +8,8 @@ pub fn Visitor(
 
         const Self = @This();
 
-        pub fn serialize(self: Self, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-            return try serializeFn(self.context, serializer, value);
+        pub fn serialize(self: Self, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            return try serializeFn(self.context, value, serializer);
         }
     };
 
@@ -22,7 +22,7 @@ pub fn Visitor(
 
 fn Fn(comptime Context: type) type {
     const S = struct {
-        fn f(self: Context, s: anytype, v: anytype) @TypeOf(s).Error!@TypeOf(s).Ok {
+        fn f(self: Context, v: anytype, s: anytype) @TypeOf(s).Error!@TypeOf(s).Ok {
             _ = self;
             _ = v;
 

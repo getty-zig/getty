@@ -7,7 +7,7 @@ pub usingnamespace Visitor(
     serialize,
 );
 
-fn serialize(_: *StringHashMapVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *StringHashMapVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const st = (try serializer.serializeMap(value.count())).mapSerialize();
     {
         var iterator = value.iterator();

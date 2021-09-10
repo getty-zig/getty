@@ -7,7 +7,7 @@ pub usingnamespace Visitor(
     serialize,
 );
 
-fn serialize(_: *NullVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *NullVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     _ = value;
 
     return try serializer.serializeNull();

@@ -9,8 +9,8 @@ pub const ser = struct {
 ///
 /// This function enables custom serialization for data types within Getty's
 /// data model and serialization for data types outside of Getty's data model.
-pub fn serializeWith(serializer: anytype, visitor: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try visitor.serialize(serializer, value);
+pub fn serializeWith(value: anytype, serializer: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    return try visitor.serialize(value, serializer);
 }
 
 /// Serialize values within Getty's data model.
@@ -22,15 +22,15 @@ pub fn serializeWith(serializer: anytype, visitor: anytype, value: anytype) @Typ
 ///
 /// Some commonly-used data types that fall outside of Getty's data model are
 /// also supported, such as `std.ArrayList` and `std.StringHashMap`.
-pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     if (comptime match("std.array_list.ArrayList", @typeName(T))) {
         var visitor = ser.ArrayListVisitor{};
-        return try serializeWith(serializer, visitor.visitor(), value);
+        return try serializeWith(value, serializer, visitor.visitor());
     } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
         var visitor = ser.StringHashMapVisitor{};
-        return try serializeWith(serializer, visitor.visitor(), value);
+        return try serializeWith(value, serializer, visitor.visitor());
     }
 
     var visitor = switch (@typeInfo(T)) {
@@ -60,7 +60,7 @@ pub fn serialize(serializer: anytype, value: anytype) @TypeOf(serializer).Error!
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     };
 
-    return try serializeWith(serializer, visitor.visitor(), value);
+    return try serializeWith(value, serializer, visitor.visitor());
 }
 
 fn match(comptime expected: []const u8, comptime actual: []const u8) bool {

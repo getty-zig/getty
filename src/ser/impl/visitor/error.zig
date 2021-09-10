@@ -7,6 +7,6 @@ pub usingnamespace getty.ser.Visitor(
     serialize,
 );
 
-fn serialize(_: *ErrorVisitor, serializer: anytype, value: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try getty.serialize(serializer, @as([]const u8, @errorName(value)));
+fn serialize(_: *ErrorVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    return try getty.serialize(@as([]const u8, @errorName(value)), serializer);
 }
