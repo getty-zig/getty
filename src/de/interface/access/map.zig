@@ -48,7 +48,7 @@ pub fn MapAccess(
             var seed = DefaultSeed(V){};
             const ds = seed.seed();
 
-            return try self.nextKeySeed(ds);
+            return try self.nextValueSeed(ds);
         }
 
         //pub fn nextEntry(self: Self, comptime K: type, comptime V: type) !?std.meta.Tuple(.{ K, V }) {
