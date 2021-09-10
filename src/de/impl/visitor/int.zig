@@ -51,8 +51,9 @@ pub fn Visitor(comptime T: type) type {
             return @intCast(T, input);
         }
 
-        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn visitMap(self: *Self, allocator: ?*Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             _ = self;
+            _ = allocator;
 
             @panic("Unsupported");
         }

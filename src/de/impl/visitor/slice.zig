@@ -51,8 +51,9 @@ pub fn Visitor(comptime T: type) type {
             @panic("Unsupported");
         }
 
-        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn visitMap(self: *Self, allocator: ?*std.mem.Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             _ = self;
+            _ = allocator;
 
             @panic("Unsupported");
         }

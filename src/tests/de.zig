@@ -3,6 +3,11 @@ const getty = @import("getty");
 
 const testing = std.testing;
 
+const Point = struct {
+    x: i64,
+    y: i64,
+};
+
 const Token = union(enum) {
     Bool: bool,
     Enum: enum { foo, bar },
@@ -12,7 +17,7 @@ const Token = union(enum) {
     Some: ?bool,
     Sequence: [2]bool,
     Slice: []const u8,
-    Struct: struct { x: i64, y: i64 },
+    Struct: Point,
     Void: void,
 };
 
@@ -34,13 +39,11 @@ const Deserializer = struct {
         _D.deserializeEnum,
         _D.deserializeFloat,
         _D.deserializeInt,
-        undefined,
-        //_D.deserializeMap,
+        _D.deserializeMap,
         _D.deserializeOptional,
         _D.deserializeSequence,
         _D.deserializeSlice,
-        undefined,
-        //_D.deserializeStruct,
+        _D.deserializeStruct,
         _D.deserializeVoid,
     );
 
@@ -162,40 +165,55 @@ const Deserializer = struct {
             return try visitor.visitSequence(sequenceValue.sequenceAccess());
         }
 
-        //fn deserializeMap(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
-        //_ = self;
+        fn deserializeMap(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+            var access = struct {
+                allocator: ?*std.mem.Allocator,
+                structure: Point,
+                i: i64 = 0,
 
-        //var access = struct {
-        //i: i64 = 0,
+                pub usingnamespace getty.de.MapAccess(
+                    *@This(),
+                    Error,
+                    nextKeySeed,
+                    nextValueSeed,
+                );
 
-        //pub usingnamespace getty.de.MapAccess(
-        //*@This(),
-        //Error,
-        //nextKeySeed,
-        //undefined,
-        //);
+                fn nextKeySeed(a: *@This(), seed: anytype) !?@TypeOf(seed).Value {
+                    defer a.i += 1;
 
-        //fn nextKeySeed(a: *@This(), seed: anytype) !?@TypeOf(seed).Value {
-        //defer a.i += 1;
+                    switch (a.i) {
+                        0 => {
+                            var deserializer = Self.init(Token{ .Slice = "x" });
+                            const d = deserializer.deserializer();
+                            return try seed.deserialize(a.allocator, d);
+                        },
+                        1 => {
+                            var deserializer = Self.init(Token{ .Slice = "y" });
+                            const d = deserializer.deserializer();
+                            return try seed.deserialize(a.allocator, d);
+                        },
+                        else => unreachable,
+                    }
+                }
 
-        //var deserializer = Self.init(Token{ .Int = a.i + 1 });
-        //const d = deserializer.deserializer();
-        //return try seed.deserialize(std.testing.allocator, d);
-        //}
+                fn nextValueSeed(a: *@This(), seed: anytype) !@TypeOf(seed).Value {
+                    // `a.i` is incremented by `nextKeySeed`, so this works for
+                    // the value .{ .x = 1, .y = 2 }.
+                    var deserializer = Self.init(Token{ .Int = a.i });
+                    const d = deserializer.deserializer();
+                    return try seed.deserialize(a.allocator, d);
+                }
+            }{ .allocator = allocator, .structure = self.value.Struct };
+            return try visitor.visitMap(allocator, access.mapAccess());
+        }
 
-        //fn nextValueSeed(mv: *@This(), seed: anytype) !@TypeOf(seed).Value {
-        //}
-        //}{};
-        //return try visitor.visitMap(access.mapAccess());
-        //}
+        fn deserializeStruct(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+            if (self.value != .Struct) {
+                return Error.Input;
+            }
 
-        //fn deserializeStruct(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
-        //if (self.value != .Struct) {
-        //return Error.Input;
-        //}
-
-        //return try deserializeMap(self, visitor);
-        //}
+            return try deserializeMap(self, allocator, visitor);
+        }
 
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             if (self.value != .Void) {
@@ -325,20 +343,23 @@ test "slice" {
     }
 }
 
-//test "struct" {
-//const tests = .{
-//.{
-//.desc = "basic",
-//.input = Token{ .Struct = .{ .x = 1, .y = 2 } },
-//.output = .{ .x = 1, .y = 2 },
-//},
-//};
+test "struct" {
+    const tests = .{
+        .{
+            .desc = "basic",
+            .input = Token{ .Struct = .{ .x = 1, .y = 2 } },
+            .output = Point{ .x = 1, .y = 2 },
+        },
+    };
 
-//inline for (tests) |t| {
-//var d = Deserializer.init(t.input);
-//try testing.expectEqual(t.output, try getty.deserialize(std.testing.allocator, @TypeOf(t.output), d.deserializer()));
-//}
-//}
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        const result = try getty.deserialize(std.testing.allocator, @TypeOf(t.output), d.deserializer());
+
+        try testing.expectEqual(t.output.x, result.x);
+        try testing.expectEqual(t.output.y, result.y);
+    }
+}
 
 test "optional" {
     const tests = .{

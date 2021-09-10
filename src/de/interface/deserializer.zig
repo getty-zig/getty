@@ -29,7 +29,13 @@ pub fn Deserializer(
     comptime floatFn: Fn(Context, E),
     //comptime identifierFn: Fn(Context, E),
     comptime intFn: Fn(Context, E),
-    comptime mapFn: Fn(Context, E),
+    comptime mapFn: @TypeOf(struct {
+        fn f(c: Context, a: *Allocator, v: anytype) E!@TypeOf(v).Value {
+            _ = c;
+            _ = a;
+            unreachable;
+        }
+    }.f),
     comptime optionalFn: @TypeOf(struct {
         fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
             _ = c;
@@ -51,7 +57,13 @@ pub fn Deserializer(
             unreachable;
         }
     }.f),
-    comptime structFn: Fn(Context, E),
+    comptime structFn: @TypeOf(struct {
+        fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
+            _ = c;
+            _ = a;
+            unreachable;
+        }
+    }.f),
     //comptime tupleFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
 ) type {
@@ -78,8 +90,8 @@ pub fn Deserializer(
             return try intFn(self.context, visitor);
         }
 
-        pub fn deserializeMap(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try mapFn(self.context, visitor);
+        pub fn deserializeMap(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try mapFn(self.context, allocator, visitor);
         }
 
         pub fn deserializeOptional(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
@@ -94,8 +106,8 @@ pub fn Deserializer(
             return try sliceFn(self.context, allocator, visitor);
         }
 
-        pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try structFn(self.context, visitor);
+        pub fn deserializeStruct(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try structFn(self.context, allocator, visitor);
         }
 
         pub fn deserializeVoid(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

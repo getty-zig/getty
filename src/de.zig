@@ -42,7 +42,7 @@ pub fn deserialize(
         },
         .Struct => {
             var visitor = de.StructVisitor(T){};
-            return try deserializer.deserializeStruct(visitor.visitor());
+            return try deserializer.deserializeStruct(allocator, visitor.visitor());
         },
         .Void => {
             var visitor = de.VoidVisitor{};

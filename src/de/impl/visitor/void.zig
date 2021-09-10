@@ -49,8 +49,9 @@ fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
     @panic("Unsupported");
 }
 
-fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+fn visitMap(self: *Self, allocator: ?*Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
     _ = self;
+    _ = allocator;
 
     @panic("Unsupported");
 }

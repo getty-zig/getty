@@ -33,8 +33,9 @@ pub fn Visitor(
         }
     }.f),
     comptime mapFn: @TypeOf(struct {
-        fn f(self: Context, mapAccess: anytype) @TypeOf(mapAccess).Error!V {
+        fn f(self: Context, allocator: ?*Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!V {
             _ = self;
+            _ = allocator;
             _ = mapAccess;
             unreachable;
         }
@@ -101,8 +102,8 @@ pub fn Visitor(
             return try intFn(self.context, Error, input);
         }
 
-        pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-            return try mapFn(self.context, mapAccess);
+        pub fn visitMap(self: Self, allocator: ?*Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+            return try mapFn(self.context, allocator, mapAccess);
         }
 
         pub fn visitNull(self: Self, comptime Error: type) Error!Value {

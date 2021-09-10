@@ -50,17 +50,22 @@ pub fn Visitor(comptime Value: type) type {
             @panic("Unsupported");
         }
 
-        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn visitMap(self: *Self, allocator: ?*std.mem.Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             _ = self;
 
             var map: Value = undefined;
 
             inline for (std.meta.fields(Value)) |field| {
                 if (try mapAccess.nextKey([]const u8)) |key| {
+                    defer allocator.?.free(key);
+
+                    // FIXME: Adding the else branch causes a compiler error.
+                    // FIXME: This can't handle deserializing into tuples.
                     if (std.mem.eql(u8, field.name, key)) {
                         @field(map, field.name) = try mapAccess.nextValue(field.field_type);
-                    } else {
-                        @panic("wrong key");
+                        //  ...
+                        //} else {
+                        //@panic("wrong key");
                     }
                 }
             }
