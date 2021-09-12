@@ -162,7 +162,7 @@ const Deserializer = struct {
                 .seq = self.value.Sequence,
             };
 
-            return try visitor.visitSequence(sequenceValue.sequenceAccess());
+            return try visitor.visitSequence(allocator, sequenceValue.sequenceAccess());
         }
 
         fn deserializeMap(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {

@@ -47,8 +47,9 @@ pub fn Visitor(
         }
     }.f),
     comptime sequenceFn: @TypeOf(struct {
-        fn f(self: Context, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!V {
+        fn f(self: Context, allocator: ?*Allocator, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!V {
             _ = self;
+            _ = allocator;
             _ = sequenceAccess;
             unreachable;
         }
@@ -110,8 +111,8 @@ pub fn Visitor(
             return try nullFn(self.context, Error);
         }
 
-        pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-            return try sequenceFn(self.context, sequenceAccess);
+        pub fn visitSequence(self: Self, allocator: ?*Allocator, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            return try sequenceFn(self.context, allocator, sequenceAccess);
         }
 
         pub fn visitSlice(self: Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {

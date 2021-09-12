@@ -62,8 +62,9 @@ fn visitNull(self: *Self, comptime Error: type) Error!Value {
     @panic("Unsupported");
 }
 
-fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+fn visitSequence(self: *Self, allocator: ?*Allocator, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
     _ = self;
+    _ = allocator;
 
     @panic("Unsupported");
 }

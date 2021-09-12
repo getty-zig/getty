@@ -79,8 +79,9 @@ pub fn Visitor(comptime Value: type) type {
             @panic("Unsupported");
         }
 
-        fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+        fn visitSequence(self: *Self, allocator: ?*std.mem.Allocator, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             _ = self;
+            _ = allocator;
 
             @panic("Unsupported");
         }
