@@ -95,13 +95,6 @@ const Deserializer = struct {
             };
         }
 
-        fn deserializeSlice(self: *Self, allocator: *std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
-            return switch (self.value) {
-                .Slice => |value| try visitor.visitSlice(allocator, Error, value),
-                else => Error.Input,
-            };
-        }
-
         fn deserializeSequence(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
             if (self.value != .Sequence) {
                 return Error.Input;
@@ -163,6 +156,13 @@ const Deserializer = struct {
             };
 
             return try visitor.visitSequence(allocator, sequenceValue.sequenceAccess());
+        }
+
+        fn deserializeSlice(self: *Self, allocator: *std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+            return switch (self.value) {
+                .Slice => |value| try visitor.visitSlice(allocator, Error, value),
+                else => Error.Input,
+            };
         }
 
         fn deserializeMap(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
