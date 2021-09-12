@@ -72,8 +72,6 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
             _ = self;
-            _ = allocator;
-            _ = input;
 
             return allocator.dupe(std.meta.Child(Value), input) catch unreachable;
         }
