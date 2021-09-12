@@ -66,9 +66,16 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitSequence(self: *Self, allocator: ?*std.mem.Allocator, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             _ = self;
-            _ = allocator;
 
-            @panic("Unsupported");
+            var list = std.ArrayList(std.meta.Child(Value)).init(allocator.?);
+            errdefer list.deinit();
+
+            while (try seqAccess.nextElement(std.meta.Child(Value))) |elem| {
+                // TODO: change unreachable
+                list.append(elem) catch unreachable;
+            }
+
+            return list.toOwnedSlice();
         }
 
         fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
