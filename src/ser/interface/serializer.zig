@@ -6,7 +6,7 @@ pub fn Serializer(
     comptime O: type,
     comptime E: type,
     comptime MapSerialize: type,
-    comptime SequenceAccess: type,
+    comptime SequenceSerialize: type,
     comptime StructSerialize: type,
     comptime TupleSerialize: type,
     comptime boolFn: fn (Context, bool) E!O,
@@ -15,7 +15,7 @@ pub fn Serializer(
     comptime intFn: fn (Context, anytype) E!O,
     comptime mapFn: fn (Context, ?usize) E!MapSerialize,
     comptime nullFn: fn (Context) E!O,
-    comptime sequenceFn: fn (Context, ?usize) E!SequenceAccess,
+    comptime sequenceFn: fn (Context, ?usize) E!SequenceSerialize,
     comptime stringFn: fn (Context, anytype) E!O,
     comptime structFn: fn (Context, comptime []const u8, usize) E!StructSerialize,
     comptime tupleFn: fn (Context, ?usize) E!TupleSerialize,
@@ -75,7 +75,7 @@ pub fn Serializer(
         }
 
         /// Starts the serialization process for a sequence.
-        pub fn serializeSequence(self: Self, length: ?usize) Error!SequenceAccess {
+        pub fn serializeSequence(self: Self, length: ?usize) Error!SequenceSerialize {
             return try sequenceFn(self.context, length);
         }
 
