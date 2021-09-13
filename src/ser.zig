@@ -20,23 +20,21 @@ pub const ser = struct {
     pub usingnamespace @import("ser/impl.zig");
 };
 
-/// Serialize values outside of Getty's data model.
+/// Serializes a value using a provided serializer and visitor.
 ///
-/// This function enables custom serialization for data types within Getty's
-/// data model and serialization for data types outside of Getty's data model.
+/// `serializeWith` allows for data types that aren't supported by Getty to be
+/// serialized. Additionally, the function enables the use of custom
+/// serialization logic for data types that are supported.
 pub fn serializeWith(value: anytype, serializer: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try visitor.serialize(value, serializer);
 }
 
-/// Serialize values within Getty's data model.
+/// Serializes a value using a provided serializer and a default visitor.
 ///
-/// Each value is serialized according to a visitor provided by Getty. The
-/// visitor itself is specific to the type of the value being serialized, and
-/// defines how the value is to be serialized (generally, in an expected
-/// fashion).
-///
-/// Some commonly-used data types that fall outside of Getty's data model are
-/// also supported, such as `std.ArrayList` and `std.StringHashMap`.
+/// Visitors are only provided for data types supported by Getty, plus a few
+/// commonly used but unsupported types such as `std.ArrayList` and
+/// `std.StringHashMap`. For custom serialization or serialization of data
+/// types not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
