@@ -1,6 +1,11 @@
+//! Serializer interface.
+
 const std = @import("std");
 
 /// A data format that can serialize any data type supported by Getty.
+///
+/// Constructs an interface type for serializers and returns a namespace
+/// containing an interface function that returns the interface type.
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
@@ -26,7 +31,10 @@ pub fn Serializer(
 
         const Self = @This();
 
+        /// Successful return type.
         pub const Ok = O;
+
+        /// The error set used upon failure.
         pub const Error = E;
 
         /// Serializes a `bool` value.
@@ -34,7 +42,7 @@ pub fn Serializer(
             return try boolFn(self.context, value);
         }
 
-        // Serialize an enum value.
+        // Serializes an enum value.
         pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Enum, .EnumLiteral => {},
@@ -44,7 +52,7 @@ pub fn Serializer(
             return try enumFn(self.context, value);
         }
 
-        /// Serializes a float-point value.
+        /// Serializes a floating-point value.
         pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Float, .ComptimeFloat => {},
@@ -105,6 +113,7 @@ pub fn Serializer(
     };
 
     return struct {
+        /// Interface function for `getty.ser.Serializer`'s interface type.
         pub fn serializer(self: Context) T {
             return .{ .context = self };
         }
