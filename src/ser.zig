@@ -1,3 +1,18 @@
+//! Serialization framework
+//!
+//! This module converts Zig data types into Getty's data model. Conversions
+//! are done by a serializer and defined by a visitor.
+//!
+//! Interfaces:
+//!
+//!   * `Serializer`: A data format that can serialize any data type supported by Getty.
+//!   * `Visitor`: A specification of the serialization process.
+//!
+//!   * `MapSerialize`: A specification of the serialization process for a map.
+//!   * `SequenceSerialize`: A specification of the serialization process for a sequence.
+//!   * `StructSerialize`: A specification of the serialization process for a struct.
+//!   * `TupleSerialize`: A specification of the serialization process for a tuple.
+
 const std = @import("std");
 
 pub const ser = struct {
