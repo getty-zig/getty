@@ -111,10 +111,18 @@ pub fn Visitor(
             return try nullFn(self.context, Error);
         }
 
+        ///
+        ///
+        /// The visitor is responsible for visiting the entire sequence. Note
+        /// that this implies that `sequenceAccess` must be able to identify
+        /// the end of a sequence when it is encountered.
         pub fn visitSequence(self: Self, allocator: ?*Allocator, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
             return try sequenceFn(self.context, allocator, sequenceAccess);
         }
 
+        ///
+        ///
+        /// The visitor is responsible for visiting the entire slice.
         pub fn visitSlice(self: Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {
             comptime assert(@typeInfo(@TypeOf(input)) == .Pointer);
             comptime assert(@typeInfo(@TypeOf(input)).Pointer.size == .Slice);
