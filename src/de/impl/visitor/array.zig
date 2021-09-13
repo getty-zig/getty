@@ -68,11 +68,14 @@ pub fn Visitor(comptime Value: type) type {
             _ = allocator;
 
             var arr: Value = undefined;
+            var i: usize = 0;
 
-            for (arr) |*v| {
-                if (try sequenceAccess.nextElement(std.meta.Child(@TypeOf(v)))) |elem| {
-                    v.* = elem;
-                }
+            while (try sequenceAccess.nextElement(std.meta.Child(Value))) |elem| : (i += 1) {
+                arr[i] = elem;
+            }
+
+            if (i != arr.len) {
+                @panic("unexpected end of sequence");
             }
 
             return arr;
