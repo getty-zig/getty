@@ -58,7 +58,7 @@ pub fn Serializer(
         pub fn serializeInt(self: Self, value: anytype) Error!Ok {
             switch (@typeInfo(@TypeOf(value))) {
                 .Int, .ComptimeInt => {},
-                else => @compileError("expected float, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                else => @compileError("expected int, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
             }
 
             return try intFn(self.context, value);
