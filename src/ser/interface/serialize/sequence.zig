@@ -1,3 +1,7 @@
+//! Sequence serialization interface.
+
+/// Returns a namespace containing an interface function for sequence
+/// serialization specifications.
 pub fn SequenceSerialize(
     comptime Context: type,
     comptime O: type,

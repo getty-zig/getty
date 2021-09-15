@@ -1,19 +1,39 @@
-//! A framework for serializing Zig data into a data format.
+//! Serialization framework.
 //!
 //! The serialization process consists of 2 stages:
 //!
 //!     1. Conversion of Zig data into Getty's data model.
 //!     2. Conversion from Getty's data model into a data format.
 //!
-//! The conversion into Getty's data model is performed by **visitors**, while
-//! the conversion into data formats is performed by **serializers**.
+//! The conversion into Getty's data model is performed by visitors, while
+//! the conversion into data formats is performed by serializers.
+//!
+//! Visually, serialization looks like this:
+//!
+//!                  Zig data
+//!
+//!                     ↓
+//!
+//!                  Visitor
+//!
+//!                     ↓
+//!
+//!              Getty Data Model
+//!
+//!                     ↓
+//!
+//!                 Serializer
+//!
+//!                     ↓
+//!
+//!                Data Format
 //!
 //! # Data Model
 //!
 //! The Getty data model is the set of types supported by Getty. The types
-//! within this set are conceptual; they are not actual Zig types. For example,
-//! there is no `i32` or `u64` in Getty's data model. Instead, they are both
-//! considered to be the same type: integer.
+//! within this set are purely conceptual; they aren't actual Zig types. For
+//! example, there is no `i32` or `u64` in Getty's data model. Instead, they
+//! are both considered to be the same type: integer.
 //!
 //! By maintaining a data model, Getty establishes a generic baseline from
 //! which serializers can operate. This can often simplify the job of a
@@ -25,34 +45,26 @@
 //! values, and values of any other struct type (assuming the type is composed
 //! of data types supported by Getty).
 //!
-//! Additionally, because type information remains available to serializers,
-//! more granular serialization can be implemented if desired. For instance, a
-//! serializer could support serialization of only `u32` and `u64` values
-//! instead of all integers by simply inspecting the integer's type
-//! information.
+//! For more granular serialization, type information may still be used.  For
+//! example, a serializer could support serialization of only `u32` and `u64`
+//! values instead of all integers by simply inspecting the `bits` fields in
+//! the integer's type information.
 //!
 //! # Visitors
 //!
 //! Visitors define how to convert Zig data types into Getty's data model. For
-//! example, the `BoolVisitor` defined by Getty converts `bool` values into the
-//! Boolean type, which is a conceptual type defined within Getty's data model.
+//! example, the `BoolVisitor` defined in Getty converts `bool` values into the
+//! Boolean type, which is one of the types defined in Getty's data model.
 //!
-//! If the conversions used by the visitors provided by Getty aren't enough or
-//! aren't suitable for your use-case, then you may create your own visitor and
-//! define your own custom serialization logic. For instance, your visitor
-//! could serialize `bool` values as integers by calling a serializer's
-//! `serializeInt` method and passing in a 1 if the value is `true` or 0 if the
-//! value is `false`.
+//! If the behavior of the default visitors provided by Getty isn't suitable
+//! for your use-case, then you may define and use your own custom
+//! serialization logic by creating a visitor yourself.
 //!
 //! # Serializers
 //!
 //! Serializers define how to convert from Getty's data model into an output
 //! data format. For example, a JSON serializer would specify that Getty
-//! sequences (e.g., arrays, slices, array lists, linked lists) should be
-//! serialized as `[<element>, <element>, ...]`.
-//!
-//! Getty does not define any serializers. It simply helps users build one
-//! themselves.
+//! strings should be serialized as `"STRING"`.
 
 const std = @import("std");
 

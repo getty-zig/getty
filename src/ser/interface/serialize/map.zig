@@ -1,3 +1,7 @@
+//! Map serialization interface.
+
+/// Returns a namespace containing an interface function for map serialization
+/// specifications.
 pub fn MapSerialize(
     comptime Context: type,
     comptime O: type,

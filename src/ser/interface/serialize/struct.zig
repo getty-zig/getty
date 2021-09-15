@@ -1,3 +1,7 @@
+//! Struct serialization interface.
+
+/// Returns a namespace containing an interface function for struct
+/// serialization specifications.
 pub fn StructSerialize(
     comptime Context: type,
     comptime O: type,

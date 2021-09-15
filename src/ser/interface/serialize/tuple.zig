@@ -1,3 +1,7 @@
+//! Tuple serialization interface.
+
+/// Returns a namespace containing an interface function for tuple
+/// serialization specifications.
 pub fn TupleSerialize(
     comptime Context: type,
     comptime O: type,

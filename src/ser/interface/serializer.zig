@@ -1,11 +1,11 @@
 //! Serializer interface.
+//!
+//! Serializers define how to convert from Getty's data model into a data
+//! format.
 
 const std = @import("std");
 
-/// A data format that can serialize any data type supported by Getty.
-///
-/// Constructs an interface type for serializers and returns a namespace
-/// containing an interface function that returns the interface type.
+/// Returns a namespace containing an interface function for serializers.
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
