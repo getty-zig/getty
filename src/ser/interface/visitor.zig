@@ -13,7 +13,15 @@
 /// Returns a namespace containing an interface function for visitors.
 pub fn Visitor(
     comptime Context: type,
-    serializeFn: Fn(Context),
+    serializeFn: @TypeOf(struct {
+        fn f(self: Context, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            _ = self;
+            _ = value;
+            _ = serializer;
+
+            unreachable;
+        }
+    }.f),
 ) type {
     const T = struct {
         context: Context,
@@ -31,17 +39,4 @@ pub fn Visitor(
             return .{ .context = self };
         }
     };
-}
-
-fn Fn(comptime Context: type) type {
-    const S = struct {
-        fn f(self: Context, v: anytype, s: anytype) @TypeOf(s).Error!@TypeOf(s).Ok {
-            _ = self;
-            _ = v;
-
-            unreachable;
-        }
-    };
-
-    return @TypeOf(S.f);
 }
