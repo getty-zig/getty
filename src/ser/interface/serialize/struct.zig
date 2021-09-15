@@ -1,6 +1,6 @@
 //! Struct serialization interface.
 
-/// Returns a namespace containing an interface function for struct
+/// Returns an anonymously namespaced interface function for struct
 /// serialization specifications.
 pub fn StructSerialize(
     comptime Context: type,

@@ -5,7 +5,7 @@
 
 const std = @import("std");
 
-/// Returns a namespace containing an interface function for serializers.
+/// Returns an anonymously namespaced interface function for serializers.
 pub fn Serializer(
     comptime Context: type,
     comptime O: type,
@@ -113,7 +113,6 @@ pub fn Serializer(
     };
 
     return struct {
-        /// Interface function for `getty.ser.Serializer`'s interface type.
         pub fn serializer(self: Context) T {
             return .{ .context = self };
         }
