@@ -86,8 +86,8 @@ pub fn serializeWith(value: anytype, serializer: anytype, visitor: anytype) @Typ
 ///
 /// Visitors are only provided for data types supported by Getty, plus a few
 /// commonly used but unsupported types such as `std.ArrayList` and
-/// `std.StringHashMap`. For custom serialization or serialization of data
-/// types not supported Getty, see `getty.serializeWith`.
+/// `std.AutoHashMap`. For custom serialization or serialization of data types
+/// not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
@@ -95,7 +95,7 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
         var visitor = ser.ArrayListVisitor{};
         return try serializeWith(value, serializer, visitor.visitor());
     } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
-        var visitor = ser.StringHashMapVisitor{};
+        var visitor = ser.HashMapVisitor{};
         return try serializeWith(value, serializer, visitor.visitor());
     }
 

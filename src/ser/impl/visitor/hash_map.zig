@@ -1,13 +1,13 @@
 const Visitor = @import("../../interface.zig").Visitor;
 
-const StringHashMapVisitor = @This();
+const HashMapVisitor = @This();
 
 pub usingnamespace Visitor(
-    *StringHashMapVisitor,
+    *HashMapVisitor,
     serialize,
 );
 
-fn serialize(_: *StringHashMapVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *HashMapVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const st = (try serializer.serializeMap(value.count())).mapSerialize();
     {
         var iterator = value.iterator();

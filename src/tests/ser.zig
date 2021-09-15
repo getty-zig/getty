@@ -320,12 +320,25 @@ test "Array list" {
 }
 
 test "Hash map" {
-    var map = std.StringHashMap(i32).init(std.testing.allocator);
-    defer map.deinit();
+    // AutoHashMap
+    {
+        var map = std.AutoHashMap(i32, bool).init(std.testing.allocator);
+        defer map.deinit();
 
-    try map.put("x", 1);
+        try map.put(1, true);
 
-    try t(map, &.{ .MapStart, .Key, .Value, .MapEnd });
+        try t(map, &.{ .MapStart, .Key, .Value, .MapEnd });
+    }
+
+    // StringHashMap
+    {
+        var map = std.StringHashMap(bool).init(std.testing.allocator);
+        defer map.deinit();
+
+        try map.put("1", true);
+
+        try t(map, &.{ .MapStart, .Key, .Value, .MapEnd });
+    }
 }
 
 fn t(input: anytype, output: []const Elem) !void {
