@@ -12,14 +12,12 @@ const Allocator = @import("std").mem.Allocator;
 ///   - bool
 ///   - enum
 ///   - float
-///   - identifier
 ///   - int
 ///   - map
 ///   - optional
 ///   - sequence
 ///   - string
 ///   - struct
-///   - tuple
 ///   - void
 pub fn Deserializer(
     comptime Context: type,
@@ -27,7 +25,6 @@ pub fn Deserializer(
     comptime boolFn: Fn(Context, E),
     comptime enumFn: Fn(Context, E),
     comptime floatFn: Fn(Context, E),
-    //comptime identifierFn: Fn(Context, E),
     comptime intFn: Fn(Context, E),
     comptime mapFn: @TypeOf(struct {
         fn f(c: Context, a: *Allocator, v: anytype) E!@TypeOf(v).Value {
@@ -64,7 +61,6 @@ pub fn Deserializer(
             unreachable;
         }
     }.f),
-    //comptime tupleFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
 ) type {
     const T = struct {
