@@ -178,6 +178,10 @@ const Deserializer = struct {
                     nextValueSeed,
                 );
 
+                // FIXME: Make sure we test when the input map is longer than
+                // the map we're deserializing into. Specifically, the else
+                // right now signifies the end of the map, but that may not be
+                // the case (e.g., missing closing brace, another entry).
                 fn nextKeySeed(a: *@This(), seed: anytype) !?@TypeOf(seed).Value {
                     defer a.i += 1;
 
@@ -192,7 +196,7 @@ const Deserializer = struct {
                             const d = deserializer.deserializer();
                             return try seed.deserialize(a.allocator, d);
                         },
-                        else => unreachable,
+                        else => return null,
                     }
                 }
 
@@ -204,6 +208,7 @@ const Deserializer = struct {
                     return try seed.deserialize(a.allocator, d);
                 }
             }{ .allocator = allocator, .structure = self.value.Struct };
+
             return try visitor.visitMap(allocator, access.mapAccess());
         }
 

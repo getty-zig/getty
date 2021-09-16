@@ -60,7 +60,6 @@ pub fn Visitor(comptime Value: type) type {
                     defer allocator.?.free(key);
 
                     // FIXME: Adding the else branch causes a compiler error.
-                    // FIXME: This can't handle deserializing into tuples.
                     if (std.mem.eql(u8, field.name, key)) {
                         @field(map, field.name) = try mapAccess.nextValue(field.field_type);
                         //  ...
@@ -68,6 +67,10 @@ pub fn Visitor(comptime Value: type) type {
                         //@panic("wrong key");
                     }
                 }
+            }
+
+            if (try mapAccess.nextKey([]const u8)) |_| {
+                @panic("expected end of map, found key");
             }
 
             return map;
