@@ -67,18 +67,20 @@ pub fn Visitor(comptime Value: type) type {
             _ = self;
             _ = allocator;
 
-            var arr: Value = undefined;
-            var i: usize = 0;
+            var seq: Value = undefined;
+            const Child = std.meta.Child(Value);
 
-            while (try sequenceAccess.nextElement(std.meta.Child(Value))) |elem| : (i += 1) {
-                arr[i] = elem;
+            for (seq) |*elem| {
+                if (try sequenceAccess.nextElement(Child)) |value| {
+                    elem.* = value;
+                }
             }
 
-            if (i != arr.len) {
-                @panic("unexpected end of sequence");
+            if (try sequenceAccess.nextElement(Child)) |_| {
+                @panic("expected end of sequence, found element");
             }
 
-            return arr;
+            return seq;
         }
 
         fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
