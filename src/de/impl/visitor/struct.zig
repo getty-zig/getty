@@ -59,13 +59,11 @@ pub fn Visitor(comptime Value: type) type {
                 if (try mapAccess.nextKey([]const u8)) |key| {
                     defer allocator.?.free(key);
 
-                    // FIXME: Adding the else branch causes a compiler error.
-                    if (std.mem.eql(u8, field.name, key)) {
-                        @field(map, field.name) = try mapAccess.nextValue(field.field_type);
-                        //  ...
-                        //} else {
-                        //@panic("wrong key");
+                    if (!std.mem.eql(u8, field.name, key)) {
+                        @panic("incorrect key");
                     }
+
+                    @field(map, field.name) = try mapAccess.nextValue(field.field_type);
                 }
             }
 
