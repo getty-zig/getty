@@ -40,9 +40,12 @@ pub fn deserialize(
             },
             else => unreachable,
         },
-        .Struct => {
-            var visitor = de.StructVisitor(T){};
-            return try deserializer.deserializeStruct(allocator, visitor.visitor());
+        .Struct => |info| switch (info.is_tuple) {
+            true => @compileError("tuple deserialization is not supported"),
+            false => {
+                var visitor = de.StructVisitor(T){};
+                return try deserializer.deserializeStruct(allocator, visitor.visitor());
+            },
         },
         .Void => {
             var visitor = de.VoidVisitor{};
