@@ -70,7 +70,7 @@ const std = @import("std");
 
 pub const ser = struct {
     pub usingnamespace @import("ser/interface.zig");
-    pub usingnamespace @import("ser/impl.zig");
+    usingnamespace @import("ser/impl.zig");
 };
 
 /// Serializes a value using a provided serializer and visitor.

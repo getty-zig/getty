@@ -2,7 +2,7 @@ const Allocator = @import("std").mem.Allocator;
 
 pub const de = struct {
     pub usingnamespace @import("de/interface.zig");
-    pub usingnamespace @import("de/impl.zig");
+    usingnamespace @import("de/impl.zig");
 };
 
 pub fn deserialize(
