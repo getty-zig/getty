@@ -217,7 +217,42 @@ const Deserializer = struct {
                 return Error.Input;
             }
 
-            return try deserializeMap(self, allocator, visitor);
+            var access = struct {
+                allocator: ?*std.mem.Allocator,
+                structure: Point,
+                i: i64 = 0,
+
+                pub usingnamespace getty.de.MapAccess(
+                    *@This(),
+                    Error,
+                    nextKeySeed,
+                    nextValueSeed,
+                );
+
+                // FIXME: Make sure we test when the input map is longer than
+                // the map we're deserializing into. Specifically, the else
+                // right now signifies the end of the map, but that may not be
+                // the case (e.g., missing closing brace, another entry).
+                fn nextKeySeed(a: *@This(), seed: anytype) !?@TypeOf(seed).Value {
+                    defer a.i += 1;
+
+                    return switch (a.i) {
+                        0 => "x",
+                        1 => "y",
+                        else => null,
+                    };
+                }
+
+                fn nextValueSeed(a: *@This(), seed: anytype) !@TypeOf(seed).Value {
+                    // `a.i` is incremented by `nextKeySeed`, so this works for
+                    // the value .{ .x = 1, .y = 2 }.
+                    var deserializer = Self.init(Token{ .Int = a.i });
+                    const d = deserializer.deserializer();
+                    return try seed.deserialize(a.allocator, d);
+                }
+            }{ .allocator = allocator, .structure = self.value.Struct };
+
+            return try visitor.visitMap(allocator, access.mapAccess());
         }
 
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
