@@ -167,58 +167,7 @@ const Deserializer = struct {
 
         fn deserializeMap(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
             var access = struct {
-                allocator: ?*std.mem.Allocator,
-                structure: Point,
-                i: i64 = 0,
-
-                pub usingnamespace getty.de.MapAccess(
-                    *@This(),
-                    Error,
-                    nextKeySeed,
-                    nextValueSeed,
-                );
-
-                // FIXME: Make sure we test when the input map is longer than
-                // the map we're deserializing into. Specifically, the else
-                // right now signifies the end of the map, but that may not be
-                // the case (e.g., missing closing brace, another entry).
-                fn nextKeySeed(a: *@This(), seed: anytype) !?@TypeOf(seed).Value {
-                    defer a.i += 1;
-
-                    switch (a.i) {
-                        0 => {
-                            var deserializer = Self.init(Token{ .Slice = "x" });
-                            const d = deserializer.deserializer();
-                            return try seed.deserialize(a.allocator, d);
-                        },
-                        1 => {
-                            var deserializer = Self.init(Token{ .Slice = "y" });
-                            const d = deserializer.deserializer();
-                            return try seed.deserialize(a.allocator, d);
-                        },
-                        else => return null,
-                    }
-                }
-
-                fn nextValueSeed(a: *@This(), seed: anytype) !@TypeOf(seed).Value {
-                    // `a.i` is incremented by `nextKeySeed`, so this works for
-                    // the value .{ .x = 1, .y = 2 }.
-                    var deserializer = Self.init(Token{ .Int = a.i });
-                    const d = deserializer.deserializer();
-                    return try seed.deserialize(a.allocator, d);
-                }
-            }{ .allocator = allocator, .structure = self.value.Struct };
-
-            return try visitor.visitMap(allocator, access.mapAccess());
-        }
-
-        fn deserializeStruct(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
-            if (self.value != .Struct) {
-                return Error.Input;
-            }
-
-            var access = struct {
-                allocator: ?*std.mem.Allocator,
+                arena: ?std.heap.ArenaAllocator,
                 structure: Point,
                 i: i64 = 0,
 
@@ -248,11 +197,24 @@ const Deserializer = struct {
                     // the value .{ .x = 1, .y = 2 }.
                     var deserializer = Self.init(Token{ .Int = a.i });
                     const d = deserializer.deserializer();
-                    return try seed.deserialize(a.allocator, d);
+
+                    return try seed.deserialize(if (a.arena) |*arena| &arena.allocator else null, d);
                 }
-            }{ .allocator = allocator, .structure = self.value.Struct };
+            }{
+                .arena = if (allocator) |alloc| std.heap.ArenaAllocator.init(alloc) else null,
+                .structure = self.value.Struct,
+            };
+            errdefer if (access.arena) |arena| arena.deinit();
 
             return try visitor.visitMap(allocator, access.mapAccess());
+        }
+
+        fn deserializeStruct(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+            if (self.value != .Struct) {
+                return Error.Input;
+            }
+
+            return try deserializeMap(self, allocator, visitor);
         }
 
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
@@ -394,7 +356,7 @@ test "struct" {
 
     inline for (tests) |t| {
         var d = Deserializer.init(t.input);
-        const result = try getty.deserialize(std.testing.allocator, @TypeOf(t.output), d.deserializer());
+        const result = try getty.deserialize(null, @TypeOf(t.output), d.deserializer());
 
         try testing.expectEqual(t.output.x, result.x);
         try testing.expectEqual(t.output.y, result.y);
