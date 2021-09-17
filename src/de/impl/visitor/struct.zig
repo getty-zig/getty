@@ -57,12 +57,16 @@ pub fn Visitor(comptime Value: type) type {
 
             inline for (std.meta.fields(Value)) |field| {
                 if (try mapAccess.nextKey([]const u8)) |key| {
-                    defer allocator.?.free(key);
+                    // Deallocate the key only if an allocator was provided.
+                    // Otherwise, the key was should be stack-allocated so
+                    // there's no need to deallocate i.
+                    defer if (allocator) |alloc| alloc.free(key);
 
                     if (!std.mem.eql(u8, field.name, key)) {
                         @panic("incorrect key");
                     }
 
+                    // TODO: Free the value if it's slice on error?
                     @field(map, field.name) = try mapAccess.nextValue(field.field_type);
                 }
             }
