@@ -3,22 +3,27 @@ const getty = @import("getty");
 
 const testing = std.testing;
 
-const Point = struct {
-    x: i64,
-    y: i64,
-};
+const TestBool = bool;
+const TestFloat = f64;
+const TestInt = i64;
+const TestEnum = enum { foo, bar };
+const TestOptional = ?bool;
+const TestPoint = struct { x: i64, y: i64 };
+const TestSequence = [2]bool;
+const TestSlice = []const u8;
+const TestVoid = void;
 
 const Token = union(enum) {
-    Bool: bool,
-    Enum: enum { foo, bar },
-    Float: f64,
-    Int: i64,
-    Null: ?bool,
-    Some: ?bool,
-    Sequence: [2]bool,
-    Slice: []const u8,
-    Struct: Point,
-    Void: void,
+    Bool: TestBool,
+    Enum: TestEnum,
+    Float: TestFloat,
+    Int: TestInt,
+    Null: TestOptional,
+    Some: TestOptional,
+    Sequence: TestSequence,
+    Slice: TestSlice,
+    Struct: TestPoint,
+    Void: TestVoid,
 };
 
 /// A data format that deserializes `Token` values.
@@ -60,6 +65,8 @@ const Deserializer = struct {
         fn deserializeEnum(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
                 .Enum => |value| try visitor.visitEnum(Error, value),
+                .Int => |value| try visitor.visitInt(Error, value),
+                .Slice => |value| try visitor.visitSlice(std.testing.allocator, Error, value),
                 else => Error.Input,
             };
         }
@@ -168,7 +175,7 @@ const Deserializer = struct {
         fn deserializeMap(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
             var access = struct {
                 arena: ?std.heap.ArenaAllocator,
-                structure: Point,
+                structure: TestPoint,
                 i: i64 = 0,
 
                 pub usingnamespace getty.de.MapAccess(
@@ -271,6 +278,34 @@ test "bool" {
     }
 }
 
+test "enum" {
+    const tests = .{
+        .{
+            .desc = "integer",
+            .input = Token{ .Int = 0 },
+            .Output = TestEnum,
+            .output = TestEnum.foo,
+        },
+        .{
+            .desc = "string",
+            .input = Token{ .Slice = "bar" },
+            .Output = TestEnum,
+            .output = TestEnum.bar,
+        },
+        .{
+            .desc = "enum",
+            .input = Token{ .Enum = TestEnum.foo },
+            .Output = TestEnum,
+            .output = TestEnum.foo,
+        },
+    };
+
+    inline for (tests) |t| {
+        var d = Deserializer.init(t.input);
+        try testing.expectEqual(t.output, try getty.deserialize(null, @TypeOf(t.output), d.deserializer()));
+    }
+}
+
 test "float" {
     const tests = .{
         .{
@@ -350,7 +385,7 @@ test "struct" {
         .{
             .desc = "basic",
             .input = Token{ .Struct = .{ .x = 1, .y = 2 } },
-            .output = Point{ .x = 1, .y = 2 },
+            .output = TestPoint{ .x = 1, .y = 2 },
         },
     };
 

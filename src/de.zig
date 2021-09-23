@@ -21,6 +21,10 @@ pub fn deserialize(
             var visitor = de.BoolVisitor{};
             return try deserializer.deserializeBool(visitor.visitor());
         },
+        .Enum => {
+            var visitor = de.EnumVisitor(T){};
+            return try deserializer.deserializeEnum(visitor.visitor());
+        },
         .Float, .ComptimeFloat => {
             var visitor = de.FloatVisitor(T){};
             return try deserializer.deserializeFloat(visitor.visitor());
