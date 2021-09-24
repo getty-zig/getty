@@ -50,9 +50,8 @@ pub fn Visitor(comptime Value: type) type {
             @panic("Unsupported");
         }
 
-        fn visitMap(self: *Self, allocator: ?*std.mem.Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             _ = self;
-            _ = allocator;
 
             var map: Value = undefined;
 
@@ -79,24 +78,21 @@ pub fn Visitor(comptime Value: type) type {
             @panic("Unsupported");
         }
 
-        fn visitSequence(self: *Self, allocator: ?*std.mem.Allocator, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+        fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             _ = self;
-            _ = allocator;
 
             @panic("Unsupported");
         }
 
-        fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
+        fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
-            _ = allocator;
             _ = input;
 
             @panic("Unsupported");
         }
 
-        fn visitSome(self: *Self, allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
-            _ = allocator;
 
             @panic("Unsupported");
         }

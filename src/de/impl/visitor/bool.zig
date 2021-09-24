@@ -48,9 +48,8 @@ fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
     @panic("Unsupported");
 }
 
-fn visitMap(self: *Self, allocator: ?*Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
     _ = self;
-    _ = allocator;
 
     @panic("Unsupported");
 }
@@ -61,24 +60,21 @@ fn visitNull(self: *Self, comptime Error: type) Error!Value {
     @panic("Unsupported");
 }
 
-fn visitSequence(self: *Self, allocator: ?*Allocator, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
     _ = self;
-    _ = allocator;
 
     @panic("Unsupported");
 }
 
-fn visitSlice(self: *Self, allocator: *Allocator, comptime Error: type, input: anytype) Error!Value {
+fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
     _ = self;
-    _ = allocator;
     _ = input;
 
     @panic("Unsupported");
 }
 
-fn visitSome(self: *Self, allocator: ?*Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
     _ = self;
-    _ = allocator;
 
     @panic("Unsupported");
 }

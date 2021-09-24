@@ -66,7 +66,7 @@ const Deserializer = struct {
             return switch (self.value) {
                 .Enum => |value| try visitor.visitEnum(Error, value),
                 .Int => |value| try visitor.visitInt(Error, value),
-                .Slice => |value| try visitor.visitSlice(std.testing.allocator, Error, value),
+                .Slice => |value| try visitor.visitSlice(Error, value),
                 else => Error.Input,
             };
         }
@@ -87,7 +87,7 @@ const Deserializer = struct {
             };
         }
 
-        fn deserializeOptional(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeOptional(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
                 .Null => try visitor.visitNull(Error),
                 .Some => blk: {
@@ -96,19 +96,18 @@ const Deserializer = struct {
                     const value = self.value.Some.?;
                     self.value = .{ .Bool = value };
 
-                    break :blk try visitor.visitSome(allocator, self.deserializer());
+                    break :blk try visitor.visitSome(self.deserializer());
                 },
                 else => Error.Input,
             };
         }
 
-        fn deserializeSequence(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeSequence(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             if (self.value != .Sequence) {
                 return Error.Input;
             }
 
             var sequenceValue = struct {
-                allocator: ?*std.mem.Allocator,
                 seq: [2]bool,
                 i: usize = 0,
 
@@ -154,28 +153,25 @@ const Deserializer = struct {
 
                         var deserializer = Self.init(Token{ .Bool = sv.seq[sv.i] });
                         const d = deserializer.deserializer();
-                        return try seed.deserialize(sv.allocator, d);
+                        return try seed.deserialize(null, d);
                     }
                 };
-            }{
-                .allocator = allocator,
-                .seq = self.value.Sequence,
-            };
+            }{ .seq = self.value.Sequence };
 
-            return try visitor.visitSequence(allocator, sequenceValue.sequenceAccess());
+            return try visitor.visitSequence(sequenceValue.sequenceAccess());
         }
 
-        fn deserializeSlice(self: *Self, allocator: *std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeSlice(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Slice => |value| try visitor.visitSlice(allocator, Error, value),
+                .Slice => |value| try visitor.visitSlice(Error, value),
                 else => Error.Input,
             };
         }
 
-        fn deserializeMap(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeMap(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+            _ = self;
+
             var access = struct {
-                arena: ?std.heap.ArenaAllocator,
-                structure: TestPoint,
                 i: i64 = 0,
 
                 pub usingnamespace getty.de.MapAccess(
@@ -205,23 +201,19 @@ const Deserializer = struct {
                     var deserializer = Self.init(Token{ .Int = a.i });
                     const d = deserializer.deserializer();
 
-                    return try seed.deserialize(if (a.arena) |*arena| &arena.allocator else null, d);
+                    return try seed.deserialize(null, d);
                 }
-            }{
-                .arena = if (allocator) |alloc| std.heap.ArenaAllocator.init(alloc) else null,
-                .structure = self.value.Struct,
-            };
-            errdefer if (access.arena) |arena| arena.deinit();
+            }{};
 
-            return try visitor.visitMap(allocator, access.mapAccess());
+            return try visitor.visitMap(access.mapAccess());
         }
 
-        fn deserializeStruct(self: *Self, allocator: ?*std.mem.Allocator, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeStruct(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             if (self.value != .Struct) {
                 return Error.Input;
             }
 
-            return try deserializeMap(self, allocator, visitor);
+            return try deserializeMap(self, visitor);
         }
 
         fn deserializeVoid(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {

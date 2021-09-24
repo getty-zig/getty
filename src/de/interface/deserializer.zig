@@ -26,41 +26,11 @@ pub fn Deserializer(
     comptime enumFn: Fn(Context, E),
     comptime floatFn: Fn(Context, E),
     comptime intFn: Fn(Context, E),
-    comptime mapFn: @TypeOf(struct {
-        fn f(c: Context, a: *Allocator, v: anytype) E!@TypeOf(v).Value {
-            _ = c;
-            _ = a;
-            unreachable;
-        }
-    }.f),
-    comptime optionalFn: @TypeOf(struct {
-        fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
-            _ = c;
-            _ = a;
-            unreachable;
-        }
-    }.f),
-    comptime sequenceFn: @TypeOf(struct {
-        fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
-            _ = c;
-            _ = a;
-            unreachable;
-        }
-    }.f),
-    comptime sliceFn: @TypeOf(struct {
-        fn f(c: Context, a: *Allocator, v: anytype) E!@TypeOf(v).Value {
-            _ = c;
-            _ = a;
-            unreachable;
-        }
-    }.f),
-    comptime structFn: @TypeOf(struct {
-        fn f(c: Context, a: ?*Allocator, v: anytype) E!@TypeOf(v).Value {
-            _ = c;
-            _ = a;
-            unreachable;
-        }
-    }.f),
+    comptime mapFn: Fn(Context, E),
+    comptime optionalFn: Fn(Context, E),
+    comptime sequenceFn: Fn(Context, E),
+    comptime sliceFn: Fn(Context, E),
+    comptime structFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
 ) type {
     const T = struct {
@@ -86,24 +56,24 @@ pub fn Deserializer(
             return try intFn(self.context, visitor);
         }
 
-        pub fn deserializeMap(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try mapFn(self.context, allocator, visitor);
+        pub fn deserializeMap(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try mapFn(self.context, visitor);
         }
 
-        pub fn deserializeOptional(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try optionalFn(self.context, allocator, visitor);
+        pub fn deserializeOptional(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try optionalFn(self.context, visitor);
         }
 
-        pub fn deserializeSequence(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try sequenceFn(self.context, allocator, visitor);
+        pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try sequenceFn(self.context, visitor);
         }
 
-        pub fn deserializeSlice(self: Self, allocator: *Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try sliceFn(self.context, allocator, visitor);
+        pub fn deserializeSlice(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try sliceFn(self.context, visitor);
         }
 
-        pub fn deserializeStruct(self: Self, allocator: ?*Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try structFn(self.context, allocator, visitor);
+        pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try structFn(self.context, visitor);
         }
 
         pub fn deserializeVoid(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

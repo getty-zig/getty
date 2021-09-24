@@ -3,6 +3,8 @@ const interface = @import("../../interface.zig");
 
 pub fn Visitor(comptime T: type) type {
     return struct {
+        allocator: *std.mem.Allocator,
+
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
@@ -51,9 +53,8 @@ pub fn Visitor(comptime T: type) type {
             @panic("Unsupported");
         }
 
-        fn visitMap(self: *Self, allocator: ?*std.mem.Allocator, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             _ = self;
-            _ = allocator;
 
             @panic("Unsupported");
         }
@@ -64,10 +65,8 @@ pub fn Visitor(comptime T: type) type {
             @panic("Unsupported");
         }
 
-        fn visitSequence(self: *Self, allocator: ?*std.mem.Allocator, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
-            _ = self;
-
-            var list = std.ArrayList(std.meta.Child(Value)).init(allocator.?);
+        fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+            var list = std.ArrayList(std.meta.Child(Value)).init(self.allocator);
             errdefer list.deinit();
 
             while (try seqAccess.nextElement(std.meta.Child(Value))) |elem| {
@@ -78,15 +77,12 @@ pub fn Visitor(comptime T: type) type {
             return list.toOwnedSlice();
         }
 
-        fn visitSlice(self: *Self, allocator: *std.mem.Allocator, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-
-            return allocator.dupe(std.meta.Child(Value), input) catch unreachable;
+        fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            return self.allocator.dupe(std.meta.Child(Value), input) catch unreachable;
         }
 
-        fn visitSome(self: *Self, allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             _ = self;
-            _ = allocator;
 
             @panic("Unsupported");
         }

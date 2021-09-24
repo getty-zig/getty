@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const DefaultSeed = @import("../../impl.zig").DefaultSeed;
 
 pub fn SequenceAccess(
