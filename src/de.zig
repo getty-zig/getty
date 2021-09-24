@@ -14,46 +14,55 @@ pub fn deserialize(
 
     switch (@typeInfo(T)) {
         .Array => {
-            var visitor = de.ArrayVisitor(T){};
-            return try deserializer.deserializeSequence(allocator, visitor.visitor());
+            var v = de.ArrayVisitor(T){};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeSequence(allocator, visitor);
         },
         .Bool => {
-            var visitor = de.BoolVisitor{};
-            return try deserializer.deserializeBool(visitor.visitor());
+            var v = de.BoolVisitor{};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeBool(visitor);
         },
         .Enum => {
-            var visitor = de.EnumVisitor(T){};
-            return try deserializer.deserializeEnum(visitor.visitor());
+            var v = de.EnumVisitor(T){};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeEnum(visitor);
         },
         .Float, .ComptimeFloat => {
-            var visitor = de.FloatVisitor(T){};
-            return try deserializer.deserializeFloat(visitor.visitor());
+            var v = de.FloatVisitor(T){};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeFloat(visitor);
         },
         .Int, .ComptimeInt => {
-            var visitor = de.IntVisitor(T){};
-            return try deserializer.deserializeInt(visitor.visitor());
+            var v = de.IntVisitor(T){};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeInt(visitor);
         },
         .Optional => {
-            var visitor = de.OptionalVisitor(T){};
-            return try deserializer.deserializeOptional(allocator, visitor.visitor());
+            var v = de.OptionalVisitor(T){};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeOptional(allocator, visitor);
         },
         .Pointer => |info| switch (info.size) {
             .Slice => {
-                var visitor = de.SliceVisitor(T){};
-                return try deserializer.deserializeSlice(allocator.?, visitor.visitor());
+                var v = de.SliceVisitor(T){};
+                const visitor = v.visitor(allocator);
+                return try deserializer.deserializeSlice(allocator.?, visitor);
             },
             else => unreachable,
         },
         .Struct => |info| switch (info.is_tuple) {
             true => @compileError("tuple deserialization is not supported"),
             false => {
-                var visitor = de.StructVisitor(T){};
-                return try deserializer.deserializeStruct(allocator, visitor.visitor());
+                var v = de.StructVisitor(T){};
+                const visitor = v.visitor(allocator);
+                return try deserializer.deserializeStruct(allocator, visitor);
             },
         },
         .Void => {
-            var visitor = de.VoidVisitor{};
-            return try deserializer.deserializeVoid(visitor.visitor());
+            var v = de.VoidVisitor{};
+            const visitor = v.visitor(allocator);
+            return try deserializer.deserializeVoid(visitor);
         },
         else => unreachable,
     }

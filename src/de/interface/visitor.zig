@@ -78,6 +78,7 @@ pub fn Visitor(
 ) type {
     const T = struct {
         context: Context,
+        allocator: ?*Allocator = null,
 
         const Self = @This();
 
@@ -140,8 +141,11 @@ pub fn Visitor(
     };
 
     return struct {
-        pub fn visitor(self: Context) T {
-            return .{ .context = self };
+        pub fn visitor(ctx: Context, allocator: ?*Allocator) T {
+            return .{
+                .context = ctx,
+                .allocator = allocator,
+            };
         }
     };
 }
