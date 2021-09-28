@@ -11,59 +11,19 @@ pub fn Visitor(comptime T: type) type {
         pub usingnamespace interface.Visitor(
             *Self,
             Value,
-            visitBool,
-            visitEnum,
-            visitFloat,
-            visitInt,
-            visitMap,
-            visitNull,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
             visitSequence,
             visitSlice,
-            visitSome,
-            visitVoid,
+            undefined,
+            undefined,
         );
 
         const Value = T;
-
-        fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
-            _ = self;
-            _ = input;
-
-            @panic("Unsupported");
-        }
-
-        fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            @panic("Unsupported");
-        }
-
-        fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            @panic("Unsupported");
-        }
-
-        fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
-            @panic("Unsupported");
-        }
-
-        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-            _ = self;
-
-            @panic("Unsupported");
-        }
-
-        fn visitNull(self: *Self, comptime Error: type) Error!Value {
-            _ = self;
-
-            @panic("Unsupported");
-        }
 
         fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             var list = std.ArrayList(std.meta.Child(Value)).init(self.allocator);
@@ -79,18 +39,6 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
             return self.allocator.dupe(std.meta.Child(Value), input) catch unreachable;
-        }
-
-        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            _ = self;
-
-            @panic("Unsupported");
-        }
-
-        fn visitVoid(self: *Self, comptime Error: type) Error!Value {
-            _ = self;
-
-            @panic("Unsupported");
         }
     };
 }
