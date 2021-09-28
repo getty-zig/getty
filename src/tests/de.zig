@@ -36,8 +36,8 @@ const Deserializer = struct {
         return .{ .value = token };
     }
 
-    /// Implements `getty.de.Deserializer`.
-    pub usingnamespace getty.de.Deserializer(
+    /// Implements `getty.Deserializer`.
+    pub usingnamespace getty.Deserializer(
         *Self,
         _D.Error,
         _D.deserializeBool,

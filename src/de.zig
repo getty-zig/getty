@@ -5,6 +5,8 @@ pub const de = struct {
     usingnamespace @import("de/impl.zig");
 };
 
+pub usingnamespace @import("de/interface/deserializer.zig");
+
 pub fn deserialize(
     allocator: ?*Allocator,
     comptime T: type,

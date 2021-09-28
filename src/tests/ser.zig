@@ -43,8 +43,8 @@ const Serializer = struct {
     const StructSerialize = *Self;
     const TupleSerialize = *Self;
 
-    /// Implements `getty.ser.Serializer`.
-    pub usingnamespace ser.Serializer(
+    /// Implements `getty.Serializer`.
+    pub usingnamespace getty.Serializer(
         *Self,
         Ok,
         Error,

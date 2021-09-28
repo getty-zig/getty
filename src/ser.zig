@@ -73,6 +73,8 @@ pub const ser = struct {
     usingnamespace @import("ser/impl.zig");
 };
 
+pub usingnamespace @import("ser/interface/serializer.zig");
+
 /// Serializes a value using a provided serializer and visitor.
 ///
 /// `serializeWith` allows for data types that aren't supported by Getty to be
