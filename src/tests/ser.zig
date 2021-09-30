@@ -267,6 +267,12 @@ test "Error value" {
     try t(error.Elem, &.{ .String, .Undefined, .Undefined, .Undefined });
 }
 
+test "Float" {
+    try t(1.0, &.{ .Float, .Undefined, .Undefined, .Undefined });
+    try t(@as(f32, 1.0), &.{ .Float, .Undefined, .Undefined, .Undefined });
+    try t(@as(f32, -1.0), &.{ .Float, .Undefined, .Undefined, .Undefined });
+}
+
 test "Integer" {
     try t(1, &.{ .Int, .Undefined, .Undefined, .Undefined });
     try t(@as(u8, 1), &.{ .Int, .Undefined, .Undefined, .Undefined });
