@@ -5,8 +5,57 @@
 
 const std = @import("std");
 
+const ser = @import("../../lib.zig").ser;
+
 /// Returns an anonymously namespaced interface function for serializers.
-pub fn Serializer(
+pub inline fn Serializer(
+    comptime Context: type,
+    comptime O: type,
+    comptime E: type,
+    comptime MapSerialize: type,
+    comptime SequenceSerialize: type,
+    comptime StructSerialize: type,
+    comptime TupleSerialize: type,
+    comptime boolFn: fn (Context, bool) E!O,
+    comptime enumFn: fn (Context, anytype) E!O,
+    comptime floatFn: fn (Context, anytype) E!O,
+    comptime intFn: fn (Context, anytype) E!O,
+    comptime mapFn: fn (Context, ?usize) E!MapSerialize,
+    comptime nullFn: fn (Context) E!O,
+    comptime sequenceFn: fn (Context, ?usize) E!SequenceSerialize,
+    comptime stringFn: fn (Context, anytype) E!O,
+    comptime structFn: fn (Context, comptime []const u8, usize) E!StructSerialize,
+    comptime tupleFn: fn (Context, ?usize) E!TupleSerialize,
+    comptime voidFn: fn (Context) E!O,
+) type {
+    switch (@typeInfo(E)) {
+        .ErrorSet => {},
+        else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
+    }
+
+    return _Serializer(
+        Context,
+        O,
+        E || ser.Error,
+        MapSerialize,
+        SequenceSerialize,
+        StructSerialize,
+        TupleSerialize,
+        boolFn,
+        enumFn,
+        floatFn,
+        intFn,
+        mapFn,
+        nullFn,
+        sequenceFn,
+        stringFn,
+        structFn,
+        tupleFn,
+        voidFn,
+    );
+}
+
+fn _Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,

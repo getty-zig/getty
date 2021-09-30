@@ -1,6 +1,18 @@
 const Allocator = @import("std").mem.Allocator;
 
 pub const de = struct {
+    pub const Error = error{
+        Unsupported,
+
+        DuplicateField,
+        InvalidLength,
+        InvalidType,
+        InvalidValue,
+        MissingField,
+        UnknownField,
+        UnknownVariant,
+    };
+
     pub usingnamespace @import("de/interface.zig");
     usingnamespace @import("de/impl.zig");
 };

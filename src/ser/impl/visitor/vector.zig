@@ -10,6 +10,6 @@ pub usingnamespace getty.ser.Visitor(
 fn serialize(_: *VectorVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return switch (@typeInfo(@TypeOf(value))) {
         .Vector => |info| try getty.serialize(@as([info.len]info.child, value), serializer),
-        else => unreachable,
+        else => @compileError("expected vector, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
     };
 }

@@ -69,6 +69,10 @@
 const std = @import("std");
 
 pub const ser = struct {
+    pub const Error = error{
+        Unsupported,
+    };
+
     pub usingnamespace @import("ser/interface.zig");
     usingnamespace @import("ser/impl.zig");
 };

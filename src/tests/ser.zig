@@ -66,29 +66,29 @@ const Serializer = struct {
     );
 
     const _S = struct {
-        fn serializeBool(self: *Self, _: bool) Error!Ok {
+        fn serializeBool(self: *Self, _: bool) !Ok {
             self.buf[self.idx] = .Bool;
             self.idx += 1;
         }
 
-        fn serializeEnum(self: *Self, value: anytype) Error!Ok {
+        fn serializeEnum(self: *Self, value: anytype) !Ok {
             _ = value;
 
             self.buf[self.idx] = .Enum;
             self.idx += 1;
         }
 
-        fn serializeFloat(self: *Self, _: anytype) Error!Ok {
+        fn serializeFloat(self: *Self, _: anytype) !Ok {
             self.buf[self.idx] = .Float;
             self.idx += 1;
         }
 
-        fn serializeInt(self: *Self, _: anytype) Error!Ok {
+        fn serializeInt(self: *Self, _: anytype) !Ok {
             self.buf[self.idx] = .Int;
             self.idx += 1;
         }
 
-        fn serializeMap(self: *Self, length: ?usize) Error!MapSerialize {
+        fn serializeMap(self: *Self, length: ?usize) !MapSerialize {
             _ = length;
 
             self.buf[self.idx] = .MapStart;
@@ -97,12 +97,12 @@ const Serializer = struct {
             return self;
         }
 
-        fn serializeNull(self: *Self) Error!Ok {
+        fn serializeNull(self: *Self) !Ok {
             self.buf[self.idx] = .Null;
             self.idx += 1;
         }
 
-        fn serializeSequence(self: *Self, length: ?usize) Error!SequenceSerialize {
+        fn serializeSequence(self: *Self, length: ?usize) !SequenceSerialize {
             _ = length;
 
             self.buf[self.idx] = .SequenceStart;
@@ -111,12 +111,12 @@ const Serializer = struct {
             return self;
         }
 
-        fn serializeString(self: *Self, _: anytype) Error!Ok {
+        fn serializeString(self: *Self, _: anytype) !Ok {
             self.buf[self.idx] = .String;
             self.idx += 1;
         }
 
-        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!StructSerialize {
+        fn serializeStruct(self: *Self, name: []const u8, length: usize) !StructSerialize {
             _ = name;
             _ = length;
 
@@ -126,7 +126,7 @@ const Serializer = struct {
             return self;
         }
 
-        fn serializeTuple(self: *Self, length: ?usize) Error!TupleSerialize {
+        fn serializeTuple(self: *Self, length: ?usize) !TupleSerialize {
             _ = length;
 
             self.buf[self.idx] = .TupleStart;
@@ -135,7 +135,7 @@ const Serializer = struct {
             return self;
         }
 
-        fn serializeVoid(self: *Self) Error!Ok {
+        fn serializeVoid(self: *Self) !Ok {
             self.buf[self.idx] = .Void;
             self.idx += 1;
         }
@@ -153,26 +153,26 @@ const Serializer = struct {
     );
 
     const _M = struct {
-        fn serializeKey(self: *Self, key: anytype) Error!void {
+        fn serializeKey(self: *Self, key: anytype) !void {
             _ = key;
 
             self.buf[self.idx] = .Key;
             self.idx += 1;
         }
 
-        fn serializeValue(self: *Self, value: anytype) Error!void {
+        fn serializeValue(self: *Self, value: anytype) !void {
             _ = value;
 
             self.buf[self.idx] = .Value;
             self.idx += 1;
         }
 
-        fn serializeEntry(self: *Self, key: anytype, value: anytype) Error!void {
+        fn serializeEntry(self: *Self, key: anytype, value: anytype) !void {
             try serializeKey(self, key);
             try serializeValue(self, value);
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Self) !Ok {
             self.buf[self.idx] = .MapEnd;
             self.idx += 1;
         }
@@ -188,14 +188,14 @@ const Serializer = struct {
     );
 
     const _SE = struct {
-        fn serializeElement(self: *Self, value: anytype) Error!void {
+        fn serializeElement(self: *Self, value: anytype) !void {
             _ = value;
 
             self.buf[self.idx] = .Element;
             self.idx += 1;
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Self) !Ok {
             self.buf[self.idx] = .SequenceEnd;
             self.idx += 1;
         }
@@ -211,7 +211,7 @@ const Serializer = struct {
     );
 
     const _ST = struct {
-        fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!void {
+        fn serializeField(self: *Self, comptime key: []const u8, value: anytype) !void {
             _ = key;
             _ = value;
 
@@ -219,7 +219,7 @@ const Serializer = struct {
             self.idx += 1;
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Self) !Ok {
             self.buf[self.idx] = .StructEnd;
             self.idx += 1;
         }
@@ -235,14 +235,14 @@ const Serializer = struct {
     );
 
     const _T = struct {
-        fn serializeElement(self: *Self, value: anytype) Error!void {
+        fn serializeElement(self: *Self, value: anytype) !void {
             _ = value;
 
             self.buf[self.idx] = .Element;
             self.idx += 1;
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Self) !Ok {
             self.buf[self.idx] = .TupleEnd;
             self.idx += 1;
         }

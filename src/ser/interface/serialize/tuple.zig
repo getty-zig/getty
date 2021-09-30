@@ -1,8 +1,31 @@
 //! Tuple serialization interface.
 
+const ser = @import("../../../lib.zig").ser;
+
 /// Returns an anonymously namespaced interface function for tuple
 /// serialization specifications.
-pub fn TupleSerialize(
+pub inline fn TupleSerialize(
+    comptime Context: type,
+    comptime O: type,
+    comptime E: type,
+    comptime elementFn: fn (Context, anytype) E!void,
+    comptime endFn: fn (Context) E!O,
+) type {
+    switch (@typeInfo(E)) {
+        .ErrorSet => {},
+        else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
+    }
+
+    return _TupleSerialize(
+        Context,
+        O,
+        E || ser.Error,
+        elementFn,
+        endFn,
+    );
+}
+
+fn _TupleSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
