@@ -80,20 +80,27 @@ pub fn Visitor(
         pub const Value = V;
 
         pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
+            comptime assert(@typeInfo(Error) == .ErrorSet);
+
             return try boolFn(self.context, Error, input);
         }
 
         pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+            comptime assert(@typeInfo(Error) == .ErrorSet);
+            comptime assert(@typeInfo(@TypeOf(input)) == .Enum or @typeInfo(@TypeOf(input)) == .EnumLiteral);
+
             return try enumFn(self.context, Error, input);
         }
 
         pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+            comptime assert(@typeInfo(Error) == .ErrorSet);
             comptime assert(@typeInfo(@TypeOf(input)) == .Float or @typeInfo(@TypeOf(input)) == .ComptimeFloat);
 
             return try floatFn(self.context, Error, input);
         }
 
         pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+            comptime assert(@typeInfo(Error) == .ErrorSet);
             comptime assert(@typeInfo(@TypeOf(input)) == .Int or @typeInfo(@TypeOf(input)) == .ComptimeInt);
 
             return try intFn(self.context, Error, input);
@@ -104,6 +111,8 @@ pub fn Visitor(
         }
 
         pub fn visitNull(self: Self, comptime Error: type) Error!Value {
+            comptime assert(@typeInfo(Error) == .ErrorSet);
+
             return try nullFn(self.context, Error);
         }
 
@@ -120,8 +129,8 @@ pub fn Visitor(
         ///
         /// The visitor is responsible for visiting the entire slice.
         pub fn visitSlice(self: Self, comptime Error: type, input: anytype) Error!Value {
-            comptime assert(@typeInfo(@TypeOf(input)) == .Pointer);
-            comptime assert(@typeInfo(@TypeOf(input)).Pointer.size == .Slice);
+            comptime assert(@typeInfo(Error) == .ErrorSet);
+            comptime assert(@typeInfo(@TypeOf(input)) == .Pointer and @typeInfo(@TypeOf(input)).Pointer.size == .Slice);
 
             return try sliceFn(self.context, Error, input);
         }
@@ -131,6 +140,8 @@ pub fn Visitor(
         }
 
         pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
+            comptime assert(@typeInfo(Error) == .ErrorSet);
+
             return try voidFn(self.context, Error);
         }
     };
