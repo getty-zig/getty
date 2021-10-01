@@ -4,7 +4,7 @@ const ser = @import("../../../lib.zig").ser;
 
 /// Returns an anonymously namespaced interface function for tuple
 /// serialization specifications.
-pub inline fn TupleSerialize(
+pub fn TupleSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -16,22 +16,6 @@ pub inline fn TupleSerialize(
         else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
     }
 
-    return _TupleSerialize(
-        Context,
-        O,
-        E || ser.Error,
-        elementFn,
-        endFn,
-    );
-}
-
-fn _TupleSerialize(
-    comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime elementFn: fn (Context, anytype) E!void,
-    comptime endFn: fn (Context) E!O,
-) type {
     const T = struct {
         const Self = @This();
 

@@ -4,7 +4,7 @@ const ser = @import("../../../lib.zig").ser;
 
 /// Returns an anonymously namespaced interface function for struct
 /// serialization specifications.
-pub inline fn StructSerialize(
+pub fn StructSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
@@ -16,22 +16,6 @@ pub inline fn StructSerialize(
         else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
     }
 
-    return _StructSerialize(
-        Context,
-        O,
-        E || ser.Error,
-        fieldFn,
-        endFn,
-    );
-}
-
-fn _StructSerialize(
-    comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime fieldFn: fn (Context, comptime []const u8, anytype) E!void,
-    comptime endFn: fn (Context) E!O,
-) type {
     const T = struct {
         const Self = @This();
 
