@@ -30,7 +30,7 @@ pub fn Visitor(comptime Value: type) type {
             inline for (std.meta.fields(Value)) |field| {
                 if (try mapAccess.nextKey([]const u8)) |key| {
                     if (!std.mem.eql(u8, field.name, key)) {
-                        @panic("incorrect key");
+                        return error.MissingField;
                     }
 
                     @field(map, field.name) = try mapAccess.nextValue(field.field_type);
@@ -38,7 +38,7 @@ pub fn Visitor(comptime Value: type) type {
             }
 
             if (try mapAccess.nextKey([]const u8)) |_| {
-                @panic("expected end of map, found key");
+                return error.UnknownField;
             }
 
             return map;

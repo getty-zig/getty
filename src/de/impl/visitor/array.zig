@@ -35,7 +35,7 @@ pub fn Visitor(comptime Value: type) type {
             }
 
             if (try sequenceAccess.nextElement(Child)) |_| {
-                @panic("expected end of sequence, found element");
+                return error.InvalidLength;
             }
 
             return seq;

@@ -1,7 +1,7 @@
 const Allocator = @import("std").mem.Allocator;
 
 pub const de = struct {
-    pub const Error = error{
+    pub const Error = Allocator.Error || error{
         Unsupported,
 
         DuplicateField,

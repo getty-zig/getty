@@ -41,7 +41,7 @@ pub fn Visitor(comptime T: type) type {
         fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
 
-            return meta.stringToEnum(Value, input) orelse @panic("could not find enum value");
+            return meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
         }
     };
 }

@@ -27,7 +27,7 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitFloat(_: *Self, comptime Error: type, input: anytype) Error!Value {
             if (math.round(input) != input or (input > math.maxInt(T) or input < math.minInt(T))) {
-                @panic("Failure during float-to-int cast");
+                return error.InvalidValue;
             }
 
             return @floatToInt(T, input);

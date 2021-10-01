@@ -30,15 +30,14 @@ pub fn Visitor(comptime T: type) type {
             errdefer list.deinit();
 
             while (try seqAccess.nextElement(std.meta.Child(Value))) |elem| {
-                // TODO: change unreachable
-                list.append(elem) catch unreachable;
+                try list.append(elem);
             }
 
             return list.toOwnedSlice();
         }
 
         fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
-            return self.allocator.dupe(std.meta.Child(Value), input) catch unreachable;
+            return try self.allocator.dupe(std.meta.Child(Value), input);
         }
     };
 }
