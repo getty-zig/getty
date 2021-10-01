@@ -53,7 +53,7 @@ const Deserializer = struct {
     );
 
     const _D = struct {
-        const Error = error{Input};
+        const Error = getty.de.Error || error{Input};
 
         fn deserializeBool(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
