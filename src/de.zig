@@ -1,7 +1,8 @@
-const Allocator = @import("std").mem.Allocator;
+const std = @import("std");
+const getty = @import("lib.zig");
 
 pub const de = struct {
-    pub const Error = Allocator.Error || error{
+    pub const Error = std.mem.Allocator.Error || error{
         Unsupported,
 
         DuplicateField,
@@ -13,69 +14,99 @@ pub const de = struct {
         UnknownVariant,
     };
 
+    pub const DefaultDeserialize = struct {
+        pub usingnamespace getty.Deserialize(
+            Self,
+            _deserialize,
+        );
+
+        const Self = @This();
+
+        fn _deserialize(
+            self: Self,
+            allocator: ?*std.mem.Allocator,
+            comptime T: type,
+            deserializer: anytype,
+        ) @TypeOf(deserializer).Error!T {
+            _ = self;
+
+            var v = switch (@typeInfo(T)) {
+                .Array => de.ArrayVisitor(T){},
+                .Bool => de.BoolVisitor{},
+                .Enum => de.EnumVisitor(T){},
+                .Float, .ComptimeFloat => de.FloatVisitor(T){},
+                .Int, .ComptimeInt => de.IntVisitor(T){},
+                .Optional => de.OptionalVisitor(T){ .allocator = allocator },
+                .Pointer => |info| switch (info.size) {
+                    .One => de.PointerVisitor(T){ .allocator = allocator.? },
+                    .Slice => de.SliceVisitor(T){ .allocator = allocator.? },
+                    else => @compileError("pointer type is not supported"),
+                },
+                .Struct => |info| switch (info.is_tuple) {
+                    true => @compileError("tuple deserialization is not supported"),
+                    false => de.StructVisitor(T){ .allocator = allocator },
+                },
+                .Void => de.VoidVisitor{},
+                else => unreachable,
+            };
+
+            return try __deserialize(
+                allocator,
+                T,
+                deserializer,
+                v.visitor(),
+            );
+        }
+
+        inline fn __deserialize(
+            allocator: ?*std.mem.Allocator,
+            comptime T: type,
+            deserializer: anytype,
+            visitor: anytype,
+        ) @TypeOf(deserializer).Error!T {
+            return try switch (@typeInfo(T)) {
+                .Array => deserializer.deserializeSequence(visitor),
+                .Bool => deserializer.deserializeBool(visitor),
+                .Enum => deserializer.deserializeEnum(visitor),
+                .Float, .ComptimeFloat => deserializer.deserializeFloat(visitor),
+                .Int, .ComptimeInt => deserializer.deserializeInt(visitor),
+                .Optional => deserializer.deserializeOptional(visitor),
+                .Pointer => |info| switch (info.size) {
+                    .One => __deserialize(allocator, std.meta.Child(T), deserializer, visitor),
+                    .Slice => deserializer.deserializeSlice(visitor),
+                    else => @compileError("pointer type is not supported"),
+                },
+                .Struct => |info| switch (info.is_tuple) {
+                    true => @compileError("tuple deserialization is not supported"),
+                    false => deserializer.deserializeStruct(visitor),
+                },
+                .Void => deserializer.deserializeVoid(visitor),
+                else => unreachable,
+            };
+        }
+    };
+
     pub usingnamespace @import("de/interface.zig");
     usingnamespace @import("de/impl.zig");
 };
 
+pub usingnamespace @import("de/interface/deserialize.zig");
 pub usingnamespace @import("de/interface/deserializer.zig");
 
+pub fn deserializeWith(
+    allocator: ?*std.mem.Allocator,
+    comptime T: type,
+    deserializer: anytype,
+    spec: anytype,
+) @TypeOf(deserializer).Error!T {
+    return try spec.deserialize(allocator, T, deserializer);
+}
+
 pub fn deserialize(
-    allocator: ?*Allocator,
+    allocator: ?*std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
 ) @TypeOf(deserializer).Error!T {
-    switch (@typeInfo(T)) {
-        .Array => {
-            var v = de.ArrayVisitor(T){};
-            const visitor = v.visitor();
-            return try deserializer.deserializeSequence(visitor);
-        },
-        .Bool => {
-            var v = de.BoolVisitor{};
-            const visitor = v.visitor();
-            return try deserializer.deserializeBool(visitor);
-        },
-        .Enum => {
-            var v = de.EnumVisitor(T){};
-            const visitor = v.visitor();
-            return try deserializer.deserializeEnum(visitor);
-        },
-        .Float, .ComptimeFloat => {
-            var v = de.FloatVisitor(T){};
-            const visitor = v.visitor();
-            return try deserializer.deserializeFloat(visitor);
-        },
-        .Int, .ComptimeInt => {
-            var v = de.IntVisitor(T){};
-            const visitor = v.visitor();
-            return try deserializer.deserializeInt(visitor);
-        },
-        .Optional => {
-            var v = de.OptionalVisitor(T){ .allocator = allocator };
-            const visitor = v.visitor();
-            return try deserializer.deserializeOptional(visitor);
-        },
-        .Pointer => |info| switch (info.size) {
-            .Slice => {
-                var v = de.SliceVisitor(T){ .allocator = allocator.? };
-                const visitor = v.visitor();
-                return try deserializer.deserializeSlice(visitor);
-            },
-            else => unreachable,
-        },
-        .Struct => |info| switch (info.is_tuple) {
-            true => @compileError("tuple deserialization is not supported"),
-            false => {
-                var v = de.StructVisitor(T){ .allocator = allocator };
-                const visitor = v.visitor();
-                return try deserializer.deserializeStruct(visitor);
-            },
-        },
-        .Void => {
-            var v = de.VoidVisitor{};
-            const visitor = v.visitor();
-            return try deserializer.deserializeVoid(visitor);
-        },
-        else => unreachable,
-    }
+    const spec = de.DefaultDeserialize{};
+    return try deserializeWith(allocator, T, deserializer, spec.deserialize());
 }
