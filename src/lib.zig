@@ -12,8 +12,43 @@
 //! methods such as reflection. Additionally, `comptime` enables all supported
 //! data types to automatically become serializable and deserializable.
 
+const Allocator = @import("std").mem.Allocator;
+
 pub usingnamespace @import("ser.zig");
 pub usingnamespace @import("de.zig");
+
+pub fn free(allocator: *Allocator, value: anytype) void {
+    switch (@typeInfo(@TypeOf(value))) {
+        .Bool, .Float, .ComptimeFloat, .Int, .ComptimeInt, .Enum, .EnumLiteral, .Null, .Void => {},
+        .Array => for (value) |v| free(allocator, v),
+        .Optional => if (value) |v| free(allocator, v),
+        .Pointer => |info| switch (info.size) {
+            .One => {
+                free(allocator, value.*);
+                allocator.destroy(value);
+            },
+            .Slice => {
+                for (value) |v| free(allocator, v);
+                allocator.free(value);
+            },
+            else => unreachable,
+        },
+        .Union => |info| {
+            if (info.tag_type) |T| {
+                inline for (info.fields) |field| {
+                    if (value == @field(T, field.name)) {
+                        free(allocator, @field(value, field.name));
+                        break;
+                    }
+                }
+            } else unreachable;
+        },
+        .Struct => |info| inline for (info.fields) |field| {
+            if (!field.is_comptime) free(allocator, @field(value, field.name));
+        },
+        else => unreachable,
+    }
+}
 
 test {
     @import("std").testing.refAllDecls(@This());

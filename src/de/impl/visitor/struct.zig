@@ -1,13 +1,15 @@
 const std = @import("std");
 
-const interface = @import("../../interface.zig");
+const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime Value: type) type {
     return struct {
+        allocator: ?*std.mem.Allocator = null,
+
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub usingnamespace interface.Visitor(
+        pub usingnamespace getty.de.Visitor(
             *Self,
             Value,
             undefined,
@@ -23,9 +25,17 @@ pub fn Visitor(comptime Value: type) type {
         );
 
         fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-            _ = self;
-
+            var seen: usize = 0;
             var map: Value = undefined;
+            errdefer {
+                inline for (std.meta.fields(Value)) |field, i| {
+                    if (i < seen) {
+                        if (self.allocator) |allocator| {
+                            getty.free(allocator, @field(map, field.name));
+                        }
+                    }
+                }
+            }
 
             inline for (std.meta.fields(Value)) |field| {
                 if (try mapAccess.nextKey([]const u8)) |key| {
@@ -34,6 +44,7 @@ pub fn Visitor(comptime Value: type) type {
                     }
 
                     @field(map, field.name) = try mapAccess.nextValue(field.field_type);
+                    seen += 1;
                 }
             }
 

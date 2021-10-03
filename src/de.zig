@@ -66,7 +66,7 @@ pub fn deserialize(
         .Struct => |info| switch (info.is_tuple) {
             true => @compileError("tuple deserialization is not supported"),
             false => {
-                var v = de.StructVisitor(T){};
+                var v = de.StructVisitor(T){ .allocator = allocator };
                 const visitor = v.visitor();
                 return try deserializer.deserializeStruct(visitor);
             },
