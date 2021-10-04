@@ -49,13 +49,11 @@ pub const de = struct {
                 .Void => de.VoidVisitor{},
                 else => unreachable,
             };
+            const visitor = v.visitor();
 
-            return try __deserialize(
-                allocator,
-                T,
-                deserializer,
-                v.visitor(),
-            );
+            std.debug.assert(T == @TypeOf(visitor).Value);
+
+            return try __deserialize(allocator, T, deserializer, visitor);
         }
 
         inline fn __deserialize(
@@ -63,7 +61,7 @@ pub const de = struct {
             comptime T: type,
             deserializer: anytype,
             visitor: anytype,
-        ) @TypeOf(deserializer).Error!T {
+        ) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
             return try switch (@typeInfo(T)) {
                 .Array => deserializer.deserializeSequence(visitor),
                 .Bool => deserializer.deserializeBool(visitor),
