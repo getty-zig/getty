@@ -29,7 +29,7 @@ pub fn Deserializer(
     comptime mapFn: Fn(Context, E),
     comptime optionalFn: Fn(Context, E),
     comptime sequenceFn: Fn(Context, E),
-    comptime sliceFn: Fn(Context, E),
+    comptime stringFn: Fn(Context, E),
     comptime structFn: Fn(Context, E),
     comptime voidFn: Fn(Context, E),
 ) type {
@@ -68,8 +68,8 @@ pub fn Deserializer(
             return try sequenceFn(self.context, visitor);
         }
 
-        pub fn deserializeSlice(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-            return try sliceFn(self.context, visitor);
+        pub fn deserializeString(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
+            return try stringFn(self.context, visitor);
         }
 
         pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {

@@ -19,7 +19,7 @@ pub fn Visitor(comptime T: type) type {
             undefined,
             undefined,
             undefined,
-            visitSlice,
+            visitString,
             undefined,
             undefined,
         );
@@ -38,7 +38,7 @@ pub fn Visitor(comptime T: type) type {
             return meta.intToEnum(Value, input) catch unreachable;
         }
 
-        fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
 
             return meta.stringToEnum(Value, input) orelse return error.UnknownVariant;

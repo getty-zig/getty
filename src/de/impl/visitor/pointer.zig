@@ -45,7 +45,7 @@ pub fn Visitor(comptime T: type) type {
             _V.visitMap,
             _V.visitNull,
             _V.visitSequence,
-            _V.visitSlice,
+            _V.visitString,
             _V.visitSome,
             _V.visitVoid,
         );
@@ -114,12 +114,12 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitSlice(Error, input);
+                value.* = try v.visitor().visitString(Error, input);
                 return value;
             }
 

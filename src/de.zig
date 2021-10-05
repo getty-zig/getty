@@ -71,7 +71,13 @@ pub const de = struct {
                 .Optional => deserializer.deserializeOptional(visitor),
                 .Pointer => |info| switch (info.size) {
                     .One => __deserialize(allocator, std.meta.Child(T), deserializer, visitor),
-                    .Slice => deserializer.deserializeSlice(visitor),
+                    .Slice => blk: {
+                        if (comptime std.meta.trait.isZigString(T)) {
+                            break :blk deserializer.deserializeString(visitor);
+                        }
+
+                        break :blk deserializer.deserializeSequence(visitor);
+                    },
                     else => @compileError("pointer type is not supported"),
                 },
                 .Struct => |info| switch (info.is_tuple) {

@@ -10,7 +10,7 @@ const TestEnum = enum { foo, bar };
 const TestOptional = ?bool;
 const TestPoint = struct { x: i64, y: i64 };
 const TestSequence = [2]bool;
-const TestSlice = []const u8;
+const TestString = []const u8;
 const TestVoid = void;
 
 const Token = union(enum) {
@@ -21,7 +21,7 @@ const Token = union(enum) {
     Null: TestOptional,
     Some: TestOptional,
     Sequence: TestSequence,
-    Slice: TestSlice,
+    String: TestString,
     Struct: TestPoint,
     Void: TestVoid,
 };
@@ -47,7 +47,7 @@ const Deserializer = struct {
         _D.deserializeMap,
         _D.deserializeOptional,
         _D.deserializeSequence,
-        _D.deserializeSlice,
+        _D.deserializeString,
         _D.deserializeStruct,
         _D.deserializeVoid,
     );
@@ -66,7 +66,7 @@ const Deserializer = struct {
             return switch (self.value) {
                 .Enum => |value| try visitor.visitEnum(Error, value),
                 .Int => |value| try visitor.visitInt(Error, value),
-                .Slice => |value| try visitor.visitSlice(Error, value),
+                .String => |value| try visitor.visitString(Error, value),
                 else => Error.Input,
             };
         }
@@ -161,9 +161,9 @@ const Deserializer = struct {
             return try visitor.visitSequence(sequenceValue.sequenceAccess());
         }
 
-        fn deserializeSlice(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
+        fn deserializeString(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Slice => |value| try visitor.visitSlice(Error, value),
+                .String => |value| try visitor.visitString(Error, value),
                 else => Error.Input,
             };
         }
@@ -280,7 +280,7 @@ test "enum" {
         },
         .{
             .desc = "string",
-            .input = Token{ .Slice = "bar" },
+            .input = Token{ .String = "bar" },
             .Output = TestEnum,
             .output = TestEnum.bar,
         },
@@ -358,7 +358,7 @@ test "slice" {
     const tests = .{
         .{
             .desc = "[]const u8",
-            .input = Token{ .Slice = "Hello, World" },
+            .input = Token{ .String = "Hello, World" },
             .output = @as([]const u8, "Hello, World"),
         },
     };

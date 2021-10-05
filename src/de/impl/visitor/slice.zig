@@ -18,7 +18,7 @@ pub fn Visitor(comptime T: type) type {
             undefined,
             undefined,
             visitSequence,
-            visitSlice,
+            visitString,
             undefined,
             undefined,
         );
@@ -36,7 +36,7 @@ pub fn Visitor(comptime T: type) type {
             return list.toOwnedSlice();
         }
 
-        fn visitSlice(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
             // TODO: This type check (and InvalidType error) is a temporary
             // workaround for the case where the child type of `Value` isn't a
             // u8. In that situation, the compiler keeps both the .ArrayBegin
@@ -47,7 +47,7 @@ pub fn Visitor(comptime T: type) type {
             // Maybe what we could do is use `visitSequence` and in the JSON
             // deserializer figure out what to do in the SequenceAccess based
             // on whether the input is an Array or a String. If this works, do we
-            // even need a `visitSlice` method?
+            // even need a `visitString` method?
             if (std.meta.Child(Value) == u8)
                 return try self.allocator.dupe(std.meta.Child(Value), input);
 

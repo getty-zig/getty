@@ -1,4 +1,6 @@
-const assert = @import("std").debug.assert;
+const std = @import("std");
+
+const assert = std.debug.assert;
 
 pub fn Visitor(
     comptime Context: type,
@@ -51,7 +53,7 @@ pub fn Visitor(
             unreachable;
         }
     }.f),
-    comptime sliceFn: @TypeOf(struct {
+    comptime stringFn: @TypeOf(struct {
         fn f(self: Context, comptime E: type, input: anytype) E!V {
             _ = self;
             _ = input;
@@ -128,11 +130,11 @@ pub fn Visitor(
         ///
         ///
         /// The visitor is responsible for visiting the entire slice.
-        pub fn visitSlice(self: Self, comptime Error: type, input: anytype) Error!Value {
+        pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
             comptime assert(@typeInfo(Error) == .ErrorSet);
-            comptime assert(@typeInfo(@TypeOf(input)) == .Pointer and @typeInfo(@TypeOf(input)).Pointer.size == .Slice);
+            comptime assert(std.meta.trait.isZigString(@TypeOf(input)));
 
-            return try sliceFn(self.context, Error, input);
+            return try stringFn(self.context, Error, input);
         }
 
         pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
