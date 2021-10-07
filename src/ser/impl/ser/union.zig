@@ -1,14 +1,12 @@
-const std = @import("std");
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
-const UnionVisitor = @This();
-
-pub usingnamespace getty.ser.Visitor(
-    *UnionVisitor,
+pub usingnamespace getty.Ser(
+    *@This(),
     serialize,
 );
 
-fn serialize(_: *UnionVisitor, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+fn serialize(_: *@This(), value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     switch (@typeInfo(@TypeOf(value))) {
         .Union => |info| if (info.tag_type) |_| {
             inline for (info.fields) |field| {

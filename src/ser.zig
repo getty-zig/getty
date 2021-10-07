@@ -5,8 +5,8 @@
 //!     1. Conversion of Zig data into Getty's data model.
 //!     2. Conversion from Getty's data model into a data format.
 //!
-//! The conversion into Getty's data model is performed by visitors, while
-//! the conversion into data formats is performed by serializers.
+//! The conversion into Getty's data model is performed by a serialize, while
+//! the conversion into data formats is performed by a serializer.
 //!
 //! Visually, serialization looks like this:
 //!
@@ -14,7 +14,7 @@
 //!
 //!                     ↓
 //!
-//!                  Visitor
+//!                 Serialize
 //!
 //!                     ↓
 //!
@@ -50,15 +50,15 @@
 //! values instead of all integers by simply inspecting the `bits` fields in
 //! the integer's type information.
 //!
-//! # Visitors
+//! # Serializes
 //!
-//! Visitors define how to convert Zig data types into Getty's data model. For
-//! example, the `BoolVisitor` defined in Getty converts `bool` values into the
+//! A serialize defines how to convert Zig data types into Getty's data model.
+//! For example, the `BoolSer` defined by Getty converts `bool` values into the
 //! Boolean type, which is one of the types defined in Getty's data model.
 //!
-//! If the behavior of the default visitors provided by Getty isn't suitable
+//! If the behavior of the default serializes provided by Getty aren't suitable
 //! for your use-case, then you may define and use your own custom
-//! serialization logic by creating a visitor yourself.
+//! serialization logic by creating a serialize yourself.
 //!
 //! # Serializers
 //!
@@ -77,62 +77,63 @@ pub const ser = struct {
     usingnamespace @import("ser/impl.zig");
 };
 
+pub usingnamespace @import("ser/interface/ser.zig");
 pub usingnamespace @import("ser/interface/serializer.zig");
 
-/// Serializes a value using a provided serializer and visitor.
+/// Serializes a value using a provided serializer and serialize.
 ///
 /// `serializeWith` allows for data types that aren't supported by Getty to be
 /// serialized. Additionally, the function enables the use of custom
 /// serialization logic for data types that are supported.
-pub fn serializeWith(value: anytype, serializer: anytype, visitor: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try visitor.serialize(value, serializer);
+pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    return try s.serialize(value, serializer);
 }
 
-/// Serializes a value using a provided serializer and a default visitor.
+/// Serializes a value using a provided serializer and a default serialize.
 ///
-/// Visitors are only provided for data types supported by Getty, plus a few
-/// commonly used but unsupported types such as `std.ArrayList` and
+/// Serializes are only provided for data types supported by Getty, plus a
+/// few commonly used but unsupported types such as `std.ArrayList` and
 /// `std.AutoHashMap`. For custom serialization or serialization of data types
 /// not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     if (comptime match("std.array_list.ArrayList", @typeName(T))) {
-        var visitor = ser.ArrayListVisitor{};
-        return try serializeWith(value, serializer, visitor.visitor());
+        var s = ser.ArrayListSer{};
+        return try serializeWith(value, serializer, s.ser());
     } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
-        var visitor = ser.HashMapVisitor{};
-        return try serializeWith(value, serializer, visitor.visitor());
+        var s = ser.HashMapSer{};
+        return try serializeWith(value, serializer, s.ser());
     }
 
-    var visitor = switch (@typeInfo(T)) {
-        .Array => ser.SequenceVisitor{},
-        .Bool => ser.BoolVisitor{},
-        .Enum, .EnumLiteral => ser.EnumVisitor{},
-        .ErrorSet => ser.ErrorVisitor{},
-        .Float, .ComptimeFloat => ser.FloatVisitor{},
-        .Int, .ComptimeInt => ser.IntVisitor{},
-        .Null => ser.NullVisitor{},
-        .Optional => ser.OptionalVisitor{},
+    var s = switch (@typeInfo(T)) {
+        .Array => ser.SequenceSer{},
+        .Bool => ser.BoolSer{},
+        .Enum, .EnumLiteral => ser.EnumSer{},
+        .ErrorSet => ser.ErrorSer{},
+        .Float, .ComptimeFloat => ser.FloatSer{},
+        .Int, .ComptimeInt => ser.IntSer{},
+        .Null => ser.NullSer{},
+        .Optional => ser.OptionalSer{},
         .Pointer => |info| switch (info.size) {
-            .One => ser.PointerVisitor{},
+            .One => ser.PointerSer{},
             .Slice => switch (comptime std.meta.trait.isZigString(T)) {
-                true => ser.StringVisitor{},
-                false => ser.SequenceVisitor{},
+                true => ser.StringSer{},
+                false => ser.SequenceSer{},
             },
             else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
         },
         .Struct => |info| switch (info.is_tuple) {
-            true => ser.TupleVisitor{},
-            false => ser.StructVisitor{},
+            true => ser.TupleSer{},
+            false => ser.StructSer{},
         },
-        .Union => ser.UnionVisitor{},
-        .Vector => ser.VectorVisitor{},
-        .Void => ser.VoidVisitor{},
+        .Union => ser.UnionSer{},
+        .Vector => ser.VectorSer{},
+        .Void => ser.VoidSer{},
         else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
     };
 
-    return try serializeWith(value, serializer, visitor.visitor());
+    return try serializeWith(value, serializer, s.ser());
 }
 
 fn match(comptime expected: []const u8, comptime actual: []const u8) bool {

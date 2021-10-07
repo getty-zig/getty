@@ -11,7 +11,7 @@
 //! `std.ArrayList` instead of the `std.ArrayList` struct itself.
 
 /// Returns a namespace containing an interface function for visitors.
-pub fn Visitor(
+pub fn Ser(
     comptime Context: type,
     serializeFn: @TypeOf(struct {
         fn f(self: Context, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
@@ -35,7 +35,7 @@ pub fn Visitor(
     };
 
     return struct {
-        pub fn visitor(self: Context) T {
+        pub fn ser(self: Context) T {
             return .{ .context = self };
         }
     };
