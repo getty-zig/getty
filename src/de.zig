@@ -67,9 +67,9 @@ pub const de = struct {
                     .Slice => blk: {
                         if (comptime std.meta.trait.isZigString(T)) {
                             break :blk deserializer.deserializeString(visitor);
+                        } else {
+                            break :blk deserializer.deserializeSequence(visitor);
                         }
-
-                        break :blk deserializer.deserializeSequence(visitor);
                     },
                     else => @compileError("pointer type is not supported"),
                 },
