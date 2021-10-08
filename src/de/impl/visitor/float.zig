@@ -1,7 +1,5 @@
 const de = @import("../../../lib.zig").de;
 
-const Allocator = @import("std").mem.Allocator;
-
 pub fn Visitor(comptime T: type) type {
     return struct {
         const Self = @This();

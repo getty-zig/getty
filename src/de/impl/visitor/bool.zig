@@ -1,13 +1,10 @@
-const Allocator = @import("std").mem.Allocator;
 const de = @import("../../../lib.zig").de;
-
-const Self = @This();
 
 const Value = bool;
 
 /// Implements `getty.de.Visitor`.
 pub usingnamespace de.Visitor(
-    *Self,
+    *@This(),
     Value,
     visitBool,
     undefined,
@@ -21,8 +18,6 @@ pub usingnamespace de.Visitor(
     undefined,
 );
 
-fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
-    _ = self;
-
+fn visitBool(_: *@This(), comptime Error: type, input: bool) Error!Value {
     return input;
 }

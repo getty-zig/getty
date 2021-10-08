@@ -1,7 +1,5 @@
 const de = @import("../../../lib.zig").de;
 
-const Allocator = @import("std").mem.Allocator;
-const math = @import("std").math;
 const meta = @import("std").meta;
 
 pub fn Visitor(comptime T: type) type {
