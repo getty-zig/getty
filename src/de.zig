@@ -2,7 +2,7 @@ const std = @import("std");
 const getty = @import("lib.zig");
 
 pub usingnamespace @import("de/interface/deserializer.zig");
-pub usingnamespace @import("de/interface/deserialize.zig");
+pub usingnamespace @import("de/interface/de.zig");
 
 pub const de = struct {
     usingnamespace @import("de/impl.zig");
@@ -23,7 +23,7 @@ pub const de = struct {
     pub const DefaultDeserialize = struct {
         const Self = @This();
 
-        pub usingnamespace getty.Deserialize(Self, _deserialize);
+        pub usingnamespace getty.De(Self, _deserialize);
 
         fn _deserialize(self: Self, allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
             _ = self;
@@ -90,5 +90,5 @@ pub fn deserializeWith(allocator: ?*std.mem.Allocator, comptime T: type, deseria
 
 pub fn deserialize(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     const spec = de.DefaultDeserialize{};
-    return try deserializeWith(allocator, T, deserializer, spec.deserialize());
+    return try deserializeWith(allocator, T, deserializer, spec.de());
 }

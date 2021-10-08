@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn Deserialize(
+pub fn De(
     comptime Context: type,
     deserializeFn: @TypeOf(struct {
         fn f(self: Context, allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
@@ -23,7 +23,7 @@ pub fn Deserialize(
     };
 
     return struct {
-        pub fn deserialize(self: Context) T {
+        pub fn de(self: Context) T {
             return .{ .context = self };
         }
     };
