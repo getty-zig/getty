@@ -17,12 +17,15 @@ pub fn StructSerialize(
     }
 
     const T = struct {
+        context: Context,
+
         const Self = @This();
 
+        /// Successful return type.
         pub const Ok = O;
-        pub const Error = E;
 
-        context: Context,
+        /// The error set used upon failure.
+        pub const Error = E;
 
         /// Serialize a struct field.
         pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!void {

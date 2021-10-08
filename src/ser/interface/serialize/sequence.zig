@@ -17,12 +17,15 @@ pub fn SequenceSerialize(
     }
 
     const T = struct {
+        context: Context,
+
         const Self = @This();
 
+        /// Successful return type.
         pub const Ok = O;
-        pub const Error = E;
 
-        context: Context,
+        /// The error set used upon failure.
+        pub const Error = E;
 
         /// Serialize a sequence element.
         pub fn serializeElement(self: Self, value: anytype) Error!void {

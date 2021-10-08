@@ -19,12 +19,15 @@ pub fn MapSerialize(
     }
 
     const T = struct {
+        context: Context,
+
         const Self = @This();
 
+        /// Successful return type.
         pub const Ok = O;
-        pub const Error = E;
 
-        context: Context,
+        /// The error set used upon failure.
+        pub const Error = E;
 
         /// Serialize a map key.
         pub fn serializeKey(self: Self, key: anytype) Error!void {
