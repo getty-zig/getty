@@ -1,6 +1,15 @@
 const std = @import("std");
-const getty = @import("../../../lib.zig");
-const visitors = @import("../visitor.zig");
+const de = @import("../../../lib.zig").de;
+
+const ArrayVisitor = @import("array.zig").Visitor;
+const BoolVisitor = @import("bool.zig");
+const EnumVisitor = @import("enum.zig").Visitor;
+const FloatVisitor = @import("float.zig").Visitor;
+const IntVisitor = @import("int.zig").Visitor;
+const OptionalVisitor = @import("optional.zig").Visitor;
+const SliceVisitor = @import("slice.zig").Visitor;
+const StructVisitor = @import("struct.zig").Visitor;
+const VoidVisitor = @import("void.zig");
 
 pub fn Visitor(comptime T: type) type {
     if (@typeInfo(T) != .Pointer or @typeInfo(T).Pointer.size != .One) {
@@ -10,22 +19,22 @@ pub fn Visitor(comptime T: type) type {
     const Value = T;
     const Child = std.meta.Child(T);
     const ChildVisitor = switch (@typeInfo(Child)) {
-        .Array => visitors.ArrayVisitor(Child),
-        .Bool => visitors.BoolVisitor,
-        .Enum => visitors.EnumVisitor(Child),
-        .Float, .ComptimeFloat => visitors.FloatVisitor(Child),
-        .Int, .ComptimeInt => visitors.IntVisitor(Child),
-        .Optional => visitors.OptionalVisitor(Child),
+        .Array => ArrayVisitor(Child),
+        .Bool => BoolVisitor,
+        .Enum => EnumVisitor(Child),
+        .Float, .ComptimeFloat => FloatVisitor(Child),
+        .Int, .ComptimeInt => IntVisitor(Child),
+        .Optional => OptionalVisitor(Child),
         .Pointer => |info| switch (info.size) {
-            .One => visitors.PointerVisitor(Child),
-            .Slice => visitors.SliceVisitor(Child),
+            .One => Visitor(Child),
+            .Slice => SliceVisitor(Child),
             else => @compileError("pointer type is not supported"),
         },
         .Struct => |info| switch (info.is_tuple) {
-            false => visitors.StructVisitor(Child),
+            false => StructVisitor(Child),
             true => @compileError("tuple deserialization is not supported"),
         },
-        .Void => visitors.VoidVisitor,
+        .Void => VoidVisitor,
         else => @compileError("type `" ++ @typeName(Child) ++ "` is not supported"),
     };
 
@@ -35,7 +44,7 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             *Self,
             Value,
             _V.visitBool,

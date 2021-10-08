@@ -1,5 +1,5 @@
 const Allocator = @import("std").mem.Allocator;
-const Visitor = @import("../../interface.zig").Visitor;
+const Visitor = @import("../../../lib.zig").de.Visitor;
 
 const Self = @This();
 

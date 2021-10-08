@@ -1,12 +1,12 @@
 const Allocator = @import("std").mem.Allocator;
-const Visitor = @import("../../interface.zig").Visitor;
+const de = @import("../../../lib.zig").de;
 
 const Self = @This();
 
 const Value = bool;
 
 /// Implements `getty.de.Visitor`.
-pub usingnamespace Visitor(
+pub usingnamespace de.Visitor(
     *Self,
     Value,
     visitBool,

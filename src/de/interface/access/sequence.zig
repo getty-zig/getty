@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const DefaultSeed = @import("../../impl.zig").DefaultSeed;
+const DefaultSeed = @import("../../../lib.zig").de.DefaultSeed;
 
 pub fn SequenceAccess(
     comptime Context: type,

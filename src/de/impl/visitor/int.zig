@@ -1,4 +1,4 @@
-const interface = @import("../../interface.zig");
+const de = @import("../../../lib.zig").de;
 
 const Allocator = @import("std").mem.Allocator;
 const math = @import("std").math;
@@ -8,7 +8,7 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub usingnamespace interface.Visitor(
+        pub usingnamespace de.Visitor(
             *Self,
             Value,
             undefined,
