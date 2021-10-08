@@ -65,9 +65,8 @@ const DefaultDeserialize = struct {
             .Void => VoidVisitor{},
             else => unreachable,
         };
-        const visitor = v.visitor();
 
-        return try __deserialize(allocator, T, deserializer, visitor);
+        return try __deserialize(allocator, T, deserializer, v.visitor());
     }
 
     fn __deserialize(
