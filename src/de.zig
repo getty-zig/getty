@@ -67,8 +67,6 @@ const DefaultDeserialize = struct {
         };
         const visitor = v.visitor();
 
-        std.debug.assert(T == @TypeOf(visitor).Value);
-
         return try __deserialize(allocator, T, deserializer, visitor);
     }
 
