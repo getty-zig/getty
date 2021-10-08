@@ -68,17 +68,18 @@
 
 const std = @import("std");
 
+pub usingnamespace @import("ser/interface/serializer.zig");
+pub usingnamespace @import("ser/interface/ser.zig");
+
 pub const ser = struct {
+    usingnamespace @import("ser/impl.zig");
+
+    pub usingnamespace @import("ser/interface.zig");
+
     pub const Error = error{
         Unsupported,
     };
-
-    pub usingnamespace @import("ser/interface.zig");
-    usingnamespace @import("ser/impl.zig");
 };
-
-pub usingnamespace @import("ser/interface/ser.zig");
-pub usingnamespace @import("ser/interface/serializer.zig");
 
 /// Serializes a value using a provided serializer and serialize.
 ///
@@ -97,11 +98,12 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(se
 /// not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
+    const name = @typeName(T);
 
-    if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+    if (comptime match("std.array_list.ArrayList", name)) {
         var s = ser.ArrayListSer{};
         return try serializeWith(value, serializer, s.ser());
-    } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
+    } else if (comptime match("std.hash_map.HashMap", name)) {
         var s = ser.HashMapSer{};
         return try serializeWith(value, serializer, s.ser());
     }
@@ -121,7 +123,7 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
                 true => ser.StringSer{},
                 false => ser.SequenceSer{},
             },
-            else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
+            else => @compileError("type `" ++ name ++ "` is not supported"),
         },
         .Struct => |info| switch (info.is_tuple) {
             true => ser.TupleSer{},
@@ -130,7 +132,7 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
         .Union => ser.UnionSer{},
         .Vector => ser.VectorSer{},
         .Void => ser.VoidSer{},
-        else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
+        else => @compileError("type `" ++ name ++ "` is not supported"),
     };
 
     return try serializeWith(value, serializer, s.ser());

@@ -34,9 +34,9 @@ pub inline fn Serializer(
     }
 
     const T = struct {
-        context: Context,
-
         const Self = @This();
+
+        context: Context,
 
         /// Successful return type.
         pub const Ok = O;

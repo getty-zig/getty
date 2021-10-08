@@ -1,10 +1,15 @@
 const std = @import("std");
 const getty = @import("lib.zig");
 
-pub const de = struct {
-    pub const Error = std.mem.Allocator.Error || error{
-        Unsupported,
+pub usingnamespace @import("de/interface/deserializer.zig");
+pub usingnamespace @import("de/interface/deserialize.zig");
 
+pub const de = struct {
+    usingnamespace @import("de/impl.zig");
+
+    pub usingnamespace @import("de/interface.zig");
+
+    pub const Error = std.mem.Allocator.Error || error{
         DuplicateField,
         InvalidLength,
         InvalidType,
@@ -12,22 +17,15 @@ pub const de = struct {
         MissingField,
         UnknownField,
         UnknownVariant,
+        Unsupported,
     };
 
     pub const DefaultDeserialize = struct {
-        pub usingnamespace getty.Deserialize(
-            Self,
-            _deserialize,
-        );
-
         const Self = @This();
 
-        fn _deserialize(
-            self: Self,
-            allocator: ?*std.mem.Allocator,
-            comptime T: type,
-            deserializer: anytype,
-        ) @TypeOf(deserializer).Error!T {
+        pub usingnamespace getty.Deserialize(Self, _deserialize);
+
+        fn _deserialize(self: Self, allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
             _ = self;
 
             var v = switch (@typeInfo(T)) {
@@ -56,12 +54,7 @@ pub const de = struct {
             return try __deserialize(allocator, T, deserializer, visitor);
         }
 
-        inline fn __deserialize(
-            allocator: ?*std.mem.Allocator,
-            comptime T: type,
-            deserializer: anytype,
-            visitor: anytype,
-        ) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+        fn __deserialize(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype, visitor: anytype) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
             return try switch (@typeInfo(T)) {
                 .Array => deserializer.deserializeSequence(visitor),
                 .Bool => deserializer.deserializeBool(visitor),
@@ -89,28 +82,13 @@ pub const de = struct {
             };
         }
     };
-
-    pub usingnamespace @import("de/interface.zig");
-    usingnamespace @import("de/impl.zig");
 };
 
-pub usingnamespace @import("de/interface/deserialize.zig");
-pub usingnamespace @import("de/interface/deserializer.zig");
-
-pub fn deserializeWith(
-    allocator: ?*std.mem.Allocator,
-    comptime T: type,
-    deserializer: anytype,
-    spec: anytype,
-) @TypeOf(deserializer).Error!T {
+pub fn deserializeWith(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype, spec: anytype) @TypeOf(deserializer).Error!T {
     return try spec.deserialize(allocator, T, deserializer);
 }
 
-pub fn deserialize(
-    allocator: ?*std.mem.Allocator,
-    comptime T: type,
-    deserializer: anytype,
-) @TypeOf(deserializer).Error!T {
+pub fn deserialize(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     const spec = de.DefaultDeserialize{};
     return try deserializeWith(allocator, T, deserializer, spec.deserialize());
 }
