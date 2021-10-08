@@ -1,3 +1,23 @@
+//! Deserialization framework.
+//!
+//! Visually, deserialization within Getty can be represented like so:
+//!
+//!                Data Format
+//!
+//!                     ↓          ←─────────────────────┐
+//!                                                      │
+//!              Getty Data Model                        │
+//!                                                      │
+//!                     ↓          ←──────┐              │
+//!                                       │              │
+//!                  Zig data             │              │
+//!                                       │              │
+//!                                       │
+//!                                       │     `getty.Deserializer`
+//!                                       │
+//!
+//!                            `getty.De` + `getty.de.Visitor`
+
 const std = @import("std");
 const getty = @import("lib.zig");
 
@@ -89,11 +109,11 @@ const DefaultDeserialize = struct {
 /// Deserializer interface
 pub usingnamespace @import("de/interface/deserializer.zig");
 
-/// Deserialization interface
+/// `De` interface
 pub usingnamespace @import("de/interface/de.zig");
 
 pub const de = struct {
-    /// Generic error set for deserialization implementations.
+    /// Generic error set for `getty.De` implementations.
     pub const Error = std.mem.Allocator.Error || error{
         DuplicateField,
         InvalidLength,
@@ -113,7 +133,7 @@ pub const de = struct {
         /// Visitor
         pub usingnamespace @import("de/interface/visitor.zig");
 
-        /// Compound type access
+        /// Access for compound types
         pub usingnamespace @import("de/interface/access/map.zig");
         pub usingnamespace @import("de/interface/access/sequence.zig");
     };
@@ -125,11 +145,13 @@ pub const de = struct {
     };
 };
 
-pub fn deserializeWith(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype, spec: anytype) @TypeOf(deserializer).Error!T {
-    return try spec.deserialize(allocator, T, deserializer);
+/// Performs deserialization using a provided serializer and `de`.
+pub fn deserializeWith(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype, d: anytype) @TypeOf(deserializer).Error!T {
+    return try d.deserialize(allocator, T, deserializer);
 }
 
+/// Performs deserialization using a provided serializer and a default `de`.
 pub fn deserialize(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
-    const spec = DefaultDeserialize{};
-    return try deserializeWith(allocator, T, deserializer, spec.de());
+    const d = DefaultDeserialize{};
+    return try deserializeWith(allocator, T, deserializer, d.de());
 }

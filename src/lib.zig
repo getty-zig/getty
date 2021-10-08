@@ -1,5 +1,5 @@
-//! Getty is a serialization and deserialization framework for the Zig
-//! programming language.
+//! A serialization and deserialization framework for the Zig programming
+//! language.
 //!
 //! At its core, Getty is composed of two things: a data model (a set of
 //! supported types) and data format interfaces (specifications of how to

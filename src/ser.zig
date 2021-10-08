@@ -1,32 +1,22 @@
 //! Serialization framework.
 //!
-//! The serialization process consists of 2 stages:
-//!
-//!     1. Conversion of Zig data into Getty's data model.
-//!     2. Conversion from Getty's data model into a data format.
-//!
-//! The conversion into Getty's data model is performed by a serialize, while
-//! the conversion into data formats is performed by a serializer.
-//!
-//! Visually, serialization looks like this:
+//! Visually, serialization within Getty can be represented like so:
 //!
 //!                  Zig data
 //!
-//!                     ↓
+//!                     ↓          <------------------
+//!                                                  |
+//!              Getty Data Model                    |
+//!                                                  |
+//!                     ↓          <-------          |
+//!                                       |          |
+//!                Data Format            |          |
+//!                                       |          |
+//!                                       |
+//!                                       |     `getty.Ser`
+//!                                       |
 //!
-//!                 Serialize
-//!
-//!                     ↓
-//!
-//!              Getty Data Model
-//!
-//!                     ↓
-//!
-//!                 Serializer
-//!
-//!                     ↓
-//!
-//!                Data Format
+//!                               `getty.Serializer`
 //!
 //! # Data Model
 //!
@@ -39,32 +29,24 @@
 //! which serializers can operate. This can often simplify the job of a
 //! serializer significantly. For example, Zig considers `struct { x: i32 }`
 //! and `struct { y: bool }` to be different types. However, in Getty they are
-//! both considered to be the same type: struct. Therefore, if a serializer
-//! supports struct (as defined by Getty) serialization, then by definition it
-//! supports serialization for `struct { x: i32 }` values, `struct { y: bool }`
-//! values, and values of any other struct type (assuming the type is composed
-//! of data types supported by Getty).
+//! both considered to be the same type: struct. This means that if a
+//! serializer supports struct (as defined by Getty) serialization, then by
+//! definition it supports serialization for `struct { x: i32 }` values,
+//! `struct { y: bool }` values, and values of any other struct type that is
+//! composed of data types supported by Getty.
 //!
-//! For more granular serialization, type information may still be used.  For
-//! example, a serializer could support serialization of only `u32` and `u64`
-//! values instead of all integers by simply inspecting the `bits` fields in
-//! the integer's type information.
+//! # `Ser`s
 //!
-//! # Serializes
-//!
-//! A serialize defines how to convert Zig data types into Getty's data model.
-//! For example, the `BoolSer` defined by Getty converts `bool` values into the
-//! Boolean type, which is one of the types defined in Getty's data model.
-//!
-//! If the behavior of the default serializes provided by Getty aren't suitable
-//! for your use-case, then you may define and use your own custom
-//! serialization logic by creating a serialize yourself.
+//! A `ser` defines the conversion process between Zig types and Getty's data
+//! model. For example, the `BoolSer` type, used internally by Getty, converts
+//! `bool` values into the Boolean type, which is one of the types defined in
+//! Getty's data model.
 //!
 //! # Serializers
 //!
-//! Serializers define how to convert from Getty's data model into an output
-//! data format. For example, a JSON serializer would specify that Getty
-//! strings should be serialized as `"STRING"`.
+//! A serializer defines the conversion process between Getty's data model and
+//! an output data format. For example, a JSON serializer would specify that
+//! Getty strings should be serialized as `"<INSERT STRING HERE>"`.
 
 const std = @import("std");
 
@@ -89,7 +71,7 @@ const VoidSer = @import("ser/impl/ser/void.zig");
 /// Serializer interface
 pub usingnamespace @import("ser/interface/serializer.zig");
 
-/// Serialization interface
+/// `Ser` interface
 pub usingnamespace @import("ser/interface/ser.zig");
 
 pub const ser = struct {
@@ -98,14 +80,14 @@ pub const ser = struct {
         Unsupported,
     };
 
-    /// Compound type serialization interfaces
+    /// Serialization interfaces for compound types
     pub usingnamespace @import("ser/interface/serialize/map.zig");
     pub usingnamespace @import("ser/interface/serialize/sequence.zig");
     pub usingnamespace @import("ser/interface/serialize/struct.zig");
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
 };
 
-/// Serializes a value using a provided serializer and serialize.
+/// Serializes a value using a provided serializer and `ser`.
 ///
 /// `serializeWith` allows for data types that aren't supported by Getty to be
 /// serialized. Additionally, the function enables the use of custom
@@ -114,10 +96,10 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(se
     return try s.serialize(value, serializer);
 }
 
-/// Serializes a value using a provided serializer and a default serialize.
+/// Serializes a value using a provided serializer and a default `ser`.
 ///
-/// Serializes are only provided for data types supported by Getty, plus a
-/// few commonly used but unsupported types such as `std.ArrayList` and
+/// `Ser`s are only provided for data types supported by Getty, plus a few
+/// commonly used but unsupported types such as `std.ArrayList` and
 /// `std.AutoHashMap`. For custom serialization or serialization of data types
 /// not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
