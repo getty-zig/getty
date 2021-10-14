@@ -26,20 +26,26 @@ pub fn Visitor(comptime Value: type) type {
 
         fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
             const Child = std.meta.Child(Value);
-            var seen: usize = 0;
             var seq: Value = undefined;
-            errdefer {
-                var i: usize = 0;
 
-                while (i < seen) : (i += 1) {
-                    if (self.allocator) |allocator| getty.free(allocator, seq[i]);
+            if (@typeInfo(Value).Array.len == 0) {
+                seq = .{};
+            } else {
+                var seen: usize = 0;
+
+                errdefer {
+                    var i: usize = 0;
+
+                    while (i < seen) : (i += 1) {
+                        if (self.allocator) |allocator| getty.free(allocator, seq[i]);
+                    }
                 }
-            }
 
-            for (seq) |*elem| {
-                if (try sequenceAccess.nextElement(Child)) |value| {
-                    elem.* = value;
-                    seen += 1;
+                for (seq) |*elem| {
+                    if (try sequenceAccess.nextElement(Child)) |value| {
+                        elem.* = value;
+                        seen += 1;
+                    }
                 }
             }
 
