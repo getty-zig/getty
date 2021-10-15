@@ -22,6 +22,7 @@ const std = @import("std");
 const getty = @import("lib.zig");
 
 const ArrayVisitor = @import("de/impl/visitor/array.zig").Visitor;
+const ArrayListVisitor = @import("de/impl/visitor/array_list.zig").Visitor;
 const BoolVisitor = @import("de/impl/visitor/bool.zig");
 const EnumVisitor = @import("de/impl/visitor/enum.zig").Visitor;
 const FloatVisitor = @import("de/impl/visitor/float.zig").Visitor;
@@ -58,9 +59,15 @@ const DefaultDeserialize = struct {
                 .Slice => SliceVisitor(T){ .allocator = allocator.? },
                 else => @compileError("pointer type is not supported"),
             },
-            .Struct => |info| switch (info.is_tuple) {
-                true => @compileError("tuple erialization is not supported"),
-                false => StructVisitor(T){ .allocator = allocator },
+            .Struct => |info| blk: {
+                if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+                    break :blk ArrayListVisitor(T){ .allocator = allocator.? };
+                }
+
+                switch (info.is_tuple) {
+                    true => @compileError("tuple serialization is not supported"),
+                    false => break :blk StructVisitor(T){ .allocator = allocator },
+                }
             },
             .Void => VoidVisitor{},
             else => unreachable,
@@ -93,9 +100,15 @@ const DefaultDeserialize = struct {
                 },
                 else => @compileError("pointer type is not supported"),
             },
-            .Struct => |info| switch (info.is_tuple) {
-                true => @compileError("tuple deserialization is not supported"),
-                false => deserializer.deserializeStruct(visitor),
+            .Struct => |info| blk: {
+                if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+                    break :blk deserializer.deserializeSequence(visitor);
+                }
+
+                switch (info.is_tuple) {
+                    true => @compileError("tuple deserialization is not supported"),
+                    false => break :blk deserializer.deserializeStruct(visitor),
+                }
             },
             .Void => deserializer.deserializeVoid(visitor),
             else => unreachable,
@@ -138,7 +151,7 @@ pub const de = struct {
     /// Implementations
     pub usingnamespace struct {
         // Default deserialization seed
-        pub usingnamespace @import("de/impl/default_seed.zig");
+        pub usingnamespace @import("de/impl/seed/default.zig");
     };
 };
 
@@ -151,4 +164,12 @@ pub fn deserializeWith(allocator: ?*std.mem.Allocator, comptime T: type, deseria
 pub fn deserialize(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
     const d = DefaultDeserialize{};
     return try deserializeWith(allocator, T, deserializer, d.de());
+}
+
+fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
+    if (actual.len >= expected.len and std.mem.eql(u8, actual[0..expected.len], expected)) {
+        return true;
+    }
+
+    return false;
 }

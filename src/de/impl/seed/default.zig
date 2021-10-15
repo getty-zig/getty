@@ -1,5 +1,5 @@
 const std = @import("std");
-const getty = @import("../../lib.zig");
+const getty = @import("../../../lib.zig");
 
 pub fn DefaultSeed(comptime Value: type) type {
     return struct {

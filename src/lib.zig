@@ -46,11 +46,26 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
                 }
             } else unreachable;
         },
-        .Struct => |info| inline for (info.fields) |field| {
-            if (!field.is_comptime) free(allocator, @field(value, field.name));
+        .Struct => |info| {
+            if (comptime match("std.array_list.ArrayList", @typeName(@TypeOf(value)))) {
+                defer value.deinit();
+                for (value.items) |v| free(allocator, v);
+            } else {
+                inline for (info.fields) |field| {
+                    if (!field.is_comptime) free(allocator, @field(value, field.name));
+                }
+            }
         },
         else => unreachable,
     }
+}
+
+fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
+    if (actual.len >= expected.len and std.mem.eql(u8, actual[0..expected.len], expected)) {
+        return true;
+    }
+
+    return false;
 }
 
 test {
