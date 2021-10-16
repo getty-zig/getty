@@ -33,88 +33,15 @@ const SliceVisitor = @import("de/impl/visitor/slice.zig").Visitor;
 const StructVisitor = @import("de/impl/visitor/struct.zig").Visitor;
 const VoidVisitor = @import("de/impl/visitor/void.zig");
 
-const DefaultDeserialize = struct {
-    const Self = @This();
-
-    pub usingnamespace getty.De(
-        Self,
-        _deserialize,
-    );
-
-    fn _deserialize(
-        _: Self,
-        allocator: ?*std.mem.Allocator,
-        comptime T: type,
-        deserializer: anytype,
-    ) @TypeOf(deserializer).Error!T {
-        var v = switch (@typeInfo(T)) {
-            .Array => ArrayVisitor(T){},
-            .Bool => BoolVisitor{},
-            .Enum => EnumVisitor(T){},
-            .Float, .ComptimeFloat => FloatVisitor(T){},
-            .Int, .ComptimeInt => IntVisitor(T){},
-            .Optional => OptionalVisitor(T){ .allocator = allocator },
-            .Pointer => |info| switch (info.size) {
-                .One => PointerVisitor(T){ .allocator = allocator.? },
-                .Slice => SliceVisitor(T){ .allocator = allocator.? },
-                else => @compileError("pointer type is not supported"),
-            },
-            .Struct => |info| blk: {
-                if (comptime match("std.array_list.ArrayList", @typeName(T))) {
-                    break :blk ArrayListVisitor(T){ .allocator = allocator.? };
-                }
-
-                switch (info.is_tuple) {
-                    true => @compileError("tuple serialization is not supported"),
-                    false => break :blk StructVisitor(T){ .allocator = allocator },
-                }
-            },
-            .Void => VoidVisitor{},
-            else => unreachable,
-        };
-
-        return try __deserialize(allocator, T, deserializer, v.visitor());
-    }
-
-    fn __deserialize(
-        allocator: ?*std.mem.Allocator,
-        comptime T: type,
-        deserializer: anytype,
-        visitor: anytype,
-    ) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
-        return try switch (@typeInfo(T)) {
-            .Array => deserializer.deserializeSequence(visitor),
-            .Bool => deserializer.deserializeBool(visitor),
-            .Enum => deserializer.deserializeEnum(visitor),
-            .Float, .ComptimeFloat => deserializer.deserializeFloat(visitor),
-            .Int, .ComptimeInt => deserializer.deserializeInt(visitor),
-            .Optional => deserializer.deserializeOptional(visitor),
-            .Pointer => |info| switch (info.size) {
-                .One => __deserialize(allocator, std.meta.Child(T), deserializer, visitor),
-                .Slice => blk: {
-                    if (comptime std.meta.trait.isZigString(T)) {
-                        break :blk deserializer.deserializeString(visitor);
-                    } else {
-                        break :blk deserializer.deserializeSequence(visitor);
-                    }
-                },
-                else => @compileError("pointer type is not supported"),
-            },
-            .Struct => |info| blk: {
-                if (comptime match("std.array_list.ArrayList", @typeName(T))) {
-                    break :blk deserializer.deserializeSequence(visitor);
-                }
-
-                switch (info.is_tuple) {
-                    true => @compileError("tuple deserialization is not supported"),
-                    false => break :blk deserializer.deserializeStruct(visitor),
-                }
-            },
-            .Void => deserializer.deserializeVoid(visitor),
-            else => unreachable,
-        };
-    }
-};
+const BoolDe = @import("de/impl/de/bool.zig").De;
+const EnumDe = @import("de/impl/de/enum.zig").De;
+const FloatDe = @import("de/impl/de/float.zig").De;
+const IntDe = @import("de/impl/de/int.zig").De;
+const OptionalDe = @import("de/impl/de/optional.zig").De;
+const SequenceDe = @import("de/impl/de/sequence.zig").De;
+const StringDe = @import("de/impl/de/string.zig").De;
+const StructDe = @import("de/impl/de/struct.zig").De;
+const VoidDe = @import("de/impl/de/void.zig").De;
 
 /// Deserializer interface
 pub usingnamespace @import("de/interface/deserializer.zig");
@@ -156,14 +83,84 @@ pub const de = struct {
 };
 
 /// Performs deserialization using a provided serializer and `de`.
-pub fn deserializeWith(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype, d: anytype) @TypeOf(deserializer).Error!T {
+pub fn deserializeWith(
+    allocator: ?*std.mem.Allocator,
+    comptime T: type,
+    deserializer: anytype,
+    d: anytype,
+) @TypeOf(deserializer).Error!T {
     return try d.deserialize(allocator, T, deserializer);
 }
 
 /// Performs deserialization using a provided serializer and a default `de`.
-pub fn deserialize(allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
-    const d = DefaultDeserialize{};
-    return try deserializeWith(allocator, T, deserializer, d.de());
+pub fn deserialize(
+    allocator: ?*std.mem.Allocator,
+    comptime T: type,
+    deserializer: anytype,
+) @TypeOf(deserializer).Error!T {
+    var v = switch (@typeInfo(T)) {
+        .Array => ArrayVisitor(T){},
+        .Bool => BoolVisitor{},
+        .Enum => EnumVisitor(T){},
+        .Float, .ComptimeFloat => FloatVisitor(T){},
+        .Int, .ComptimeInt => IntVisitor(T){},
+        .Optional => OptionalVisitor(T){ .allocator = allocator },
+        .Pointer => |info| switch (info.size) {
+            .One => PointerVisitor(T){ .allocator = allocator.? },
+            .Slice => SliceVisitor(T){ .allocator = allocator.? },
+            else => @compileError("pointer type is not supported"),
+        },
+        .Struct => |info| blk: {
+            if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+                break :blk ArrayListVisitor(T){ .allocator = allocator.? };
+            } else switch (info.is_tuple) {
+                true => @compileError("tuple serialization is not supported"),
+                false => break :blk StructVisitor(T){ .allocator = allocator },
+            }
+        },
+        .Void => VoidVisitor{},
+        else => unreachable,
+    };
+
+    return try _deserialize(allocator, T, deserializer, v.visitor());
+}
+
+fn _deserialize(
+    allocator: ?*std.mem.Allocator,
+    comptime T: type,
+    deserializer: anytype,
+    visitor: anytype,
+) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+    const Visitor = @TypeOf(visitor);
+
+    var d = switch (@typeInfo(T)) {
+        .Array => SequenceDe(Visitor){ .visitor = visitor },
+        .Bool => BoolDe(Visitor){ .visitor = visitor },
+        .Enum => EnumDe(Visitor){ .visitor = visitor },
+        .Float, .ComptimeFloat => FloatDe(Visitor){ .visitor = visitor },
+        .Int, .ComptimeInt => IntDe(Visitor){ .visitor = visitor },
+        .Optional => OptionalDe(Visitor){ .visitor = visitor },
+        .Pointer => |info| switch (info.size) {
+            .One => return try _deserialize(allocator, std.meta.Child(T), deserializer, visitor),
+            .Slice => switch (comptime std.meta.trait.isZigString(T)) {
+                true => StringDe(Visitor){ .visitor = visitor },
+                false => SequenceDe(Visitor){ .visitor = visitor },
+            },
+            else => @compileError("pointer type is not supported"),
+        },
+        .Struct => |info| blk: {
+            if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+                break :blk SequenceDe(Visitor){ .visitor = visitor };
+            } else switch (info.is_tuple) {
+                false => break :blk StructDe(Visitor){ .visitor = visitor },
+                true => @compileError("tuple deserialization is not supported"),
+            }
+        },
+        .Void => VoidDe(Visitor){ .visitor = visitor },
+        else => unreachable,
+    };
+
+    return try deserializeWith(allocator, Visitor.Value, deserializer, d.de());
 }
 
 fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
