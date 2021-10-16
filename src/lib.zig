@@ -48,8 +48,8 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
         },
         .Struct => |info| {
             if (comptime match("std.array_list.ArrayList", @typeName(@TypeOf(value)))) {
-                defer value.deinit();
                 for (value.items) |v| free(allocator, v);
+                value.deinit();
             } else {
                 inline for (info.fields) |field| {
                     if (!field.is_comptime) free(allocator, @field(value, field.name));
