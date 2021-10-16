@@ -108,18 +108,18 @@ pub fn deserialize(
         .Pointer => |info| switch (info.size) {
             .One => PointerVisitor(T){ .allocator = allocator.? },
             .Slice => SliceVisitor(T){ .allocator = allocator.? },
-            else => @compileError("pointer type is not supported"),
+            else => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
         },
         .Struct => |info| blk: {
             if (comptime match("std.array_list.ArrayList", @typeName(T))) {
                 break :blk ArrayListVisitor(T){ .allocator = allocator.? };
             } else switch (info.is_tuple) {
-                true => @compileError("tuple serialization is not supported"),
+                true => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
                 false => break :blk StructVisitor(T){ .allocator = allocator },
             }
         },
         .Void => VoidVisitor{},
-        else => unreachable,
+        else => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
     };
 
     return try _deserialize(allocator, T, deserializer, v.visitor());
@@ -146,18 +146,18 @@ fn _deserialize(
                 true => StringDe(Visitor){ .visitor = visitor },
                 false => SequenceDe(Visitor){ .visitor = visitor },
             },
-            else => @compileError("pointer type is not supported"),
+            else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
         },
         .Struct => |info| blk: {
             if (comptime match("std.array_list.ArrayList", @typeName(T))) {
                 break :blk SequenceDe(Visitor){ .visitor = visitor };
             } else switch (info.is_tuple) {
                 false => break :blk StructDe(Visitor){ .visitor = visitor },
-                true => @compileError("tuple deserialization is not supported"),
+                true => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
             }
         },
         .Void => VoidDe(Visitor){ .visitor = visitor },
-        else => unreachable,
+        else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
     };
 
     return try deserializeWith(allocator, Visitor.Value, deserializer, d.de());
