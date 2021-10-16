@@ -80,7 +80,6 @@ pub const ser = struct {
         Unsupported,
     };
 
-    /// Serialization interfaces for compound types
     pub usingnamespace @import("ser/interface/serialize/map.zig");
     pub usingnamespace @import("ser/interface/serialize/sequence.zig");
     pub usingnamespace @import("ser/interface/serialize/struct.zig");

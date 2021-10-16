@@ -62,24 +62,12 @@ pub const de = struct {
         Unsupported,
     };
 
-    /// Interfaces
-    pub usingnamespace struct {
-        /// Deserialization seed
-        pub usingnamespace @import("de/interface/seed.zig");
+    pub usingnamespace @import("de/interface/seed.zig");
+    pub usingnamespace @import("de/interface/visitor.zig");
+    pub usingnamespace @import("de/interface/access/map.zig");
+    pub usingnamespace @import("de/interface/access/sequence.zig");
 
-        /// Visitor
-        pub usingnamespace @import("de/interface/visitor.zig");
-
-        /// Access for compound types
-        pub usingnamespace @import("de/interface/access/map.zig");
-        pub usingnamespace @import("de/interface/access/sequence.zig");
-    };
-
-    /// Implementations
-    pub usingnamespace struct {
-        // Default deserialization seed
-        pub usingnamespace @import("de/impl/seed/default.zig");
-    };
+    pub usingnamespace @import("de/impl/seed/default.zig");
 };
 
 /// Performs deserialization using a provided serializer and `de`.
