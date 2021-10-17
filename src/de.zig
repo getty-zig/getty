@@ -99,7 +99,7 @@ pub fn deserialize(
             else => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
         },
         .Struct => |info| blk: {
-            if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
                 break :blk ArrayListVisitor(T){ .allocator = allocator.? };
             } else switch (info.is_tuple) {
                 true => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
@@ -137,11 +137,11 @@ fn _deserialize(
             else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
         },
         .Struct => |info| blk: {
-            if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
                 break :blk SequenceDe(Visitor){ .visitor = visitor };
             } else switch (info.is_tuple) {
-                false => break :blk StructDe(Visitor){ .visitor = visitor },
                 true => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
+                false => break :blk StructDe(Visitor){ .visitor = visitor },
             }
         },
         .Void => VoidDe(Visitor){ .visitor = visitor },
@@ -149,12 +149,4 @@ fn _deserialize(
     };
 
     return try deserializeWith(allocator, Visitor.Value, deserializer, d.de());
-}
-
-fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
-    if (actual.len >= expected.len and std.mem.eql(u8, actual[0..expected.len], expected)) {
-        return true;
-    }
-
-    return false;
 }

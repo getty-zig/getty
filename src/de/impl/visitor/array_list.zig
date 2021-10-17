@@ -2,6 +2,12 @@ const std = @import("std");
 const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime ArrayList: type) type {
+    const unmanaged = comptime std.mem.startsWith(
+        u8,
+        @typeName(ArrayList),
+        "std.array_list.ArrayListAlignedUnmanaged",
+    );
+
     return struct {
         allocator: *std.mem.Allocator,
 
@@ -24,11 +30,11 @@ pub fn Visitor(comptime ArrayList: type) type {
         );
 
         fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!ArrayList {
-            var list = ArrayList.init(self.allocator);
-            errdefer list.deinit();
+            var list = if (unmanaged) ArrayList{} else ArrayList.init(self.allocator);
+            errdefer if (unmanaged) list.deinit(self.allocator) else list.deinit();
 
             while (try sequenceAccess.nextElement(Child)) |value| {
-                try list.append(value);
+                try if (unmanaged) list.append(self.allocator, value) else list.append(value);
             }
 
             return list;

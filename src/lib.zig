@@ -21,7 +21,10 @@ pub usingnamespace @import("ser.zig");
 pub usingnamespace @import("de.zig");
 
 pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
-    switch (@typeInfo(@TypeOf(value))) {
+    const T = @TypeOf(value);
+    const name = @typeName(T);
+
+    switch (@typeInfo(T)) {
         .Bool, .Float, .ComptimeFloat, .Int, .ComptimeInt, .Enum, .EnumLiteral, .Null, .Void => {},
         .Array => for (value) |v| free(allocator, v),
         .Optional => if (value) |v| free(allocator, v),
@@ -37,9 +40,9 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
             else => unreachable,
         },
         .Union => |info| {
-            if (info.tag_type) |T| {
+            if (info.tag_type) |Tag| {
                 inline for (info.fields) |field| {
-                    if (value == @field(T, field.name)) {
+                    if (value == @field(Tag, field.name)) {
                         free(allocator, @field(value, field.name));
                         break;
                     }
@@ -47,7 +50,14 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
             } else unreachable;
         },
         .Struct => |info| {
-            if (comptime match("std.array_list.ArrayList", @typeName(@TypeOf(value)))) {
+            if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayListAlignedUnmanaged")) {
+                for (value.items) |v| free(allocator, v);
+
+                // A copy is needed since the `deinit` method for unmanaged
+                // ArrayLists takes `*Self` instead of `Self`.
+                var copy = value;
+                copy.deinit(allocator);
+            } else if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayList")) {
                 for (value.items) |v| free(allocator, v);
                 value.deinit();
             } else {
@@ -58,14 +68,6 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
         },
         else => unreachable,
     }
-}
-
-fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
-    if (actual.len >= expected.len and std.mem.eql(u8, actual[0..expected.len], expected)) {
-        return true;
-    }
-
-    return false;
 }
 
 test {
