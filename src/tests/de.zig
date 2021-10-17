@@ -81,7 +81,6 @@ const Deserializer = struct {
 
         fn deserializeInt(self: *Self, visitor: anytype) !@TypeOf(visitor).Value {
             return switch (self.value) {
-                .Float => |value| try visitor.visitFloat(Error, value),
                 .Int => |value| try visitor.visitInt(Error, value),
                 else => Error.Input,
             };
@@ -334,11 +333,6 @@ test "int" {
             .desc = "conversion to higher bit size",
             .input = Token{ .Int = 1 },
             .output = @as(i128, 1),
-        },
-        .{
-            .desc = "conversion from float",
-            .input = Token{ .Float = 1.0 },
-            .output = @as(i64, 1),
         },
         .{
             .desc = "conversion to different sign",

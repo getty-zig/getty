@@ -12,7 +12,7 @@ pub fn Visitor(comptime T: type) type {
             Value,
             undefined,
             undefined,
-            visitFloat,
+            undefined,
             visitInt,
             undefined,
             undefined,
@@ -23,14 +23,6 @@ pub fn Visitor(comptime T: type) type {
         );
 
         const Value = T;
-
-        fn visitFloat(_: *Self, comptime Error: type, input: anytype) Error!Value {
-            if (math.round(input) != input or (input > math.maxInt(T) or input < math.minInt(T))) {
-                return error.InvalidValue;
-            }
-
-            return @floatToInt(T, input);
-        }
 
         fn visitInt(_: *Self, comptime Error: type, input: anytype) Error!Value {
             return @intCast(T, input);
