@@ -9,7 +9,7 @@ pub fn Visitor(comptime T: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace de.Visitor(
-            *Self,
+            Self,
             Value,
             undefined,
             undefined,
@@ -25,7 +25,7 @@ pub fn Visitor(comptime T: type) type {
 
         const Value = T;
 
-        fn visitSequence(self: *Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+        fn visitSequence(self: Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             var list = std.ArrayList(std.meta.Child(Value)).init(self.allocator);
             errdefer list.deinit();
 
@@ -36,7 +36,7 @@ pub fn Visitor(comptime T: type) type {
             return list.toOwnedSlice();
         }
 
-        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
             // TODO: This type check (and InvalidType error) is a temporary
             // workaround for the case where the child type of `Value` isn't a
             // u8. In that situation, the compiler keeps both the .ArrayBegin

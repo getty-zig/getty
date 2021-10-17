@@ -10,7 +10,7 @@ pub fn Visitor(comptime Value: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace getty.de.Visitor(
-            *Self,
+            Self,
             Value,
             undefined,
             undefined,
@@ -24,7 +24,7 @@ pub fn Visitor(comptime Value: type) type {
             undefined,
         );
 
-        fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+        fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
             const Child = std.meta.Child(Value);
             var seq: Value = undefined;
 

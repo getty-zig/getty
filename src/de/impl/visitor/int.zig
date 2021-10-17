@@ -8,7 +8,7 @@ pub fn Visitor(comptime T: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace de.Visitor(
-            *Self,
+            Self,
             Value,
             undefined,
             undefined,
@@ -24,7 +24,7 @@ pub fn Visitor(comptime T: type) type {
 
         const Value = T;
 
-        fn visitInt(_: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitInt(_: Self, comptime Error: type, input: anytype) Error!Value {
             return @intCast(T, input);
         }
     };

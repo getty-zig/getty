@@ -11,7 +11,7 @@ pub fn Visitor(comptime T: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace getty.de.Visitor(
-            *Self,
+            Self,
             Value,
             undefined,
             undefined,
@@ -27,13 +27,13 @@ pub fn Visitor(comptime T: type) type {
 
         const Value = T;
 
-        fn visitNull(self: *Self, comptime Error: type) Error!Value {
+        fn visitNull(self: Self, comptime Error: type) Error!Value {
             _ = self;
 
             return null;
         }
 
-        fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return try getty.deserialize(self.allocator, Child(T), deserializer);
         }
     };

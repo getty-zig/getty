@@ -4,7 +4,7 @@ const Value = bool;
 
 /// Implements `getty.de.Visitor`.
 pub usingnamespace de.Visitor(
-    *@This(),
+    @This(),
     Value,
     visitBool,
     undefined,
@@ -18,6 +18,6 @@ pub usingnamespace de.Visitor(
     undefined,
 );
 
-fn visitBool(_: *@This(), comptime Error: type, input: bool) Error!Value {
+fn visitBool(_: @This(), comptime Error: type, input: bool) Error!Value {
     return input;
 }

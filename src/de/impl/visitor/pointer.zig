@@ -45,7 +45,7 @@ pub fn Visitor(comptime T: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace de.Visitor(
-            *Self,
+            Self,
             Value,
             _V.visitBool,
             _V.visitEnum,
@@ -60,7 +60,7 @@ pub fn Visitor(comptime T: type) type {
         );
 
         const _V = struct {
-            fn visitBool(self: *Self, comptime Error: type, input: bool) Error!Value {
+            fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -69,7 +69,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -78,7 +78,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitFloat(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -87,7 +87,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -96,7 +96,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+            fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -105,7 +105,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitNull(self: *Self, comptime Error: type) Error!Value {
+            fn visitNull(self: Self, comptime Error: type) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -114,7 +114,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitSequence(self: *Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -123,7 +123,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
+            fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -132,7 +132,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitSome(self: *Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
@@ -141,7 +141,7 @@ pub fn Visitor(comptime T: type) type {
                 return value;
             }
 
-            fn visitVoid(self: *Self, comptime Error: type) Error!Value {
+            fn visitVoid(self: Self, comptime Error: type) Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 

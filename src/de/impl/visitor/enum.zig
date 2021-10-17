@@ -8,7 +8,7 @@ pub fn Visitor(comptime T: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace de.Visitor(
-            *Self,
+            Self,
             Value,
             undefined,
             visitEnum,
@@ -24,19 +24,19 @@ pub fn Visitor(comptime T: type) type {
 
         const Value = T;
 
-        fn visitEnum(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
 
             return input;
         }
 
-        fn visitInt(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
 
             return meta.intToEnum(Value, input) catch unreachable;
         }
 
-        fn visitString(self: *Self, comptime Error: type, input: anytype) Error!Value {
+        fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
             _ = self;
 
             return meta.stringToEnum(Value, input) orelse return error.UnknownVariant;

@@ -4,7 +4,7 @@ const Value = void;
 
 /// Implements `getty.de.Visitor`.
 pub usingnamespace Visitor(
-    *@This(),
+    @This(),
     Value,
     undefined,
     undefined,
@@ -18,6 +18,6 @@ pub usingnamespace Visitor(
     visitVoid,
 );
 
-fn visitVoid(_: *@This(), comptime Error: type) Error!Value {
+fn visitVoid(_: @This(), comptime Error: type) Error!Value {
     return {};
 }

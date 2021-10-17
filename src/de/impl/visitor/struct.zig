@@ -10,7 +10,7 @@ pub fn Visitor(comptime Value: type) type {
 
         /// Implements `getty.de.Visitor`.
         pub usingnamespace getty.de.Visitor(
-            *Self,
+            Self,
             Value,
             undefined,
             undefined,
@@ -24,7 +24,7 @@ pub fn Visitor(comptime Value: type) type {
             undefined,
         );
 
-        fn visitMap(self: *Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             var seen: usize = 0;
             var map: Value = undefined;
             errdefer {
