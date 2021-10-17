@@ -104,10 +104,10 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(se
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
-    if (comptime match("std.array_list.ArrayList", @typeName(T))) {
+    if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
         var s = ArrayListSer{};
         return try serializeWith(value, serializer, s.ser());
-    } else if (comptime match("std.hash_map.HashMap", @typeName(T))) {
+    } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
         var s = HashMapSer{};
         return try serializeWith(value, serializer, s.ser());
     }
@@ -140,12 +140,4 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
     };
 
     return try serializeWith(value, serializer, s.ser());
-}
-
-fn match(comptime expected: []const u8, comptime actual: []const u8) bool {
-    if (actual.len >= expected.len and std.mem.eql(u8, actual[0..expected.len], expected)) {
-        return true;
-    }
-
-    return false;
 }
