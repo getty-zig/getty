@@ -103,9 +103,9 @@ pub fn deserialize(
             else => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
         },
         .Struct => |info| blk: {
-            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
+            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
                 break :blk ArrayListVisitor(T){ .allocator = allocator.? };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
+            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
                 break :blk HashMapVisitor(T){ .allocator = allocator.? };
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
                 break :blk LinkedListVisitor(T){ .allocator = allocator.? };
@@ -147,9 +147,9 @@ fn _deserialize(
             else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
         },
         .Struct => |info| blk: {
-            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
+            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
                 break :blk SequenceDe(Visitor){ .visitor = visitor };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
+            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
                 break :blk MapDe(Visitor){ .visitor = visitor };
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list")) {
                 break :blk SequenceDe(Visitor){ .visitor = visitor };
