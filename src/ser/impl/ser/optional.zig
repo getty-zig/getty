@@ -6,9 +6,5 @@ pub usingnamespace getty.Ser(
 );
 
 fn serialize(_: *@This(), value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    if (value) |v| {
-        return try getty.serialize(v, serializer);
-    }
-
-    return try getty.serialize(null, serializer);
+    return try if (value) |v| serializer.serializeSome(v) else serializer.serializeNull();
 }

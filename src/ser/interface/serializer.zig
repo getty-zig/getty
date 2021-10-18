@@ -23,6 +23,7 @@ pub inline fn Serializer(
     comptime mapFn: fn (Context, ?usize) E!MapSerialize,
     comptime nullFn: fn (Context) E!O,
     comptime sequenceFn: fn (Context, ?usize) E!SequenceSerialize,
+    comptime someFn: fn (Context, anytype) E!O,
     comptime stringFn: fn (Context, anytype) E!O,
     comptime structFn: fn (Context, comptime []const u8, usize) E!StructSerialize,
     comptime tupleFn: fn (Context, ?usize) E!TupleSerialize,
@@ -92,6 +93,11 @@ pub inline fn Serializer(
         /// Starts the serialization process for a sequence.
         pub fn serializeSequence(self: Self, length: ?usize) Error!SequenceSerialize {
             return try sequenceFn(self.context, length);
+        }
+
+        /// Serializes the payload of an optional.
+        pub fn serializeSome(self: Self, value: anytype) Error!Ok {
+            return try someFn(self.context, value);
         }
 
         /// Serializes a string value.
