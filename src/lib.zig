@@ -52,14 +52,18 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
         .Struct => |info| {
             if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayListAlignedUnmanaged")) {
                 for (value.items) |v| free(allocator, v);
-
-                // A copy is needed since the `deinit` method for unmanaged
-                // ArrayLists takes `*Self` instead of `Self`.
-                var copy = value;
-                copy.deinit(allocator);
+                var mut = value;
+                mut.deinit(allocator);
             } else if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayList")) {
                 for (value.items) |v| free(allocator, v);
                 value.deinit();
+            } else if (comptime std.mem.startsWith(u8, name, "std.linked_list.SinglyLinkedList")) {
+                var it = value.first;
+                while (it) |node| {
+                    free(allocator, node.data);
+                    it = node.next;
+                    allocator.destroy(node);
+                }
             } else {
                 inline for (info.fields) |field| {
                     if (!field.is_comptime) free(allocator, @field(value, field.name));
