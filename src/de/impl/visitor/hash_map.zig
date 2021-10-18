@@ -13,25 +13,8 @@ pub fn Visitor(comptime HashMap: type) type {
 
         const Self = @This();
 
-        const K = blk: {
-            inline for (std.meta.fields(HashMap.KV)) |field| {
-                if (std.mem.eql(u8, "key", field.name)) {
-                    break :blk field.field_type;
-                }
-            }
-
-            unreachable;
-        };
-
-        const V = blk: {
-            inline for (std.meta.fields(HashMap.KV)) |field| {
-                if (std.mem.eql(u8, "value", field.name)) {
-                    break :blk field.field_type;
-                }
-            }
-
-            unreachable;
-        };
+        const K = std.meta.fieldInfo(HashMap.KV, .key).field_type;
+        const V = std.meta.fieldInfo(HashMap.KV, .value).field_type;
 
         pub usingnamespace getty.de.Visitor(
             Self,
@@ -50,7 +33,7 @@ pub fn Visitor(comptime HashMap: type) type {
 
         fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!HashMap {
             var map = if (unmanaged) HashMap{} else HashMap.init(self.allocator);
-            errdefer if (unmanaged) map.deinit(self.allocator) else map.deinit();
+            errdefer getty.free(self.allocator, map);
 
             while (try mapAccess.nextKey(K)) |key| {
                 const value = try mapAccess.nextValue(V);

@@ -33,6 +33,7 @@ const LinkedListVisitor = @import("de/impl/visitor/linked_list.zig").Visitor;
 const PointerVisitor = @import("de/impl/visitor/pointer.zig").Visitor;
 const SliceVisitor = @import("de/impl/visitor/slice.zig").Visitor;
 const StructVisitor = @import("de/impl/visitor/struct.zig").Visitor;
+const TailQueueVisitor = @import("de/impl/visitor/tail_queue.zig").Visitor;
 const VoidVisitor = @import("de/impl/visitor/void.zig");
 
 const BoolDe = @import("de/impl/de/bool.zig").De;
@@ -108,6 +109,8 @@ pub fn deserialize(
                 break :blk HashMapVisitor(T){ .allocator = allocator.? };
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
                 break :blk LinkedListVisitor(T){ .allocator = allocator.? };
+            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue")) {
+                break :blk TailQueueVisitor(T){ .allocator = allocator.? };
             } else switch (info.is_tuple) {
                 true => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
                 false => break :blk StructVisitor(T){ .allocator = allocator },
@@ -148,7 +151,7 @@ fn _deserialize(
                 break :blk SequenceDe(Visitor){ .visitor = visitor };
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
                 break :blk MapDe(Visitor){ .visitor = visitor };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
+            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list")) {
                 break :blk SequenceDe(Visitor){ .visitor = visitor };
             } else switch (info.is_tuple) {
                 true => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.

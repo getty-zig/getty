@@ -57,11 +57,21 @@ pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
             } else if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayList")) {
                 for (value.items) |v| free(allocator, v);
                 value.deinit();
-            } else if (comptime std.mem.startsWith(u8, name, "std.linked_list.SinglyLinkedList")) {
-                var it = value.first;
-                while (it) |node| {
+            } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMapUnmanaged")) {
+                var iterator = value.iterator();
+                while (iterator.next()) |entry| free(allocator, entry.value_ptr.*);
+                var mut = value;
+                mut.deinit(allocator);
+            } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMap")) {
+                var iterator = value.iterator();
+                while (iterator.next()) |entry| free(allocator, entry.value_ptr.*);
+                var mut = value;
+                mut.deinit();
+            } else if (comptime std.mem.startsWith(u8, name, "std.linked_list")) {
+                var iterator = value.first;
+                while (iterator) |node| {
                     free(allocator, node.data);
-                    it = node.next;
+                    iterator = node.next;
                     allocator.destroy(node);
                 }
             } else {
