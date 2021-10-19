@@ -20,9 +20,6 @@ pub const Token = union(enum) {
     F64: f64,
     F128: f128,
 
-    //ComptimeInt: comptime_int,
-    //ComptimeFloat: comptime_float,
-
     String: []const u8,
 
     Null,

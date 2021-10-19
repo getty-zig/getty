@@ -117,10 +117,6 @@ test "bool" {
     try t(false, &[_]Token{.{ .Bool = false }});
 }
 
-//test "comptime_int" {}
-
-//test "comptime_float" {}
-
 test "enum" {
     // enum literal
     {
