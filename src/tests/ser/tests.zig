@@ -185,6 +185,26 @@ test "hash map" {
             .{ .MapEnd = .{} },
         });
     }
+
+    // string
+    {
+        var map = std.StringHashMap(i32).init(std.testing.allocator);
+        defer getty.free(std.testing.allocator, map);
+
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = .{} },
+        });
+
+        try map.put("1", 2);
+
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .String = "1" },
+            .{ .I32 = 2 },
+            .{ .MapEnd = .{} },
+        });
+    }
 }
 
 test "integer" {
