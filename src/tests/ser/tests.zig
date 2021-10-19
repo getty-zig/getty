@@ -288,6 +288,13 @@ test "tuple" {
     });
 }
 
+test "union" {
+    const Union = union(enum) { Int: i32, Bool: bool };
+
+    try t(Union{ .Int = 0 }, &[_]Token{.{ .I32 = 0 }});
+    try t(Union{ .Bool = true }, &[_]Token{.{ .Bool = true }});
+}
+
 test "vector" {
     try t(@splat(2, @as(i32, 1)), &[_]Token{
         .{ .Seq = .{ .len = 2 } },
