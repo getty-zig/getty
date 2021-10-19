@@ -5,23 +5,32 @@ const Builder = std.build.Builder;
 const package_name = "getty";
 const package_path = "src/lib.zig";
 
+const tests = [_][]const u8{
+    "src/tests/ser/tests.zig",
+    "src/tests/de/tests.zig",
+};
+
 pub fn build(b: *Builder) void {
     // Options
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
 
     // Tests
-    const step = b.step("test", "Run library tests");
-    const t = b.addTest("src/tests/test.zig");
+    const step = b.step("test", "Run framework tests");
 
-    t.addPackagePath(package_name, package_path);
-    t.setBuildMode(mode);
-    t.setTarget(target);
+    for (tests) |path| {
+        const t = b.addTest(path);
 
-    step.dependOn(&t.step);
+        t.addPackagePath(package_name, package_path);
+        t.setBuildMode(mode);
+        t.setTarget(target);
+
+        step.dependOn(&t.step);
+    }
 
     // Library
     const lib = b.addStaticLibrary(package_name, package_path);
+
     lib.setBuildMode(mode);
     lib.install();
 }
