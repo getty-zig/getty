@@ -59,10 +59,12 @@ const IntSer = @import("ser/impl/ser/int.zig");
 const OptionalSer = @import("ser/impl/ser/optional.zig");
 const PointerSer = @import("ser/impl/ser/pointer.zig");
 const NullSer = @import("ser/impl/ser/null.zig");
+const LinkedListSer = @import("ser/impl/ser/linked_list.zig");
 const SequenceSer = @import("ser/impl/ser/sequence.zig");
 const StringSer = @import("ser/impl/ser/string.zig");
 const HashMapSer = @import("ser/impl/ser/hash_map.zig");
 const StructSer = @import("ser/impl/ser/struct.zig");
+const TailQueueSer = @import("ser/impl/ser/tail_queue.zig");
 const TupleSer = @import("ser/impl/ser/tuple.zig");
 const UnionSer = @import("ser/impl/ser/union.zig");
 const VectorSer = @import("ser/impl/ser/vector.zig");
@@ -128,6 +130,12 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
                     return try serializeWith(value, serializer, s.ser());
                 } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
                     var s = HashMapSer{};
+                    return try serializeWith(value, serializer, s.ser());
+                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
+                    var s = LinkedListSer{};
+                    return try serializeWith(value, serializer, s.ser());
+                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue")) {
+                    var s = TailQueueSer{};
                     return try serializeWith(value, serializer, s.ser());
                 } else {
                     break :blk StructSer{};
