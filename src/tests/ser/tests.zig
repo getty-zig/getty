@@ -127,6 +127,10 @@ test "enum" {
     try t(Enum.Bar, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Bar" } }});
 }
 
+test "error" {
+    try t(error.Foobar, &[_]Token{.{ .String = "Foobar" }});
+}
+
 test "float" {
     // comptime_float
     try t(0.0, &[_]Token{.{ .ComptimeFloat = {} }});
