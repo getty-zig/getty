@@ -236,6 +236,43 @@ test "string" {
     try t(&[_:0]u8{ 'a', 'b', 'c' }, &[_]Token{.{ .String = "abc" }});
 }
 
+test "struct" {
+    const Struct = struct { a: i32, b: i32, c: i32 };
+
+    try t(Struct{ .a = 1, .b = 2, .c = 3 }, &[_]Token{
+        .{ .Struct = .{ .name = "Struct", .len = 3 } },
+        .{ .String = "a" },
+        .{ .I32 = 1 },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .String = "c" },
+        .{ .I32 = 3 },
+        .{ .StructEnd = {} },
+    });
+}
+test "tuple" {
+    try t(.{}, &[_]Token{
+        .{ .Tuple = .{ .len = 0 } },
+        .{ .TupleEnd = .{} },
+    });
+
+    try t(std.meta.Tuple(&[_]type{ i32, i32, i32 }){ 1, 2, 3 }, &[_]Token{
+        .{ .Tuple = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .TupleEnd = .{} },
+    });
+
+    try t(.{ @as(i32, 1), @as(i32, 2), @as(i32, 3) }, &[_]Token{
+        .{ .Tuple = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .TupleEnd = .{} },
+    });
+}
+
 test "void" {
     try t({}, &[_]Token{.{ .Void = {} }});
 }
