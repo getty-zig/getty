@@ -284,6 +284,15 @@ test "tuple" {
     });
 }
 
+test "vector" {
+    try t(@splat(2, @as(i32, 1)), &[_]Token{
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 1 },
+        .{ .SeqEnd = {} },
+    });
+}
+
 test "void" {
     try t({}, &[_]Token{.{ .Void = {} }});
 }
