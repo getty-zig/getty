@@ -271,19 +271,17 @@ test "tuple" {
         .{ .TupleEnd = .{} },
     });
 
-    try t(std.meta.Tuple(&[_]type{ i32, i32, i32 }){ 1, 2, 3 }, &[_]Token{
-        .{ .Tuple = .{ .len = 3 } },
+    try t(std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &[_]Token{
+        .{ .Tuple = .{ .len = 2 } },
         .{ .I32 = 1 },
-        .{ .I32 = 2 },
-        .{ .I32 = 3 },
+        .{ .Bool = true },
         .{ .TupleEnd = .{} },
     });
 
-    try t(.{ @as(i32, 1), @as(i32, 2), @as(i32, 3) }, &[_]Token{
-        .{ .Tuple = .{ .len = 3 } },
+    try t(.{ @as(i32, 1), true }, &[_]Token{
+        .{ .Tuple = .{ .len = 2 } },
         .{ .I32 = 1 },
-        .{ .I32 = 2 },
-        .{ .I32 = 3 },
+        .{ .Bool = true },
         .{ .TupleEnd = .{} },
     });
 }
