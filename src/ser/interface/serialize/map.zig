@@ -10,7 +10,6 @@ pub fn MapSerialize(
     comptime E: type,
     comptime keyFn: fn (Context, anytype) E!void,
     comptime valueFn: fn (Context, anytype) E!void,
-    comptime entryFn: fn (Context, anytype, anytype) E!void,
     comptime endFn: fn (Context) E!O,
 ) type {
     switch (@typeInfo(E)) {
@@ -41,7 +40,8 @@ pub fn MapSerialize(
 
         /// Serialize a map entry consisting of a key and a value.
         pub fn serializeEntry(self: Self, key: anytype, value: anytype) Error!void {
-            try entryFn(self.context, key, value);
+            try serializeKey(self, key);
+            try serializeValue(self, value);
         }
 
         /// Finish serializing a struct.
