@@ -126,17 +126,13 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
         .Struct => |info| switch (info.is_tuple) {
             false => blk: {
                 if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
-                    var s = ArrayListSer{};
-                    return try serializeWith(value, serializer, s.ser());
+                    break :blk ArrayListSer{};
                 } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
-                    var s = HashMapSer{};
-                    return try serializeWith(value, serializer, s.ser());
+                    break :blk HashMapSer{};
                 } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
-                    var s = LinkedListSer{};
-                    return try serializeWith(value, serializer, s.ser());
+                    break :blk LinkedListSer{};
                 } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue")) {
-                    var s = TailQueueSer{};
-                    return try serializeWith(value, serializer, s.ser());
+                    break :blk TailQueueSer{};
                 } else {
                     break :blk StructSer{};
                 }
