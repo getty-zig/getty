@@ -104,14 +104,6 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(se
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
-    if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
-        var s = ArrayListSer{};
-        return try serializeWith(value, serializer, s.ser());
-    } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
-        var s = HashMapSer{};
-        return try serializeWith(value, serializer, s.ser());
-    }
-
     var s = switch (@typeInfo(T)) {
         .Array => SequenceSer{},
         .Bool => BoolSer{},
@@ -130,8 +122,18 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
             else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
         },
         .Struct => |info| switch (info.is_tuple) {
+            false => blk: {
+                if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
+                    var s = ArrayListSer{};
+                    return try serializeWith(value, serializer, s.ser());
+                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
+                    var s = HashMapSer{};
+                    return try serializeWith(value, serializer, s.ser());
+                } else {
+                    break :blk StructSer{};
+                }
+            },
             true => TupleSer{},
-            false => StructSer{},
         },
         .Union => UnionSer{},
         .Vector => VectorSer{},
