@@ -123,10 +123,10 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
         },
         .Struct => |info| switch (info.is_tuple) {
             false => blk: {
-                if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list.ArrayList")) {
+                if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
                     var s = ArrayListSer{};
                     return try serializeWith(value, serializer, s.ser());
-                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map.HashMap")) {
+                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
                     var s = HashMapSer{};
                     return try serializeWith(value, serializer, s.ser());
                 } else {

@@ -21,16 +21,7 @@ test "array" {
 test "array list" {
     const allocator = std.testing.allocator;
 
-    {
-        var list = std.ArrayList(i32).init(allocator);
-        defer getty.free(allocator, list);
-
-        try t(list, &[_]Token{
-            .{ .Seq = .{ .len = 0 } },
-            .{ .SeqEnd = .{} },
-        });
-    }
-
+    // managed
     {
         var list = std.ArrayList(std.ArrayList(i32)).init(allocator);
         var a = std.ArrayList(i32).init(allocator);
@@ -38,10 +29,60 @@ test "array list" {
         var c = std.ArrayList(i32).init(allocator);
         defer getty.free(allocator, list);
 
+        try t(list, &[_]Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = .{} },
+        });
+
         try b.append(1);
         try c.append(2);
         try c.append(3);
         try list.appendSlice(&[_]std.ArrayList(i32){ a, b, c });
+
+        try t(list, &[_]Token{
+            // START list
+            .{ .Seq = .{ .len = 3 } },
+
+            // START a
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = .{} },
+            // END a
+
+            // START b
+            .{ .Seq = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .SeqEnd = .{} },
+            // END b
+
+            // START c
+            .{ .Seq = .{ .len = 2 } },
+            .{ .I32 = 2 },
+            .{ .I32 = 3 },
+            .{ .SeqEnd = .{} },
+            // END c
+
+            .{ .SeqEnd = .{} },
+            // END list
+        });
+    }
+
+    // unmanaged
+    {
+        var list = std.ArrayListUnmanaged(std.ArrayListUnmanaged(i32)){};
+        var a = std.ArrayListUnmanaged(i32){};
+        var b = std.ArrayListUnmanaged(i32){};
+        var c = std.ArrayListUnmanaged(i32){};
+        defer getty.free(allocator, list);
+
+        try t(list, &[_]Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = .{} },
+        });
+
+        try b.append(allocator, 1);
+        try c.append(allocator, 2);
+        try c.append(allocator, 3);
+        try list.appendSlice(allocator, &[_]std.ArrayListUnmanaged(i32){ a, b, c });
 
         try t(list, &[_]Token{
             // START list
@@ -105,17 +146,45 @@ test "float" {
 }
 
 test "hash map" {
-    var map = std.AutoHashMap(i32, i32).init(std.testing.allocator);
-    defer getty.free(std.testing.allocator, map);
+    // managed
+    {
+        var map = std.AutoHashMap(i32, i32).init(std.testing.allocator);
+        defer getty.free(std.testing.allocator, map);
 
-    try map.put(1, 2);
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = .{} },
+        });
 
-    try t(map, &[_]Token{
-        .{ .Map = .{ .len = 1 } },
-        .{ .I32 = 1 },
-        .{ .I32 = 2 },
-        .{ .MapEnd = .{} },
-    });
+        try map.put(1, 2);
+
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = .{} },
+        });
+    }
+
+    // unmanaged
+    {
+        var map = std.AutoHashMapUnmanaged(i32, i32){};
+        defer getty.free(std.testing.allocator, map);
+
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = .{} },
+        });
+
+        try map.put(std.testing.allocator, 1, 2);
+
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = .{} },
+        });
+    }
 }
 
 test "integer" {
