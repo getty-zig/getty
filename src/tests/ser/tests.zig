@@ -119,20 +119,12 @@ test "bool" {
 
 test "enum" {
     // enum literal
-    {
-        try t(.Foo, &[_]Token{.{ .Enum = .{ .name = "", .variant = "Foo" } }});
-    }
+    try t(.Foo, &[_]Token{.{ .Enum = .{ .name = "", .variant = "Foo" } }});
 
     // enum
-    {
-        const Enum = enum {
-            Foo,
-            Bar,
-        };
-
-        try t(Enum.Foo, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Foo" } }});
-        try t(Enum.Bar, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Bar" } }});
-    }
+    const Enum = enum { Foo, Bar };
+    try t(Enum.Foo, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Foo" } }});
+    try t(Enum.Bar, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Bar" } }});
 }
 
 test "float" {
