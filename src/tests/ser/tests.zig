@@ -136,6 +136,10 @@ test "enum" {
 }
 
 test "float" {
+    // comptime_float
+    try t(0.0, &[_]Token{.{ .ComptimeFloat = {} }});
+
+    // float
     try t(@as(f16, 0), &[_]Token{.{ .F16 = 0 }});
     try t(@as(f32, 0), &[_]Token{.{ .F32 = 0 }});
     try t(@as(f64, 0), &[_]Token{.{ .F64 = 0 }});
@@ -184,21 +188,20 @@ test "hash map" {
 }
 
 test "integer" {
+    // comptime_int
+    try t(0, &[_]Token{.{ .ComptimeInt = {} }});
+
     // signed
-    {
-        try t(@as(i8, 0), &[_]Token{.{ .I8 = 0 }});
-        try t(@as(i16, 0), &[_]Token{.{ .I16 = 0 }});
-        try t(@as(i32, 0), &[_]Token{.{ .I32 = 0 }});
-        try t(@as(i64, 0), &[_]Token{.{ .I64 = 0 }});
-    }
+    try t(@as(i8, 0), &[_]Token{.{ .I8 = 0 }});
+    try t(@as(i16, 0), &[_]Token{.{ .I16 = 0 }});
+    try t(@as(i32, 0), &[_]Token{.{ .I32 = 0 }});
+    try t(@as(i64, 0), &[_]Token{.{ .I64 = 0 }});
 
     // unsigned
-    {
-        try t(@as(u8, 0), &[_]Token{.{ .U8 = 0 }});
-        try t(@as(u16, 0), &[_]Token{.{ .U16 = 0 }});
-        try t(@as(u32, 0), &[_]Token{.{ .U32 = 0 }});
-        try t(@as(u64, 0), &[_]Token{.{ .U64 = 0 }});
-    }
+    try t(@as(u8, 0), &[_]Token{.{ .U8 = 0 }});
+    try t(@as(u16, 0), &[_]Token{.{ .U16 = 0 }});
+    try t(@as(u32, 0), &[_]Token{.{ .U32 = 0 }});
+    try t(@as(u64, 0), &[_]Token{.{ .U64 = 0 }});
 }
 
 test "null" {

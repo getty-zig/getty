@@ -3,6 +3,9 @@ const std = @import("std");
 pub const Token = union(enum) {
     Bool: bool,
 
+    ComptimeInt,
+    ComptimeFloat,
+
     I8: i8,
     I16: i16,
     I32: i32,

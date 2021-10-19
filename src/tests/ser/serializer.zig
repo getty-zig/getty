@@ -77,12 +77,16 @@ pub const Serializer = struct {
         }
 
         fn serializeFloat(self: *Self, v: anytype) Error!Ok {
-            var expected = switch (@typeInfo(@TypeOf(v)).Float.bits) {
-                16 => Token{ .F16 = v },
-                32 => Token{ .F32 = v },
-                64 => Token{ .F64 = v },
-                128 => Token{ .F128 = v },
-                else => @panic("unexpected float size"),
+            var expected = switch (@typeInfo(@TypeOf(v))) {
+                .ComptimeFloat => Token{ .ComptimeFloat = {} },
+                .Float => |info| switch (info.bits) {
+                    16 => Token{ .F16 = v },
+                    32 => Token{ .F32 = v },
+                    64 => Token{ .F64 = v },
+                    128 => Token{ .F128 = v },
+                    else => @panic("unexpected float size"),
+                },
+                else => @panic("unexpected type"),
             };
 
             try assertNextToken(self, expected);
@@ -90,6 +94,7 @@ pub const Serializer = struct {
 
         fn serializeInt(self: *Self, v: anytype) Error!Ok {
             var expected = switch (@typeInfo(@TypeOf(v))) {
+                .ComptimeInt => Token{ .ComptimeInt = {} },
                 .Int => |info| switch (info.signedness) {
                     .signed => switch (info.bits) {
                         8 => Token{ .I8 = v },
@@ -108,7 +113,7 @@ pub const Serializer = struct {
                         else => @panic("unexpected integer size"),
                     },
                 },
-                else => unreachable,
+                else => @panic("unexpected type"),
             };
 
             try assertNextToken(self, expected);
@@ -239,6 +244,8 @@ fn assertNextToken(ser: *Serializer, expected: Token) !void {
         if (token_tag == expected_tag) {
             switch (token) {
                 .Bool => try expectEqual(@field(token, "Bool"), @field(expected, "Bool")),
+                .ComptimeFloat => try expectEqual(@field(token, "ComptimeFloat"), @field(expected, "ComptimeFloat")),
+                .ComptimeInt => try expectEqual(@field(token, "ComptimeInt"), @field(expected, "ComptimeInt")),
                 .Enum => {
                     const t = @field(token, "Enum");
                     const e = @field(expected, "Enum");
