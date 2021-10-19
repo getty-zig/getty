@@ -40,29 +40,17 @@ test "array list" {
         try list.appendSlice(&[_]std.ArrayList(i32){ a, b, c });
 
         try t(list, &[_]Token{
-            // START list
             .{ .Seq = .{ .len = 3 } },
-
-            // START a
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = .{} },
-            // END a
-
-            // START b
             .{ .Seq = .{ .len = 1 } },
             .{ .I32 = 1 },
             .{ .SeqEnd = .{} },
-            // END b
-
-            // START c
             .{ .Seq = .{ .len = 2 } },
             .{ .I32 = 2 },
             .{ .I32 = 3 },
             .{ .SeqEnd = .{} },
-            // END c
-
             .{ .SeqEnd = .{} },
-            // END list
         });
     }
 
@@ -85,29 +73,17 @@ test "array list" {
         try list.appendSlice(allocator, &[_]std.ArrayListUnmanaged(i32){ a, b, c });
 
         try t(list, &[_]Token{
-            // START list
             .{ .Seq = .{ .len = 3 } },
-
-            // START a
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = .{} },
-            // END a
-
-            // START b
             .{ .Seq = .{ .len = 1 } },
             .{ .I32 = 1 },
             .{ .SeqEnd = .{} },
-            // END b
-
-            // START c
             .{ .Seq = .{ .len = 2 } },
             .{ .I32 = 2 },
             .{ .I32 = 3 },
             .{ .SeqEnd = .{} },
-            // END c
-
             .{ .SeqEnd = .{} },
-            // END list
         });
     }
 }
