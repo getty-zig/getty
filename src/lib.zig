@@ -20,6 +20,7 @@ pub usingnamespace @import("ser.zig");
 /// Deserialization framework
 pub usingnamespace @import("de.zig");
 
+/// Frees resources allocated during deserialization.
 pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
     const T = @TypeOf(value);
     const name = @typeName(T);

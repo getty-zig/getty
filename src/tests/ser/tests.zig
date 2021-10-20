@@ -4,6 +4,8 @@ const getty = @import("getty");
 const Token = @import("token.zig").Token;
 const Serializer = @import("serializer.zig").Serializer;
 
+const allocator = std.testing.allocator;
+
 test "array" {
     try t([_]i32{}, &[_]Token{
         .{ .Seq = .{ .len = 0 } },
@@ -19,15 +21,19 @@ test "array" {
 }
 
 test "array list" {
-    const allocator = std.testing.allocator;
-
     // managed
     {
         var list = std.ArrayList(std.ArrayList(i32)).init(allocator);
+        defer list.deinit();
+
         var a = std.ArrayList(i32).init(allocator);
+        defer a.deinit();
+
         var b = std.ArrayList(i32).init(allocator);
+        defer b.deinit();
+
         var c = std.ArrayList(i32).init(allocator);
-        defer getty.free(allocator, list);
+        defer c.deinit();
 
         try t(list, &[_]Token{
             .{ .Seq = .{ .len = 0 } },
@@ -57,10 +63,16 @@ test "array list" {
     // unmanaged
     {
         var list = std.ArrayListUnmanaged(std.ArrayListUnmanaged(i32)){};
+        defer list.deinit(allocator);
+
         var a = std.ArrayListUnmanaged(i32){};
+        defer a.deinit(allocator);
+
         var b = std.ArrayListUnmanaged(i32){};
+        defer b.deinit(allocator);
+
         var c = std.ArrayListUnmanaged(i32){};
-        defer getty.free(allocator, list);
+        defer c.deinit(allocator);
 
         try t(list, &[_]Token{
             .{ .Seq = .{ .len = 0 } },
@@ -120,8 +132,8 @@ test "float" {
 test "hash map" {
     // managed
     {
-        var map = std.AutoHashMap(i32, i32).init(std.testing.allocator);
-        defer getty.free(std.testing.allocator, map);
+        var map = std.AutoHashMap(i32, i32).init(allocator);
+        defer map.deinit();
 
         try t(map, &[_]Token{
             .{ .Map = .{ .len = 0 } },
@@ -141,14 +153,14 @@ test "hash map" {
     // unmanaged
     {
         var map = std.AutoHashMapUnmanaged(i32, i32){};
-        defer getty.free(std.testing.allocator, map);
+        defer map.deinit(allocator);
 
         try t(map, &[_]Token{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = .{} },
         });
 
-        try map.put(std.testing.allocator, 1, 2);
+        try map.put(allocator, 1, 2);
 
         try t(map, &[_]Token{
             .{ .Map = .{ .len = 1 } },
@@ -160,8 +172,8 @@ test "hash map" {
 
     // string
     {
-        var map = std.StringHashMap(i32).init(std.testing.allocator);
-        defer getty.free(std.testing.allocator, map);
+        var map = std.StringHashMap(i32).init(allocator);
+        defer map.deinit();
 
         try t(map, &[_]Token{
             .{ .Map = .{ .len = 0 } },
@@ -231,7 +243,6 @@ test "optional" {
 }
 
 test "pointer" {
-    const allocator = std.testing.allocator;
 
     // one level of indirection
     {
