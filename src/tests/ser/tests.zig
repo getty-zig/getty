@@ -196,6 +196,31 @@ test "integer" {
     try t(@as(u64, 0), &[_]Token{.{ .U64 = 0 }});
 }
 
+test "linked list" {
+    var list = std.SinglyLinkedList(i32){};
+
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
+    });
+
+    var one = @TypeOf(list).Node{ .data = 1 };
+    var two = @TypeOf(list).Node{ .data = 2 };
+    var three = @TypeOf(list).Node{ .data = 3 };
+
+    list.prepend(&one);
+    one.insertAfter(&two);
+    two.insertAfter(&three);
+
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = .{} },
+    });
+}
+
 test "null" {
     try t(null, &[_]Token{.{ .Null = {} }});
 }
@@ -241,6 +266,32 @@ test "struct" {
         .{ .StructEnd = {} },
     });
 }
+
+test "tail queue" {
+    var list = std.TailQueue(i32){};
+
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
+    });
+
+    var one = @TypeOf(list).Node{ .data = 1 };
+    var two = @TypeOf(list).Node{ .data = 2 };
+    var three = @TypeOf(list).Node{ .data = 3 };
+
+    list.append(&one);
+    list.append(&two);
+    list.append(&three);
+
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = .{} },
+    });
+}
+
 test "tuple" {
     try t(.{}, &[_]Token{
         .{ .Tuple = .{ .len = 0 } },
