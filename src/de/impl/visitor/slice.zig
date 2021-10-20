@@ -1,5 +1,5 @@
 const std = @import("std");
-const de = @import("../../../lib.zig").de;
+const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime T: type) type {
     return struct {
@@ -8,7 +8,7 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub usingnamespace de.Visitor(
+        pub usingnamespace getty.de.Visitor(
             Self,
             Value,
             undefined,
@@ -27,7 +27,7 @@ pub fn Visitor(comptime T: type) type {
 
         fn visitSequence(self: Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             var list = std.ArrayList(std.meta.Child(Value)).init(self.allocator);
-            errdefer list.deinit();
+            errdefer getty.de.free(self.allocator, list);
 
             while (try seqAccess.nextElement(std.meta.Child(Value))) |elem| {
                 try list.append(elem);

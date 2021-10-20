@@ -1,5 +1,5 @@
 const std = @import("std");
-const de = @import("../../../lib.zig").de;
+const getty = @import("../../../lib.zig");
 
 const ArrayVisitor = @import("array.zig").Visitor;
 const BoolVisitor = @import("bool.zig");
@@ -44,7 +44,7 @@ pub fn Visitor(comptime T: type) type {
         const Self = @This();
 
         /// Implements `getty.de.Visitor`.
-        pub usingnamespace de.Visitor(
+        pub usingnamespace getty.de.Visitor(
             Self,
             Value,
             _V.visitBool,
@@ -62,7 +62,7 @@ pub fn Visitor(comptime T: type) type {
         const _V = struct {
             fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitBool(Error, input);
@@ -71,7 +71,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitEnum(Error, input);
@@ -80,7 +80,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitFloat(Error, input);
@@ -89,7 +89,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitInt(Error, input);
@@ -98,7 +98,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitMap(mapAccess);
@@ -107,7 +107,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitNull(self: Self, comptime Error: type) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitNull(Error);
@@ -116,7 +116,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitSequence(sequenceAccess);
@@ -125,7 +125,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitString(Error, input);
@@ -134,7 +134,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitSome(deserializer);
@@ -143,7 +143,7 @@ pub fn Visitor(comptime T: type) type {
 
             fn visitVoid(self: Self, comptime Error: type) Error!Value {
                 const value = try self.allocator.create(Child);
-                errdefer self.allocator.destroy(value);
+                errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitVoid(Error);

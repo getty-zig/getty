@@ -25,7 +25,7 @@ pub fn Visitor(comptime LinkedList: type) type {
 
         fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!LinkedList {
             var list = LinkedList{};
-            errdefer getty.free(self.allocator, list);
+            errdefer getty.de.free(self.allocator, list);
 
             var current: ?*LinkedList.Node = null;
 

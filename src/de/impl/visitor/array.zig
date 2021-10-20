@@ -37,7 +37,7 @@ pub fn Visitor(comptime Value: type) type {
                     var i: usize = 0;
 
                     while (i < seen) : (i += 1) {
-                        if (self.allocator) |allocator| getty.free(allocator, seq[i]);
+                        if (self.allocator) |allocator| getty.de.free(allocator, seq[i]);
                     }
                 }
 

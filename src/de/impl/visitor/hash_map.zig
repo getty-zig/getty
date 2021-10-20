@@ -33,7 +33,7 @@ pub fn Visitor(comptime HashMap: type) type {
 
         fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!HashMap {
             var map = if (unmanaged) HashMap{} else HashMap.init(self.allocator);
-            errdefer getty.free(self.allocator, map);
+            errdefer getty.de.free(self.allocator, map);
 
             while (try mapAccess.nextKey(K)) |key| {
                 const value = try mapAccess.nextValue(V);

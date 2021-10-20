@@ -31,7 +31,7 @@ pub fn Visitor(comptime ArrayList: type) type {
 
         fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!ArrayList {
             var list = if (unmanaged) ArrayList{} else ArrayList.init(self.allocator);
-            errdefer getty.free(self.allocator, list);
+            errdefer getty.de.free(self.allocator, list);
 
             while (try sequenceAccess.nextElement(Child)) |value| {
                 try if (unmanaged) list.append(self.allocator, value) else list.append(value);

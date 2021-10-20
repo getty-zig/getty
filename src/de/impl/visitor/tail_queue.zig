@@ -25,7 +25,7 @@ pub fn Visitor(comptime TailQueue: type) type {
 
         fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!TailQueue {
             var list = TailQueue{};
-            errdefer getty.free(self.allocator, list);
+            errdefer getty.de.free(self.allocator, list);
 
             while (try sequenceAccess.nextElement(Child)) |value| {
                 var node = try self.allocator.create(TailQueue.Node);

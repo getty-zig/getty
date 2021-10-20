@@ -31,7 +31,7 @@ pub fn Visitor(comptime Value: type) type {
                 inline for (std.meta.fields(Value)) |field, i| {
                     if (i < seen) {
                         if (self.allocator) |allocator| {
-                            getty.free(allocator, @field(map, field.name));
+                            getty.de.free(allocator, @field(map, field.name));
                         }
                     }
                 }

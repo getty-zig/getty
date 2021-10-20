@@ -72,6 +72,71 @@ pub const de = struct {
     pub usingnamespace @import("de/interface/access/sequence.zig");
 
     pub usingnamespace @import("de/impl/seed/default.zig");
+
+    /// Frees resources allocated during deserialization.
+    pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
+        const T = @TypeOf(value);
+        const name = @typeName(T);
+
+        switch (@typeInfo(T)) {
+            .Bool, .Float, .ComptimeFloat, .Int, .ComptimeInt, .Enum, .EnumLiteral, .Null, .Void => {},
+            .Array => for (value) |v| free(allocator, v),
+            .Optional => if (value) |v| free(allocator, v),
+            .Pointer => |info| switch (info.size) {
+                .One => {
+                    free(allocator, value.*);
+                    allocator.destroy(value);
+                },
+                .Slice => {
+                    for (value) |v| free(allocator, v);
+                    allocator.free(value);
+                },
+                else => unreachable,
+            },
+            .Union => |info| {
+                if (info.tag_type) |Tag| {
+                    inline for (info.fields) |field| {
+                        if (value == @field(Tag, field.name)) {
+                            free(allocator, @field(value, field.name));
+                            break;
+                        }
+                    }
+                } else unreachable;
+            },
+            .Struct => |info| {
+                if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayListAlignedUnmanaged")) {
+                    for (value.items) |v| free(allocator, v);
+                    var mut = value;
+                    mut.deinit(allocator);
+                } else if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayList")) {
+                    for (value.items) |v| free(allocator, v);
+                    value.deinit();
+                } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMapUnmanaged")) {
+                    var iterator = value.iterator();
+                    while (iterator.next()) |entry| free(allocator, entry.value_ptr.*);
+                    var mut = value;
+                    mut.deinit(allocator);
+                } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMap")) {
+                    var iterator = value.iterator();
+                    while (iterator.next()) |entry| free(allocator, entry.value_ptr.*);
+                    var mut = value;
+                    mut.deinit();
+                } else if (comptime std.mem.startsWith(u8, name, "std.linked_list")) {
+                    var iterator = value.first;
+                    while (iterator) |node| {
+                        free(allocator, node.data);
+                        iterator = node.next;
+                        allocator.destroy(node);
+                    }
+                } else {
+                    inline for (info.fields) |field| {
+                        if (!field.is_comptime) free(allocator, @field(value, field.name));
+                    }
+                }
+            },
+            else => unreachable,
+        }
+    }
 };
 
 /// Performs deserialization using a provided serializer and `de`.
