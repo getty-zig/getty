@@ -230,6 +230,41 @@ test "optional" {
     try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
 }
 
+test "pointer" {
+    const allocator = std.testing.allocator;
+
+    // one level of indirection
+    {
+        var ptr = try allocator.create(i32);
+        defer allocator.destroy(ptr);
+        ptr.* = @as(i32, 1);
+
+        try t(ptr, &[_]Token{.{ .I32 = 1 }});
+    }
+
+    // two levels of indirection
+    {
+        var tmp = try allocator.create(i32);
+        defer allocator.destroy(tmp);
+        tmp.* = 2;
+
+        var ptr = try allocator.create(*i32);
+        defer allocator.destroy(ptr);
+        ptr.* = tmp;
+
+        try t(ptr, &[_]Token{.{ .I32 = 2 }});
+    }
+
+    // pointer to slice
+    {
+        var ptr = try allocator.create([]const u8);
+        defer allocator.destroy(ptr);
+        ptr.* = "3";
+
+        try t(ptr, &[_]Token{.{ .String = "3" }});
+    }
+}
+
 test "slice" {
     try t(&[_]i32{}, &[_]Token{
         .{ .Seq = .{ .len = 0 } },
