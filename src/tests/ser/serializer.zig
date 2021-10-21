@@ -5,7 +5,7 @@ const assert = std.debug.assert;
 const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 
-const Token = @import("token.zig").Token;
+const Token = @import("common/token.zig").Token;
 
 pub const Serializer = struct {
     tokens: []const Token,
@@ -256,10 +256,12 @@ fn assertNextToken(ser: *Serializer, expected: Token) !void {
                 .F16 => try expectEqual(@field(token, "F16"), @field(expected, "F16")),
                 .F32 => try expectEqual(@field(token, "F32"), @field(expected, "F32")),
                 .F64 => try expectEqual(@field(token, "F64"), @field(expected, "F64")),
+                .F128 => try expectEqual(@field(token, "F128"), @field(expected, "F128")),
                 .I8 => try expectEqual(@field(token, "I8"), @field(expected, "I8")),
                 .I16 => try expectEqual(@field(token, "I16"), @field(expected, "I16")),
                 .I32 => try expectEqual(@field(token, "I32"), @field(expected, "I32")),
                 .I64 => try expectEqual(@field(token, "I64"), @field(expected, "I64")),
+                .I128 => try expectEqual(@field(token, "I128"), @field(expected, "I128")),
                 .Map => try expectEqual(@field(token, "Map"), @field(expected, "Map")),
                 .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
                 .Null => try expectEqual(@field(token, "Null"), @field(expected, "Null")),
@@ -281,8 +283,8 @@ fn assertNextToken(ser: *Serializer, expected: Token) !void {
                 .U16 => try expectEqual(@field(token, "U16"), @field(expected, "U16")),
                 .U32 => try expectEqual(@field(token, "U32"), @field(expected, "U32")),
                 .U64 => try expectEqual(@field(token, "U64"), @field(expected, "U64")),
+                .U128 => try expectEqual(@field(token, "U128"), @field(expected, "U128")),
                 .Void => try expectEqual(@field(token, "Void"), @field(expected, "Void")),
-                else => unreachable,
             }
         } else {
             @panic("expected Token::{} but serialized as {}");

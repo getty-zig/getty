@@ -21,9 +21,11 @@ pub fn build(b: *Builder) void {
     for (tests) |path| {
         const t = b.addTest(path);
 
-        t.addPackagePath(package_name, package_path);
         t.setBuildMode(mode);
         t.setTarget(target);
+
+        t.addPackagePath(package_name, package_path);
+        t.addPackagePath("common/token.zig", "src/tests/common/token.zig");
 
         step.dependOn(&t.step);
     }

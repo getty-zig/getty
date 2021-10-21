@@ -1,5 +1,3 @@
-const std = @import("std");
-
 pub const Token = union(enum) {
     Bool: bool,
 
