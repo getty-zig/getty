@@ -11,6 +11,7 @@ pub const Serializer = struct {
     tokens: []const Token,
 
     const Self = @This();
+    const impl = @"impl Serializer";
 
     pub fn init(tokens: []const Token) Self {
         return .{ .tokens = tokens };
@@ -33,40 +34,75 @@ pub const Serializer = struct {
 
     pub usingnamespace getty.Serializer(
         *Self,
-        Ok,
-        Error,
-        _S.MapSerialize,
-        _S.SequenceSerialize,
-        _S.StructSerialize,
-        _S.TupleSerialize,
-        _S.serializeBool,
-        _S.serializeEnum,
-        _S.serializeFloat,
-        _S.serializeInt,
-        _S.serializeMap,
-        _S.serializeNull,
-        _S.serializeSequence,
-        _S.serializeSome,
-        _S.serializeString,
-        _S.serializeStruct,
-        _S.serializeTuple,
-        _S.serializeVoid,
+        impl.serializer.Ok,
+        impl.serializer.Error,
+        impl.serializer.MapSerialize,
+        impl.serializer.SequenceSerialize,
+        impl.serializer.StructSerialize,
+        impl.serializer.TupleSerialize,
+        impl.serializer.serializeBool,
+        impl.serializer.serializeEnum,
+        impl.serializer.serializeFloat,
+        impl.serializer.serializeInt,
+        impl.serializer.serializeMap,
+        impl.serializer.serializeNull,
+        impl.serializer.serializeSequence,
+        impl.serializer.serializeSome,
+        impl.serializer.serializeString,
+        impl.serializer.serializeStruct,
+        impl.serializer.serializeTuple,
+        impl.serializer.serializeVoid,
     );
 
-    const Ok = void;
-    const Error = getty.ser.Error || error{TestExpectedEqual};
+    pub usingnamespace getty.ser.MapSerialize(
+        *Self,
+        impl.mapSerialize.Ok,
+        impl.mapSerialize.Error,
+        impl.mapSerialize.serializeKey,
+        impl.mapSerialize.serializeValue,
+        impl.mapSerialize.end,
+    );
 
-    const _S = struct {
-        const MapSerialize = *Self;
-        const SequenceSerialize = *Self;
-        const StructSerialize = *Self;
-        const TupleSerialize = *Self;
+    pub usingnamespace getty.ser.SequenceSerialize(
+        *Self,
+        impl.sequenceSerialize.Ok,
+        impl.sequenceSerialize.Error,
+        impl.sequenceSerialize.serializeElement,
+        impl.sequenceSerialize.end,
+    );
 
-        fn serializeBool(self: *Self, v: bool) Error!Ok {
+    pub usingnamespace getty.ser.TupleSerialize(
+        *Self,
+        impl.tupleSerialize.Ok,
+        impl.tupleSerialize.Error,
+        impl.tupleSerialize.serializeElement,
+        impl.tupleSerialize.end,
+    );
+
+    pub usingnamespace getty.ser.StructSerialize(
+        *Self,
+        impl.structSerialize.Ok,
+        impl.structSerialize.Error,
+        impl.structSerialize.serializeField,
+        impl.structSerialize.end,
+    );
+};
+
+const @"impl Serializer" = struct {
+    const serializer = struct {
+        const Ok = void;
+        const Error = getty.ser.Error || error{TestExpectedEqual};
+
+        const MapSerialize = *Serializer;
+        const SequenceSerialize = *Serializer;
+        const StructSerialize = *Serializer;
+        const TupleSerialize = *Serializer;
+
+        fn serializeBool(self: *Serializer, v: bool) Error!Ok {
             try assertNextToken(self, Token{ .Bool = v });
         }
 
-        fn serializeEnum(self: *Self, v: anytype) Error!Ok {
+        fn serializeEnum(self: *Serializer, v: anytype) Error!Ok {
             const name = switch (@typeInfo(@TypeOf(v))) {
                 .EnumLiteral => "",
                 .Enum => @typeName(@TypeOf(v)),
@@ -76,7 +112,7 @@ pub const Serializer = struct {
             try assertNextToken(self, Token{ .Enum = .{ .name = name, .variant = @tagName(v) } });
         }
 
-        fn serializeFloat(self: *Self, v: anytype) Error!Ok {
+        fn serializeFloat(self: *Serializer, v: anytype) Error!Ok {
             var expected = switch (@typeInfo(@TypeOf(v))) {
                 .ComptimeFloat => Token{ .ComptimeFloat = {} },
                 .Float => |info| switch (info.bits) {
@@ -92,7 +128,7 @@ pub const Serializer = struct {
             try assertNextToken(self, expected);
         }
 
-        fn serializeInt(self: *Self, v: anytype) Error!Ok {
+        fn serializeInt(self: *Serializer, v: anytype) Error!Ok {
             var expected = switch (@typeInfo(@TypeOf(v))) {
                 .ComptimeInt => Token{ .ComptimeInt = {} },
                 .Int => |info| switch (info.signedness) {
@@ -119,119 +155,98 @@ pub const Serializer = struct {
             try assertNextToken(self, expected);
         }
 
-        fn serializeMap(self: *Self, length: ?usize) Error!MapSerialize {
+        fn serializeMap(self: *Serializer, length: ?usize) Error!MapSerialize {
             try assertNextToken(self, Token{ .Map = .{ .len = length } });
             return self;
         }
 
-        fn serializeNull(self: *Self) Error!Ok {
+        fn serializeNull(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .Null = {} });
         }
 
-        fn serializeSequence(self: *Self, length: ?usize) Error!SequenceSerialize {
+        fn serializeSequence(self: *Serializer, length: ?usize) Error!SequenceSerialize {
             try assertNextToken(self, Token{ .Seq = .{ .len = length } });
             return self;
         }
 
-        fn serializeSome(self: *Self, v: anytype) Error!Ok {
+        fn serializeSome(self: *Serializer, v: anytype) Error!Ok {
             try assertNextToken(self, Token{ .Some = {} });
             try getty.serialize(v, self.serializer());
         }
 
-        fn serializeString(self: *Self, v: anytype) Error!Ok {
+        fn serializeString(self: *Serializer, v: anytype) Error!Ok {
             try assertNextToken(self, Token{ .String = v });
         }
 
-        fn serializeStruct(self: *Self, name: []const u8, length: usize) Error!StructSerialize {
+        fn serializeStruct(self: *Serializer, name: []const u8, length: usize) Error!StructSerialize {
             try assertNextToken(self, Token{ .Struct = .{ .name = name, .len = length } });
             return self;
         }
 
-        fn serializeTuple(self: *Self, length: ?usize) Error!TupleSerialize {
+        fn serializeTuple(self: *Serializer, length: ?usize) Error!TupleSerialize {
             try assertNextToken(self, Token{ .Tuple = .{ .len = length.? } });
             return self;
         }
 
-        fn serializeVoid(self: *Self) Error!Ok {
+        fn serializeVoid(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .Void = {} });
         }
     };
 
-    pub usingnamespace getty.ser.MapSerialize(
-        *Self,
-        Ok,
-        Error,
-        _M.serializeKey,
-        _M.serializeValue,
-        _M.end,
-    );
+    const mapSerialize = struct {
+        const Ok = serializer.Ok;
+        const Error = serializer.Error;
 
-    const _M = struct {
-        fn serializeKey(self: *Self, key: anytype) Error!void {
+        fn serializeKey(self: *Serializer, key: anytype) Error!void {
             try getty.serialize(key, self.serializer());
         }
 
-        fn serializeValue(self: *Self, value: anytype) Error!void {
+        fn serializeValue(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .MapEnd = {} });
         }
     };
 
-    pub usingnamespace getty.ser.SequenceSerialize(
-        *Self,
-        Ok,
-        Error,
-        _SQ.serializeElement,
-        _SQ.end,
-    );
+    const sequenceSerialize = struct {
+        const Ok = serializer.Ok;
+        const Error = serializer.Error;
 
-    const _SQ = struct {
-        fn serializeElement(self: *Self, value: anytype) Error!void {
+        fn serializeElement(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .SeqEnd = {} });
         }
     };
 
-    pub usingnamespace getty.ser.TupleSerialize(
-        *Self,
-        Ok,
-        Error,
-        _T.serializeElement,
-        _T.end,
-    );
+    const structSerialize = struct {
+        const Ok = serializer.Ok;
+        const Error = serializer.Error;
 
-    const _T = struct {
-        fn serializeElement(self: *Self, value: anytype) Error!void {
-            try getty.serialize(value, self.serializer());
-        }
-
-        fn end(self: *Self) Error!Ok {
-            try assertNextToken(self, Token{ .TupleEnd = {} });
-        }
-    };
-
-    pub usingnamespace getty.ser.StructSerialize(
-        *Self,
-        Ok,
-        Error,
-        _ST.serializeField,
-        _ST.end,
-    );
-
-    const _ST = struct {
-        pub fn serializeField(self: *Self, comptime key: []const u8, value: anytype) Error!Ok {
+        pub fn serializeField(self: *Serializer, comptime key: []const u8, value: anytype) Error!Ok {
             try assertNextToken(self, Token{ .String = key });
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Self) Error!Ok {
+        fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .StructEnd = {} });
+        }
+    };
+
+    const tupleSerialize = struct {
+        const Ok = serializer.Ok;
+        const Error = serializer.Error;
+
+        fn serializeElement(self: *Serializer, value: anytype) Error!void {
+            try getty.serialize(value, self.serializer());
+        }
+
+        fn end(self: *Serializer) Error!Ok {
+            try assertNextToken(self, Token{ .TupleEnd = {} });
         }
     };
 };
