@@ -1,18 +1,27 @@
 const getty = @import("../../../lib.zig");
 const std = @import("std");
 
+const Ser = @This();
+const impl = @"impl Ser";
+
 pub usingnamespace getty.Ser(
-    *@This(),
-    serialize,
+    Ser,
+    impl.ser.serialize,
 );
 
-fn serialize(_: *@This(), value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const info = @typeInfo(@TypeOf(value)).Pointer;
+const @"impl Ser" = struct {
+    const ser = struct {
+        fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            _ = self;
 
-    // Serialize array pointers as slices so that strings are handled properly.
-    if (@typeInfo(info.child) == .Array) {
-        return try getty.serialize(@as([]const std.meta.Elem(info.child), value), serializer);
-    }
+            const info = @typeInfo(@TypeOf(value)).Pointer;
 
-    return try getty.serialize(value.*, serializer);
-}
+            // Serialize array pointers as slices so that strings are handled properly.
+            if (@typeInfo(info.child) == .Array) {
+                return try getty.serialize(@as([]const std.meta.Elem(info.child), value), serializer);
+            }
+
+            return try getty.serialize(value.*, serializer);
+        }
+    };
+};

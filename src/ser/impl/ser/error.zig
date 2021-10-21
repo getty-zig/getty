@@ -1,10 +1,19 @@
 const getty = @import("../../../lib.zig");
 
+const Ser = @This();
+const impl = @"impl Ser";
+
 pub usingnamespace getty.Ser(
-    *@This(),
-    serialize,
+    Ser,
+    impl.ser.serialize,
 );
 
-fn serialize(_: *@This(), value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try getty.serialize(@as([]const u8, @errorName(value)), serializer);
-}
+const @"impl Ser" = struct {
+    const ser = struct {
+        fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            _ = self;
+
+            return try getty.serialize(@as([]const u8, @errorName(value)), serializer);
+        }
+    };
+};

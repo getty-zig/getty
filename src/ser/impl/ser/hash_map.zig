@@ -1,17 +1,26 @@
 const getty = @import("../../../lib.zig");
 
+const Ser = @This();
+const impl = @"impl Ser";
+
 pub usingnamespace getty.Ser(
-    *@This(),
-    serialize,
+    Ser,
+    impl.ser.serialize,
 );
 
-fn serialize(_: *@This(), value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const m = (try serializer.serializeMap(value.count())).mapSerialize();
-    {
-        var iterator = value.iterator();
-        while (iterator.next()) |entry| {
-            try m.serializeEntry(entry.key_ptr.*, entry.value_ptr.*);
+const @"impl Ser" = struct {
+    const ser = struct {
+        fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            _ = self;
+
+            const m = (try serializer.serializeMap(value.count())).mapSerialize();
+            {
+                var iterator = value.iterator();
+                while (iterator.next()) |entry| {
+                    try m.serializeEntry(entry.key_ptr.*, entry.value_ptr.*);
+                }
+            }
+            return try m.end();
         }
-    }
-    return try m.end();
-}
+    };
+};

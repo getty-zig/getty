@@ -1,20 +1,29 @@
 const getty = @import("../../../lib.zig");
 const std = @import("std");
 
+const Ser = @This();
+const impl = @"impl Ser";
+
 pub usingnamespace getty.Ser(
-    *@This(),
-    serialize,
+    Ser,
+    impl.ser.serialize,
 );
 
-fn serialize(_: *@This(), value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    switch (@typeInfo(@TypeOf(value))) {
-        .Union => |info| if (info.tag_type) |_| {
-            inline for (info.fields) |field| {
-                if (std.mem.eql(u8, field.name, @tagName(value))) {
-                    return try getty.serialize(@field(value, field.name), serializer);
-                }
+const @"impl Ser" = struct {
+    const ser = struct {
+        fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            _ = self;
+
+            switch (@typeInfo(@TypeOf(value))) {
+                .Union => |info| if (info.tag_type) |_| {
+                    inline for (info.fields) |field| {
+                        if (std.mem.eql(u8, field.name, @tagName(value))) {
+                            return try getty.serialize(@field(value, field.name), serializer);
+                        }
+                    }
+                } else @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                else => @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
             }
-        } else @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
-        else => @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
-    }
-}
+        }
+    };
+};
