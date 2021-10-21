@@ -32,7 +32,7 @@ pub const Deserializer = struct {
         }
     }
 
-    fn nextToken(self: *Self) Token {
+    pub fn nextToken(self: *Self) Token {
         switch (self.remaining()) {
             0 => std.debug.panic("ran out of tokens to deserialize", .{}),
             else => |len| {

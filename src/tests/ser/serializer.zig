@@ -21,7 +21,7 @@ pub const Serializer = struct {
         return self.tokens.len;
     }
 
-    fn nextTokenOpt(self: *Self) ?Token {
+    pub fn nextTokenOpt(self: *Self) ?Token {
         switch (self.remaining()) {
             0 => return null,
             else => |len| {
