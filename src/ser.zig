@@ -78,7 +78,7 @@ pub usingnamespace @import("ser/interface/ser.zig");
 
 pub const ser = struct {
     /// Generic error set for `getty.Ser` implementations.
-    pub const Error = error{
+    pub const Error = std.mem.Allocator.Error || error{
         Unsupported,
     };
 
