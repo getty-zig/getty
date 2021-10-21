@@ -8,7 +8,7 @@ pub fn DefaultSeed(comptime Value: type) type {
 
         /// Implements `getty.de.Seed`.
         pub usingnamespace getty.de.Seed(
-            *Self,
+            Self,
             impl.seed(Value).Value,
             impl.seed(Value).deserialize,
         );
@@ -20,7 +20,7 @@ const @"impl DefaultSeed" = struct {
         return struct {
             const Value = V;
 
-            fn deserialize(self: *DefaultSeed(V), allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            fn deserialize(self: DefaultSeed(V), allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 _ = self;
 
                 return try getty.deserialize(allocator, Value, deserializer);
