@@ -21,7 +21,7 @@ pub const Serializer = struct {
         return self.tokens.len;
     }
 
-    fn nextToken(self: *Self) ?Token {
+    fn nextTokenOpt(self: *Self) ?Token {
         switch (self.remaining()) {
             0 => return null,
             else => |len| {
@@ -252,7 +252,7 @@ const @"impl Serializer" = struct {
 };
 
 fn assertNextToken(ser: *Serializer, expected: Token) !void {
-    if (ser.nextToken()) |token| {
+    if (ser.nextTokenOpt()) |token| {
         const token_tag = std.meta.activeTag(token);
         const expected_tag = std.meta.activeTag(expected);
 
