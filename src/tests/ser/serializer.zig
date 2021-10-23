@@ -89,20 +89,20 @@ pub const Serializer = struct {
 };
 
 const @"impl Serializer" = struct {
-    const serializer = struct {
-        const Ok = void;
-        const Error = getty.ser.Error || error{TestExpectedEqual};
+    pub const serializer = struct {
+        pub const Ok = void;
+        pub const Error = getty.ser.Error || error{TestExpectedEqual};
 
-        const MapSerialize = *Serializer;
-        const SequenceSerialize = *Serializer;
-        const StructSerialize = *Serializer;
-        const TupleSerialize = *Serializer;
+        pub const MapSerialize = *Serializer;
+        pub const SequenceSerialize = *Serializer;
+        pub const StructSerialize = *Serializer;
+        pub const TupleSerialize = *Serializer;
 
-        fn serializeBool(self: *Serializer, v: bool) Error!Ok {
+        pub fn serializeBool(self: *Serializer, v: bool) Error!Ok {
             try assertNextToken(self, Token{ .Bool = v });
         }
 
-        fn serializeEnum(self: *Serializer, v: anytype) Error!Ok {
+        pub fn serializeEnum(self: *Serializer, v: anytype) Error!Ok {
             const name = switch (@typeInfo(@TypeOf(v))) {
                 .EnumLiteral => "",
                 .Enum => @typeName(@TypeOf(v)),
@@ -112,7 +112,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, Token{ .Enum = .{ .name = name, .variant = @tagName(v) } });
         }
 
-        fn serializeFloat(self: *Serializer, v: anytype) Error!Ok {
+        pub fn serializeFloat(self: *Serializer, v: anytype) Error!Ok {
             var expected = switch (@typeInfo(@TypeOf(v))) {
                 .ComptimeFloat => Token{ .ComptimeFloat = {} },
                 .Float => |info| switch (info.bits) {
@@ -128,7 +128,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, expected);
         }
 
-        fn serializeInt(self: *Serializer, v: anytype) Error!Ok {
+        pub fn serializeInt(self: *Serializer, v: anytype) Error!Ok {
             var expected = switch (@typeInfo(@TypeOf(v))) {
                 .ComptimeInt => Token{ .ComptimeInt = {} },
                 .Int => |info| switch (info.signedness) {
@@ -155,156 +155,156 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, expected);
         }
 
-        fn serializeMap(self: *Serializer, length: ?usize) Error!MapSerialize {
+        pub fn serializeMap(self: *Serializer, length: ?usize) Error!MapSerialize {
             try assertNextToken(self, Token{ .Map = .{ .len = length } });
             return self;
         }
 
-        fn serializeNull(self: *Serializer) Error!Ok {
+        pub fn serializeNull(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .Null = {} });
         }
 
-        fn serializeSequence(self: *Serializer, length: ?usize) Error!SequenceSerialize {
+        pub fn serializeSequence(self: *Serializer, length: ?usize) Error!SequenceSerialize {
             try assertNextToken(self, Token{ .Seq = .{ .len = length } });
             return self;
         }
 
-        fn serializeSome(self: *Serializer, v: anytype) Error!Ok {
+        pub fn serializeSome(self: *Serializer, v: anytype) Error!Ok {
             try assertNextToken(self, Token{ .Some = {} });
             try getty.serialize(v, self.serializer());
         }
 
-        fn serializeString(self: *Serializer, v: anytype) Error!Ok {
+        pub fn serializeString(self: *Serializer, v: anytype) Error!Ok {
             try assertNextToken(self, Token{ .String = v });
         }
 
-        fn serializeStruct(self: *Serializer, name: []const u8, length: usize) Error!StructSerialize {
+        pub fn serializeStruct(self: *Serializer, name: []const u8, length: usize) Error!StructSerialize {
             try assertNextToken(self, Token{ .Struct = .{ .name = name, .len = length } });
             return self;
         }
 
-        fn serializeTuple(self: *Serializer, length: ?usize) Error!TupleSerialize {
+        pub fn serializeTuple(self: *Serializer, length: ?usize) Error!TupleSerialize {
             try assertNextToken(self, Token{ .Tuple = .{ .len = length.? } });
             return self;
         }
 
-        fn serializeVoid(self: *Serializer) Error!Ok {
+        pub fn serializeVoid(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .Void = {} });
         }
     };
 
-    const mapSerialize = struct {
-        const Ok = serializer.Ok;
-        const Error = serializer.Error;
+    pub const mapSerialize = struct {
+        pub const Ok = serializer.Ok;
+        pub const Error = serializer.Error;
 
-        fn serializeKey(self: *Serializer, key: anytype) Error!void {
+        pub fn serializeKey(self: *Serializer, key: anytype) Error!void {
             try getty.serialize(key, self.serializer());
         }
 
-        fn serializeValue(self: *Serializer, value: anytype) Error!void {
+        pub fn serializeValue(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Serializer) Error!Ok {
+        pub fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .MapEnd = {} });
         }
     };
 
-    const sequenceSerialize = struct {
-        const Ok = serializer.Ok;
-        const Error = serializer.Error;
+    pub const sequenceSerialize = struct {
+        pub const Ok = serializer.Ok;
+        pub const Error = serializer.Error;
 
-        fn serializeElement(self: *Serializer, value: anytype) Error!void {
+        pub fn serializeElement(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Serializer) Error!Ok {
+        pub fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .SeqEnd = {} });
         }
     };
 
-    const structSerialize = struct {
-        const Ok = serializer.Ok;
-        const Error = serializer.Error;
+    pub const structSerialize = struct {
+        pub const Ok = serializer.Ok;
+        pub const Error = serializer.Error;
 
         pub fn serializeField(self: *Serializer, comptime key: []const u8, value: anytype) Error!Ok {
             try assertNextToken(self, Token{ .String = key });
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Serializer) Error!Ok {
+        pub fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .StructEnd = {} });
         }
     };
 
-    const tupleSerialize = struct {
-        const Ok = serializer.Ok;
-        const Error = serializer.Error;
+    pub const tupleSerialize = struct {
+        pub const Ok = serializer.Ok;
+        pub const Error = serializer.Error;
 
-        fn serializeElement(self: *Serializer, value: anytype) Error!void {
+        pub fn serializeElement(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());
         }
 
-        fn end(self: *Serializer) Error!Ok {
+        pub fn end(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .TupleEnd = {} });
         }
     };
-};
 
-fn assertNextToken(ser: *Serializer, expected: Token) !void {
-    if (ser.nextTokenOpt()) |token| {
-        const token_tag = std.meta.activeTag(token);
-        const expected_tag = std.meta.activeTag(expected);
+    fn assertNextToken(ser: *Serializer, expected: Token) !void {
+        if (ser.nextTokenOpt()) |token| {
+            const token_tag = std.meta.activeTag(token);
+            const expected_tag = std.meta.activeTag(expected);
 
-        if (token_tag == expected_tag) {
-            switch (token) {
-                .Bool => try expectEqual(@field(token, "Bool"), @field(expected, "Bool")),
-                .ComptimeFloat => try expectEqual(@field(token, "ComptimeFloat"), @field(expected, "ComptimeFloat")),
-                .ComptimeInt => try expectEqual(@field(token, "ComptimeInt"), @field(expected, "ComptimeInt")),
-                .Enum => {
-                    const t = @field(token, "Enum");
-                    const e = @field(expected, "Enum");
+            if (token_tag == expected_tag) {
+                switch (token) {
+                    .Bool => try expectEqual(@field(token, "Bool"), @field(expected, "Bool")),
+                    .ComptimeFloat => try expectEqual(@field(token, "ComptimeFloat"), @field(expected, "ComptimeFloat")),
+                    .ComptimeInt => try expectEqual(@field(token, "ComptimeInt"), @field(expected, "ComptimeInt")),
+                    .Enum => {
+                        const t = @field(token, "Enum");
+                        const e = @field(expected, "Enum");
 
-                    try expectEqualSlices(u8, t.name, e.name);
-                    try expectEqualSlices(u8, t.variant, e.variant);
-                },
-                .F16 => try expectEqual(@field(token, "F16"), @field(expected, "F16")),
-                .F32 => try expectEqual(@field(token, "F32"), @field(expected, "F32")),
-                .F64 => try expectEqual(@field(token, "F64"), @field(expected, "F64")),
-                .F128 => try expectEqual(@field(token, "F128"), @field(expected, "F128")),
-                .I8 => try expectEqual(@field(token, "I8"), @field(expected, "I8")),
-                .I16 => try expectEqual(@field(token, "I16"), @field(expected, "I16")),
-                .I32 => try expectEqual(@field(token, "I32"), @field(expected, "I32")),
-                .I64 => try expectEqual(@field(token, "I64"), @field(expected, "I64")),
-                .I128 => try expectEqual(@field(token, "I128"), @field(expected, "I128")),
-                .Map => try expectEqual(@field(token, "Map"), @field(expected, "Map")),
-                .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
-                .Null => try expectEqual(@field(token, "Null"), @field(expected, "Null")),
-                .Seq => try expectEqual(@field(token, "Seq"), @field(expected, "Seq")),
-                .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
-                .Some => try expectEqual(@field(token, "Some"), @field(expected, "Some")),
-                .String => try expectEqualSlices(u8, @field(token, "String"), @field(expected, "String")),
-                .Struct => {
-                    const t = @field(token, "Struct");
-                    const e = @field(expected, "Struct");
+                        try expectEqualSlices(u8, t.name, e.name);
+                        try expectEqualSlices(u8, t.variant, e.variant);
+                    },
+                    .F16 => try expectEqual(@field(token, "F16"), @field(expected, "F16")),
+                    .F32 => try expectEqual(@field(token, "F32"), @field(expected, "F32")),
+                    .F64 => try expectEqual(@field(token, "F64"), @field(expected, "F64")),
+                    .F128 => try expectEqual(@field(token, "F128"), @field(expected, "F128")),
+                    .I8 => try expectEqual(@field(token, "I8"), @field(expected, "I8")),
+                    .I16 => try expectEqual(@field(token, "I16"), @field(expected, "I16")),
+                    .I32 => try expectEqual(@field(token, "I32"), @field(expected, "I32")),
+                    .I64 => try expectEqual(@field(token, "I64"), @field(expected, "I64")),
+                    .I128 => try expectEqual(@field(token, "I128"), @field(expected, "I128")),
+                    .Map => try expectEqual(@field(token, "Map"), @field(expected, "Map")),
+                    .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
+                    .Null => try expectEqual(@field(token, "Null"), @field(expected, "Null")),
+                    .Seq => try expectEqual(@field(token, "Seq"), @field(expected, "Seq")),
+                    .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
+                    .Some => try expectEqual(@field(token, "Some"), @field(expected, "Some")),
+                    .String => try expectEqualSlices(u8, @field(token, "String"), @field(expected, "String")),
+                    .Struct => {
+                        const t = @field(token, "Struct");
+                        const e = @field(expected, "Struct");
 
-                    try expectEqualSlices(u8, t.name, e.name);
-                    try expectEqual(t.len, e.len);
-                },
-                .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
-                .Tuple => try expectEqual(@field(token, "Tuple"), @field(expected, "Tuple")),
-                .TupleEnd => try expectEqual(@field(token, "TupleEnd"), @field(expected, "TupleEnd")),
-                .U8 => try expectEqual(@field(token, "U8"), @field(expected, "U8")),
-                .U16 => try expectEqual(@field(token, "U16"), @field(expected, "U16")),
-                .U32 => try expectEqual(@field(token, "U32"), @field(expected, "U32")),
-                .U64 => try expectEqual(@field(token, "U64"), @field(expected, "U64")),
-                .U128 => try expectEqual(@field(token, "U128"), @field(expected, "U128")),
-                .Void => try expectEqual(@field(token, "Void"), @field(expected, "Void")),
+                        try expectEqualSlices(u8, t.name, e.name);
+                        try expectEqual(t.len, e.len);
+                    },
+                    .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
+                    .Tuple => try expectEqual(@field(token, "Tuple"), @field(expected, "Tuple")),
+                    .TupleEnd => try expectEqual(@field(token, "TupleEnd"), @field(expected, "TupleEnd")),
+                    .U8 => try expectEqual(@field(token, "U8"), @field(expected, "U8")),
+                    .U16 => try expectEqual(@field(token, "U16"), @field(expected, "U16")),
+                    .U32 => try expectEqual(@field(token, "U32"), @field(expected, "U32")),
+                    .U64 => try expectEqual(@field(token, "U64"), @field(expected, "U64")),
+                    .U128 => try expectEqual(@field(token, "U128"), @field(expected, "U128")),
+                    .Void => try expectEqual(@field(token, "Void"), @field(expected, "Void")),
+                }
+            } else {
+                @panic("expected Token::{} but serialized as {}");
             }
         } else {
-            @panic("expected Token::{} but serialized as {}");
+            @panic("expected end of tokens, but {} was serialized");
         }
-    } else {
-        @panic("expected end of tokens, but {} was serialized");
     }
-}
+};

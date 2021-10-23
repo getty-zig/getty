@@ -9,8 +9,8 @@ pub usingnamespace getty.Ser(
 );
 
 const @"impl Ser" = struct {
-    const ser = struct {
-        fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    pub const ser = struct {
+        pub fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
             _ = self;
 
             return try getty.serialize(@as([]const u8, @errorName(value)), serializer);
