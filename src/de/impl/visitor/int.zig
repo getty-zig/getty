@@ -1,19 +1,17 @@
-const de = @import("../../../lib.zig").de;
+const getty = @import("../../../lib.zig");
 
-const math = @import("std").math;
-
-pub fn Visitor(comptime T: type) type {
+pub fn Visitor(comptime Int: type) type {
     return struct {
         const Self = @This();
+        const impl = @"impl Visitor"(Int);
 
-        /// Implements `getty.de.Visitor`.
-        pub usingnamespace de.Visitor(
+        pub usingnamespace getty.de.Visitor(
             Self,
-            Value,
+            impl.visitor.Value,
             undefined,
             undefined,
             undefined,
-            visitInt,
+            impl.visitor.visitInt,
             undefined,
             undefined,
             undefined,
@@ -21,11 +19,21 @@ pub fn Visitor(comptime T: type) type {
             undefined,
             undefined,
         );
+    };
+}
 
-        const Value = T;
+fn @"impl Visitor"(comptime Int: type) type {
+    const Self = Visitor(Int);
 
-        fn visitInt(_: Self, comptime Error: type, input: anytype) Error!Value {
-            return @intCast(T, input);
-        }
+    return struct {
+        pub const visitor = struct {
+            pub const Value = Int;
+
+            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+                _ = self;
+
+                return @intCast(Value, input);
+            }
+        };
     };
 }

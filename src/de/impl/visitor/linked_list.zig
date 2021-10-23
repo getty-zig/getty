@@ -6,43 +6,51 @@ pub fn Visitor(comptime LinkedList: type) type {
         allocator: *std.mem.Allocator,
 
         const Self = @This();
-        const Child = LinkedList.Node.Data;
+        const impl = @"impl Visitor"(LinkedList);
 
         pub usingnamespace getty.de.Visitor(
             Self,
-            LinkedList,
+            impl.visitor.LinkedList,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
-            visitSequence,
+            impl.visitor.visitSequence,
             undefined,
             undefined,
             undefined,
         );
+    };
+}
 
-        fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!LinkedList {
-            var list = LinkedList{};
-            errdefer getty.de.free(self.allocator, list);
+fn @"impl Visitor"(comptime LinkedList: type) type {
+    const Self = Visitor(LinkedList);
 
-            var current: ?*LinkedList.Node = null;
+    return struct {
+        pub const visitor = struct {
+            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!LinkedList {
+                var list = LinkedList{};
+                errdefer getty.de.free(self.allocator, list);
 
-            while (try sequenceAccess.nextElement(Child)) |value| {
-                var node = try self.allocator.create(LinkedList.Node);
-                node.* = .{ .data = value };
+                var current: ?*LinkedList.Node = null;
 
-                if (current) |c| {
-                    c.*.insertAfter(node);
-                    current = c.next;
-                } else {
-                    list.prepend(node);
-                    current = list.first;
+                while (try sequenceAccess.nextElement(LinkedList.Node.Data)) |value| {
+                    var node = try self.allocator.create(LinkedList.Node);
+                    node.* = .{ .data = value };
+
+                    if (current) |c| {
+                        c.*.insertAfter(node);
+                        current = c.next;
+                    } else {
+                        list.prepend(node);
+                        current = list.first;
+                    }
                 }
-            }
 
-            return list;
-        }
+                return list;
+            }
+        };
     };
 }

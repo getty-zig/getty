@@ -3,38 +3,46 @@ const getty = @import("../../../lib.zig");
 const Allocator = @import("std").mem.Allocator;
 const Child = @import("std").meta.Child;
 
-pub fn Visitor(comptime T: type) type {
+pub fn Visitor(comptime Optional: type) type {
     return struct {
         allocator: ?*Allocator = null,
 
         const Self = @This();
+        const impl = @"impl Visitor"(Optional);
 
-        /// Implements `getty.de.Visitor`.
         pub usingnamespace getty.de.Visitor(
             Self,
-            Value,
+            impl.visitor.Value,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
-            visitNull,
+            impl.visitor.visitNull,
             undefined,
             undefined,
-            visitSome,
+            impl.visitor.visitSome,
             undefined,
         );
+    };
+}
 
-        const Value = T;
+fn @"impl Visitor"(comptime Optional: type) type {
+    const Self = Visitor(Optional);
 
-        fn visitNull(self: Self, comptime Error: type) Error!Value {
-            _ = self;
+    return struct {
+        pub const visitor = struct {
+            pub const Value = Optional;
 
-            return null;
-        }
+            pub fn visitNull(self: Self, comptime Error: type) Error!Value {
+                _ = self;
 
-        fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try getty.deserialize(self.allocator, Child(T), deserializer);
-        }
+                return null;
+            }
+
+            pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+                return try getty.deserialize(self.allocator, Child(Value), deserializer);
+            }
+        };
     };
 }

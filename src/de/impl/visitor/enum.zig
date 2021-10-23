@@ -1,45 +1,52 @@
-const de = @import("../../../lib.zig").de;
+const std = @import("std");
+const getty = @import("../../../lib.zig");
 
-const meta = @import("std").meta;
-
-pub fn Visitor(comptime T: type) type {
+pub fn Visitor(comptime Enum: type) type {
     return struct {
         const Self = @This();
+        const impl = @"impl Visitor"(Enum);
 
-        /// Implements `getty.de.Visitor`.
-        pub usingnamespace de.Visitor(
+        pub usingnamespace getty.de.Visitor(
             Self,
-            Value,
+            impl.visitor.Value,
             undefined,
-            visitEnum,
+            impl.visitor.visitEnum,
             undefined,
-            visitInt,
+            impl.visitor.visitInt,
             undefined,
             undefined,
             undefined,
-            visitString,
+            impl.visitor.visitString,
             undefined,
             undefined,
         );
+    };
+}
 
-        const Value = T;
+fn @"impl Visitor"(comptime Enum: type) type {
+    const Self = Visitor(Enum);
 
-        fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
+    return struct {
+        pub const visitor = struct {
+            pub const Value = Enum;
 
-            return input;
-        }
+            pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+                _ = self;
 
-        fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
+                return input;
+            }
 
-            return meta.intToEnum(Value, input) catch unreachable;
-        }
+            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+                _ = self;
 
-        fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
+                return std.meta.intToEnum(Value, input) catch unreachable;
+            }
 
-            return meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
-        }
+            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+                _ = self;
+
+                return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
+            }
+        };
     };
 }

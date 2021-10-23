@@ -1,59 +1,66 @@
 const std = @import("std");
-
 const getty = @import("../../../lib.zig");
 
-pub fn Visitor(comptime Value: type) type {
+pub fn Visitor(comptime Array: type) type {
     return struct {
         allocator: ?*std.mem.Allocator = null,
 
         const Self = @This();
+        const impl = @"impl Visitor"(Array);
 
-        /// Implements `getty.de.Visitor`.
         pub usingnamespace getty.de.Visitor(
             Self,
-            Value,
+            impl.visitor.Value,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
-            visitSequence,
+            impl.visitor.visitSequence,
             undefined,
             undefined,
             undefined,
         );
+    };
+}
+fn @"impl Visitor"(comptime Array: type) type {
+    const Self = Visitor(Array);
 
-        fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-            const Child = std.meta.Child(Value);
-            var seq: Value = undefined;
+    return struct {
+        pub const visitor = struct {
+            pub const Value = Array;
 
-            if (@typeInfo(Value).Array.len == 0) {
-                seq = .{};
-            } else {
-                var seen: usize = 0;
+            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+                var seq: Value = undefined;
 
-                errdefer {
-                    var i: usize = 0;
+                if (@typeInfo(Value).Array.len == 0) {
+                    seq = .{};
+                } else {
+                    var seen: usize = 0;
 
-                    while (i < seen) : (i += 1) {
-                        if (self.allocator) |allocator| getty.de.free(allocator, seq[i]);
+                    errdefer {
+                        var i: usize = 0;
+
+                        while (i < seen) : (i += 1) {
+                            if (self.allocator) |allocator| getty.de.free(allocator, seq[i]);
+                        }
+                    }
+
+                    for (seq) |*elem| {
+                        if (try sequenceAccess.nextElement(std.meta.Child(Value))) |value| {
+                            elem.* = value;
+                            seen += 1;
+                        }
                     }
                 }
 
-                for (seq) |*elem| {
-                    if (try sequenceAccess.nextElement(Child)) |value| {
-                        elem.* = value;
-                        seen += 1;
-                    }
+                if (try sequenceAccess.nextElement(std.meta.Child(Value))) |_| {
+                    return error.InvalidLength;
                 }
-            }
 
-            if (try sequenceAccess.nextElement(Child)) |_| {
-                return error.InvalidLength;
+                return seq;
             }
-
-            return seq;
-        }
+        };
     };
 }

@@ -1,11 +1,11 @@
-const Visitor = @import("../../../lib.zig").de.Visitor;
+const getty = @import("../../../lib.zig");
 
-const Value = void;
+const Visitor = @This();
+const impl = @"impl Visitor";
 
-/// Implements `getty.de.Visitor`.
-pub usingnamespace Visitor(
-    @This(),
-    Value,
+pub usingnamespace getty.de.Visitor(
+    Visitor,
+    impl.visitor.Value,
     undefined,
     undefined,
     undefined,
@@ -15,9 +15,19 @@ pub usingnamespace Visitor(
     undefined,
     undefined,
     undefined,
-    visitVoid,
+    impl.visitor.visitVoid,
 );
 
-fn visitVoid(_: @This(), comptime Error: type) Error!Value {
-    return {};
-}
+const @"impl Visitor" = struct {
+    const Self = Visitor;
+
+    pub const visitor = struct {
+        pub const Value = void;
+
+        pub fn visitVoid(self: Visitor, comptime Error: type) Error!Value {
+            _ = self;
+
+            return {};
+        }
+    };
+};

@@ -6,34 +6,46 @@ pub fn Visitor(comptime TailQueue: type) type {
         allocator: *std.mem.Allocator,
 
         const Self = @This();
-        const Child = std.meta.fieldInfo(TailQueue.Node, .data).field_type;
+        const impl = @"impl Visitor"(TailQueue);
 
         pub usingnamespace getty.de.Visitor(
             Self,
-            TailQueue,
+            impl.visitor.TailQueue,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
-            visitSequence,
+            impl.visitor.visitSequence,
             undefined,
             undefined,
             undefined,
         );
+    };
+}
 
-        fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!TailQueue {
-            var list = TailQueue{};
-            errdefer getty.de.free(self.allocator, list);
+fn @"impl Visitor"(comptime TailQueue: type) type {
+    const Self = Visitor(TailQueue);
 
-            while (try sequenceAccess.nextElement(Child)) |value| {
-                var node = try self.allocator.create(TailQueue.Node);
-                node.* = .{ .data = value };
-                list.append(node);
+    return struct {
+        pub const visitor = struct {
+            pub const Value = TailQueue;
+
+            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!TailQueue {
+                var list = TailQueue{};
+                errdefer getty.de.free(self.allocator, list);
+
+                while (try sequenceAccess.nextElement(Child)) |value| {
+                    var node = try self.allocator.create(TailQueue.Node);
+                    node.* = .{ .data = value };
+                    list.append(node);
+                }
+
+                return list;
             }
 
-            return list;
-        }
+            const Child = std.meta.fieldInfo(TailQueue.Node, .data).field_type;
+        };
     };
 }
