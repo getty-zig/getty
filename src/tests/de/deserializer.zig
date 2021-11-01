@@ -8,13 +8,17 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 const Token = @import("common/token.zig").Token;
 
 pub const Deserializer = struct {
+    allocator: *std.mem.Allocator,
     tokens: []const Token,
 
     const Self = @This();
     const impl = @"impl Deserializer";
 
-    pub fn init(tokens: []const Token) Self {
-        return .{ .tokens = tokens };
+    pub fn init(allocator: *std.mem.Allocator, tokens: []const Token) Self {
+        return .{
+            .allocator = allocator,
+            .tokens = tokens,
+        };
     }
 
     pub fn remaining(self: Self) usize {
@@ -51,7 +55,7 @@ pub const Deserializer = struct {
         if (self.peekTokenOpt()) |token| {
             return token;
         } else {
-            std.debug.panic("ran out of tokens to deserialize");
+            std.debug.panic("ran out of tokens to deserialize", .{});
         }
     }
 
@@ -127,7 +131,10 @@ const @"impl Deserializer" = struct {
         }
 
         pub fn deserializeSequence(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
-            _ = self;
+            return switch (self.nextToken()) {
+                .Seq => |v| try visit_seq(self, v.len, .SeqEnd, visitor),
+                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+            };
         }
 
         pub fn deserializeString(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
@@ -150,6 +157,66 @@ const @"impl Deserializer" = struct {
                 .Void => return try visitor.visitVoid(Error),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             }
+        }
+
+        fn visit_seq(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
+            var s = DeserializerSeqVisitor{ .de = self, .len = len, .end = end };
+            var value = visitor.visitSequence(s.sequenceAccess());
+
+            try assertNextToken(self, end);
+
+            return value;
+        }
+
+        fn assertNextToken(self: *Deserializer, expected: Token) !void {
+            if (self.nextTokenOpt()) |token| {
+                const token_tag = std.meta.activeTag(token);
+                const expected_tag = std.meta.activeTag(expected);
+
+                if (token_tag == expected_tag) {
+                    switch (token) {
+                        //.MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
+                        .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
+                        //.Struct => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
+                        else => @panic("unexpected token"),
+                    }
+                } else {
+                    @panic("expected Token::{} but deserialization wants Token::{}");
+                }
+            } else {
+                @panic("end of tokens but deserialization wants Token::{}");
+            }
+        }
+    };
+};
+
+const DeserializerSeqVisitor = struct {
+    de: *Deserializer,
+    len: ?usize,
+    end: Token,
+
+    const Self = @This();
+    const impl = @"impl DeserializerSeqVisitor";
+
+    pub usingnamespace getty.de.SequenceAccess(
+        *Self,
+        impl.sequenceAccess.Error,
+        impl.sequenceAccess.nextElementSeed,
+    );
+};
+
+const @"impl DeserializerSeqVisitor" = struct {
+    pub const sequenceAccess = struct {
+        pub const Error = @"impl Deserializer".deserializer.Error;
+
+        pub fn nextElementSeed(self: *DeserializerSeqVisitor, seed: anytype) Error!?@TypeOf(seed).Value {
+            if (self.de.peekTokenOpt()) |token| {
+                if (std.meta.eql(token, self.end)) return null;
+            }
+
+            self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+
+            return try seed.deserialize(self.de.allocator, self.de.deserializer());
         }
     };
 };

@@ -5,6 +5,47 @@ const Deserializer = @import("deserializer.zig").Deserializer;
 const Token = @import("common/token.zig").Token;
 
 const allocator = std.testing.allocator;
+const assert = std.debug.assert;
+const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
+const expectEqualSlices = std.testing.expectEqualSlices;
+
+test "array" {
+    try t([0]i32, [_]i32{}, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
+    });
+    try t([3]i32, [3]i32{ 1, 2, 3 }, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = .{} },
+    });
+    try t([3][2]i32, [3][2]i32{ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } }, &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .SeqEnd = .{} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 3 },
+        .{ .I32 = 4 },
+        .{ .SeqEnd = .{} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 5 },
+        .{ .I32 = 6 },
+        .{ .SeqEnd = .{} },
+        .{ .SeqEnd = .{} },
+    });
+}
+
+test "array list" {
+    try t(std.ArrayList(isize), std.ArrayList(isize).init(allocator), &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
+    });
+}
 
 test "bool" {
     try t(bool, true, &[_]Token{.{ .Bool = true }});
@@ -31,7 +72,7 @@ test "integer" {
     try t(isize, @as(i64, 0), &[_]Token{.{ .I64 = 0 }});
     try t(isize, @as(i128, 0), &[_]Token{.{ .I128 = 0 }});
 
-    //// unsigned
+    // unsigned
     try t(u8, @as(u8, 0), &[_]Token{.{ .U8 = 0 }});
     try t(u16, @as(u16, 0), &[_]Token{.{ .U16 = 0 }});
     try t(u32, @as(u32, 0), &[_]Token{.{ .U32 = 0 }});
@@ -45,23 +86,47 @@ test "integer" {
 }
 
 test "string" {
-    //try t([]const u8, "abc", &[_]Token{.{ .String = "abc" }});
-    //try t([]const u8, &[_]u8{ 'a', 'b', 'c' }, &[_]Token{.{ .String = "abc" }});
-    //try t([]const u8, &[_:0]u8{ 'a', 'b', 'c' }, &[_]Token{.{ .String = "abc" }});
-    //try t([]const u8, &[_]u8{ 'a', 'b', 'c' }, &[_]Token{.{ .String = "abc" }});
-    //try t([]const u8, &[_:0]u8{ 'a', 'b', 'c' }, &[_]Token{.{ .String = "abc" }});
+    {
+        try t([]const u8, "abc", &[_]Token{.{ .String = "abc" }});
+    }
+
+    {
+        var arr = [_]u8{ 'a', 'b', 'c' };
+        try t([]u8, &arr, &[_]Token{.{ .String = "abc" }});
+    }
+}
+
+test "void" {
+    try t(void, {}, &[_]Token{.{ .Void = {} }});
 }
 
 fn t(comptime T: type, expected: T, tokens: []const Token) !void {
-    var d = Deserializer.init(tokens);
+    var d = Deserializer.init(allocator, tokens);
+    const v = getty.deserialize(allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+    defer getty.de.free(allocator, v);
 
-    const v = getty.deserialize(
-        allocator,
-        T,
-        d.deserializer(),
-    ) catch return error.TestUnexpectedError;
+    switch (@typeInfo(T)) {
+        .Bool,
+        .Float,
+        .Int,
+        .Void,
+        //.Enum,
+        => try expectEqual(expected, v),
+        .Array => |info| try expectEqualSlices(info.child, &expected, &v),
+        .Pointer => |info| switch (info.size) {
+            .Slice => try expectEqualSlices(info.child, expected, v),
+            else => unreachable,
+        },
+        .Struct => {
+            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
+                try expectEqual(expected.capacity, v.capacity);
+                try expectEqualSlices(std.meta.Child(T.Slice), expected.items, v.items);
+            } else {
+                unreachable;
+            }
+        },
+        else => unreachable,
+    }
 
-    // TODO: Handle slices, structs, etc.
-    try std.testing.expectEqual(v, expected);
-    try std.testing.expect(d.remaining() == 0);
+    try expect(d.remaining() == 0);
 }
