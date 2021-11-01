@@ -32,30 +32,38 @@ fn @"impl Visitor"(comptime Array: type) type {
             pub const Value = Array;
 
             pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+                const Child = std.meta.Child(Value);
+
                 var seq: Value = undefined;
+                var seen: usize = 0;
 
-                if (@typeInfo(Value).Array.len == 0) {
-                    seq = .{};
-                } else {
-                    var seen: usize = 0;
-
-                    errdefer {
+                errdefer {
+                    if (seq.len > 0) {
                         var i: usize = 0;
 
-                        while (i < seen) : (i += 1) {
-                            if (self.allocator) |allocator| getty.de.free(allocator, seq[i]);
-                        }
-                    }
-
-                    for (seq) |*elem| {
-                        if (try sequenceAccess.nextElement(std.meta.Child(Value))) |value| {
-                            elem.* = value;
-                            seen += 1;
+                        if (self.allocator) |allocator| {
+                            while (i < seen) : (i += 1) {
+                                getty.de.free(allocator, seq[i]);
+                            }
                         }
                     }
                 }
 
-                if (try sequenceAccess.nextElement(std.meta.Child(Value))) |_| {
+                switch (seq.len) {
+                    0 => seq = .{},
+                    else => for (seq) |*elem| {
+                        if (try sequenceAccess.nextElement(Child)) |value| {
+                            elem.* = value;
+                            seen += 1;
+                        } else {
+                            // End of sequence was reached early.
+                            return error.InvalidLength;
+                        }
+                    },
+                }
+
+                // Expected end of sequence, but found an element.
+                if ((try sequenceAccess.nextElement(Child)) != null) {
                     return error.InvalidLength;
                 }
 
