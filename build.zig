@@ -34,5 +34,6 @@ pub fn build(b: *Builder) void {
     const lib = b.addStaticLibrary(package_name, package_path);
 
     lib.setBuildMode(mode);
+    lib.setTarget(target);
     lib.install();
 }
