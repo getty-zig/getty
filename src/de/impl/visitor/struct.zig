@@ -34,32 +34,56 @@ fn @"impl Visitor"(comptime Struct: type) type {
             pub const Value = Struct;
 
             pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-                var seen: usize = 0;
+                const fields = std.meta.fields(Value);
+
                 var map: Value = undefined;
+                var seen = [_]bool{false} ** fields.len;
 
                 errdefer {
                     if (self.allocator) |allocator| {
-                        inline for (std.meta.fields(Value)) |field, i| {
-                            if (i < seen) {
+                        inline for (fields) |field, i| {
+                            if (!field.is_comptime and seen[i]) {
                                 getty.de.free(allocator, @field(map, field.name));
                             }
                         }
                     }
                 }
 
-                inline for (std.meta.fields(Value)) |field| {
-                    if (try mapAccess.nextKey([]const u8)) |key| {
-                        if (!std.mem.eql(u8, field.name, key)) {
-                            return error.MissingField;
-                        }
+                while (try mapAccess.nextKey([]const u8)) |key| {
+                    var found = false;
 
-                        @field(map, field.name) = try mapAccess.nextValue(field.field_type);
-                        seen += 1;
+                    inline for (fields) |field, i| {
+                        if (std.mem.eql(u8, field.name, key)) {
+                            if (seen[i]) {
+                                return error.DuplicateField;
+                            }
+
+                            switch (field.is_comptime) {
+                                true => @compileError("TODO"),
+                                false => @field(map, field.name) = try mapAccess.nextValue(field.field_type),
+                            }
+
+                            seen[i] = true;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        return error.UnknownField;
                     }
                 }
 
-                if (try mapAccess.nextKey([]const u8)) |_| {
-                    return error.UnknownField;
+                inline for (fields) |field, i| {
+                    if (!seen[i]) {
+                        if (field.default_value) |default| {
+                            if (!field.is_comptime) {
+                                @field(map, field.name) = default;
+                            }
+                        } else {
+                            return error.MissingField;
+                        }
+                    }
                 }
 
                 return map;
