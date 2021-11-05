@@ -157,6 +157,53 @@ test "string" {
     try t(@as([]const u8, &arr), &[_]Token{.{ .String = "abc" }});
 }
 
+test "tuple" {
+    try t(std.meta.Tuple(&[_]type{}){}, &[_]Token{
+        .{ .Tuple = .{ .len = 0 } },
+        .{ .TupleEnd = .{} },
+    });
+
+    try t(std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 }, &[_]Token{
+        .{ .Tuple = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .U32 = 2 },
+        .{ .TupleEnd = .{} },
+    });
+
+    try t(std.meta.Tuple(&[_]type{}){}, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
+    });
+
+    try t(std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 }, &[_]Token{
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .U32 = 2 },
+        .{ .SeqEnd = .{} },
+    });
+
+    try t(std.meta.Tuple(&[_]type{
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+    }){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } }, &[_]Token{
+        .{ .Tuple = .{ .len = 3 } },
+        .{ .Tuple = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .TupleEnd = .{} },
+        .{ .Tuple = .{ .len = 2 } },
+        .{ .I32 = 3 },
+        .{ .I32 = 4 },
+        .{ .TupleEnd = .{} },
+        .{ .Tuple = .{ .len = 2 } },
+        .{ .I32 = 5 },
+        .{ .I32 = 6 },
+        .{ .TupleEnd = .{} },
+        .{ .TupleEnd = .{} },
+    });
+}
+
 test "void" {
     try t({}, &[_]Token{.{ .Void = {} }});
 }
@@ -186,12 +233,20 @@ fn t(expected: anytype, tokens: []const Token) !void {
                 else => unreachable,
             },
         },
-        .Struct => {
+        .Struct => |info| {
             if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
                 try expectEqual(expected.capacity, v.capacity);
                 try expectEqualSlices(std.meta.Child(T.Slice), expected.items, v.items);
-            } else {
-                unreachable;
+            } else switch (info.is_tuple) {
+                true => {
+                    const length = std.meta.fields(T).len;
+                    comptime var i: usize = 0;
+
+                    inline while (i < length) : (i += 1) {
+                        try expectEqual(expected[i], v[i]);
+                    }
+                },
+                false => unreachable, // TODO
             }
         },
         else => unreachable,

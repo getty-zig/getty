@@ -133,6 +133,7 @@ const @"impl Deserializer" = struct {
         pub fn deserializeSequence(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
                 .Seq => |v| try visit_seq(self, v.len, .SeqEnd, visitor),
+                .Tuple => |v| try visit_seq(self, v.len, .TupleEnd, visitor),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }
@@ -177,6 +178,7 @@ const @"impl Deserializer" = struct {
                     switch (token) {
                         //.MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
                         .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
+                        .TupleEnd => try expectEqual(@field(token, "TupleEnd"), @field(expected, "TupleEnd")),
                         //.Struct => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
                         else => @panic("unexpected token"),
                     }
