@@ -203,13 +203,13 @@ fn _deserialize(
         .Float, .ComptimeFloat => FloatDe(Visitor){ .visitor = visitor },
         .Int, .ComptimeInt => IntDe(Visitor){ .visitor = visitor },
         .Optional => OptionalDe(Visitor){ .visitor = visitor },
-        .Pointer => |info| switch (info.size) {
-            .One => return try _deserialize(allocator, std.meta.Child(T), deserializer, visitor),
-            .Slice => switch (comptime std.meta.trait.isZigString(T)) {
-                true => StringDe(Visitor){ .visitor = visitor },
-                false => SequenceDe(Visitor){ .visitor = visitor },
+        .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
+            true => StringDe(Visitor){ .visitor = visitor },
+            false => switch (info.size) {
+                .One => return try _deserialize(allocator, std.meta.Child(T), deserializer, visitor),
+                .Slice => SequenceDe(Visitor){ .visitor = visitor },
+                else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
             },
-            else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
         },
         .Struct => |info| blk: {
             if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
