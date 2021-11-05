@@ -157,6 +157,37 @@ test "string" {
     try t(@as([]const u8, &arr), &[_]Token{.{ .String = "abc" }});
 }
 
+test "struct" {
+    try t(struct {}{}, &[_]Token{
+        .{ .Map = .{ .len = 0 } },
+        .{ .MapEnd = .{} },
+    });
+
+    const T = struct { a: i32, b: i32, c: i32 };
+
+    try t(T{ .a = 1, .b = 2, .c = 3 }, &[_]Token{
+        .{ .Struct = .{ .name = "T", .len = 3 } },
+        .{ .String = "a" },
+        .{ .I32 = 1 },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .String = "c" },
+        .{ .I32 = 3 },
+        .{ .StructEnd = .{} },
+    });
+
+    try t(T{ .a = 1, .b = 2, .c = 3 }, &[_]Token{
+        .{ .Map = .{ .len = 3 } },
+        .{ .String = "a" },
+        .{ .I32 = 1 },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .String = "c" },
+        .{ .I32 = 3 },
+        .{ .MapEnd = .{} },
+    });
+}
+
 test "tuple" {
     try t(std.meta.Tuple(&[_]type{}){}, &[_]Token{
         .{ .Tuple = .{ .len = 0 } },
@@ -246,7 +277,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
                         try expectEqual(expected[i], v[i]);
                     }
                 },
-                false => unreachable, // TODO
+                false => try expectEqual(expected, v),
             }
         },
         else => unreachable,

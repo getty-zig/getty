@@ -116,6 +116,14 @@ const @"impl Deserializer" = struct {
             };
         }
 
+        pub fn deserializeMap(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
+            switch (self.nextToken()) {
+                .Map => |v| return try visitMap(self, v.len, .MapEnd, visitor),
+                .Struct => |v| return try visitMap(self, v.len, .StructEnd, visitor),
+                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+            }
+        }
+
         pub fn deserializeOptional(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             switch (self.peekToken()) {
                 .Null => {
@@ -132,8 +140,8 @@ const @"impl Deserializer" = struct {
 
         pub fn deserializeSequence(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
-                .Seq => |v| try visit_seq(self, v.len, .SeqEnd, visitor),
-                .Tuple => |v| try visit_seq(self, v.len, .TupleEnd, visitor),
+                .Seq => |v| try visitSequence(self, v.len, .SeqEnd, visitor),
+                .Tuple => |v| try visitSequence(self, v.len, .TupleEnd, visitor),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }
@@ -145,12 +153,8 @@ const @"impl Deserializer" = struct {
             }
         }
 
-        pub fn deserializeMap(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
-            _ = self;
-        }
-
         pub fn deserializeStruct(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
-            _ = self;
+            return try deserializeMap(self, visitor);
         }
 
         pub fn deserializeVoid(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
@@ -160,9 +164,18 @@ const @"impl Deserializer" = struct {
             }
         }
 
-        fn visit_seq(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
-            var s = DeserializerSeqVisitor{ .de = self, .len = len, .end = end };
+        fn visitSequence(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
+            var s = SeqMapVisitor{ .de = self, .len = len, .end = end };
             var value = visitor.visitSequence(s.sequenceAccess());
+
+            try assertNextToken(self, end);
+
+            return value;
+        }
+
+        fn visitMap(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
+            var m = SeqMapVisitor{ .de = self, .len = len, .end = end };
+            var value = visitor.visitMap(m.mapAccess());
 
             try assertNextToken(self, end);
 
@@ -176,11 +189,11 @@ const @"impl Deserializer" = struct {
 
                 if (token_tag == expected_tag) {
                     switch (token) {
-                        //.MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
+                        .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
                         .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
+                        .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
                         .TupleEnd => try expectEqual(@field(token, "TupleEnd"), @field(expected, "TupleEnd")),
-                        //.Struct => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
-                        else => @panic("unexpected token"),
+                        else => |v| std.debug.panic("unexpected token: {s}", .{@tagName(v)}),
                     }
                 } else {
                     @panic("expected Token::{} but deserialization wants Token::{}");
@@ -192,32 +205,57 @@ const @"impl Deserializer" = struct {
     };
 };
 
-const DeserializerSeqVisitor = struct {
+const SeqMapVisitor = struct {
     de: *Deserializer,
     len: ?usize,
     end: Token,
 
     const Self = @This();
-    const impl = @"impl DeserializerSeqVisitor";
+    const impl = @"impl SeqMapVisitor";
 
     pub usingnamespace getty.de.SequenceAccess(
         *Self,
         impl.sequenceAccess.Error,
         impl.sequenceAccess.nextElementSeed,
     );
+
+    pub usingnamespace getty.de.MapAccess(
+        *Self,
+        impl.mapAccess.Error,
+        impl.mapAccess.nextKeySeed,
+        impl.mapAccess.nextValueSeed,
+    );
 };
 
-const @"impl DeserializerSeqVisitor" = struct {
+const @"impl SeqMapVisitor" = struct {
     pub const sequenceAccess = struct {
         pub const Error = @"impl Deserializer".deserializer.Error;
 
-        pub fn nextElementSeed(self: *DeserializerSeqVisitor, seed: anytype) Error!?@TypeOf(seed).Value {
+        pub fn nextElementSeed(self: *SeqMapVisitor, seed: anytype) Error!?@TypeOf(seed).Value {
             if (self.de.peekTokenOpt()) |token| {
                 if (std.meta.eql(token, self.end)) return null;
             }
 
             self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
 
+            return try seed.deserialize(self.de.allocator, self.de.deserializer());
+        }
+    };
+
+    pub const mapAccess = struct {
+        pub const Error = @"impl Deserializer".deserializer.Error;
+
+        pub fn nextKeySeed(self: *SeqMapVisitor, seed: anytype) Error!?@TypeOf(seed).Value {
+            if (self.de.peekTokenOpt()) |token| {
+                if (std.meta.eql(token, self.end)) return null;
+            }
+
+            self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+
+            return try seed.deserialize(self.de.allocator, self.de.deserializer());
+        }
+
+        pub fn nextValueSeed(self: *SeqMapVisitor, seed: anytype) Error!@TypeOf(seed).Value {
             return try seed.deserialize(self.de.allocator, self.de.deserializer());
         }
     };
