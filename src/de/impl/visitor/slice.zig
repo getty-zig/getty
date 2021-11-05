@@ -33,10 +33,10 @@ fn @"impl Visitor"(comptime Slice: type) type {
             pub const Value = Slice;
 
             pub fn visitSequence(self: Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
-                var list = std.ArrayList(std.meta.Child(Value)).init(self.allocator);
+                var list = std.ArrayList(Child).init(self.allocator);
                 errdefer getty.de.free(self.allocator, list);
 
-                while (try seqAccess.nextElement(std.meta.Child(Value))) |elem| {
+                while (try seqAccess.nextElement(Child)) |elem| {
                     try list.append(elem);
                 }
 
@@ -55,11 +55,14 @@ fn @"impl Visitor"(comptime Slice: type) type {
                 // deserializer figure out what to do in the SequenceAccess based
                 // on whether the input is an Array or a String. If this works, do we
                 // even need a `visitString` method?
-                if (std.meta.Child(Value) == u8)
+                if (Child == u8) {
                     return try self.allocator.dupe(std.meta.Child(Value), input);
+                }
 
                 return error.InvalidType;
             }
+
+            const Child = std.meta.Child(Value);
         };
     };
 }
