@@ -18,7 +18,7 @@ pub fn Visitor(comptime Array: type) type {
             undefined,
             undefined,
             impl.visitor.visitSequence,
-            undefined,
+            impl.visitor.visitString,
             undefined,
             undefined,
         );
@@ -32,16 +32,14 @@ fn @"impl Visitor"(comptime Array: type) type {
             pub const Value = Array;
 
             pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-                const Child = std.meta.Child(Value);
-
                 var seq: Value = undefined;
                 var seen: usize = 0;
 
                 errdefer {
-                    if (seq.len > 0) {
-                        var i: usize = 0;
+                    if (self.allocator) |allocator| {
+                        if (seq.len > 0) {
+                            var i: usize = 0;
 
-                        if (self.allocator) |allocator| {
                             while (i < seen) : (i += 1) {
                                 getty.de.free(allocator, seq[i]);
                             }
@@ -69,6 +67,23 @@ fn @"impl Visitor"(comptime Array: type) type {
 
                 return seq;
             }
+
+            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+                _ = self;
+
+                if (Child == u8) {
+                    var string: Value = undefined;
+
+                    if (input.len == string.len) {
+                        std.mem.copy(u8, &string, input);
+                        return string;
+                    }
+                }
+
+                return error.InvalidType;
+            }
+
+            const Child = std.meta.Child(Value);
         };
     };
 }
