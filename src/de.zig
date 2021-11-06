@@ -114,12 +114,18 @@ pub const de = struct {
                     value.deinit();
                 } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMapUnmanaged")) {
                     var iterator = value.iterator();
-                    while (iterator.next()) |entry| free(allocator, entry.value_ptr.*);
+                    while (iterator.next()) |entry| {
+                        free(allocator, entry.key_ptr.*);
+                        free(allocator, entry.value_ptr.*);
+                    }
                     var mut = value;
                     mut.deinit(allocator);
                 } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMap")) {
                     var iterator = value.iterator();
-                    while (iterator.next()) |entry| free(allocator, entry.value_ptr.*);
+                    while (iterator.next()) |entry| {
+                        free(allocator, entry.key_ptr.*);
+                        free(allocator, entry.value_ptr.*);
+                    }
                     var mut = value;
                     mut.deinit();
                 } else if (comptime std.mem.startsWith(u8, name, "std.linked_list")) {
