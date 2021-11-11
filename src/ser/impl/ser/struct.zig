@@ -15,9 +15,10 @@ const @"impl Ser" = struct {
             _ = self;
 
             const T = @TypeOf(value);
+            const fields = std.meta.fields(T);
 
-            const st = (try serializer.serializeStruct(@typeName(T), std.meta.fields(T).len)).structSerialize();
-            inline for (@typeInfo(T).Struct.fields) |field| {
+            const st = (try serializer.serializeStruct(@typeName(T), fields.len)).structSerialize();
+            inline for (fields) |field| {
                 if (field.field_type != void) {
                     try st.serializeField(field.name, @field(value, field.name));
                 }
