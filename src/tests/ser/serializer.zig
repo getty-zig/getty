@@ -178,7 +178,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, Token{ .String = v });
         }
 
-        pub fn serializeStruct(self: *Serializer, name: []const u8, length: usize) Error!StructSerialize {
+        pub fn serializeStruct(self: *Serializer, comptime name: []const u8, length: usize) Error!StructSerialize {
             try assertNextToken(self, Token{ .Struct = .{ .name = name, .len = length } });
             return self;
         }

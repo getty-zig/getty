@@ -25,7 +25,15 @@ pub fn Serializer(
     comptime sequenceFn: fn (Context, ?usize) E!SequenceSerialize,
     comptime someFn: fn (Context, anytype) E!O,
     comptime stringFn: fn (Context, anytype) E!O,
-    comptime structFn: fn (Context, comptime []const u8, usize) E!StructSerialize,
+    comptime structFn: @TypeOf(struct {
+        fn f(self: Context, comptime name: []const u8, length: usize) E!StructSerialize {
+            _ = self;
+            _ = name;
+            _ = length;
+
+            unreachable;
+        }
+    }.f),
     comptime tupleFn: fn (Context, ?usize) E!TupleSerialize,
     comptime voidFn: fn (Context) E!O,
 ) type {

@@ -8,7 +8,15 @@ pub fn StructSerialize(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime fieldFn: fn (Context, comptime []const u8, anytype) E!void,
+    comptime fieldFn: @TypeOf(struct {
+        fn f(self: Context, comptime key: []const u8, value: anytype) E!void {
+            _ = self;
+            _ = key;
+            _ = value;
+
+            unreachable;
+        }
+    }.f),
     comptime endFn: fn (Context) E!O,
 ) type {
     switch (@typeInfo(E)) {
