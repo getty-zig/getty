@@ -37,7 +37,7 @@
 //!
 //! # `Ser`s
 //!
-//! A `ser` defines the conversion process between Zig types and Getty's data
+//! A `Ser` defines the conversion process between Zig types and Getty's data
 //! model. For example, the `BoolSer` type, used internally by Getty, converts
 //! `bool` values into the Boolean type, which is one of the types defined in
 //! Getty's data model.
@@ -86,6 +86,45 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/serialize/sequence.zig");
     pub usingnamespace @import("ser/interface/serialize/struct.zig");
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
+
+    pub const concepts = struct {
+        fn @"getty.Serializer"(comptime T: type) void {
+            comptime {
+                const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Serializer");
+                const has_field = std.meta.trait.hasField("context")(T);
+                const has_decls = std.meta.trait.hasDecls(T, .{ "Ok", "Error" });
+                const has_funcs = std.meta.trait.hasFunctions(T, .{
+                    "serializeBool",
+                    "serializeEnum",
+                    "serializeInt",
+                    "serializeMap",
+                    "serializeNull",
+                    "serializeSequence",
+                    "serializeSome",
+                    "serializeString",
+                    "serializeStruct",
+                    "serializeTuple",
+                    "serializeVoid",
+                });
+
+                if (!(has_name and has_field and has_decls and has_funcs)) {
+                    @compileError("concept `Serializer` was not satisfied");
+                }
+            }
+        }
+
+        fn @"getty.Ser"(comptime T: type) void {
+            comptime {
+                const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Ser");
+                const has_field = std.meta.trait.hasField("context")(T);
+                const has_func = std.meta.trait.hasFn("serialize")(T);
+
+                if (!(has_name and has_field and has_func)) {
+                    @compileError("concept `Ser` was not satisfied");
+                }
+            }
+        }
+    };
 };
 
 /// Serializes a value using a provided serializer and `ser`.
@@ -93,7 +132,12 @@ pub const ser = struct {
 /// `serializeWith` allows for data types that aren't supported by Getty to be
 /// serialized. Additionally, the function enables the use of custom
 /// serialization logic for data types that are supported.
-pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) blk: {
+    ser.concepts.@"getty.Serializer"(@TypeOf(serializer));
+    ser.concepts.@"getty.Ser"(@TypeOf(s));
+
+    break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
+} {
     return try s.serialize(value, serializer);
 }
 
@@ -103,7 +147,11 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) @TypeOf(se
 /// commonly used but unsupported types such as `std.ArrayList` and
 /// `std.AutoHashMap`. For custom serialization or serialization of data types
 /// not supported Getty, see `getty.serializeWith`.
-pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+pub fn serialize(value: anytype, serializer: anytype) blk: {
+    ser.concepts.@"getty.Serializer"(@TypeOf(serializer));
+
+    break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
+} {
     const T = @TypeOf(value);
 
     var s = switch (@typeInfo(T)) {

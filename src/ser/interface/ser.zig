@@ -23,19 +23,18 @@ pub fn Ser(
         }
     }.f),
 ) type {
-    const T = struct {
-        context: Context,
-
-        const Self = @This();
-
-        /// A specification of how to serialize `value`.
-        pub fn serialize(self: Self, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-            return try serializeFn(self.context, value, serializer);
-        }
-    };
-
     return struct {
-        pub fn ser(self: Context) T {
+        const @"getty.Ser" = struct {
+            context: Context,
+
+            const Self = @This();
+
+            /// A specification of how to serialize `value`.
+            pub fn serialize(self: Self, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+                return try serializeFn(self.context, value, serializer);
+            }
+        };
+        pub fn ser(self: Context) @"getty.Ser" {
             return .{ .context = self };
         }
     };
