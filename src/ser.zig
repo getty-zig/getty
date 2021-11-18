@@ -90,10 +90,25 @@ pub const ser = struct {
     pub const concepts = struct {
         fn @"getty.Serializer"(comptime T: type) void {
             comptime {
-                const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Serializer");
-                const has_field = std.meta.trait.hasField("context")(T);
-                const has_decls = std.meta.trait.hasDecls(T, .{ "Ok", "Error" });
-                const has_funcs = std.meta.trait.hasFunctions(T, .{
+                // Invariants
+                if (!std.meta.trait.isContainer(T)) {
+                    @compileError("concept `Serializer` could not be satisfied");
+                }
+
+                // Constraints
+                if (!std.mem.startsWith(u8, @typeName(T), "getty.Serializer")) {
+                    @compileError("concept `Serializer` was not satisfied");
+                }
+
+                if (!std.meta.trait.hasField("context")(T)) {
+                    @compileError("concept `Serializer` was not satisfied");
+                }
+
+                if (!std.meta.trait.hasDecls(T, .{ "Ok", "Error" })) {
+                    @compileError("concept `Serializer` was not satisfied");
+                }
+
+                if (!std.meta.trait.hasFunctions(T, .{
                     "serializeBool",
                     "serializeEnum",
                     "serializeInt",
@@ -105,9 +120,7 @@ pub const ser = struct {
                     "serializeStruct",
                     "serializeTuple",
                     "serializeVoid",
-                });
-
-                if (!(has_name and has_field and has_decls and has_funcs)) {
+                })) {
                     @compileError("concept `Serializer` was not satisfied");
                 }
             }
@@ -115,11 +128,21 @@ pub const ser = struct {
 
         fn @"getty.Ser"(comptime T: type) void {
             comptime {
-                const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Ser");
-                const has_field = std.meta.trait.hasField("context")(T);
-                const has_func = std.meta.trait.hasFn("serialize")(T);
+                // Invariants
+                if (!std.meta.trait.isContainer(T)) {
+                    @compileError("concept `Ser` could not be satisfied");
+                }
 
-                if (!(has_name and has_field and has_func)) {
+                // Constraints
+                if (!std.mem.startsWith(u8, @typeName(T), "getty.Ser")) {
+                    @compileError("concept `Ser` was not satisfied");
+                }
+
+                if (!std.meta.trait.hasField("context")(T)) {
+                    @compileError("concept `Ser` was not satisfied");
+                }
+
+                if (!std.meta.trait.hasFn("serialize")(T)) {
                     @compileError("concept `Ser` was not satisfied");
                 }
             }
