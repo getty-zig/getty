@@ -1,16 +1,34 @@
 const std = @import("std");
 
-const Builder = std.build.Builder;
-
 const package_name = "getty";
 const package_path = "src/lib.zig";
+
+const packages = struct {
+    const getty = std.build.Pkg{
+        .name = package_name,
+        .path = .{ .path = package_path },
+        .dependencies = &[_]std.build.Pkg{
+            concepts,
+        },
+    };
+
+    const concepts = std.build.Pkg{
+        .name = "concepts",
+        .path = .{ .path = "deps/concepts/src/lib.zig" },
+    };
+
+    const token = std.build.Pkg{
+        .name = "common/token.zig",
+        .path = .{ .path = "src/tests/common/token.zig" },
+    };
+};
 
 const tests = [_][]const u8{
     "src/tests/ser/tests.zig",
     "src/tests/de/tests.zig",
 };
 
-pub fn build(b: *Builder) void {
+pub fn build(b: *std.build.Builder) void {
     // Options
     const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
@@ -24,8 +42,8 @@ pub fn build(b: *Builder) void {
         t.setBuildMode(mode);
         t.setTarget(target);
 
-        t.addPackagePath(package_name, package_path);
-        t.addPackagePath("common/token.zig", "src/tests/common/token.zig");
+        t.addPackage(packages.getty);
+        t.addPackage(packages.token);
 
         step.dependOn(&t.step);
     }
