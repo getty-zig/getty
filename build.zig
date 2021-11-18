@@ -7,14 +7,6 @@ const packages = struct {
     const getty = std.build.Pkg{
         .name = package_name,
         .path = .{ .path = package_path },
-        .dependencies = &[_]std.build.Pkg{
-            concepts,
-        },
-    };
-
-    const concepts = std.build.Pkg{
-        .name = "concepts",
-        .path = .{ .path = "deps/concepts/src/lib.zig" },
     };
 
     const token = std.build.Pkg{
