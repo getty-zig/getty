@@ -19,7 +19,8 @@
 //!                            `getty.De` + `getty.de.Visitor`
 
 const std = @import("std");
-const getty = @import("lib.zig");
+
+const getty = @import("getty");
 
 const ArrayVisitor = @import("de/impl/visitor/array.zig").Visitor;
 const ArrayListVisitor = @import("de/impl/visitor/array_list.zig").Visitor;
