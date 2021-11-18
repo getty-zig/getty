@@ -111,6 +111,7 @@ pub const ser = struct {
                 if (!std.meta.trait.hasFunctions(T, .{
                     "serializeBool",
                     "serializeEnum",
+                    "serializeFloat",
                     "serializeInt",
                     "serializeMap",
                     "serializeNull",
