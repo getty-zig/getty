@@ -6,14 +6,14 @@ const ser = @import("../../../lib.zig").ser;
 /// serialization specifications.
 pub fn SequenceSerialize(
     comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime elementFn: fn (Context, anytype) E!void,
-    comptime endFn: fn (Context) E!O,
+    comptime Ok: type,
+    comptime Error: type,
+    comptime serializeElement: fn (Context, anytype) Error!void,
+    comptime end: fn (Context) Error!Ok,
 ) type {
-    switch (@typeInfo(E)) {
+    switch (@typeInfo(Error)) {
         .ErrorSet => {},
-        else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
+        else => @compileError("expected error set, found `" ++ @typeName(Error) ++ "`"),
     }
 
     const T = struct {
@@ -22,19 +22,19 @@ pub fn SequenceSerialize(
         const Self = @This();
 
         /// Successful return type.
-        pub const Ok = O;
+        pub const Ok = Ok;
 
         /// The error set used upon failure.
-        pub const Error = E;
+        pub const Error = Error;
 
         /// Serialize a sequence element.
         pub fn serializeElement(self: Self, value: anytype) Error!void {
-            try elementFn(self.context, value);
+            try serializeElement(self.context, value);
         }
 
         /// Finish serializing a sequence.
         pub fn end(self: Self) Error!Ok {
-            return try endFn(self.context);
+            return try end(self.context);
         }
     };
 

@@ -13,7 +13,7 @@
 /// Returns a namespace containing an interface function for visitors.
 pub fn Ser(
     comptime Context: type,
-    serializeFn: @TypeOf(struct {
+    serialize: @TypeOf(struct {
         fn f(self: Context, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
             _ = self;
             _ = value;
@@ -31,7 +31,7 @@ pub fn Ser(
 
             /// A specification of how to serialize `value`.
             pub fn serialize(self: Self, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-                return try serializeFn(self.context, value, serializer);
+                return try serialize(self.context, value, serializer);
             }
         };
         pub fn ser(self: Context) @"getty.Ser" {

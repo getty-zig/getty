@@ -6,10 +6,10 @@ const ser = @import("../../../lib.zig").ser;
 /// serialization specifications.
 pub fn StructSerialize(
     comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime fieldFn: @TypeOf(struct {
-        fn f(self: Context, comptime key: []const u8, value: anytype) E!void {
+    comptime Ok: type,
+    comptime Error: type,
+    comptime serializeField: @TypeOf(struct {
+        fn f(self: Context, comptime key: []const u8, value: anytype) Error!void {
             _ = self;
             _ = key;
             _ = value;
@@ -17,11 +17,11 @@ pub fn StructSerialize(
             unreachable;
         }
     }.f),
-    comptime endFn: fn (Context) E!O,
+    comptime end: fn (Context) Error!Ok,
 ) type {
-    switch (@typeInfo(E)) {
+    switch (@typeInfo(Error)) {
         .ErrorSet => {},
-        else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
+        else => @compileError("expected error set, found `" ++ @typeName(Error) ++ "`"),
     }
 
     const T = struct {
@@ -30,19 +30,19 @@ pub fn StructSerialize(
         const Self = @This();
 
         /// Successful return type.
-        pub const Ok = O;
+        pub const Ok = Ok;
 
         /// The error set used upon failure.
-        pub const Error = E;
+        pub const Error = Error;
 
         /// Serialize a struct field.
         pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!void {
-            try fieldFn(self.context, key, value);
+            try serializeField(self.context, key, value);
         }
 
         /// Finish serializing a struct.
         pub fn end(self: Self) Error!Ok {
-            return try endFn(self.context);
+            return try end(self.context);
         }
     };
 

@@ -6,15 +6,15 @@ const ser = @import("../../../lib.zig").ser;
 /// specifications.
 pub fn MapSerialize(
     comptime Context: type,
-    comptime O: type,
-    comptime E: type,
-    comptime keyFn: fn (Context, anytype) E!void,
-    comptime valueFn: fn (Context, anytype) E!void,
-    comptime endFn: fn (Context) E!O,
+    comptime Ok: type,
+    comptime Error: type,
+    comptime serializeKey: fn (Context, anytype) Error!void,
+    comptime serializeValue: fn (Context, anytype) Error!void,
+    comptime end: fn (Context) Error!Ok,
 ) type {
-    switch (@typeInfo(E)) {
+    switch (@typeInfo(Error)) {
         .ErrorSet => {},
-        else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
+        else => @compileError("expected error set, found `" ++ @typeName(Error) ++ "`"),
     }
 
     const T = struct {
@@ -23,30 +23,30 @@ pub fn MapSerialize(
         const Self = @This();
 
         /// Successful return type.
-        pub const Ok = O;
+        pub const Ok = Ok;
 
         /// The error set used upon failure.
-        pub const Error = E;
+        pub const Error = Error;
 
         /// Serialize a map key.
         pub fn serializeKey(self: Self, key: anytype) Error!void {
-            try keyFn(self.context, key);
+            try serializeKey(self.context, key);
         }
 
         /// Serialize a map value.
         pub fn serializeValue(self: Self, value: anytype) Error!void {
-            try valueFn(self.context, value);
+            try serializeValue(self.context, value);
         }
 
         /// Serialize a map entry consisting of a key and a value.
         pub fn serializeEntry(self: Self, key: anytype, value: anytype) Error!void {
-            try serializeKey(self, key);
-            try serializeValue(self, value);
+            try self.serializeKey(key);
+            try self.serializeValue(value);
         }
 
         /// Finish serializing a struct.
         pub fn end(self: Self) Error!Ok {
-            return try endFn(self.context);
+            return try end(self.context);
         }
     };
 
