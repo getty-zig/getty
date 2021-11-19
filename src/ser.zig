@@ -50,6 +50,8 @@
 
 const std = @import("std");
 
+const concepts = @import("lib.zig").concepts;
+
 const ArrayListSer = @import("ser/impl/ser/array_list.zig");
 const BoolSer = @import("ser/impl/ser/bool.zig");
 const ErrorSer = @import("ser/impl/ser/error.zig");
@@ -76,6 +78,7 @@ pub usingnamespace @import("ser/interface/serializer.zig");
 /// `Ser` interface
 pub usingnamespace @import("ser/interface/ser.zig");
 
+/// `ser` namespace
 pub const ser = struct {
     /// Generic error set for `getty.Ser` implementations.
     pub const Error = std.mem.Allocator.Error || error{
@@ -86,62 +89,6 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/serialize/sequence.zig");
     pub usingnamespace @import("ser/interface/serialize/struct.zig");
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
-
-    pub const concepts = struct {
-        pub fn @"getty.Serializer"(comptime T: type) void {
-            const err = "expected `getty.Serializer` interface value, found `" ++ @typeName(T) ++ "`";
-
-            comptime {
-                // Invariants
-                if (!std.meta.trait.isContainer(T)) {
-                    @compileError(err);
-                }
-
-                // Constraints
-                const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Serializer");
-                const has_field = std.meta.trait.hasField("context")(T);
-                const has_decls = std.meta.trait.hasDecls(T, .{ "Ok", "Error" });
-                const has_funcs = std.meta.trait.hasFunctions(T, .{
-                    "serializeBool",
-                    "serializeEnum",
-                    "serializeFloat",
-                    "serializeInt",
-                    "serializeMap",
-                    "serializeNull",
-                    "serializeSequence",
-                    "serializeSome",
-                    "serializeString",
-                    "serializeStruct",
-                    "serializeTuple",
-                    "serializeVoid",
-                });
-
-                if (!(has_name and has_field and has_decls and has_funcs)) {
-                    @compileError(err);
-                }
-            }
-        }
-
-        pub fn @"getty.Ser"(comptime T: type) void {
-            const err = "expected `getty.Ser` interface value, found `" ++ @typeName(T) ++ "`";
-
-            comptime {
-                // Invariants
-                if (!std.meta.trait.isContainer(T)) {
-                    @compileError(err);
-                }
-
-                // Constraints
-                const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Ser");
-                const has_field = std.meta.trait.hasField("context")(T);
-                const has_func = std.meta.trait.hasFn("serialize")(T);
-
-                if (!(has_name and has_field and has_func)) {
-                    @compileError(err);
-                }
-            }
-        }
-    };
 };
 
 /// Serializes a value using a provided serializer and `ser`.
@@ -150,8 +97,8 @@ pub const ser = struct {
 /// serialized. Additionally, the function enables the use of custom
 /// serialization logic for data types that are supported.
 pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) blk: {
-    ser.concepts.@"getty.Serializer"(@TypeOf(serializer));
-    ser.concepts.@"getty.Ser"(@TypeOf(s));
+    concepts.@"getty.Serializer"(@TypeOf(serializer));
+    concepts.@"getty.Ser"(@TypeOf(s));
 
     break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
 } {
@@ -165,7 +112,7 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) blk: {
 /// `std.AutoHashMap`. For custom serialization or serialization of data types
 /// not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) blk: {
-    ser.concepts.@"getty.Serializer"(@TypeOf(serializer));
+    concepts.@"getty.Serializer"(@TypeOf(serializer));
 
     break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
 } {
