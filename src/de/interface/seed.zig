@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const concepts = @import("../../lib.zig").concepts;
+
 pub fn Seed(
     comptime Context: type,
     comptime Value: type,
@@ -24,13 +26,19 @@ pub fn Seed(
                 self: Self,
                 allocator: ?*std.mem.Allocator,
                 deserializer: anytype,
-            ) @TypeOf(deserializer).Error!Value {
+            ) Return(@TypeOf(deserializer)) {
                 return try deserialize(self.context, allocator, deserializer);
             }
         };
 
         pub fn seed(self: Context) @"getty.de.Seed" {
             return .{ .context = self };
+        }
+
+        fn Return(comptime Deserializer: type) type {
+            concepts.@"getty.Deserializer"(Deserializer);
+
+            return Deserializer.Error!Value;
         }
     };
 }
