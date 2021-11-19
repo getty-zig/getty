@@ -13,27 +13,27 @@ pub fn SequenceAccess(
         }
     }.f),
 ) type {
-    const T = struct {
-        context: Context,
-
-        const Self = @This();
-
-        pub const Error = Error;
-
-        pub fn nextElementSeed(self: Self, seed: anytype) Error!?@TypeOf(seed).Value {
-            return try nextElementSeed(self.context, seed);
-        }
-
-        pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
-            var seed = DefaultSeed(Value){};
-            const ds = seed.seed();
-
-            return try self.nextElementSeed(ds);
-        }
-    };
-
     return struct {
-        pub fn sequenceAccess(self: Context) T {
+        pub const @"getty.de.SequenceAccess" = struct {
+            context: Context,
+
+            const Self = @This();
+
+            pub const Error = Error;
+
+            pub fn nextElementSeed(self: Self, seed: anytype) Error!?@TypeOf(seed).Value {
+                return try nextElementSeed(self.context, seed);
+            }
+
+            pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
+                var seed = DefaultSeed(Value){};
+                const ds = seed.seed();
+
+                return try self.nextElementSeed(ds);
+            }
+        };
+
+        pub fn sequenceAccess(self: Context) @"getty.de.SequenceAccess" {
             return .{ .context = self };
         }
     };

@@ -12,24 +12,24 @@ pub fn Seed(
         }
     }.f),
 ) type {
-    const T = struct {
-        context: Context,
-
-        const Self = @This();
-
-        pub const Value = Value;
-
-        pub fn deserialize(
-            self: Self,
-            allocator: ?*std.mem.Allocator,
-            deserializer: anytype,
-        ) @TypeOf(deserializer).Error!Value {
-            return try deserialize(self.context, allocator, deserializer);
-        }
-    };
-
     return struct {
-        pub fn seed(self: Context) T {
+        pub const @"getty.de.Seed" = struct {
+            context: Context,
+
+            const Self = @This();
+
+            pub const Value = Value;
+
+            pub fn deserialize(
+                self: Self,
+                allocator: ?*std.mem.Allocator,
+                deserializer: anytype,
+            ) @TypeOf(deserializer).Error!Value {
+                return try deserialize(self.context, allocator, deserializer);
+            }
+        };
+
+        pub fn seed(self: Context) @"getty.de.Seed" {
             return .{ .context = self };
         }
     };

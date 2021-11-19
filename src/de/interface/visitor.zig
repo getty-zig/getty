@@ -84,7 +84,7 @@ pub fn Visitor(
     }.f),
 ) type {
     return struct {
-        const @"getty.de.Visitor" = struct {
+        pub const @"getty.de.Visitor" = struct {
             context: Context,
 
             const Self = @This();
