@@ -1,4 +1,4 @@
-const concepts = @import("../../lib.zig").de.concepts;
+const concepts = @import("../../lib.zig").concepts;
 
 /// A data format that can deserialize any data type supported by Getty.
 ///

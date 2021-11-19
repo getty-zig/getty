@@ -25,4 +25,11 @@ pub const concepts = struct {
     pub usingnamespace @import("ser/concept/serialize/sequence.zig");
     pub usingnamespace @import("ser/concept/serialize/struct.zig");
     pub usingnamespace @import("ser/concept/serialize/tuple.zig");
+
+    pub usingnamespace @import("de/concept/de.zig");
+    pub usingnamespace @import("de/concept/deserializer.zig");
+    pub usingnamespace @import("de/concept/seed.zig");
+    pub usingnamespace @import("de/concept/visitor.zig");
+    pub usingnamespace @import("de/concept/access/map.zig");
+    pub usingnamespace @import("de/concept/access/sequence.zig");
 };
