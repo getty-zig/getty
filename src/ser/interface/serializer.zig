@@ -37,11 +37,6 @@ pub fn Serializer(
     comptime serializeTuple: fn (Context, ?usize) Error!TupleSerialize,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
-    switch (@typeInfo(Error)) {
-        .ErrorSet => {},
-        else => @compileError("expected error set, found `" ++ @typeName(Error) ++ "`"),
-    }
-
     return struct {
         pub const @"getty.Serializer" = struct {
             const Self = @This();

@@ -11,11 +11,6 @@ pub fn TupleSerialize(
     comptime serializeElement: fn (Context, anytype) Error!void,
     comptime end: fn (Context) Error!Ok,
 ) type {
-    switch (@typeInfo(Error)) {
-        .ErrorSet => {},
-        else => @compileError("expected error set, found `" ++ @typeName(Error) ++ "`"),
-    }
-
     const T = struct {
         context: Context,
 
