@@ -5,8 +5,6 @@
 
 const std = @import("std");
 
-const ser = @import("../../lib.zig").ser;
-
 /// Returns an anonymously namespaced interface function for serializers.
 pub fn Serializer(
     comptime Context: type,
