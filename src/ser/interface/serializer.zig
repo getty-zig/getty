@@ -10,23 +10,23 @@ const ser = @import("../../lib.zig").ser;
 /// Returns an anonymously namespaced interface function for serializers.
 pub fn Serializer(
     comptime Context: type,
-    comptime O: type,
-    comptime E: type,
+    comptime Ok: type,
+    comptime Error: type,
     comptime MapSerialize: type,
     comptime SequenceSerialize: type,
     comptime StructSerialize: type,
     comptime TupleSerialize: type,
-    comptime boolFn: fn (Context, bool) E!O,
-    comptime enumFn: fn (Context, anytype) E!O,
-    comptime floatFn: fn (Context, anytype) E!O,
-    comptime intFn: fn (Context, anytype) E!O,
-    comptime mapFn: fn (Context, ?usize) E!MapSerialize,
-    comptime nullFn: fn (Context) E!O,
-    comptime sequenceFn: fn (Context, ?usize) E!SequenceSerialize,
-    comptime someFn: fn (Context, anytype) E!O,
-    comptime stringFn: fn (Context, anytype) E!O,
-    comptime structFn: @TypeOf(struct {
-        fn f(self: Context, comptime name: []const u8, length: usize) E!StructSerialize {
+    comptime serializeBool: fn (Context, bool) Error!Ok,
+    comptime serializeEnum: fn (Context, anytype) Error!Ok,
+    comptime serializeFloat: fn (Context, anytype) Error!Ok,
+    comptime serializeInt: fn (Context, anytype) Error!Ok,
+    comptime serializeMap: fn (Context, ?usize) Error!MapSerialize,
+    comptime serializeNull: fn (Context) Error!Ok,
+    comptime serializeSequence: fn (Context, ?usize) Error!SequenceSerialize,
+    comptime serializeSome: fn (Context, anytype) Error!Ok,
+    comptime serializeString: fn (Context, anytype) Error!Ok,
+    comptime serializeStruct: @TypeOf(struct {
+        fn f(self: Context, comptime name: []const u8, length: usize) Error!StructSerialize {
             _ = self;
             _ = name;
             _ = length;
@@ -34,12 +34,12 @@ pub fn Serializer(
             unreachable;
         }
     }.f),
-    comptime tupleFn: fn (Context, ?usize) E!TupleSerialize,
-    comptime voidFn: fn (Context) E!O,
+    comptime serializeTuple: fn (Context, ?usize) Error!TupleSerialize,
+    comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
-    switch (@typeInfo(E)) {
+    switch (@typeInfo(Error)) {
         .ErrorSet => {},
-        else => @compileError("expected error set, found `" ++ @typeName(E) ++ "`"),
+        else => @compileError("expected error set, found `" ++ @typeName(Error) ++ "`"),
     }
 
     return struct {
@@ -49,14 +49,14 @@ pub fn Serializer(
             context: Context,
 
             /// Successful return type.
-            pub const Ok = O;
+            pub const Ok = Ok;
 
             /// The error set used upon failure.
-            pub const Error = E;
+            pub const Error = Error;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
-                return try boolFn(self.context, value);
+                return try serializeBool(self.context, value);
             }
 
             // Serializes an enum value.
@@ -66,7 +66,7 @@ pub fn Serializer(
                     else => @compileError("expected enum, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
                 }
 
-                return try enumFn(self.context, value);
+                return try serializeEnum(self.context, value);
             }
 
             /// Serializes a floating-point value.
@@ -75,7 +75,7 @@ pub fn Serializer(
                     @compileError("expected floating-point, found `" ++ @typeName(@TypeOf(value)) ++ "`");
                 };
 
-                return try floatFn(self.context, value);
+                return try serializeFloat(self.context, value);
             }
 
             /// Serializes an integer value.
@@ -84,27 +84,27 @@ pub fn Serializer(
                     @compileError("expected integer, found `" ++ @typeName(@TypeOf(value)) ++ "`");
                 }
 
-                return try intFn(self.context, value);
+                return try serializeInt(self.context, value);
             }
 
             /// Starts the serialization process for a map.
             pub fn serializeMap(self: Self, length: ?usize) Error!MapSerialize {
-                return try mapFn(self.context, length);
+                return try serializeMap(self.context, length);
             }
 
             /// Serializes a `null` value.
             pub fn serializeNull(self: Self) Error!Ok {
-                return try nullFn(self.context);
+                return try serializeNull(self.context);
             }
 
             /// Starts the serialization process for a sequence.
             pub fn serializeSequence(self: Self, length: ?usize) Error!SequenceSerialize {
-                return try sequenceFn(self.context, length);
+                return try serializeSequence(self.context, length);
             }
 
             /// Serializes the payload of an optional.
             pub fn serializeSome(self: Self, value: anytype) Error!Ok {
-                return try someFn(self.context, value);
+                return try serializeSome(self.context, value);
             }
 
             /// Serializes a string value.
@@ -113,22 +113,22 @@ pub fn Serializer(
                     @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
                 }
 
-                return try stringFn(self.context, value);
+                return try serializeString(self.context, value);
             }
 
             /// Starts the serialization process for a struct.
             pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!StructSerialize {
-                return try structFn(self.context, name, length);
+                return try serializeStruct(self.context, name, length);
             }
 
             /// Starts the serialization process for a tuple.
             pub fn serializeTuple(self: Self, length: ?usize) Error!TupleSerialize {
-                return try tupleFn(self.context, length);
+                return try serializeTuple(self.context, length);
             }
 
             /// Serializes a `void` value.
             pub fn serializeVoid(self: Self) Error!Ok {
-                return try voidFn(self.context);
+                return try serializeVoid(self.context);
             }
         };
 
