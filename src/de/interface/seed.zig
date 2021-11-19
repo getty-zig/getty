@@ -2,11 +2,12 @@ const std = @import("std");
 
 pub fn Seed(
     comptime Context: type,
-    comptime V: type,
-    comptime deserializeFn: @TypeOf(struct {
-        fn f(c: Context, a: ?*std.mem.Allocator, d: anytype) @TypeOf(d).Error!V {
+    comptime Value: type,
+    comptime deserialize: @TypeOf(struct {
+        fn f(c: Context, a: ?*std.mem.Allocator, d: anytype) @TypeOf(d).Error!Value {
             _ = c;
             _ = a;
+
             unreachable;
         }
     }.f),
@@ -16,10 +17,14 @@ pub fn Seed(
 
         const Self = @This();
 
-        pub const Value = V;
+        pub const Value = Value;
 
-        pub fn deserialize(self: Self, allocator: ?*std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try deserializeFn(self.context, allocator, deserializer);
+        pub fn deserialize(
+            self: Self,
+            allocator: ?*std.mem.Allocator,
+            deserializer: anytype,
+        ) @TypeOf(deserializer).Error!Value {
+            return try deserialize(self.context, allocator, deserializer);
         }
     };
 
