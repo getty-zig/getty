@@ -88,7 +88,7 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
 
     pub const concepts = struct {
-        fn @"getty.Serializer"(comptime T: type) void {
+        pub fn @"getty.Serializer"(comptime T: type) void {
             const err = "expected `getty.Serializer` interface value, found `" ++ @typeName(T) ++ "`";
 
             comptime {
@@ -122,7 +122,7 @@ pub const ser = struct {
             }
         }
 
-        fn @"getty.Ser"(comptime T: type) void {
+        pub fn @"getty.Ser"(comptime T: type) void {
             const err = "expected `getty.Ser` interface value, found `" ++ @typeName(T) ++ "`";
 
             comptime {
