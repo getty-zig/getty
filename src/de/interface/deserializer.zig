@@ -1,4 +1,4 @@
-const Allocator = @import("std").mem.Allocator;
+const concepts = @import("../../lib.zig").de.concepts;
 
 /// A data format that can deserialize any data type supported by Getty.
 ///
@@ -41,49 +41,55 @@ pub fn Deserializer(
 
             pub const Error = Error;
 
-            pub fn deserializeBool(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeBool(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeBool(self.context, visitor);
             }
 
-            pub fn deserializeEnum(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeEnum(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeEnum(self.context, visitor);
             }
 
-            pub fn deserializeFloat(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeFloat(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeFloat(self.context, visitor);
             }
 
-            pub fn deserializeInt(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeInt(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeInt(self.context, visitor);
             }
 
-            pub fn deserializeMap(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeMap(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeMap(self.context, visitor);
             }
 
-            pub fn deserializeOptional(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeOptional(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeOptional(self.context, visitor);
             }
 
-            pub fn deserializeSequence(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeSequence(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeSequence(self.context, visitor);
             }
 
-            pub fn deserializeString(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeString(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeString(self.context, visitor);
             }
 
-            pub fn deserializeStruct(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeStruct(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeStruct(self.context, visitor);
             }
 
-            pub fn deserializeVoid(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeVoid(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeVoid(self.context, visitor);
             }
         };
 
         pub fn deserializer(self: Context) @"getty.Deserializer" {
             return .{ .context = self };
+        }
+
+        fn Return(comptime Visitor: type) type {
+            concepts.@"getty.de.Visitor"(Visitor);
+
+            return Error!Visitor.Value;
         }
     };
 }
