@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const concepts = @import("../../lib.zig").concepts;
+
 pub fn De(
     comptime Context: type,
     deserialize: @TypeOf(struct {
@@ -28,7 +30,7 @@ pub fn De(
                 allocator: ?*std.mem.Allocator,
                 comptime T: type,
                 deserializer: anytype,
-            ) @TypeOf(deserializer).Error!T {
+            ) Return(T, @TypeOf(deserializer)) {
                 return try deserialize(self.context, allocator, T, deserializer);
             }
         };
@@ -37,4 +39,10 @@ pub fn De(
             return .{ .context = self };
         }
     };
+}
+
+fn Return(comptime Ok: type, comptime Deserializer: type) type {
+    concepts.@"getty.Deserializer"(Deserializer);
+
+    return Deserializer.Error!Ok;
 }
