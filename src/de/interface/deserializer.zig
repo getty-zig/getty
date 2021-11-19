@@ -21,17 +21,17 @@ const Allocator = @import("std").mem.Allocator;
 ///   - void
 pub fn Deserializer(
     comptime Context: type,
-    comptime E: type,
-    comptime boolFn: Fn(Context, E),
-    comptime enumFn: Fn(Context, E),
-    comptime floatFn: Fn(Context, E),
-    comptime intFn: Fn(Context, E),
-    comptime mapFn: Fn(Context, E),
-    comptime optionalFn: Fn(Context, E),
-    comptime sequenceFn: Fn(Context, E),
-    comptime stringFn: Fn(Context, E),
-    comptime structFn: Fn(Context, E),
-    comptime voidFn: Fn(Context, E),
+    comptime Error: type,
+    comptime deserializeBool: Fn(Context, Error),
+    comptime deserializeEnum: Fn(Context, Error),
+    comptime deserializeFloat: Fn(Context, Error),
+    comptime deserializeInt: Fn(Context, Error),
+    comptime deserializeMap: Fn(Context, Error),
+    comptime deserializeOptional: Fn(Context, Error),
+    comptime deserializeSequence: Fn(Context, Error),
+    comptime deserializeString: Fn(Context, Error),
+    comptime deserializeStruct: Fn(Context, Error),
+    comptime deserializeVoid: Fn(Context, Error),
 ) type {
     return struct {
         pub const @"getty.Deserializer" = struct {
@@ -39,46 +39,46 @@ pub fn Deserializer(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Error = Error;
 
-            pub fn deserializeBool(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try boolFn(self.context, visitor);
+            pub fn deserializeBool(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeBool(self.context, visitor);
             }
 
-            pub fn deserializeEnum(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try enumFn(self.context, visitor);
+            pub fn deserializeEnum(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeEnum(self.context, visitor);
             }
 
-            pub fn deserializeFloat(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try floatFn(self.context, visitor);
+            pub fn deserializeFloat(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeFloat(self.context, visitor);
             }
 
-            pub fn deserializeInt(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try intFn(self.context, visitor);
+            pub fn deserializeInt(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeInt(self.context, visitor);
             }
 
-            pub fn deserializeMap(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try mapFn(self.context, visitor);
+            pub fn deserializeMap(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeMap(self.context, visitor);
             }
 
-            pub fn deserializeOptional(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try optionalFn(self.context, visitor);
+            pub fn deserializeOptional(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeOptional(self.context, visitor);
             }
 
-            pub fn deserializeSequence(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try sequenceFn(self.context, visitor);
+            pub fn deserializeSequence(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeSequence(self.context, visitor);
             }
 
-            pub fn deserializeString(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try stringFn(self.context, visitor);
+            pub fn deserializeString(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeString(self.context, visitor);
             }
 
-            pub fn deserializeStruct(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try structFn(self.context, visitor);
+            pub fn deserializeStruct(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeStruct(self.context, visitor);
             }
 
-            pub fn deserializeVoid(self: Self, visitor: anytype) E!@TypeOf(visitor).Value {
-                return try voidFn(self.context, visitor);
+            pub fn deserializeVoid(self: Self, visitor: anytype) Error!@TypeOf(visitor).Value {
+                return try deserializeVoid(self.context, visitor);
             }
         };
 
