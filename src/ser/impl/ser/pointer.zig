@@ -11,7 +11,13 @@ pub usingnamespace getty.Ser(
 
 const @"impl Ser" = struct {
     pub const ser = struct {
-        pub fn serialize(self: Ser, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+        pub fn serialize(self: Ser, value: anytype, serializer: anytype) blk: {
+            const Serializer = @TypeOf(serializer);
+
+            getty.concepts.@"getty.Serializer"(Serializer);
+
+            break :blk Serializer.Error!Serializer.Ok;
+        } {
             _ = self;
 
             const info = @typeInfo(@TypeOf(value)).Pointer;
