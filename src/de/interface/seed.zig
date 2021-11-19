@@ -22,11 +22,7 @@ pub fn Seed(
 
             pub const Value = Value;
 
-            pub fn deserialize(
-                self: Self,
-                allocator: ?*std.mem.Allocator,
-                deserializer: anytype,
-            ) Return(@TypeOf(deserializer)) {
+            pub fn deserialize(self: Self, allocator: ?*std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
                 return try deserialize(self.context, allocator, deserializer);
             }
         };
@@ -36,7 +32,7 @@ pub fn Seed(
         }
 
         fn Return(comptime Deserializer: type) type {
-            concepts.@"getty.Deserializer"(Deserializer);
+            comptime concepts.@"getty.Deserializer"(Deserializer);
 
             return Deserializer.Error!Value;
         }

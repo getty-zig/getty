@@ -5,12 +5,7 @@ const concepts = @import("../../lib.zig").concepts;
 pub fn De(
     comptime Context: type,
     deserialize: @TypeOf(struct {
-        fn f(
-            self: Context,
-            allocator: ?*std.mem.Allocator,
-            comptime T: type,
-            deserializer: anytype,
-        ) @TypeOf(deserializer).Error!T {
+        fn f(self: Context, allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) @TypeOf(deserializer).Error!T {
             _ = self;
             _ = allocator;
             _ = deserializer;
@@ -25,12 +20,7 @@ pub fn De(
 
             const Self = @This();
 
-            pub fn deserialize(
-                self: Self,
-                allocator: ?*std.mem.Allocator,
-                comptime T: type,
-                deserializer: anytype,
-            ) Return(T, @TypeOf(deserializer)) {
+            pub fn deserialize(self: Self, allocator: ?*std.mem.Allocator, comptime T: type, deserializer: anytype) Return(T, @TypeOf(deserializer)) {
                 return try deserialize(self.context, allocator, T, deserializer);
             }
         };
@@ -41,8 +31,8 @@ pub fn De(
     };
 }
 
-fn Return(comptime Ok: type, comptime Deserializer: type) type {
-    concepts.@"getty.Deserializer"(Deserializer);
+fn Return(comptime T: type, comptime Deserializer: type) type {
+    comptime concepts.@"getty.Deserializer"(Deserializer);
 
-    return Deserializer.Error!Ok;
+    return Deserializer.Error!T;
 }

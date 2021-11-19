@@ -87,7 +87,7 @@ pub fn Deserializer(
         }
 
         fn Return(comptime Visitor: type) type {
-            concepts.@"getty.de.Visitor"(Visitor);
+            comptime concepts.@"getty.de.Visitor"(Visitor);
 
             return Error!Visitor.Value;
         }

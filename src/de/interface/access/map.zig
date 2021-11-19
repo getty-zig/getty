@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const concepts = @import("../../../lib.zig").concepts;
 const DefaultSeed = @import("../../../lib.zig").de.DefaultSeed;
 
 pub fn MapAccess(
@@ -28,11 +29,11 @@ pub fn MapAccess(
 
             pub const Error = Error;
 
-            pub fn nextKeySeed(self: Self, seed: anytype) Error!?@TypeOf(seed).Value {
+            pub fn nextKeySeed(self: Self, seed: anytype) KeyReturn(@TypeOf(seed)) {
                 return try nextKeySeed(self.context, seed);
             }
 
-            pub fn nextValueSeed(self: Self, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn nextValueSeed(self: Self, seed: anytype) ValueReturn(@TypeOf(seed)) {
                 return try nextValueSeed(self.context, seed);
             }
 
@@ -57,6 +58,18 @@ pub fn MapAccess(
             //pub fn nextEntry(self: Self, comptime K: type, comptime V: type) !?std.meta.Tuple(.{ K, V }) {
             //_ = self;
             //}
+
+            fn KeyReturn(comptime Seed: type) type {
+                comptime concepts.@"getty.de.Seed"(Seed);
+
+                return Error!?Seed.Value;
+            }
+
+            fn ValueReturn(comptime Seed: type) type {
+                comptime concepts.@"getty.de.Seed"(Seed);
+
+                return Error!Seed.Value;
+            }
         };
 
         pub fn mapAccess(self: Context) @"getty.de.MapAccess" {

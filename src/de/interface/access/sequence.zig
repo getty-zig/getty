@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const concepts = @import("../../../lib.zig").concepts;
 const DefaultSeed = @import("../../../lib.zig").de.DefaultSeed;
 
 pub fn SequenceAccess(
@@ -21,7 +22,7 @@ pub fn SequenceAccess(
 
             pub const Error = Error;
 
-            pub fn nextElementSeed(self: Self, seed: anytype) Error!?@TypeOf(seed).Value {
+            pub fn nextElementSeed(self: Self, seed: anytype) Return(@TypeOf(seed)) {
                 return try nextElementSeed(self.context, seed);
             }
 
@@ -30,6 +31,12 @@ pub fn SequenceAccess(
                 const ds = seed.seed();
 
                 return try self.nextElementSeed(ds);
+            }
+
+            fn Return(comptime Seed: type) type {
+                comptime concepts.@"getty.de.Seed"(Seed);
+
+                return Error!?Seed.Value;
             }
         };
 

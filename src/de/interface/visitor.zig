@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const concepts = @import("../../lib.zig").concepts;
+
 const assert = std.debug.assert;
 
 pub fn Visitor(
@@ -92,39 +94,51 @@ pub fn Visitor(
             pub const Value = Value;
 
             pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-
                 return try visitBool(self.context, Error, input);
             }
 
             pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-                comptime assert(@typeInfo(@TypeOf(input)) == .Enum or @typeInfo(@TypeOf(input)) == .EnumLiteral);
+                comptime {
+                    switch (@typeInfo(@TypeOf(input))) {
+                        .Enum, .EnumLiteral => {},
+                        else => @compileError("expected enum or enum literal, found `" ++ @typeName(@TypeOf(input)) ++ "`"),
+                    }
+                }
 
                 return try visitEnum(self.context, Error, input);
             }
 
             pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-                comptime assert(@typeInfo(@TypeOf(input)) == .Float or @typeInfo(@TypeOf(input)) == .ComptimeFloat);
+                comptime {
+                    switch (@typeInfo(@TypeOf(input))) {
+                        .Float, .ComptimeFloat => {},
+                        else => @compileError("expected floating-point, found `" ++ @typeName(@TypeOf(input)) ++ "`"),
+                    }
+                }
 
                 return try visitFloat(self.context, Error, input);
             }
 
             pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-                comptime assert(@typeInfo(@TypeOf(input)) == .Int or @typeInfo(@TypeOf(input)) == .ComptimeInt);
+                comptime {
+                    switch (@typeInfo(@TypeOf(input))) {
+                        .Int, .ComptimeInt => {},
+                        else => @compileError("expected integer, found `" ++ @typeName(@TypeOf(input)) ++ "`"),
+                    }
+                }
 
                 return try visitInt(self.context, Error, input);
             }
 
-            pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+            pub fn visitMap(self: Self, mapAccess: anytype) blk: {
+                concepts.@"getty.de.MapAccess"(@TypeOf(mapAccess));
+
+                break :blk @TypeOf(mapAccess).Error!Value;
+            } {
                 return try visitMap(self.context, mapAccess);
             }
 
             pub fn visitNull(self: Self, comptime Error: type) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-
                 return try visitNull(self.context, Error);
             }
 
@@ -133,11 +147,19 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `sequenceAccess` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            pub fn visitSequence(self: Self, sequenceAccess: anytype) blk: {
+                concepts.@"getty.de.SequenceAccess"(@TypeOf(sequenceAccess));
+
+                break :blk @TypeOf(sequenceAccess).Error!Value;
+            } {
                 return try visitSequence(self.context, sequenceAccess);
             }
 
-            pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            pub fn visitSome(self: Self, deserializer: anytype) blk: {
+                concepts.@"getty.Deserializer"(@TypeOf(deserializer));
+
+                break :blk @TypeOf(deserializer).Error!Value;
+            } {
                 return try visitSome(self.context, deserializer);
             }
 
@@ -145,15 +167,16 @@ pub fn Visitor(
             ///
             /// The visitor is responsible for visiting the entire slice.
             pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-                comptime assert(std.meta.trait.isZigString(@TypeOf(input)));
+                comptime {
+                    if (!std.meta.trait.isZigString(@TypeOf(input))) {
+                        @compileError("expected string, found `" ++ @typeName(@TypeOf(input)) ++ "`");
+                    }
+                }
 
                 return try visitString(self.context, Error, input);
             }
 
             pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
-                comptime assert(@typeInfo(Error) == .ErrorSet);
-
                 return try visitVoid(self.context, Error);
             }
         };
