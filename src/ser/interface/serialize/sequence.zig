@@ -11,30 +11,30 @@ pub fn SequenceSerialize(
     comptime serializeElement: fn (Context, anytype) Error!void,
     comptime end: fn (Context) Error!Ok,
 ) type {
-    const T = struct {
-        context: Context,
-
-        const Self = @This();
-
-        /// Successful return type.
-        pub const Ok = Ok;
-
-        /// The error set used upon failure.
-        pub const Error = Error;
-
-        /// Serialize a sequence element.
-        pub fn serializeElement(self: Self, value: anytype) Error!void {
-            try serializeElement(self.context, value);
-        }
-
-        /// Finish serializing a sequence.
-        pub fn end(self: Self) Error!Ok {
-            return try end(self.context);
-        }
-    };
-
     return struct {
-        pub fn sequenceSerialize(self: Context) T {
+        const @"getty.ser.SequenceSerialize" = struct {
+            context: Context,
+
+            const Self = @This();
+
+            /// Successful return type.
+            pub const Ok = Ok;
+
+            /// The error set used upon failure.
+            pub const Error = Error;
+
+            /// Serialize a sequence element.
+            pub fn serializeElement(self: Self, value: anytype) Error!void {
+                try serializeElement(self.context, value);
+            }
+
+            /// Finish serializing a sequence.
+            pub fn end(self: Self) Error!Ok {
+                return try end(self.context);
+            }
+        };
+
+        pub fn sequenceSerialize(self: Context) @"getty.ser.SequenceSerialize" {
             return .{ .context = self };
         }
     };

@@ -11,30 +11,30 @@ pub fn TupleSerialize(
     comptime serializeElement: fn (Context, anytype) Error!void,
     comptime end: fn (Context) Error!Ok,
 ) type {
-    const T = struct {
-        context: Context,
-
-        const Self = @This();
-
-        /// Successful return type.
-        pub const Ok = Ok;
-
-        /// The error set used upon failure.
-        pub const Error = Error;
-
-        /// Serialize a tuple element.
-        pub fn serializeElement(self: Self, value: anytype) Error!void {
-            try serializeElement(self.context, value);
-        }
-
-        /// Finish serializing a tuple.
-        pub fn end(self: Self) Error!Ok {
-            return try end(self.context);
-        }
-    };
-
     return struct {
-        pub fn tupleSerialize(self: Context) T {
+        const @"getty.ser.TupleSerialize" = struct {
+            context: Context,
+
+            const Self = @This();
+
+            /// Successful return type.
+            pub const Ok = Ok;
+
+            /// The error set used upon failure.
+            pub const Error = Error;
+
+            /// Serialize a tuple element.
+            pub fn serializeElement(self: Self, value: anytype) Error!void {
+                try serializeElement(self.context, value);
+            }
+
+            /// Finish serializing a tuple.
+            pub fn end(self: Self) Error!Ok {
+                return try end(self.context);
+            }
+        };
+
+        pub fn tupleSerialize(self: Context) @"getty.ser.TupleSerialize" {
             return .{ .context = self };
         }
     };
