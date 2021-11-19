@@ -12,7 +12,7 @@ pub fn TupleSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        const @"getty.ser.TupleSerialize" = struct {
+        pub const @"getty.ser.TupleSerialize" = struct {
             context: Context,
 
             const Self = @This();

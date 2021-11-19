@@ -13,7 +13,7 @@ pub fn MapSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        const @"getty.ser.MapSerialize" = struct {
+        pub const @"getty.ser.MapSerialize" = struct {
             context: Context,
 
             const Self = @This();

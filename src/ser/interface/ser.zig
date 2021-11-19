@@ -24,7 +24,7 @@ pub fn Ser(
     }.f),
 ) type {
     return struct {
-        const @"getty.Ser" = struct {
+        pub const @"getty.Ser" = struct {
             context: Context,
 
             const Self = @This();

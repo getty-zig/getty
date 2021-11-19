@@ -20,7 +20,7 @@ pub fn StructSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        const @"getty.ser.StructSerialize" = struct {
+        pub const @"getty.ser.StructSerialize" = struct {
             context: Context,
 
             const Self = @This();

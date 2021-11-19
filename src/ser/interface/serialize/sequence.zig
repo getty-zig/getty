@@ -12,7 +12,7 @@ pub fn SequenceSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        const @"getty.ser.SequenceSerialize" = struct {
+        pub const @"getty.ser.SequenceSerialize" = struct {
             context: Context,
 
             const Self = @This();
