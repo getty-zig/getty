@@ -83,82 +83,82 @@ pub fn Visitor(
         }
     }.f),
 ) type {
-    const T = struct {
-        context: Context,
-
-        const Self = @This();
-
-        pub const Value = Value;
-
-        pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-
-            return try visitBool(self.context, Error, input);
-        }
-
-        pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-            comptime assert(@typeInfo(@TypeOf(input)) == .Enum or @typeInfo(@TypeOf(input)) == .EnumLiteral);
-
-            return try visitEnum(self.context, Error, input);
-        }
-
-        pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-            comptime assert(@typeInfo(@TypeOf(input)) == .Float or @typeInfo(@TypeOf(input)) == .ComptimeFloat);
-
-            return try visitFloat(self.context, Error, input);
-        }
-
-        pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-            comptime assert(@typeInfo(@TypeOf(input)) == .Int or @typeInfo(@TypeOf(input)) == .ComptimeInt);
-
-            return try visitInt(self.context, Error, input);
-        }
-
-        pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-            return try visitMap(self.context, mapAccess);
-        }
-
-        pub fn visitNull(self: Self, comptime Error: type) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-
-            return try visitNull(self.context, Error);
-        }
-
-        ///
-        ///
-        /// The visitor is responsible for visiting the entire sequence. Note
-        /// that this implies that `sequenceAccess` must be able to identify
-        /// the end of a sequence when it is encountered.
-        pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-            return try visitSequence(self.context, sequenceAccess);
-        }
-
-        ///
-        ///
-        /// The visitor is responsible for visiting the entire slice.
-        pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-            comptime assert(std.meta.trait.isZigString(@TypeOf(input)));
-
-            return try visitString(self.context, Error, input);
-        }
-
-        pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try visitSome(self.context, deserializer);
-        }
-
-        pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
-            comptime assert(@typeInfo(Error) == .ErrorSet);
-
-            return try visitVoid(self.context, Error);
-        }
-    };
-
     return struct {
-        pub fn visitor(ctx: Context) T {
+        const @"getty.de.Visitor" = struct {
+            context: Context,
+
+            const Self = @This();
+
+            pub const Value = Value;
+
+            pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+
+                return try visitBool(self.context, Error, input);
+            }
+
+            pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+                comptime assert(@typeInfo(@TypeOf(input)) == .Enum or @typeInfo(@TypeOf(input)) == .EnumLiteral);
+
+                return try visitEnum(self.context, Error, input);
+            }
+
+            pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+                comptime assert(@typeInfo(@TypeOf(input)) == .Float or @typeInfo(@TypeOf(input)) == .ComptimeFloat);
+
+                return try visitFloat(self.context, Error, input);
+            }
+
+            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+                comptime assert(@typeInfo(@TypeOf(input)) == .Int or @typeInfo(@TypeOf(input)) == .ComptimeInt);
+
+                return try visitInt(self.context, Error, input);
+            }
+
+            pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+                return try visitMap(self.context, mapAccess);
+            }
+
+            pub fn visitNull(self: Self, comptime Error: type) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+
+                return try visitNull(self.context, Error);
+            }
+
+            ///
+            ///
+            /// The visitor is responsible for visiting the entire sequence. Note
+            /// that this implies that `sequenceAccess` must be able to identify
+            /// the end of a sequence when it is encountered.
+            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+                return try visitSequence(self.context, sequenceAccess);
+            }
+
+            pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+                return try visitSome(self.context, deserializer);
+            }
+
+            ///
+            ///
+            /// The visitor is responsible for visiting the entire slice.
+            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+                comptime assert(std.meta.trait.isZigString(@TypeOf(input)));
+
+                return try visitString(self.context, Error, input);
+            }
+
+            pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
+                comptime assert(@typeInfo(Error) == .ErrorSet);
+
+                return try visitVoid(self.context, Error);
+            }
+        };
+
+        pub fn visitor(ctx: Context) @"getty.de.Visitor" {
             return .{ .context = ctx };
         }
     };
