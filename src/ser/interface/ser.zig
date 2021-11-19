@@ -10,6 +10,8 @@
 //! creating a visitor that serializes the slice maintained by the
 //! `std.ArrayList` instead of the `std.ArrayList` struct itself.
 
+const concepts = @import("../../lib.zig").concepts;
+
 /// Returns a namespace containing an interface function for visitors.
 pub fn Ser(
     comptime Context: type,
@@ -30,12 +32,19 @@ pub fn Ser(
             const Self = @This();
 
             /// A specification of how to serialize `value`.
-            pub fn serialize(self: Self, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            pub fn serialize(self: Self, value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
                 return try serialize(self.context, value, serializer);
             }
         };
+
         pub fn ser(self: Context) @"getty.Ser" {
             return .{ .context = self };
         }
     };
+}
+
+fn Return(comptime Serializer: type) type {
+    concepts.@"getty.Serializer"(Serializer);
+
+    return Serializer.Error!Serializer.Ok;
 }
