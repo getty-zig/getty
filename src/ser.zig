@@ -50,7 +50,7 @@
 
 const std = @import("std");
 
-const concepts = @import("lib.zig").concepts;
+const getty = @import("lib.zig");
 
 const ArrayListSer = @import("ser/impl/ser/array_list.zig");
 const BoolSer = @import("ser/impl/ser/bool.zig");
@@ -97,8 +97,8 @@ pub const ser = struct {
 /// serialized. Additionally, the function enables the use of custom
 /// serialization logic for data types that are supported.
 pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) blk: {
-    concepts.@"getty.Serializer"(@TypeOf(serializer));
-    concepts.@"getty.Ser"(@TypeOf(s));
+    getty.concepts.@"getty.Serializer"(@TypeOf(serializer));
+    getty.concepts.@"getty.Ser"(@TypeOf(s));
 
     break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
 } {
@@ -112,7 +112,7 @@ pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) blk: {
 /// `std.AutoHashMap`. For custom serialization or serialization of data types
 /// not supported Getty, see `getty.serializeWith`.
 pub fn serialize(value: anytype, serializer: anytype) blk: {
-    concepts.@"getty.Serializer"(@TypeOf(serializer));
+    getty.concepts.@"getty.Serializer"(@TypeOf(serializer));
 
     break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
 } {

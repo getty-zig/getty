@@ -1,25 +1,11 @@
-const std = @import("std");
+const concepts = @import("concepts");
 
-pub fn @"getty.ser.SequenceSerialize"(comptime T: type) void {
-    const err = "expected `getty.ser.SequenceSerialize` interface value, found `" ++ @typeName(T) ++ "`";
+const SerializeConcept = @import("detail/serialize.zig").SerializeConcept;
 
-    comptime {
-        // Invariants
-        if (!std.meta.trait.isContainer(T)) {
-            @compileError(err);
-        }
+const concept = "getty.ser.SequenceSerialize";
+const funcs = .{
+    "serializeElement",
+    "end",
+};
 
-        // Constraints
-        const has_name = std.mem.startsWith(u8, @typeName(T), "getty.ser.SequenceSerialize");
-        const has_field = std.meta.trait.hasField("context")(T);
-        const has_decls = std.meta.trait.hasDecls(T, .{ "Ok", "Error" });
-        const has_funcs = std.meta.trait.hasFunctions(T, .{
-            "serializeElement",
-            "end",
-        });
-
-        if (!(has_name and has_field and has_decls and has_funcs)) {
-            @compileError(err);
-        }
-    }
-}
+pub const @"getty.ser.SequenceSerialize" = SerializeConcept(concept, funcs);

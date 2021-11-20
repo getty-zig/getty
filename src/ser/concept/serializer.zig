@@ -1,35 +1,41 @@
 const std = @import("std");
 
-pub fn @"getty.Serializer"(comptime T: type) void {
-    const err = "expected `getty.Serializer` interface value, found `" ++ @typeName(T) ++ "`";
+const concepts = @import("concepts");
 
+const concept = "getty.Serializer";
+const decls = .{ "Ok", "Error" };
+const funcs = .{
+    "serializeBool",
+    "serializeEnum",
+    "serializeFloat",
+    "serializeInt",
+    "serializeMap",
+    "serializeNull",
+    "serializeSequence",
+    "serializeSome",
+    "serializeString",
+    "serializeStruct",
+    "serializeTuple",
+    "serializeVoid",
+};
+
+pub fn @"getty.Serializer"(comptime T: type) void {
     comptime {
         // Invariants
-        if (!std.meta.trait.isContainer(T)) {
-            @compileError(err);
-        }
+        concepts.container(T);
 
         // Constraints
-        const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Serializer");
-        const has_field = std.meta.trait.hasField("context")(T);
-        const has_decls = std.meta.trait.hasDecls(T, .{ "Ok", "Error" });
-        const has_funcs = std.meta.trait.hasFunctions(T, .{
-            "serializeBool",
-            "serializeEnum",
-            "serializeFloat",
-            "serializeInt",
-            "serializeMap",
-            "serializeNull",
-            "serializeSequence",
-            "serializeSome",
-            "serializeString",
-            "serializeStruct",
-            "serializeTuple",
-            "serializeVoid",
-        });
+        const has_name = std.mem.startsWith(u8, @typeName(T), concept);
+        const has_field = concepts.traits.hasField(T, "context");
+        const has_decls = for (decls) |d| {
+            if (!concepts.traits.hasDecl(T, d)) return false;
+        } else true;
+        const has_funcs = for (funcs) |f| {
+            if (!concepts.traits.hasFunction(T, f)) return false;
+        } else true;
 
         if (!(has_name and has_field and has_decls and has_funcs)) {
-            @compileError(err);
+            concepts.fail(concept, "");
         }
     }
 }

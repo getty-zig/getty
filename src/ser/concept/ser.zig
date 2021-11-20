@@ -1,21 +1,21 @@
 const std = @import("std");
 
-pub fn @"getty.Ser"(comptime T: type) void {
-    const err = "expected `getty.Ser` interface value, found `" ++ @typeName(T) ++ "`";
+const concepts = @import("concepts");
 
+const concept = "getty.Ser";
+
+pub fn @"getty.Ser"(comptime T: type) void {
     comptime {
         // Invariants
-        if (!std.meta.trait.isContainer(T)) {
-            @compileError(err);
-        }
+        concepts.container(T);
 
         // Constraints
-        const has_name = std.mem.startsWith(u8, @typeName(T), "getty.Ser");
-        const has_field = std.meta.trait.hasField("context")(T);
-        const has_func = std.meta.trait.hasFn("serialize")(T);
+        const has_name = std.mem.startsWith(u8, @typeName(T), concept);
+        const has_field = concepts.traits.hasField(T, "context");
+        const has_func = concepts.traits.hasFunction(T, "serialize");
 
         if (!(has_name and has_field and has_func)) {
-            @compileError(err);
+            concepts.fail(concept);
         }
     }
 }
