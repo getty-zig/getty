@@ -15,7 +15,7 @@ const concepts = @import("../../lib.zig").concepts;
 /// Returns a namespace containing an interface function for visitors.
 pub fn Ser(
     comptime Context: type,
-    serialize: @TypeOf(struct {
+    comptime serialize: @TypeOf(struct {
         fn f(self: Context, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
             _ = self;
             _ = value;
