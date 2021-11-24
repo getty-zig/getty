@@ -38,22 +38,23 @@ const TailQueueVisitor = @import("de/impl/visitor/tail_queue.zig").Visitor;
 const TupleVisitor = @import("de/impl/visitor/tuple.zig").Visitor;
 const VoidVisitor = @import("de/impl/visitor/void.zig");
 
-const BoolDe = @import("de/impl/de/bool.zig").De;
-const EnumDe = @import("de/impl/de/enum.zig").De;
-const FloatDe = @import("de/impl/de/float.zig").De;
-const IntDe = @import("de/impl/de/int.zig").De;
-const MapDe = @import("de/impl/de/map.zig").De;
-const OptionalDe = @import("de/impl/de/optional.zig").De;
-const SequenceDe = @import("de/impl/de/sequence.zig").De;
-const StringDe = @import("de/impl/de/string.zig").De;
-const StructDe = @import("de/impl/de/struct.zig").De;
-const VoidDe = @import("de/impl/de/void.zig").De;
-
 /// Deserializer interface
 pub usingnamespace @import("de/interface/deserializer.zig");
 
 /// `De` interface
 pub usingnamespace @import("de/interface/de.zig");
+
+/// `De` implementations
+pub const BoolDe = @import("de/impl/de/bool.zig").De;
+pub const EnumDe = @import("de/impl/de/enum.zig").De;
+pub const FloatDe = @import("de/impl/de/float.zig").De;
+pub const IntDe = @import("de/impl/de/int.zig").De;
+pub const MapDe = @import("de/impl/de/map.zig").De;
+pub const OptionalDe = @import("de/impl/de/optional.zig").De;
+pub const SequenceDe = @import("de/impl/de/sequence.zig").De;
+pub const StringDe = @import("de/impl/de/string.zig").De;
+pub const StructDe = @import("de/impl/de/struct.zig").De;
+pub const VoidDe = @import("de/impl/de/void.zig").De;
 
 pub const de = struct {
     /// Generic error set for `getty.De` implementations.
