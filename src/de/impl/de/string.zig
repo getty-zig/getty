@@ -1,7 +1,7 @@
 const std = @import("std");
 const getty = @import("../../../lib.zig");
 
-pub fn De(comptime Visitor: type) type {
+pub fn StringDe(comptime Visitor: type) type {
     return struct {
         visitor: Visitor,
 
@@ -16,7 +16,7 @@ pub fn De(comptime Visitor: type) type {
 }
 
 fn @"impl De"(comptime Visitor: type) type {
-    const Self = De(Visitor);
+    const Self = StringDe(Visitor);
 
     return struct {
         pub const de = struct {

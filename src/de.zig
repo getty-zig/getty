@@ -44,18 +44,6 @@ pub usingnamespace @import("de/interface/deserializer.zig");
 /// `De` interface
 pub usingnamespace @import("de/interface/de.zig");
 
-/// `De` implementations
-pub const BoolDe = @import("de/impl/de/bool.zig").De;
-pub const EnumDe = @import("de/impl/de/enum.zig").De;
-pub const FloatDe = @import("de/impl/de/float.zig").De;
-pub const IntDe = @import("de/impl/de/int.zig").De;
-pub const MapDe = @import("de/impl/de/map.zig").De;
-pub const OptionalDe = @import("de/impl/de/optional.zig").De;
-pub const SequenceDe = @import("de/impl/de/sequence.zig").De;
-pub const StringDe = @import("de/impl/de/string.zig").De;
-pub const StructDe = @import("de/impl/de/struct.zig").De;
-pub const VoidDe = @import("de/impl/de/void.zig").De;
-
 pub const de = struct {
     /// Generic error set for `getty.De` implementations.
     pub const Error = std.mem.Allocator.Error || error{
@@ -69,11 +57,21 @@ pub const de = struct {
         Unsupported,
     };
 
-    pub usingnamespace @import("de/interface/seed.zig");
-    pub usingnamespace @import("de/interface/visitor.zig");
     pub usingnamespace @import("de/interface/access/map.zig");
     pub usingnamespace @import("de/interface/access/sequence.zig");
+    pub usingnamespace @import("de/interface/seed.zig");
+    pub usingnamespace @import("de/interface/visitor.zig");
 
+    pub usingnamespace @import("de/impl/de/bool.zig");
+    pub usingnamespace @import("de/impl/de/enum.zig");
+    pub usingnamespace @import("de/impl/de/float.zig");
+    pub usingnamespace @import("de/impl/de/int.zig");
+    pub usingnamespace @import("de/impl/de/map.zig");
+    pub usingnamespace @import("de/impl/de/optional.zig");
+    pub usingnamespace @import("de/impl/de/sequence.zig");
+    pub usingnamespace @import("de/impl/de/string.zig");
+    pub usingnamespace @import("de/impl/de/struct.zig");
+    pub usingnamespace @import("de/impl/de/void.zig");
     pub usingnamespace @import("de/impl/seed/default.zig");
 
     /// Frees resources allocated during deserialization.
@@ -206,33 +204,33 @@ fn _deserialize(
     const Visitor = @TypeOf(visitor);
 
     var d = switch (@typeInfo(T)) {
-        .Array => SequenceDe(Visitor){ .visitor = visitor },
-        .Bool => BoolDe(Visitor){ .visitor = visitor },
-        .Enum => EnumDe(Visitor){ .visitor = visitor },
-        .Float, .ComptimeFloat => FloatDe(Visitor){ .visitor = visitor },
-        .Int, .ComptimeInt => IntDe(Visitor){ .visitor = visitor },
-        .Optional => OptionalDe(Visitor){ .visitor = visitor },
+        .Array => de.SequenceDe(Visitor){ .visitor = visitor },
+        .Bool => de.BoolDe(Visitor){ .visitor = visitor },
+        .Enum => de.EnumDe(Visitor){ .visitor = visitor },
+        .Float, .ComptimeFloat => de.FloatDe(Visitor){ .visitor = visitor },
+        .Int, .ComptimeInt => de.IntDe(Visitor){ .visitor = visitor },
+        .Optional => de.OptionalDe(Visitor){ .visitor = visitor },
         .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
-            true => StringDe(Visitor){ .visitor = visitor },
+            true => de.StringDe(Visitor){ .visitor = visitor },
             false => switch (info.size) {
                 .One => return try _deserialize(allocator, std.meta.Child(T), deserializer, visitor),
-                .Slice => SequenceDe(Visitor){ .visitor = visitor },
+                .Slice => de.SequenceDe(Visitor){ .visitor = visitor },
                 else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
             },
         },
         .Struct => |info| blk: {
             if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
-                break :blk SequenceDe(Visitor){ .visitor = visitor };
+                break :blk de.SequenceDe(Visitor){ .visitor = visitor };
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
-                break :blk MapDe(Visitor){ .visitor = visitor };
+                break :blk de.MapDe(Visitor){ .visitor = visitor };
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list")) {
-                break :blk SequenceDe(Visitor){ .visitor = visitor };
+                break :blk de.SequenceDe(Visitor){ .visitor = visitor };
             } else switch (info.is_tuple) {
-                true => break :blk SequenceDe(Visitor){ .visitor = visitor },
-                false => break :blk StructDe(Visitor){ .visitor = visitor },
+                true => break :blk de.SequenceDe(Visitor){ .visitor = visitor },
+                false => break :blk de.StructDe(Visitor){ .visitor = visitor },
             }
         },
-        .Void => VoidDe(Visitor){ .visitor = visitor },
+        .Void => de.VoidDe(Visitor){ .visitor = visitor },
         else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
     };
 
