@@ -8,8 +8,9 @@ pub fn @"getty.Serializer"(comptime T: type) void {
     comptime concepts.Concept(concept, "")(.{
         std.mem.eql(u8, @typeName(T), concept),
         concepts.traits.hasField(T, "context"),
-        concepts.traits.hasDecls(T, .{ "Ok", "Error" }),
-        concepts.traits.hasFunctions(T, .{
+        concepts.traits.hasDecls(T, .{
+            "Ok",
+            "Error",
             "serializeBool",
             "serializeEnum",
             "serializeFloat",
