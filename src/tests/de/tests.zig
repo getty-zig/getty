@@ -153,7 +153,7 @@ test "string" {
     try t("abc", &[_]Token{.{ .String = "abc" }});
 
     var arr = [_]u8{ 'a', 'b', 'c' };
-    try t(&arr, &[_]Token{.{ .String = "abc" }});
+    try t(@as([]u8, &arr), &[_]Token{.{ .String = "abc" }});
     try t(@as([]const u8, &arr), &[_]Token{.{ .String = "abc" }});
 }
 
