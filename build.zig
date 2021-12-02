@@ -1,26 +1,15 @@
 const std = @import("std");
+const pkgs = @import("deps.zig").pkgs;
 
 const package_name = "getty";
 const package_path = "src/lib.zig";
 
-const packages = struct {
-    const getty = std.build.Pkg{
-        .name = package_name,
-        .path = .{ .path = package_path },
-        .dependencies = &[_]std.build.Pkg{
-            concepts,
-        },
-    };
-
-    const token = std.build.Pkg{
-        .name = "common/token.zig",
-        .path = .{ .path = "src/tests/common/token.zig" },
-    };
-
-    const concepts = std.build.Pkg{
-        .name = "concepts",
-        .path = .{ .path = "deps/concepts/src/lib.zig" },
-    };
+const getty_pkg = std.build.Pkg{
+    .name = package_name,
+    .path = .{ .path = package_path },
+    .dependencies = &[_]std.build.Pkg{
+        pkgs.concepts,
+    },
 };
 
 const tests = [_][]const u8{
@@ -41,17 +30,9 @@ pub fn build(b: *std.build.Builder) void {
 
         t.setBuildMode(mode);
         t.setTarget(target);
-
-        t.addPackage(packages.getty);
-        t.addPackage(packages.token);
-
+        pkgs.addAllTo(t);
+        t.addPackagePath("common/token.zig", "src/tests/common/token.zig");
+        t.addPackage(getty_pkg);
         step.dependOn(&t.step);
     }
-
-    // Library
-    const lib = b.addStaticLibrary(package_name, package_path);
-
-    lib.setBuildMode(mode);
-    lib.setTarget(target);
-    lib.install();
 }
