@@ -44,6 +44,8 @@ fn @"impl Visitor"(comptime Slice: type) type {
             }
 
             pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+                errdefer getty.de.free(self.allocator, input);
+
                 // TODO: This type check (and InvalidType error) is a temporary
                 // workaround for the case where the child type of `Value` isn't a
                 // u8. In that situation, the compiler keeps both the .ArrayBegin
@@ -55,11 +57,7 @@ fn @"impl Visitor"(comptime Slice: type) type {
                 // deserializer figure out what to do in the SequenceAccess based
                 // on whether the input is an Array or a String. If this works, do we
                 // even need a `visitString` method?
-                if (Child == u8) {
-                    return try self.allocator.dupe(std.meta.Child(Value), input);
-                }
-
-                return error.InvalidType;
+                return if (Child == u8) input else error.InvalidType;
             }
 
             const Child = std.meta.Child(Value);

@@ -148,7 +148,7 @@ const @"impl Deserializer" = struct {
 
         pub fn deserializeString(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             switch (self.nextToken()) {
-                .String => |v| return try visitor.visitString(Error, v),
+                .String => |v| return try visitor.visitString(Error, try self.allocator.dupe(u8, v)),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             }
         }
