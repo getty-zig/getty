@@ -110,13 +110,16 @@ fn @"impl Visitor"(comptime Pointer: type) type {
             }
 
             pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-                defer getty.de.free(self.allocator, input);
+                var v = childVisitor(self.allocator);
 
                 const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
-
-                var v = childVisitor(self.allocator);
+                errdefer self.allocator.destroy(value);
                 value.* = try v.visitor().visitString(Error, input);
+
+                if (@typeInfo(Child) != .Pointer) {
+                    getty.de.free(self.allocator, input);
+                }
+
                 return value;
             }
 

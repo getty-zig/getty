@@ -83,16 +83,19 @@ pub const de = struct {
             .Bool, .Float, .ComptimeFloat, .Int, .ComptimeInt, .Enum, .EnumLiteral, .Null, .Void => {},
             .Array => for (value) |v| free(allocator, v),
             .Optional => if (value) |v| free(allocator, v),
-            .Pointer => |info| switch (info.size) {
-                .One => {
-                    free(allocator, value.*);
-                    allocator.destroy(value);
+            .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
+                true => allocator.free(value),
+                false => switch (info.size) {
+                    .One => {
+                        free(allocator, value.*);
+                        allocator.destroy(value);
+                    },
+                    .Slice => {
+                        for (value) |v| free(allocator, v);
+                        allocator.free(value);
+                    },
+                    else => unreachable,
                 },
-                .Slice => {
-                    for (value) |v| free(allocator, v);
-                    allocator.free(value);
-                },
-                else => unreachable,
             },
             .Union => |info| {
                 if (info.tag_type) |Tag| {
