@@ -37,7 +37,11 @@ fn @"impl Visitor"(comptime HashMap: type) type {
                 errdefer getty.de.free(self.allocator, map);
 
                 while (try mapAccess.nextKey(K)) |key| {
+                    errdefer getty.de.free(self.allocator, key);
+
                     const value = try mapAccess.nextValue(V);
+                    errdefer getty.de.free(self.allocator, value);
+
                     try if (unmanaged) map.put(self.allocator, key, value) else map.put(key, value);
                 }
 
