@@ -33,7 +33,6 @@ fn @"impl Visitor"(comptime Struct: type) type {
         pub const visitor = struct {
             pub const Value = Struct;
 
-            /// Keys are assumed to be stack-allocated.
             pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
                 const fields = std.meta.fields(Value);
 
@@ -51,6 +50,8 @@ fn @"impl Visitor"(comptime Struct: type) type {
                 }
 
                 while (try mapAccess.nextKey([]const u8)) |key| {
+                    defer self.allocator.?.free(key);
+
                     var found = false;
 
                     inline for (fields) |field, i| {
