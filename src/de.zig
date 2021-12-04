@@ -168,7 +168,7 @@ pub fn deserialize(
     var v = switch (@typeInfo(T)) {
         .Array => ArrayVisitor(T){},
         .Bool => BoolVisitor{},
-        .Enum => EnumVisitor(T){},
+        .Enum => EnumVisitor(T){ .allocator = allocator },
         .Float, .ComptimeFloat => FloatVisitor(T){},
         .Int, .ComptimeInt => IntVisitor(T){},
         .Optional => OptionalVisitor(T){ .allocator = allocator },

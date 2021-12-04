@@ -110,16 +110,11 @@ fn @"impl Visitor"(comptime Pointer: type) type {
             }
 
             pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-                var v = childVisitor(self.allocator);
-
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
+
+                var v = childVisitor(self.allocator);
                 value.* = try v.visitor().visitString(Error, input);
-
-                if (@typeInfo(Child) != .Pointer) {
-                    getty.de.free(self.allocator, input);
-                }
-
                 return value;
             }
 
@@ -143,8 +138,8 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             fn childVisitor(allocator: *std.mem.Allocator) ChildVisitor {
                 return switch (@typeInfo(Child)) {
-                    .Array, .Bool, .ComptimeFloat, .ComptimeInt, .Enum, .Float, .Int, .Void => .{},
-                    .Optional, .Pointer, .Struct => .{ .allocator = allocator },
+                    .Bool, .ComptimeFloat, .ComptimeInt, .Float, .Int, .Void => .{},
+                    .Array, .Enum, .Optional, .Pointer, .Struct => .{ .allocator = allocator },
                     else => unreachable,
                 };
             }

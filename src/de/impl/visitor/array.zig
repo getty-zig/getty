@@ -69,7 +69,7 @@ fn @"impl Visitor"(comptime Array: type) type {
             }
 
             pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
+                defer getty.de.free(self.allocator.?, input);
 
                 if (Child == u8) {
                     var string: Value = undefined;

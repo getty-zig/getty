@@ -3,6 +3,8 @@ const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime Enum: type) type {
     return struct {
+        allocator: ?*std.mem.Allocator = null,
+
         const Self = @This();
         const impl = @"impl Visitor"(Enum);
 
@@ -43,8 +45,7 @@ fn @"impl Visitor"(comptime Enum: type) type {
             }
 
             pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
-
+                defer getty.de.free(self.allocator.?, input);
                 return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
             }
         };
