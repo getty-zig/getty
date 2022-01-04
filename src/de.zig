@@ -75,7 +75,7 @@ pub const de = struct {
     pub usingnamespace @import("de/impl/seed/default.zig");
 
     /// Frees resources allocated during deserialization.
-    pub fn free(allocator: *std.mem.Allocator, value: anytype) void {
+    pub fn free(allocator: std.mem.Allocator, value: anytype) void {
         const T = @TypeOf(value);
         const name = @typeName(T);
 
@@ -151,7 +151,7 @@ pub const de = struct {
 
 /// Performs deserialization using a provided serializer and `de`.
 pub fn deserializeWith(
-    allocator: ?*std.mem.Allocator,
+    allocator: ?std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
     d: anytype,
@@ -161,7 +161,7 @@ pub fn deserializeWith(
 
 /// Performs deserialization using a provided serializer and a default `de`.
 pub fn deserialize(
-    allocator: ?*std.mem.Allocator,
+    allocator: ?std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
 ) @TypeOf(deserializer).Error!T {
@@ -199,7 +199,7 @@ pub fn deserialize(
 }
 
 fn _deserialize(
-    allocator: ?*std.mem.Allocator,
+    allocator: ?std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,

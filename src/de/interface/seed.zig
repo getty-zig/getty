@@ -6,7 +6,7 @@ pub fn Seed(
     comptime Context: type,
     comptime Value: type,
     comptime deserialize: @TypeOf(struct {
-        fn f(c: Context, a: ?*std.mem.Allocator, d: anytype) @TypeOf(d).Error!Value {
+        fn f(c: Context, a: ?std.mem.Allocator, d: anytype) @TypeOf(d).Error!Value {
             _ = c;
             _ = a;
 
@@ -22,7 +22,7 @@ pub fn Seed(
 
             pub const Value = Value;
 
-            pub fn deserialize(self: Self, allocator: ?*std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
+            pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
                 return try deserialize(self.context, allocator, deserializer);
             }
         };

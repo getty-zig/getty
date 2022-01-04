@@ -3,7 +3,7 @@ const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime Enum: type) type {
     return struct {
-        allocator: ?*std.mem.Allocator = null,
+        allocator: ?std.mem.Allocator = null,
 
         const Self = @This();
         const impl = @"impl Visitor"(Enum);

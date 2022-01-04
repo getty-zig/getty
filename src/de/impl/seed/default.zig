@@ -23,7 +23,7 @@ fn @"impl DefaultSeed"(comptime V: type) type {
 
             pub fn deserialize(
                 self: Self,
-                allocator: ?*std.mem.Allocator,
+                allocator: ?std.mem.Allocator,
                 deserializer: anytype,
             ) @TypeOf(deserializer).Error!Value {
                 _ = self;

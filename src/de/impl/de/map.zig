@@ -22,7 +22,7 @@ fn @"impl De"(comptime Visitor: type) type {
         pub const de = struct {
             pub fn deserialize(
                 self: Self,
-                allocator: ?*std.mem.Allocator,
+                allocator: ?std.mem.Allocator,
                 comptime T: type,
                 deserializer: anytype,
             ) @TypeOf(deserializer).Error!T {

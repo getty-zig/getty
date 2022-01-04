@@ -3,7 +3,7 @@ const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime LinkedList: type) type {
     return struct {
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
 
         const Self = @This();
         const impl = @"impl Visitor"(LinkedList);

@@ -17,7 +17,7 @@ pub fn Visitor(comptime Pointer: type) type {
     }
 
     return struct {
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
 
         const Self = @This();
         const impl = @"impl Visitor"(Pointer);
@@ -136,7 +136,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 return value;
             }
 
-            fn childVisitor(allocator: *std.mem.Allocator) ChildVisitor {
+            fn childVisitor(allocator: std.mem.Allocator) ChildVisitor {
                 return switch (@typeInfo(Child)) {
                     .Bool, .ComptimeFloat, .ComptimeInt, .Float, .Int, .Void => .{},
                     .Array, .Enum, .Optional, .Pointer, .Struct => .{ .allocator = allocator },

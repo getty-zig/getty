@@ -5,7 +5,7 @@ const Child = @import("std").meta.Child;
 
 pub fn Visitor(comptime Optional: type) type {
     return struct {
-        allocator: ?*Allocator = null,
+        allocator: ?Allocator = null,
 
         const Self = @This();
         const impl = @"impl Visitor"(Optional);

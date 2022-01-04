@@ -8,13 +8,13 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 const Token = @import("common/token.zig").Token;
 
 pub const Deserializer = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     tokens: []const Token,
 
     const Self = @This();
     const impl = @"impl Deserializer";
 
-    pub fn init(allocator: *std.mem.Allocator, tokens: []const Token) Self {
+    pub fn init(allocator: std.mem.Allocator, tokens: []const Token) Self {
         return .{
             .allocator = allocator,
             .tokens = tokens,
