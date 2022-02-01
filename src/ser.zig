@@ -35,13 +35,6 @@
 //! `struct { y: bool }` values, and values of any other struct type that is
 //! composed of data types supported by Getty.
 //!
-//! # `Ser`s
-//!
-//! A `Ser` defines the conversion process between Zig types and Getty's data
-//! model. For example, the `BoolSer` type, used internally by Getty, converts
-//! `bool` values into the Boolean type, which is one of the types defined in
-//! Getty's data model.
-//!
 //! # Serializers
 //!
 //! A serializer defines the conversion process between Getty's data model and
@@ -52,31 +45,8 @@ const std = @import("std");
 
 const getty = @import("lib.zig");
 
-const ArrayListSer = @import("ser/impl/ser/array_list.zig");
-const BoolSer = @import("ser/impl/ser/bool.zig");
-const ErrorSer = @import("ser/impl/ser/error.zig");
-const EnumSer = @import("ser/impl/ser/enum.zig");
-const FloatSer = @import("ser/impl/ser/float.zig");
-const IntSer = @import("ser/impl/ser/int.zig");
-const OptionalSer = @import("ser/impl/ser/optional.zig");
-const PointerSer = @import("ser/impl/ser/pointer.zig");
-const NullSer = @import("ser/impl/ser/null.zig");
-const LinkedListSer = @import("ser/impl/ser/linked_list.zig");
-const SequenceSer = @import("ser/impl/ser/sequence.zig");
-const StringSer = @import("ser/impl/ser/string.zig");
-const HashMapSer = @import("ser/impl/ser/hash_map.zig");
-const StructSer = @import("ser/impl/ser/struct.zig");
-const TailQueueSer = @import("ser/impl/ser/tail_queue.zig");
-const TupleSer = @import("ser/impl/ser/tuple.zig");
-const UnionSer = @import("ser/impl/ser/union.zig");
-const VectorSer = @import("ser/impl/ser/vector.zig");
-const VoidSer = @import("ser/impl/ser/void.zig");
-
 /// Serializer interface
 pub usingnamespace @import("ser/interface/serializer.zig");
-
-/// `Ser` interface
-pub usingnamespace @import("ser/interface/ser.zig");
 
 /// `ser` namespace
 pub const ser = struct {
@@ -91,71 +61,308 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
 };
 
-/// Serializes a value using a provided serializer and `ser`.
-///
-/// `serializeWith` allows for data types that aren't supported by Getty to be
-/// serialized. Additionally, the function enables the use of custom
-/// serialization logic for data types that are supported.
-pub fn serializeWith(value: anytype, serializer: anytype, s: anytype) blk: {
-    getty.concepts.@"getty.Serializer"(@TypeOf(serializer));
-    getty.concepts.@"getty.Ser"(@TypeOf(s));
+pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+    const T = @TypeOf(value);
+    const Serializer = @TypeOf(serializer);
 
-    break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
-} {
-    return try s.serialize(value, serializer);
+    if (Serializer.Ser != DefaultSer) {
+        inline for (std.meta.declarations(Serializer.Ser)) |decl| {
+            const S = @field(Serializer.Ser, decl.name);
+
+            if (comptime S.is(T)) {
+                return try S.serialize(value, serializer);
+            }
+        }
+    }
+
+    inline for (std.meta.declarations(DefaultSer)) |decl| {
+        const S = @field(DefaultSer, decl.name);
+
+        if (comptime S.is(T)) {
+            return try S.serialize(value, serializer);
+        }
+    }
+
+    @compileError("type `" ++ @typeName(T) ++ "` is not supported");
 }
 
-/// Serializes a value using a provided serializer and a default `ser`.
-///
-/// `Ser`s are only provided for data types supported by Getty, plus a few
-/// commonly used but unsupported types such as `std.ArrayList` and
-/// `std.AutoHashMap`. For custom serialization or serialization of data types
-/// not supported Getty, see `getty.serializeWith`.
-pub fn serialize(value: anytype, serializer: anytype) blk: {
-    getty.concepts.@"getty.Serializer"(@TypeOf(serializer));
+pub const DefaultSer = struct {
+    pub const Array = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Array;
+        }
 
-    break :blk @TypeOf(serializer).Error!@TypeOf(serializer).Ok;
-} {
-    const T = @TypeOf(value);
-
-    var s = switch (@typeInfo(T)) {
-        .Array => SequenceSer{},
-        .Bool => BoolSer{},
-        .Enum, .EnumLiteral => EnumSer{},
-        .ErrorSet => ErrorSer{},
-        .Float, .ComptimeFloat => FloatSer{},
-        .Int, .ComptimeInt => IntSer{},
-        .Null => NullSer{},
-        .Optional => OptionalSer{},
-        .Pointer => |info| switch (info.size) {
-            .One => PointerSer{},
-            .Slice => switch (comptime std.meta.trait.isZigString(T)) {
-                true => StringSer{},
-                false => SequenceSer{},
-            },
-            else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
-        },
-        .Struct => |info| switch (info.is_tuple) {
-            false => blk: {
-                if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
-                    break :blk ArrayListSer{};
-                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
-                    break :blk HashMapSer{};
-                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
-                    break :blk LinkedListSer{};
-                } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue")) {
-                    break :blk TailQueueSer{};
-                } else {
-                    break :blk StructSer{};
-                }
-            },
-            true => TupleSer{},
-        },
-        .Union => UnionSer{},
-        .Vector => VectorSer{},
-        .Void => VoidSer{},
-        else => @compileError("type `" ++ @typeName(T) ++ "` is not supported"),
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const seq = (try serializer.serializeSequence(value.len)).sequenceSerialize();
+            for (value) |elem| {
+                try seq.serializeElement(elem);
+            }
+            return try seq.end();
+        }
     };
 
-    return try serializeWith(value, serializer, s.ser());
+    pub const ArrayList = struct {
+        pub fn is(comptime T: type) bool {
+            return std.mem.startsWith(u8, @typeName(T), "std.array_list");
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try getty.serialize(value.items, serializer);
+        }
+    };
+
+    pub const Bool = struct {
+        pub fn is(comptime T: type) bool {
+            return T == bool;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeBool(value);
+        }
+    };
+
+    pub const Enum = struct {
+        pub fn is(comptime T: type) bool {
+            return switch (@typeInfo(T)) {
+                .Enum, .EnumLiteral => true,
+                else => false,
+            };
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeEnum(value);
+        }
+    };
+
+    pub const ErrorSet = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .ErrorSet;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try getty.serialize(@as([]const u8, @errorName(value)), serializer);
+        }
+    };
+
+    pub const Float = struct {
+        pub fn is(comptime T: type) bool {
+            return switch (@typeInfo(T)) {
+                .Float, .ComptimeFloat => true,
+                else => false,
+            };
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeFloat(value);
+        }
+    };
+
+    pub const HashMap = struct {
+        pub fn is(comptime T: type) bool {
+            return std.mem.startsWith(u8, @typeName(T), "std.hash_map");
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const m = (try serializer.serializeMap(value.count())).mapSerialize();
+            {
+                var iterator = value.iterator();
+                while (iterator.next()) |entry| {
+                    try m.serializeEntry(entry.key_ptr.*, entry.value_ptr.*);
+                }
+            }
+            return try m.end();
+        }
+    };
+
+    pub const Int = struct {
+        pub fn is(comptime T: type) bool {
+            return switch (@typeInfo(T)) {
+                .Int, .ComptimeInt => true,
+                else => false,
+            };
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeInt(value);
+        }
+    };
+
+    pub const LinkedList = struct {
+        pub fn is(comptime T: type) bool {
+            return std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList");
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const seq = (try serializer.serializeSequence(value.len())).sequenceSerialize();
+            {
+                var iterator = value.first;
+                while (iterator) |node| : (iterator = node.next) {
+                    try seq.serializeElement(node.data);
+                }
+            }
+            return try seq.end();
+        }
+    };
+
+    pub const Null = struct {
+        pub fn is(comptime T: type) bool {
+            return T == @TypeOf(null);
+        }
+
+        pub fn serialize(_: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeNull();
+        }
+    };
+
+    pub const OnePointer = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const info = @typeInfo(@TypeOf(value)).Pointer;
+
+            // Serialize array pointers as slices so that strings are handled properly.
+            if (@typeInfo(info.child) == .Array) {
+                return try getty.serialize(@as([]const std.meta.Elem(info.child), value), serializer);
+            }
+
+            return try getty.serialize(value.*, serializer);
+        }
+    };
+
+    pub const Optional = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Optional;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try if (value) |v| serializer.serializeSome(v) else serializer.serializeNull();
+        }
+    };
+
+    pub const Slice = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime !std.meta.trait.isZigString(T);
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const seq = (try serializer.serializeSequence(value.len)).sequenceSerialize();
+            for (value) |elem| {
+                try seq.serializeElement(elem);
+            }
+            return try seq.end();
+        }
+    };
+
+    pub const String = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime std.meta.trait.isZigString(T);
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeString(value);
+        }
+    };
+
+    pub const TailQueue = struct {
+        pub fn is(comptime T: type) bool {
+            return std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const seq = (try serializer.serializeSequence(value.len)).sequenceSerialize();
+            {
+                var iterator = value.first;
+                while (iterator) |node| : (iterator = node.next) {
+                    try seq.serializeElement(node.data);
+                }
+            }
+            return try seq.end();
+        }
+    };
+
+    pub const Tuple = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Struct and @typeInfo(T).Struct.is_tuple;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const T = @TypeOf(value);
+
+            const tuple = (try serializer.serializeTuple(std.meta.fields(T).len)).tupleSerialize();
+            inline for (@typeInfo(T).Struct.fields) |field| {
+                try tuple.serializeElement(@field(value, field.name));
+            }
+            return try tuple.end();
+        }
+    };
+
+    pub const Union = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Union;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            switch (@typeInfo(@TypeOf(value))) {
+                .Union => |info| if (info.tag_type) |_| {
+                    inline for (info.fields) |field| {
+                        if (std.mem.eql(u8, field.name, @tagName(value))) {
+                            return try getty.serialize(@field(value, field.name), serializer);
+                        }
+                    }
+                } else @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                else => @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+            }
+        }
+    };
+
+    pub const Vector = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Vector;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return switch (@typeInfo(@TypeOf(value))) {
+                .Vector => |info| try getty.serialize(@as([info.len]info.child, value), serializer),
+                else => @compileError("expected vector, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+            };
+        }
+    };
+
+    pub const Void = struct {
+        pub fn is(comptime T: type) bool {
+            return T == void;
+        }
+
+        pub fn serialize(_: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            return try serializer.serializeVoid();
+        }
+    };
+
+    // This should always be last.
+    pub const Struct = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Struct;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
+            const T = @TypeOf(value);
+            const fields = std.meta.fields(T);
+
+            const st = (try serializer.serializeStruct(@typeName(T), fields.len)).structSerialize();
+            inline for (fields) |field| {
+                if (field.field_type != void) {
+                    try st.serializeField(field.name, @field(value, field.name));
+                }
+            }
+            return try st.end();
+        }
+    };
+};
+
+fn Return(comptime Serializer: type) type {
+    getty.concepts.@"getty.Serializer"(Serializer);
+
+    return Serializer.Error!Serializer.Ok;
 }

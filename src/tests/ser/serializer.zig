@@ -37,6 +37,7 @@ pub const Serializer = struct {
         *Self,
         impl.serializer.Ok,
         impl.serializer.Error,
+        impl.serializer.Ser,
         impl.serializer.MapSerialize,
         impl.serializer.SequenceSerialize,
         impl.serializer.StructSerialize,
@@ -93,6 +94,7 @@ const @"impl Serializer" = struct {
     pub const serializer = struct {
         pub const Ok = void;
         pub const Error = getty.ser.Error || error{TestExpectedEqual};
+        pub const Ser = getty.DefaultSer;
 
         pub const MapSerialize = *Serializer;
         pub const SequenceSerialize = *Serializer;

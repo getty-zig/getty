@@ -10,6 +10,7 @@ pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
+    comptime Ser: type,
     comptime MapSerialize: type,
     comptime SequenceSerialize: type,
     comptime StructSerialize: type,
@@ -46,6 +47,9 @@ pub fn Serializer(
 
             /// The error set used upon failure.
             pub const Error = Error;
+
+            /// TODO
+            pub const Ser = Ser;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
