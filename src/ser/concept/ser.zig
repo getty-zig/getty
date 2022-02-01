@@ -18,9 +18,11 @@ fn is_namespace(comptime T: type) bool {
 }
 
 fn has_blocks(comptime T: type) bool {
-    comptime std.debug.assert(is_namespace(T));
+    if (!is_namespace(T)) {
+        return false;
+    }
 
-    for (@typeInfo(T).Struct.decls) |d| {
+    inline for (@typeInfo(T).Struct.decls) |d| {
         if (!is_block(@field(T, d.name))) {
             return false;
         }
@@ -30,14 +32,6 @@ fn has_blocks(comptime T: type) bool {
 }
 
 fn is_block(comptime T: type) bool {
-    const F = @TypeOf(struct {
-        fn f(_: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-            undefined;
-        }
-    }.f);
-
-    return is_namespace(T) and
-        concepts.traits.hasFunctions(T, .{ "is", "serialize" }) and
-        T.is == fn (comptime T: type) bool and
-        T.serialize == F;
+    // This is the best we can do without relaxed generic type erasure.
+    return is_namespace(T) and concepts.traits.hasFunctions(T, .{ "is", "serialize" });
 }
