@@ -149,93 +149,321 @@ pub const de = struct {
     }
 };
 
-/// Performs deserialization using a provided serializer and `de`.
-pub fn deserializeWith(
-    allocator: ?std.mem.Allocator,
-    comptime T: type,
-    deserializer: anytype,
-    d: anytype,
-) @TypeOf(deserializer).Error!T {
-    return try d.deserialize(allocator, T, deserializer);
-}
-
-/// Performs deserialization using a provided serializer and a default `de`.
 pub fn deserialize(
     allocator: ?std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
 ) @TypeOf(deserializer).Error!T {
-    var v = switch (@typeInfo(T)) {
-        .Array => ArrayVisitor(T){},
-        .Bool => BoolVisitor{},
-        .Enum => EnumVisitor(T){ .allocator = allocator },
-        .Float, .ComptimeFloat => FloatVisitor(T){},
-        .Int, .ComptimeInt => IntVisitor(T){},
-        .Optional => OptionalVisitor(T){ .allocator = allocator },
-        .Pointer => |info| switch (info.size) {
-            .One => PointerVisitor(T){ .allocator = allocator.? },
-            .Slice => SliceVisitor(T){ .allocator = allocator.? },
-            else => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
-        },
-        .Struct => |info| blk: {
-            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
-                break :blk ArrayListVisitor(T){ .allocator = allocator.? };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
-                break :blk HashMapVisitor(T){ .allocator = allocator.? };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList")) {
-                break :blk LinkedListVisitor(T){ .allocator = allocator.? };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue")) {
-                break :blk TailQueueVisitor(T){ .allocator = allocator.? };
-            } else switch (info.is_tuple) {
-                true => break :blk TupleVisitor(T){},
-                false => break :blk StructVisitor(T){ .allocator = allocator },
+    const Deserializer = @TypeOf(deserializer);
+
+    var v = blk: {
+        // Default
+        inline for (std.meta.declarations(DefaultDe)) |decl| {
+            const D = @field(DefaultDe, decl.name);
+
+            if (comptime D.is(T)) {
+                break :blk D.visitor(allocator, T);
             }
-        },
-        .Void => VoidVisitor{},
-        else => @compileError("type ` " ++ @typeName(T) ++ "` is not supported"),
+        }
+
+        // Custom
+        if (Deserializer.De != DefaultDe) {
+            inline for (std.meta.declarations(Deserializer.De)) |decl| {
+                const D = @field(Deserializer.De, decl.name);
+
+                if (comptime D.is(T)) {
+                    break :blk D.visitor(allocator, T);
+                }
+            }
+        }
+
+        @compileError("type ` " ++ @typeName(T) ++ "` is not supported");
     };
 
-    return try _deserialize(allocator, T, deserializer, v.visitor());
+    return try _deserialize(T, deserializer, v.visitor());
 }
 
-fn _deserialize(
-    allocator: ?std.mem.Allocator,
+pub fn _deserialize(
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,
 ) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
-    const Visitor = @TypeOf(visitor);
+    const Deserializer = @TypeOf(deserializer);
 
-    var d = switch (@typeInfo(T)) {
-        .Array => de.SequenceDe(Visitor){ .visitor = visitor },
-        .Bool => de.BoolDe(Visitor){ .visitor = visitor },
-        .Enum => de.EnumDe(Visitor){ .visitor = visitor },
-        .Float, .ComptimeFloat => de.FloatDe(Visitor){ .visitor = visitor },
-        .Int, .ComptimeInt => de.IntDe(Visitor){ .visitor = visitor },
-        .Optional => de.OptionalDe(Visitor){ .visitor = visitor },
-        .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
-            true => de.StringDe(Visitor){ .visitor = visitor },
-            false => switch (info.size) {
-                .One => return try _deserialize(allocator, std.meta.Child(T), deserializer, visitor),
-                .Slice => de.SequenceDe(Visitor){ .visitor = visitor },
-                else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
-            },
-        },
-        .Struct => |info| blk: {
-            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
-                break :blk de.SequenceDe(Visitor){ .visitor = visitor };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map")) {
-                break :blk de.MapDe(Visitor){ .visitor = visitor };
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list")) {
-                break :blk de.SequenceDe(Visitor){ .visitor = visitor };
-            } else switch (info.is_tuple) {
-                true => break :blk de.SequenceDe(Visitor){ .visitor = visitor },
-                false => break :blk de.StructDe(Visitor){ .visitor = visitor },
+    // Custom
+    if (Deserializer.De != DefaultDe) {
+        inline for (std.meta.declarations(Deserializer.De)) |decl| {
+            const D = @field(Deserializer.De, decl.name);
+
+            if (comptime D.is(T)) {
+                return try D.deserialize(T, deserializer, visitor);
             }
-        },
-        .Void => de.VoidDe(Visitor){ .visitor = visitor },
-        else => unreachable, // UNREACHABLE: `deserialize` raises a compile error for this branch.
+        }
+    }
+
+    // Default
+    inline for (std.meta.declarations(DefaultDe)) |decl| {
+        const D = @field(DefaultDe, decl.name);
+
+        if (comptime D.is(T)) {
+            return try D.deserialize(T, deserializer, visitor);
+        }
+    }
+
+    // UNREACHABLE: `deserialize` ensures that only supported types are passed
+    // to this function.
+    unreachable;
+}
+
+pub const DefaultDe = struct {
+    // Primitives
+    pub const arrays = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Array;
+        }
+
+        pub fn visitor(_: ?std.mem.Allocator, comptime T: type) ArrayVisitor(T) {
+            return .{};
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeSequence(v);
+        }
     };
 
-    return try deserializeWith(allocator, Visitor.Value, deserializer, d.de());
-}
+    pub const bools = struct {
+        pub fn is(comptime T: type) bool {
+            return T == bool;
+        }
+
+        pub fn visitor(_: ?std.mem.Allocator, comptime _: type) BoolVisitor {
+            return .{};
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeBool(v);
+        }
+    };
+
+    pub const enums = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Enum;
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) EnumVisitor(T) {
+            return .{ .allocator = allocator };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeEnum(v);
+        }
+    };
+
+    pub const floats = struct {
+        pub fn is(comptime T: type) bool {
+            return switch (@typeInfo(T)) {
+                .Float, .ComptimeFloat => true,
+                else => false,
+            };
+        }
+
+        pub fn visitor(_: ?std.mem.Allocator, comptime T: type) FloatVisitor(T) {
+            return .{};
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeFloat(v);
+        }
+    };
+
+    pub const ints = struct {
+        pub fn is(comptime T: type) bool {
+            return switch (@typeInfo(T)) {
+                .Int, .ComptimeInt => true,
+                else => false,
+            };
+        }
+
+        pub fn visitor(_: ?std.mem.Allocator, comptime T: type) IntVisitor(T) {
+            return .{};
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeInt(v);
+        }
+    };
+
+    pub const one_pointers = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One and comptime !std.meta.trait.isZigString(T);
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) PointerVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try _deserialize(
+                std.meta.Child(T),
+                deserializer,
+                v,
+            );
+        }
+    };
+
+    pub const optionals = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Optional;
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) OptionalVisitor(T) {
+            return .{ .allocator = allocator };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeOptional(v);
+        }
+    };
+
+    pub const slices = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime !std.meta.trait.isZigString(T);
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) SliceVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeSequence(v);
+        }
+    };
+
+    pub const string_ptrs = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One and comptime std.meta.trait.isZigString(T);
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) PointerVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeString(v);
+        }
+    };
+
+    pub const string_slices = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime std.meta.trait.isZigString(T);
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) SliceVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeString(v);
+        }
+    };
+
+    pub const tuples = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Struct and @typeInfo(T).Struct.is_tuple;
+        }
+
+        pub fn visitor(_: ?std.mem.Allocator, comptime T: type) TupleVisitor(T) {
+            return .{};
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeSequence(v);
+        }
+    };
+
+    pub const voids = struct {
+        pub fn is(comptime T: type) bool {
+            return T == void;
+        }
+
+        pub fn visitor(_: ?std.mem.Allocator, comptime _: type) VoidVisitor {
+            return .{};
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeVoid(v);
+        }
+    };
+
+    // std
+    pub const array_lists = struct {
+        pub fn is(comptime T: type) bool {
+            return comptime std.mem.startsWith(u8, @typeName(T), "std.array_list");
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) ArrayListVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeSequence(v);
+        }
+    };
+
+    pub const hash_maps = struct {
+        pub fn is(comptime T: type) bool {
+            return comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map");
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) HashMapVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeMap(v);
+        }
+    };
+
+    pub const linked_lists = struct {
+        pub fn is(comptime T: type) bool {
+            return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList");
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) LinkedListVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeSequence(v);
+        }
+    };
+
+    pub const tail_queues = struct {
+        pub fn is(comptime T: type) bool {
+            return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) TailQueueVisitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeSequence(v);
+        }
+    };
+
+    // struct
+    pub const structs = struct {
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;
+        }
+
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) StructVisitor(T) {
+            return .{ .allocator = allocator };
+        }
+
+        pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try deserializer.deserializeStruct(v);
+        }
+    };
+};

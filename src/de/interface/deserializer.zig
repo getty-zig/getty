@@ -22,6 +22,7 @@ const concepts = @import("../../lib.zig").concepts;
 pub fn Deserializer(
     comptime Context: type,
     comptime Error: type,
+    comptime De: type,
     comptime deserializeBool: Fn(Context, Error),
     comptime deserializeEnum: Fn(Context, Error),
     comptime deserializeFloat: Fn(Context, Error),
@@ -40,6 +41,8 @@ pub fn Deserializer(
             const Self = @This();
 
             pub const Error = Error;
+
+            pub const De = De;
 
             pub fn deserializeBool(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeBool(self.context, visitor);

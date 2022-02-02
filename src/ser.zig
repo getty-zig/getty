@@ -65,6 +65,7 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
     const T = @TypeOf(value);
     const Serializer = @TypeOf(serializer);
 
+    // Custom
     if (Serializer.Ser != DefaultSer) {
         inline for (std.meta.declarations(Serializer.Ser)) |decl| {
             const S = @field(Serializer.Ser, decl.name);
@@ -75,6 +76,7 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
         }
     }
 
+    // Default
     inline for (std.meta.declarations(DefaultSer)) |decl| {
         const S = @field(DefaultSer, decl.name);
 
@@ -243,7 +245,7 @@ pub const DefaultSer = struct {
 
     pub const slices = struct {
         pub fn is(comptime T: type) bool {
-            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime !std.meta.trait.isZigString(T);
+            return @typeInfo(T) == .Pointer and comptime !std.meta.trait.isZigString(T);
         }
 
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
