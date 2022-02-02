@@ -157,15 +157,6 @@ pub fn deserialize(
     const Deserializer = @TypeOf(deserializer);
 
     var v = blk: {
-        // Default
-        inline for (std.meta.declarations(DefaultDe)) |decl| {
-            const D = @field(DefaultDe, decl.name);
-
-            if (comptime D.is(T)) {
-                break :blk D.visitor(allocator, T);
-            }
-        }
-
         // Custom
         if (Deserializer.De != DefaultDe) {
             inline for (std.meta.declarations(Deserializer.De)) |decl| {
@@ -174,6 +165,15 @@ pub fn deserialize(
                 if (comptime D.is(T)) {
                     break :blk D.visitor(allocator, T);
                 }
+            }
+        }
+
+        // Default
+        inline for (std.meta.declarations(DefaultDe)) |decl| {
+            const D = @field(DefaultDe, decl.name);
+
+            if (comptime D.is(T)) {
+                break :blk D.visitor(allocator, T);
             }
         }
 
