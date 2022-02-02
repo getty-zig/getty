@@ -87,7 +87,7 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
 }
 
 pub const DefaultSer = struct {
-    pub const Array = struct {
+    pub const arrays = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Array;
         }
@@ -101,7 +101,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const ArrayList = struct {
+    pub const array_lists = struct {
         pub fn is(comptime T: type) bool {
             return std.mem.startsWith(u8, @typeName(T), "std.array_list");
         }
@@ -111,7 +111,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Bool = struct {
+    pub const bools = struct {
         pub fn is(comptime T: type) bool {
             return T == bool;
         }
@@ -121,7 +121,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Enum = struct {
+    pub const enums = struct {
         pub fn is(comptime T: type) bool {
             return switch (@typeInfo(T)) {
                 .Enum, .EnumLiteral => true,
@@ -134,7 +134,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const ErrorSet = struct {
+    pub const errors = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .ErrorSet;
         }
@@ -144,7 +144,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Float = struct {
+    pub const floats = struct {
         pub fn is(comptime T: type) bool {
             return switch (@typeInfo(T)) {
                 .Float, .ComptimeFloat => true,
@@ -157,7 +157,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const HashMap = struct {
+    pub const hash_maps = struct {
         pub fn is(comptime T: type) bool {
             return std.mem.startsWith(u8, @typeName(T), "std.hash_map");
         }
@@ -174,7 +174,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Int = struct {
+    pub const ints = struct {
         pub fn is(comptime T: type) bool {
             return switch (@typeInfo(T)) {
                 .Int, .ComptimeInt => true,
@@ -187,7 +187,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const LinkedList = struct {
+    pub const linked_lists = struct {
         pub fn is(comptime T: type) bool {
             return std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList");
         }
@@ -204,7 +204,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Null = struct {
+    pub const nulls = struct {
         pub fn is(comptime T: type) bool {
             return T == @TypeOf(null);
         }
@@ -214,7 +214,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const OnePointer = struct {
+    pub const one_pointers = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;
         }
@@ -231,7 +231,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Optional = struct {
+    pub const optionals = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Optional;
         }
@@ -241,7 +241,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Slice = struct {
+    pub const slices = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime !std.meta.trait.isZigString(T);
         }
@@ -255,7 +255,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const String = struct {
+    pub const strings = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice and comptime std.meta.trait.isZigString(T);
         }
@@ -265,7 +265,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const TailQueue = struct {
+    pub const tail_queues = struct {
         pub fn is(comptime T: type) bool {
             return std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
         }
@@ -282,7 +282,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Tuple = struct {
+    pub const tuples = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Struct and @typeInfo(T).Struct.is_tuple;
         }
@@ -298,7 +298,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Union = struct {
+    pub const unions = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Union;
         }
@@ -317,7 +317,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Vector = struct {
+    pub const vectors = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Vector;
         }
@@ -330,7 +330,7 @@ pub const DefaultSer = struct {
         }
     };
 
-    pub const Void = struct {
+    pub const voids = struct {
         pub fn is(comptime T: type) bool {
             return T == void;
         }
@@ -341,7 +341,7 @@ pub const DefaultSer = struct {
     };
 
     // This should always be last.
-    pub const Struct = struct {
+    pub const structs = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Struct;
         }
