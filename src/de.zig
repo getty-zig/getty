@@ -159,7 +159,7 @@ pub fn deserialize(
     var v = blk: {
         // Custom
         if (Deserializer.De != DefaultDe) {
-            inline for (std.meta.declarations(Deserializer.De)) |decl| {
+            inline for (comptime std.meta.declarations(Deserializer.De)) |decl| {
                 const D = @field(Deserializer.De, decl.name);
 
                 if (comptime D.is(T)) {
@@ -169,7 +169,7 @@ pub fn deserialize(
         }
 
         // Default
-        inline for (std.meta.declarations(DefaultDe)) |decl| {
+        inline for (comptime std.meta.declarations(DefaultDe)) |decl| {
             const D = @field(DefaultDe, decl.name);
 
             if (comptime D.is(T)) {
@@ -192,7 +192,7 @@ pub fn _deserialize(
 
     // Custom
     if (Deserializer.De != DefaultDe) {
-        inline for (std.meta.declarations(Deserializer.De)) |decl| {
+        inline for (comptime std.meta.declarations(Deserializer.De)) |decl| {
             const D = @field(Deserializer.De, decl.name);
 
             if (comptime D.is(T)) {
@@ -202,7 +202,7 @@ pub fn _deserialize(
     }
 
     // Default
-    inline for (std.meta.declarations(DefaultDe)) |decl| {
+    inline for (comptime std.meta.declarations(DefaultDe)) |decl| {
         const D = @field(DefaultDe, decl.name);
 
         if (comptime D.is(T)) {

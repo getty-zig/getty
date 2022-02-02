@@ -67,7 +67,7 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
 
     // Custom
     if (Serializer.Ser != DefaultSer) {
-        inline for (std.meta.declarations(Serializer.Ser)) |decl| {
+        inline for (comptime std.meta.declarations(Serializer.Ser)) |decl| {
             const S = @field(Serializer.Ser, decl.name);
 
             if (comptime S.is(T)) {
@@ -77,7 +77,7 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
     }
 
     // Default
-    inline for (std.meta.declarations(DefaultSer)) |decl| {
+    inline for (comptime std.meta.declarations(DefaultSer)) |decl| {
         const S = @field(DefaultSer, decl.name);
 
         if (comptime S.is(T)) {
