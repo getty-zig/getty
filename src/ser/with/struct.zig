@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub fn is(comptime T: type) bool {
-    return @typeInfo(T) == .Struct;
+    return @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;
 }
 
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
