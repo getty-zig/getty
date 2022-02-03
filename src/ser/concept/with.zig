@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concepts = @import("concepts");
 
-const concept = "getty.with";
+const concept = "getty.ser.with";
 
-pub fn @"getty.with"(comptime T: type) void {
+pub fn @"getty.ser.with"(comptime T: type) void {
     comptime concepts.Concept(concept, "")(.{
         is_namespace(T),
         has_blocks(T),

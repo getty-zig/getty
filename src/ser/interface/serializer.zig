@@ -41,7 +41,7 @@ pub fn Serializer(
 ) type {
     comptime {
         if (with) |w| {
-            getty.concepts.@"getty.with"(w);
+            getty.concepts.@"getty.ser.with"(w);
         }
 
         // TODO: Add concept for Error (blocked by concepts library).
