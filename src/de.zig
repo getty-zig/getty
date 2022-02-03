@@ -62,16 +62,6 @@ pub const de = struct {
     pub usingnamespace @import("de/interface/seed.zig");
     pub usingnamespace @import("de/interface/visitor.zig");
 
-    pub usingnamespace @import("de/impl/de/bool.zig");
-    pub usingnamespace @import("de/impl/de/enum.zig");
-    pub usingnamespace @import("de/impl/de/float.zig");
-    pub usingnamespace @import("de/impl/de/int.zig");
-    pub usingnamespace @import("de/impl/de/map.zig");
-    pub usingnamespace @import("de/impl/de/optional.zig");
-    pub usingnamespace @import("de/impl/de/sequence.zig");
-    pub usingnamespace @import("de/impl/de/string.zig");
-    pub usingnamespace @import("de/impl/de/struct.zig");
-    pub usingnamespace @import("de/impl/de/void.zig");
     pub usingnamespace @import("de/impl/seed/default.zig");
 
     /// Frees resources allocated during deserialization.
