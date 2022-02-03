@@ -4,7 +4,7 @@ const ser = @import("../../../lib.zig").ser;
 
 /// Returns an anonymously namespaced interface function for sequence
 /// serialization specifications.
-pub fn SerializeSeq(
+pub fn Seq(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
@@ -12,7 +12,7 @@ pub fn SerializeSeq(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        pub const @"getty.ser.SerializeSeq" = struct {
+        pub const @"getty.ser.Seq" = struct {
             context: Context,
 
             const Self = @This();
@@ -34,7 +34,7 @@ pub fn SerializeSeq(
             }
         };
 
-        pub fn sequenceSerialize(self: Context) @"getty.ser.SerializeSeq" {
+        pub fn seq(self: Context) @"getty.ser.Seq" {
             return .{ .context = self };
         }
     };

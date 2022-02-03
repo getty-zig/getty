@@ -12,7 +12,7 @@ pub fn Serializer(
     comptime Error: type,
     comptime ser: type,
     comptime Map: type,
-    comptime SerializeSeq: type,
+    comptime Seq: type,
     comptime Struct: type,
     comptime Tuple: type,
     comptime serializeBool: fn (Context, bool) Error!Ok,
@@ -21,7 +21,7 @@ pub fn Serializer(
     comptime serializeInt: fn (Context, anytype) Error!Ok,
     comptime serializeMap: fn (Context, ?usize) Error!Map,
     comptime serializeNull: fn (Context) Error!Ok,
-    comptime serializeSequence: fn (Context, ?usize) Error!SerializeSeq,
+    comptime serializeSequence: fn (Context, ?usize) Error!Seq,
     comptime serializeSome: fn (Context, anytype) Error!Ok,
     comptime serializeString: fn (Context, anytype) Error!Ok,
     comptime serializeStruct: @TypeOf(struct {
@@ -95,7 +95,7 @@ pub fn Serializer(
             }
 
             /// Starts the serialization process for a sequence.
-            pub fn serializeSequence(self: Self, length: ?usize) Error!SerializeSeq {
+            pub fn serializeSequence(self: Self, length: ?usize) Error!Seq {
                 return try serializeSequence(self.context, length);
             }
 

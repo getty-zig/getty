@@ -90,7 +90,7 @@ pub const default_ser = struct {
         }
 
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
-            const seq = (try serializer.serializeSequence(value.len)).sequenceSerialize();
+            const seq = (try serializer.serializeSequence(value.len)).seq();
             for (value) |elem| {
                 try seq.serializeElement(elem);
             }
@@ -190,7 +190,7 @@ pub const default_ser = struct {
         }
 
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
-            const seq = (try serializer.serializeSequence(value.len())).sequenceSerialize();
+            const seq = (try serializer.serializeSequence(value.len())).seq();
             {
                 var iterator = value.first;
                 while (iterator) |node| : (iterator = node.next) {
@@ -244,7 +244,7 @@ pub const default_ser = struct {
         }
 
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
-            const seq = (try serializer.serializeSequence(value.len)).sequenceSerialize();
+            const seq = (try serializer.serializeSequence(value.len)).seq();
             for (value) |elem| {
                 try seq.serializeElement(elem);
             }
@@ -268,7 +268,7 @@ pub const default_ser = struct {
         }
 
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
-            const seq = (try serializer.serializeSequence(value.len)).sequenceSerialize();
+            const seq = (try serializer.serializeSequence(value.len)).seq();
             {
                 var iterator = value.first;
                 while (iterator) |node| : (iterator = node.next) {
