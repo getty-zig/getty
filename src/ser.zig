@@ -86,6 +86,12 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
 }
 
 const default_with = struct {
+    // Standard Library
+    const array_lists = @import("ser/with/array_list.zig");
+    const hash_maps = @import("ser/with/hash_map.zig");
+    const linked_lists = @import("ser/with/linked_list.zig");
+    const tail_queues = @import("ser/with/tail_queue.zig");
+
     // Primitives
     const arrays = @import("ser/with/array.zig");
     const bools = @import("ser/with/bool.zig");
@@ -98,17 +104,9 @@ const default_with = struct {
     const pointers = @import("ser/with/pointer.zig");
     const slices = @import("ser/with/slice.zig");
     const strings = @import("ser/with/string.zig");
+    const structs = @import("ser/with/struct.zig");
     const tuples = @import("ser/with/tuple.zig");
     const unions = @import("ser/with/union.zig");
     const vectors = @import("ser/with/vector.zig");
     const voids = @import("ser/with/void.zig");
-
-    // Standard Library
-    const array_lists = @import("ser/with/array_list.zig");
-    const hash_maps = @import("ser/with/hash_map.zig");
-    const linked_lists = @import("ser/with/linked_list.zig");
-    const tail_queues = @import("ser/with/tail_queue.zig");
-
-    // Epilogue
-    const structs = @import("ser/with/struct.zig");
 };
