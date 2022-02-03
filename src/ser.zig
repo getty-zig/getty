@@ -50,11 +50,6 @@ pub usingnamespace @import("ser/interface/serializer.zig");
 
 /// `ser` namespace
 pub const ser = struct {
-    /// Generic error set for `getty.Ser` implementations.
-    pub const Error = std.mem.Allocator.Error || error{
-        Unsupported,
-    };
-
     pub usingnamespace @import("ser/interface/serialize/map.zig");
     pub usingnamespace @import("ser/interface/serialize/sequence.zig");
     pub usingnamespace @import("ser/interface/serialize/struct.zig");

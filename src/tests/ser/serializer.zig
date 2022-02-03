@@ -93,7 +93,7 @@ pub const Serializer = struct {
 const @"impl Serializer" = struct {
     pub const serializer = struct {
         pub const Ok = void;
-        pub const Error = getty.ser.Error || error{TestExpectedEqual};
+        pub const Error = std.mem.Allocator.Error || error{TestExpectedEqual};
         pub const ser = getty.default_ser;
 
         pub const MapSerialize = *Serializer;
