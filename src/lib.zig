@@ -19,12 +19,12 @@ pub usingnamespace @import("ser.zig");
 pub usingnamespace @import("de.zig");
 
 pub const concepts = struct {
-    pub usingnamespace @import("ser/concept/ser.zig");
-    pub usingnamespace @import("ser/concept/serializer.zig");
     pub usingnamespace @import("ser/concept/map.zig");
+    pub usingnamespace @import("ser/concept/serializer.zig");
     pub usingnamespace @import("ser/concept/seq.zig");
     pub usingnamespace @import("ser/concept/structure.zig");
     pub usingnamespace @import("ser/concept/tuple.zig");
+    pub usingnamespace @import("ser/concept/with.zig");
 
     pub usingnamespace @import("de/concept/de.zig");
     pub usingnamespace @import("de/concept/deserializer.zig");
