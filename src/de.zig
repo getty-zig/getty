@@ -41,9 +41,6 @@ const VoidVisitor = @import("de/impl/visitor/void.zig");
 /// Deserializer interface
 pub usingnamespace @import("de/interface/deserializer.zig");
 
-/// `De` interface
-pub usingnamespace @import("de/interface/de.zig");
-
 pub const de = struct {
     /// Generic error set for `getty.De` implementations.
     pub const Error = std.mem.Allocator.Error || error{
