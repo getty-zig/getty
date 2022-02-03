@@ -4,7 +4,7 @@ const ser = @import("../../../lib.zig").ser;
 
 /// Returns an anonymously namespaced interface function for map serialization
 /// specifications.
-pub fn MapSerialize(
+pub fn SerializeMap(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
@@ -13,7 +13,7 @@ pub fn MapSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        pub const @"getty.ser.MapSerialize" = struct {
+        pub const @"getty.ser.SerializeMap" = struct {
             context: Context,
 
             const Self = @This();
@@ -46,7 +46,7 @@ pub fn MapSerialize(
             }
         };
 
-        pub fn mapSerialize(self: Context) @"getty.ser.MapSerialize" {
+        pub fn mapSerialize(self: Context) @"getty.ser.SerializeMap" {
             return .{ .context = self };
         }
     };

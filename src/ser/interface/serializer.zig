@@ -11,7 +11,7 @@ pub fn Serializer(
     comptime Ok: type,
     comptime Error: type,
     comptime ser: type,
-    comptime MapSerialize: type,
+    comptime SerializeMap: type,
     comptime SequenceSerialize: type,
     comptime StructSerialize: type,
     comptime TupleSerialize: type,
@@ -19,7 +19,7 @@ pub fn Serializer(
     comptime serializeEnum: fn (Context, anytype) Error!Ok,
     comptime serializeFloat: fn (Context, anytype) Error!Ok,
     comptime serializeInt: fn (Context, anytype) Error!Ok,
-    comptime serializeMap: fn (Context, ?usize) Error!MapSerialize,
+    comptime serializeMap: fn (Context, ?usize) Error!SerializeMap,
     comptime serializeNull: fn (Context) Error!Ok,
     comptime serializeSequence: fn (Context, ?usize) Error!SequenceSerialize,
     comptime serializeSome: fn (Context, anytype) Error!Ok,
@@ -85,7 +85,7 @@ pub fn Serializer(
             }
 
             /// Starts the serialization process for a map.
-            pub fn serializeMap(self: Self, length: ?usize) Error!MapSerialize {
+            pub fn serializeMap(self: Self, length: ?usize) Error!SerializeMap {
                 return try serializeMap(self.context, length);
             }
 
