@@ -5,6 +5,7 @@
 
 const std = @import("std");
 
+const concepts = @import("concepts");
 const getty = @import("../../lib.zig");
 
 /// Returns an anonymously namespaced interface function for serializers.
@@ -38,6 +39,7 @@ pub fn Serializer(
     comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
+    // TODO: Add concept for Error (blocked by concepts library).
     comptime getty.concepts.@"getty.ser"(ser);
 
     return struct {
@@ -62,6 +64,7 @@ pub fn Serializer(
 
             // Serializes an enum value.
             pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
+                // TODO: Replace this with a concept (blocked by concepts library).
                 switch (@typeInfo(@TypeOf(value))) {
                     .Enum, .EnumLiteral => {},
                     else => @compileError("expected enum, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
@@ -72,18 +75,14 @@ pub fn Serializer(
 
             /// Serializes a floating-point value.
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
-                comptime if (!std.meta.trait.isFloat(@TypeOf(value))) {
-                    @compileError("expected floating-point, found `" ++ @typeName(@TypeOf(value)) ++ "`");
-                };
+                comptime concepts.float(@TypeOf(value));
 
                 return try serializeFloat(self.context, value);
             }
 
             /// Serializes an integer value.
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
-                if (comptime !std.meta.trait.isIntegral(@TypeOf(value))) {
-                    @compileError("expected integer, found `" ++ @typeName(@TypeOf(value)) ++ "`");
-                }
+                comptime concepts.integral(@TypeOf(value));
 
                 return try serializeInt(self.context, value);
             }
@@ -110,9 +109,7 @@ pub fn Serializer(
 
             /// Serializes a string value.
             pub fn serializeString(self: Self, value: anytype) Error!Ok {
-                if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
-                    @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
-                }
+                comptime concepts.string(@TypeOf(value));
 
                 return try serializeString(self.context, value);
             }
