@@ -50,10 +50,10 @@ pub usingnamespace @import("ser/interface/serializer.zig");
 
 /// `ser` namespace
 pub const ser = struct {
-    pub usingnamespace @import("ser/interface/serialize/map.zig");
-    pub usingnamespace @import("ser/interface/serialize/seq.zig");
-    pub usingnamespace @import("ser/interface/serialize/structure.zig");
-    pub usingnamespace @import("ser/interface/serialize/tuple.zig");
+    pub usingnamespace @import("ser/interface/map.zig");
+    pub usingnamespace @import("ser/interface/seq.zig");
+    pub usingnamespace @import("ser/interface/structure.zig");
+    pub usingnamespace @import("ser/interface/tuple.zig");
 };
 
 pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
