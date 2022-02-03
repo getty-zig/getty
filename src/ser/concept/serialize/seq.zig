@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concepts = @import("concepts");
 
-const concept = "getty.ser.SequenceSerialize";
+const concept = "getty.ser.SerializeSeq";
 
-pub fn @"getty.ser.SequenceSerialize"(comptime T: type) void {
+pub fn @"getty.ser.SerializeSeq"(comptime T: type) void {
     comptime concepts.Concept(concept, "")(.{
         std.mem.eql(u8, @typeName(T), concept),
         concepts.traits.hasField(T, "context"),

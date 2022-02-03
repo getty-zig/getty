@@ -51,7 +51,7 @@ pub usingnamespace @import("ser/interface/serializer.zig");
 /// `ser` namespace
 pub const ser = struct {
     pub usingnamespace @import("ser/interface/serialize/map.zig");
-    pub usingnamespace @import("ser/interface/serialize/sequence.zig");
+    pub usingnamespace @import("ser/interface/serialize/seq.zig");
     pub usingnamespace @import("ser/interface/serialize/struct.zig");
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
 };

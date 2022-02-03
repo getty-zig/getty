@@ -39,7 +39,7 @@ pub const Serializer = struct {
         impl.serializer.Error,
         impl.serializer.ser,
         impl.serializer.SerializeMap,
-        impl.serializer.SequenceSerialize,
+        impl.serializer.SerializeSeq,
         impl.serializer.StructSerialize,
         impl.serializer.TupleSerialize,
         impl.serializer.serializeBool,
@@ -65,7 +65,7 @@ pub const Serializer = struct {
         impl.mapSerialize.end,
     );
 
-    pub usingnamespace getty.ser.SequenceSerialize(
+    pub usingnamespace getty.ser.SerializeSeq(
         *Self,
         impl.sequenceSerialize.Ok,
         impl.sequenceSerialize.Error,
@@ -97,7 +97,7 @@ const @"impl Serializer" = struct {
         pub const ser = getty.default_ser;
 
         pub const SerializeMap = *Serializer;
-        pub const SequenceSerialize = *Serializer;
+        pub const SerializeSeq = *Serializer;
         pub const StructSerialize = *Serializer;
         pub const TupleSerialize = *Serializer;
 
@@ -167,7 +167,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, Token{ .Null = {} });
         }
 
-        pub fn serializeSequence(self: *Serializer, length: ?usize) Error!SequenceSerialize {
+        pub fn serializeSequence(self: *Serializer, length: ?usize) Error!SerializeSeq {
             try assertNextToken(self, Token{ .Seq = .{ .len = length } });
             return self;
         }
