@@ -5,6 +5,8 @@
 
 const std = @import("std");
 
+const getty = @import("../../lib.zig");
+
 /// Returns an anonymously namespaced interface function for serializers.
 pub fn Serializer(
     comptime Context: type,
@@ -36,6 +38,8 @@ pub fn Serializer(
     comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
+    comptime getty.concepts.@"getty.ser"(ser);
+
     return struct {
         pub const @"getty.Serializer" = struct {
             const Self = @This();
