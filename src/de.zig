@@ -173,7 +173,7 @@ pub fn deserialize(
     return try _deserialize(T, deserializer, v.visitor());
 }
 
-pub fn _deserialize(
+fn _deserialize(
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,
