@@ -37,7 +37,7 @@ pub const Serializer = struct {
         *Self,
         impl.@"getty.Serializer".Ok,
         impl.@"getty.Serializer".Error,
-        impl.@"getty.Serializer".ser,
+        null,
         impl.@"getty.Serializer".Map,
         impl.@"getty.Serializer".Seq,
         impl.@"getty.Serializer".Structure,
@@ -94,7 +94,6 @@ const @"impl Serializer" = struct {
     pub const @"getty.Serializer" = struct {
         pub const Ok = void;
         pub const Error = std.mem.Allocator.Error || error{TestExpectedEqual};
-        pub const ser = getty.default_ser;
 
         pub const Map = *Serializer;
         pub const Seq = *Serializer;

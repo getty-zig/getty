@@ -13,7 +13,7 @@ pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
-    comptime ser: type,
+    comptime with: ?type,
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
@@ -39,8 +39,13 @@ pub fn Serializer(
     comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
-    // TODO: Add concept for Error (blocked by concepts library).
-    comptime getty.concepts.@"getty.ser"(ser);
+    comptime {
+        if (with) |w| {
+            getty.concepts.@"getty.with"(w);
+        }
+
+        // TODO: Add concept for Error (blocked by concepts library).
+    }
 
     return struct {
         pub const @"getty.Serializer" = struct {
@@ -55,7 +60,7 @@ pub fn Serializer(
             pub const Error = Error;
 
             /// TODO
-            pub const ser = ser;
+            pub const with = with;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
