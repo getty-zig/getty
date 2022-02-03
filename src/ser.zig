@@ -287,7 +287,7 @@ pub const default_ser = struct {
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
             const T = @TypeOf(value);
 
-            const tuple = (try serializer.serializeTuple(std.meta.fields(T).len)).tupleSerialize();
+            const tuple = (try serializer.serializeTuple(std.meta.fields(T).len)).tuple();
             inline for (@typeInfo(T).Struct.fields) |field| {
                 try tuple.serializeElement(@field(value, field.name));
             }

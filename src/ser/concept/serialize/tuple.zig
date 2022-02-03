@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concepts = @import("concepts");
 
-const concept = "getty.ser.TupleSerialize";
+const concept = "getty.ser.Tuple";
 
-pub fn @"getty.ser.TupleSerialize"(comptime T: type) void {
+pub fn @"getty.ser.Tuple"(comptime T: type) void {
     comptime concepts.Concept(concept, "")(.{
         std.mem.eql(u8, @typeName(T), concept),
         concepts.traits.hasField(T, "context"),

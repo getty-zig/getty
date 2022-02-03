@@ -14,7 +14,7 @@ pub fn Serializer(
     comptime SerializeMap: type,
     comptime SerializeSeq: type,
     comptime Struct: type,
-    comptime TupleSerialize: type,
+    comptime Tuple: type,
     comptime serializeBool: fn (Context, bool) Error!Ok,
     comptime serializeEnum: fn (Context, anytype) Error!Ok,
     comptime serializeFloat: fn (Context, anytype) Error!Ok,
@@ -33,7 +33,7 @@ pub fn Serializer(
             unreachable;
         }
     }.f),
-    comptime serializeTuple: fn (Context, ?usize) Error!TupleSerialize,
+    comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
     return struct {
@@ -119,7 +119,7 @@ pub fn Serializer(
             }
 
             /// Starts the serialization process for a tuple.
-            pub fn serializeTuple(self: Self, length: ?usize) Error!TupleSerialize {
+            pub fn serializeTuple(self: Self, length: ?usize) Error!Tuple {
                 return try serializeTuple(self.context, length);
             }
 

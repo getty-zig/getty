@@ -41,7 +41,7 @@ pub const Serializer = struct {
         impl.serializer.SerializeMap,
         impl.serializer.SerializeSeq,
         impl.serializer.Struct,
-        impl.serializer.TupleSerialize,
+        impl.serializer.Tuple,
         impl.serializer.serializeBool,
         impl.serializer.serializeEnum,
         impl.serializer.serializeFloat,
@@ -73,12 +73,12 @@ pub const Serializer = struct {
         impl.sequenceSerialize.end,
     );
 
-    pub usingnamespace getty.ser.TupleSerialize(
+    pub usingnamespace getty.ser.Tuple(
         *Self,
-        impl.tupleSerialize.Ok,
-        impl.tupleSerialize.Error,
-        impl.tupleSerialize.serializeElement,
-        impl.tupleSerialize.end,
+        impl.@"getty.ser.Tuple".Ok,
+        impl.@"getty.ser.Tuple".Error,
+        impl.@"getty.ser.Tuple".serializeElement,
+        impl.@"getty.ser.Tuple".end,
     );
 
     pub usingnamespace getty.ser.Struct(
@@ -99,7 +99,7 @@ const @"impl Serializer" = struct {
         pub const SerializeMap = *Serializer;
         pub const SerializeSeq = *Serializer;
         pub const Struct = *Serializer;
-        pub const TupleSerialize = *Serializer;
+        pub const Tuple = *Serializer;
 
         pub fn serializeBool(self: *Serializer, v: bool) Error!Ok {
             try assertNextToken(self, Token{ .Bool = v });
@@ -186,7 +186,7 @@ const @"impl Serializer" = struct {
             return self;
         }
 
-        pub fn serializeTuple(self: *Serializer, length: ?usize) Error!TupleSerialize {
+        pub fn serializeTuple(self: *Serializer, length: ?usize) Error!Tuple {
             try assertNextToken(self, Token{ .Tuple = .{ .len = length.? } });
             return self;
         }
@@ -240,7 +240,7 @@ const @"impl Serializer" = struct {
         }
     };
 
-    pub const tupleSerialize = struct {
+    pub const @"getty.ser.Tuple" = struct {
         pub const Ok = serializer.Ok;
         pub const Error = serializer.Error;
 

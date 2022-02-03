@@ -4,7 +4,7 @@ const ser = @import("../../../lib.zig").ser;
 
 /// Returns an anonymously namespaced interface function for tuple
 /// serialization specifications.
-pub fn TupleSerialize(
+pub fn Tuple(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
@@ -12,7 +12,7 @@ pub fn TupleSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        pub const @"getty.ser.TupleSerialize" = struct {
+        pub const @"getty.ser.Tuple" = struct {
             context: Context,
 
             const Self = @This();
@@ -34,7 +34,7 @@ pub fn TupleSerialize(
             }
         };
 
-        pub fn tupleSerialize(self: Context) @"getty.ser.TupleSerialize" {
+        pub fn tuple(self: Context) @"getty.ser.Tuple" {
             return .{ .context = self };
         }
     };
