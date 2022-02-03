@@ -35,42 +35,42 @@ pub const Serializer = struct {
 
     pub usingnamespace getty.Serializer(
         *Self,
-        impl.serializer.Ok,
-        impl.serializer.Error,
-        impl.serializer.ser,
-        impl.serializer.Map,
-        impl.serializer.Seq,
-        impl.serializer.Structure,
-        impl.serializer.Tuple,
-        impl.serializer.serializeBool,
-        impl.serializer.serializeEnum,
-        impl.serializer.serializeFloat,
-        impl.serializer.serializeInt,
-        impl.serializer.serializeMap,
-        impl.serializer.serializeNull,
-        impl.serializer.serializeSequence,
-        impl.serializer.serializeSome,
-        impl.serializer.serializeString,
-        impl.serializer.serializeStruct,
-        impl.serializer.serializeTuple,
-        impl.serializer.serializeVoid,
+        impl.@"getty.Serializer".Ok,
+        impl.@"getty.Serializer".Error,
+        impl.@"getty.Serializer".ser,
+        impl.@"getty.Serializer".Map,
+        impl.@"getty.Serializer".Seq,
+        impl.@"getty.Serializer".Structure,
+        impl.@"getty.Serializer".Tuple,
+        impl.@"getty.Serializer".serializeBool,
+        impl.@"getty.Serializer".serializeEnum,
+        impl.@"getty.Serializer".serializeFloat,
+        impl.@"getty.Serializer".serializeInt,
+        impl.@"getty.Serializer".serializeMap,
+        impl.@"getty.Serializer".serializeNull,
+        impl.@"getty.Serializer".serializeSequence,
+        impl.@"getty.Serializer".serializeSome,
+        impl.@"getty.Serializer".serializeString,
+        impl.@"getty.Serializer".serializeStruct,
+        impl.@"getty.Serializer".serializeTuple,
+        impl.@"getty.Serializer".serializeVoid,
     );
 
     pub usingnamespace getty.ser.Map(
         *Self,
-        impl.mapSerialize.Ok,
-        impl.mapSerialize.Error,
-        impl.mapSerialize.serializeKey,
-        impl.mapSerialize.serializeValue,
-        impl.mapSerialize.end,
+        impl.@"getty.ser.Map".Ok,
+        impl.@"getty.ser.Map".Error,
+        impl.@"getty.ser.Map".serializeKey,
+        impl.@"getty.ser.Map".serializeValue,
+        impl.@"getty.ser.Map".end,
     );
 
     pub usingnamespace getty.ser.Seq(
         *Self,
-        impl.sequenceSerialize.Ok,
-        impl.sequenceSerialize.Error,
-        impl.sequenceSerialize.serializeElement,
-        impl.sequenceSerialize.end,
+        impl.@"getty.ser.Seq".Ok,
+        impl.@"getty.ser.Seq".Error,
+        impl.@"getty.ser.Seq".serializeElement,
+        impl.@"getty.ser.Seq".end,
     );
 
     pub usingnamespace getty.ser.Tuple(
@@ -91,7 +91,7 @@ pub const Serializer = struct {
 };
 
 const @"impl Serializer" = struct {
-    pub const serializer = struct {
+    pub const @"getty.Serializer" = struct {
         pub const Ok = void;
         pub const Error = std.mem.Allocator.Error || error{TestExpectedEqual};
         pub const ser = getty.default_ser;
@@ -196,9 +196,9 @@ const @"impl Serializer" = struct {
         }
     };
 
-    pub const mapSerialize = struct {
-        pub const Ok = serializer.Ok;
-        pub const Error = serializer.Error;
+    pub const @"getty.ser.Map" = struct {
+        pub const Ok = @"getty.Serializer".Ok;
+        pub const Error = @"getty.Serializer".Error;
 
         pub fn serializeKey(self: *Serializer, key: anytype) Error!void {
             try getty.serialize(key, self.serializer());
@@ -213,9 +213,9 @@ const @"impl Serializer" = struct {
         }
     };
 
-    pub const sequenceSerialize = struct {
-        pub const Ok = serializer.Ok;
-        pub const Error = serializer.Error;
+    pub const @"getty.ser.Seq" = struct {
+        pub const Ok = @"getty.Serializer".Ok;
+        pub const Error = @"getty.Serializer".Error;
 
         pub fn serializeElement(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());
@@ -227,8 +227,8 @@ const @"impl Serializer" = struct {
     };
 
     pub const @"getty.ser.Structure" = struct {
-        pub const Ok = serializer.Ok;
-        pub const Error = serializer.Error;
+        pub const Ok = @"getty.Serializer".Ok;
+        pub const Error = @"getty.Serializer".Error;
 
         pub fn serializeField(self: *Serializer, comptime key: []const u8, value: anytype) Error!Ok {
             try assertNextToken(self, Token{ .String = key });
@@ -241,8 +241,8 @@ const @"impl Serializer" = struct {
     };
 
     pub const @"getty.ser.Tuple" = struct {
-        pub const Ok = serializer.Ok;
-        pub const Error = serializer.Error;
+        pub const Ok = @"getty.Serializer".Ok;
+        pub const Error = @"getty.Serializer".Error;
 
         pub fn serializeElement(self: *Serializer, value: anytype) Error!void {
             try getty.serialize(value, self.serializer());

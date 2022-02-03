@@ -52,7 +52,7 @@ pub usingnamespace @import("ser/interface/serializer.zig");
 pub const ser = struct {
     pub usingnamespace @import("ser/interface/serialize/map.zig");
     pub usingnamespace @import("ser/interface/serialize/seq.zig");
-    pub usingnamespace @import("ser/interface/serialize/struct.zig");
+    pub usingnamespace @import("ser/interface/serialize/structure.zig");
     pub usingnamespace @import("ser/interface/serialize/tuple.zig");
 };
 
@@ -160,7 +160,7 @@ pub const default_ser = struct {
         }
 
         pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)) {
-            const m = (try serializer.serializeMap(value.count())).mapSerialize();
+            const m = (try serializer.serializeMap(value.count())).map();
             {
                 var iterator = value.iterator();
                 while (iterator.next()) |entry| {
