@@ -13,7 +13,7 @@ pub fn Serializer(
     comptime ser: type,
     comptime SerializeMap: type,
     comptime SerializeSeq: type,
-    comptime StructSerialize: type,
+    comptime Struct: type,
     comptime TupleSerialize: type,
     comptime serializeBool: fn (Context, bool) Error!Ok,
     comptime serializeEnum: fn (Context, anytype) Error!Ok,
@@ -25,7 +25,7 @@ pub fn Serializer(
     comptime serializeSome: fn (Context, anytype) Error!Ok,
     comptime serializeString: fn (Context, anytype) Error!Ok,
     comptime serializeStruct: @TypeOf(struct {
-        fn f(self: Context, comptime name: []const u8, length: usize) Error!StructSerialize {
+        fn f(self: Context, comptime name: []const u8, length: usize) Error!Struct {
             _ = self;
             _ = name;
             _ = length;
@@ -114,7 +114,7 @@ pub fn Serializer(
             }
 
             /// Starts the serialization process for a struct.
-            pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!StructSerialize {
+            pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
                 return try serializeStruct(self.context, name, length);
             }
 

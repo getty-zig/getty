@@ -40,7 +40,7 @@ pub const Serializer = struct {
         impl.serializer.ser,
         impl.serializer.SerializeMap,
         impl.serializer.SerializeSeq,
-        impl.serializer.StructSerialize,
+        impl.serializer.Struct,
         impl.serializer.TupleSerialize,
         impl.serializer.serializeBool,
         impl.serializer.serializeEnum,
@@ -81,12 +81,12 @@ pub const Serializer = struct {
         impl.tupleSerialize.end,
     );
 
-    pub usingnamespace getty.ser.StructSerialize(
+    pub usingnamespace getty.ser.Struct(
         *Self,
-        impl.structSerialize.Ok,
-        impl.structSerialize.Error,
-        impl.structSerialize.serializeField,
-        impl.structSerialize.end,
+        impl.@"getty.ser.Struct".Ok,
+        impl.@"getty.ser.Struct".Error,
+        impl.@"getty.ser.Struct".serializeField,
+        impl.@"getty.ser.Struct".end,
     );
 };
 
@@ -98,7 +98,7 @@ const @"impl Serializer" = struct {
 
         pub const SerializeMap = *Serializer;
         pub const SerializeSeq = *Serializer;
-        pub const StructSerialize = *Serializer;
+        pub const Struct = *Serializer;
         pub const TupleSerialize = *Serializer;
 
         pub fn serializeBool(self: *Serializer, v: bool) Error!Ok {
@@ -181,7 +181,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, Token{ .String = v });
         }
 
-        pub fn serializeStruct(self: *Serializer, comptime name: []const u8, length: usize) Error!StructSerialize {
+        pub fn serializeStruct(self: *Serializer, comptime name: []const u8, length: usize) Error!Struct {
             try assertNextToken(self, Token{ .Struct = .{ .name = name, .len = length } });
             return self;
         }
@@ -226,7 +226,7 @@ const @"impl Serializer" = struct {
         }
     };
 
-    pub const structSerialize = struct {
+    pub const @"getty.ser.Struct" = struct {
         pub const Ok = serializer.Ok;
         pub const Error = serializer.Error;
 

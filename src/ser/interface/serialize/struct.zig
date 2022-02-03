@@ -4,7 +4,7 @@ const ser = @import("../../../lib.zig").ser;
 
 /// Returns an anonymously namespaced interface function for struct
 /// serialization specifications.
-pub fn StructSerialize(
+pub fn Struct(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
@@ -20,7 +20,7 @@ pub fn StructSerialize(
     comptime end: fn (Context) Error!Ok,
 ) type {
     return struct {
-        pub const @"getty.ser.StructSerialize" = struct {
+        pub const @"getty.ser.Struct" = struct {
             context: Context,
 
             const Self = @This();
@@ -42,7 +42,7 @@ pub fn StructSerialize(
             }
         };
 
-        pub fn structSerialize(self: Context) @"getty.ser.StructSerialize" {
+        pub fn iface(self: Context) @"getty.ser.Struct" {
             return .{ .context = self };
         }
     };
