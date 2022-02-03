@@ -38,7 +38,7 @@ pub const Serializer = struct {
         impl.serializer.Ok,
         impl.serializer.Error,
         impl.serializer.ser,
-        impl.serializer.SerializeMap,
+        impl.serializer.Map,
         impl.serializer.SerializeSeq,
         impl.serializer.Structure,
         impl.serializer.Tuple,
@@ -56,7 +56,7 @@ pub const Serializer = struct {
         impl.serializer.serializeVoid,
     );
 
-    pub usingnamespace getty.ser.SerializeMap(
+    pub usingnamespace getty.ser.Map(
         *Self,
         impl.mapSerialize.Ok,
         impl.mapSerialize.Error,
@@ -96,7 +96,7 @@ const @"impl Serializer" = struct {
         pub const Error = std.mem.Allocator.Error || error{TestExpectedEqual};
         pub const ser = getty.default_ser;
 
-        pub const SerializeMap = *Serializer;
+        pub const Map = *Serializer;
         pub const SerializeSeq = *Serializer;
         pub const Structure = *Serializer;
         pub const Tuple = *Serializer;
@@ -158,7 +158,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, expected);
         }
 
-        pub fn serializeMap(self: *Serializer, length: ?usize) Error!SerializeMap {
+        pub fn serializeMap(self: *Serializer, length: ?usize) Error!Map {
             try assertNextToken(self, Token{ .Map = .{ .len = length } });
             return self;
         }
