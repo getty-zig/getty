@@ -26,10 +26,10 @@ pub const concepts = struct {
     pub usingnamespace @import("ser/concept/tuple.zig");
     pub usingnamespace @import("ser/concept/with.zig");
 
-    pub usingnamespace @import("de/concept/de.zig");
     pub usingnamespace @import("de/concept/deserializer.zig");
     pub usingnamespace @import("de/concept/seed.zig");
     pub usingnamespace @import("de/concept/visitor.zig");
+    pub usingnamespace @import("de/concept/with.zig");
     pub usingnamespace @import("de/concept/access/map.zig");
     pub usingnamespace @import("de/concept/access/sequence.zig");
 };

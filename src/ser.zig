@@ -59,6 +59,7 @@ pub const ser = struct {
 pub fn serialize(value: anytype, serializer: anytype) blk: {
     const Serializer = @TypeOf(serializer);
     getty.concepts.@"getty.Serializer"(Serializer);
+
     break :blk Serializer.Error!Serializer.Ok;
 } {
     const T = @TypeOf(value);

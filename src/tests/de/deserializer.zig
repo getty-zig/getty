@@ -62,7 +62,7 @@ pub const Deserializer = struct {
     pub usingnamespace getty.Deserializer(
         *Self,
         impl.deserializer.Error,
-        impl.deserializer.De,
+        null,
         impl.deserializer.deserializeBool,
         impl.deserializer.deserializeEnum,
         impl.deserializer.deserializeFloat,
@@ -79,7 +79,6 @@ pub const Deserializer = struct {
 const @"impl Deserializer" = struct {
     pub const deserializer = struct {
         pub const Error = getty.de.Error || error{TestExpectedEqual};
-        pub const De = getty.DefaultDe;
 
         pub fn deserializeBool(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             switch (self.nextToken()) {

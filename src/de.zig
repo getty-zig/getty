@@ -20,7 +20,7 @@
 
 const std = @import("std");
 
-const getty = @import("getty");
+const getty = @import("lib.zig");
 
 const ArrayVisitor = @import("de/impl/visitor/array.zig").Visitor;
 const ArrayListVisitor = @import("de/impl/visitor/array_list.zig").Visitor;
@@ -144,10 +144,9 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
     const Deserializer = @TypeOf(deserializer);
 
     var v = blk: {
-        // Custom
-        if (Deserializer.De != DefaultDe) {
-            inline for (comptime std.meta.declarations(Deserializer.De)) |decl| {
-                const D = @field(Deserializer.De, decl.name);
+        if (Deserializer.with) |with| {
+            inline for (@typeInfo(with).Struct.decls) |decl| {
+                const D = @field(with, decl.name);
 
                 if (comptime D.is(T)) {
                     break :blk D.visitor(allocator, T);
@@ -155,9 +154,8 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
             }
         }
 
-        // Default
-        inline for (comptime std.meta.declarations(DefaultDe)) |decl| {
-            const D = @field(DefaultDe, decl.name);
+        inline for (@typeInfo(default_with).Struct.decls) |decl| {
+            const D = @field(default_with, decl.name);
 
             if (comptime D.is(T)) {
                 break :blk D.visitor(allocator, T);
@@ -178,9 +176,9 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     const Deserializer = @TypeOf(deserializer);
 
     // Custom
-    if (Deserializer.De != DefaultDe) {
-        inline for (comptime std.meta.declarations(Deserializer.De)) |decl| {
-            const D = @field(Deserializer.De, decl.name);
+    if (Deserializer.with) |with| {
+        inline for (@typeInfo(with).Struct.decls) |decl| {
+            const D = @field(with, decl.name);
 
             if (comptime D.is(T)) {
                 return try D.deserialize(T, deserializer, visitor);
@@ -189,8 +187,8 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     }
 
     // Default
-    inline for (comptime std.meta.declarations(DefaultDe)) |decl| {
-        const D = @field(DefaultDe, decl.name);
+    inline for (@typeInfo(default_with).Struct.decls) |decl| {
+        const D = @field(default_with, decl.name);
 
         if (comptime D.is(T)) {
             return try D.deserialize(T, deserializer, visitor);
@@ -202,7 +200,7 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     unreachable;
 }
 
-pub const DefaultDe = struct {
+pub const default_with = struct {
     // Primitives
     pub const arrays = struct {
         pub fn is(comptime T: type) bool {
