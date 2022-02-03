@@ -66,9 +66,9 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
     const Serializer = @TypeOf(serializer);
 
     // Custom
-    if (Serializer.Ser != DefaultSer) {
-        inline for (comptime std.meta.declarations(Serializer.Ser)) |decl| {
-            const S = @field(Serializer.Ser, decl.name);
+    if (Serializer.ser != default_ser) {
+        inline for (comptime std.meta.declarations(Serializer.ser)) |decl| {
+            const S = @field(Serializer.ser, decl.name);
 
             if (comptime S.is(T)) {
                 return try S.serialize(value, serializer);
@@ -77,8 +77,8 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
     }
 
     // Default
-    inline for (comptime std.meta.declarations(DefaultSer)) |decl| {
-        const S = @field(DefaultSer, decl.name);
+    inline for (comptime std.meta.declarations(default_ser)) |decl| {
+        const S = @field(default_ser, decl.name);
 
         if (comptime S.is(T)) {
             return try S.serialize(value, serializer);
@@ -88,7 +88,7 @@ pub fn serialize(value: anytype, serializer: anytype) Return(@TypeOf(serializer)
     @compileError("type `" ++ @typeName(T) ++ "` is not supported");
 }
 
-pub const DefaultSer = struct {
+pub const default_ser = struct {
     pub const arrays = struct {
         pub fn is(comptime T: type) bool {
             return @typeInfo(T) == .Array;
