@@ -139,11 +139,11 @@ pub const de = struct {
     }
 };
 
-pub fn deserialize(
-    allocator: ?std.mem.Allocator,
-    comptime T: type,
-    deserializer: anytype,
-) @TypeOf(deserializer).Error!T {
+pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
+    getty.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
+
+    break :blk @TypeOf(deserializer).Error!T;
+} {
     const Deserializer = @TypeOf(deserializer);
 
     var v = blk: {
@@ -173,11 +173,11 @@ pub fn deserialize(
     return try _deserialize(T, deserializer, v.visitor());
 }
 
-fn _deserialize(
-    comptime T: type,
-    deserializer: anytype,
-    visitor: anytype,
-) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: {
+    getty.concepts.@"getty.de.Visitor"(@TypeOf(visitor));
+
+    break :blk @TypeOf(deserializer).Error!@TypeOf(visitor).Value;
+} {
     const Deserializer = @TypeOf(deserializer);
 
     // Custom
