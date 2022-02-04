@@ -41,12 +41,11 @@
 //! an output data format. For example, a JSON serializer would specify that
 //! Getty strings should be serialized as `"<INSERT STRING HERE>"`.
 
+const getty = @import("lib.zig");
 const std = @import("std");
 
-const getty = @import("lib.zig");
-
 /// Serializer interface
-pub usingnamespace @import("ser/interface/serializer.zig");
+pub const Serializer = @import("ser/interface/serializer.zig").Serializer;
 
 /// `ser` namespace
 pub const ser = struct {
@@ -56,57 +55,28 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/tuple.zig");
 };
 
-pub fn serialize(value: anytype, serializer: anytype) blk: {
-    const Serializer = @TypeOf(serializer);
-    getty.concepts.@"getty.Serializer"(Serializer);
+const default_with = @import("ser/interface/serializer.zig").default_with;
 
-    break :blk Serializer.Error!Serializer.Ok;
+pub fn serialize(value: anytype, serializer: anytype) blk: {
+    const S = @TypeOf(serializer);
+    getty.concepts.@"getty.Serializer"(S);
+    break :blk S.Error!S.Ok;
 } {
     const T = @TypeOf(value);
 
     if (@TypeOf(serializer).with) |with| {
-        inline for (@typeInfo(with).Struct.decls) |decl| {
-            const block = @field(with, decl.name);
-
-            if (comptime block.is(T)) {
-                return try block.serialize(value, serializer);
+        inline for (with) |w| {
+            if (comptime w.is(T)) {
+                return try w.serialize(value, serializer);
             }
         }
     }
 
-    inline for (@typeInfo(default_with).Struct.decls) |decl| {
-        const block = @field(default_with, decl.name);
-
-        if (comptime block.is(T)) {
-            return try block.serialize(value, serializer);
+    inline for (default_with) |with| {
+        if (comptime with.is(T)) {
+            return try with.serialize(value, serializer);
         }
     }
 
     @compileError("type `" ++ @typeName(T) ++ "` is not supported");
 }
-
-const default_with = struct {
-    // Standard Library
-    const array_lists = @import("ser/with/array_list.zig");
-    const hash_maps = @import("ser/with/hash_map.zig");
-    const linked_lists = @import("ser/with/linked_list.zig");
-    const tail_queues = @import("ser/with/tail_queue.zig");
-
-    // Primitives
-    const arrays = @import("ser/with/array.zig");
-    const bools = @import("ser/with/bool.zig");
-    const enums = @import("ser/with/enum.zig");
-    const errors = @import("ser/with/error.zig");
-    const floats = @import("ser/with/float.zig");
-    const ints = @import("ser/with/int.zig");
-    const nulls = @import("ser/with/null.zig");
-    const optionals = @import("ser/with/optional.zig");
-    const pointers = @import("ser/with/pointer.zig");
-    const slices = @import("ser/with/slice.zig");
-    const strings = @import("ser/with/string.zig");
-    const structs = @import("ser/with/struct.zig");
-    const tuples = @import("ser/with/tuple.zig");
-    const unions = @import("ser/with/union.zig");
-    const vectors = @import("ser/with/vector.zig");
-    const voids = @import("ser/with/void.zig");
-};

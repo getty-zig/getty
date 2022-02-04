@@ -13,7 +13,8 @@ pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
-    comptime with: ?type,
+    //comptime with: ?type,
+    comptime with: anytype,
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
@@ -40,11 +41,9 @@ pub fn Serializer(
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
     comptime {
-        if (with) |w| {
-            getty.concepts.@"getty.ser.with"(w);
-        }
+        getty.concepts.@"getty.ser.with"(@TypeOf(with));
 
-        // TODO: Add concept for Error (blocked by concepts library).
+        //TODO: Add concept for Error (blocked by concepts library).
     }
 
     return struct {
@@ -59,8 +58,14 @@ pub fn Serializer(
             /// The error set used upon failure.
             pub const Error = Error;
 
-            /// TODO
-            pub const with = with;
+            /// TODO: description
+            ///
+            /// `with` is guaranteed to be an optional.
+            pub const with = switch (@typeInfo(@TypeOf(with))) {
+                .Struct => @as(?@TypeOf(with), with),
+                .Optional => with,
+                else => @as(?@TypeOf(default_with), null),
+            };
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
@@ -140,3 +145,29 @@ pub fn Serializer(
         }
     };
 }
+
+pub const default_with = .{
+    // Standard Library
+    @import("../with/array_list.zig"),
+    @import("../with/hash_map.zig"),
+    @import("../with/linked_list.zig"),
+    @import("../with/tail_queue.zig"),
+
+    // Primitives
+    @import("../with/array.zig"),
+    @import("../with/bool.zig"),
+    @import("../with/enum.zig"),
+    @import("../with/error.zig"),
+    @import("../with/float.zig"),
+    @import("../with/int.zig"),
+    @import("../with/null.zig"),
+    @import("../with/optional.zig"),
+    @import("../with/pointer.zig"),
+    @import("../with/slice.zig"),
+    @import("../with/string.zig"),
+    @import("../with/struct.zig"),
+    @import("../with/tuple.zig"),
+    @import("../with/union.zig"),
+    @import("../with/vector.zig"),
+    @import("../with/void.zig"),
+};

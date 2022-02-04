@@ -11,26 +11,35 @@ pub fn @"getty.ser.with"(comptime T: type) void {
 }
 
 fn check(comptime T: type) bool {
-    if (!is_namespace(T)) {
-        return false;
-    }
+    switch (@typeInfo(T)) {
+        .Struct => |info| {
+            if (!info.is_tuple) {
+                return false;
+            }
 
-    inline for (@typeInfo(T).Struct.decls) |d| {
-        if (!is_block(@field(T, d.name))) {
+            inline for (std.meta.declarations(T)) |decl| {
+                if (!is_with_block(@TypeOf(@field(T, decl.name)))) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+        .Optional => |info| {
+            if (std.meta.trait.isTuple(info.child)) {
+                return check(info.child);
+            }
+
             return false;
-        }
+        },
+        else => return T == @Type(.Null),
     }
-
-    return true;
 }
 
-fn is_namespace(comptime T: type) bool {
+fn is_with_block(comptime T: type) bool {
     const info = @typeInfo(T);
 
-    return info == .Struct and info.Struct.fields.len == 0;
-}
-
-fn is_block(comptime T: type) bool {
-    // This is the best we can do without relaxed generic type erasure.
-    return is_namespace(T) and concepts.traits.hasFunctions(T, .{ "is", "serialize" });
+    return info == .Struct and
+        info.Struct.fields.len == 0 and
+        concepts.traits.hasFunctions(T, .{ "is", "serialize" });
 }
