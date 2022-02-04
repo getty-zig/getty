@@ -48,7 +48,7 @@ pub const Serializer = struct {
         impl.@"getty.Serializer".serializeInt,
         impl.@"getty.Serializer".serializeMap,
         impl.@"getty.Serializer".serializeNull,
-        impl.@"getty.Serializer".serializeSequence,
+        impl.@"getty.Serializer".serializeSeq,
         impl.@"getty.Serializer".serializeSome,
         impl.@"getty.Serializer".serializeString,
         impl.@"getty.Serializer".serializeStruct,
@@ -166,7 +166,7 @@ const @"impl Serializer" = struct {
             try assertNextToken(self, Token{ .Null = {} });
         }
 
-        pub fn serializeSequence(self: *Serializer, length: ?usize) Error!Seq {
+        pub fn serializeSeq(self: *Serializer, length: ?usize) Error!Seq {
             try assertNextToken(self, Token{ .Seq = .{ .len = length } });
             return self;
         }

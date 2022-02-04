@@ -5,7 +5,7 @@ pub fn is(comptime T: type) bool {
 }
 
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const seq = (try serializer.serializeSequence(value.len())).seq();
+    const seq = (try serializer.serializeSeq(value.len())).seq();
     {
         var iterator = value.first;
         while (iterator) |node| : (iterator = node.next) {

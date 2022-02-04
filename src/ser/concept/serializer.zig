@@ -18,7 +18,7 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             "serializeInt",
             "serializeMap",
             "serializeNull",
-            "serializeSequence",
+            "serializeSeq",
             "serializeSome",
             "serializeString",
             "serializeStruct",
