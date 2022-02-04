@@ -11,29 +11,23 @@ pub fn @"getty.ser.with"(comptime T: type) void {
 }
 
 fn check(comptime T: type) bool {
-    switch (@typeInfo(T)) {
-        .Struct => |info| {
-            if (info.is_tuple) {
-                inline for (std.meta.declarations(T)) |decl| {
-                    if (!is_with_block(@TypeOf(@field(T, decl.name)))) {
-                        return false;
-                    }
-                }
-            } else if (!is_with_block(T)) {
+    const info = @typeInfo(T);
+
+    if (info != .Struct) {
+        return false;
+    }
+
+    if (info.Struct.is_tuple) {
+        inline for (std.meta.declarations(T)) |decl| {
+            if (!is_with_block(@TypeOf(@field(T, decl.name)))) {
                 return false;
             }
-
-            return true;
-        },
-        .Optional => |info| {
-            if (std.meta.trait.isTuple(info.child)) {
-                return check(info.child);
-            }
-
-            return false;
-        },
-        else => return T == @Type(.Null),
+        }
+    } else if (!is_with_block(T)) {
+        return false;
     }
+
+    return true;
 }
 
 fn is_with_block(comptime T: type) bool {

@@ -37,7 +37,7 @@ pub const Serializer = struct {
         *Self,
         impl.@"getty.Serializer".Ok,
         impl.@"getty.Serializer".Error,
-        null,
+        getty.ser.default_with,
         impl.@"getty.Serializer".Map,
         impl.@"getty.Serializer".Seq,
         impl.@"getty.Serializer".Structure,

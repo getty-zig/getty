@@ -53,9 +53,33 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/seq.zig");
     pub usingnamespace @import("ser/interface/structure.zig");
     pub usingnamespace @import("ser/interface/tuple.zig");
-};
 
-const default_with = @import("ser/interface/serializer.zig").default_with;
+    pub const default_with = .{
+        // Standard Library
+        @import("ser/with/array_list.zig"),
+        @import("ser/with/hash_map.zig"),
+        @import("ser/with/linked_list.zig"),
+        @import("ser/with/tail_queue.zig"),
+
+        // Primitives
+        @import("ser/with/array.zig"),
+        @import("ser/with/bool.zig"),
+        @import("ser/with/enum.zig"),
+        @import("ser/with/error.zig"),
+        @import("ser/with/float.zig"),
+        @import("ser/with/int.zig"),
+        @import("ser/with/null.zig"),
+        @import("ser/with/optional.zig"),
+        @import("ser/with/pointer.zig"),
+        @import("ser/with/slice.zig"),
+        @import("ser/with/string.zig"),
+        @import("ser/with/struct.zig"),
+        @import("ser/with/tuple.zig"),
+        @import("ser/with/union.zig"),
+        @import("ser/with/vector.zig"),
+        @import("ser/with/void.zig"),
+    };
+};
 
 pub fn serialize(value: anytype, serializer: anytype) blk: {
     const S = @TypeOf(serializer);
@@ -63,24 +87,19 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
     break :blk S.Error!S.Ok;
 } {
     const T = @TypeOf(value);
+    const with = @TypeOf(serializer).with;
 
-    if (@TypeOf(serializer).with) |with| {
-        const With = if (@TypeOf(with) == type) with else @TypeOf(with);
-
-        if (@typeInfo(With).Struct.is_tuple) {
-            inline for (with) |w| {
-                if (comptime w.is(T)) {
-                    return try w.serialize(value, serializer);
-                }
+    if (@TypeOf(with) != @TypeOf(ser.default_with)) {
+        inline for (with) |w| {
+            if (comptime w.is(T)) {
+                return try w.serialize(value, serializer);
             }
-        } else if (comptime with.is(T)) {
-            return try with.serialize(value, serializer);
         }
     }
 
-    inline for (default_with) |with| {
-        if (comptime with.is(T)) {
-            return try with.serialize(value, serializer);
+    inline for (ser.default_with) |w| {
+        if (comptime w.is(T)) {
+            return try w.serialize(value, serializer);
         }
     }
 

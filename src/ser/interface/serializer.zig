@@ -13,7 +13,6 @@ pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
-    //comptime with: ?type,
     comptime with: anytype,
     comptime Map: type,
     comptime Seq: type,
@@ -62,15 +61,8 @@ pub fn Serializer(
 
             /// TODO: description
             ///
-            /// `with` is guaranteed to be an optional.
-            pub const with = switch (@typeInfo(With)) {
-                .Struct => |info| switch (info.is_tuple) {
-                    true => @as(?With, with),
-                    false => @as(?type, with),
-                },
-                .Optional => with,
-                else => @as(?@TypeOf(default_with), null),
-            };
+            /// `with` is guaranteed to be a tuple of with blocks.
+            pub const with = if (@TypeOf(with) == type) std.meta.Tuple(&[_]type{type}){with} else with;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
@@ -150,29 +142,3 @@ pub fn Serializer(
         }
     };
 }
-
-pub const default_with = .{
-    // Standard Library
-    @import("../with/array_list.zig"),
-    @import("../with/hash_map.zig"),
-    @import("../with/linked_list.zig"),
-    @import("../with/tail_queue.zig"),
-
-    // Primitives
-    @import("../with/array.zig"),
-    @import("../with/bool.zig"),
-    @import("../with/enum.zig"),
-    @import("../with/error.zig"),
-    @import("../with/float.zig"),
-    @import("../with/int.zig"),
-    @import("../with/null.zig"),
-    @import("../with/optional.zig"),
-    @import("../with/pointer.zig"),
-    @import("../with/slice.zig"),
-    @import("../with/string.zig"),
-    @import("../with/struct.zig"),
-    @import("../with/tuple.zig"),
-    @import("../with/union.zig"),
-    @import("../with/vector.zig"),
-    @import("../with/void.zig"),
-};
