@@ -65,10 +65,16 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
     const T = @TypeOf(value);
 
     if (@TypeOf(serializer).with) |with| {
-        inline for (with) |w| {
-            if (comptime w.is(T)) {
-                return try w.serialize(value, serializer);
+        const With = if (@TypeOf(with) == type) with else @TypeOf(with);
+
+        if (@typeInfo(With).Struct.is_tuple) {
+            inline for (with) |w| {
+                if (comptime w.is(T)) {
+                    return try w.serialize(value, serializer);
+                }
             }
+        } else if (comptime with.is(T)) {
+            return try with.serialize(value, serializer);
         }
     }
 

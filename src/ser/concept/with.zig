@@ -13,14 +13,14 @@ pub fn @"getty.ser.with"(comptime T: type) void {
 fn check(comptime T: type) bool {
     switch (@typeInfo(T)) {
         .Struct => |info| {
-            if (!info.is_tuple) {
-                return false;
-            }
-
-            inline for (std.meta.declarations(T)) |decl| {
-                if (!is_with_block(@TypeOf(@field(T, decl.name)))) {
-                    return false;
+            if (info.is_tuple) {
+                inline for (std.meta.declarations(T)) |decl| {
+                    if (!is_with_block(@TypeOf(@field(T, decl.name)))) {
+                        return false;
+                    }
                 }
+            } else if (!is_with_block(T)) {
+                return false;
             }
 
             return true;

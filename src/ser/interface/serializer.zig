@@ -40,17 +40,19 @@ pub fn Serializer(
     comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
+    const With = if (@TypeOf(with) == type) with else @TypeOf(with);
+
     comptime {
-        getty.concepts.@"getty.ser.with"(@TypeOf(with));
+        getty.concepts.@"getty.ser.with"(With);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
 
     return struct {
         pub const @"getty.Serializer" = struct {
-            const Self = @This();
-
             context: Context,
+
+            const Self = @This();
 
             /// Successful return type.
             pub const Ok = Ok;
@@ -61,8 +63,11 @@ pub fn Serializer(
             /// TODO: description
             ///
             /// `with` is guaranteed to be an optional.
-            pub const with = switch (@typeInfo(@TypeOf(with))) {
-                .Struct => @as(?@TypeOf(with), with),
+            pub const with = switch (@typeInfo(With)) {
+                .Struct => |info| switch (info.is_tuple) {
+                    true => @as(?With, with),
+                    false => @as(?type, with),
+                },
                 .Optional => with,
                 else => @as(?@TypeOf(default_with), null),
             };
