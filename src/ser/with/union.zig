@@ -6,14 +6,16 @@ pub fn is(comptime T: type) bool {
 }
 
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    switch (@typeInfo(@TypeOf(value))) {
-        .Union => |info| if (info.tag_type) |_| {
-            inline for (info.fields) |field| {
-                if (std.mem.eql(u8, field.name, @tagName(value))) {
-                    return try getty.serialize(@field(value, field.name), serializer);
-                }
+    const T = @TypeOf(value);
+    const info = @typeInfo(T).Union;
+
+    if (info.tag_type) |_| {
+        inline for (info.fields) |field| {
+            if (std.mem.eql(u8, field.name, @tagName(value))) {
+                return try getty.serialize(@field(value, field.name), serializer);
             }
-        } else @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
-        else => @compileError("expected tagged union, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+        }
+    } else {
+        @compileError("type `" ++ @typeName(T) ++ "`" ++ "is not supported");
     }
 }
