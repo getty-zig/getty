@@ -66,19 +66,19 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
 
     if (@TypeOf(serializer).with) |with| {
         inline for (@typeInfo(with).Struct.decls) |decl| {
-            const S = @field(with, decl.name);
+            const block = @field(with, decl.name);
 
-            if (comptime S.is(T)) {
-                return try S.serialize(value, serializer);
+            if (comptime block.is(T)) {
+                return try block.serialize(value, serializer);
             }
         }
     }
 
     inline for (@typeInfo(default_with).Struct.decls) |decl| {
-        const S = @field(default_with, decl.name);
+        const block = @field(default_with, decl.name);
 
-        if (comptime S.is(T)) {
-            return try S.serialize(value, serializer);
+        if (comptime block.is(T)) {
+            return try block.serialize(value, serializer);
         }
     }
 
