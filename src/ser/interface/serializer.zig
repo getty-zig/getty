@@ -39,10 +39,8 @@ pub fn Serializer(
     comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
-    const With = if (@TypeOf(with) == type) with else @TypeOf(with);
-
     comptime {
-        getty.concepts.@"getty.ser.with"(With);
+        getty.concepts.@"getty.ser.with"(with);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -62,7 +60,7 @@ pub fn Serializer(
             /// TODO: description
             ///
             /// `with` is guaranteed to be a tuple of with blocks.
-            pub const with = if (@TypeOf(with) == type) std.meta.Tuple(&[_]type{type}){with} else with;
+            pub const with = if (@TypeOf(with) == type) std.meta.Tuple(&.{type}){with} else with;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
