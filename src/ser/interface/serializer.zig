@@ -60,7 +60,7 @@ pub fn Serializer(
             /// TODO: description
             ///
             /// `with` is guaranteed to be a tuple of with blocks.
-            pub const with = if (@TypeOf(with) == type) std.meta.Tuple(&.{type}){with} else with;
+            pub const with = if (@TypeOf(with) == type) .{with} else with;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
