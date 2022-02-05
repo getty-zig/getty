@@ -49,19 +49,14 @@ pub const Serializer = @import("ser/interface/serializer.zig").Serializer;
 
 /// `ser` namespace
 pub const ser = struct {
-    pub usingnamespace @import("ser/interface/map.zig");
-    pub usingnamespace @import("ser/interface/seq.zig");
-    pub usingnamespace @import("ser/interface/structure.zig");
-    pub usingnamespace @import("ser/interface/tuple.zig");
-
     pub const default_with = .{
-        // Standard Library
+        // std
         @import("ser/with/array_list.zig"),
         @import("ser/with/hash_map.zig"),
         @import("ser/with/linked_list.zig"),
         @import("ser/with/tail_queue.zig"),
 
-        // Primitives
+        // primitives
         @import("ser/with/array.zig"),
         @import("ser/with/bool.zig"),
         @import("ser/with/enum.zig"),
@@ -79,6 +74,11 @@ pub const ser = struct {
         @import("ser/with/vector.zig"),
         @import("ser/with/void.zig"),
     };
+
+    pub usingnamespace @import("ser/interface/map.zig");
+    pub usingnamespace @import("ser/interface/seq.zig");
+    pub usingnamespace @import("ser/interface/structure.zig");
+    pub usingnamespace @import("ser/interface/tuple.zig");
 };
 
 pub fn serialize(value: anytype, serializer: anytype) blk: {

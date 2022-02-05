@@ -3,10 +3,9 @@
 //! Serializers define how to convert from Getty's data model into a data
 //! format.
 
-const std = @import("std");
-
 const concepts = @import("concepts");
 const getty = @import("../../lib.zig");
+const std = @import("std");
 
 /// Returns an anonymously namespaced interface function for serializers.
 pub fn Serializer(
