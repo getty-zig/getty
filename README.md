@@ -11,23 +11,75 @@
   <a href="https://github.com/getty-zig/getty/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
 </p>
 
-<p align="center">A framework for serializing and deserializing Zig data types.</p>
-
 ## Overview
 
 Getty is a serialization and deserialization framework for the Zig programming
 language.
 
-At its core, Getty is composed of two things: a **data model** (a set of
-supported types) and **data format interfaces** (specifications of how to
-convert between data and format). Together, these components enable any
-supported data type to be serialized into any conforming data format, and
-likewise any conforming data format to be deserialized into any data type.
+The main contribution of Getty is its data model, a set of types that
+establishes a generic baseline from which serializers and deserializers can
+operate. By working within Getty's data model, the set of possible
+inputs/outputs for a serializer/deserializer is reduced to a subset of the
+types within the data model. Additionally, any type that is mapped to Getty's
+data model automatically becomes (de)serializable.
 
-By leveraging the powerful compile-time features of Zig, Getty is able to avoid
-the inherent runtime overhead of more traditional serialization methods such as
-reflection. Additionally, `comptime` enables all supported data types to
-automatically become serializable and deserializable.
+Out of the box, Getty maps a number of Zig types to its data model, including
+several types within the standard library (e.g., `std.ArrayList`,
+`std.StringHashMap`). For types that aren't already supported by Getty, custom
+"with blocks" can be provided to specify how a type should be serialized or how
+it can be deserialized into.
+
+## Installation
+
+### Manual
+
+1. Create a new Zig project.
+
+    ```
+    mkdir getty-json
+    cd getty-json
+    zig init-exe
+    ```
+
+2. Install Getty.
+
+    ```
+    git clone https://github.com/getty-zig/getty lib/getty
+    ```
+
+3. Add the following to `build.zig`.
+
+    ```diff
+    const std = @import("std");
+
+    pub fn build(b: *std.build.Builder) void {
+        ...
+
+        const exe = b.addExecutable("getty-json", "src/main.zig");
+        exe.setTarget(target);
+        exe.setBuildMode(mode);
+    +   exe.addPackagePath("getty", "lib/getty/src/lib.zig");
+        exe.install();
+
+        ...
+    }
+    ```
+
+### Gyro
+
+1. Create a new Zig project.
+
+    ```
+    mkdir getty-json
+    cd getty-json
+    zig init-exe
+    ```
+
+2. Install and add Getty to the project.
+
+    ```
+    gyro add -s github getty-zig/getty
+    ```
 
 ## Contributing
 
