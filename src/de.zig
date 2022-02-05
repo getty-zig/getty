@@ -175,7 +175,7 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
         }
 
         if (@TypeOf(de_with) != @TypeOf(de.default_with)) {
-            inline for (user_with) |w| {
+            inline for (de_with) |w| {
                 if (comptime w.is(T)) {
                     break :blk w.visitor(allocator, T);
                 }
@@ -210,7 +210,7 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     }
 
     if (@TypeOf(de_with) != @TypeOf(de.default_with)) {
-        inline for (user_with) |w| {
+        inline for (de_with) |w| {
             if (comptime w.is(T)) {
                 return try w.deserialize(T, deserializer, visitor);
             }
