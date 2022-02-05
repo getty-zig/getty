@@ -14,7 +14,8 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
         const has_field = std.meta.trait.hasField("context")(T);
         const has_decls = std.meta.trait.hasDecls(T, .{
             "Error",
-            "with",
+            "user_with",
+            "de_with",
             "deserializeBool",
             "deserializeEnum",
             "deserializeFloat",

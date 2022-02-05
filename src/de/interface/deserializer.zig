@@ -1,4 +1,4 @@
-const concepts = @import("../../lib.zig").concepts;
+const getty = @import("../../lib.zig");
 
 /// A data format that can deserialize any data type supported by Getty.
 ///
@@ -22,7 +22,8 @@ const concepts = @import("../../lib.zig").concepts;
 pub fn Deserializer(
     comptime Context: type,
     comptime Error: type,
-    comptime with: ?type,
+    comptime user_with: anytype,
+    comptime de_with: anytype,
     comptime deserializeBool: Fn(Context, Error),
     comptime deserializeEnum: Fn(Context, Error),
     comptime deserializeFloat: Fn(Context, Error),
@@ -34,6 +35,13 @@ pub fn Deserializer(
     comptime deserializeStruct: Fn(Context, Error),
     comptime deserializeVoid: Fn(Context, Error),
 ) type {
+    comptime {
+        getty.concepts.@"getty.de.with"(user_with);
+        getty.concepts.@"getty.de.with"(de_with);
+
+        //TODO: Add concept for Error (blocked by concepts library).
+    }
+
     return struct {
         pub const @"getty.Deserializer" = struct {
             context: Context,
@@ -42,7 +50,8 @@ pub fn Deserializer(
 
             pub const Error = Error;
 
-            pub const with = with;
+            pub const user_with = if (@TypeOf(user_with) == type) .{user_with} else user_with;
+            pub const de_with = if (@TypeOf(de_with) == type) .{de_with} else de_with;
 
             pub fn deserializeBool(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeBool(self.context, visitor);
@@ -90,7 +99,7 @@ pub fn Deserializer(
         }
 
         fn Return(comptime Visitor: type) type {
-            comptime concepts.@"getty.de.Visitor"(Visitor);
+            comptime getty.concepts.@"getty.de.Visitor"(Visitor);
 
             return Error!Visitor.Value;
         }

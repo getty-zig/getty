@@ -26,6 +26,28 @@ const getty = @import("lib.zig");
 pub usingnamespace @import("de/interface/deserializer.zig");
 
 pub const de = struct {
+    pub const default_with = .{
+        // std
+        @import("de/with/array_list.zig"),
+        @import("de/with/hash_map.zig"),
+        @import("de/with/linked_list.zig"),
+        @import("de/with/tail_queue.zig"),
+
+        // primitives
+        @import("de/with/array.zig"),
+        @import("de/with/bool.zig"),
+        @import("de/with/enum.zig"),
+        @import("de/with/float.zig"),
+        @import("de/with/int.zig"),
+        @import("de/with/optional.zig"),
+        pointer_with,
+        @import("de/with/slice.zig"),
+        @import("de/with/string.zig"),
+        @import("de/with/struct.zig"),
+        @import("de/with/tuple.zig"),
+        @import("de/with/void.zig"),
+    };
+
     /// Generic error set for `getty.De` implementations.
     pub const Error = std.mem.Allocator.Error || error{
         DuplicateField,
@@ -118,31 +140,52 @@ pub const de = struct {
             else => unreachable,
         }
     }
+
+    const pointer_with = struct {
+        const Visitor = @import("de/impl/visitor/pointer.zig").Visitor;
+        pub fn is(comptime T: type) bool {
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One and comptime !std.meta.trait.isZigString(T);
+        }
+        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
+            return .{ .allocator = allocator.? };
+        }
+        pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+            return try _deserialize(
+                std.meta.Child(T),
+                deserializer,
+                v,
+            );
+        }
+    };
 };
 
 pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
     getty.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
-
     break :blk @TypeOf(deserializer).Error!T;
 } {
-    const Deserializer = @TypeOf(deserializer);
+    const user_with = @TypeOf(deserializer).user_with;
+    const de_with = @TypeOf(deserializer).de_with;
 
     var v = blk: {
-        if (Deserializer.with) |with| {
-            inline for (@typeInfo(with).Struct.decls) |decl| {
-                const D = @field(with, decl.name);
-
-                if (comptime D.is(T)) {
-                    break :blk D.visitor(allocator, T);
+        if (@TypeOf(user_with) != @TypeOf(de.default_with)) {
+            inline for (user_with) |w| {
+                if (comptime w.is(T)) {
+                    break :blk w.visitor(allocator, T);
                 }
             }
         }
 
-        inline for (@typeInfo(default_with).Struct.decls) |decl| {
-            const D = @field(default_with, decl.name);
+        if (@TypeOf(de_with) != @TypeOf(de.default_with)) {
+            inline for (user_with) |w| {
+                if (comptime w.is(T)) {
+                    break :blk w.visitor(allocator, T);
+                }
+            }
+        }
 
-            if (comptime D.is(T)) {
-                break :blk D.visitor(allocator, T);
+        inline for (de.default_with) |w| {
+            if (comptime w.is(T)) {
+                break :blk w.visitor(allocator, T);
             }
         }
 
@@ -154,28 +197,30 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
 
 fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: {
     getty.concepts.@"getty.de.Visitor"(@TypeOf(visitor));
-
     break :blk @TypeOf(deserializer).Error!@TypeOf(visitor).Value;
 } {
-    const Deserializer = @TypeOf(deserializer);
+    const user_with = @TypeOf(deserializer).user_with;
+    const de_with = @TypeOf(deserializer).de_with;
 
-    // Custom
-    if (Deserializer.with) |with| {
-        inline for (@typeInfo(with).Struct.decls) |decl| {
-            const D = @field(with, decl.name);
-
-            if (comptime D.is(T)) {
-                return try D.deserialize(T, deserializer, visitor);
+    if (@TypeOf(user_with) != @TypeOf(de.default_with)) {
+        inline for (user_with) |w| {
+            if (comptime w.is(T)) {
+                return try w.deserialize(T, deserializer, visitor);
             }
         }
     }
 
-    // Default
-    inline for (@typeInfo(default_with).Struct.decls) |decl| {
-        const D = @field(default_with, decl.name);
+    if (@TypeOf(de_with) != @TypeOf(de.default_with)) {
+        inline for (user_with) |w| {
+            if (comptime w.is(T)) {
+                return try w.deserialize(T, deserializer, visitor);
+            }
+        }
+    }
 
-        if (comptime D.is(T)) {
-            return try D.deserialize(T, deserializer, visitor);
+    inline for (de.default_with) |w| {
+        if (comptime w.is(T)) {
+            return try w.deserialize(T, deserializer, visitor);
         }
     }
 
@@ -183,45 +228,3 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     // to this function.
     unreachable;
 }
-
-const default_with = struct {
-    // Standard Library
-    const array_lists = @import("de/with/array_list.zig");
-    const hash_maps = @import("de/with/hash_map.zig");
-    const linked_lists = @import("de/with/linked_list.zig");
-    const tail_queues = @import("de/with/tail_queue.zig");
-
-    // Primitives
-    const arrays = @import("de/with/array.zig");
-    const bools = @import("de/with/bool.zig");
-    const enums = @import("de/with/enum.zig");
-    const floats = @import("de/with/float.zig");
-    const ints = @import("de/with/int.zig");
-    const optionals = @import("de/with/optional.zig");
-    const pointers = pointer_with;
-    const slices = @import("de/with/slice.zig");
-    const strings = @import("de/with/string.zig");
-    const structs = @import("de/with/struct.zig");
-    const tuples = @import("de/with/tuple.zig");
-    const voids = @import("de/with/void.zig");
-};
-
-const pointer_with = struct {
-    const Visitor = @import("de/impl/visitor/pointer.zig").Visitor;
-
-    pub fn is(comptime T: type) bool {
-        return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One and comptime !std.meta.trait.isZigString(T);
-    }
-
-    pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
-        return .{ .allocator = allocator.? };
-    }
-
-    pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-        return try _deserialize(
-            std.meta.Child(T),
-            deserializer,
-            v,
-        );
-    }
-};

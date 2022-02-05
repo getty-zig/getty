@@ -4,37 +4,38 @@ const concepts = @import("concepts");
 
 const concept = "getty.de.with";
 
-pub fn @"getty.de.with"(comptime T: type) void {
+pub fn @"getty.de.with"(comptime with: anytype) void {
     comptime concepts.Concept(concept, "")(.{
-        check(T),
+        check(with),
     });
 }
 
-fn check(comptime T: type) bool {
-    if (!is_namespace(T)) {
+fn check(comptime with: anytype) bool {
+    const T = if (@TypeOf(with) == type) with else @TypeOf(with);
+    const info = @typeInfo(T);
+
+    if (info != .Struct) {
         return false;
     }
 
-    inline for (@typeInfo(T).Struct.decls) |d| {
-        if (!is_block(@field(T, d.name))) {
-            return false;
+    if (info.Struct.is_tuple) {
+        inline for (std.meta.fields(T)) |field| {
+            if (!is_with_block(@field(with, field.name))) {
+                return false;
+            }
         }
+    } else if (!is_with_block(T)) {
+        return false;
     }
 
     return true;
 }
 
-fn is_namespace(comptime T: type) bool {
+fn is_with_block(comptime T: type) bool {
     const info = @typeInfo(T);
 
-    return info == .Struct and info.Struct.fields.len == 0;
-}
-
-fn is_block(comptime T: type) bool {
-    // This is the best we can do without relaxed generic type erasure.
-    return is_namespace(T) and concepts.traits.hasFunctions(T, .{
-        "is",
-        "visitor",
-        "deserialize",
-    });
+    return info == .Struct and
+        !info.Struct.is_tuple and
+        info.Struct.fields.len == 0 and
+        concepts.traits.hasFunctions(T, .{ "is", "visitor", "deserialize" });
 }
