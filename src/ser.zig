@@ -87,16 +87,28 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
     break :blk S.Error!S.Ok;
 } {
     const T = @TypeOf(value);
-    const with = @TypeOf(serializer).with;
+    const user_with = @TypeOf(serializer).user_with;
+    const ser_with = @TypeOf(serializer).ser_with;
 
-    if (@TypeOf(with) != @TypeOf(ser.default_with)) {
-        inline for (with) |w| {
+    // User
+    if (@TypeOf(user_with) != @TypeOf(ser.default_with)) {
+        inline for (user_with) |w| {
             if (comptime w.is(T)) {
                 return try w.serialize(value, serializer);
             }
         }
     }
 
+    // Serializer
+    if (@TypeOf(ser_with) != @TypeOf(ser.default_with)) {
+        inline for (ser_with) |w| {
+            if (comptime w.is(T)) {
+                return try w.serialize(value, serializer);
+            }
+        }
+    }
+
+    // Default
     inline for (ser.default_with) |w| {
         if (comptime w.is(T)) {
             return try w.serialize(value, serializer);

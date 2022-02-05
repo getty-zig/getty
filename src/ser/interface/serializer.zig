@@ -13,7 +13,8 @@ pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
-    comptime with: anytype,
+    comptime user_with: anytype,
+    comptime ser_with: anytype,
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
@@ -40,7 +41,8 @@ pub fn Serializer(
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
     comptime {
-        getty.concepts.@"getty.ser.with"(with);
+        getty.concepts.@"getty.ser.with"(user_with);
+        getty.concepts.@"getty.ser.with"(ser_with);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -58,9 +60,8 @@ pub fn Serializer(
             pub const Error = Error;
 
             /// TODO: description
-            ///
-            /// `with` is guaranteed to be a tuple of with blocks.
-            pub const with = if (@TypeOf(with) == type) .{with} else with;
+            pub const user_with = if (@TypeOf(user_with) == type) .{user_with} else user_with;
+            pub const ser_with = if (@TypeOf(ser_with) == type) .{ser_with} else ser_with;
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
