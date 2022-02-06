@@ -36,6 +36,21 @@
 //! values, and values of any other struct type that is composed of data types
 //! supported by Getty.
 //!
+//! The serialization GDM consists of the following types:
+//!
+//!   1. Boolean
+//!   2. Enum
+//!   3. Float
+//!   4. Integer
+//!   5. Map
+//!   6. Null
+//!   7. Sequence
+//!   8. Some
+//!   9. String
+//!   10. Struct
+//!   11. Tuple
+//!   12. Void
+//!
 //! Serializers
 //! ===========
 //!
@@ -52,8 +67,8 @@
 //!
 //! An SB is a struct namespace containing two functions:
 //!
-//!  - `fn is(comptime T: type) bool`
-//!  - `fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer.Error)!@TypeOf(serializer).Ok`
+//!   - `fn is(comptime T: type) bool`
+//!   - `fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer.Error)!@TypeOf(serializer).Ok`
 //!
 //! `is` specifies which types are serialized by the SB, and `serialize`
 //! defines how to serialize values of those types. For example, the following
