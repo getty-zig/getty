@@ -1,13 +1,106 @@
-//! Serializer interface.
-//!
-//! Serializers define how to convert from Getty's data model into a data
-//! format.
-
 const concepts = @import("concepts");
 const getty = @import("../../lib.zig");
 const std = @import("std");
 
-/// Returns an anonymously namespaced interface function for serializers.
+/// Serializer interface.
+///
+/// Serializers are responsible for the following conversion:
+///
+///              Getty Data Model
+///
+///                     ↓          <-------
+///                                       |
+///                Data Format            |
+///                                       |
+///                                       |
+///                                       |
+///                                       |
+///
+///                               `getty.Serializer`
+///
+/// Note that Zig data is not a part of this conversion. This is important to
+/// understand: serializers only care about values within Getty's data model.
+/// That is, a Getty serializer specifies how to convert a Getty map into a
+/// JSON map, but not how to convert a `struct { x: i32 }` value to a JSON map.
+///
+/// Most types within Getty's data model have the same semantics as their Zig
+/// counterparts. For example, Getty booleans are functionally equivalent to
+/// `bool` values and Getty integers are just regular Zig integers. Do keep in
+/// mind though that there are types that do not have a 1:1 correlation, such
+/// as maps and sequences.
+///
+/// Parameters
+/// ==========
+///
+///     Context
+///     -------
+///
+///         This is the type that implements `getty.Serializer` (or a pointer to it).
+///
+///     Ok
+///     --
+///
+///         The successful return type for a majority of `getty.Serializer`'s methods.
+///
+///     Error
+///     -----
+///
+///         The error set used by all of `getty.Serializer`'s methods upon failure.
+///
+///     user_sbt
+///     --------
+///
+///         A Serialization Block or Tuple.
+///
+///         This parameter is intended for users of a serializer, enabling them
+///         to use their own custom serialization logic.
+///
+///     ser_sbt
+///     -------
+///
+///         A Serialization Block or Tuple.
+///
+///         This parameter is intended for serializers, enabling them to use
+///         their own custom serialization logic.
+///
+///     Map
+///     ---
+///
+///         A type that implements `getty.ser.Map` (or a pointer to it).
+///
+///         The `getty.ser.Map` interface specifies how to serialize the
+///         components of a map and how to finish serialization for a map.
+///
+///     Seq
+///     ---
+///
+///         A type that implements `getty.ser.Seq` (or a pointer to it).
+///
+///         The `getty.ser.Seq` interface specifies how to serialize the
+///         elements of a sequence and how to finish serialization for a
+///         sequence.
+///
+///     Struct
+///     ------
+///
+///         A type that implements `getty.ser.Structure` (or a pointer to it).
+///
+///         The `getty.ser.Structure` interface specifies how to serialize the
+///         fields of a struct (e.g., fields) and how to finish serialization
+///         for a struct.
+///
+///     serializeXXX
+///     ------------
+///
+///         Methods required by `getty.Serializer` to carry out serialization.
+///         Each method encompasses one or more types within the GDM.
+///
+///         Most of the methods are one and done (i.e.,  you call them once and
+///         in return you get a fully serialized value). However, some methods
+///         (specifically, the ones for compound data types like `serializeMap`
+///         and `serializeSeq`), only start the serialization process. The
+///         caller must then continue where the methods left off by using the
+///         returned `getty.ser.Map|Seq|Struct|Tuple` implementation.
 pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
@@ -55,9 +148,10 @@ pub fn Serializer(
             /// Successful return type.
             pub const Ok = Ok;
 
-            /// The error set used upon failure.
+            /// Error set used upon failure.
             pub const Error = Error;
 
+            /// Serialization Tuple associated with the serializer.
             pub const st = blk: {
                 const user_st = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
                 const ser_st = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
