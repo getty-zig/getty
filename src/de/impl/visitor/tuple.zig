@@ -31,22 +31,21 @@ fn @"impl Visitor"(comptime Tuple: type) type {
         pub const visitor = struct {
             pub const Value = Tuple;
 
-            pub fn visitSeq(_: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 var tuple: Value = undefined;
-                // TODO: what is this?
-                //var seen: usize = 0;
+                comptime var seen: usize = 0;
 
-                //errdefer {
-                //comptime var i: usize = 0;
+                errdefer {
+                    comptime var i: usize = 0;
 
-                //if (self.allocator) |allocator| {
-                //if (length > 0) {
-                //inline while (i < seen) : (i += 1) {
-                //getty.de.free(allocator, seq[i]);
-                //}
-                //}
-                //}
-                //}
+                    if (self.allocator) |allocator| {
+                        if (length > 0) {
+                            inline while (i < seen) : (i += 1) {
+                                getty.de.free(allocator, tuple[i]);
+                            }
+                        }
+                    }
+                }
 
                 switch (length) {
                     0 => tuple = .{},
@@ -58,7 +57,9 @@ fn @"impl Visitor"(comptime Tuple: type) type {
                             // compiler bug, so this is a workaround.
                             const value = try seq.nextElement(fields[i].field_type);
                             if (value == null) return error.InvalidLength;
+
                             tuple[i] = value.?;
+                            seen += 1;
                         }
                     },
                 }
