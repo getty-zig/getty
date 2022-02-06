@@ -164,15 +164,7 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
     const with = @TypeOf(deserializer).with;
 
     var v = blk: {
-        if (@TypeOf(with) != @TypeOf(de.default_with)) {
-            inline for (with) |w| {
-                if (comptime w.is(T)) {
-                    break :blk w.visitor(allocator, T);
-                }
-            }
-        }
-
-        inline for (de.default_with) |w| {
+        inline for (with) |w| {
             if (comptime w.is(T)) {
                 break :blk w.visitor(allocator, T);
             }
@@ -190,15 +182,7 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
 } {
     const with = @TypeOf(deserializer).with;
 
-    if (@TypeOf(with) != @TypeOf(de.default_with)) {
-        inline for (with) |w| {
-            if (comptime w.is(T)) {
-                return try w.deserialize(T, deserializer, visitor);
-            }
-        }
-    }
-
-    inline for (de.default_with) |w| {
+    inline for (with) |w| {
         if (comptime w.is(T)) {
             return try w.deserialize(T, deserializer, visitor);
         }

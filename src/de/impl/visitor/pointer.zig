@@ -38,15 +38,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitBool(self: Self, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -64,15 +56,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitEnum(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -90,15 +74,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitFloat(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -116,15 +92,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitInt(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -142,15 +110,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -168,15 +128,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -194,15 +146,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitSequence(self: Self, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -220,15 +164,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -248,15 +184,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 var child_visitor = blk: {
                     const Deserializer = @TypeOf(deserializer);
 
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
@@ -274,15 +202,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
 
             pub fn visitVoid(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
                 var child_visitor = blk: {
-                    if (@TypeOf(Deserializer.with) != @TypeOf(getty.de.default_with)) {
-                        inline for (Deserializer.with) |w| {
-                            if (comptime w.is(Child)) {
-                                break :blk w.visitor(self.allocator, Child);
-                            }
-                        }
-                    }
-
-                    inline for (getty.de.default_with) |w| {
+                    inline for (Deserializer.with) |w| {
                         if (comptime w.is(Child)) {
                             break :blk w.visitor(self.allocator, Child);
                         }
