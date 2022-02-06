@@ -86,34 +86,11 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
     getty.concepts.@"getty.Serializer"(S);
     break :blk S.Error!S.Ok;
 } {
-    const T = @TypeOf(value);
-    const user_with = @TypeOf(serializer).user_with;
-    const ser_with = @TypeOf(serializer).ser_with;
-
-    // User
-    if (@TypeOf(user_with) != @TypeOf(ser.default_with)) {
-        inline for (user_with) |w| {
-            if (comptime w.is(T)) {
-                return try w.serialize(value, serializer);
-            }
-        }
-    }
-
-    // Serializer
-    if (@TypeOf(ser_with) != @TypeOf(ser.default_with)) {
-        inline for (ser_with) |w| {
-            if (comptime w.is(T)) {
-                return try w.serialize(value, serializer);
-            }
-        }
-    }
-
-    // Default
-    inline for (ser.default_with) |w| {
-        if (comptime w.is(T)) {
+    inline for (@TypeOf(serializer).with) |w| {
+        if (comptime w.is(@TypeOf(value))) {
             return try w.serialize(value, serializer);
         }
     }
 
-    @compileError("type `" ++ @typeName(T) ++ "` is not supported");
+    @compileError("type `" ++ @typeName(@TypeOf(value)) ++ "` is not supported");
 }

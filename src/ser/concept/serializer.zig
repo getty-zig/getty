@@ -11,8 +11,7 @@ pub fn @"getty.Serializer"(comptime T: type) void {
         concepts.traits.hasDecls(T, .{
             "Ok",
             "Error",
-            "user_with",
-            "ser_with",
+            "with",
             "serializeBool",
             "serializeEnum",
             "serializeFloat",

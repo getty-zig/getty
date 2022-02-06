@@ -58,9 +58,23 @@ pub fn Serializer(
             /// The error set used upon failure.
             pub const Error = Error;
 
-            /// TODO: description
-            pub const user_with = if (@TypeOf(user_with) == type) .{user_with} else user_with;
-            pub const ser_with = if (@TypeOf(ser_with) == type) .{ser_with} else ser_with;
+            pub const with = blk: {
+                const uwith = if (@TypeOf(user_with) == type) .{user_with} else user_with;
+                const swith = if (@TypeOf(ser_with) == type) .{ser_with} else ser_with;
+                const U = @TypeOf(uwith);
+                const S = @TypeOf(swith);
+                const Default = @TypeOf(getty.de.default_with);
+
+                if (U == Default and S == Default) {
+                    break :blk getty.de.default_with;
+                } else if (U != Default and S == Default) {
+                    break :blk uwith ++ getty.de.default_with;
+                } else if (U == Default and S != Default) {
+                    break :blk swith ++ getty.de.default_with;
+                } else {
+                    break :blk uwith ++ swith ++ getty.de.default_with;
+                }
+            };
 
             /// Serializes a `bool` value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
