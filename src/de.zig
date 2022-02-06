@@ -243,9 +243,9 @@ pub const de = struct {
         comptime {
             getty.concepts.@"getty.Deserializer"(Deserializer);
 
-            inline for (Deserializer.dt) |W| {
-                if (W.is(T)) {
-                    return W;
+            inline for (Deserializer.dt) |db| {
+                if (db.is(T)) {
+                    return db;
                 }
             }
 
