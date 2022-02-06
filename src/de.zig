@@ -1,22 +1,132 @@
 //! Deserialization framework.
 //!
-//! Visually, deserialization within Getty can be represented like so:
+//! Visually, deserialization in Getty can be represented like so:
 //!
-//!                Data Format
+//!                  Zig data
 //!
-//!                     ↓          ←─────────────────────┐
-//!                                                      │
-//!              Getty Data Model                        │
-//!                                                      │
-//!                     ↓          ←──────┐              │
-//!                                       │              │
-//!                  Zig data             │              │
-//!                                       │              │
-//!                                       │
-//!                                       │     `getty.Deserializer`
-//!                                       │
+//!                     ↑          <-----------------------
+//!                                                       |
+//!              Getty Data Model                         |
+//!                                                       |
+//!                     ↑          <-------               |
+//!                                       |               |
+//!                Data Format            |               |
+//!                                       |               |
+//!                                       |
+//!                                       |      Deserialization Block
+//!                                       |
 //!
-//!                            `getty.De` + `getty.de.Visitor`
+//!                               `getty.Deserializer`
+//!
+//! Data Model
+//! ==========
+//!
+//! The Getty Data Model (GDM) is the set of types supported by Getty. The
+//! types within the GDM are purely conceptual; they aren't actual Zig types.
+//! For example, there is no `i32` or `u64` in the GDM. Instead, they are both
+//! considered to be the type: integer.
+//!
+//! By maintaining a data model, Getty establishes a generic baseline from
+//! which deserializers can operate. This often simplifies the job of a
+//! deserializer significantly. For example, Zig considers `struct { x: i32 }`
+//! and `struct { y: bool }` to be different types. However, in Getty they are
+//! both considered to be the same type: struct. This means that if a
+//! deserializer knows how to deserialize into a struct (as defined by the
+//! GDM), then it will be able to deserialize into `struct { x: i32 }` values,
+//! `struct { y: bool }` values, and values of any other struct type that is
+//! composed of data types supported by Getty.
+//!
+//! The deserialization GDM consists of the following types:
+//!
+//!   1. Boolean
+//!   2. Enum
+//!   3. Float
+//!   4. Integer
+//!   5. Map
+//!   6. Optional
+//!   7. Sequence
+//!   8. String
+//!   9. Struct
+//!   10. Void
+//!
+//! Deserializers
+//! =============
+//!
+//! A deserializer is an implementation of the `getty.Deserializer` interface.
+//! They define the conversion process between an input data format (e.g.,
+//! JSON, YAML) and Getty's data model. For example, a JSON deserializer would
+//! be responsible for converting JSON maps into Getty maps.
+//!
+//! Deserialization Blocks
+//! ======================
+//!
+//! Deserialization Blocks (DB) make up the core of custom deserialization in
+//! Getty. DBs define how to deserialize into values of one or more types.
+//!
+//! A DB is a struct namespace containing three functions:
+//!
+//!   1. fn is(comptime T: type) bool
+//!   2. fn deserialize(comptime T: type, deserializer: anytype, visitor: anytype) @TypeOf(deserializer).Error!@TypeOf(visitor).Value
+//!   3. fn visitor(allocator: ?std.mem.Allocator, comptime T: type) ...
+//!
+//! The `is` function specifies which types are deserializable by the DB. The
+//! `deserialize` defines how to deserialize the input data format into Getty's
+//! data model. Finally, the `visitor` function returns an instance of an
+//! implementation of the `getty.de.Visitor` interface, which Getty will use to
+//! produce an actual Zig value.
+//!
+//! For example, the following shows a DB for booleans. With it, you can
+//! deserialize into a `bool` from a JSON boolean or a JSON integer:
+//!
+//! ```zig
+//! const bool_db = struct {
+//!     pub fn is(comptime T: type) bool {
+//!         return T == bool;
+//!     }
+//!
+//!     pub fn deserialize(comptime _: anytype, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+//!         return try deserializer.deserializeBool(v);
+//!     }
+//!
+//!     pub fn visitor(_: ?std.mem.Allocator, comptime _: type) Visitor {
+//!         return .{};
+//!     }
+//!
+//!     const Visitor = struct {
+//!         pub usingnamespace getty.de.Visitor(
+//!             @This(),
+//!             bool,
+//!             visitBool,
+//!             undefined,
+//!             undefined,
+//!             visitInt,
+//!             undefined,
+//!             undefined,
+//!             undefined,
+//!             undefined,
+//!             undefined,
+//!             undefined,
+//!         );
+//!
+//!         pub fn visitBool(_: @This(), comptime _: type, input: bool) !bool {
+//!             return bool;
+//!         }
+//!
+//!         pub fn visitInt(_: @This(), comptime _: type, input: anytype) !bool {
+//!             return input > 0;
+//!         }
+//!     };
+//! };
+//! ```
+//!
+//! Deserialization Tuples
+//! ======================
+//!
+//! DBs can be grouped up into a tuple, known as a Deserialization Tuple (DT).
+//!
+//! Getty provides its own DT for various Zig data types, but users and
+//! deserializers can provide their own through the `getty.Deserializer`
+//! interface.
 
 const std = @import("std");
 
