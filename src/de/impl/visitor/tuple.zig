@@ -31,9 +31,9 @@ fn @"impl Visitor"(comptime Tuple: type) type {
         pub const visitor = struct {
             pub const Value = Tuple;
 
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-                _ = self;
+            pub fn visitSequence(_: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
                 var seq: Value = undefined;
+                // TODO: what is this?
                 //var seen: usize = 0;
 
                 //errdefer {

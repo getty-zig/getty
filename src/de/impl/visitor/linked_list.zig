@@ -30,7 +30,7 @@ fn @"impl Visitor"(comptime LinkedList: type) type {
 
     return struct {
         pub const visitor = struct {
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!LinkedList {
+            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!LinkedList {
                 var list = LinkedList{};
                 errdefer getty.de.free(self.allocator, list);
 

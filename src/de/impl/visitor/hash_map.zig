@@ -32,7 +32,7 @@ fn @"impl Visitor"(comptime HashMap: type) type {
         pub const visitor = struct {
             pub const Value = HashMap;
 
-            pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!HashMap {
+            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!HashMap {
                 var map = if (unmanaged) HashMap{} else HashMap.init(self.allocator);
                 errdefer getty.de.free(self.allocator, map);
 

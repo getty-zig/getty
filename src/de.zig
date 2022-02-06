@@ -42,7 +42,6 @@ pub const de = struct {
         @import("de/with/optional.zig"),
         pointer_with,
         @import("de/with/slice.zig"),
-        @import("de/with/string.zig"),
         @import("de/with/struct.zig"),
         @import("de/with/tuple.zig"),
         @import("de/with/void.zig"),
@@ -145,7 +144,7 @@ pub const de = struct {
         const PointerVisitor = @import("de/impl/visitor/pointer.zig").Visitor;
 
         pub fn is(comptime T: type) bool {
-            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One and comptime !std.meta.trait.isZigString(T);
+            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;
         }
 
         pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) PointerVisitor(T) {

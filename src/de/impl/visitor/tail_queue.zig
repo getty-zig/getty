@@ -32,7 +32,7 @@ fn @"impl Visitor"(comptime TailQueue: type) type {
         pub const visitor = struct {
             pub const Value = TailQueue;
 
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!TailQueue {
+            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!TailQueue {
                 var list = TailQueue{};
                 errdefer getty.de.free(self.allocator, list);
 

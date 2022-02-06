@@ -31,7 +31,7 @@ fn @"impl Visitor"(comptime Array: type) type {
         pub const visitor = struct {
             pub const Value = Array;
 
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
+            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
                 var seq: Value = undefined;
                 var seen: usize = 0;
 

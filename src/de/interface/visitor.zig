@@ -28,7 +28,7 @@ pub fn Visitor(
         }
     }.f),
     comptime visitMap: @TypeOf(struct {
-        fn f(_: Context, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
@@ -38,7 +38,7 @@ pub fn Visitor(
         }
     }.f),
     comptime visitSequence: @TypeOf(struct {
-        fn f(_: Context, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
@@ -103,12 +103,12 @@ pub fn Visitor(
                 return try visitInt(self.context, Deserializer, input);
             }
 
-            pub fn visitMap(self: Self, mapAccess: anytype) blk: {
+            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) blk: {
                 concepts.@"getty.de.MapAccess"(@TypeOf(mapAccess));
 
-                break :blk @TypeOf(mapAccess).Error!Value;
+                break :blk Deserializer.Error!Value;
             } {
-                return try visitMap(self.context, mapAccess);
+                return try visitMap(self.context, Deserializer, mapAccess);
             }
 
             pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
@@ -120,12 +120,12 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `sequenceAccess` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) blk: {
+            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) blk: {
                 concepts.@"getty.de.SequenceAccess"(@TypeOf(sequenceAccess));
 
-                break :blk @TypeOf(sequenceAccess).Error!Value;
+                break :blk Deserializer.Error!Value;
             } {
-                return try visitSequence(self.context, sequenceAccess);
+                return try visitSequence(self.context, Deserializer, sequenceAccess);
             }
 
             pub fn visitSome(self: Self, deserializer: anytype) blk: {

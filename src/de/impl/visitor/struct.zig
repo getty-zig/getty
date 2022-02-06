@@ -33,7 +33,7 @@ fn @"impl Visitor"(comptime Struct: type) type {
         pub const visitor = struct {
             pub const Value = Struct;
 
-            pub fn visitMap(self: Self, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
+            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!Value {
                 const fields = std.meta.fields(Value);
 
                 var map: Value = undefined;

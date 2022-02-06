@@ -167,7 +167,7 @@ const @"impl Deserializer" = struct {
 
         fn visitMap(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
             var m = MapAccess{ .de = self, .len = len, .end = end };
-            var value = visitor.visitMap(m.mapAccess());
+            var value = visitor.visitMap(Deserializer.@"getty.Deserializer", m.mapAccess());
 
             try assertNextToken(self, end);
 
@@ -176,7 +176,10 @@ const @"impl Deserializer" = struct {
 
         fn visitSequence(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
             var s = SeqAccess{ .de = self, .len = len, .end = end };
-            var value = visitor.visitSequence(s.sequenceAccess());
+            var value = visitor.visitSequence(
+                Deserializer.@"getty.Deserializer",
+                s.sequenceAccess(),
+            );
 
             try assertNextToken(self, end);
 

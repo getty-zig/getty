@@ -32,7 +32,7 @@ fn @"impl Visitor"(comptime Slice: type) type {
         pub const visitor = struct {
             pub const Value = Slice;
 
-            pub fn visitSequence(self: Self, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
+            pub fn visitSequence(self: Self, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Value {
                 var list = std.ArrayList(Child).init(self.allocator);
                 errdefer getty.de.free(self.allocator, list);
 

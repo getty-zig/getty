@@ -32,7 +32,7 @@ fn @"impl Visitor"(comptime ArrayList: type) type {
         pub const visitor = struct {
             pub const Value = ArrayList;
 
-            pub fn visitSequence(self: Self, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!ArrayList {
+            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
                 var list = if (unmanaged) ArrayList{} else ArrayList.init(self.allocator);
                 errdefer getty.de.free(self.allocator, list);
 

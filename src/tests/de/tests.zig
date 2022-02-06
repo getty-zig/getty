@@ -150,7 +150,13 @@ test "integer" {
 }
 
 test "string" {
-    try t("abc", &[_]Token{.{ .String = "abc" }});
+    try t("abc", &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .U8 = 'a' },
+        .{ .U8 = 'b' },
+        .{ .U8 = 'c' },
+        .{ .SeqEnd = .{} },
+    });
 
     var arr = [_]u8{ 'a', 'b', 'c' };
     try t(@as([]u8, &arr), &[_]Token{.{ .String = "abc" }});
