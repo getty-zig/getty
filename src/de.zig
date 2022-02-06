@@ -128,15 +128,15 @@
 //! deserializers can provide their own through the `getty.Deserializer`
 //! interface.
 
+const getty = @import("lib.zig");
 const std = @import("std");
 
-const getty = @import("lib.zig");
-
-/// Deserializer interface
+/// Deserializer interface.
 pub usingnamespace @import("de/interface/deserializer.zig");
 
+/// Namespace for deserialization-specific types and functions.
 pub const de = struct {
-    /// Generic error set for `getty.De` implementations.
+    /// Generic error set for `getty.de.Visitor` implementations.
     pub const Error = std.mem.Allocator.Error || error{
         DuplicateField,
         InvalidLength,
@@ -148,14 +148,22 @@ pub const de = struct {
         Unsupported,
     };
 
+    /// Map access and deserialization interface.
     pub usingnamespace @import("de/interface/map.zig");
+
+    /// Deserialization seed interface.
     pub usingnamespace @import("de/interface/seed.zig");
+
+    /// Sequence access and deserialization interface.
     pub usingnamespace @import("de/interface/seq.zig");
+
+    /// Visitor interface.
     pub usingnamespace @import("de/interface/visitor.zig");
 
+    /// Default deserialization seed implementation.
     pub usingnamespace @import("de/impl/seed/default.zig");
 
-    /// Frees resources allocated during deserialization.
+    /// Frees resources allocated during Getty deserialization.
     pub fn free(allocator: std.mem.Allocator, value: anytype) void {
         const T = @TypeOf(value);
         const name = @typeName(T);
@@ -230,6 +238,10 @@ pub const de = struct {
     }
 };
 
+/// The default Deserialization Tuple.
+///
+/// If a user or deserializer DT is provided, the default DT is appended to the
+/// end, thereby taking the lowest priority.
 pub const dt = .{
     // std
     @import("de/with/array_list.zig"),
@@ -265,6 +277,7 @@ pub fn With(comptime Deserializer: type, comptime T: type) type {
     }
 }
 
+/// Deserializes a value from the given Getty deserializer.
 pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
     const D = @TypeOf(deserializer);
 
