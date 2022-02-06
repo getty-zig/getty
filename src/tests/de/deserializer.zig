@@ -62,8 +62,8 @@ pub const Deserializer = struct {
     pub usingnamespace getty.Deserializer(
         *Self,
         impl.deserializer.Error,
-        getty.de.default_with,
-        getty.de.default_with,
+        getty.dwt,
+        getty.dwt,
         impl.deserializer.deserializeBool,
         impl.deserializer.deserializeEnum,
         impl.deserializer.deserializeFloat,

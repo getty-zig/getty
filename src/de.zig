@@ -26,26 +26,6 @@ const getty = @import("lib.zig");
 pub usingnamespace @import("de/interface/deserializer.zig");
 
 pub const de = struct {
-    pub const default_with = .{
-        // std
-        @import("de/with/array_list.zig"),
-        @import("de/with/hash_map.zig"),
-        @import("de/with/linked_list.zig"),
-        @import("de/with/tail_queue.zig"),
-
-        // primitives
-        @import("de/with/array.zig"),
-        @import("de/with/bool.zig"),
-        @import("de/with/enum.zig"),
-        @import("de/with/float.zig"),
-        @import("de/with/int.zig"),
-        @import("de/with/optional.zig"),
-        @import("de/with/pointer.zig"),
-        @import("de/with/slice.zig"),
-        @import("de/with/struct.zig"),
-        @import("de/with/tuple.zig"),
-        @import("de/with/void.zig"),
-    };
 
     /// Generic error set for `getty.De` implementations.
     pub const Error = std.mem.Allocator.Error || error{
@@ -139,6 +119,27 @@ pub const de = struct {
             else => unreachable,
         }
     }
+};
+
+pub const dwt = .{
+    // std
+    @import("de/with/array_list.zig"),
+    @import("de/with/hash_map.zig"),
+    @import("de/with/linked_list.zig"),
+    @import("de/with/tail_queue.zig"),
+
+    // primitives
+    @import("de/with/array.zig"),
+    @import("de/with/bool.zig"),
+    @import("de/with/enum.zig"),
+    @import("de/with/float.zig"),
+    @import("de/with/int.zig"),
+    @import("de/with/optional.zig"),
+    @import("de/with/pointer.zig"),
+    @import("de/with/slice.zig"),
+    @import("de/with/struct.zig"),
+    @import("de/with/tuple.zig"),
+    @import("de/with/void.zig"),
 };
 
 pub fn With(comptime Deserializer: type, comptime T: type) type {

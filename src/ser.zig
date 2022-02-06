@@ -88,36 +88,6 @@ pub const Serializer = @import("ser/interface/serializer.zig").Serializer;
 
 /// Namespace for serialization-specific types and functions.
 pub const ser = struct {
-    /// The default Serialization With Tuple.
-    ///
-    /// If a user or serializer SWT is provided, the default SWT is appended to
-    /// the end, thereby taking the lowest priority.
-    pub const default_with = .{
-        // std
-        @import("ser/with/array_list.zig"),
-        @import("ser/with/hash_map.zig"),
-        @import("ser/with/linked_list.zig"),
-        @import("ser/with/tail_queue.zig"),
-
-        // primitives
-        @import("ser/with/array.zig"),
-        @import("ser/with/bool.zig"),
-        @import("ser/with/enum.zig"),
-        @import("ser/with/error.zig"),
-        @import("ser/with/float.zig"),
-        @import("ser/with/int.zig"),
-        @import("ser/with/null.zig"),
-        @import("ser/with/optional.zig"),
-        @import("ser/with/pointer.zig"),
-        @import("ser/with/slice.zig"),
-        @import("ser/with/string.zig"),
-        @import("ser/with/struct.zig"),
-        @import("ser/with/tuple.zig"),
-        @import("ser/with/union.zig"),
-        @import("ser/with/vector.zig"),
-        @import("ser/with/void.zig"),
-    };
-
     /// Map serialization interface.
     pub usingnamespace @import("ser/interface/map.zig");
 
@@ -129,6 +99,36 @@ pub const ser = struct {
 
     /// Tuple serialization interface.
     pub usingnamespace @import("ser/interface/tuple.zig");
+};
+
+/// The default Serialization With Tuple.
+///
+/// If a user or serializer SWT is provided, the default SWT is appended to
+/// the end, thereby taking the lowest priority.
+pub const swt = .{
+    // std
+    @import("ser/with/array_list.zig"),
+    @import("ser/with/hash_map.zig"),
+    @import("ser/with/linked_list.zig"),
+    @import("ser/with/tail_queue.zig"),
+
+    // primitives
+    @import("ser/with/array.zig"),
+    @import("ser/with/bool.zig"),
+    @import("ser/with/enum.zig"),
+    @import("ser/with/error.zig"),
+    @import("ser/with/float.zig"),
+    @import("ser/with/int.zig"),
+    @import("ser/with/null.zig"),
+    @import("ser/with/optional.zig"),
+    @import("ser/with/pointer.zig"),
+    @import("ser/with/slice.zig"),
+    @import("ser/with/string.zig"),
+    @import("ser/with/struct.zig"),
+    @import("ser/with/tuple.zig"),
+    @import("ser/with/union.zig"),
+    @import("ser/with/vector.zig"),
+    @import("ser/with/void.zig"),
 };
 
 /// Serializes a value into the given Getty serializer.
