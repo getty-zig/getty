@@ -1,4 +1,3 @@
-<p align="center">:zap: <strong>Getty is in early development. Things might break or change!</strong> :zap:</p>
 <br/>
 
 <p align="center">
