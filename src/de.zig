@@ -161,10 +161,8 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
     getty.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
     break :blk @TypeOf(deserializer).Error!T;
 } {
-    const with = @TypeOf(deserializer).with;
-
     var v = blk: {
-        inline for (with) |w| {
+        inline for (@TypeOf(deserializer).with) |w| {
             if (comptime w.is(T)) {
                 break :blk w.visitor(allocator, T);
             }
@@ -180,9 +178,7 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     getty.concepts.@"getty.de.Visitor"(@TypeOf(visitor));
     break :blk @TypeOf(deserializer).Error!@TypeOf(visitor).Value;
 } {
-    const with = @TypeOf(deserializer).with;
-
-    inline for (with) |w| {
+    inline for (@TypeOf(deserializer).with) |w| {
         if (comptime w.is(T)) {
             return try w.deserialize(T, deserializer, visitor);
         }
