@@ -4,16 +4,16 @@
 //!
 //!                  Zig data
 //!
-//!                     ↓          <------------------
-//!                                                  |
-//!              Getty Data Model                    |
-//!                                                  |
-//!                     ↓          <-------          |
-//!                                       |          |
-//!                Data Format            |          |
-//!                                       |          |
+//!                     ↓          <-----------------------
+//!                                                       |
+//!              Getty Data Model                         |
+//!                                                       |
+//!                     ↓          <-------               |
+//!                                       |               |
+//!                Data Format            |               |
+//!                                       |               |
 //!                                       |
-//!                                       |      With Block
+//!                                       |      Serialization Block
 //!                                       |
 //!
 //!                               `getty.Serializer`
@@ -60,7 +60,7 @@
 //! shows an SB for booleans:
 //!
 //! ```zig
-//! const BoolSB = struct {
+//! const bool_sb = struct {
 //!     pub fn is(comptime T: type) bool {
 //!         return T == bool;
 //!     }
