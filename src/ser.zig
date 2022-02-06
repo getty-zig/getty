@@ -67,12 +67,13 @@
 //!
 //! An SB is a struct namespace containing two functions:
 //!
-//!   - `fn is(comptime T: type) bool`
-//!   - `fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer.Error)!@TypeOf(serializer).Ok`
+//!   1. fn is(comptime T: type) bool
+//!   2. fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok
 //!
-//! `is` specifies which types are serialized by the SB, and `serialize`
-//! defines how to serialize values of those types. For example, the following
-//! shows an SB for booleans:
+//! The `is` function specifies which types are serializable by the SB, and the
+//! `serialize` function defines how to serialize values of those types.
+//!
+//! For example, the following shows an SB for booleans:
 //!
 //! ```zig
 //! const bool_sb = struct {
