@@ -2,16 +2,16 @@ const std = @import("std");
 
 const concepts = @import("concepts");
 
-const concept = "getty.ser.with";
+const concept = "getty.ser.sbt";
 
-pub fn @"getty.ser.with"(comptime with: anytype) void {
+pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
     comptime concepts.Concept(concept, "")(.{
-        check(with),
+        check(sbt),
     });
 }
 
-fn check(comptime with: anytype) bool {
-    const T = if (@TypeOf(with) == type) with else @TypeOf(with);
+fn check(comptime sbt: anytype) bool {
+    const T = if (@TypeOf(sbt) == type) sbt else @TypeOf(sbt);
     const info = @typeInfo(T);
 
     if (info != .Struct) {
@@ -20,18 +20,18 @@ fn check(comptime with: anytype) bool {
 
     if (info.Struct.is_tuple) {
         inline for (std.meta.fields(T)) |field| {
-            if (!is_with_block(@field(with, field.name))) {
+            if (!is_sb(@field(sbt, field.name))) {
                 return false;
             }
         }
-    } else if (!is_with_block(T)) {
+    } else if (!is_sb(T)) {
         return false;
     }
 
     return true;
 }
 
-fn is_with_block(comptime T: type) bool {
+fn is_sb(comptime T: type) bool {
     const info = @typeInfo(T);
 
     return info == .Struct and

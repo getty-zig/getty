@@ -156,9 +156,9 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
 } {
     const T = @TypeOf(value);
 
-    inline for (@TypeOf(serializer).with) |w| {
-        if (comptime w.is(T)) {
-            return try w.serialize(value, serializer);
+    inline for (@TypeOf(serializer).st) |sb| {
+        if (comptime sb.is(T)) {
+            return try sb.serialize(value, serializer);
         }
     }
 

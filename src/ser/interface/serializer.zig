@@ -12,8 +12,8 @@ pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
     comptime Error: type,
-    comptime user_with: anytype,
-    comptime ser_with: anytype,
+    comptime user_sbt: anytype,
+    comptime ser_sbt: anytype,
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
@@ -40,8 +40,8 @@ pub fn Serializer(
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
     comptime {
-        getty.concepts.@"getty.ser.with"(user_with);
-        getty.concepts.@"getty.ser.with"(ser_with);
+        getty.concepts.@"getty.ser.sbt"(user_sbt);
+        getty.concepts.@"getty.ser.sbt"(ser_sbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -58,21 +58,23 @@ pub fn Serializer(
             /// The error set used upon failure.
             pub const Error = Error;
 
-            pub const with = blk: {
-                const uwith = if (@TypeOf(user_with) == type) .{user_with} else user_with;
-                const swith = if (@TypeOf(ser_with) == type) .{ser_with} else ser_with;
-                const U = @TypeOf(uwith);
-                const S = @TypeOf(swith);
-                const Default = @TypeOf(getty.default_st);
+            pub const st = blk: {
+                const user_st = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
+                const ser_st = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+                const default = getty.default_st;
+
+                const U = @TypeOf(user_st);
+                const S = @TypeOf(ser_st);
+                const Default = @TypeOf(default);
 
                 if (U == Default and S == Default) {
-                    break :blk getty.default_st;
+                    break :blk default;
                 } else if (U != Default and S == Default) {
-                    break :blk uwith ++ getty.default_st;
+                    break :blk user_st ++ default;
                 } else if (U == Default and S != Default) {
-                    break :blk swith ++ getty.default_st;
+                    break :blk ser_st ++ default;
                 } else {
-                    break :blk uwith ++ swith ++ getty.default_st;
+                    break :blk user_st ++ ser_st ++ default;
                 }
             };
 
