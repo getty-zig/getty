@@ -22,9 +22,7 @@ const @"impl Visitor" = struct {
     pub const visitor = struct {
         pub const Value = bool;
 
-        pub fn visitBool(self: Visitor, comptime Error: type, input: bool) Error!Value {
-            _ = self;
-
+        pub fn visitBool(_: Visitor, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
             return input;
         }
     };

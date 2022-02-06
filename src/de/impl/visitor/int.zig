@@ -29,9 +29,7 @@ fn @"impl Visitor"(comptime Int: type) type {
         pub const visitor = struct {
             pub const Value = Int;
 
-            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
-
+            pub fn visitInt(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return @intCast(Value, input);
             }
         };

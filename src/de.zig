@@ -162,20 +162,11 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
     getty.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
     break :blk @TypeOf(deserializer).Error!T;
 } {
-    const user_with = @TypeOf(deserializer).user_with;
-    const de_with = @TypeOf(deserializer).de_with;
+    const with = @TypeOf(deserializer).with;
 
     var v = blk: {
-        if (@TypeOf(user_with) != @TypeOf(de.default_with)) {
-            inline for (user_with) |w| {
-                if (comptime w.is(T)) {
-                    break :blk w.visitor(allocator, T);
-                }
-            }
-        }
-
-        if (@TypeOf(de_with) != @TypeOf(de.default_with)) {
-            inline for (de_with) |w| {
+        if (@TypeOf(with) != @TypeOf(de.default_with)) {
+            inline for (with) |w| {
                 if (comptime w.is(T)) {
                     break :blk w.visitor(allocator, T);
                 }
@@ -198,19 +189,10 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
     getty.concepts.@"getty.de.Visitor"(@TypeOf(visitor));
     break :blk @TypeOf(deserializer).Error!@TypeOf(visitor).Value;
 } {
-    const user_with = @TypeOf(deserializer).user_with;
-    const de_with = @TypeOf(deserializer).de_with;
+    const with = @TypeOf(deserializer).with;
 
-    if (@TypeOf(user_with) != @TypeOf(de.default_with)) {
-        inline for (user_with) |w| {
-            if (comptime w.is(T)) {
-                return try w.deserialize(T, deserializer, visitor);
-            }
-        }
-    }
-
-    if (@TypeOf(de_with) != @TypeOf(de.default_with)) {
-        inline for (de_with) |w| {
+    if (@TypeOf(with) != @TypeOf(de.default_with)) {
+        inline for (with) |w| {
             if (comptime w.is(T)) {
                 return try w.deserialize(T, deserializer, visitor);
             }

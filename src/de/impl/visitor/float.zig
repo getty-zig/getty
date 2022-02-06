@@ -29,15 +29,11 @@ fn @"impl Visitor"(comptime Float: type) type {
         pub const visitor = struct {
             pub const Value = Float;
 
-            pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
-
+            pub fn visitFloat(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return @floatCast(Value, input);
             }
 
-            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
-
+            pub fn visitInt(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return @intToFloat(Value, input);
             }
         };

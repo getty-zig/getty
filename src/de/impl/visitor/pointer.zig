@@ -46,39 +46,39 @@ fn @"impl Visitor"(comptime Pointer: type) type {
         pub const visitor = struct {
             pub const Value = Pointer;
 
-            pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
+            pub fn visitBool(self: Self, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitBool(Error, input);
+                value.* = try v.visitor().visitBool(Deserializer, input);
                 return value;
             }
 
-            pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitEnum(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitEnum(Error, input);
+                value.* = try v.visitor().visitEnum(Deserializer, input);
                 return value;
             }
 
-            pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitFloat(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitFloat(Error, input);
+                value.* = try v.visitor().visitFloat(Deserializer, input);
                 return value;
             }
 
-            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitInt(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitInt(Error, input);
+                value.* = try v.visitor().visitInt(Deserializer, input);
                 return value;
             }
 
@@ -91,12 +91,12 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 return value;
             }
 
-            pub fn visitNull(self: Self, comptime Error: type) Error!Value {
+            pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitNull(Error);
+                value.* = try v.visitor().visitNull(Deserializer);
                 return value;
             }
 
@@ -109,12 +109,12 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 return value;
             }
 
-            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer self.allocator.destroy(value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitString(Error, input);
+                value.* = try v.visitor().visitString(Deserializer, input);
                 return value;
             }
 
@@ -127,12 +127,12 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 return value;
             }
 
-            pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
+            pub fn visitVoid(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var v = childVisitor(self.allocator);
-                value.* = try v.visitor().visitVoid(Error);
+                value.* = try v.visitor().visitVoid(Deserializer);
                 return value;
             }
 

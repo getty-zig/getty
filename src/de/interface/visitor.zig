@@ -8,79 +8,52 @@ pub fn Visitor(
     comptime Context: type,
     comptime Value: type,
     comptime visitBool: @TypeOf(struct {
-        fn f(self: Context, comptime Error: type, input: bool) Error!Value {
-            _ = self;
-            _ = input;
-
+        fn f(_: Context, comptime Deserializer: type, _: bool) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitEnum: @TypeOf(struct {
-        fn f(self: Context, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
+        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitFloat: @TypeOf(struct {
-        fn f(self: Context, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
+        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitInt: @TypeOf(struct {
-        fn f(self: Context, comptime Error: type, input: anytype) Error!Value {
-            _ = self;
-            _ = input;
-
+        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitMap: @TypeOf(struct {
-        fn f(self: Context, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
-            _ = self;
-            _ = mapAccess;
-
+        fn f(_: Context, mapAccess: anytype) @TypeOf(mapAccess).Error!Value {
             unreachable;
         }
     }.f),
     comptime visitNull: @TypeOf(struct {
-        fn f(self: Context, comptime Error: type) Error!Value {
-            _ = self;
-
+        fn f(_: Context, comptime Deserializer: type) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitSequence: @TypeOf(struct {
-        fn f(self: Context, sequenceAccess: anytype) @TypeOf(sequenceAccess).Error!Value {
-            _ = self;
-            _ = sequenceAccess;
-
+        fn f(_: Context, seqAccess: anytype) @TypeOf(seqAccess).Error!Value {
             unreachable;
         }
     }.f),
     comptime visitString: @TypeOf(struct {
-        fn f(self: Context, comptime E: type, input: anytype) E!Value {
-            _ = self;
-            _ = input;
-
+        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitSome: @TypeOf(struct {
-        fn f(self: Context, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            _ = self;
-
+        fn f(_: Context, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             unreachable;
         }
     }.f),
     comptime visitVoid: @TypeOf(struct {
-        fn f(self: Context, comptime Error: type) Error!Value {
-            _ = self;
-
+        fn f(_: Context, comptime Deserializer: type) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
@@ -93,11 +66,11 @@ pub fn Visitor(
 
             pub const Value = Value;
 
-            pub fn visitBool(self: Self, comptime Error: type, input: bool) Error!Value {
-                return try visitBool(self.context, Error, input);
+            pub fn visitBool(self: Self, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
+                return try visitBool(self.context, Deserializer, input);
             }
 
-            pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitEnum(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Enum, .EnumLiteral => {},
@@ -105,10 +78,10 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitEnum(self.context, Error, input);
+                return try visitEnum(self.context, Deserializer, input);
             }
 
-            pub fn visitFloat(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitFloat(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Float, .ComptimeFloat => {},
@@ -116,10 +89,10 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitFloat(self.context, Error, input);
+                return try visitFloat(self.context, Deserializer, input);
             }
 
-            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitInt(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Int, .ComptimeInt => {},
@@ -127,7 +100,7 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitInt(self.context, Error, input);
+                return try visitInt(self.context, Deserializer, input);
             }
 
             pub fn visitMap(self: Self, mapAccess: anytype) blk: {
@@ -138,8 +111,8 @@ pub fn Visitor(
                 return try visitMap(self.context, mapAccess);
             }
 
-            pub fn visitNull(self: Self, comptime Error: type) Error!Value {
-                return try visitNull(self.context, Error);
+            pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
+                return try visitNull(self.context, Deserializer);
             }
 
             ///
@@ -166,18 +139,18 @@ pub fn Visitor(
             ///
             ///
             /// The visitor is responsible for visiting the entire slice.
-            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     if (!std.meta.trait.isZigString(@TypeOf(input))) {
                         @compileError("expected string, found `" ++ @typeName(@TypeOf(input)) ++ "`");
                     }
                 }
 
-                return try visitString(self.context, Error, input);
+                return try visitString(self.context, Deserializer, input);
             }
 
-            pub fn visitVoid(self: Self, comptime Error: type) Error!Value {
-                return try visitVoid(self.context, Error);
+            pub fn visitVoid(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
+                return try visitVoid(self.context, Deserializer);
             }
         };
 

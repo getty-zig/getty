@@ -68,7 +68,7 @@ fn @"impl Visitor"(comptime Array: type) type {
                 return seq;
             }
 
-            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 defer getty.de.free(self.allocator.?, input);
 
                 if (Child == u8) {

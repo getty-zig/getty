@@ -83,7 +83,7 @@ const @"impl Deserializer" = struct {
 
         pub fn deserializeBool(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             switch (self.nextToken()) {
-                .Bool => |v| return try visitor.visitBool(Error, v),
+                .Bool => |v| return try visitor.visitBool(Deserializer.@"getty.Deserializer", v),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             }
         }
@@ -94,26 +94,26 @@ const @"impl Deserializer" = struct {
 
         pub fn deserializeFloat(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
-                .F16 => |v| try visitor.visitFloat(Error, v),
-                .F32 => |v| try visitor.visitFloat(Error, v),
-                .F64 => |v| try visitor.visitFloat(Error, v),
-                .F128 => |v| try visitor.visitFloat(Error, v),
+                .F16 => |v| try visitor.visitFloat(Deserializer.@"getty.Deserializer", v),
+                .F32 => |v| try visitor.visitFloat(Deserializer.@"getty.Deserializer", v),
+                .F64 => |v| try visitor.visitFloat(Deserializer.@"getty.Deserializer", v),
+                .F128 => |v| try visitor.visitFloat(Deserializer.@"getty.Deserializer", v),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }
 
         pub fn deserializeInt(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
-                .I8 => |v| try visitor.visitInt(Error, v),
-                .I16 => |v| try visitor.visitInt(Error, v),
-                .I32 => |v| try visitor.visitInt(Error, v),
-                .I64 => |v| try visitor.visitInt(Error, v),
-                .I128 => |v| try visitor.visitInt(Error, v),
-                .U8 => |v| try visitor.visitInt(Error, v),
-                .U16 => |v| try visitor.visitInt(Error, v),
-                .U32 => |v| try visitor.visitInt(Error, v),
-                .U64 => |v| try visitor.visitInt(Error, v),
-                .U128 => |v| try visitor.visitInt(Error, v),
+                .I8 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .I16 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .I32 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .I64 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .I128 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .U8 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .U16 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .U32 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .U64 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
+                .U128 => |v| try visitor.visitInt(Deserializer.@"getty.Deserializer", v),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }
@@ -130,11 +130,11 @@ const @"impl Deserializer" = struct {
             switch (self.peekToken()) {
                 .Null => {
                     _ = self.nextToken();
-                    return try visitor.visitNull(Error);
+                    return try visitor.visitNull(Deserializer.@"getty.Deserializer");
                 },
                 .Some => {
                     _ = self.nextToken();
-                    return try visitor.visitSome(Error);
+                    return try visitor.visitSome(Deserializer.@"getty.Deserializer");
                 },
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             }
@@ -150,14 +150,17 @@ const @"impl Deserializer" = struct {
 
         pub fn deserializeString(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             switch (self.nextToken()) {
-                .String => |v| return try visitor.visitString(Error, try self.allocator.dupe(u8, v)),
+                .String => |v| return try visitor.visitString(
+                    Deserializer.@"getty.Deserializer",
+                    try self.allocator.dupe(u8, v),
+                ),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             }
         }
 
         pub fn deserializeVoid(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             switch (self.nextToken()) {
-                .Void => return try visitor.visitVoid(Error),
+                .Void => return try visitor.visitVoid(Deserializer.@"getty.Deserializer"),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             }
         }

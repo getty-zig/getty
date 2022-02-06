@@ -34,9 +34,7 @@ fn @"impl Visitor"(comptime Optional: type) type {
         pub const visitor = struct {
             pub const Value = Optional;
 
-            pub fn visitNull(self: Self, comptime Error: type) Error!Value {
-                _ = self;
-
+            pub fn visitNull(_: Self, comptime Deserializer: type) Deserializer.Error!Value {
                 return null;
             }
 

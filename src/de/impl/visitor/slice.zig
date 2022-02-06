@@ -43,7 +43,7 @@ fn @"impl Visitor"(comptime Slice: type) type {
                 return list.toOwnedSlice();
             }
 
-            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 errdefer getty.de.free(self.allocator, input);
 
                 // TODO: This type check (and InvalidType error) is a temporary

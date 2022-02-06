@@ -32,19 +32,15 @@ fn @"impl Visitor"(comptime Enum: type) type {
         pub const visitor = struct {
             pub const Value = Enum;
 
-            pub fn visitEnum(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
-
+            pub fn visitEnum(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return input;
             }
 
-            pub fn visitInt(self: Self, comptime Error: type, input: anytype) Error!Value {
-                _ = self;
-
+            pub fn visitInt(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return std.meta.intToEnum(Value, input) catch unreachable;
             }
 
-            pub fn visitString(self: Self, comptime Error: type, input: anytype) Error!Value {
+            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 defer getty.de.free(self.allocator.?, input);
                 return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
             }

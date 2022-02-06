@@ -24,9 +24,7 @@ const @"impl Visitor" = struct {
     pub const visitor = struct {
         pub const Value = void;
 
-        pub fn visitVoid(self: Visitor, comptime Error: type) Error!Value {
-            _ = self;
-
+        pub fn visitVoid(_: Visitor, comptime Deserializer: type) Deserializer.Error!Value {
             return {};
         }
     };
