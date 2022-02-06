@@ -109,7 +109,7 @@
 //!         );
 //!
 //!         pub fn visitBool(_: @This(), comptime _: type, input: bool) !bool {
-//!             return bool;
+//!             return input;
 //!         }
 //!
 //!         pub fn visitInt(_: @This(), comptime _: type, input: anytype) !bool {
