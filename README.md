@@ -23,10 +23,9 @@ types in Zig to a subset of the types within the data model.
 
 Any type that is mapped to Getty's data model automatically becomes
 (de)serializable. Out of the box, Getty maps a number of Zig types, including
-several types within the standard library (e.g., `std.ArrayList`,
-`std.StringHashMap`). For types that aren't already supported by Getty, custom
-"with blocks" can be provided to specify how a type should be serialized or how
-it can be deserialized into.
+many standard library types (e.g., `std.ArrayList`, `std.StringHashMap`). For
+types that aren't already supported by Getty, custom "with blocks" can be
+provided to specify how a type can be serialized or deserialized into.
 
 ## Installation
 
