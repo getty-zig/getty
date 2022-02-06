@@ -55,16 +55,16 @@ pub fn Deserializer(
                 const dwith = if (@TypeOf(de_with) == type) .{de_with} else de_with;
                 const U = @TypeOf(uwith);
                 const D = @TypeOf(dwith);
-                const Default = @TypeOf(getty.dwt);
+                const Default = @TypeOf(getty.dt);
 
                 if (U == Default and D == Default) {
-                    break :blk getty.dwt;
+                    break :blk getty.dt;
                 } else if (U != Default and D == Default) {
-                    break :blk uwith ++ getty.dwt;
+                    break :blk uwith ++ getty.dt;
                 } else if (U == Default and D != Default) {
-                    break :blk dwith ++ getty.dwt;
+                    break :blk dwith ++ getty.dt;
                 } else {
-                    break :blk uwith ++ dwith ++ getty.dwt;
+                    break :blk uwith ++ dwith ++ getty.dt;
                 }
             };
 

@@ -26,7 +26,6 @@ const getty = @import("lib.zig");
 pub usingnamespace @import("de/interface/deserializer.zig");
 
 pub const de = struct {
-
     /// Generic error set for `getty.De` implementations.
     pub const Error = std.mem.Allocator.Error || error{
         DuplicateField,
@@ -121,7 +120,7 @@ pub const de = struct {
     }
 };
 
-pub const dwt = .{
+pub const dt = .{
     // std
     @import("de/with/array_list.zig"),
     @import("de/with/hash_map.zig"),
