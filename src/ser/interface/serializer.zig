@@ -63,16 +63,16 @@ pub fn Serializer(
                 const swith = if (@TypeOf(ser_with) == type) .{ser_with} else ser_with;
                 const U = @TypeOf(uwith);
                 const S = @TypeOf(swith);
-                const Default = @TypeOf(getty.st);
+                const Default = @TypeOf(getty.default_st);
 
                 if (U == Default and S == Default) {
-                    break :blk getty.st;
+                    break :blk getty.default_st;
                 } else if (U != Default and S == Default) {
-                    break :blk uwith ++ getty.st;
+                    break :blk uwith ++ getty.default_st;
                 } else if (U == Default and S != Default) {
-                    break :blk swith ++ getty.st;
+                    break :blk swith ++ getty.default_st;
                 } else {
-                    break :blk uwith ++ swith ++ getty.st;
+                    break :blk uwith ++ swith ++ getty.default_st;
                 }
             };
 

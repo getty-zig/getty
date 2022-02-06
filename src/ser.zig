@@ -120,7 +120,7 @@ pub const ser = struct {
 ///
 /// If a user or serializer ST is provided, the default ST is appended to
 /// the end, thereby taking the lowest priority.
-pub const st = .{
+pub const default_st = .{
     // std
     @import("ser/with/array_list.zig"),
     @import("ser/with/hash_map.zig"),
