@@ -1,9 +1,7 @@
+const getty = @import("../../lib.zig");
 const std = @import("std");
 
-const concepts = @import("../../../lib.zig").concepts;
-const DefaultSeed = @import("../../../lib.zig").de.DefaultSeed;
-
-pub fn SequenceAccess(
+pub fn Seq(
     comptime Context: type,
     comptime Error: type,
     comptime nextElementSeed: @TypeOf(struct {
@@ -15,7 +13,7 @@ pub fn SequenceAccess(
     }.f),
 ) type {
     return struct {
-        pub const @"getty.de.SequenceAccess" = struct {
+        pub const @"getty.de.Seq" = struct {
             context: Context,
 
             const Self = @This();
@@ -27,20 +25,20 @@ pub fn SequenceAccess(
             }
 
             pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
-                var seed = DefaultSeed(Value){};
+                var seed = getty.de.DefaultSeed(Value){};
                 const ds = seed.seed();
 
                 return try self.nextElementSeed(ds);
             }
 
             fn Return(comptime Seed: type) type {
-                comptime concepts.@"getty.de.Seed"(Seed);
+                comptime getty.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }
         };
 
-        pub fn sequenceAccess(self: Context) @"getty.de.SequenceAccess" {
+        pub fn seq(self: Context) @"getty.de.Seq" {
             return .{ .context = self };
         }
     };

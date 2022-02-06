@@ -32,11 +32,11 @@ fn @"impl Visitor"(comptime ArrayList: type) type {
         pub const visitor = struct {
             pub const Value = ArrayList;
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 var list = if (unmanaged) ArrayList{} else ArrayList.init(self.allocator);
                 errdefer getty.de.free(self.allocator, list);
 
-                while (try sequenceAccess.nextElement(std.meta.Child(ArrayList.Slice))) |value| {
+                while (try seq.nextElement(std.meta.Child(ArrayList.Slice))) |value| {
                     try if (unmanaged) list.append(self.allocator, value) else list.append(value);
                 }
 

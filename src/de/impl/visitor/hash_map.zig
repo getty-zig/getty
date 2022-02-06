@@ -32,20 +32,20 @@ fn @"impl Visitor"(comptime HashMap: type) type {
         pub const visitor = struct {
             pub const Value = HashMap;
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!HashMap {
-                var map = if (unmanaged) HashMap{} else HashMap.init(self.allocator);
-                errdefer getty.de.free(self.allocator, map);
+            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) Deserializer.Error!HashMap {
+                var hash_map = if (unmanaged) HashMap{} else HashMap.init(self.allocator);
+                errdefer getty.de.free(self.allocator, hash_map);
 
-                while (try mapAccess.nextKey(K)) |key| {
+                while (try map.nextKey(K)) |key| {
                     errdefer getty.de.free(self.allocator, key);
 
-                    const value = try mapAccess.nextValue(V);
+                    const value = try map.nextValue(V);
                     errdefer getty.de.free(self.allocator, value);
 
-                    try if (unmanaged) map.put(self.allocator, key, value) else map.put(key, value);
+                    try if (unmanaged) hash_map.put(self.allocator, key, value) else hash_map.put(key, value);
                 }
 
-                return map;
+                return hash_map;
             }
 
             const unmanaged = std.mem.startsWith(

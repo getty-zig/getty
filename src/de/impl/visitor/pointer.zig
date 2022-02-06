@@ -76,12 +76,12 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 return value;
             }
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!Value {
+            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitMap(Deserializer, mapAccess);
+                value.* = try child_visitor.visitor().visitMap(Deserializer, map);
 
                 return value;
             }
@@ -96,12 +96,12 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 return value;
             }
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
                 var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitSeq(Deserializer, seqAccess);
+                value.* = try child_visitor.visitor().visitSeq(Deserializer, seq);
 
                 return value;
             }

@@ -1,9 +1,7 @@
+const getty = @import("../../lib.zig");
 const std = @import("std");
 
-const concepts = @import("../../../lib.zig").concepts;
-const DefaultSeed = @import("../../../lib.zig").de.DefaultSeed;
-
-pub fn MapAccess(
+pub fn Map(
     comptime Context: type,
     comptime Error: type,
     comptime nextKeySeed: @TypeOf(struct {
@@ -22,7 +20,7 @@ pub fn MapAccess(
     }.f),
 ) type {
     return struct {
-        pub const @"getty.de.MapAccess" = struct {
+        pub const @"getty.de.Map" = struct {
             context: Context,
 
             const Self = @This();
@@ -42,14 +40,14 @@ pub fn MapAccess(
             //}
 
             pub fn nextKey(self: Self, comptime K: type) !?K {
-                var seed = DefaultSeed(K){};
+                var seed = getty.de.DefaultSeed(K){};
                 const ds = seed.seed();
 
                 return try self.nextKeySeed(ds);
             }
 
             pub fn nextValue(self: Self, comptime V: type) !V {
-                var seed = DefaultSeed(V){};
+                var seed = getty.de.DefaultSeed(V){};
                 const ds = seed.seed();
 
                 return try self.nextValueSeed(ds);
@@ -60,19 +58,19 @@ pub fn MapAccess(
             //}
 
             fn KeyReturn(comptime Seed: type) type {
-                comptime concepts.@"getty.de.Seed"(Seed);
+                comptime getty.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }
 
             fn ValueReturn(comptime Seed: type) type {
-                comptime concepts.@"getty.de.Seed"(Seed);
+                comptime getty.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!Seed.Value;
             }
         };
 
-        pub fn mapAccess(self: Context) @"getty.de.MapAccess" {
+        pub fn map(self: Context) @"getty.de.Map" {
             return .{ .context = self };
         }
     };

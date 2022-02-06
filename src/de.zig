@@ -59,9 +59,9 @@ pub const de = struct {
         Unsupported,
     };
 
-    pub usingnamespace @import("de/interface/access/map.zig");
-    pub usingnamespace @import("de/interface/access/sequence.zig");
+    pub usingnamespace @import("de/interface/map.zig");
     pub usingnamespace @import("de/interface/seed.zig");
+    pub usingnamespace @import("de/interface/seq.zig");
     pub usingnamespace @import("de/interface/visitor.zig");
 
     pub usingnamespace @import("de/impl/seed/default.zig");

@@ -103,12 +103,12 @@ pub fn Visitor(
                 return try visitInt(self.context, Deserializer, input);
             }
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) blk: {
-                concepts.@"getty.de.MapAccess"(@TypeOf(mapAccess));
+            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) blk: {
+                concepts.@"getty.de.Map"(@TypeOf(map));
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitMap(self.context, Deserializer, mapAccess);
+                return try visitMap(self.context, Deserializer, map);
             }
 
             pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
@@ -118,14 +118,14 @@ pub fn Visitor(
             ///
             ///
             /// The visitor is responsible for visiting the entire sequence. Note
-            /// that this implies that `sequenceAccess` must be able to identify
+            /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) blk: {
-                concepts.@"getty.de.SequenceAccess"(@TypeOf(sequenceAccess));
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) blk: {
+                concepts.@"getty.de.Seq"(@TypeOf(seq));
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitSeq(self.context, Deserializer, sequenceAccess);
+                return try visitSeq(self.context, Deserializer, seq);
             }
 
             pub fn visitSome(self: Self, deserializer: anytype) blk: {

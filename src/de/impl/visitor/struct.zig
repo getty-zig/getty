@@ -33,23 +33,23 @@ fn @"impl Visitor"(comptime Struct: type) type {
         pub const visitor = struct {
             pub const Value = Struct;
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!Value {
+            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
                 const fields = std.meta.fields(Value);
 
-                var map: Value = undefined;
+                var structure: Value = undefined;
                 var seen = [_]bool{false} ** fields.len;
 
                 errdefer {
                     if (self.allocator) |allocator| {
                         inline for (fields) |field, i| {
                             if (!field.is_comptime and seen[i]) {
-                                getty.de.free(allocator, @field(map, field.name));
+                                getty.de.free(allocator, @field(structure, field.name));
                             }
                         }
                     }
                 }
 
-                while (try mapAccess.nextKey([]const u8)) |key| {
+                while (try map.nextKey([]const u8)) |key| {
                     defer self.allocator.?.free(key);
 
                     var found = false;
@@ -62,7 +62,7 @@ fn @"impl Visitor"(comptime Struct: type) type {
 
                             switch (field.is_comptime) {
                                 true => @compileError("TODO"),
-                                false => @field(map, field.name) = try mapAccess.nextValue(field.field_type),
+                                false => @field(structure, field.name) = try map.nextValue(field.field_type),
                             }
 
                             seen[i] = true;
@@ -80,7 +80,7 @@ fn @"impl Visitor"(comptime Struct: type) type {
                     if (!seen[i]) {
                         if (field.default_value) |default| {
                             if (!field.is_comptime) {
-                                @field(map, field.name) = default;
+                                @field(structure, field.name) = default;
                             }
                         } else {
                             return error.MissingField;
@@ -88,7 +88,7 @@ fn @"impl Visitor"(comptime Struct: type) type {
                     }
                 }
 
-                return map;
+                return structure;
             }
         };
     };

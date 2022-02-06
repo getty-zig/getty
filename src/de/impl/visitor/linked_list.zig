@@ -30,13 +30,13 @@ fn @"impl Visitor"(comptime LinkedList: type) type {
 
     return struct {
         pub const visitor = struct {
-            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!LinkedList {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!LinkedList {
                 var list = LinkedList{};
                 errdefer getty.de.free(self.allocator, list);
 
                 var current: ?*LinkedList.Node = null;
 
-                while (try sequenceAccess.nextElement(LinkedList.Node.Data)) |value| {
+                while (try seq.nextElement(LinkedList.Node.Data)) |value| {
                     var node = try self.allocator.create(LinkedList.Node);
                     node.* = .{ .data = value };
 

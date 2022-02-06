@@ -32,11 +32,11 @@ fn @"impl Visitor"(comptime TailQueue: type) type {
         pub const visitor = struct {
             pub const Value = TailQueue;
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!TailQueue {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!TailQueue {
                 var list = TailQueue{};
                 errdefer getty.de.free(self.allocator, list);
 
-                while (try sequenceAccess.nextElement(Child)) |value| {
+                while (try seq.nextElement(Child)) |value| {
                     var node = try self.allocator.create(TailQueue.Node);
                     node.* = .{ .data = value };
                     list.append(node);

@@ -31,26 +31,26 @@ fn @"impl Visitor"(comptime Array: type) type {
         pub const visitor = struct {
             pub const Value = Array;
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
-                var seq: Value = undefined;
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+                var array: Value = undefined;
                 var seen: usize = 0;
 
                 errdefer {
                     if (self.allocator) |allocator| {
-                        if (seq.len > 0) {
+                        if (array.len > 0) {
                             var i: usize = 0;
 
                             while (i < seen) : (i += 1) {
-                                getty.de.free(allocator, seq[i]);
+                                getty.de.free(allocator, array[i]);
                             }
                         }
                     }
                 }
 
-                switch (seq.len) {
-                    0 => seq = .{},
-                    else => for (seq) |*elem| {
-                        if (try sequenceAccess.nextElement(Child)) |value| {
+                switch (array.len) {
+                    0 => array = .{},
+                    else => for (array) |*elem| {
+                        if (try seq.nextElement(Child)) |value| {
                             elem.* = value;
                             seen += 1;
                         } else {
@@ -61,11 +61,11 @@ fn @"impl Visitor"(comptime Array: type) type {
                 }
 
                 // Expected end of sequence, but found an element.
-                if ((try sequenceAccess.nextElement(Child)) != null) {
+                if ((try seq.nextElement(Child)) != null) {
                     return error.InvalidLength;
                 }
 
-                return seq;
+                return array;
             }
 
             pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {

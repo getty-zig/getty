@@ -31,8 +31,8 @@ fn @"impl Visitor"(comptime Tuple: type) type {
         pub const visitor = struct {
             pub const Value = Tuple;
 
-            pub fn visitSeq(_: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
-                var seq: Value = undefined;
+            pub fn visitSeq(_: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+                var tuple: Value = undefined;
                 // TODO: what is this?
                 //var seen: usize = 0;
 
@@ -49,26 +49,26 @@ fn @"impl Visitor"(comptime Tuple: type) type {
                 //}
 
                 switch (length) {
-                    0 => seq = .{},
+                    0 => tuple = .{},
                     else => {
                         comptime var i: usize = 0;
 
                         inline while (i < length) : (i += 1) {
                             // NOTE: Using an if to unwrap `value` runs into a
                             // compiler bug, so this is a workaround.
-                            const value = try sequenceAccess.nextElement(fields[i].field_type);
+                            const value = try seq.nextElement(fields[i].field_type);
                             if (value == null) return error.InvalidLength;
-                            seq[i] = value.?;
+                            tuple[i] = value.?;
                         }
                     },
                 }
 
                 // Expected end of sequence, but found an element.
-                if ((try sequenceAccess.nextElement(void)) != null) {
+                if ((try seq.nextElement(void)) != null) {
                     return error.InvalidLength;
                 }
 
-                return seq;
+                return tuple;
             }
         };
 

@@ -32,11 +32,11 @@ fn @"impl Visitor"(comptime Slice: type) type {
         pub const visitor = struct {
             pub const Value = Slice;
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 var list = std.ArrayList(Child).init(self.allocator);
                 errdefer getty.de.free(self.allocator, list);
 
-                while (try seqAccess.nextElement(Child)) |elem| {
+                while (try seq.nextElement(Child)) |elem| {
                     try list.append(elem);
                 }
 
@@ -54,9 +54,9 @@ fn @"impl Visitor"(comptime Slice: type) type {
                 // say, a `[]const u32` from that.
                 //
                 // Maybe what we could do is use `visitSeq` and in the JSON
-                // deserializer figure out what to do in the SequenceAccess based
-                // on whether the input is an Array or a String. If this works, do we
-                // even need a `visitString` method?
+                // deserializer figure out what to do in the Seq based on
+                // whether the input is an Array or a String. If this works, do
+                // we even need a `visitString` method?
                 return if (Child == u8) input else error.InvalidType;
             }
 
