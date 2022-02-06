@@ -20,7 +20,7 @@ pub fn @"getty.de.Visitor"(comptime T: type) void {
             "visitInt",
             "visitMap",
             "visitNull",
-            "visitSequence",
+            "visitSeq",
             "visitSome",
             "visitString",
             "visitVoid",

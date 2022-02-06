@@ -17,7 +17,7 @@ pub fn Visitor(comptime TailQueue: type) type {
             undefined,
             undefined,
             undefined,
-            impl.visitor.visitSequence,
+            impl.visitor.visitSeq,
             undefined,
             undefined,
             undefined,
@@ -32,7 +32,7 @@ fn @"impl Visitor"(comptime TailQueue: type) type {
         pub const visitor = struct {
             pub const Value = TailQueue;
 
-            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!TailQueue {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!TailQueue {
                 var list = TailQueue{};
                 errdefer getty.de.free(self.allocator, list);
 

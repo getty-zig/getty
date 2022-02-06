@@ -176,7 +176,7 @@ const @"impl Deserializer" = struct {
 
         fn visitSeq(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
             var s = SeqAccess{ .de = self, .len = len, .end = end };
-            var value = visitor.visitSequence(
+            var value = visitor.visitSeq(
                 Deserializer.@"getty.Deserializer",
                 s.sequenceAccess(),
             );

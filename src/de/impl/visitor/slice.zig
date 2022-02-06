@@ -17,7 +17,7 @@ pub fn Visitor(comptime Slice: type) type {
             undefined,
             undefined,
             undefined,
-            impl.visitor.visitSequence,
+            impl.visitor.visitSeq,
             impl.visitor.visitString,
             undefined,
             undefined,
@@ -32,7 +32,7 @@ fn @"impl Visitor"(comptime Slice: type) type {
         pub const visitor = struct {
             pub const Value = Slice;
 
-            pub fn visitSequence(self: Self, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Value {
                 var list = std.ArrayList(Child).init(self.allocator);
                 errdefer getty.de.free(self.allocator, list);
 
@@ -53,7 +53,7 @@ fn @"impl Visitor"(comptime Slice: type) type {
                 // `TokenStream.slice` returns a `[]const u8` and we can't `dupe` into,
                 // say, a `[]const u32` from that.
                 //
-                // Maybe what we could do is use `visitSequence` and in the JSON
+                // Maybe what we could do is use `visitSeq` and in the JSON
                 // deserializer figure out what to do in the SequenceAccess based
                 // on whether the input is an Array or a String. If this works, do we
                 // even need a `visitString` method?

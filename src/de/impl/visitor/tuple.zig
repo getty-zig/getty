@@ -17,7 +17,7 @@ pub fn Visitor(comptime Tuple: type) type {
             undefined,
             undefined,
             undefined,
-            impl.visitor.visitSequence,
+            impl.visitor.visitSeq,
             undefined,
             undefined,
             undefined,
@@ -31,7 +31,7 @@ fn @"impl Visitor"(comptime Tuple: type) type {
         pub const visitor = struct {
             pub const Value = Tuple;
 
-            pub fn visitSequence(_: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(_: Self, comptime Deserializer: type, sequenceAccess: anytype) Deserializer.Error!Value {
                 var seq: Value = undefined;
                 // TODO: what is this?
                 //var seen: usize = 0;

@@ -37,7 +37,7 @@ pub fn Visitor(
             unreachable;
         }
     }.f),
-    comptime visitSequence: @TypeOf(struct {
+    comptime visitSeq: @TypeOf(struct {
         fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
@@ -120,12 +120,12 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `sequenceAccess` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSequence(self: Self, comptime Deserializer: type, sequenceAccess: anytype) blk: {
+            pub fn visitSeq(self: Self, comptime Deserializer: type, sequenceAccess: anytype) blk: {
                 concepts.@"getty.de.SequenceAccess"(@TypeOf(sequenceAccess));
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitSequence(self.context, Deserializer, sequenceAccess);
+                return try visitSeq(self.context, Deserializer, sequenceAccess);
             }
 
             pub fn visitSome(self: Self, deserializer: anytype) blk: {
