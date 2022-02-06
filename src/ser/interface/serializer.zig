@@ -69,7 +69,7 @@ const std = @import("std");
 ///         A type that implements `getty.ser.Map` (or a pointer to it).
 ///
 ///         The `getty.ser.Map` interface specifies how to serialize the
-///         components of a map and how to finish serialization for a map.
+///         components of a map and how to finish serialization for maps.
 ///
 ///     Seq
 ///     ---
@@ -77,8 +77,8 @@ const std = @import("std");
 ///         A type that implements `getty.ser.Seq` (or a pointer to it).
 ///
 ///         The `getty.ser.Seq` interface specifies how to serialize the
-///         elements of a sequence and how to finish serialization for a
-///         sequence.
+///         elements of a sequence and how to finish serialization for
+///         sequences.
 ///
 ///     Struct
 ///     ------
@@ -87,7 +87,15 @@ const std = @import("std");
 ///
 ///         The `getty.ser.Structure` interface specifies how to serialize the
 ///         fields of a struct (e.g., fields) and how to finish serialization
-///         for a struct.
+///         for structs.
+///
+///     Tuple
+///     -----
+///
+///         A type that implements `getty.ser.Tuple` (or a pointer to it).
+///
+///         The `getty.ser.Tuple` interface specifies how to serialize the
+///         elements of a tuple and how to finish serialization for tuples.
 ///
 ///     serializeXXX
 ///     ------------
