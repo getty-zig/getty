@@ -242,7 +242,7 @@ pub const de = struct {
 ///
 /// If a user or deserializer DT is provided, the default DT is appended to the
 /// end, thereby taking the lowest priority.
-pub const dt = .{
+pub const default_dt = .{
     // std
     @import("de/with/array_list.zig"),
     @import("de/with/hash_map.zig"),
