@@ -70,7 +70,7 @@ pub const Deserializer = struct {
         impl.deserializer.deserializeInt,
         impl.deserializer.deserializeMap,
         impl.deserializer.deserializeOptional,
-        impl.deserializer.deserializeSequence,
+        impl.deserializer.deserializeSeq,
         impl.deserializer.deserializeString,
         impl.deserializer.deserializeMap,
         impl.deserializer.deserializeVoid,
@@ -140,10 +140,10 @@ const @"impl Deserializer" = struct {
             }
         }
 
-        pub fn deserializeSequence(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
+        pub fn deserializeSeq(self: *Deserializer, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
-                .Seq => |v| try visitSequence(self, v.len, .SeqEnd, visitor),
-                .Tuple => |v| try visitSequence(self, v.len, .TupleEnd, visitor),
+                .Seq => |v| try visitSeq(self, v.len, .SeqEnd, visitor),
+                .Tuple => |v| try visitSeq(self, v.len, .TupleEnd, visitor),
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }
@@ -174,7 +174,7 @@ const @"impl Deserializer" = struct {
             return value;
         }
 
-        fn visitSequence(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn visitSeq(self: *Deserializer, len: ?usize, end: Token, visitor: anytype) Error!@TypeOf(visitor).Value {
             var s = SeqAccess{ .de = self, .len = len, .end = end };
             var value = visitor.visitSequence(
                 Deserializer.@"getty.Deserializer",

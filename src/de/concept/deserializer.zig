@@ -21,7 +21,7 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
             "deserializeInt",
             "deserializeMap",
             "deserializeOptional",
-            "deserializeSequence",
+            "deserializeSeq",
             "deserializeString",
             "deserializeStruct",
             "deserializeVoid",

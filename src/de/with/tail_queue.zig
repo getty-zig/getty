@@ -11,5 +11,5 @@ pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
 }
 
 pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-    return try deserializer.deserializeSequence(v);
+    return try deserializer.deserializeSeq(v);
 }

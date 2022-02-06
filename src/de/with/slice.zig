@@ -13,6 +13,6 @@ pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
 pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
     return try switch (comptime std.meta.trait.isZigString(T)) {
         true => deserializer.deserializeString(v),
-        false => deserializer.deserializeSequence(v),
+        false => deserializer.deserializeSeq(v),
     };
 }

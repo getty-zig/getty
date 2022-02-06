@@ -30,7 +30,7 @@ pub fn Deserializer(
     comptime deserializeInt: Fn(Context, Error),
     comptime deserializeMap: Fn(Context, Error),
     comptime deserializeOptional: Fn(Context, Error),
-    comptime deserializeSequence: Fn(Context, Error),
+    comptime deserializeSeq: Fn(Context, Error),
     comptime deserializeString: Fn(Context, Error),
     comptime deserializeStruct: Fn(Context, Error),
     comptime deserializeVoid: Fn(Context, Error),
@@ -92,8 +92,8 @@ pub fn Deserializer(
                 return try deserializeOptional(self.context, visitor);
             }
 
-            pub fn deserializeSequence(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeSequence(self.context, visitor);
+            pub fn deserializeSeq(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeSeq(self.context, visitor);
             }
 
             pub fn deserializeString(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
