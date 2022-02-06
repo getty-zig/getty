@@ -1,6 +1,6 @@
 //! Serialization framework.
 //!
-//! Visually, serialization within Getty can be represented like so:
+//! Visually, serialization in Getty can be represented like so:
 //!
 //!                  Zig data
 //!
@@ -13,42 +13,85 @@
 //!                Data Format            |          |
 //!                                       |          |
 //!                                       |
-//!                                       |     `getty.Ser`
+//!                                       |      With Block
 //!                                       |
 //!
 //!                               `getty.Serializer`
 //!
-//! # Data Model
+//! Data Model
+//! ==========
 //!
-//! The Getty data model is the set of types supported by Getty. The types
-//! within this set are purely conceptual; they aren't actual Zig types. For
-//! example, there is no `i32` or `u64` in Getty's data model. Instead, they
-//! are both considered to be the same type: integer.
+//! The Getty Data Model (GDM) is the set of types supported by Getty. The
+//! types within the GDM are purely conceptual; they aren't actual Zig types.
+//! For example, there is no `i32` or `u64` in the GDM. Instead, they are both
+//! considered to be the type: integer.
 //!
 //! By maintaining a data model, Getty establishes a generic baseline from
-//! which serializers can operate. This can often simplify the job of a
-//! serializer significantly. For example, Zig considers `struct { x: i32 }`
-//! and `struct { y: bool }` to be different types. However, in Getty they are
-//! both considered to be the same type: struct. This means that if a
-//! serializer supports struct (as defined by Getty) serialization, then by
-//! definition it supports serialization for `struct { x: i32 }` values,
-//! `struct { y: bool }` values, and values of any other struct type that is
-//! composed of data types supported by Getty.
+//! which serializers can operate. This often simplifies the job of a
+//! serializer significantly. For example, Zig considers `struct { x: i32 }` and
+//! `struct { y: bool }` to be different types. However, in Getty they are both
+//! considered to be the same type: struct. This means that if a serializer
+//! knows how to serialize a struct (as defined by the GDM), then it will be
+//! able to serialize `struct { x: i32 }` values, `struct { y: bool }` values,
+//! and values of any other struct type that is composed of data types
+//! supported by Getty.
 //!
-//! # Serializers
+//! Serializers
+//! ===========
 //!
-//! A serializer defines the conversion process between Getty's data model and
-//! an output data format. For example, a JSON serializer would specify that
-//! Getty strings should be serialized as `"<INSERT STRING HERE>"`.
+//! A serializer is an implementation of the `getty.Serializer` interface. They
+//! define the conversion process between Getty's data model and an output data
+//! format (e.g., JSON, YAML). For example, a JSON serializer would be
+//! responsible for converting Getty maps into JSON maps.
+//!
+//! Serialization With Blocks
+//! =========================
+//!
+//! Serialization With Blocks (SWB) make up the core of custom serialization in
+//! Getty. SWBs define how to serialize values of one or more types.
+//!
+//! An SWB is a struct namespace containing two functions:
+//!
+//!  - `fn is(comptime T: type) bool`
+//!  - `fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer.Error)!@TypeOf(serializer).Ok`
+//!
+//! `is` specifies which types are serialized by the SWB, and `serialize`
+//! defines how to serialize values of those types. For example, the following
+//! shows an SWB for booleans:
+//!
+//! ```zig
+//! const bool_swb = struct {
+//!     pub fn is(comptime T: type) bool {
+//!         return T == bool;
+//!     }
+//!
+//!     pub fn serialize(value: anytype, serializer: anytype) !@TypeOf(serializer).Ok {
+//!         return try serializer.serializeBool(value);
+//!     }
+//! };
+//! ```
+//!
+//! Serialization With Tuples
+//! =========================
+//!
+//! SWBs can be grouped up into a tuple, known as a Serialization With Tuple
+//! (SWT).
+//!
+//! Getty provides its own SWT for various Zig data types, but users and
+//! serializers can provide their own through the `getty.Serializer` interface.
 
 const getty = @import("lib.zig");
 const std = @import("std");
 
-/// Serializer interface
+/// Serializer interface.
 pub const Serializer = @import("ser/interface/serializer.zig").Serializer;
 
-/// `ser` namespace
+/// Namespace for serialization-specific types and functions.
 pub const ser = struct {
+    /// The default Serialization With Tuple.
+    ///
+    /// If a user or serializer SWT is provided, the default SWT is appended to
+    /// the end, thereby taking the lowest priority.
     pub const default_with = .{
         // std
         @import("ser/with/array_list.zig"),
@@ -75,22 +118,34 @@ pub const ser = struct {
         @import("ser/with/void.zig"),
     };
 
+    /// Map serialization interface.
     pub usingnamespace @import("ser/interface/map.zig");
+
+    /// Sequence serialization interface.
     pub usingnamespace @import("ser/interface/seq.zig");
+
+    /// Struct serialization interface.
     pub usingnamespace @import("ser/interface/structure.zig");
+
+    /// Tuple serialization interface.
     pub usingnamespace @import("ser/interface/tuple.zig");
 };
 
+/// Serializes a value into the given Getty serializer.
 pub fn serialize(value: anytype, serializer: anytype) blk: {
     const S = @TypeOf(serializer);
+
     getty.concepts.@"getty.Serializer"(S);
+
     break :blk S.Error!S.Ok;
 } {
+    const T = @TypeOf(value);
+
     inline for (@TypeOf(serializer).with) |w| {
-        if (comptime w.is(@TypeOf(value))) {
+        if (comptime w.is(T)) {
             return try w.serialize(value, serializer);
         }
     }
 
-    @compileError("type `" ++ @typeName(@TypeOf(value)) ++ "` is not supported");
+    @compileError("type `" ++ @typeName(T) ++ "` is not supported");
 }
