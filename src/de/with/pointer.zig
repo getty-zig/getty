@@ -13,7 +13,7 @@ pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
 
 pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
     const Child = std.meta.Child(T);
-    const With = getty.With(@TypeOf(deserializer), Child);
+    const db = getty.db(@TypeOf(deserializer), Child);
 
-    return try With.deserialize(Child, deserializer, v);
+    return try db.deserialize(Child, deserializer, v);
 }

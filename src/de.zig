@@ -263,7 +263,9 @@ pub const dt = .{
     @import("de/with/void.zig"),
 };
 
-pub fn With(comptime Deserializer: type, comptime T: type) type {
+/// Returns the highest priority Deserialization Block for a type given a
+/// deserializer type.
+pub fn db(comptime Deserializer: type, comptime T: type) type {
     comptime {
         getty.concepts.@"getty.Deserializer"(Deserializer);
 
@@ -285,8 +287,7 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
 
     break :blk D.Error!T;
 } {
-    const W = With(@TypeOf(deserializer), T);
-    var v = W.visitor(allocator, T);
+    var v = db(@TypeOf(deserializer), T).visitor(allocator, T);
 
     return try _deserialize(T, deserializer, v.visitor());
 }
@@ -300,7 +301,5 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
 
     break :blk D.Error!V.Value;
 } {
-    const W = With(@TypeOf(deserializer), T);
-
-    return try W.deserialize(T, deserializer, visitor);
+    return try db(@TypeOf(deserializer), T).deserialize(T, deserializer, visitor);
 }

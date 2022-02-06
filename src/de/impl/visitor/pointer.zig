@@ -40,7 +40,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitBool(Deserializer, input);
 
                 return value;
@@ -50,7 +50,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitEnum(Deserializer, input);
 
                 return value;
@@ -60,7 +60,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitFloat(Deserializer, input);
 
                 return value;
@@ -70,7 +70,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitInt(Deserializer, input);
 
                 return value;
@@ -80,7 +80,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitMap(Deserializer, map);
 
                 return value;
@@ -90,7 +90,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitNull(Deserializer);
 
                 return value;
@@ -100,7 +100,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitSeq(Deserializer, seq);
 
                 return value;
@@ -110,7 +110,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitString(Deserializer, input);
 
                 return value;
@@ -120,7 +120,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(@TypeOf(deserializer), Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(@TypeOf(deserializer), Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitSome(deserializer);
 
                 return value;
@@ -130,7 +130,7 @@ fn @"impl Visitor"(comptime Pointer: type) type {
                 const value = try self.allocator.create(Child);
                 errdefer getty.de.free(self.allocator, value);
 
-                var child_visitor = getty.With(Deserializer, Child).visitor(self.allocator, Child);
+                var child_visitor = getty.db(Deserializer, Child).visitor(self.allocator, Child);
                 value.* = try child_visitor.visitor().visitVoid(Deserializer);
 
                 return value;
