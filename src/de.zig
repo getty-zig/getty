@@ -236,6 +236,22 @@ pub const de = struct {
             else => unreachable,
         }
     }
+
+    /// Returns the highest priority Deserialization Block for a type given a
+    /// deserializer type.
+    pub fn find_db(comptime Deserializer: type, comptime T: type) type {
+        comptime {
+            getty.concepts.@"getty.Deserializer"(Deserializer);
+
+            inline for (Deserializer.with) |W| {
+                if (W.is(T)) {
+                    return W;
+                }
+            }
+
+            @compileError("type ` " ++ @typeName(T) ++ "` is not supported");
+        }
+    }
 };
 
 /// The default Deserialization Tuple.
@@ -263,22 +279,6 @@ pub const default_dt = .{
     @import("de/with/void.zig"),
 };
 
-/// Returns the highest priority Deserialization Block for a type given a
-/// deserializer type.
-pub fn db(comptime Deserializer: type, comptime T: type) type {
-    comptime {
-        getty.concepts.@"getty.Deserializer"(Deserializer);
-
-        inline for (Deserializer.with) |W| {
-            if (W.is(T)) {
-                return W;
-            }
-        }
-
-        @compileError("type ` " ++ @typeName(T) ++ "` is not supported");
-    }
-}
-
 /// Deserializes a value from the given Getty deserializer.
 pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
     const D = @TypeOf(deserializer);
@@ -287,7 +287,8 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
 
     break :blk D.Error!T;
 } {
-    var v = db(@TypeOf(deserializer), T).visitor(allocator, T);
+    const db = de.find_db(@TypeOf(deserializer), T);
+    var v = db.visitor(allocator, T);
 
     return try _deserialize(T, deserializer, v.visitor());
 }
@@ -301,5 +302,7 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
 
     break :blk D.Error!V.Value;
 } {
-    return try db(@TypeOf(deserializer), T).deserialize(T, deserializer, visitor);
+    const db = de.find_db(@TypeOf(deserializer), T);
+
+    return try db.deserialize(T, deserializer, visitor);
 }
