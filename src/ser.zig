@@ -28,12 +28,12 @@
 //!
 //! By maintaining a data model, Getty establishes a generic baseline from
 //! which serializers can operate. This often simplifies the job of a
-//! serializer significantly. For example, Zig considers `struct { x: i32 }` and
-//! `struct { y: bool }` to be different types. However, in Getty they are both
-//! considered to be the same type: struct. This means that if a serializer
-//! knows how to serialize a struct (as defined by the GDM), then it will be
-//! able to serialize `struct { x: i32 }` values, `struct { y: bool }` values,
-//! and values of any other struct type that is composed of data types
+//! serializer significantly. For example, Zig considers `struct { x: i32 }`
+//! and `struct { y: bool }` to be different types. However, in Getty they are
+//! both considered to be the same type: struct. This means that if a
+//! serializer knows how to serialize a struct (as defined by the GDM), then it
+//! will be able to serialize `struct { x: i32 }` values, `struct { y: bool }`
+//! values, and values of any other struct type that is composed of data types
 //! supported by Getty.
 //!
 //! Serializers
@@ -44,23 +44,23 @@
 //! format (e.g., JSON, YAML). For example, a JSON serializer would be
 //! responsible for converting Getty maps into JSON maps.
 //!
-//! Serialization With Blocks
-//! =========================
+//! Serialization Blocks
+//! ====================
 //!
-//! Serialization With Blocks (SWB) make up the core of custom serialization in
-//! Getty. SWBs define how to serialize values of one or more types.
+//! Serialization Blocks (SB) make up the core of custom serialization in
+//! Getty. SBs define how to serialize values of one or more types.
 //!
-//! An SWB is a struct namespace containing two functions:
+//! An SB is a struct namespace containing two functions:
 //!
 //!  - `fn is(comptime T: type) bool`
 //!  - `fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer.Error)!@TypeOf(serializer).Ok`
 //!
-//! `is` specifies which types are serialized by the SWB, and `serialize`
+//! `is` specifies which types are serialized by the SB, and `serialize`
 //! defines how to serialize values of those types. For example, the following
-//! shows an SWB for booleans:
+//! shows an SB for booleans:
 //!
 //! ```zig
-//! const bool_swb = struct {
+//! const BoolSB = struct {
 //!     pub fn is(comptime T: type) bool {
 //!         return T == bool;
 //!     }
@@ -71,13 +71,12 @@
 //! };
 //! ```
 //!
-//! Serialization With Tuples
-//! =========================
+//! Serialization Tuples
+//! ====================
 //!
-//! SWBs can be grouped up into a tuple, known as a Serialization With Tuple
-//! (SWT).
+//! SBs can be grouped up into a tuple, known as a Serialization Tuple (ST).
 //!
-//! Getty provides its own SWT for various Zig data types, but users and
+//! Getty provides its own ST for various Zig data types, but users and
 //! serializers can provide their own through the `getty.Serializer` interface.
 
 const getty = @import("lib.zig");
@@ -101,11 +100,11 @@ pub const ser = struct {
     pub usingnamespace @import("ser/interface/tuple.zig");
 };
 
-/// The default Serialization With Tuple.
+/// The default Serialization Tuple.
 ///
-/// If a user or serializer SWT is provided, the default SWT is appended to
+/// If a user or serializer ST is provided, the default ST is appended to
 /// the end, thereby taking the lowest priority.
-pub const swt = .{
+pub const st = .{
     // std
     @import("ser/with/array_list.zig"),
     @import("ser/with/hash_map.zig"),
