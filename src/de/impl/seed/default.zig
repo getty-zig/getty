@@ -21,13 +21,7 @@ fn @"impl DefaultSeed"(comptime V: type) type {
         pub const seed = struct {
             pub const Value = V;
 
-            pub fn deserialize(
-                self: Self,
-                allocator: ?std.mem.Allocator,
-                deserializer: anytype,
-            ) @TypeOf(deserializer).Error!Value {
-                _ = self;
-
+            pub fn deserialize(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 return try getty.deserialize(allocator, Value, deserializer);
             }
         };

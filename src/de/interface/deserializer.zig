@@ -51,20 +51,21 @@ pub fn Deserializer(
             pub const Error = Error;
 
             pub const with = blk: {
-                //const uwith = if (@TypeOf(user_with) == type) .{user_with} else user_with;
-                //const dwith = if (@TypeOf(de_with) == type) .{de_with} else de_with;
+                const uwith = if (@TypeOf(user_with) == type) .{user_with} else user_with;
+                const dwith = if (@TypeOf(de_with) == type) .{de_with} else de_with;
+                const U = @TypeOf(uwith);
+                const D = @TypeOf(dwith);
+                const Default = @TypeOf(getty.de.default_with);
 
-                //const U = @TypeOf(uwith);
-                //const D = @TypeOf(dwith);
-                //const Default = @TypeOf(getty.de.default_with);
-
-                break :blk getty.de.default_with;
-
-                //if (U == Default and D == Default) break :blk getty.de.default_with;
-                //if (U != Default and D == Default) break :blk uwith;
-                //if (U == Default and D != Default) break :blk dwith;
-
-                //break :blk uwith ++ dwith;
+                if (U == Default and D == Default) {
+                    break :blk getty.de.default_with;
+                } else if (U != Default and D == Default) {
+                    break :blk uwith;
+                } else if (U == Default and D != Default) {
+                    break :blk dwith;
+                } else {
+                    break :blk uwith ++ dwith;
+                }
             };
 
             pub fn deserializeBool(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
