@@ -1,3 +1,4 @@
+const getty = @import("../../lib.zig");
 const std = @import("std");
 
 const Visitor = @import("../impl/visitor/pointer.zig").Visitor;
@@ -12,10 +13,7 @@ pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
 
 pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
     const Child = std.meta.Child(T);
+    const With = getty.With(@TypeOf(deserializer), Child);
 
-    inline for (@TypeOf(deserializer).with) |w| {
-        if (comptime w.is(Child)) {
-            return try w.deserialize(Child, deserializer, v);
-        }
-    }
+    return try With.deserialize(Child, deserializer, v);
 }

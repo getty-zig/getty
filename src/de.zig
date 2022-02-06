@@ -141,34 +141,43 @@ pub const de = struct {
     }
 };
 
-pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
-    getty.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
-    break :blk @TypeOf(deserializer).Error!T;
-} {
-    var v = blk: {
-        inline for (@TypeOf(deserializer).with) |w| {
-            if (comptime w.is(T)) {
-                break :blk w.visitor(allocator, T);
+pub fn With(comptime Deserializer: type, comptime T: type) type {
+    comptime {
+        getty.concepts.@"getty.Deserializer"(Deserializer);
+
+        inline for (Deserializer.with) |W| {
+            if (W.is(T)) {
+                return W;
             }
         }
 
         @compileError("type ` " ++ @typeName(T) ++ "` is not supported");
-    };
+    }
+}
+
+pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
+    const D = @TypeOf(deserializer);
+
+    getty.concepts.@"getty.Deserializer"(D);
+
+    break :blk D.Error!T;
+} {
+    const W = With(@TypeOf(deserializer), T);
+    var v = W.visitor(allocator, T);
 
     return try _deserialize(T, deserializer, v.visitor());
 }
 
 fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: {
-    getty.concepts.@"getty.de.Visitor"(@TypeOf(visitor));
-    break :blk @TypeOf(deserializer).Error!@TypeOf(visitor).Value;
-} {
-    inline for (@TypeOf(deserializer).with) |w| {
-        if (comptime w.is(T)) {
-            return try w.deserialize(T, deserializer, visitor);
-        }
-    }
+    const D = @TypeOf(deserializer);
+    const V = @TypeOf(visitor);
 
-    // UNREACHABLE: `deserialize` ensures that only supported types are passed
-    // to this function.
-    unreachable;
+    getty.concepts.@"getty.Deserializer"(D);
+    getty.concepts.@"getty.de.Visitor"(V);
+
+    break :blk D.Error!V.Value;
+} {
+    const W = With(@TypeOf(deserializer), T);
+
+    return try W.deserialize(T, deserializer, visitor);
 }
