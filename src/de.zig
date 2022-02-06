@@ -40,7 +40,7 @@ pub const de = struct {
         @import("de/with/float.zig"),
         @import("de/with/int.zig"),
         @import("de/with/optional.zig"),
-        pointer_with,
+        @import("de/with/pointer.zig"),
         @import("de/with/slice.zig"),
         @import("de/with/struct.zig"),
         @import("de/with/tuple.zig"),
@@ -139,22 +139,6 @@ pub const de = struct {
             else => unreachable,
         }
     }
-
-    const pointer_with = struct {
-        const PointerVisitor = @import("de/impl/visitor/pointer.zig").Visitor;
-
-        pub fn is(comptime T: type) bool {
-            return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;
-        }
-
-        pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) PointerVisitor(T) {
-            return .{ .allocator = allocator.? };
-        }
-
-        pub fn deserialize(comptime T: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-            return try _deserialize(std.meta.Child(T), deserializer, v);
-        }
-    };
 };
 
 pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
