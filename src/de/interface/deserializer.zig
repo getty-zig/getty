@@ -1,24 +1,71 @@
 const getty = @import("../../lib.zig");
 
-/// A data format that can deserialize any data type supported by Getty.
+/// Deserializer interface.
 ///
-/// This interface is generic over the following:
+/// Deserializers are responsible for the following conversion:
 ///
-///   - An `E` type representing the error set in the return type of
-///     all of `Deserializer`'s required methods.
+///              Getty Data Model
 ///
-/// Data model:
+///                     ▲          <-------
+///                     |                 |
+///                                       |
+///                Data Format            |
+///                                       |
+///                                       |
+///                                       |
+///                                       |
 ///
-///   - bool
-///   - enum
-///   - float
-///   - int
-///   - map
-///   - optional
-///   - sequence
-///   - string
-///   - struct
-///   - void
+///                               `getty.Deserializer`
+///
+/// Notice how Zig data is not a part of this conversion. Deserializers only
+/// convert into values that fall under Getty's data model. In other words, a
+/// Getty deserializer specifies how to convert a JSON map into Getty map, not
+/// how to convert a JSON map into a `struct { x: i32 }`.
+///
+/// Parameters
+/// ==========
+///
+///     Context
+///     -------
+///
+///         This is the type that implements `getty.Deserializer` (or a pointer to it).
+///
+///     Error
+///     -----
+///
+///         The error set used by all of `getty.Deserializer`'s methods upon failure.
+///
+///     user_dbt
+///     --------
+///
+///         A Deserialization Block or Tuple.
+///
+///         This parameter is intended for users of a deserializer, enabling
+///         them to use their own custom deserialization logic.
+///
+///     de_dbt
+///     -------
+///
+///         A Deserialization Block or Tuple.
+///
+///         This parameter is intended for deserializers, enabling them to use
+///         their own custom deserialization logic.
+///
+///     deserializeXXX
+///     --------------
+///
+///         Methods required by `getty.Deserializer` to carry out
+///         deserialization.
+///
+///         Each method converts data from an input data format into Getty's
+///         data model. This is done by calling a method on the `visitor`
+///         parameter, which is a `getty.de.Visitor` interface value. For
+///         example, the `deserializeInt` method of a typical JSON deserializer
+///         would parse an integer from the input data and then map it to
+///         Getty's data model by passing the integer value to the visitor
+///         parameter's `visitInt` method. The visitor would then produce a Zig
+///         integer or whatever other value it wants from the Getty integer on
+///         its own.
 pub fn Deserializer(
     comptime Context: type,
     comptime Error: type,

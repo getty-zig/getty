@@ -94,14 +94,13 @@ const std = @import("std");
 ///     ------------
 ///
 ///         Methods required by `getty.Serializer` to carry out serialization.
-///         Each method encompasses one or more types within the GDM.
 ///
-///         Most of the methods are one and done (i.e.,  you call them once and
+///         Most of the methods are one and done (i.e., you call them once and
 ///         in return you get a fully serialized value). However, some methods
 ///         (specifically, the ones for compound data types like `serializeMap`
-///         and `serializeSeq`), only start the serialization process. The
-///         caller must then continue where the methods left off by using the
-///         returned `getty.ser.Map|Seq|Struct` implementation.
+///         and `serializeSeq`), only begin the serialization process. The
+///         caller must then continue serialization by using the returned
+///         `getty.ser.Map|Seq|Struct` implementation.
 pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
