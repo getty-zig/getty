@@ -18,14 +18,16 @@ language.
 The main contribution of Getty is its data model, a set of types that
 establishes a generic baseline from which serializers and deserializers can
 operate. By working within Getty's data model, the set of possible
-inputs/outputs for a serializer/deserializer is reduced from all possible
-types in Zig to a subset of the types within the data model.
+inputs/outputs for a serializer/deserializer is reduced from all possible types
+in Zig to a subset of the types within the data model. The result is that
+compliant (de)serializers are significantly simpler, support a wider variety of
+types by default, and are more easily extensible.
 
 Any type that is mapped to Getty's data model automatically becomes
-(de)serializable. Out of the box, Getty maps a number of Zig types, including
-many standard library types (e.g., `std.ArrayList`, `std.StringHashMap`). For
-types that aren't already supported by Getty, custom "with blocks" can be
-provided to specify how a type can be serialized or deserialized into.
+(de)serializable. Out of the box, Getty maps a number of common types,
+including many from the standard library. For types that are not already
+supported by Getty, custom blocks can be provided to specify how a type can be
+serialized or deserialized into.
 
 ## Installation
 
