@@ -31,9 +31,6 @@ pub const Token = union(enum) {
     Seq: struct { len: ?usize },
     SeqEnd,
 
-    Tuple: struct { len: usize },
-    TupleEnd,
-
     Map: struct { len: ?usize },
     MapEnd,
 

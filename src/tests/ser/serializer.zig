@@ -42,7 +42,6 @@ pub const Serializer = struct {
         impl.@"getty.Serializer".Map,
         impl.@"getty.Serializer".Seq,
         impl.@"getty.Serializer".Structure,
-        impl.@"getty.Serializer".Tuple,
         impl.@"getty.Serializer".serializeBool,
         impl.@"getty.Serializer".serializeEnum,
         impl.@"getty.Serializer".serializeFloat,
@@ -53,7 +52,6 @@ pub const Serializer = struct {
         impl.@"getty.Serializer".serializeSome,
         impl.@"getty.Serializer".serializeString,
         impl.@"getty.Serializer".serializeStruct,
-        impl.@"getty.Serializer".serializeTuple,
         impl.@"getty.Serializer".serializeVoid,
     );
 
@@ -74,14 +72,6 @@ pub const Serializer = struct {
         impl.@"getty.ser.Seq".end,
     );
 
-    pub usingnamespace getty.ser.Tuple(
-        *Self,
-        impl.@"getty.ser.Tuple".Ok,
-        impl.@"getty.ser.Tuple".Error,
-        impl.@"getty.ser.Tuple".serializeElement,
-        impl.@"getty.ser.Tuple".end,
-    );
-
     pub usingnamespace getty.ser.Structure(
         *Self,
         impl.@"getty.ser.Structure".Ok,
@@ -99,7 +89,6 @@ const @"impl Serializer" = struct {
         pub const Map = *Serializer;
         pub const Seq = *Serializer;
         pub const Structure = *Serializer;
-        pub const Tuple = *Serializer;
 
         pub fn serializeBool(self: *Serializer, v: bool) Error!Ok {
             try assertNextToken(self, Token{ .Bool = v });
@@ -186,11 +175,6 @@ const @"impl Serializer" = struct {
             return self;
         }
 
-        pub fn serializeTuple(self: *Serializer, length: ?usize) Error!Tuple {
-            try assertNextToken(self, Token{ .Tuple = .{ .len = length.? } });
-            return self;
-        }
-
         pub fn serializeVoid(self: *Serializer) Error!Ok {
             try assertNextToken(self, Token{ .Void = {} });
         }
@@ -240,19 +224,6 @@ const @"impl Serializer" = struct {
         }
     };
 
-    pub const @"getty.ser.Tuple" = struct {
-        pub const Ok = @"getty.Serializer".Ok;
-        pub const Error = @"getty.Serializer".Error;
-
-        pub fn serializeElement(self: *Serializer, value: anytype) Error!void {
-            try getty.serialize(value, self.serializer());
-        }
-
-        pub fn end(self: *Serializer) Error!Ok {
-            try assertNextToken(self, Token{ .TupleEnd = {} });
-        }
-    };
-
     fn assertNextToken(ser: *Serializer, expected: Token) !void {
         if (ser.nextTokenOpt()) |token| {
             const token_tag = std.meta.activeTag(token);
@@ -294,8 +265,6 @@ const @"impl Serializer" = struct {
                         try expectEqual(t.len, e.len);
                     },
                     .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
-                    .Tuple => try expectEqual(@field(token, "Tuple"), @field(expected, "Tuple")),
-                    .TupleEnd => try expectEqual(@field(token, "TupleEnd"), @field(expected, "TupleEnd")),
                     .U8 => try expectEqual(@field(token, "U8"), @field(expected, "U8")),
                     .U16 => try expectEqual(@field(token, "U16"), @field(expected, "U16")),
                     .U32 => try expectEqual(@field(token, "U32"), @field(expected, "U32")),

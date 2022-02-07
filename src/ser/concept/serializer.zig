@@ -22,7 +22,6 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             "serializeSome",
             "serializeString",
             "serializeStruct",
-            "serializeTuple",
             "serializeVoid",
         }),
     });

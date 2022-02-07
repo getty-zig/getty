@@ -196,15 +196,15 @@ test "struct" {
 
 test "tuple" {
     try t(std.meta.Tuple(&[_]type{}){}, &[_]Token{
-        .{ .Tuple = .{ .len = 0 } },
-        .{ .TupleEnd = .{} },
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
     });
 
     try t(std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 }, &[_]Token{
-        .{ .Tuple = .{ .len = 2 } },
+        .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .U32 = 2 },
-        .{ .TupleEnd = .{} },
+        .{ .SeqEnd = .{} },
     });
 
     try t(std.meta.Tuple(&[_]type{}){}, &[_]Token{
@@ -224,20 +224,20 @@ test "tuple" {
         std.meta.Tuple(&[_]type{ i32, i32 }),
         std.meta.Tuple(&[_]type{ i32, i32 }),
     }){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } }, &[_]Token{
-        .{ .Tuple = .{ .len = 3 } },
-        .{ .Tuple = .{ .len = 2 } },
+        .{ .Seq = .{ .len = 3 } },
+        .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },
-        .{ .TupleEnd = .{} },
-        .{ .Tuple = .{ .len = 2 } },
+        .{ .SeqEnd = .{} },
+        .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 3 },
         .{ .I32 = 4 },
-        .{ .TupleEnd = .{} },
-        .{ .Tuple = .{ .len = 2 } },
+        .{ .SeqEnd = .{} },
+        .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 5 },
         .{ .I32 = 6 },
-        .{ .TupleEnd = .{} },
-        .{ .TupleEnd = .{} },
+        .{ .SeqEnd = .{} },
+        .{ .SeqEnd = .{} },
     });
 }
 

@@ -343,22 +343,22 @@ test "tail queue" {
 
 test "tuple" {
     try t(.{}, &[_]Token{
-        .{ .Tuple = .{ .len = 0 } },
-        .{ .TupleEnd = .{} },
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = .{} },
     });
 
     try t(std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &[_]Token{
-        .{ .Tuple = .{ .len = 2 } },
+        .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .Bool = true },
-        .{ .TupleEnd = .{} },
+        .{ .SeqEnd = .{} },
     });
 
     try t(.{ @as(i32, 1), true }, &[_]Token{
-        .{ .Tuple = .{ .len = 2 } },
+        .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .Bool = true },
-        .{ .TupleEnd = .{} },
+        .{ .SeqEnd = .{} },
     });
 }
 

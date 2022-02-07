@@ -90,14 +90,6 @@ const std = @import("std");
 ///         fields of a struct (e.g., fields) and how to finish serialization
 ///         for structs.
 ///
-///     Tuple
-///     -----
-///
-///         A type that implements `getty.ser.Tuple` (or a pointer to it).
-///
-///         The `getty.ser.Tuple` interface specifies how to serialize the
-///         elements of a tuple and how to finish serialization for tuples.
-///
 ///     serializeXXX
 ///     ------------
 ///
@@ -109,7 +101,7 @@ const std = @import("std");
 ///         (specifically, the ones for compound data types like `serializeMap`
 ///         and `serializeSeq`), only start the serialization process. The
 ///         caller must then continue where the methods left off by using the
-///         returned `getty.ser.Map|Seq|Struct|Tuple` implementation.
+///         returned `getty.ser.Map|Seq|Struct` implementation.
 pub fn Serializer(
     comptime Context: type,
     comptime Ok: type,
@@ -119,7 +111,6 @@ pub fn Serializer(
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
-    comptime Tuple: type,
     comptime serializeBool: fn (Context, bool) Error!Ok,
     comptime serializeEnum: fn (Context, anytype) Error!Ok,
     comptime serializeFloat: fn (Context, anytype) Error!Ok,
@@ -138,7 +129,6 @@ pub fn Serializer(
             unreachable;
         }
     }.f),
-    comptime serializeTuple: fn (Context, ?usize) Error!Tuple,
     comptime serializeVoid: fn (Context) Error!Ok,
 ) type {
     comptime {
@@ -241,11 +231,6 @@ pub fn Serializer(
             /// Starts the serialization process for a struct.
             pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
                 return try serializeStruct(self.context, name, length);
-            }
-
-            /// Starts the serialization process for a tuple.
-            pub fn serializeTuple(self: Self, length: ?usize) Error!Tuple {
-                return try serializeTuple(self.context, length);
             }
 
             /// Serializes a `void` value.

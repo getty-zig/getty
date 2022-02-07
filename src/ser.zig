@@ -50,8 +50,7 @@
 //!   8. Some
 //!   9. String
 //!   10. Struct
-//!   11. Tuple
-//!   12. Void
+//!   11. Void
 //!
 //! Serializers
 //! ===========
@@ -113,9 +112,6 @@ pub const ser = struct {
 
     /// Struct serialization interface.
     pub usingnamespace @import("ser/interface/structure.zig");
-
-    /// Tuple serialization interface.
-    pub usingnamespace @import("ser/interface/tuple.zig");
 };
 
 /// The default Serialization Tuple.
