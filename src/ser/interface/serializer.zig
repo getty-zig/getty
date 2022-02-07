@@ -8,7 +8,8 @@ const std = @import("std");
 ///
 ///              Getty Data Model
 ///
-///                     ↓          <-------
+///                     |          <-------
+///                     ▼                 |
 ///                                       |
 ///                Data Format            |
 ///                                       |
