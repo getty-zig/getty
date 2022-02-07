@@ -36,22 +36,16 @@ const ser = @import("../../../lib.zig").ser;
 ///
 ///         A method that serializes an element of a sequence.
 ///
-///         Callers of `getty.Serializer`'s `serializeSeq` method are expected
-///         to use this function to serialize the elements of a sequence.
-///
 ///     end
 ///     ---
 ///
 ///         A method that ends the serialization of a sequence.
 ///
-///         Callers of `getty.Serializer`'s `serializeSeq` method are expected
-///         to use this function to end the serialization of a sequence.
-///
 /// Examples
 /// ========
 ///
 /// ```zig
-/// const array_sb = struct {
+/// const seq_sb = struct {
 ///     pub fn is(comptime T: type) bool {
 ///         return T == [3]i32;
 ///     }
