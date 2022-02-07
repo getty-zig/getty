@@ -19,10 +19,10 @@ const std = @import("std");
 ///
 ///                               `getty.Serializer`
 ///
-/// Note that Zig data is not a part of this conversion. This is important to
-/// understand: serializers only care about values within Getty's data model.
-/// That is, a Getty serializer specifies how to convert a Getty map into a
-/// JSON map, but not how to convert a `struct { x: i32 }` value to a JSON map.
+/// Notice how Zig data is not a part of this conversion. Serializers only
+/// convert values that fall under Getty's data model. In other words, a Getty
+/// serializer specifies how to convert a Getty map into a JSON map, not how to
+/// convert a `struct { x: i32 }` to a JSON map.
 ///
 /// Most types within Getty's data model have the same semantics as their Zig
 /// counterparts. For example, Getty booleans are functionally equivalent to
