@@ -1,15 +1,20 @@
 const std = @import("std");
 
-const Visitor = @import("../impl/visitor/enum.zig").Visitor;
+const EnumVisitor = @import("../impl/visitor/enum.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Enum;
 }
 
-pub fn visitor(comptime T: type) Visitor(T) {
-    return .{};
+pub fn Visitor(comptime T: type) type {
+    return EnumVisitor(T);
 }
 
-pub fn deserialize(allocator: ?std.mem.Allocator, comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-    return try deserializer.deserializeEnum(allocator, v);
+pub fn deserialize(
+    allocator: ?std.mem.Allocator,
+    comptime _: type,
+    deserializer: anytype,
+    visitor: anytype,
+) !@TypeOf(visitor).Value {
+    return try deserializer.deserializeEnum(allocator, visitor);
 }

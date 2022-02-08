@@ -38,5 +38,5 @@ fn is_db(comptime T: type) bool {
     return info == .Struct and
         !info.Struct.is_tuple and
         info.Struct.fields.len == 0 and
-        concepts.traits.hasFunctions(T, .{ "is", "visitor", "deserialize" });
+        concepts.traits.hasFunctions(T, .{ "is", "deserialize", "Visitor" });
 }

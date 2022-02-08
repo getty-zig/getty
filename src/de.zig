@@ -290,7 +290,7 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
     break :blk D.Error!T;
 } {
     const db = de.find_db(@TypeOf(deserializer), T);
-    var v = db.visitor(T);
+    var v = db.Visitor(T){};
 
     return try _deserialize(allocator, T, deserializer, v.visitor());
 }

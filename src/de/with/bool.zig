@@ -1,15 +1,20 @@
 const std = @import("std");
 
-const Visitor = @import("../impl/visitor/bool.zig");
+const BoolVisitor = @import("../impl/visitor/bool.zig");
 
 pub fn is(comptime T: type) bool {
     return T == bool;
 }
 
-pub fn visitor(comptime _: type) Visitor {
-    return .{};
+pub fn Visitor(comptime _: type) type {
+    return BoolVisitor;
 }
 
-pub fn deserialize(allocator: ?std.mem.Allocator, comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-    return try deserializer.deserializeBool(allocator, v);
+pub fn deserialize(
+    allocator: ?std.mem.Allocator,
+    comptime _: type,
+    deserializer: anytype,
+    visitor: anytype,
+) !@TypeOf(visitor).Value {
+    return try deserializer.deserializeBool(allocator, visitor);
 }

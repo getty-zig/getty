@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Visitor = @import("../impl/visitor/float.zig").Visitor;
+const FloatVisitor = @import("../impl/visitor/float.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return switch (@typeInfo(T)) {
@@ -9,10 +9,15 @@ pub fn is(comptime T: type) bool {
     };
 }
 
-pub fn visitor(comptime T: type) Visitor(T) {
-    return .{};
+pub fn Visitor(comptime T: type) type {
+    return FloatVisitor(T);
 }
 
-pub fn deserialize(allocator: ?std.mem.Allocator, comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-    return try deserializer.deserializeFloat(allocator, v);
+pub fn deserialize(
+    allocator: ?std.mem.Allocator,
+    comptime _: type,
+    deserializer: anytype,
+    visitor: anytype,
+) !@TypeOf(visitor).Value {
+    return try deserializer.deserializeFloat(allocator, visitor);
 }
