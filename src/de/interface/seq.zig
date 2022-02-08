@@ -5,9 +5,7 @@ pub fn Seq(
     comptime Context: type,
     comptime Error: type,
     comptime nextElementSeed: @TypeOf(struct {
-        fn f(c: Context, seed: anytype) Error!?@TypeOf(seed).Value {
-            _ = c;
-
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
             unreachable;
         }
     }.f),
@@ -20,15 +18,15 @@ pub fn Seq(
 
             pub const Error = Error;
 
-            pub fn nextElementSeed(self: Self, seed: anytype) Return(@TypeOf(seed)) {
-                return try nextElementSeed(self.context, seed);
+            pub fn nextElementSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(@TypeOf(seed)) {
+                return try nextElementSeed(self.context, allocator, seed);
             }
 
-            pub fn nextElement(self: Self, comptime Value: type) Error!?Value {
+            pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {
                 var seed = getty.de.DefaultSeed(Value){};
                 const ds = seed.seed();
 
-                return try self.nextElementSeed(ds);
+                return try self.nextElementSeed(allocator, ds);
             }
 
             fn Return(comptime Seed: type) type {

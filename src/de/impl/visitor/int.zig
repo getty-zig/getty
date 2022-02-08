@@ -1,4 +1,5 @@
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 pub fn Visitor(comptime Int: type) type {
     return struct {
@@ -29,7 +30,7 @@ fn @"impl Visitor"(comptime Int: type) type {
         pub const visitor = struct {
             pub const Value = Int;
 
-            pub fn visitInt(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return @intCast(Value, input);
             }
         };

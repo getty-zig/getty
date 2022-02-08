@@ -1,4 +1,5 @@
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 const Visitor = @This();
 const impl = @"impl Visitor";
@@ -22,7 +23,7 @@ const @"impl Visitor" = struct {
     pub const visitor = struct {
         pub const Value = bool;
 
-        pub fn visitBool(_: Visitor, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
+        pub fn visitBool(_: Visitor, _: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
             return input;
         }
     };

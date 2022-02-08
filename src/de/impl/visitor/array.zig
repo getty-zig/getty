@@ -1,10 +1,8 @@
-const std = @import("std");
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 pub fn Visitor(comptime Array: type) type {
     return struct {
-        allocator: ?std.mem.Allocator = null,
-
         const Self = @This();
         const impl = @"impl Visitor"(Array);
 
@@ -24,6 +22,7 @@ pub fn Visitor(comptime Array: type) type {
         );
     };
 }
+
 fn @"impl Visitor"(comptime Array: type) type {
     const Self = Visitor(Array);
 
@@ -31,17 +30,17 @@ fn @"impl Visitor"(comptime Array: type) type {
         pub const visitor = struct {
             pub const Value = Array;
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 var array: Value = undefined;
                 var seen: usize = 0;
 
                 errdefer {
-                    if (self.allocator) |allocator| {
+                    if (allocator) |alloc| {
                         if (array.len > 0) {
                             var i: usize = 0;
 
                             while (i < seen) : (i += 1) {
-                                getty.de.free(allocator, array[i]);
+                                getty.de.free(alloc, array[i]);
                             }
                         }
                     }
@@ -50,7 +49,7 @@ fn @"impl Visitor"(comptime Array: type) type {
                 switch (array.len) {
                     0 => array = .{},
                     else => for (array) |*elem| {
-                        if (try seq.nextElement(Child)) |value| {
+                        if (try seq.nextElement(allocator, Child)) |value| {
                             elem.* = value;
                             seen += 1;
                         } else {
@@ -61,15 +60,15 @@ fn @"impl Visitor"(comptime Array: type) type {
                 }
 
                 // Expected end of sequence, but found an element.
-                if ((try seq.nextElement(Child)) != null) {
+                if ((try seq.nextElement(allocator, Child)) != null) {
                     return error.InvalidLength;
                 }
 
                 return array;
             }
 
-            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                defer getty.de.free(self.allocator.?, input);
+            pub fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                defer getty.de.free(allocator.?, input);
 
                 if (Child == u8) {
                     var string: Value = undefined;

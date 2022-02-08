@@ -1,5 +1,5 @@
-const std = @import("std");
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 pub fn Visitor(comptime Pointer: type) type {
     if (@typeInfo(Pointer) != .Pointer or @typeInfo(Pointer).Pointer.size != .One) {
@@ -7,8 +7,6 @@ pub fn Visitor(comptime Pointer: type) type {
     }
 
     return struct {
-        allocator: std.mem.Allocator,
-
         const Self = @This();
         const impl = @"impl Visitor"(Pointer);
 
@@ -36,102 +34,102 @@ fn @"impl Visitor"(comptime Pointer: type) type {
         pub const visitor = struct {
             pub const Value = Pointer;
 
-            pub fn visitBool(self: Self, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
+            pub fn visitBool(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
 
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitBool(Deserializer, input);
-
-                return value;
-            }
-
-            pub fn visitEnum(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
-
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitEnum(Deserializer, input);
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitBool(allocator, Deserializer, input);
 
                 return value;
             }
 
-            pub fn visitFloat(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
+            pub fn visitEnum(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
 
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitFloat(Deserializer, input);
-
-                return value;
-            }
-
-            pub fn visitInt(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
-
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitInt(Deserializer, input);
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitEnum(allocator, Deserializer, input);
 
                 return value;
             }
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
+            pub fn visitFloat(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
 
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitMap(Deserializer, map);
-
-                return value;
-            }
-
-            pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
-
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitNull(Deserializer);
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitFloat(allocator, Deserializer, input);
 
                 return value;
             }
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
+            pub fn visitInt(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
 
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitSeq(Deserializer, seq);
-
-                return value;
-            }
-
-            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
-
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitString(Deserializer, input);
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitInt(allocator, Deserializer, input);
 
                 return value;
             }
 
-            pub fn visitSome(self: Self, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
+            pub fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
 
-                var child_visitor = getty.de.find_db(@TypeOf(deserializer), Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitSome(deserializer);
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitMap(allocator, Deserializer, map);
 
                 return value;
             }
 
-            pub fn visitVoid(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
-                const value = try self.allocator.create(Child);
-                errdefer getty.de.free(self.allocator, value);
+            pub fn visitNull(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
 
-                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(self.allocator, Child);
-                value.* = try child_visitor.visitor().visitVoid(Deserializer);
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitNull(allocator, Deserializer);
+
+                return value;
+            }
+
+            pub fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
+
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitSeq(allocator, Deserializer, seq);
+
+                return value;
+            }
+
+            pub fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
+
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitString(allocator, Deserializer, input);
+
+                return value;
+            }
+
+            pub fn visitSome(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
+
+                var child_visitor = getty.de.find_db(@TypeOf(deserializer), Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitSome(allocator, deserializer);
+
+                return value;
+            }
+
+            pub fn visitVoid(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+                const value = try allocator.?.create(Child);
+                errdefer getty.de.free(allocator.?, value);
+
+                var child_visitor = getty.de.find_db(Deserializer, Child).visitor(Child);
+                value.* = try child_visitor.visitor().visitVoid(allocator, Deserializer);
 
                 return value;
             }

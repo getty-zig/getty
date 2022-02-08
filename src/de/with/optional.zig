@@ -6,10 +6,10 @@ pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Optional;
 }
 
-pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
-    return .{ .allocator = allocator };
+pub fn visitor(comptime T: type) Visitor(T) {
+    return .{};
 }
 
-pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-    return try deserializer.deserializeOptional(v);
+pub fn deserialize(allocator: ?std.mem.Allocator, comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+    return try deserializer.deserializeOptional(allocator, v);
 }

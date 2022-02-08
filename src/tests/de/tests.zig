@@ -107,7 +107,7 @@ test "array list" {
 
         // Test manually since the `t` function cannot recursively test
         // user-defined containers containers without ugly hacks.
-        var d = Deserializer.init(allocator, tokens);
+        var d = Deserializer.init(tokens);
         const v = getty.deserialize(allocator, Parent, d.deserializer()) catch return error.TestUnexpectedError;
         defer getty.de.free(allocator, v);
 
@@ -250,7 +250,7 @@ test "void" {
 fn t(expected: anytype, tokens: []const Token) !void {
     const T = @TypeOf(expected);
 
-    var d = Deserializer.init(allocator, tokens);
+    var d = Deserializer.init(tokens);
     const v = getty.deserialize(allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
     defer getty.de.free(allocator, v);
 

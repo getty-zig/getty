@@ -6,10 +6,10 @@ pub fn is(comptime T: type) bool {
     return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
 }
 
-pub fn visitor(allocator: ?std.mem.Allocator, comptime T: type) Visitor(T) {
-    return .{ .allocator = allocator.? };
+pub fn visitor(comptime T: type) Visitor(T) {
+    return .{};
 }
 
-pub fn deserialize(comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-    return try deserializer.deserializeSeq(v);
+pub fn deserialize(allocator: ?std.mem.Allocator, comptime _: type, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
+    return try deserializer.deserializeSeq(allocator, v);
 }

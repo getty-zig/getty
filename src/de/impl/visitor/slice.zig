@@ -1,10 +1,8 @@
-const std = @import("std");
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 pub fn Visitor(comptime Slice: type) type {
     return struct {
-        allocator: std.mem.Allocator,
-
         const Self = @This();
         const impl = @"impl Visitor"(Slice);
 
@@ -32,19 +30,19 @@ fn @"impl Visitor"(comptime Slice: type) type {
         pub const visitor = struct {
             pub const Value = Slice;
 
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-                var list = std.ArrayList(Child).init(self.allocator);
-                errdefer getty.de.free(self.allocator, list);
+            pub fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+                var list = std.ArrayList(Child).init(allocator.?);
+                errdefer getty.de.free(allocator.?, list);
 
-                while (try seq.nextElement(Child)) |elem| {
+                while (try seq.nextElement(allocator, Child)) |elem| {
                     try list.append(elem);
                 }
 
                 return list.toOwnedSlice();
             }
 
-            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                errdefer getty.de.free(self.allocator, input);
+            pub fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                errdefer getty.de.free(allocator.?, input);
 
                 // TODO: This type check (and InvalidType error) is a temporary
                 // workaround for the case where the child type of `Value` isn't a

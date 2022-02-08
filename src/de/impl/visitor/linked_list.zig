@@ -1,10 +1,8 @@
-const std = @import("std");
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 pub fn Visitor(comptime LinkedList: type) type {
     return struct {
-        allocator: std.mem.Allocator,
-
         const Self = @This();
         const impl = @"impl Visitor"(LinkedList);
 
@@ -30,14 +28,14 @@ fn @"impl Visitor"(comptime LinkedList: type) type {
 
     return struct {
         pub const visitor = struct {
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) Deserializer.Error!LinkedList {
+            pub fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!LinkedList {
                 var list = LinkedList{};
-                errdefer getty.de.free(self.allocator, list);
+                errdefer getty.de.free(allocator.?, list);
 
                 var current: ?*LinkedList.Node = null;
 
-                while (try seq.nextElement(LinkedList.Node.Data)) |value| {
-                    var node = try self.allocator.create(LinkedList.Node);
+                while (try seq.nextElement(allocator, LinkedList.Node.Data)) |value| {
+                    var node = try allocator.?.create(LinkedList.Node);
                     node.* = .{ .data = value };
 
                     if (current) |c| {

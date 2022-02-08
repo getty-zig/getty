@@ -1,10 +1,8 @@
-const std = @import("std");
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 pub fn Visitor(comptime Enum: type) type {
     return struct {
-        allocator: ?std.mem.Allocator = null,
-
         const Self = @This();
         const impl = @"impl Visitor"(Enum);
 
@@ -32,16 +30,16 @@ fn @"impl Visitor"(comptime Enum: type) type {
         pub const visitor = struct {
             pub const Value = Enum;
 
-            pub fn visitEnum(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitEnum(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return input;
             }
 
-            pub fn visitInt(_: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 return std.meta.intToEnum(Value, input) catch unreachable;
             }
 
-            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                defer getty.de.free(self.allocator.?, input);
+            pub fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+                defer getty.de.free(allocator.?, input);
                 return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
             }
         };

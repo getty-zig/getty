@@ -1,4 +1,5 @@
 const getty = @import("../../lib.zig");
+const std = @import("std");
 
 /// Deserializer interface.
 ///
@@ -117,44 +118,44 @@ pub fn Deserializer(
                 }
             };
 
-            pub fn deserializeBool(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeBool(self.context, visitor);
+            pub fn deserializeBool(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeBool(self.context, allocator, visitor);
             }
 
-            pub fn deserializeEnum(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeEnum(self.context, visitor);
+            pub fn deserializeEnum(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeEnum(self.context, allocator, visitor);
             }
 
-            pub fn deserializeFloat(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeFloat(self.context, visitor);
+            pub fn deserializeFloat(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeFloat(self.context, allocator, visitor);
             }
 
-            pub fn deserializeInt(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeInt(self.context, visitor);
+            pub fn deserializeInt(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeInt(self.context, allocator, visitor);
             }
 
-            pub fn deserializeMap(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeMap(self.context, visitor);
+            pub fn deserializeMap(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeMap(self.context, allocator, visitor);
             }
 
-            pub fn deserializeOptional(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeOptional(self.context, visitor);
+            pub fn deserializeOptional(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeOptional(self.context, allocator, visitor);
             }
 
-            pub fn deserializeSeq(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeSeq(self.context, visitor);
+            pub fn deserializeSeq(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeSeq(self.context, allocator, visitor);
             }
 
-            pub fn deserializeString(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeString(self.context, visitor);
+            pub fn deserializeString(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeString(self.context, allocator, visitor);
             }
 
-            pub fn deserializeStruct(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeStruct(self.context, visitor);
+            pub fn deserializeStruct(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeStruct(self.context, allocator, visitor);
             }
 
-            pub fn deserializeVoid(self: Self, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeVoid(self.context, visitor);
+            pub fn deserializeVoid(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeVoid(self.context, allocator, visitor);
             }
         };
 
@@ -172,7 +173,7 @@ pub fn Deserializer(
 
 fn Fn(comptime Context: type, comptime Error: type) type {
     const S = struct {
-        fn f(_: Context, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn f(_: Context, _: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             unreachable;
         }
     };

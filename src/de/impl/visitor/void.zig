@@ -1,4 +1,5 @@
 const getty = @import("../../../lib.zig");
+const std = @import("std");
 
 const Visitor = @This();
 const impl = @"impl Visitor";
@@ -24,7 +25,7 @@ const @"impl Visitor" = struct {
     pub const visitor = struct {
         pub const Value = void;
 
-        pub fn visitVoid(_: Visitor, comptime Deserializer: type) Deserializer.Error!Value {
+        pub fn visitVoid(_: Visitor, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
             return {};
         }
     };

@@ -290,12 +290,12 @@ pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer
     break :blk D.Error!T;
 } {
     const db = de.find_db(@TypeOf(deserializer), T);
-    var v = db.visitor(allocator, T);
+    var v = db.visitor(T);
 
-    return try _deserialize(T, deserializer, v.visitor());
+    return try _deserialize(allocator, T, deserializer, v.visitor());
 }
 
-fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: {
+fn _deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype, visitor: anytype) blk: {
     const D = @TypeOf(deserializer);
     const V = @TypeOf(visitor);
 
@@ -306,5 +306,5 @@ fn _deserialize(comptime T: type, deserializer: anytype, visitor: anytype) blk: 
 } {
     const db = de.find_db(@TypeOf(deserializer), T);
 
-    return try db.deserialize(T, deserializer, visitor);
+    return try db.deserialize(allocator, T, deserializer, visitor);
 }

@@ -8,52 +8,52 @@ pub fn Visitor(
     comptime Context: type,
     comptime Value: type,
     comptime visitBool: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: bool) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitEnum: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitFloat: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitInt: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitMap: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitNull: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitSeq: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitString: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
     comptime visitSome: @TypeOf(struct {
-        fn f(_: Context, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             unreachable;
         }
     }.f),
     comptime visitVoid: @TypeOf(struct {
-        fn f(_: Context, comptime Deserializer: type) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
@@ -66,11 +66,11 @@ pub fn Visitor(
 
             pub const Value = Value;
 
-            pub fn visitBool(self: Self, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
-                return try visitBool(self.context, Deserializer, input);
+            pub fn visitBool(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
+                return try visitBool(self.context, allocator, Deserializer, input);
             }
 
-            pub fn visitEnum(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitEnum(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Enum, .EnumLiteral => {},
@@ -78,10 +78,10 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitEnum(self.context, Deserializer, input);
+                return try visitEnum(self.context, allocator, Deserializer, input);
             }
 
-            pub fn visitFloat(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitFloat(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Float, .ComptimeFloat => {},
@@ -89,10 +89,10 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitFloat(self.context, Deserializer, input);
+                return try visitFloat(self.context, allocator, Deserializer, input);
             }
 
-            pub fn visitInt(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitInt(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Int, .ComptimeInt => {},
@@ -100,19 +100,19 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitInt(self.context, Deserializer, input);
+                return try visitInt(self.context, allocator, Deserializer, input);
             }
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) blk: {
+            pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
                 concepts.@"getty.de.Map"(@TypeOf(map));
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitMap(self.context, Deserializer, map);
+                return try visitMap(self.context, allocator, Deserializer, map);
             }
 
-            pub fn visitNull(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
-                return try visitNull(self.context, Deserializer);
+            pub fn visitNull(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+                return try visitNull(self.context, allocator, Deserializer);
             }
 
             ///
@@ -120,37 +120,37 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSeq(self: Self, comptime Deserializer: type, seq: anytype) blk: {
+            pub fn visitSeq(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) blk: {
                 concepts.@"getty.de.Seq"(@TypeOf(seq));
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitSeq(self.context, Deserializer, seq);
+                return try visitSeq(self.context, allocator, Deserializer, seq);
             }
 
-            pub fn visitSome(self: Self, deserializer: anytype) blk: {
+            pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) blk: {
                 concepts.@"getty.Deserializer"(@TypeOf(deserializer));
 
                 break :blk @TypeOf(deserializer).Error!Value;
             } {
-                return try visitSome(self.context, deserializer);
+                return try visitSome(self.context, allocator, deserializer);
             }
 
             ///
             ///
             /// The visitor is responsible for visiting the entire slice.
-            pub fn visitString(self: Self, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitString(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     if (!std.meta.trait.isZigString(@TypeOf(input))) {
                         @compileError("expected string, found `" ++ @typeName(@TypeOf(input)) ++ "`");
                     }
                 }
 
-                return try visitString(self.context, Deserializer, input);
+                return try visitString(self.context, allocator, Deserializer, input);
             }
 
-            pub fn visitVoid(self: Self, comptime Deserializer: type) Deserializer.Error!Value {
-                return try visitVoid(self.context, Deserializer);
+            pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+                return try visitVoid(self.context, allocator, Deserializer);
             }
         };
 

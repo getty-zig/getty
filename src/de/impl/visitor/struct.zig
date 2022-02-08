@@ -4,8 +4,6 @@ const getty = @import("../../../lib.zig");
 
 pub fn Visitor(comptime Struct: type) type {
     return struct {
-        allocator: ?std.mem.Allocator = null,
-
         const Self = @This();
         const impl = @"impl Visitor"(Struct);
 
@@ -33,24 +31,24 @@ fn @"impl Visitor"(comptime Struct: type) type {
         pub const visitor = struct {
             pub const Value = Struct;
 
-            pub fn visitMap(self: Self, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            pub fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
                 const fields = std.meta.fields(Value);
 
                 var structure: Value = undefined;
                 var seen = [_]bool{false} ** fields.len;
 
                 errdefer {
-                    if (self.allocator) |allocator| {
+                    if (allocator) |alloc| {
                         inline for (fields) |field, i| {
                             if (!field.is_comptime and seen[i]) {
-                                getty.de.free(allocator, @field(structure, field.name));
+                                getty.de.free(alloc, @field(structure, field.name));
                             }
                         }
                     }
                 }
 
-                while (try map.nextKey([]const u8)) |key| {
-                    defer self.allocator.?.free(key);
+                while (try map.nextKey(allocator, []const u8)) |key| {
+                    defer allocator.?.free(key);
 
                     var found = false;
 
@@ -62,7 +60,7 @@ fn @"impl Visitor"(comptime Struct: type) type {
 
                             switch (field.is_comptime) {
                                 true => @compileError("TODO"),
-                                false => @field(structure, field.name) = try map.nextValue(field.field_type),
+                                false => @field(structure, field.name) = try map.nextValue(allocator, field.field_type),
                             }
 
                             seen[i] = true;

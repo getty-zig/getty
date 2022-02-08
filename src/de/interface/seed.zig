@@ -6,10 +6,7 @@ pub fn Seed(
     comptime Context: type,
     comptime Value: type,
     comptime deserialize: @TypeOf(struct {
-        fn f(c: Context, a: ?std.mem.Allocator, d: anytype) @TypeOf(d).Error!Value {
-            _ = c;
-            _ = a;
-
+        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             unreachable;
         }
     }.f),
