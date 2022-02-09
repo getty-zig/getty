@@ -19,30 +19,22 @@ The main contribution of Getty is its data model, a set of types that
 establishes a generic baseline from which serializers and deserializers can
 operate. Using the data model, serializers and deserializers:
 
-- Gain support for a variety of Zig data types (including many within the standard library).
-- Can automatically serialize or deserialize into any data type mapped to Getty's data model.
+- Automatically support a number of Zig data types (including many within the standard library).
+- Can serialize or deserialize into any data type mapped to Getty's data model.
 - Can perform custom serialization and deserialization.
-- Are much simpler to implement than equivalent, handwritten alternatives.
+- Become much simpler than equivalent, handwritten alternatives.
 
 ## Installation
 
 ### Manual
 
-1. Create a new Zig project.
+1. Clone Getty:
 
     ```
-    mkdir getty-json
-    cd getty-json
-    zig init-exe
+    git clone https://github.com/getty-zig/getty
     ```
 
-2. Install Getty.
-
-    ```
-    git clone https://github.com/getty-zig/getty lib/getty
-    ```
-
-3. Add the following to `build.zig`.
+2. Add the following to `build.zig`:
 
     ```diff
     const std = @import("std");
@@ -50,10 +42,10 @@ operate. Using the data model, serializers and deserializers:
     pub fn build(b: *std.build.Builder) void {
         ...
 
-        const exe = b.addExecutable("getty-json", "src/main.zig");
+        const exe = b.addExecutable("my-project", "src/main.zig");
         exe.setTarget(target);
         exe.setBuildMode(mode);
-    +   exe.addPackagePath("getty", "lib/getty/src/lib.zig");
+    +   exe.addPackagePath("getty", "getty/src/lib.zig");
         exe.install();
 
         ...
@@ -62,18 +54,30 @@ operate. Using the data model, serializers and deserializers:
 
 ### Gyro
 
-1. Create a new Zig project.
-
-    ```
-    mkdir getty-json
-    cd getty-json
-    zig init-exe
-    ```
-
-2. Install and add Getty to the project.
+1. Make Getty a project dependency:
 
     ```
     gyro add -s github getty-zig/getty
+    gyro fetch
+    ```
+
+2. Add the following to `build.zig`:
+
+    ```diff
+    const std = @import("std");
+    +const pkgs = @import("deps.zig").pkgs;
+
+    pub fn build(b: *std.build.Builder) void {
+        ...
+
+        const exe = b.addExecutable("my-project", "src/main.zig");
+        exe.setTarget(target);
+        exe.setBuildMode(mode);
+    +   pkgs.addAllTo(exe);
+        exe.install();
+        
+        ...
+    }
     ```
 
 ## Contributing
