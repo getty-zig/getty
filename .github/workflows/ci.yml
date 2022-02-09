@@ -11,8 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: goto-bus-stop/setup-zig@v1
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: setup-zig
+        uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
 
@@ -21,7 +24,7 @@ jobs:
           zig fmt --check src/
           zig fmt --check build.zig
 
-  build:
+  build-unix:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -29,16 +32,60 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: goto-bus-stop/setup-zig@v1
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: setup-zig
+        uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - uses: mattnite/setup-gyro@v1
+
+      - name: setup-gyro
+        uses: mattnite/setup-gyro@v1
         with:
           access-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: fetch
+        run: gyro fetch
+
       - name: build
-        run: gyro build
+        run: zig build
+
+      - name: test
+        run: zig build test
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: setup-git
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: setup-zig
+        uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: master
+
+      - name: setup-gyro
+        uses: mattnite/setup-gyro@v1
+        with:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: fetch
+        run: gyro fetch
+
+      - name: build
+        run: |
+          zig build -Dtarget=i386-windows --prefix tmp
+          zig build
 
       - name: test
         run: zig build test
