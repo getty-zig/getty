@@ -12,22 +12,17 @@
 
 ## Overview
 
-Getty is a serialization and deserialization framework for the Zig programming
-language.
+Getty is a serialization and deserialization framework for the [Zig programming
+language](https://ziglang.org).
 
 The main contribution of Getty is its data model, a set of types that
 establishes a generic baseline from which serializers and deserializers can
-operate. By working within Getty's data model, the set of possible
-inputs/outputs for a serializer/deserializer is reduced from all possible types
-in Zig to a subset of the types within the data model. The result is that
-compliant (de)serializers are significantly simpler, support a wider variety of
-types by default, and are more easily extensible.
+operate. Using the data model, serializers and deserializers:
 
-Any type that is mapped to Getty's data model automatically becomes
-(de)serializable. Out of the box, Getty maps a number of common types,
-including many from the standard library. For types that are not already
-supported by Getty, custom blocks can be provided to specify how a type can be
-serialized or deserialized into.
+- Gain support for a variety of Zig data types (including many within the standard library).
+- Can automatically serialize or deserialize into any data type mapped to Getty's data model.
+- Can perform custom serialization and deserialization.
+- Are much simpler to implement than equivalent, handwritten alternatives.
 
 ## Installation
 
