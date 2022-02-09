@@ -31,7 +31,7 @@ operate. Using the data model, serializers and deserializers:
 1. Clone Getty:
 
     ```
-    git clone https://github.com/getty-zig/getty
+    git clone --recursive https://github.com/getty-zig/getty deps/getty
     ```
 
 2. Add the following to `build.zig`:
@@ -45,7 +45,7 @@ operate. Using the data model, serializers and deserializers:
         const exe = b.addExecutable("my-project", "src/main.zig");
         exe.setTarget(target);
         exe.setBuildMode(mode);
-    +   exe.addPackagePath("getty", "getty/src/lib.zig");
+    +   exe.addPackagePath("getty", "deps/getty/src/lib.zig");
         exe.install();
 
         ...
@@ -75,7 +75,7 @@ operate. Using the data model, serializers and deserializers:
         exe.setBuildMode(mode);
     +   pkgs.addAllTo(exe);
         exe.install();
-        
+
         ...
     }
     ```
