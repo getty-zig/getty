@@ -23,10 +23,10 @@ pub usingnamespace @import("de.zig");
 /// Compile-time type restraints for various Getty data types.
 pub const concepts = struct {
     pub usingnamespace @import("ser/concept/map.zig");
+    pub usingnamespace @import("ser/concept/sbt.zig");
     pub usingnamespace @import("ser/concept/serializer.zig");
     pub usingnamespace @import("ser/concept/seq.zig");
     pub usingnamespace @import("ser/concept/structure.zig");
-    pub usingnamespace @import("ser/concept/with.zig");
 
     pub usingnamespace @import("de/concept/deserializer.zig");
     pub usingnamespace @import("de/concept/map.zig");
