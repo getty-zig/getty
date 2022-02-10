@@ -28,12 +28,12 @@ pub const concepts = struct {
     pub usingnamespace @import("ser/concept/seq.zig");
     pub usingnamespace @import("ser/concept/structure.zig");
 
+    pub usingnamespace @import("de/concept/dbt.zig");
     pub usingnamespace @import("de/concept/deserializer.zig");
     pub usingnamespace @import("de/concept/map.zig");
     pub usingnamespace @import("de/concept/seed.zig");
     pub usingnamespace @import("de/concept/seq.zig");
     pub usingnamespace @import("de/concept/visitor.zig");
-    pub usingnamespace @import("de/concept/with.zig");
 
     pub fn err(comptime concept: []const u8, comptime msg: []const u8) void {
         @compileError("concept `" ++ concept ++ "` was not satisfied: " ++ msg);
