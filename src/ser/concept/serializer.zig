@@ -1,5 +1,6 @@
-const concepts = @import("../../lib.zig").concepts;
 const std = @import("std");
+
+const concepts = @import("../../lib.zig").concepts;
 
 const concept = "getty.Serializer";
 
