@@ -1,19 +1,20 @@
 const std = @import("std");
 
-pub fn @"getty.de.Visitor"(comptime T: type) void {
-    const err = "expected `getty.de.Visitor` interface value, found `" ++ @typeName(T) ++ "`";
+const concepts = @import("../../lib.zig").concepts;
 
+const concept = "getty.de.Visitor";
+
+pub fn @"getty.de.Visitor"(comptime T: type) void {
     comptime {
-        // Invariants
-        if (!std.meta.trait.isContainer(T)) {
-            @compileError(err);
+        if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
+            concepts.err(concept, "missing `context` field");
         }
 
-        // Constraints
-        const has_name = std.mem.startsWith(u8, @typeName(T), "getty.de.Visitor");
-        const has_field = std.meta.trait.hasField("context")(T);
-        const has_decls = std.meta.trait.hasDecls(T, .{
-            "Value",
+        if (!@hasDecl(T, "Value")) {
+            concepts.err(concept, "missing `Value` declaration");
+        }
+
+        inline for (.{
             "visitBool",
             "visitEnum",
             "visitFloat",
@@ -24,10 +25,14 @@ pub fn @"getty.de.Visitor"(comptime T: type) void {
             "visitSome",
             "visitString",
             "visitVoid",
-        });
+        }) |func| {
+            if (!std.meta.trait.hasFunctions(T, .{func})) {
+                concepts.err(concept, "missing `" ++ func ++ "` function");
+            }
+        }
 
-        if (!(has_name and has_field and has_decls)) {
-            @compileError(err);
+        if (!std.mem.eql(u8, @typeName(T), concept)) {
+            concepts.err(concept, "mismatched types");
         }
     }
 }
