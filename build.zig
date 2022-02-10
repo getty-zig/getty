@@ -1,16 +1,7 @@
 const std = @import("std");
-const pkgs = @import("deps.zig").pkgs;
 
 const package_name = "getty";
 const package_path = "src/lib.zig";
-
-const getty_pkg = std.build.Pkg{
-    .name = package_name,
-    .path = .{ .path = package_path },
-    .dependencies = &[_]std.build.Pkg{
-        pkgs.concepts,
-    },
-};
 
 const tests = [_][]const u8{
     "src/tests/ser/tests.zig",
@@ -30,9 +21,8 @@ pub fn build(b: *std.build.Builder) void {
 
         t.setBuildMode(mode);
         t.setTarget(target);
-        pkgs.addAllTo(t);
         t.addPackagePath("common/token.zig", "src/tests/common/token.zig");
-        t.addPackage(getty_pkg);
+        t.addPackagePath(package_name, package_path);
         step.dependOn(&t.step);
     }
 }

@@ -1,4 +1,3 @@
-const concepts = @import("concepts");
 const getty = @import("../../lib.zig");
 const std = @import("std");
 
@@ -188,16 +187,18 @@ pub fn Serializer(
 
             /// Serializes a floating-point value.
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
-                comptime concepts.float(@TypeOf(value));
-
-                return try serializeFloat(self.context, value);
+                switch (@typeInfo(@TypeOf(value))) {
+                    .Float, .ComptimeFloat => return try serializeFloat(self.context, value),
+                    else => @compileError("expected float, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                }
             }
 
             /// Serializes an integer value.
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
-                comptime concepts.integral(@TypeOf(value));
-
-                return try serializeInt(self.context, value);
+                switch (@typeInfo(@TypeOf(value))) {
+                    .Int, .ComptimeInt => return try serializeInt(self.context, value),
+                    else => @compileError("expected integer, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                }
             }
 
             /// Starts the serialization process for a map.
@@ -222,7 +223,9 @@ pub fn Serializer(
 
             /// Serializes a string value.
             pub fn serializeString(self: Self, value: anytype) Error!Ok {
-                comptime concepts.string(@TypeOf(value));
+                if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
+                    @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
+                }
 
                 return try serializeString(self.context, value);
             }
