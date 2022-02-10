@@ -1,25 +1,30 @@
 const std = @import("std");
 
-pub fn @"getty.de.Seq"(comptime T: type) void {
-    const err = "expected `getty.de.Seq` interface value, found `" ++ @typeName(T) ++ "`";
+const concepts = @import("../../lib.zig").concepts;
 
+const concept = "getty.de.Seq";
+
+pub fn @"getty.de.Seq"(comptime T: type) void {
     comptime {
-        // Invariants
-        if (!std.meta.trait.isContainer(T)) {
-            @compileError(err);
+        if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
+            concepts.err(concept, "missing `context` field");
         }
 
-        // Constraints
-        const has_name = std.mem.startsWith(u8, @typeName(T), "getty.de.Seq");
-        const has_field = std.meta.trait.hasField("context")(T);
-        const has_decl = @hasDecl(T, "Error");
-        const has_funcs = std.meta.trait.hasFunctions(T, .{
+        if (!@hasDecl(T, "Error")) {
+            concepts.err(concept, "missing `Error` declaration");
+        }
+
+        inline for (.{
             "nextElementSeed",
             "nextElement",
-        });
+        }) |func| {
+            if (!std.meta.trait.hasFunctions(T, .{func})) {
+                concepts.err(concept, "missing `" ++ func ++ "` function");
+            }
+        }
 
-        if (!(has_name and has_field and has_decl and has_funcs)) {
-            @compileError(err);
+        if (!std.mem.eql(u8, @typeName(T), concept)) {
+            concepts.err(concept, "mismatched types");
         }
     }
 }
