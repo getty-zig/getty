@@ -1,14 +1,15 @@
+const concepts = @import("../../lib.zig").concepts;
 const std = @import("std");
-
-const concepts = @import("concepts");
 
 const concept = "getty.Serializer";
 
 pub fn @"getty.Serializer"(comptime T: type) void {
-    comptime concepts.Concept(concept, "")(.{
-        std.mem.eql(u8, @typeName(T), concept),
-        concepts.traits.hasField(T, "context"),
-        concepts.traits.hasDecls(T, .{
+    comptime {
+        if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
+            concepts.err(concept, "missing `context` field");
+        }
+
+        inline for (.{
             "Ok",
             "Error",
             "st",
@@ -23,6 +24,14 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             "serializeString",
             "serializeStruct",
             "serializeVoid",
-        }),
-    });
+        }) |decl| {
+            if (!@hasDecl(T, decl)) {
+                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
+            }
+        }
+
+        if (!std.mem.eql(u8, @typeName(T), concept)) {
+            concepts.err(concept, "mismatched types");
+        }
+    }
 }
