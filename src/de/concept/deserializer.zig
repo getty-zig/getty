@@ -13,6 +13,13 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
         inline for (.{
             "Error",
             "dt",
+        }) |decl| {
+            if (!@hasDecl(T, decl)) {
+                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
+            }
+        }
+
+        inline for (.{
             "deserializeBool",
             "deserializeEnum",
             "deserializeFloat",
@@ -23,9 +30,9 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
             "deserializeString",
             "deserializeStruct",
             "deserializeVoid",
-        }) |decl| {
-            if (!@hasDecl(T, decl)) {
-                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
+        }) |func| {
+            if (!std.meta.trait.hasFunctions(T, .{func})) {
+                concepts.err(concept, "missing `" ++ func ++ "` function");
             }
         }
 
