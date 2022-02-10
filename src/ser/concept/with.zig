@@ -1,41 +1,55 @@
 const std = @import("std");
 
-const concepts = @import("concepts");
+const concepts = @import("../../lib.zig").concepts;
 
 const concept = "getty.ser.sbt";
 
 pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
-    comptime concepts.Concept(concept, "")(.{
-        check(sbt),
-    });
-}
-
-fn check(comptime sbt: anytype) bool {
     const T = if (@TypeOf(sbt) == type) sbt else @TypeOf(sbt);
     const info = @typeInfo(T);
 
-    if (info != .Struct) {
-        return false;
-    }
+    comptime {
+        if (info == .Struct and info.Struct.is_tuple) {
+            inline for (std.meta.fields(T)) |field| {
+                const sb = @field(sbt, field.name);
 
-    if (info.Struct.is_tuple) {
-        inline for (std.meta.fields(T)) |field| {
-            if (!is_sb(@field(sbt, field.name))) {
-                return false;
+                if (@TypeOf(sb) != type) {
+                    concepts.err(concept, "found non-namespace Serialization Block");
+                }
+
+                switch (@typeInfo(sb)) {
+                    .Struct => |sb_info| {
+                        if (sb_info.is_tuple) {
+                            concepts.err(concept, "found non-namespace Serialization Block");
+                        }
+
+                        if (sb_info.fields.len != 0) {
+                            concepts.err(concept, "found field in Serialization Block");
+                        }
+
+                        inline for (.{ "is", "serialize" }) |func| {
+                            if (!std.meta.trait.hasFunctions(sb, .{func})) {
+                                concepts.err(concept, "missing `" ++ func ++ "` function in Serialization Block");
+                            }
+                        }
+                    },
+                    else => concepts.err(concept, "found non-namespace Serialization Block"),
+                }
+            }
+        } else {
+            if (info != .Struct or info.Struct.is_tuple) {
+                concepts.err(concept, "found non-namespace Serialization Block");
+            }
+
+            if (info.Struct.fields.len != 0) {
+                concepts.err(concept, "found field in Serialization Block");
+            }
+
+            inline for (.{ "is", "serialize" }) |func| {
+                if (!std.meta.trait.hasFunctions(T, .{func})) {
+                    concepts.err(concept, "missing `" ++ func ++ "` function in Serialization Block");
+                }
             }
         }
-    } else if (!is_sb(T)) {
-        return false;
     }
-
-    return true;
-}
-
-fn is_sb(comptime T: type) bool {
-    const info = @typeInfo(T);
-
-    return info == .Struct and
-        !info.Struct.is_tuple and
-        info.Struct.fields.len == 0 and
-        concepts.traits.hasFunctions(T, .{ "is", "serialize" });
 }
