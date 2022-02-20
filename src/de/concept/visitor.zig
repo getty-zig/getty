@@ -10,11 +10,8 @@ pub fn @"getty.de.Visitor"(comptime T: type) void {
             concepts.err(concept, "missing `context` field");
         }
 
-        if (!@hasDecl(T, "Value")) {
-            concepts.err(concept, "missing `Value` declaration");
-        }
-
         inline for (.{
+            "Value",
             "visitBool",
             "visitEnum",
             "visitFloat",
@@ -25,9 +22,9 @@ pub fn @"getty.de.Visitor"(comptime T: type) void {
             "visitSome",
             "visitString",
             "visitVoid",
-        }) |func| {
-            if (!std.meta.trait.hasFunctions(T, .{func})) {
-                concepts.err(concept, "missing `" ++ func ++ "` function");
+        }) |decl| {
+            if (!@hasDecl(T, decl)) {
+                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
             }
         }
 

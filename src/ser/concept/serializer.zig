@@ -10,13 +10,10 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             concepts.err(concept, "missing `context` field");
         }
 
-        inline for (.{ "Ok", "Error", "st" }) |decl| {
-            if (!@hasDecl(T, decl)) {
-                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
-            }
-        }
-
         inline for (.{
+            "Ok",
+            "Error",
+            "st",
             "serializeBool",
             "serializeEnum",
             "serializeFloat",
@@ -28,9 +25,9 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             "serializeString",
             "serializeStruct",
             "serializeVoid",
-        }) |func| {
-            if (!std.meta.trait.hasFunctions(T, .{func})) {
-                concepts.err(concept, "missing `" ++ func ++ "` function");
+        }) |decl| {
+            if (!@hasDecl(T, decl)) {
+                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
             }
         }
 
