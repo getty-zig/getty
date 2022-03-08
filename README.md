@@ -80,6 +80,25 @@ operate. Using the data model, serializers and deserializers:
     }
     ```
 
+### Zigmod
+
+1. [Read this tutorial](https://nektro.github.io/zigmod/tutorial.html) on how to setup a new zigmod project.
+
+    Note: getty is not hosted on aquila.red ([see this comment for details](https://github.com/nektro/zigmod/issues/63#issuecomment-1063205053)).
+
+1. Add getty to zigmod.yml
+
+    ```
+    root_dependencies:
+      - src: git https://github.com/getty-zig/getty
+    ```
+
+1. Fetch the new dependency:
+
+    ```
+    zigmod fetch
+    ```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
