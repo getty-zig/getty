@@ -5,87 +5,78 @@ const getty = @import("../../../lib.zig");
 pub fn Visitor(comptime Struct: type) type {
     return struct {
         const Self = @This();
-        const impl = @"impl Visitor"(Struct);
 
         pub usingnamespace getty.de.Visitor(
             Self,
-            impl.visitor.Value,
+            Value,
             undefined,
             undefined,
             undefined,
             undefined,
-            impl.visitor.visitMap,
+            visitMap,
             undefined,
             undefined,
             undefined,
             undefined,
             undefined,
         );
-    };
-}
 
-fn @"impl Visitor"(comptime Struct: type) type {
-    const Self = Visitor(Struct);
+        const Value = Struct;
 
-    return struct {
-        pub const visitor = struct {
-            pub const Value = Struct;
+        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            const fields = std.meta.fields(Value);
 
-            pub fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
-                const fields = std.meta.fields(Value);
+            var structure: Value = undefined;
+            var seen = [_]bool{false} ** fields.len;
 
-                var structure: Value = undefined;
-                var seen = [_]bool{false} ** fields.len;
-
-                errdefer {
-                    if (allocator) |alloc| {
-                        inline for (fields) |field, i| {
-                            if (!field.is_comptime and seen[i]) {
-                                getty.de.free(alloc, @field(structure, field.name));
-                            }
-                        }
-                    }
-                }
-
-                while (try map.nextKey(allocator, []const u8)) |key| {
-                    var found = false;
-
+            errdefer {
+                if (allocator) |alloc| {
                     inline for (fields) |field, i| {
-                        if (std.mem.eql(u8, field.name, key)) {
-                            if (seen[i]) {
-                                return error.DuplicateField;
-                            }
-
-                            switch (field.is_comptime) {
-                                true => @compileError("TODO"),
-                                false => @field(structure, field.name) = try map.nextValue(allocator, field.field_type),
-                            }
-
-                            seen[i] = true;
-                            found = true;
-                            break;
+                        if (!field.is_comptime and seen[i]) {
+                            getty.de.free(alloc, @field(structure, field.name));
                         }
                     }
-
-                    if (!found) {
-                        return error.UnknownField;
-                    }
                 }
+            }
+
+            while (try map.nextKey(allocator, []const u8)) |key| {
+                var found = false;
 
                 inline for (fields) |field, i| {
-                    if (!seen[i]) {
-                        if (field.default_value) |default| {
-                            if (!field.is_comptime) {
-                                @field(structure, field.name) = default;
-                            }
-                        } else {
-                            return error.MissingField;
+                    if (std.mem.eql(u8, field.name, key)) {
+                        if (seen[i]) {
+                            return error.DuplicateField;
                         }
+
+                        switch (field.is_comptime) {
+                            true => @compileError("TODO"),
+                            false => @field(structure, field.name) = try map.nextValue(allocator, field.field_type),
+                        }
+
+                        seen[i] = true;
+                        found = true;
+                        break;
                     }
                 }
 
-                return structure;
+                if (!found) {
+                    return error.UnknownField;
+                }
             }
-        };
+
+            inline for (fields) |field, i| {
+                if (!seen[i]) {
+                    if (field.default_value) |default| {
+                        if (!field.is_comptime) {
+                            @field(structure, field.name) = default;
+                        }
+                    } else {
+                        return error.MissingField;
+                    }
+                }
+            }
+
+            return structure;
+        }
     };
 }

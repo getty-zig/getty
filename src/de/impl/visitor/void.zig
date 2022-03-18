@@ -2,11 +2,10 @@ const getty = @import("../../../lib.zig");
 const std = @import("std");
 
 const Visitor = @This();
-const impl = @"impl Visitor";
 
 pub usingnamespace getty.de.Visitor(
     Visitor,
-    impl.visitor.Value,
+    Value,
     undefined,
     undefined,
     undefined,
@@ -16,17 +15,11 @@ pub usingnamespace getty.de.Visitor(
     undefined,
     undefined,
     undefined,
-    impl.visitor.visitVoid,
+    visitVoid,
 );
 
-const @"impl Visitor" = struct {
-    const Self = Visitor;
+const Value = void;
 
-    pub const visitor = struct {
-        pub const Value = void;
-
-        pub fn visitVoid(_: Visitor, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-            return {};
-        }
-    };
-};
+fn visitVoid(_: Visitor, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+    return {};
+}

@@ -4,44 +4,35 @@ const std = @import("std");
 pub fn Visitor(comptime Enum: type) type {
     return struct {
         const Self = @This();
-        const impl = @"impl Visitor"(Enum);
 
         pub usingnamespace getty.de.Visitor(
             Self,
-            impl.visitor.Value,
+            Value,
             undefined,
-            impl.visitor.visitEnum,
+            visitEnum,
             undefined,
-            impl.visitor.visitInt,
+            visitInt,
             undefined,
             undefined,
             undefined,
-            impl.visitor.visitString,
+            visitString,
             undefined,
             undefined,
         );
-    };
-}
 
-fn @"impl Visitor"(comptime Enum: type) type {
-    const Self = Visitor(Enum);
+        const Value = Enum;
 
-    return struct {
-        pub const visitor = struct {
-            pub const Value = Enum;
+        fn visitEnum(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            return input;
+        }
 
-            pub fn visitEnum(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                return input;
-            }
+        fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            return std.meta.intToEnum(Value, input) catch unreachable;
+        }
 
-            pub fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                return std.meta.intToEnum(Value, input) catch unreachable;
-            }
-
-            pub fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                defer getty.de.free(allocator.?, input);
-                return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
-            }
-        };
+        fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            defer getty.de.free(allocator.?, input);
+            return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
+        }
     };
 }

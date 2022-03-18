@@ -4,15 +4,14 @@ const std = @import("std");
 pub fn Visitor(comptime Float: type) type {
     return struct {
         const Self = @This();
-        const impl = @"impl Visitor"(Float);
 
         pub usingnamespace getty.de.Visitor(
             Self,
-            impl.visitor.Value,
+            Value,
             undefined,
             undefined,
-            impl.visitor.visitFloat,
-            impl.visitor.visitInt,
+            visitFloat,
+            visitInt,
             undefined,
             undefined,
             undefined,
@@ -20,23 +19,15 @@ pub fn Visitor(comptime Float: type) type {
             undefined,
             undefined,
         );
-    };
-}
 
-fn @"impl Visitor"(comptime Float: type) type {
-    const Self = Visitor(Float);
+        const Value = Float;
 
-    return struct {
-        pub const visitor = struct {
-            pub const Value = Float;
+        fn visitFloat(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            return @floatCast(Value, input);
+        }
 
-            pub fn visitFloat(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                return @floatCast(Value, input);
-            }
-
-            pub fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                return @intToFloat(Value, input);
-            }
-        };
+        fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            return @intToFloat(Value, input);
+        }
     };
 }
