@@ -48,8 +48,6 @@ fn @"impl Visitor"(comptime Struct: type) type {
                 }
 
                 while (try map.nextKey(allocator, []const u8)) |key| {
-                    defer allocator.?.free(key);
-
                     var found = false;
 
                     inline for (fields) |field, i| {
