@@ -326,6 +326,8 @@ const @"impl Map" = struct {
         pub fn nextKeySeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
             if (self.de.peekTokenOpt()) |token| {
                 if (std.meta.eql(token, self.end)) return null;
+            } else {
+                return null;
             }
 
             self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
