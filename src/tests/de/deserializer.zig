@@ -11,7 +11,6 @@ pub const Deserializer = struct {
     tokens: []const Token,
 
     const Self = @This();
-    const impl = @"impl Deserializer";
 
     pub fn init(tokens: []const Token) Self {
         return .{ .tokens = tokens };
@@ -57,219 +56,151 @@ pub const Deserializer = struct {
 
     pub usingnamespace getty.Deserializer(
         *Self,
-        impl.deserializer.Error,
+        Error,
         getty.default_dt,
         getty.default_dt,
-        impl.deserializer.deserializeBool,
-        impl.deserializer.deserializeEnum,
-        impl.deserializer.deserializeFloat,
-        impl.deserializer.deserializeInt,
-        impl.deserializer.deserializeMap,
-        impl.deserializer.deserializeOptional,
-        impl.deserializer.deserializeSeq,
-        impl.deserializer.deserializeString,
-        impl.deserializer.deserializeStruct,
-        impl.deserializer.deserializeVoid,
+        deserializeBool,
+        deserializeEnum,
+        deserializeFloat,
+        deserializeInt,
+        deserializeMap,
+        deserializeOptional,
+        deserializeSeq,
+        deserializeString,
+        deserializeStruct,
+        deserializeVoid,
     );
-};
 
-const @"impl Deserializer" = struct {
-    pub const deserializer = struct {
-        pub const Error = getty.de.Error || error{TestExpectedEqual};
+    const Error = getty.de.Error || error{TestExpectedEqual};
 
-        pub fn deserializeBool(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            switch (self.nextToken()) {
-                .Bool => |v| return try visitor.visitBool(allocator, Deserializer.@"getty.Deserializer", v),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            }
+    fn deserializeBool(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Bool => |v| return try visitor.visitBool(allocator, Self.@"getty.Deserializer", v),
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeEnum(
-            _: *Deserializer,
-            _: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {}
+    fn deserializeEnum(_: *Self, _: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {}
 
-        pub fn deserializeFloat(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            return switch (self.nextToken()) {
-                .F16 => |v| try visitor.visitFloat(allocator, Deserializer.@"getty.Deserializer", v),
-                .F32 => |v| try visitor.visitFloat(allocator, Deserializer.@"getty.Deserializer", v),
-                .F64 => |v| try visitor.visitFloat(allocator, Deserializer.@"getty.Deserializer", v),
-                .F128 => |v| try visitor.visitFloat(allocator, Deserializer.@"getty.Deserializer", v),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            };
+    fn deserializeFloat(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        return switch (self.nextToken()) {
+            .F16 => |v| try visitor.visitFloat(allocator, Self.@"getty.Deserializer", v),
+            .F32 => |v| try visitor.visitFloat(allocator, Self.@"getty.Deserializer", v),
+            .F64 => |v| try visitor.visitFloat(allocator, Self.@"getty.Deserializer", v),
+            .F128 => |v| try visitor.visitFloat(allocator, Self.@"getty.Deserializer", v),
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+        };
+    }
+
+    fn deserializeInt(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        return switch (self.nextToken()) {
+            .I8 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .I16 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .I32 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .I64 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .I128 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .U8 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .U16 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .U32 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .U64 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            .U128 => |v| try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+        };
+    }
+
+    fn deserializeMap(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Map => |v| {
+                var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
+                var value = visitor.visitMap(allocator, Self.@"getty.Deserializer", m.map());
+
+                try self.assertNextToken(.MapEnd);
+
+                return value;
+            },
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeInt(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            return switch (self.nextToken()) {
-                .I8 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .I16 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .I32 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .I64 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .I128 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .U8 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .U16 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .U32 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .U64 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                .U128 => |v| try visitor.visitInt(allocator, Deserializer.@"getty.Deserializer", v),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            };
+    fn deserializeOptional(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.peekToken()) {
+            .Null => {
+                _ = self.nextToken();
+                return try visitor.visitNull(allocator, Self.@"getty.Deserializer");
+            },
+            .Some => {
+                _ = self.nextToken();
+                return try visitor.visitSome(allocator, Self.@"getty.Deserializer");
+            },
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeMap(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            switch (self.nextToken()) {
-                .Map => |v| return try visitMap(self, allocator, v.len, .MapEnd, visitor),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            }
+    fn deserializeSeq(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Seq => |v| {
+                var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
+                var value = visitor.visitSeq(allocator, Self.@"getty.Deserializer", s.seq());
+
+                try self.assertNextToken(.SeqEnd);
+
+                return value;
+            },
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeOptional(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            switch (self.peekToken()) {
-                .Null => {
-                    _ = self.nextToken();
-                    return try visitor.visitNull(allocator, Deserializer.@"getty.Deserializer");
-                },
-                .Some => {
-                    _ = self.nextToken();
-                    return try visitor.visitSome(allocator, Deserializer.@"getty.Deserializer");
-                },
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            }
+    fn deserializeString(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .String => |v| return try visitor.visitString(
+                allocator,
+                Self.@"getty.Deserializer",
+                try allocator.?.dupe(u8, v),
+            ),
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeSeq(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            return switch (self.nextToken()) {
-                .Seq => |v| try visitSeq(self, allocator, v.len, .SeqEnd, visitor),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            };
+    fn deserializeStruct(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Struct => |v| {
+                var s = Struct{ .de = self, .len = v.len, .end = .StructEnd };
+                var value = visitor.visitMap(allocator, Self.@"getty.Deserializer", s.map());
+
+                try self.assertNextToken(.StructEnd);
+
+                return value;
+            },
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeString(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            switch (self.nextToken()) {
-                .String => |v| return try visitor.visitString(
-                    allocator,
-                    Deserializer.@"getty.Deserializer",
-                    try allocator.?.dupe(u8, v),
-                ),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            }
+    fn deserializeVoid(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Void => return try visitor.visitVoid(allocator, Self.@"getty.Deserializer"),
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
+    }
 
-        pub fn deserializeStruct(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            switch (self.nextToken()) {
-                .Struct => |v| return try visitStruct(self, allocator, v.len, .StructEnd, visitor),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            }
-        }
+    fn assertNextToken(self: *Self, expected: Token) !void {
+        if (self.nextTokenOpt()) |token| {
+            const token_tag = std.meta.activeTag(token);
+            const expected_tag = std.meta.activeTag(expected);
 
-        pub fn deserializeVoid(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            switch (self.nextToken()) {
-                .Void => return try visitor.visitVoid(allocator, Deserializer.@"getty.Deserializer"),
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            }
-        }
-
-        fn visitMap(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            len: ?usize,
-            end: Token,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            var m = Map{ .de = self, .len = len, .end = end };
-            var value = visitor.visitMap(allocator, Deserializer.@"getty.Deserializer", m.map());
-
-            try assertNextToken(self, end);
-
-            return value;
-        }
-
-        fn visitSeq(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            len: ?usize,
-            end: Token,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            var s = Seq{ .de = self, .len = len, .end = end };
-            var value = visitor.visitSeq(allocator, Deserializer.@"getty.Deserializer", s.seq());
-
-            try assertNextToken(self, end);
-
-            return value;
-        }
-
-        fn visitStruct(
-            self: *Deserializer,
-            allocator: ?std.mem.Allocator,
-            len: ?usize,
-            end: Token,
-            visitor: anytype,
-        ) Error!@TypeOf(visitor).Value {
-            var s = Struct{ .de = self, .len = len, .end = end };
-            var value = visitor.visitMap(allocator, Deserializer.@"getty.Deserializer", s.map());
-
-            try assertNextToken(self, end);
-
-            return value;
-        }
-
-        fn assertNextToken(self: *Deserializer, expected: Token) !void {
-            if (self.nextTokenOpt()) |token| {
-                const token_tag = std.meta.activeTag(token);
-                const expected_tag = std.meta.activeTag(expected);
-
-                if (token_tag == expected_tag) {
-                    switch (token) {
-                        .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
-                        .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
-                        .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
-                        else => |v| std.debug.panic("unexpected token: {s}", .{@tagName(v)}),
-                    }
-                } else {
-                    @panic("expected Token::{} but deserialization wants Token::{}");
+            if (token_tag == expected_tag) {
+                switch (token) {
+                    .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
+                    .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
+                    .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
+                    else => |v| std.debug.panic("unexpected token: {s}", .{@tagName(v)}),
                 }
             } else {
-                @panic("end of tokens but deserialization wants Token::{}");
+                @panic("expected Token::{} but deserialization wants Token::{}");
             }
+        } else {
+            @panic("end of tokens but deserialization wants Token::{}");
         }
-    };
+    }
 };
 
 const Seq = struct {
@@ -278,29 +209,22 @@ const Seq = struct {
     end: Token,
 
     const Self = @This();
-    const impl = @"impl Seq";
 
     pub usingnamespace getty.de.Seq(
         *Self,
-        impl.seq.Error,
-        impl.seq.nextElementSeed,
+        Deserializer.Error,
+        nextElementSeed,
     );
-};
 
-const @"impl Seq" = struct {
-    pub const seq = struct {
-        pub const Error = @"impl Deserializer".deserializer.Error;
-
-        pub fn nextElementSeed(self: *Seq, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
-            if (self.de.peekTokenOpt()) |token| {
-                if (std.meta.eql(token, self.end)) return null;
-            }
-
-            self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
-
-            return try seed.deserialize(allocator, self.de.deserializer());
+    fn nextElementSeed(self: *Seq, allocator: ?std.mem.Allocator, seed: anytype) Deserializer.Error!?@TypeOf(seed).Value {
+        if (self.de.peekTokenOpt()) |token| {
+            if (std.meta.eql(token, self.end)) return null;
         }
-    };
+
+        self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+
+        return try seed.deserialize(allocator, self.de.deserializer());
+    }
 };
 
 const Map = struct {
@@ -309,36 +233,29 @@ const Map = struct {
     end: Token,
 
     const Self = @This();
-    const impl = @"impl Map";
 
     pub usingnamespace getty.de.Map(
         *Self,
-        impl.map.Error,
-        impl.map.nextKeySeed,
-        impl.map.nextValueSeed,
+        Deserializer.Error,
+        nextKeySeed,
+        nextValueSeed,
     );
-};
 
-const @"impl Map" = struct {
-    pub const map = struct {
-        pub const Error = @"impl Deserializer".deserializer.Error;
-
-        pub fn nextKeySeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
-            if (self.de.peekTokenOpt()) |token| {
-                if (std.meta.eql(token, self.end)) return null;
-            } else {
-                return null;
-            }
-
-            self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
-
-            return try seed.deserialize(allocator, self.de.deserializer());
+    fn nextKeySeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Deserializer.Error!?@TypeOf(seed).Value {
+        if (self.de.peekTokenOpt()) |token| {
+            if (std.meta.eql(token, self.end)) return null;
+        } else {
+            return null;
         }
 
-        pub fn nextValueSeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-            return try seed.deserialize(allocator, self.de.deserializer());
-        }
-    };
+        self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+
+        return try seed.deserialize(allocator, self.de.deserializer());
+    }
+
+    fn nextValueSeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Deserializer.Error!@TypeOf(seed).Value {
+        return try seed.deserialize(allocator, self.de.deserializer());
+    }
 };
 
 const Struct = struct {
@@ -347,42 +264,35 @@ const Struct = struct {
     end: Token,
 
     const Self = @This();
-    const impl = @"impl Struct";
 
     pub usingnamespace getty.de.Map(
         *Self,
-        impl.structure.Error,
-        impl.structure.nextKeySeed,
-        impl.structure.nextValueSeed,
+        Deserializer.Error,
+        nextKeySeed,
+        nextValueSeed,
     );
-};
 
-const @"impl Struct" = struct {
-    pub const structure = struct {
-        pub const Error = @"impl Deserializer".deserializer.Error;
-
-        pub fn nextKeySeed(self: *Struct, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
-            if (self.de.peekTokenOpt()) |token| {
-                if (std.meta.eql(token, self.end)) return null;
-            } else {
-                return null;
-            }
-
-            if (self.de.nextTokenOpt()) |token| {
-                self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
-
-                if (token != .String) {
-                    return error.InvalidType;
-                }
-
-                return token.String;
-            } else {
-                return null;
-            }
+    fn nextKeySeed(self: *Struct, _: ?std.mem.Allocator, seed: anytype) Deserializer.Error!?@TypeOf(seed).Value {
+        if (self.de.peekTokenOpt()) |token| {
+            if (std.meta.eql(token, self.end)) return null;
+        } else {
+            return null;
         }
 
-        pub fn nextValueSeed(self: *Struct, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-            return try seed.deserialize(allocator, self.de.deserializer());
+        if (self.de.nextTokenOpt()) |token| {
+            self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+
+            if (token != .String) {
+                return error.InvalidType;
+            }
+
+            return token.String;
+        } else {
+            return null;
         }
-    };
+    }
+
+    fn nextValueSeed(self: *Struct, allocator: ?std.mem.Allocator, seed: anytype) Deserializer.Error!@TypeOf(seed).Value {
+        return try seed.deserialize(allocator, self.de.deserializer());
+    }
 };
