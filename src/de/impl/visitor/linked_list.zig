@@ -26,18 +26,20 @@ pub fn Visitor(comptime LinkedList: type) type {
             var list = Value{};
             errdefer getty.de.free(allocator.?, list);
 
-            var current: ?*Value.Node = null;
+            {
+                var current: ?*Value.Node = null;
 
-            while (try seq.nextElement(allocator, Value.Node.Data)) |value| {
-                var node = try allocator.?.create(Value.Node);
-                node.* = .{ .data = value };
+                while (try seq.nextElement(allocator, Value.Node.Data)) |value| {
+                    var node = try allocator.?.create(Value.Node);
+                    node.* = .{ .data = value };
 
-                if (current) |c| {
-                    c.*.insertAfter(node);
-                    current = c.next;
-                } else {
-                    list.prepend(node);
-                    current = list.first;
+                    if (current) |c| {
+                        c.*.insertAfter(node);
+                        current = c.next;
+                    } else {
+                        list.prepend(node);
+                        current = list.first;
+                    }
                 }
             }
 
