@@ -24,7 +24,7 @@ pub fn Visitor(comptime Tuple: type) type {
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             const fields = std.meta.fields(Value);
-            const length = std.meta.fields(Value).len;
+            const len = fields.len;
 
             var tuple: Value = undefined;
             comptime var seen: usize = 0;
@@ -33,7 +33,7 @@ pub fn Visitor(comptime Tuple: type) type {
                 comptime var i: usize = 0;
 
                 if (allocator) |alloc| {
-                    if (length > 0) {
+                    if (len > 0) {
                         inline while (i < seen) : (i += 1) {
                             getty.de.free(alloc, tuple[i]);
                         }
@@ -41,12 +41,12 @@ pub fn Visitor(comptime Tuple: type) type {
                 }
             }
 
-            switch (length) {
+            switch (len) {
                 0 => tuple = .{},
                 else => {
                     comptime var i: usize = 0;
 
-                    inline while (i < length) : (i += 1) {
+                    inline while (i < len) : (i += 1) {
                         // NOTE: Using an if to unwrap `value` runs into a
                         // compiler bug, so this is a workaround.
                         const value = try seq.nextElement(allocator, fields[i].field_type);
