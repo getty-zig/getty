@@ -176,13 +176,10 @@ pub fn Serializer(
 
             // Serializes an enum value.
             pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
-                // TODO: Replace this with a concept (blocked by concepts library).
                 switch (@typeInfo(@TypeOf(value))) {
-                    .Enum, .EnumLiteral => {},
+                    .Enum, .EnumLiteral => return try serializeEnum(self.context, value),
                     else => @compileError("expected enum, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
                 }
-
-                return try serializeEnum(self.context, value);
             }
 
             /// Serializes a floating-point value.
