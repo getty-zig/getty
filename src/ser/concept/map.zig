@@ -21,9 +21,5 @@ pub fn @"getty.ser.Map"(comptime T: type) void {
                 concepts.err(concept, "missing `" ++ func ++ "` function");
             }
         }
-
-        if (!std.mem.eql(u8, @typeName(T), concept)) {
-            concepts.err(concept, "mismatched types");
-        }
     }
 }

@@ -13,9 +13,5 @@ pub fn @"getty.de.Seed"(comptime T: type) void {
         if (!std.meta.trait.hasFunctions(T, .{"deserialize"})) {
             concepts.err(concept, "missing `deserialize` function");
         }
-
-        if (!std.mem.eql(u8, @typeName(T), concept)) {
-            concepts.err(concept, "mismatched types");
-        }
     }
 }

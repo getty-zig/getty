@@ -27,9 +27,5 @@ pub fn @"getty.de.Visitor"(comptime T: type) void {
                 concepts.err(concept, "missing `" ++ decl ++ "` declaration");
             }
         }
-
-        if (!std.mem.eql(u8, @typeName(T), concept)) {
-            concepts.err(concept, "mismatched types");
-        }
     }
 }
