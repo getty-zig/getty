@@ -62,13 +62,8 @@ pub const Serializer = struct {
     }
 
     fn serializeEnum(self: *Self, v: anytype) Error!Ok {
-        const name = switch (@typeInfo(@TypeOf(v))) {
-            .EnumLiteral => "",
-            .Enum => @typeName(@TypeOf(v)),
-            else => unreachable,
-        };
-
-        try assertNextToken(self, Token{ .Enum = .{ .name = name, .variant = @tagName(v) } });
+        try assertNextToken(self, Token{ .Enum = {} });
+        try assertNextToken(self, Token{ .String = @tagName(v) });
     }
 
     fn serializeFloat(self: *Self, v: anytype) Error!Ok {
@@ -230,13 +225,7 @@ fn assertNextToken(ser: *Serializer, expected: Token) !void {
                 .Bool => try expectEqual(@field(token, "Bool"), @field(expected, "Bool")),
                 .ComptimeFloat => try expectEqual(@field(token, "ComptimeFloat"), @field(expected, "ComptimeFloat")),
                 .ComptimeInt => try expectEqual(@field(token, "ComptimeInt"), @field(expected, "ComptimeInt")),
-                .Enum => {
-                    const t = @field(token, "Enum");
-                    const e = @field(expected, "Enum");
-
-                    try expectEqualSlices(u8, t.name, e.name);
-                    try expectEqualSlices(u8, t.variant, e.variant);
-                },
+                .Enum => try expectEqual(@field(token, "Enum"), @field(expected, "Enum")),
                 .F16 => try expectEqual(@field(token, "F16"), @field(expected, "F16")),
                 .F32 => try expectEqual(@field(token, "F32"), @field(expected, "F32")),
                 .F64 => try expectEqual(@field(token, "F64"), @field(expected, "F64")),

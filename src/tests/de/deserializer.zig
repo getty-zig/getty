@@ -80,7 +80,20 @@ pub const Deserializer = struct {
         }
     }
 
-    fn deserializeEnum(_: *Self, _: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {}
+    fn deserializeEnum(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Enum => switch (self.nextToken()) {
+                .U8 => |v| return try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+                .U16 => |v| return try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+                .U32 => |v| return try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+                .U64 => |v| return try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+                .U128 => |v| return try visitor.visitInt(allocator, Self.@"getty.Deserializer", v),
+                .String => |v| return try visitor.visitString(allocator, Self.@"getty.Deserializer", v),
+                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+            },
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+        }
+    }
 
     fn deserializeFloat(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
         return switch (self.nextToken()) {

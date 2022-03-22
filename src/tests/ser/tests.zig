@@ -106,13 +106,14 @@ test "bool" {
 }
 
 test "enum" {
-    // enum literal
-    try t(.Foo, &[_]Token{.{ .Enum = .{ .name = "", .variant = "Foo" } }});
+    // literal
+    try t(.foo, &[_]Token{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t(.bar, &[_]Token{ .{ .Enum = {} }, .{ .String = "bar" } });
 
-    // enum
-    const Enum = enum { Foo, Bar };
-    try t(Enum.Foo, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Foo" } }});
-    try t(Enum.Bar, &[_]Token{.{ .Enum = .{ .name = "Enum", .variant = "Bar" } }});
+    // non-literal
+    const T = enum { foo, bar };
+    try t(T.foo, &[_]Token{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t(T.bar, &[_]Token{ .{ .Enum = {} }, .{ .String = "bar" } });
 }
 
 test "error" {

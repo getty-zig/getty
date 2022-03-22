@@ -124,6 +124,19 @@ test "bool" {
     try t(false, &[_]Token{.{ .Bool = false }});
 }
 
+test "enum" {
+    const T = enum { zero, one, two, three, four };
+
+    try t(T.zero, &[_]Token{ .{ .Enum = {} }, .{ .U8 = 0 } });
+    try t(T.one, &[_]Token{ .{ .Enum = {} }, .{ .U16 = 1 } });
+    try t(T.two, &[_]Token{ .{ .Enum = {} }, .{ .U32 = 2 } });
+    try t(T.three, &[_]Token{ .{ .Enum = {} }, .{ .U64 = 3 } });
+    try t(T.four, &[_]Token{ .{ .Enum = {} }, .{ .U128 = 4 } });
+
+    try t(T.zero, &[_]Token{ .{ .Enum = {} }, .{ .String = "zero" } });
+    try t(T.four, &[_]Token{ .{ .Enum = {} }, .{ .String = "four" } });
+}
+
 test "float" {
     try t(@as(f16, 0), &[_]Token{.{ .F16 = 0 }});
     try t(@as(f32, 0), &[_]Token{.{ .F32 = 0 }});
@@ -248,7 +261,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
         .Float,
         .Int,
         .Void,
-        //.Enum,
+        .Enum,
         => try expectEqual(expected, v),
         .Array => |info| try expectEqualSlices(info.child, &expected, &v),
         .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {

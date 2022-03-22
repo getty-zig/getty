@@ -37,5 +37,5 @@ pub const Token = union(enum) {
     Struct: struct { name: []const u8, len: usize },
     StructEnd,
 
-    Enum: struct { name: []const u8, variant: []const u8 },
+    Enum,
 };
