@@ -30,8 +30,7 @@ pub fn Visitor(comptime Enum: type) type {
             return std.meta.intToEnum(Value, input) catch unreachable;
         }
 
-        fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            defer getty.de.free(allocator.?, input);
+        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             return std.meta.stringToEnum(Value, input) orelse return error.UnknownVariant;
         }
     };
