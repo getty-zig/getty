@@ -120,28 +120,28 @@ pub const ser = struct {
 /// the end, thereby taking the lowest priority.
 pub const default_st = .{
     // std
-    @import("ser/with/array_list.zig"),
-    @import("ser/with/hash_map.zig"),
-    @import("ser/with/linked_list.zig"),
-    @import("ser/with/tail_queue.zig"),
+    @import("ser/blocks/array_list.zig"),
+    @import("ser/blocks/hash_map.zig"),
+    @import("ser/blocks/linked_list.zig"),
+    @import("ser/blocks/tail_queue.zig"),
 
     // primitives
-    @import("ser/with/array.zig"),
-    @import("ser/with/bool.zig"),
-    @import("ser/with/enum.zig"),
-    @import("ser/with/error.zig"),
-    @import("ser/with/float.zig"),
-    @import("ser/with/int.zig"),
-    @import("ser/with/null.zig"),
-    @import("ser/with/optional.zig"),
-    @import("ser/with/pointer.zig"),
-    @import("ser/with/slice.zig"),
-    @import("ser/with/string.zig"),
-    @import("ser/with/struct.zig"),
-    @import("ser/with/tuple.zig"),
-    @import("ser/with/union.zig"),
-    @import("ser/with/vector.zig"),
-    @import("ser/with/void.zig"),
+    @import("ser/blocks/array.zig"),
+    @import("ser/blocks/bool.zig"),
+    @import("ser/blocks/enum.zig"),
+    @import("ser/blocks/error.zig"),
+    @import("ser/blocks/float.zig"),
+    @import("ser/blocks/int.zig"),
+    @import("ser/blocks/null.zig"),
+    @import("ser/blocks/optional.zig"),
+    @import("ser/blocks/pointer.zig"),
+    @import("ser/blocks/slice.zig"),
+    @import("ser/blocks/string.zig"),
+    @import("ser/blocks/struct.zig"),
+    @import("ser/blocks/tuple.zig"),
+    @import("ser/blocks/union.zig"),
+    @import("ser/blocks/vector.zig"),
+    @import("ser/blocks/void.zig"),
 };
 
 /// Serializes a value into the given Getty serializer.

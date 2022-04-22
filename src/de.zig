@@ -262,23 +262,23 @@ pub const de = struct {
 /// end, thereby taking the lowest priority.
 pub const default_dt = .{
     // std
-    @import("de/with/array_list.zig"),
-    @import("de/with/hash_map.zig"),
-    @import("de/with/linked_list.zig"),
-    @import("de/with/tail_queue.zig"),
+    @import("de/blocks/array_list.zig"),
+    @import("de/blocks/hash_map.zig"),
+    @import("de/blocks/linked_list.zig"),
+    @import("de/blocks/tail_queue.zig"),
 
     // primitives
-    @import("de/with/array.zig"),
-    @import("de/with/bool.zig"),
-    @import("de/with/enum.zig"),
-    @import("de/with/float.zig"),
-    @import("de/with/int.zig"),
-    @import("de/with/optional.zig"),
-    @import("de/with/pointer.zig"),
-    @import("de/with/slice.zig"),
-    @import("de/with/struct.zig"),
-    @import("de/with/tuple.zig"),
-    @import("de/with/void.zig"),
+    @import("de/blocks/array.zig"),
+    @import("de/blocks/bool.zig"),
+    @import("de/blocks/enum.zig"),
+    @import("de/blocks/float.zig"),
+    @import("de/blocks/int.zig"),
+    @import("de/blocks/optional.zig"),
+    @import("de/blocks/pointer.zig"),
+    @import("de/blocks/slice.zig"),
+    @import("de/blocks/struct.zig"),
+    @import("de/blocks/tuple.zig"),
+    @import("de/blocks/void.zig"),
 };
 
 /// Deserializes a value from the given Getty deserializer.

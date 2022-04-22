@@ -11,8 +11,8 @@
 //! (de)serializable. Out of the box, Getty maps a number of Zig types,
 //! including many standard library types (e.g., std.ArrayList,
 //! std.StringHashMap). For types that aren't already supported by Getty,
-//! custom "with blocks" can be provided to specify how a type can be
-//! serialized or deserialized into.
+//! custom "blocks" can be provided to specify how a type can be serialized or
+//! deserialized into.
 
 /// Serialization framework.
 pub usingnamespace @import("ser.zig");

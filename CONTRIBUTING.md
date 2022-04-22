@@ -6,7 +6,7 @@ and information to help you get started.
 ## First Steps
 
 If you're new to Getty, the best place to get started is
-[`src/ser/with/`](src/ser/with/).
+[`src/ser/blocks/`](src/ser/blocks/).
 
 The directory contains files for every data type Getty knows how to serialize:
 booleans, integers, arrays, `std.ArrayList`, it's all in there! The plan is to
