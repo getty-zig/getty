@@ -23,16 +23,16 @@ test "array" {
 test "array list" {
     // managed
     {
-        var list = std.ArrayList(std.ArrayList(i32)).init(allocator);
+        var list = std.ArrayList(std.ArrayList(u8)).init(allocator);
         defer list.deinit();
 
-        var a = std.ArrayList(i32).init(allocator);
+        var a = std.ArrayList(u8).init(allocator);
         defer a.deinit();
 
-        var b = std.ArrayList(i32).init(allocator);
+        var b = std.ArrayList(u8).init(allocator);
         defer b.deinit();
 
-        var c = std.ArrayList(i32).init(allocator);
+        var c = std.ArrayList(u8).init(allocator);
         defer c.deinit();
 
         try t(list, &[_]Token{
@@ -43,18 +43,18 @@ test "array list" {
         try b.append(1);
         try c.append(2);
         try c.append(3);
-        try list.appendSlice(&[_]std.ArrayList(i32){ a, b, c });
+        try list.appendSlice(&[_]std.ArrayList(u8){ a, b, c });
 
         try t(list, &[_]Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = .{} },
             .{ .Seq = .{ .len = 1 } },
-            .{ .I32 = 1 },
+            .{ .U8 = 1 },
             .{ .SeqEnd = .{} },
             .{ .Seq = .{ .len = 2 } },
-            .{ .I32 = 2 },
-            .{ .I32 = 3 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
             .{ .SeqEnd = .{} },
             .{ .SeqEnd = .{} },
         });
@@ -62,16 +62,16 @@ test "array list" {
 
     // unmanaged
     {
-        var list = std.ArrayListUnmanaged(std.ArrayListUnmanaged(i32)){};
+        var list = std.ArrayListUnmanaged(std.ArrayListUnmanaged(u8)){};
         defer list.deinit(allocator);
 
-        var a = std.ArrayListUnmanaged(i32){};
+        var a = std.ArrayListUnmanaged(u8){};
         defer a.deinit(allocator);
 
-        var b = std.ArrayListUnmanaged(i32){};
+        var b = std.ArrayListUnmanaged(u8){};
         defer b.deinit(allocator);
 
-        var c = std.ArrayListUnmanaged(i32){};
+        var c = std.ArrayListUnmanaged(u8){};
         defer c.deinit(allocator);
 
         try t(list, &[_]Token{
@@ -82,18 +82,18 @@ test "array list" {
         try b.append(allocator, 1);
         try c.append(allocator, 2);
         try c.append(allocator, 3);
-        try list.appendSlice(allocator, &[_]std.ArrayListUnmanaged(i32){ a, b, c });
+        try list.appendSlice(allocator, &[_]std.ArrayListUnmanaged(u8){ a, b, c });
 
         try t(list, &[_]Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = .{} },
             .{ .Seq = .{ .len = 1 } },
-            .{ .I32 = 1 },
+            .{ .U8 = 1 },
             .{ .SeqEnd = .{} },
             .{ .Seq = .{ .len = 2 } },
-            .{ .I32 = 2 },
-            .{ .I32 = 3 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
             .{ .SeqEnd = .{} },
             .{ .SeqEnd = .{} },
         });
