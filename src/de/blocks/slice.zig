@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const SliceVisitor = @import("../impl/visitor/slice.zig").Visitor;
+const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .Slice;

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const VoidVisitor = @import("../impl/visitor/void.zig");
+const VoidVisitor = @import("../impls/visitor/void.zig");
 
 pub fn is(comptime T: type) bool {
     return T == void;

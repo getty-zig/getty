@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const OptionalVisitor = @import("../impl/visitor/optional.zig").Visitor;
+const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Optional;

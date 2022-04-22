@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const BoolVisitor = @import("../impl/visitor/bool.zig");
+const BoolVisitor = @import("../impls/visitor/bool.zig");
 
 pub fn is(comptime T: type) bool {
     return T == bool;

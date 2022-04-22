@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const ArrayListVisitor = @import("../impl/visitor/array_list.zig").Visitor;
+const ArrayListVisitor = @import("../impls/visitor/array_list.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return comptime std.mem.startsWith(u8, @typeName(T), "std.array_list");

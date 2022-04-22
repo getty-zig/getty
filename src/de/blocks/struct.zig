@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const StructVisitor = @import("../impl/visitor/struct.zig").Visitor;
+const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;

@@ -134,7 +134,7 @@ const getty = @import("lib.zig");
 const std = @import("std");
 
 /// Deserializer interface.
-pub usingnamespace @import("de/interface/deserializer.zig");
+pub usingnamespace @import("de/interfaces/deserializer.zig");
 
 /// Namespace for deserialization-specific types and functions.
 pub const de = struct {
@@ -151,19 +151,19 @@ pub const de = struct {
     };
 
     /// Map access and deserialization interface.
-    pub usingnamespace @import("de/interface/map.zig");
+    pub usingnamespace @import("de/interfaces/map.zig");
 
     /// Deserialization seed interface.
-    pub usingnamespace @import("de/interface/seed.zig");
+    pub usingnamespace @import("de/interfaces/seed.zig");
 
     /// Sequence access and deserialization interface.
-    pub usingnamespace @import("de/interface/seq.zig");
+    pub usingnamespace @import("de/interfaces/seq.zig");
 
     /// Visitor interface.
-    pub usingnamespace @import("de/interface/visitor.zig");
+    pub usingnamespace @import("de/interfaces/visitor.zig");
 
     /// Default deserialization seed implementation.
-    pub usingnamespace @import("de/impl/seed/default.zig");
+    pub usingnamespace @import("de/impls/seed/default.zig");
 
     /// Frees resources allocated during Getty deserialization.
     pub fn free(allocator: std.mem.Allocator, value: anytype) void {

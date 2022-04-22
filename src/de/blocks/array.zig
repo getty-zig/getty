@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const ArrayVisitor = @import("../impl/visitor/array.zig").Visitor;
+const ArrayVisitor = @import("../impls/visitor/array.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Array;

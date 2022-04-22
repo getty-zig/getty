@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const FloatVisitor = @import("../impl/visitor/float.zig").Visitor;
+const FloatVisitor = @import("../impls/visitor/float.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return switch (@typeInfo(T)) {

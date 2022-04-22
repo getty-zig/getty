@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const EnumVisitor = @import("../impl/visitor/enum.zig").Visitor;
+const EnumVisitor = @import("../impls/visitor/enum.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Enum;

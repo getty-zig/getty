@@ -100,18 +100,18 @@ const getty = @import("lib.zig");
 const std = @import("std");
 
 /// Serializer interface.
-pub const Serializer = @import("ser/interface/serializer.zig").Serializer;
+pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
 /// Namespace for serialization-specific types and functions.
 pub const ser = struct {
     /// Map serialization interface.
-    pub usingnamespace @import("ser/interface/map.zig");
+    pub usingnamespace @import("ser/interfaces/map.zig");
 
     /// Sequence serialization interface.
-    pub usingnamespace @import("ser/interface/seq.zig");
+    pub usingnamespace @import("ser/interfaces/seq.zig");
 
     /// Struct serialization interface.
-    pub usingnamespace @import("ser/interface/structure.zig");
+    pub usingnamespace @import("ser/interfaces/structure.zig");
 };
 
 /// The default Serialization Tuple.

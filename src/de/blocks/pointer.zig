@@ -1,7 +1,7 @@
 const getty = @import("../../lib.zig");
 const std = @import("std");
 
-const PointerVisitor = @import("../impl/visitor/pointer.zig").Visitor;
+const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;

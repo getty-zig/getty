@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const HashMapVisitor = @import("../impl/visitor/hash_map.zig").Visitor;
+const HashMapVisitor = @import("../impls/visitor/hash_map.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return comptime std.mem.startsWith(u8, @typeName(T), "std.hash_map");

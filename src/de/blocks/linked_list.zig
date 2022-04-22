@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const LinkedListVisitor = @import("../impl/visitor/linked_list.zig").Visitor;
+const LinkedListVisitor = @import("../impls/visitor/linked_list.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
     return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList");
