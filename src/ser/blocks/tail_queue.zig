@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub fn is(comptime T: type) bool {
-    return std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
+    return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
 }
 
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
