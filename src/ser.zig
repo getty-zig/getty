@@ -121,6 +121,7 @@ pub const ser = struct {
 pub const default_st = .{
     // std
     @import("ser/blocks/array_list.zig"),
+    @import("ser/blocks/bounded_array.zig"),
     @import("ser/blocks/hash_map.zig"),
     @import("ser/blocks/linked_list.zig"),
     @import("ser/blocks/tail_queue.zig"),
