@@ -12,17 +12,105 @@
 
 ## Overview
 
-Getty is a serialization and deserialization framework for the [Zig programming
-language](https://ziglang.org).
+Getty is a framework for building robust, optimal, and reusable (de)serializers in the [Zig programming language](https://ziglang.org).
 
-The main contribution of Getty is its data model, a set of types that
-establishes a generic baseline from which serializers and deserializers can
-operate. Using the data model, serializers and deserializers:
+With Getty's data model abstractions, custom (de)serialization capabilities, and comprehensive support for standard library types, writing efficient, extensible, and type-safe (de)serializers in Zig has never been easier!
 
-- Automatically support a number of Zig data types (including many within the standard library).
-- Can serialize or deserialize into any data type mapped to Getty's data model.
-- Can perform custom serialization and deserialization.
-- Become much simpler than equivalent, handwritten alternatives.
+## Quick Start
+
+```zig
+const std = @import("std");
+const getty = @import("getty");
+
+// A JSON serializer that only supports scalar values.
+//
+// It can serialize the following types (and more):
+//
+//   - bool
+//   - comptime_int
+//   - comptime_float
+//   - i0 through i65535
+//   - u0 through u65535
+//   - f16, f32, f64, f80, f128
+//   - enum{ foo, bar }
+//   - []u8, []const u8, *const [N]u8
+//   - *void, **void
+//   - ?void, ??void
+const Serializer = struct {
+    pub usingnamespace getty.Serializer(
+        @This(),
+        Ok,
+        Error,
+        getty.default_st,
+        getty.default_st,
+        @This(),
+        @This(),
+        @This(),
+        serializeBool,
+        serializeEnum,
+        serializeFloat,
+        serializeInt,
+        undefined,
+        serializeNull,
+        undefined,
+        serializeSome,
+        serializeString,
+        undefined,
+        serializeNull,
+    );
+
+    const Ok = void;
+    const Error = error{ Io, Syntax };
+
+    fn serializeBool(_: @This(), value: bool) !Ok {
+        std.debug.print("{}\n", .{value});
+    }
+
+    fn serializeEnum(self: @This(), value: anytype) !Ok {
+        try self.serializeString(@tagName(value));
+    }
+
+    fn serializeFloat(_: @This(), value: anytype) !Ok {
+        std.debug.print("{e}\n", .{value});
+    }
+
+    fn serializeInt(_: @This(), value: anytype) !Ok {
+        std.debug.print("{d}\n", .{value});
+    }
+
+    fn serializeNull(_: @This()) !Ok {
+        std.debug.print("null\n", .{});
+    }
+
+    fn serializeSome(self: @This(), value: anytype) !Ok {
+        try getty.serialize(value, self.serializer());
+    }
+
+    fn serializeString(_: @This(), value: anytype) !Ok {
+        std.debug.print("\"{s}\"\n", .{value});
+    }
+};
+
+pub fn main() anyerror!void {
+    const s = (Serializer{}).serializer();
+
+    inline for (.{ true, 123, 3.14, "Getty!", {}, null }) |v| {
+        try getty.serialize(v, s);
+    }
+}
+```
+
+Output:
+
+```console
+$ zig build run
+true
+123
+3.14e+00
+"Getty!"
+null
+null
+```
 
 ## Installation
 
