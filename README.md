@@ -116,7 +116,7 @@ null
 
 ### Manual
 
-1. Clone Getty:
+1. Add Getty to your project:
 
     ```
     git clone https://github.com/getty-zig/getty deps/getty
@@ -179,7 +179,13 @@ null
     +  - src: git https://gitub.com/getty-zig/getty
     ```
 
-2. Add the following to `build.zig`:
+2. Fetch project dependencies:
+
+    ```
+    zigmod fetch
+    ```
+
+3. Add the following to `build.zig`:
 
     ```diff
     const std = @import("std");
@@ -196,12 +202,6 @@ null
 
         ...
     }
-    ```
-
-3. Fetch dependencies:
-
-    ```
-    zigmod fetch
     ```
 
 ## Contributing
