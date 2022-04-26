@@ -142,7 +142,7 @@ null
 
 ### Gyro
 
-1. Make Getty a project dependency:
+1. Add Getty to your project:
 
     ```
     gyro add -s github getty-zig/getty
@@ -166,6 +166,42 @@ null
 
         ...
     }
+    ```
+
+### Zigmod
+
+1. Add the following to `zigmod.yml`:
+
+    ```diff
+    ...
+
+    root_dependencies:
+    +  - src: git https://gitub.com/getty-zig/getty
+    ```
+
+2. Add the following to `build.zig`:
+
+    ```diff
+    const std = @import("std");
+    +const deps = @import("deps.zig");
+
+    pub fn build(b: *std.build.Builder) void {
+        ...
+
+        const exe = b.addExecutable("my-project", "src/main.zig");
+        exe.setTarget(target);
+        exe.setBuildMode(mode);
+    +   deps.addAllTo(exe);
+        exe.install();
+
+        ...
+    }
+    ```
+
+3. Fetch dependencies:
+
+    ```
+    zigmod fetch
     ```
 
 ## Contributing
