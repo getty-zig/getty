@@ -22,16 +22,16 @@ With Getty's data model abstractions, custom (de)serialization capabilities, and
 const std = @import("std");
 const getty = @import("getty");
 
-// A JSON serializer that only supports scalar values.
+// A JSON serializer that supports scalar and string values.
 //
-// It can serialize the following types (and more):
+// A non-exhaustive list of type supported by Serializer::
 //
 //   - bool
 //   - comptime_int
 //   - comptime_float
 //   - i0 through i65535
 //   - u0 through u65535
-//   - f16, f32, f64, f80, f128
+//   - f16, f32, f64, f128
 //   - enum{ foo, bar }
 //   - []u8, []const u8, *const [N]u8
 //   - *void, **void
@@ -43,13 +43,13 @@ const Serializer = struct {
         Error,
         getty.default_st,
         getty.default_st,
-        @This(),
-        @This(),
-        @This(),
-        serializeBool,
+        getty.TODO,
+        getty.TODO,
+        getty.TODO,
+        serializeDefault,
         serializeEnum,
-        serializeFloat,
-        serializeInt,
+        serializeDefault,
+        serializeDefault,
         undefined,
         serializeNull,
         undefined,
@@ -62,20 +62,12 @@ const Serializer = struct {
     const Ok = void;
     const Error = error{ Io, Syntax };
 
-    fn serializeBool(_: @This(), value: bool) !Ok {
+    fn serializeDefault(_: @This(), value: anytype) !Ok {
         std.debug.print("{}\n", .{value});
     }
 
     fn serializeEnum(self: @This(), value: anytype) !Ok {
         try self.serializeString(@tagName(value));
-    }
-
-    fn serializeFloat(_: @This(), value: anytype) !Ok {
-        std.debug.print("{e}\n", .{value});
-    }
-
-    fn serializeInt(_: @This(), value: anytype) !Ok {
-        std.debug.print("{d}\n", .{value});
     }
 
     fn serializeNull(_: @This()) !Ok {
@@ -93,8 +85,9 @@ const Serializer = struct {
 
 pub fn main() anyerror!void {
     const s = (Serializer{}).serializer();
+    const values = .{ true, 123, 3.14, "Getty!", null };
 
-    inline for (.{ true, 123, 3.14, "Getty!", {}, null }) |v| {
+    inline for (values) |v| {
         try getty.serialize(v, s);
     }
 }
@@ -108,7 +101,6 @@ true
 123
 3.14e+00
 "Getty!"
-null
 null
 ```
 
