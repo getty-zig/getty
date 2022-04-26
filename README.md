@@ -12,9 +12,9 @@
 
 ## Overview
 
-Getty is a framework for building robust, optimal, and reusable (de)serializers in the [Zig programming language](https://ziglang.org).
+Getty is a framework for building __robust__, __optimal__, and __reusable__ (de)serializers in the [Zig programming language](https://ziglang.org).
 
-With Getty's data model abstractions, custom (de)serialization capabilities, and comprehensive support for standard library types, writing efficient, extensible, and type-safe (de)serializers in Zig has never been easier!
+Getty provides out-of-the-box support for a variety of standard library types, enables local customization of (de)serialization logic for both existing and remote types, and maintains its own data model abstractions that serve as simple and generic baselines from which serializers and deserializers can operate.
 
 ## Quick Start
 
