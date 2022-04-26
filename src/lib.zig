@@ -39,3 +39,6 @@ pub const concepts = struct {
         @compileError("concept `" ++ concept ++ "` was not satisfied: " ++ msg);
     }
 };
+
+/// Placeholder value for compound (de)serialization-related arguments.
+pub const TODO = struct {};
