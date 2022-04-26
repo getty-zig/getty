@@ -22,20 +22,6 @@ With Getty's data model abstractions, custom (de)serialization capabilities, and
 const std = @import("std");
 const getty = @import("getty");
 
-// A JSON serializer that supports scalar and string values.
-//
-// A non-exhaustive list of type supported by Serializer::
-//
-//   - bool
-//   - comptime_int
-//   - comptime_float
-//   - i0 through i65535
-//   - u0 through u65535
-//   - f16, f32, f64, f128
-//   - enum{ foo, bar }
-//   - []u8, []const u8, *const [N]u8
-//   - *void, **void
-//   - ?void, ??void
 const Serializer = struct {
     pub usingnamespace getty.Serializer(
         @This(),
@@ -46,10 +32,10 @@ const Serializer = struct {
         getty.TODO,
         getty.TODO,
         getty.TODO,
-        serializeDefault,
+        serializeBool,
         serializeEnum,
-        serializeDefault,
-        serializeDefault,
+        serializeNumber,
+        serializeNumber,
         undefined,
         serializeNull,
         undefined,
@@ -62,7 +48,7 @@ const Serializer = struct {
     const Ok = void;
     const Error = error{ Io, Syntax };
 
-    fn serializeDefault(_: @This(), value: anytype) !Ok {
+    fn serializeBool(_: @This(), value: bool) !Ok {
         std.debug.print("{}\n", .{value});
     }
 
@@ -72,6 +58,10 @@ const Serializer = struct {
 
     fn serializeNull(_: @This()) !Ok {
         std.debug.print("null\n", .{});
+    }
+
+    fn serializeNumber(_: @This(), value: anytype) !Ok {
+        std.debug.print("{}\n", .{value});
     }
 
     fn serializeSome(self: @This(), value: anytype) !Ok {
