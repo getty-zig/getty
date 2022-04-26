@@ -75,7 +75,7 @@ const Serializer = struct {
 
 pub fn main() anyerror!void {
     const s = (Serializer{}).serializer();
-    const values = .{ true, 123, 3.14, "Getty!", null };
+    const values = .{ true, 10, 10.0, "string", .variant, null };
 
     inline for (values) |v| {
         try getty.serialize(v, s);
@@ -88,9 +88,10 @@ Output:
 ```console
 $ zig build run
 true
-123
-3.14e+00
-"Getty!"
+10
+1.0e+01
+"string"
+"variant"
 null
 ```
 
