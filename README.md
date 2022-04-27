@@ -102,7 +102,7 @@ null
 1. Add Getty to your project:
 
     ```
-    git clone https://github.com/getty-zig/getty deps/getty
+    git clone https://github.com/getty-zig/getty lib/getty
     ```
 
 2. Add the following to `build.zig`:
@@ -116,7 +116,7 @@ null
         const exe = b.addExecutable("my-project", "src/main.zig");
         exe.setTarget(target);
         exe.setBuildMode(mode);
-    +   exe.addPackagePath("getty", "deps/getty/src/lib.zig");
+    +   exe.addPackagePath("getty", "lib/getty/src/lib.zig");
         exe.install();
 
         ...
