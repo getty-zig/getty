@@ -7,9 +7,9 @@ const Serializer = struct {
         error{ Io, Syntax },
         getty.default_st,
         getty.default_st,
-        @This(),
-        @This(),
-        @This(),
+        getty.TODO,
+        getty.TODO,
+        getty.TODO,
         undefined,
         undefined,
         undefined,
@@ -23,10 +23,3 @@ const Serializer = struct {
         undefined,
     );
 };
-
-pub fn main() anyerror!void {
-    const s = (Serializer{}).serializer();
-
-    // COMPILE ERROR: `Serializer` does not implement `serializeBool`.
-    try getty.serialize(true, s);
-}
