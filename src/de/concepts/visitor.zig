@@ -21,6 +21,7 @@ pub fn @"getty.de.Visitor"(comptime T: type) void {
             "visitSeq",
             "visitSome",
             "visitString",
+            "visitUnion",
             "visitVoid",
         }) |decl| {
             if (!@hasDecl(T, decl)) {
