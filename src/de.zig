@@ -284,6 +284,7 @@ pub const default_dt = .{
     @import("de/blocks/slice.zig"),
     @import("de/blocks/struct.zig"),
     @import("de/blocks/tuple.zig"),
+    @import("de/blocks/union.zig"),
     @import("de/blocks/void.zig"),
 };
 
