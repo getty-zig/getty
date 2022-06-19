@@ -81,6 +81,7 @@ pub fn Deserializer(
     comptime deserializeSeq: Fn(Context, Error),
     comptime deserializeString: Fn(Context, Error),
     comptime deserializeStruct: Fn(Context, Error),
+    comptime deserializeUnion: Fn(Context, Error),
     comptime deserializeVoid: Fn(Context, Error),
 ) type {
     comptime {
@@ -152,6 +153,10 @@ pub fn Deserializer(
 
             pub fn deserializeStruct(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
                 return try deserializeStruct(self.context, allocator, visitor);
+            }
+
+            pub fn deserializeUnion(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                return try deserializeUnion(self.context, allocator, visitor);
             }
 
             pub fn deserializeVoid(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {

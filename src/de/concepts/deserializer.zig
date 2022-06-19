@@ -22,6 +22,7 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
             "deserializeSeq",
             "deserializeString",
             "deserializeStruct",
+            "deserializeUnion",
             "deserializeVoid",
         }) |decl| {
             if (!@hasDecl(T, decl)) {
