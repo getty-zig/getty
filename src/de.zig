@@ -159,6 +159,12 @@ pub const de = struct {
     /// Sequence access and deserialization interface.
     pub usingnamespace @import("de/interfaces/seq.zig");
 
+    /// Union access and deserialization interface.
+    pub usingnamespace @import("de/interfaces/union_access.zig");
+
+    /// Variant access and deserialization interface.
+    pub usingnamespace @import("de/interfaces/variant_access.zig");
+
     /// Visitor interface.
     pub usingnamespace @import("de/interfaces/visitor.zig");
 

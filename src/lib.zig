@@ -33,6 +33,8 @@ pub const concepts = struct {
     pub usingnamespace @import("de/concepts/map.zig");
     pub usingnamespace @import("de/concepts/seed.zig");
     pub usingnamespace @import("de/concepts/seq.zig");
+    pub usingnamespace @import("de/concepts/union_access.zig");
+    pub usingnamespace @import("de/concepts/variant_access.zig");
     pub usingnamespace @import("de/concepts/visitor.zig");
 
     pub fn err(comptime concept: []const u8, comptime msg: []const u8) void {
