@@ -10,7 +10,7 @@ pub fn @"getty.de.Seed"(comptime T: type) void {
             concepts.err(concept, "missing `context` field");
         }
 
-        if (!std.meta.trait.hasFunctions(T, .{"deserialize"})) {
+        if (!std.meta.trait.hasFn("deserialize")(T)) {
             concepts.err(concept, "missing `deserialize` function");
         }
     }

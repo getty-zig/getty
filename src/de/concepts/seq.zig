@@ -14,10 +14,7 @@ pub fn @"getty.de.Seq"(comptime T: type) void {
             concepts.err(concept, "missing `Error` declaration");
         }
 
-        inline for (.{
-            "nextElementSeed",
-            "nextElement",
-        }) |func| {
+        inline for (.{ "nextElementSeed", "nextElement" }) |func| {
             if (!std.meta.trait.hasFunctions(T, .{func})) {
                 concepts.err(concept, "missing `" ++ func ++ "` function");
             }
