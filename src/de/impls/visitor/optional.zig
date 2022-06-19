@@ -15,8 +15,8 @@ pub fn Visitor(comptime Optional: type) type {
             undefined,
             visitNull,
             undefined,
-            undefined,
             visitSome,
+            undefined,
             undefined,
         );
 

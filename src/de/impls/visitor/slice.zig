@@ -15,8 +15,8 @@ pub fn Visitor(comptime Slice: type) type {
             undefined,
             undefined,
             visitSeq,
-            visitString,
             undefined,
+            visitString,
             undefined,
         );
 

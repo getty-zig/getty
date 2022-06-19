@@ -42,13 +42,13 @@ pub fn Visitor(
             unreachable;
         }
     }.f),
-    comptime visitString: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitSome: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             unreachable;
         }
     }.f),
-    comptime visitSome: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+    comptime visitString: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),

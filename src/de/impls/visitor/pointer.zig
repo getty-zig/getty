@@ -19,8 +19,8 @@ pub fn Visitor(comptime Pointer: type) type {
             visitMap,
             visitNull,
             visitSeq,
-            visitString,
             visitSome,
+            visitString,
             visitVoid,
         );
 

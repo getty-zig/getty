@@ -15,8 +15,8 @@ pub fn Visitor(comptime Enum: type) type {
             undefined,
             undefined,
             undefined,
-            visitString,
             undefined,
+            visitString,
             undefined,
         );
 
