@@ -18,6 +18,7 @@ pub fn Visitor(comptime TailQueue: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = TailQueue;

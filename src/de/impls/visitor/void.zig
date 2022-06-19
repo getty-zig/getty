@@ -15,6 +15,7 @@ pub usingnamespace getty.de.Visitor(
     undefined,
     undefined,
     undefined,
+    undefined,
     visitVoid,
 );
 

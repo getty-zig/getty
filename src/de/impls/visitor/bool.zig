@@ -16,6 +16,7 @@ pub usingnamespace getty.de.Visitor(
     undefined,
     undefined,
     undefined,
+    undefined,
 );
 
 const Value = bool;

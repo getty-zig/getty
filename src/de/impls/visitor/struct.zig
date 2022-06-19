@@ -19,6 +19,7 @@ pub fn Visitor(comptime Struct: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = Struct;

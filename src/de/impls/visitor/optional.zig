@@ -18,6 +18,7 @@ pub fn Visitor(comptime Optional: type) type {
             visitSome,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = Optional;

@@ -18,6 +18,7 @@ pub fn Visitor(comptime Int: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = Int;

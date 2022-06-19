@@ -18,6 +18,7 @@ pub fn Visitor(comptime Tuple: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = Tuple;

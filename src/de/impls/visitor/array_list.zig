@@ -18,6 +18,7 @@ pub fn Visitor(comptime ArrayList: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = ArrayList;

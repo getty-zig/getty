@@ -18,6 +18,7 @@ pub fn Visitor(comptime Slice: type) type {
             undefined,
             visitString,
             undefined,
+            undefined,
         );
 
         const Value = Slice;

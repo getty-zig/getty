@@ -18,6 +18,7 @@ pub fn Visitor(comptime Array: type) type {
             undefined,
             visitString,
             undefined,
+            undefined,
         );
 
         const Value = Array;

@@ -18,6 +18,7 @@ pub fn Visitor(comptime LinkedList: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = LinkedList;

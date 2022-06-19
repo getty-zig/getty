@@ -18,6 +18,7 @@ pub fn Visitor(comptime HashMap: type) type {
             undefined,
             undefined,
             undefined,
+            undefined,
         );
 
         const Value = HashMap;

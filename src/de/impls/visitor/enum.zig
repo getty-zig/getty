@@ -18,6 +18,7 @@ pub fn Visitor(comptime Enum: type) type {
             undefined,
             visitString,
             undefined,
+            undefined,
         );
 
         const Value = Enum;
