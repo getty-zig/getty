@@ -202,7 +202,7 @@ pub const de = struct {
                             break;
                         }
                     }
-                } else unreachable;
+                } else @compileError("untagged unions cannot be freed by Getty");
             },
             .Struct => |info| {
                 if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayListAlignedUnmanaged")) {
