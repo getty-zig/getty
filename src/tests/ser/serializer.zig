@@ -255,6 +255,7 @@ fn assertNextToken(ser: *Serializer, expected: Token) !void {
                 .U32 => try expectEqual(@field(token, "U32"), @field(expected, "U32")),
                 .U64 => try expectEqual(@field(token, "U64"), @field(expected, "U64")),
                 .U128 => try expectEqual(@field(token, "U128"), @field(expected, "U128")),
+                .Union => @panic("TODO: unions"),
                 .Void => try expectEqual(@field(token, "Void"), @field(expected, "Void")),
             }
         } else {
