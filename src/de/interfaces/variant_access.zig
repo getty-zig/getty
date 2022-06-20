@@ -4,8 +4,7 @@ const std = @import("std");
 pub fn VariantAccess(
     comptime Context: type,
     comptime Error: type,
-    comptime voidVariant: fn (Context) Error!void,
-    comptime variant: @TypeOf(struct {
+    comptime payloadSeed: @TypeOf(struct {
         fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
             unreachable;
         }
@@ -18,14 +17,16 @@ pub fn VariantAccess(
             const Self = @This();
 
             pub const Error = Error;
-            pub const Variant = Variant;
 
-            pub fn voidVariant(self: Self) Error!void {
-                return try voidVariant(self.context);
+            pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
+                return try payloadSeed(self.context, allocator, seed);
             }
 
-            pub fn variant(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                return try variant(self.context, allocator, seed);
+            pub fn payload(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
+                var ds = getty.de.DefaultSeed(T){};
+                const seed = ds.seed();
+
+                return try self.payloadSeed(allocator, seed);
             }
         };
 

@@ -14,10 +14,8 @@ pub fn @"getty.de.VariantAccess"(comptime T: type) void {
             concepts.err(concept, "missing `Error` declaration");
         }
 
-        inline for (.{ "voidVariant", "variant" }) |func| {
-            if (!std.meta.trait.hasFn(func)(T)) {
-                concepts.err(concept, "missing `" ++ func ++ "` function");
-            }
+        if (!std.meta.trait.hasFn("payloadSeed")(T)) {
+            concepts.err(concept, "missing `payloadSeed` function");
         }
     }
 }
