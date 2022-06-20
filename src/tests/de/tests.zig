@@ -243,12 +243,69 @@ test "tuple" {
     });
 }
 
+test "union" {
+    // Tagged
+    {
+        const T = union(enum) {
+            foo: bool,
+            bar: void,
+        };
+
+        try t(T{ .foo = true }, &[_]Token{
+            .{ .Union = {} },
+            .{ .String = "foo" },
+            .{ .Bool = true },
+        });
+        try t(T{ .bar = {} }, &[_]Token{
+            .{ .Union = {} },
+            .{ .String = "bar" },
+            .{ .Void = {} },
+        });
+    }
+
+    // Untagged
+    {
+        const T = union {
+            foo: bool,
+            bar: void,
+        };
+
+        {
+            const tokens = &[_]Token{
+                .{ .Union = {} },
+                .{ .String = "foo" },
+                .{ .Bool = true },
+            };
+
+            var d = Deserializer.init(tokens);
+            const v = getty.deserialize(allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+
+            try expectEqual(true, v.foo);
+        }
+
+        {
+            const tokens = &[_]Token{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Void = {} },
+            };
+
+            var d = Deserializer.init(tokens);
+            const v = getty.deserialize(allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+
+            try expectEqual({}, v.bar);
+        }
+    }
+}
+
 test "void" {
     try t({}, &[_]Token{.{ .Void = {} }});
 }
 
-/// This test function does not support recursive, user-defined containers such
-/// as `std.ArrayList(std.ArrayList(u8))`.
+/// This test function does not support:
+///
+/// - Untagged unions
+/// - Recursive, user-defined containers (e.g., std.ArrayList(std.ArrayList(u8))).
 fn t(expected: anytype, tokens: []const Token) !void {
     const T = @TypeOf(expected);
 
@@ -287,6 +344,13 @@ fn t(expected: anytype, tokens: []const Token) !void {
                 },
                 false => try expectEqual(expected, v),
             }
+        },
+        .Union => |info| {
+            if (info.tag_type == null) {
+                @compileError("untagged unions are not supported by this function");
+            }
+
+            try expectEqual(expected, v);
         },
         else => unreachable,
     }

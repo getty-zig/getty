@@ -38,4 +38,5 @@ pub const Token = union(enum) {
     StructEnd,
 
     Enum,
+    Union,
 };

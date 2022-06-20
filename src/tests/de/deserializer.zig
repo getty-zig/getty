@@ -68,6 +68,7 @@ pub const Deserializer = struct {
         deserializeSeq,
         deserializeString,
         deserializeStruct,
+        deserializeUnion,
         deserializeVoid,
     );
 
@@ -183,6 +184,16 @@ pub const Deserializer = struct {
                 try self.assertNextToken(.StructEnd);
 
                 return value;
+            },
+            else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+        }
+    }
+
+    fn deserializeUnion(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        switch (self.nextToken()) {
+            .Union => {
+                var u = Union{ .de = self };
+                return visitor.visitUnion(allocator, Self.@"getty.Deserializer", u.unionAccess(), u.variantAccess());
             },
             else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
@@ -307,5 +318,41 @@ const Struct = struct {
 
     fn nextValueSeed(self: *Struct, allocator: ?std.mem.Allocator, seed: anytype) Deserializer.Error!@TypeOf(seed).Value {
         return try seed.deserialize(allocator, self.de.deserializer());
+    }
+};
+
+const Union = struct {
+    de: *Deserializer,
+
+    pub usingnamespace getty.de.UnionAccess(
+        *Union,
+        Deserializer.Error,
+        variantSeed,
+    );
+
+    pub usingnamespace getty.de.VariantAccess(
+        *Union,
+        Deserializer.Error,
+        payloadSeed,
+    );
+
+    fn variantSeed(self: *Union, _: ?std.mem.Allocator, seed: anytype) Deserializer.Error!@TypeOf(seed).Value {
+        const token = self.de.nextToken();
+
+        if (token == .String) {
+            return token.String;
+        }
+
+        return error.InvalidType;
+    }
+
+    fn payloadSeed(self: *Union, allocator: ?std.mem.Allocator, seed: anytype) Deserializer.Error!@TypeOf(seed).Value {
+        if (@TypeOf(seed).Value != void) {
+            return try seed.deserialize(allocator, self.de.deserializer());
+        }
+
+        if (self.de.nextToken() != .Void) {
+            return error.UnknownVariant;
+        }
     }
 };
