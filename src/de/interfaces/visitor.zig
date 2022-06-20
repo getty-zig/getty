@@ -159,7 +159,7 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitUnion(self.context, allocator, Deserializer);
+                return try visitUnion(self.context, allocator, Deserializer, access);
             }
 
             pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
