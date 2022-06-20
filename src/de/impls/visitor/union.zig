@@ -23,8 +23,17 @@ pub fn Visitor(comptime Union: type) type {
 
         const Value = Union;
 
-        fn visitUnion(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
-            return error.Unsupported;
+        fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
+            var variant = try ua.variant(allocator, []const u8);
+
+            inline for (std.meta.fields(Value)) |f| {
+                if (std.mem.eql(u8, f.name, variant)) {
+                    const alloc = if (f.field_type == void) null else allocator;
+                    return @unionInit(Value, f.name, try va.payload(alloc, f.field_type));
+                }
+            }
+
+            return error.UnknownVariant;
         }
     };
 }

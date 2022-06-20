@@ -10,10 +10,8 @@ pub fn @"getty.de.UnionAccess"(comptime T: type) void {
             concepts.err(concept, "missing `context` field");
         }
 
-        inline for (.{ "Error", "Variant" }) |decl| {
-            if (!@hasDecl(T, decl)) {
-                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
-            }
+        if (!@hasDecl(T, "Error")) {
+            concepts.err(concept, "missing `Error` declaration");
         }
 
         if (!std.meta.trait.hasFn("variantSeed")(T)) {

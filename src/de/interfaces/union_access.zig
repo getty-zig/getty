@@ -4,9 +4,8 @@ const std = @import("std");
 pub fn UnionAccess(
     comptime Context: type,
     comptime Error: type,
-    comptime Variant: type,
     comptime variantSeed: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(Error, Variant, @TypeOf(seed)) {
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
             unreachable;
         }
     }.f),
@@ -18,15 +17,17 @@ pub fn UnionAccess(
             const Self = @This();
 
             pub const Error = Error;
-            pub const Variant = Variant;
 
-            pub fn variantSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, Variant, @TypeOf(seed)) {
+            pub fn variantSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
                 return try variantSeed(self.context, allocator, seed);
             }
 
-            //pub fn variant(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, Variant, @TypeOf(seed)) {
-            //return try variantSeed(self.context, allocator, seed);
-            //}
+            pub fn variant(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
+                var ds = getty.de.DefaultSeed(T){};
+                const seed = ds.seed();
+
+                return try self.variantSeed(allocator, seed);
+            }
         };
 
         pub fn unionAccess(self: Context) @"getty.de.UnionAccess" {
@@ -35,8 +36,8 @@ pub fn UnionAccess(
     };
 }
 
-fn Return(comptime Error: type, comptime Variant: type, comptime Seed: type) type {
+fn Return(comptime Error: type, comptime Seed: type) type {
     comptime getty.concepts.@"getty.de.Seed"(Seed);
 
-    return Error!std.meta.Tuple(&[_]type{ Seed.Value, Variant });
+    return Error!Seed.Value;
 }

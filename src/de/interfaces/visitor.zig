@@ -53,7 +53,7 @@ pub fn Visitor(
         }
     }.f),
     comptime visitUnion: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype, _: anytype) Deserializer.Error!Value {
             unreachable;
         }
     }.f),
@@ -154,12 +154,13 @@ pub fn Visitor(
                 return try visitString(self.context, allocator, Deserializer, input);
             }
 
-            pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, access: anytype) blk: {
-                concepts.@"getty.de.UnionAccess"(@TypeOf(access));
+            pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) blk: {
+                concepts.@"getty.de.UnionAccess"(@TypeOf(ua));
+                concepts.@"getty.de.VariantAccess"(@TypeOf(va));
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitUnion(self.context, allocator, Deserializer, access);
+                return try visitUnion(self.context, allocator, Deserializer, ua, va);
             }
 
             pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
