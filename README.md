@@ -168,3 +168,7 @@ STRING: "Getty!"
         ...
     }
     ```
+
+## Contributing
+
+See [Contributing](https://getty.so/contributing).
