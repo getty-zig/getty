@@ -77,98 +77,10 @@ INT: 1234
 STRING: "Getty!"
 ```
 
-## Installation
+## Resources
 
-### Manual
-
-1. Add Getty to your project:
-
-    ```
-    git clone https://github.com/getty-zig/getty lib/getty
-    ```
-
-2. Add the following to `build.zig`:
-
-    ```diff
-    const std = @import("std");
-
-    pub fn build(b: *std.build.Builder) void {
-        ...
-
-        const exe = b.addExecutable("my-project", "src/main.zig");
-        exe.setTarget(target);
-        exe.setBuildMode(mode);
-    +   exe.addPackagePath("getty", "lib/getty/src/lib.zig");
-        exe.install();
-
-        ...
-    }
-    ```
-
-### Gyro
-
-1. Add Getty to your project:
-
-    ```
-    gyro add -s github getty-zig/getty
-    gyro fetch
-    ```
-
-2. Add the following to `build.zig`:
-
-    ```diff
-    const std = @import("std");
-    +const pkgs = @import("deps.zig").pkgs;
-
-    pub fn build(b: *std.build.Builder) void {
-        ...
-
-        const exe = b.addExecutable("my-project", "src/main.zig");
-        exe.setTarget(target);
-        exe.setBuildMode(mode);
-    +   pkgs.addAllTo(exe);
-        exe.install();
-
-        ...
-    }
-    ```
-
-### Zigmod
-
-1. Add the following to `zigmod.yml`:
-
-    ```diff
-    ...
-
-    root_dependencies:
-    +  - src: git https://gitub.com/getty-zig/getty
-    ```
-
-2. Fetch project dependencies:
-
-    ```
-    zigmod fetch
-    ```
-
-3. Add the following to `build.zig`:
-
-    ```diff
-    const std = @import("std");
-    +const deps = @import("deps.zig");
-
-    pub fn build(b: *std.build.Builder) void {
-        ...
-
-        const exe = b.addExecutable("my-project", "src/main.zig");
-        exe.setTarget(target);
-        exe.setBuildMode(mode);
-    +   deps.addAllTo(exe);
-        exe.install();
-
-        ...
-    }
-    ```
-
-## Contributing
-
-See [Contributing](https://getty.so/contributing).
+- [Website](https://getty.so)
+- [Guide](https://getty.so/guide)
+- [Examples](https://github.com/getty-zig/getty/tree/main/examples)
+- [Installation](https://github.com/getty-zig/getty/wiki/Installation)
+- [Contributing](https://getty.so/contributing)
