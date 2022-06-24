@@ -16,6 +16,67 @@ Getty is a framework for building __robust__, __optimal__, and __reusable__ (de)
 
 Getty provides out-of-the-box support for a variety of standard library types, enables users to _locally_ customize the (de)serialization process for both existing and remote types, and maintains its own data model abstractions that serve as simple and generic baselines for serializers and deserializers.
 
+## Quick Start
+
+```zig
+const std = @import("std");
+const getty = @import("getty");
+
+const Serializer = struct {
+    pub usingnamespace getty.Serializer(
+        @This(),
+        Ok,
+        Error,
+        getty.default_st,
+        getty.default_st,
+        getty.TODO,
+        getty.TODO,
+        getty.TODO,
+        serializeBool,
+        undefined,
+        undefined,
+        serializeInt,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        serializeString,
+        undefined,
+        undefined,
+    );
+
+    const Ok = void;
+    const Error = error{ Io, Syntax };
+
+    fn serializeBool(_: @This(), value: bool) !Ok {
+        std.debug.print("BOOL: {}\n", .{value});
+    }
+
+    fn serializeInt(_: @This(), value: anytype) !Ok {
+        std.debug.print("INT: {}\n", .{value});
+    }
+
+    fn serializeString(_: @This(), value: anytype) !Ok {
+        std.debug.print("STRING: \"{s}\"\n", .{value});
+    }
+};
+
+pub fn main() anyerror!void {
+    const s = (Serializer{}).serializer();
+
+    try getty.serialize(true, s);
+    try getty.serialize(1234, s);
+    try getty.serialize("Getty!", s);
+}
+```
+
+```sh
+$ zig build run
+BOOL: true
+INT: 1234
+STRING: "Getty!"
+```
+
 ## Installation
 
 ### Manual
