@@ -49,32 +49,28 @@ const Serializer = struct {
     const Error = error{ Io, Syntax };
 
     fn serializeBool(_: @This(), value: bool) !Ok {
-        std.debug.print("BOOL: {}\n", .{value});
+        std.debug.print("{}\n", .{value});
     }
 
     fn serializeInt(_: @This(), value: anytype) !Ok {
-        std.debug.print("INT: {}\n", .{value});
+        std.debug.print("{}\n", .{value != 0});
     }
 
     fn serializeString(_: @This(), value: anytype) !Ok {
-        std.debug.print("STRING: \"{s}\"\n", .{value});
+        std.debug.print("{}\n", .{value.len > 0});
     }
 };
 
 pub fn main() anyerror!void {
     const s = (Serializer{}).serializer();
 
-    try getty.serialize(true, s);
-    try getty.serialize(1234, s);
-    try getty.serialize("Getty!", s);
+    try getty.serialize(true, s);    // output: true
+    try getty.serialize(false, s);   // output: false
+    try getty.serialize(1, s);       // output: true
+    try getty.serialize(0, s);       // output: false
+    try getty.serialize("Getty", s); // output: true
+    try getty.serialize("", s);      // output: false
 }
-```
-
-```sh
-$ zig build run
-BOOL: true
-INT: 1234
-STRING: "Getty!"
 ```
 
 ## Resources
