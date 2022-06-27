@@ -145,6 +145,7 @@ pub const de = struct {
         InvalidType,
         InvalidValue,
         MissingField,
+        MissingVariant,
         UnknownField,
         UnknownVariant,
         Unsupported,
