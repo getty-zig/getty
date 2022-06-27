@@ -195,15 +195,13 @@ pub const de = struct {
                     else => unreachable,
                 },
             },
-            .Union => |info| {
-                if (info.tag_type) |Tag| {
-                    inline for (info.fields) |field| {
-                        if (value == @field(Tag, field.name)) {
-                            free(allocator, @field(value, field.name));
-                            break;
-                        }
+            .Union => |info| if (info.tag_type) |Tag| {
+                inline for (info.fields) |field| {
+                    if (value == @field(Tag, field.name)) {
+                        free(allocator, @field(value, field.name));
+                        break;
                     }
-                } else @compileError("untagged unions cannot be freed by Getty");
+                }
             },
             .Struct => |info| {
                 if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayListAlignedUnmanaged")) {
