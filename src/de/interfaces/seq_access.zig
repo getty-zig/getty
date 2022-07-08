@@ -1,7 +1,7 @@
 const getty = @import("../../lib.zig");
 const std = @import("std");
 
-pub fn Seq(
+pub fn SeqAccess(
     comptime Context: type,
     comptime Error: type,
     comptime nextElementSeed: @TypeOf(struct {
@@ -11,7 +11,7 @@ pub fn Seq(
     }.f),
 ) type {
     return struct {
-        pub const @"getty.de.Seq" = struct {
+        pub const @"getty.de.SeqAccess" = struct {
             context: Context,
 
             const Self = @This();
@@ -36,7 +36,7 @@ pub fn Seq(
             }
         };
 
-        pub fn seq(self: Context) @"getty.de.Seq" {
+        pub fn seqAccess(self: Context) @"getty.de.SeqAccess" {
             return .{ .context = self };
         }
     };

@@ -126,7 +126,7 @@ pub fn Visitor(
             /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
             pub fn visitSeq(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) blk: {
-                concepts.@"getty.de.Seq"(@TypeOf(seq));
+                concepts.@"getty.de.SeqAccess"(@TypeOf(seq));
 
                 break :blk Deserializer.Error!Value;
             } {

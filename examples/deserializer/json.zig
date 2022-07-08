@@ -164,7 +164,7 @@ const Deserializer = struct {
         const Seq = struct {
             de: *Deserializer,
 
-            pub usingnamespace getty.de.Seq(
+            pub usingnamespace getty.de.SeqAccess(
                 *@This(),
                 Error,
                 nextElementSeed,
@@ -189,7 +189,7 @@ const Deserializer = struct {
         if (try self.tokens.next()) |token| {
             if (token == .ArrayBegin) {
                 var s = Seq{ .de = self };
-                const seq = s.seq();
+                const seq = s.seqAccess();
 
                 return try v.visitSeq(allocator, De, seq);
             }

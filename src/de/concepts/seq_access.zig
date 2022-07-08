@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concepts = @import("../../lib.zig").concepts;
 
-const concept = "getty.de.Seq";
+const concept = "getty.de.SeqAccess";
 
-pub fn @"getty.de.Seq"(comptime T: type) void {
+pub fn @"getty.de.SeqAccess"(comptime T: type) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
             concepts.err(concept, "missing `context` field");

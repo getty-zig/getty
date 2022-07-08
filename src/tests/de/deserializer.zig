@@ -154,7 +154,7 @@ pub const Deserializer = struct {
         switch (self.nextToken()) {
             .Seq => |v| {
                 var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
-                var value = visitor.visitSeq(allocator, Self.@"getty.Deserializer", s.seq());
+                var value = visitor.visitSeq(allocator, Self.@"getty.Deserializer", s.seqAccess());
 
                 try self.assertNextToken(.SeqEnd);
 
@@ -234,7 +234,7 @@ const Seq = struct {
 
     const Self = @This();
 
-    pub usingnamespace getty.de.Seq(
+    pub usingnamespace getty.de.SeqAccess(
         *Self,
         Deserializer.Error,
         nextElementSeed,
