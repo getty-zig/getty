@@ -1,7 +1,7 @@
 const getty = @import("../../lib.zig");
 const std = @import("std");
 
-pub fn Map(
+pub fn MapAccess(
     comptime Context: type,
     comptime Error: type,
     comptime nextKeySeed: @TypeOf(struct {
@@ -16,7 +16,7 @@ pub fn Map(
     }.f),
 ) type {
     return struct {
-        pub const @"getty.de.Map" = struct {
+        pub const @"getty.de.MapAccess" = struct {
             context: Context,
 
             const Self = @This();
@@ -66,7 +66,7 @@ pub fn Map(
             }
         };
 
-        pub fn map(self: Context) @"getty.de.Map" {
+        pub fn mapAccess(self: Context) @"getty.de.MapAccess" {
             return .{ .context = self };
         }
     };

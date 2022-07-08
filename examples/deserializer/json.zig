@@ -121,7 +121,7 @@ const Deserializer = struct {
         const Map = struct {
             de: *Deserializer,
 
-            pub usingnamespace getty.de.Map(
+            pub usingnamespace getty.de.MapAccess(
                 *@This(),
                 Error,
                 nextKeySeed,
@@ -151,7 +151,7 @@ const Deserializer = struct {
         if (try self.tokens.next()) |token| {
             if (token == .ObjectBegin) {
                 var m = Map{ .de = self };
-                const map = m.map();
+                const map = m.mapAccess();
 
                 return try v.visitMap(allocator, De, map);
             }
@@ -202,7 +202,7 @@ const Deserializer = struct {
         const Map = struct {
             de: *Deserializer,
 
-            pub usingnamespace getty.de.Map(
+            pub usingnamespace getty.de.MapAccess(
                 *@This(),
                 Error,
                 nextKeySeed,
@@ -231,7 +231,7 @@ const Deserializer = struct {
         if (try self.tokens.next()) |token| {
             if (token == .ObjectBegin) {
                 var m = Map{ .de = self };
-                const map = m.map();
+                const map = m.mapAccess();
 
                 return try v.visitMap(allocator, De, map);
             }

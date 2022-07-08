@@ -30,7 +30,7 @@ pub const concepts = struct {
 
     pub usingnamespace @import("de/concepts/dbt.zig");
     pub usingnamespace @import("de/concepts/deserializer.zig");
-    pub usingnamespace @import("de/concepts/map.zig");
+    pub usingnamespace @import("de/concepts/map_access.zig");
     pub usingnamespace @import("de/concepts/seed.zig");
     pub usingnamespace @import("de/concepts/seq_access.zig");
     pub usingnamespace @import("de/concepts/union_access.zig");

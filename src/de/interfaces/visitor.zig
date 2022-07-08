@@ -109,7 +109,7 @@ pub fn Visitor(
             }
 
             pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
-                concepts.@"getty.de.Map"(@TypeOf(map));
+                concepts.@"getty.de.MapAccess"(@TypeOf(map));
 
                 break :blk Deserializer.Error!Value;
             } {

@@ -152,7 +152,7 @@ pub const de = struct {
     };
 
     /// Map access and deserialization interface.
-    pub usingnamespace @import("de/interfaces/map.zig");
+    pub usingnamespace @import("de/interfaces/map_access.zig");
 
     /// Deserialization seed interface.
     pub usingnamespace @import("de/interfaces/seed.zig");

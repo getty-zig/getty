@@ -126,7 +126,7 @@ pub const Deserializer = struct {
         switch (self.nextToken()) {
             .Map => |v| {
                 var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
-                var value = visitor.visitMap(allocator, Self.@"getty.Deserializer", m.map());
+                var value = visitor.visitMap(allocator, Self.@"getty.Deserializer", m.mapAccess());
 
                 try self.assertNextToken(.MapEnd);
 
@@ -179,7 +179,7 @@ pub const Deserializer = struct {
         switch (self.nextToken()) {
             .Struct => |v| {
                 var s = Struct{ .de = self, .len = v.len, .end = .StructEnd };
-                var value = visitor.visitMap(allocator, Self.@"getty.Deserializer", s.map());
+                var value = visitor.visitMap(allocator, Self.@"getty.Deserializer", s.mapAccess());
 
                 try self.assertNextToken(.StructEnd);
 
@@ -258,7 +258,7 @@ const Map = struct {
 
     const Self = @This();
 
-    pub usingnamespace getty.de.Map(
+    pub usingnamespace getty.de.MapAccess(
         *Self,
         Deserializer.Error,
         nextKeySeed,
@@ -289,7 +289,7 @@ const Struct = struct {
 
     const Self = @This();
 
-    pub usingnamespace getty.de.Map(
+    pub usingnamespace getty.de.MapAccess(
         *Self,
         Deserializer.Error,
         nextKeySeed,
