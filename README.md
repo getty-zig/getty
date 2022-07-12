@@ -16,12 +16,32 @@ Getty is a framework for building __robust__, __optimal__, and __reusable__ (de)
 
 Getty provides out-of-the-box support for a variety of standard library types, enables users to _locally_ customize the (de)serialization process for both existing and remote types, and maintains its own data model abstractions that serve as simple and generic baselines for serializers and deserializers.
 
+## Resources
+
+- [Website](https://getty.so)
+- [Guide](https://getty.so/guide)
+- [Examples](https://github.com/getty-zig/getty/tree/main/examples)
+- [Installation](https://github.com/getty-zig/getty/wiki/Installation)
+- [Contributing](https://getty.so/contributing)
+
 ## Quick Start
 
 ```zig
 const std = @import("std");
 const getty = @import("getty");
 
+// Serializer supports the following types:
+//
+//  - Booleans
+//  - Arrays
+//  - Slices
+//  - Tuples
+//  - Vectors
+//  - std.ArrayList
+//  - std.TailQueue
+//  - std.SinglyLinkedList
+//  - std.BoundedArray
+//  - and more!
 const Serializer = struct {
     pub usingnamespace getty.Serializer(
         @This(),
@@ -30,53 +50,63 @@ const Serializer = struct {
         getty.default_st,
         getty.default_st,
         getty.TODO,
-        getty.TODO,
+        Seq,
         getty.TODO,
         serializeBool,
         undefined,
         undefined,
-        serializeInt,
         undefined,
         undefined,
         undefined,
+        serializeSeq,
         undefined,
-        serializeString,
+        undefined,
         undefined,
         undefined,
     );
 
     const Ok = void;
-    const Error = error{ Io, Syntax };
+    const Error = error{ Foo, Bar };
 
-    fn serializeBool(_: @This(), value: bool) !Ok {
-        std.debug.print("{}\n", .{value});
+    fn serializeBool(_: @This(), value: bool) Error!Ok {
+        std.debug.print("{}", .{value});
     }
 
-    fn serializeInt(_: @This(), value: anytype) !Ok {
-        std.debug.print("{}\n", .{value != 0});
+    fn serializeSeq(_: @This(), _: ?usize) Error!Seq {
+        std.debug.print("[", .{});
+        return Seq{};
+    }
+};
+
+const Seq = struct {
+    first: bool = true,
+
+    pub usingnamespace getty.ser.Seq(
+        *@This(),
+        Serializer.Ok,
+        Serializer.Error,
+        serializeElement,
+        end,
+    );
+
+    fn serializeElement(self: *@This(), value: anytype) !void {
+        switch (self.first) {
+            true => self.first = false,
+            false => std.debug.print(", ", .{}),
+        }
+
+        try getty.serialize(value, (Serializer{}).serializer());
     }
 
-    fn serializeString(_: @This(), value: anytype) !Ok {
-        std.debug.print("{}\n", .{value.len > 0});
+    fn end(_: *@This()) !Serializer.Ok {
+        std.debug.print("]", .{});
     }
 };
 
 pub fn main() anyerror!void {
-    const s = (Serializer{}).serializer();
-
-    try getty.serialize(true, s);    // output: true
-    try getty.serialize(false, s);   // output: false
-    try getty.serialize(1, s);       // output: true
-    try getty.serialize(0, s);       // output: false
-    try getty.serialize("Getty", s); // output: true
-    try getty.serialize("", s);      // output: false
+    const s = Serializer{};
+    const value = .{ true, false };
+    
+    try getty.serialize(value, s.serializer()); // output: [true, false]
 }
 ```
-
-## Resources
-
-- [Website](https://getty.so)
-- [Guide](https://getty.so/guide)
-- [Examples](https://github.com/getty-zig/getty/tree/main/examples)
-- [Installation](https://github.com/getty-zig/getty/wiki/Installation)
-- [Contributing](https://getty.so/contributing)
