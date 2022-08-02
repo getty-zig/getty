@@ -21,7 +21,7 @@ pub fn Visitor(comptime Pointer: type) type {
             visitSeq,
             visitSome,
             visitString,
-            undefined,
+            visitUnion,
             visitVoid,
         );
 
@@ -117,12 +117,12 @@ pub fn Visitor(comptime Pointer: type) type {
             return value;
         }
 
-        fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, access: anytype) Deserializer.Error!Value {
+        fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
             const value = try allocator.?.create(Child);
             errdefer getty.de.free(allocator.?, value);
 
             var child_visitor = getty.de.find_db(Deserializer, Child).Visitor(Child){};
-            value.* = try child_visitor.visitor().visitUnion(allocator, Deserializer, access);
+            value.* = try child_visitor.visitor().visitUnion(allocator, Deserializer, ua, va);
 
             return value;
         }
