@@ -236,30 +236,30 @@ test "integer" {
     try t(@as(u128, 0), &[_]Token{.{ .U128 = 0 }});
 }
 
-//test "linked list" {
-//var list = std.SinglyLinkedList(i32){};
+test "linked list" {
+    var list = std.SinglyLinkedList(i32){};
 
-//try t(list, &[_]Token{
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//});
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
 
-//var one = @TypeOf(list).Node{ .data = 1 };
-//var two = @TypeOf(list).Node{ .data = 2 };
-//var three = @TypeOf(list).Node{ .data = 3 };
+    var one = @TypeOf(list).Node{ .data = 1 };
+    var two = @TypeOf(list).Node{ .data = 2 };
+    var three = @TypeOf(list).Node{ .data = 3 };
 
-//list.prepend(&one);
-//one.insertAfter(&two);
-//two.insertAfter(&three);
+    list.prepend(&one);
+    one.insertAfter(&two);
+    two.insertAfter(&three);
 
-//try t(list, &[_]Token{
-//.{ .Seq = .{ .len = 3 } },
-//.{ .I32 = 1 },
-//.{ .I32 = 2 },
-//.{ .I32 = 3 },
-//.{ .SeqEnd = {} },
-//});
-//}
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+    });
+}
 
 test "null" {
     try t(null, &[_]Token{.{ .Null = {} }});
