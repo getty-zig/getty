@@ -1,11 +1,12 @@
 const std = @import("std");
 
 pub fn is(comptime T: type) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
+    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.TailQueue");
 }
 
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const seq = (try serializer.serializeSeq(value.len)).seq();
+    var s = try serializer.serializeSeq(value.len);
+    const seq = s.seq();
     {
         var iterator = value.first;
         while (iterator) |node| : (iterator = node.next) {

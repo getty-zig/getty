@@ -339,30 +339,30 @@ test "struct" {
     });
 }
 
-//test "tail queue" {
-//var list = std.TailQueue(i32){};
+test "tail queue" {
+    var list = std.TailQueue(i32){};
 
-//try t(list, &[_]Token{
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//});
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
 
-//var one = @TypeOf(list).Node{ .data = 1 };
-//var two = @TypeOf(list).Node{ .data = 2 };
-//var three = @TypeOf(list).Node{ .data = 3 };
+    var one = @TypeOf(list).Node{ .data = 1 };
+    var two = @TypeOf(list).Node{ .data = 2 };
+    var three = @TypeOf(list).Node{ .data = 3 };
 
-//list.append(&one);
-//list.append(&two);
-//list.append(&three);
+    list.append(&one);
+    list.append(&two);
+    list.append(&three);
 
-//try t(list, &[_]Token{
-//.{ .Seq = .{ .len = 3 } },
-//.{ .I32 = 1 },
-//.{ .I32 = 2 },
-//.{ .I32 = 3 },
-//.{ .SeqEnd = {} },
-//});
-//}
+    try t(list, &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+    });
+}
 
 test "tuple" {
     try t(.{}, &[_]Token{
