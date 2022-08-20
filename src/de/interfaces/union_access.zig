@@ -3,9 +3,9 @@ const std = @import("std");
 
 pub fn UnionAccess(
     comptime Context: type,
-    comptime Error: type,
-    comptime variantSeed: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
+    comptime E: type,
+    comptime variantSeedFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
             unreachable;
         }
     }.f),
@@ -16,10 +16,10 @@ pub fn UnionAccess(
 
             const Self = @This();
 
-            pub const Error = Error;
+            pub const Error = E;
 
             pub fn variantSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                return try variantSeed(self.context, allocator, seed);
+                return try variantSeedFn(self.context, allocator, seed);
             }
 
             pub fn variant(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {

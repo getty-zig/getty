@@ -69,20 +69,20 @@ const std = @import("std");
 ///         its own.
 pub fn Deserializer(
     comptime Context: type,
-    comptime Error: type,
+    comptime E: type,
     comptime user_dbt: anytype,
     comptime de_dbt: anytype,
-    comptime deserializeBool: Fn(Context, Error),
-    comptime deserializeEnum: Fn(Context, Error),
-    comptime deserializeFloat: Fn(Context, Error),
-    comptime deserializeInt: Fn(Context, Error),
-    comptime deserializeMap: Fn(Context, Error),
-    comptime deserializeOptional: Fn(Context, Error),
-    comptime deserializeSeq: Fn(Context, Error),
-    comptime deserializeString: Fn(Context, Error),
-    comptime deserializeStruct: Fn(Context, Error),
-    comptime deserializeUnion: Fn(Context, Error),
-    comptime deserializeVoid: Fn(Context, Error),
+    comptime deserializeBoolFn: Fn(Context, E),
+    comptime deserializeEnumFn: Fn(Context, E),
+    comptime deserializeFloatFn: Fn(Context, E),
+    comptime deserializeIntFn: Fn(Context, E),
+    comptime deserializeMapFn: Fn(Context, E),
+    comptime deserializeOptionalFn: Fn(Context, E),
+    comptime deserializeSeqFn: Fn(Context, E),
+    comptime deserializeStringFn: Fn(Context, E),
+    comptime deserializeStructFn: Fn(Context, E),
+    comptime deserializeUnionFn: Fn(Context, E),
+    comptime deserializeVoidFn: Fn(Context, E),
 ) type {
     comptime {
         getty.concepts.@"getty.de.dbt"(user_dbt);
@@ -97,7 +97,7 @@ pub fn Deserializer(
 
             const Self = @This();
 
-            pub const Error = Error;
+            pub const Error = E;
 
             pub const dt = blk: {
                 const user_dt = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
@@ -120,47 +120,47 @@ pub fn Deserializer(
             };
 
             pub fn deserializeBool(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeBool(self.context, allocator, visitor);
+                return try deserializeBoolFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeEnum(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeEnum(self.context, allocator, visitor);
+                return try deserializeEnumFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeFloat(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeFloat(self.context, allocator, visitor);
+                return try deserializeFloatFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeInt(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeInt(self.context, allocator, visitor);
+                return try deserializeIntFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeMap(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeMap(self.context, allocator, visitor);
+                return try deserializeMapFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeOptional(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeOptional(self.context, allocator, visitor);
+                return try deserializeOptionalFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeSeq(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeSeq(self.context, allocator, visitor);
+                return try deserializeSeqFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeString(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeString(self.context, allocator, visitor);
+                return try deserializeStringFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeStruct(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeStruct(self.context, allocator, visitor);
+                return try deserializeStructFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeUnion(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeUnion(self.context, allocator, visitor);
+                return try deserializeUnionFn(self.context, allocator, visitor);
             }
 
             pub fn deserializeVoid(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
-                return try deserializeVoid(self.context, allocator, visitor);
+                return try deserializeVoidFn(self.context, allocator, visitor);
             }
         };
 
@@ -171,7 +171,7 @@ pub fn Deserializer(
         fn Return(comptime Visitor: type) type {
             comptime getty.concepts.@"getty.de.Visitor"(Visitor);
 
-            return Error!Visitor.Value;
+            return E!Visitor.Value;
         }
     };
 }

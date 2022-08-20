@@ -7,7 +7,8 @@ pub fn is(comptime T: type) bool {
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
-    const seq = (try serializer.serializeSeq(std.meta.fields(T).len)).seq();
+    var s = try serializer.serializeSeq(std.meta.fields(T).len);
+    const seq = s.seq();
     inline for (@typeInfo(T).Struct.fields) |field| {
         try seq.serializeElement(@field(value, field.name));
     }

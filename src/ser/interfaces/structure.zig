@@ -65,10 +65,10 @@ const ser = @import("../../lib.zig").ser;
 /// ```
 pub fn Structure(
     comptime Context: type,
-    comptime Ok: type,
-    comptime Error: type,
-    comptime serializeField: @TypeOf(struct {
-        fn f(self: Context, comptime key: []const u8, value: anytype) Error!void {
+    comptime O: type,
+    comptime E: type,
+    comptime serializeFieldFn: @TypeOf(struct {
+        fn f(self: Context, comptime key: []const u8, value: anytype) E!void {
             _ = self;
             _ = key;
             _ = value;
@@ -76,7 +76,7 @@ pub fn Structure(
             unreachable;
         }
     }.f),
-    comptime end: fn (Context) Error!Ok,
+    comptime endFn: fn (Context) E!O,
 ) type {
     return struct {
         pub const @"getty.ser.Structure" = struct {
@@ -85,19 +85,19 @@ pub fn Structure(
             const Self = @This();
 
             /// Successful return type.
-            pub const Ok = Ok;
+            pub const Ok = O;
 
             /// The error set used upon failure.
-            pub const Error = Error;
+            pub const Error = E;
 
             /// Serialize a struct field.
             pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!void {
-                try serializeField(self.context, key, value);
+                try serializeFieldFn(self.context, key, value);
             }
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
-                return try end(self.context);
+                return try endFn(self.context);
             }
         };
 

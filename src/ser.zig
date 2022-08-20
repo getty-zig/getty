@@ -135,7 +135,7 @@ pub const default_st = .{
     @import("ser/blocks/int.zig"),
     @import("ser/blocks/null.zig"),
     @import("ser/blocks/optional.zig"),
-    @import("ser/blocks/pointer.zig"),
+    //@import("ser/blocks/pointer.zig"),
     @import("ser/blocks/slice.zig"),
     @import("ser/blocks/string.zig"),
     @import("ser/blocks/struct.zig"),

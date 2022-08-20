@@ -66,10 +66,10 @@ const ser = @import("../../lib.zig").ser;
 /// ```
 pub fn Seq(
     comptime Context: type,
-    comptime Ok: type,
-    comptime Error: type,
-    comptime serializeElement: fn (Context, anytype) Error!void,
-    comptime end: fn (Context) Error!Ok,
+    comptime O: type,
+    comptime E: type,
+    comptime serializeElementFn: fn (Context, anytype) E!void,
+    comptime endFn: fn (Context) E!O,
 ) type {
     return struct {
         pub const @"getty.ser.Seq" = struct {
@@ -78,19 +78,19 @@ pub fn Seq(
             const Self = @This();
 
             /// Successful return type.
-            pub const Ok = Ok;
+            pub const Ok = O;
 
             /// The error set used upon failure.
-            pub const Error = Error;
+            pub const Error = E;
 
             /// Serialize a sequence element.
             pub fn serializeElement(self: Self, value: anytype) Error!void {
-                try serializeElement(self.context, value);
+                try serializeElementFn(self.context, value);
             }
 
             /// Finish serializing a sequence.
             pub fn end(self: Self) Error!Ok {
-                return try end(self.context);
+                return try endFn(self.context);
             }
         };
 

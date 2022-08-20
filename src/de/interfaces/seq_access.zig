@@ -3,9 +3,9 @@ const std = @import("std");
 
 pub fn SeqAccess(
     comptime Context: type,
-    comptime Error: type,
-    comptime nextElementSeed: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+    comptime E: type,
+    comptime nextElementSeedFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             unreachable;
         }
     }.f),
@@ -16,10 +16,10 @@ pub fn SeqAccess(
 
             const Self = @This();
 
-            pub const Error = Error;
+            pub const Error = E;
 
             pub fn nextElementSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(@TypeOf(seed)) {
-                return try nextElementSeed(self.context, allocator, seed);
+                return try nextElementSeedFn(self.context, allocator, seed);
             }
 
             pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {

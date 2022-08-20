@@ -3,9 +3,9 @@ const std = @import("std");
 
 pub fn VariantAccess(
     comptime Context: type,
-    comptime Error: type,
-    comptime payloadSeed: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
+    comptime E: type,
+    comptime payloadSeedFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
             unreachable;
         }
     }.f),
@@ -16,10 +16,10 @@ pub fn VariantAccess(
 
             const Self = @This();
 
-            pub const Error = Error;
+            pub const Error = E;
 
             pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                return try payloadSeed(self.context, allocator, seed);
+                return try payloadSeedFn(self.context, allocator, seed);
             }
 
             pub fn payload(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {

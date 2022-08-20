@@ -73,11 +73,11 @@ const ser = @import("../../lib.zig").ser;
 /// ```
 pub fn Map(
     comptime Context: type,
-    comptime Ok: type,
-    comptime Error: type,
-    comptime serializeKey: fn (Context, anytype) Error!void,
-    comptime serializeValue: fn (Context, anytype) Error!void,
-    comptime end: fn (Context) Error!Ok,
+    comptime O: type,
+    comptime E: type,
+    comptime serializeKeyFn: fn (Context, anytype) E!void,
+    comptime serializeValueFn: fn (Context, anytype) E!void,
+    comptime endFn: fn (Context) E!O,
 ) type {
     return struct {
         pub const @"getty.ser.Map" = struct {
@@ -86,19 +86,19 @@ pub fn Map(
             const Self = @This();
 
             /// Successful return type.
-            pub const Ok = Ok;
+            pub const Ok = O;
 
             /// The error set used upon failure.
-            pub const Error = Error;
+            pub const Error = E;
 
             /// Serialize a map key.
             pub fn serializeKey(self: Self, key: anytype) Error!void {
-                try serializeKey(self.context, key);
+                try serializeKeyFn(self.context, key);
             }
 
             /// Serialize a map value.
             pub fn serializeValue(self: Self, value: anytype) Error!void {
-                try serializeValue(self.context, value);
+                try serializeValueFn(self.context, value);
             }
 
             /// Serialize a map entry consisting of a key and a value.
@@ -109,7 +109,7 @@ pub fn Map(
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
-                return try end(self.context);
+                return try endFn(self.context);
             }
         };
 

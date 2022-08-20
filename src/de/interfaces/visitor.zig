@@ -6,59 +6,59 @@ const assert = std.debug.assert;
 
 pub fn Visitor(
     comptime Context: type,
-    comptime Value: type,
-    comptime visitBool: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!Value {
+    comptime V: type,
+    comptime visitBoolFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitEnum: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitEnumFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitFloat: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitFloatFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitInt: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitIntFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitMap: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitMapFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitNull: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+    comptime visitNullFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitSeq: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitSeqFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitSome: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+    comptime visitSomeFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
             unreachable;
         }
     }.f),
-    comptime visitString: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+    comptime visitStringFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitUnion: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype, _: anytype) Deserializer.Error!Value {
+    comptime visitUnionFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype, _: anytype) Deserializer.Error!V {
             unreachable;
         }
     }.f),
-    comptime visitVoid: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+    comptime visitVoidFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!V {
             unreachable;
         }
     }.f),
@@ -69,10 +69,10 @@ pub fn Visitor(
 
             const Self = @This();
 
-            pub const Value = Value;
+            pub const Value = V;
 
             pub fn visitBool(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
-                return try visitBool(self.context, allocator, Deserializer, input);
+                return try visitBoolFn(self.context, allocator, Deserializer, input);
             }
 
             pub fn visitEnum(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
@@ -83,7 +83,7 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitEnum(self.context, allocator, Deserializer, input);
+                return try visitEnumFn(self.context, allocator, Deserializer, input);
             }
 
             pub fn visitFloat(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
@@ -94,7 +94,7 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitFloat(self.context, allocator, Deserializer, input);
+                return try visitFloatFn(self.context, allocator, Deserializer, input);
             }
 
             pub fn visitInt(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
@@ -105,7 +105,7 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitInt(self.context, allocator, Deserializer, input);
+                return try visitIntFn(self.context, allocator, Deserializer, input);
             }
 
             pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
@@ -113,11 +113,11 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitMap(self.context, allocator, Deserializer, map);
+                return try visitMapFn(self.context, allocator, Deserializer, map);
             }
 
             pub fn visitNull(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-                return try visitNull(self.context, allocator, Deserializer);
+                return try visitNullFn(self.context, allocator, Deserializer);
             }
 
             ///
@@ -130,7 +130,7 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitSeq(self.context, allocator, Deserializer, seq);
+                return try visitSeqFn(self.context, allocator, Deserializer, seq);
             }
 
             pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) blk: {
@@ -138,7 +138,7 @@ pub fn Visitor(
 
                 break :blk @TypeOf(deserializer).Error!Value;
             } {
-                return try visitSome(self.context, allocator, deserializer);
+                return try visitSomeFn(self.context, allocator, deserializer);
             }
 
             ///
@@ -151,7 +151,7 @@ pub fn Visitor(
                     }
                 }
 
-                return try visitString(self.context, allocator, Deserializer, input);
+                return try visitStringFn(self.context, allocator, Deserializer, input);
             }
 
             pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) blk: {
@@ -160,11 +160,11 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitUnion(self.context, allocator, Deserializer, ua, va);
+                return try visitUnionFn(self.context, allocator, Deserializer, ua, va);
             }
 
             pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-                return try visitVoid(self.context, allocator, Deserializer);
+                return try visitVoidFn(self.context, allocator, Deserializer);
             }
         };
 

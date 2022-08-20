@@ -3,14 +3,14 @@ const std = @import("std");
 
 pub fn MapAccess(
     comptime Context: type,
-    comptime Error: type,
-    comptime nextKeySeed: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+    comptime E: type,
+    comptime nextKeySeedFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             unreachable;
         }
     }.f),
-    comptime nextValueSeed: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+    comptime nextValueSeedFn: @TypeOf(struct {
+        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             unreachable;
         }
     }.f),
@@ -21,14 +21,14 @@ pub fn MapAccess(
 
             const Self = @This();
 
-            pub const Error = Error;
+            pub const Error = E;
 
             pub fn nextKeySeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) KeyReturn(@TypeOf(seed)) {
-                return try nextKeySeed(self.context, allocator, seed);
+                return try nextKeySeedFn(self.context, allocator, seed);
             }
 
             pub fn nextValueSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) ValueReturn(@TypeOf(seed)) {
-                return try nextValueSeed(self.context, allocator, seed);
+                return try nextValueSeedFn(self.context, allocator, seed);
             }
 
             //pub fn nextEntrySeed(self: Self, kseed: anytype, vseed: anytype) Error!?std.meta.Tuple(.{ @TypeOf(kseed).Value, @TypeOf(vseed).Value }) {
