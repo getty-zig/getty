@@ -105,27 +105,27 @@ test "bool" {
     try t(false, &[_]Token{.{ .Bool = false }});
 }
 
-//test "bounded array" {
-//var empty = try std.BoundedArray(u8, 10).fromSlice(&[_]u8{});
+test "bounded array" {
+    var empty = try std.BoundedArray(u8, 10).fromSlice(&[_]u8{});
 
-//try t(empty, &[_]Token{
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//});
+    try t(empty, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
 
-//const array = [_]u8{1} ** 5;
-//var non_empty = try std.BoundedArray(u8, 5).fromSlice(&array);
+    const array = [_]u8{1} ** 5;
+    var non_empty = try std.BoundedArray(u8, 5).fromSlice(&array);
 
-//try t(non_empty, &[_]Token{
-//.{ .Seq = .{ .len = 5 } },
-//.{ .U8 = 1 },
-//.{ .U8 = 1 },
-//.{ .U8 = 1 },
-//.{ .U8 = 1 },
-//.{ .U8 = 1 },
-//.{ .SeqEnd = {} },
-//});
-//}
+    try t(non_empty, &[_]Token{
+        .{ .Seq = .{ .len = 5 } },
+        .{ .U8 = 1 },
+        .{ .U8 = 1 },
+        .{ .U8 = 1 },
+        .{ .U8 = 1 },
+        .{ .U8 = 1 },
+        .{ .SeqEnd = {} },
+    });
+}
 
 test "enum" {
     // literal
