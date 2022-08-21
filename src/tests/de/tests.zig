@@ -41,83 +41,83 @@ test "array" {
     });
 }
 
-//test "array list" {
-//{
-//var expected = std.ArrayList(void).init(allocator);
-//defer expected.deinit();
+test "array list" {
+    {
+        var expected = std.ArrayList(void).init(allocator);
+        defer expected.deinit();
 
-//try t(expected, &[_]Token{
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//});
-//}
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+    }
 
-//{
-//var expected = std.ArrayList(isize).init(allocator);
-//defer expected.deinit();
+    {
+        var expected = std.ArrayList(isize).init(allocator);
+        defer expected.deinit();
 
-//try expected.append(1);
-//try expected.append(2);
-//try expected.append(3);
+        try expected.append(1);
+        try expected.append(2);
+        try expected.append(3);
 
-//try t(expected, &[_]Token{
-//.{ .Seq = .{ .len = 3 } },
-//.{ .I8 = 1 },
-//.{ .I32 = 2 },
-//.{ .I64 = 3 },
-//.{ .SeqEnd = {} },
-//});
-//}
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I8 = 1 },
+            .{ .I32 = 2 },
+            .{ .I64 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
 
-//{
-//const Child = std.ArrayList(isize);
-//const Parent = std.ArrayList(Child);
+    {
+        const Child = std.ArrayList(isize);
+        const Parent = std.ArrayList(Child);
 
-//var expected = Parent.init(allocator);
-//var a = Child.init(allocator);
-//var b = Child.init(allocator);
-//var c = Child.init(allocator);
-//defer {
-//expected.deinit();
-//a.deinit();
-//b.deinit();
-//c.deinit();
-//}
+        var expected = Parent.init(allocator);
+        var a = Child.init(allocator);
+        var b = Child.init(allocator);
+        var c = Child.init(allocator);
+        defer {
+            expected.deinit();
+            a.deinit();
+            b.deinit();
+            c.deinit();
+        }
 
-//try b.append(1);
-//try c.append(2);
-//try c.append(3);
-//try expected.append(a);
-//try expected.append(b);
-//try expected.append(c);
+        try b.append(1);
+        try c.append(2);
+        try c.append(3);
+        try expected.append(a);
+        try expected.append(b);
+        try expected.append(c);
 
-//const tokens = &[_]Token{
-//.{ .Seq = .{ .len = 3 } },
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//.{ .Seq = .{ .len = 1 } },
-//.{ .I32 = 1 },
-//.{ .SeqEnd = {} },
-//.{ .Seq = .{ .len = 2 } },
-//.{ .I32 = 2 },
-//.{ .I32 = 3 },
-//.{ .SeqEnd = {} },
-//.{ .SeqEnd = {} },
-//};
+        const tokens = &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 2 } },
+            .{ .I32 = 2 },
+            .{ .I32 = 3 },
+            .{ .SeqEnd = {} },
+            .{ .SeqEnd = {} },
+        };
 
-//// Test manually since the `t` function cannot recursively test
-//// user-defined containers containers without ugly hacks.
-//var d = Deserializer.init(tokens);
-//const v = getty.deserialize(allocator, Parent, d.deserializer()) catch return error.TestUnexpectedError;
-//defer getty.de.free(allocator, v);
+        // Test manually since the `t` function cannot recursively test
+        // user-defined containers containers without ugly hacks.
+        var d = Deserializer.init(tokens);
+        const v = getty.deserialize(allocator, Parent, d.deserializer()) catch return error.TestUnexpectedError;
+        defer getty.de.free(allocator, v);
 
-//try expectEqual(expected.capacity, v.capacity);
-//for (v.items) |l, i| {
-//try expectEqual(expected.items[i].capacity, l.capacity);
-//try expectEqualSlices(isize, expected.items[i].items, l.items);
-//}
-//}
-//}
+        try expectEqual(expected.capacity, v.capacity);
+        for (v.items) |l, i| {
+            try expectEqual(expected.items[i].capacity, l.capacity);
+            try expectEqualSlices(isize, expected.items[i].items, l.items);
+        }
+    }
+}
 
 test "bool" {
     try t(true, &[_]Token{.{ .Bool = true }});
