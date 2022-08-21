@@ -196,35 +196,35 @@ test "struct" {
     });
 }
 
-//test "tuple" {
-//try t(std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 }, &[_]Token{
-//.{ .Seq = .{ .len = 2 } },
-//.{ .I32 = 1 },
-//.{ .U32 = 2 },
-//.{ .SeqEnd = {} },
-//});
+test "tuple" {
+    try t(std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 }, &[_]Token{
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .U32 = 2 },
+        .{ .SeqEnd = {} },
+    });
 
-//try t(std.meta.Tuple(&[_]type{
-//std.meta.Tuple(&[_]type{ i32, i32 }),
-//std.meta.Tuple(&[_]type{ i32, i32 }),
-//std.meta.Tuple(&[_]type{ i32, i32 }),
-//}){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } }, &[_]Token{
-//.{ .Seq = .{ .len = 3 } },
-//.{ .Seq = .{ .len = 2 } },
-//.{ .I32 = 1 },
-//.{ .I32 = 2 },
-//.{ .SeqEnd = {} },
-//.{ .Seq = .{ .len = 2 } },
-//.{ .I32 = 3 },
-//.{ .I32 = 4 },
-//.{ .SeqEnd = {} },
-//.{ .Seq = .{ .len = 2 } },
-//.{ .I32 = 5 },
-//.{ .I32 = 6 },
-//.{ .SeqEnd = {} },
-//.{ .SeqEnd = {} },
-//});
-//}
+    //try t(std.meta.Tuple(&[_]type{
+    //std.meta.Tuple(&[_]type{ i32, i32 }),
+    //std.meta.Tuple(&[_]type{ i32, i32 }),
+    //std.meta.Tuple(&[_]type{ i32, i32 }),
+    //}){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } }, &[_]Token{
+    //.{ .Seq = .{ .len = 3 } },
+    //.{ .Seq = .{ .len = 2 } },
+    //.{ .I32 = 1 },
+    //.{ .I32 = 2 },
+    //.{ .SeqEnd = {} },
+    //.{ .Seq = .{ .len = 2 } },
+    //.{ .I32 = 3 },
+    //.{ .I32 = 4 },
+    //.{ .SeqEnd = {} },
+    //.{ .Seq = .{ .len = 2 } },
+    //.{ .I32 = 5 },
+    //.{ .I32 = 6 },
+    //.{ .SeqEnd = {} },
+    //.{ .SeqEnd = {} },
+    //});
+}
 
 test "union" {
     // Tagged
@@ -322,7 +322,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
                     comptime var i: usize = 0;
 
                     inline while (i < length) : (i += 1) {
-                        try expectEqual(expected[i], v[i]);
+                        //try expectEqual(expected[i], v[i]);
                     }
                 },
                 false => try expectEqual(expected, v),
