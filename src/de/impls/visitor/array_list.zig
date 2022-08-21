@@ -27,7 +27,7 @@ pub fn Visitor(comptime ArrayList: type) type {
             const unmanaged = comptime std.mem.startsWith(
                 u8,
                 @typeName(Value),
-                "std.array_list.ArrayListAlignedUnmanaged",
+                "array_list.ArrayListAlignedUnmanaged",
             );
 
             var list = if (unmanaged) ArrayList{} else ArrayList.init(allocator.?);

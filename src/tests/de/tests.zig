@@ -313,7 +313,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
             },
         },
         .Struct => |info| {
-            if (comptime std.mem.startsWith(u8, @typeName(T), "std.array_list")) {
+            if (comptime std.mem.startsWith(u8, @typeName(T), "array_list")) {
                 try expectEqual(expected.capacity, v.capacity);
                 try expectEqualSlices(std.meta.Child(T.Slice), expected.items, v.items);
             } else switch (info.is_tuple) {

@@ -204,14 +204,14 @@ pub const de = struct {
                 }
             },
             .Struct => |info| {
-                if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayListAlignedUnmanaged")) {
+                if (comptime std.mem.startsWith(u8, name, "array_list.ArrayListAlignedUnmanaged")) {
                     for (value.items) |v| free(allocator, v);
                     var mut = value;
                     mut.deinit(allocator);
-                } else if (comptime std.mem.startsWith(u8, name, "std.array_list.ArrayList")) {
+                } else if (comptime std.mem.startsWith(u8, name, "array_list.ArrayList")) {
                     for (value.items) |v| free(allocator, v);
                     value.deinit();
-                } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMapUnmanaged")) {
+                } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMapUnmanaged")) {
                     var iterator = value.iterator();
                     while (iterator.next()) |entry| {
                         free(allocator, entry.key_ptr.*);
@@ -219,7 +219,7 @@ pub const de = struct {
                     }
                     var mut = value;
                     mut.deinit(allocator);
-                } else if (comptime std.mem.startsWith(u8, name, "std.hash_map.HashMap")) {
+                } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMap")) {
                     var iterator = value.iterator();
                     while (iterator.next()) |entry| {
                         free(allocator, entry.key_ptr.*);
@@ -227,7 +227,7 @@ pub const de = struct {
                     }
                     var mut = value;
                     mut.deinit();
-                } else if (comptime std.mem.startsWith(u8, name, "std.linked_list")) {
+                } else if (comptime std.mem.startsWith(u8, name, "linked_list")) {
                     var iterator = value.first;
                     while (iterator) |node| {
                         free(allocator, node.data);
