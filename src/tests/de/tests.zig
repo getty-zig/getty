@@ -197,11 +197,6 @@ test "struct" {
 }
 
 //test "tuple" {
-//try t(std.meta.Tuple(&[_]type{}){}, &[_]Token{
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//});
-
 //try t(std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 }, &[_]Token{
 //.{ .Seq = .{ .len = 2 } },
 //.{ .I32 = 1 },
