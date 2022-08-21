@@ -268,53 +268,53 @@ test "optional" {
     try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
 }
 
-//test "pointer" {
+test "pointer" {
 
-//// one level of indirection
-//{
-//var ptr = try allocator.create(i32);
-//defer allocator.destroy(ptr);
-//ptr.* = @as(i32, 1);
+    // one level of indirection
+    {
+        var ptr = try allocator.create(i32);
+        defer allocator.destroy(ptr);
+        ptr.* = @as(i32, 1);
 
-//try t(ptr, &[_]Token{.{ .I32 = 1 }});
-//}
+        try t(ptr, &[_]Token{.{ .I32 = 1 }});
+    }
 
-//// two levels of indirection
-//{
-//var tmp = try allocator.create(i32);
-//defer allocator.destroy(tmp);
-//tmp.* = 2;
+    // two levels of indirection
+    {
+        var tmp = try allocator.create(i32);
+        defer allocator.destroy(tmp);
+        tmp.* = 2;
 
-//var ptr = try allocator.create(*i32);
-//defer allocator.destroy(ptr);
-//ptr.* = tmp;
+        var ptr = try allocator.create(*i32);
+        defer allocator.destroy(ptr);
+        ptr.* = tmp;
 
-//try t(ptr, &[_]Token{.{ .I32 = 2 }});
-//}
+        try t(ptr, &[_]Token{.{ .I32 = 2 }});
+    }
 
-//// pointer to slice
-//{
-//var ptr = try allocator.create([]const u8);
-//defer allocator.destroy(ptr);
-//ptr.* = "3";
+    // pointer to slice
+    {
+        var ptr = try allocator.create([]const u8);
+        defer allocator.destroy(ptr);
+        ptr.* = "3";
 
-//try t(ptr, &[_]Token{.{ .String = "3" }});
-//}
-//}
+        try t(ptr, &[_]Token{.{ .String = "3" }});
+    }
+}
 
-//test "slice" {
-//try t(&[_]i32{}, &[_]Token{
-//.{ .Seq = .{ .len = 0 } },
-//.{ .SeqEnd = {} },
-//});
-//try t(&[_]i32{ 1, 2, 3 }, &[_]Token{
-//.{ .Seq = .{ .len = 3 } },
-//.{ .I32 = 1 },
-//.{ .I32 = 2 },
-//.{ .I32 = 3 },
-//.{ .SeqEnd = {} },
-//});
-//}
+test "slice" {
+    try t(&[_]i32{}, &[_]Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
+    try t(&[_]i32{ 1, 2, 3 }, &[_]Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+    });
+}
 
 test "string" {
     try t("abc", &[_]Token{.{ .String = "abc" }});
