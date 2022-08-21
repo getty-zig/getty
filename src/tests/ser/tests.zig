@@ -153,67 +153,67 @@ test "float" {
     try t(@as(f128, 0), &[_]Token{.{ .F128 = 0 }});
 }
 
-//test "hash map" {
-//// managed
-//{
-//var map = std.AutoHashMap(i32, i32).init(allocator);
-//defer map.deinit();
+test "hash map" {
+    // managed
+    {
+        var map = std.AutoHashMap(i32, i32).init(allocator);
+        defer map.deinit();
 
-//try t(map, &[_]Token{
-//.{ .Map = .{ .len = 0 } },
-//.{ .MapEnd = {} },
-//});
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
 
-//try map.put(1, 2);
+        try map.put(1, 2);
 
-//try t(map, &[_]Token{
-//.{ .Map = .{ .len = 1 } },
-//.{ .I32 = 1 },
-//.{ .I32 = 2 },
-//.{ .MapEnd = {} },
-//});
-//}
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
 
-//// unmanaged
-//{
-//var map = std.AutoHashMapUnmanaged(i32, i32){};
-//defer map.deinit(allocator);
+    // unmanaged
+    {
+        var map = std.AutoHashMapUnmanaged(i32, i32){};
+        defer map.deinit(allocator);
 
-//try t(map, &[_]Token{
-//.{ .Map = .{ .len = 0 } },
-//.{ .MapEnd = {} },
-//});
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
 
-//try map.put(allocator, 1, 2);
+        try map.put(allocator, 1, 2);
 
-//try t(map, &[_]Token{
-//.{ .Map = .{ .len = 1 } },
-//.{ .I32 = 1 },
-//.{ .I32 = 2 },
-//.{ .MapEnd = {} },
-//});
-//}
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
 
-//// string
-//{
-//var map = std.StringHashMap(i32).init(allocator);
-//defer map.deinit();
+    // string
+    {
+        var map = std.StringHashMap(i32).init(allocator);
+        defer map.deinit();
 
-//try t(map, &[_]Token{
-//.{ .Map = .{ .len = 0 } },
-//.{ .MapEnd = {} },
-//});
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
 
-//try map.put("1", 2);
+        try map.put("1", 2);
 
-//try t(map, &[_]Token{
-//.{ .Map = .{ .len = 1 } },
-//.{ .String = "1" },
-//.{ .I32 = 2 },
-//.{ .MapEnd = {} },
-//});
-//}
-//}
+        try t(map, &[_]Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .String = "1" },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
+}
 
 test "integer" {
     // comptime_int
