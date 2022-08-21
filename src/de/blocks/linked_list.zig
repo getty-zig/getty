@@ -3,7 +3,7 @@ const std = @import("std");
 const LinkedListVisitor = @import("../impls/visitor/linked_list.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.SinglyLinkedList");
+    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.SinglyLinkedList");
 }
 
 pub fn Visitor(comptime T: type) type {

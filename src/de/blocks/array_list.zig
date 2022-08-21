@@ -3,7 +3,7 @@ const std = @import("std");
 const ArrayListVisitor = @import("../impls/visitor/array_list.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "std.array_list");
+    return comptime std.mem.startsWith(u8, @typeName(T), "array_list");
 }
 
 pub fn Visitor(comptime T: type) type {

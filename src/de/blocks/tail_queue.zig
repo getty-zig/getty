@@ -3,7 +3,7 @@ const std = @import("std");
 const TailQueueVisitor = @import("../impls/visitor/tail_queue.zig").Visitor;
 
 pub fn is(comptime T: type) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "std.linked_list.TailQueue");
+    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.TailQueue");
 }
 
 pub fn Visitor(comptime T: type) type {

@@ -5,7 +5,7 @@ const package_path = "src/lib.zig";
 
 const tests = [_][]const u8{
     "src/tests/ser/tests.zig",
-    //"src/tests/de/tests.zig",
+    "src/tests/de/tests.zig",
 };
 
 pub fn build(b: *std.build.Builder) void {
