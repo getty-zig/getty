@@ -142,8 +142,6 @@ test "error" {
     try t(error.Foobar, &[_]Token{.{ .String = "Foobar" }});
 }
 
-// TODO: Serializing a f128 results in a compiler bug. I believe it its because
-// f128 and anytype don't work well together.
 test "float" {
     // comptime_float
     try t(0.0, &[_]Token{.{ .ComptimeFloat = {} }});
@@ -152,7 +150,7 @@ test "float" {
     try t(@as(f16, 0), &[_]Token{.{ .F16 = 0 }});
     try t(@as(f32, 0), &[_]Token{.{ .F32 = 0 }});
     try t(@as(f64, 0), &[_]Token{.{ .F64 = 0 }});
-    //try t(@as(f128, 0), &[_]Token{.{ .F128 = 0 }});
+    try t(@as(f128, 0), &[_]Token{.{ .F128 = 0 }});
 }
 
 //test "hash map" {
