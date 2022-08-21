@@ -6,7 +6,8 @@ pub fn is(comptime T: type) bool {
 }
 
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const seq = (try serializer.serializeSeq(value.items.len)).seq();
+    var s = try serializer.serializeSeq(value.items.len);
+    const seq = s.seq();
     for (value.items) |elem| {
         try seq.serializeElement(elem);
     }
