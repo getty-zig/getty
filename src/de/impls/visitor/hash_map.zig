@@ -29,7 +29,7 @@ pub fn Visitor(comptime HashMap: type) type {
             const unmanaged = comptime std.mem.startsWith(
                 u8,
                 @typeName(Value),
-                "std.hash_map.HashMapUnmanaged",
+                "hash_map.HashMapUnmanaged",
             );
 
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(allocator.?);
