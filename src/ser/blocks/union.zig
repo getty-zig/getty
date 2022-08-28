@@ -9,13 +9,16 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
     const T = @TypeOf(value);
     const info = @typeInfo(T).Union;
 
-    if (info.tag_type) |_| {
-        inline for (info.fields) |field| {
-            if (std.mem.eql(u8, field.name, @tagName(value))) {
-                return try getty.serialize(@field(value, field.name), serializer);
-            }
-        }
-    } else {
+    if (info.tag_type == null) {
         @compileError("type `" ++ @typeName(T) ++ "`" ++ "is not supported");
     }
+
+    var m = try serializer.serializeMap(1);
+    const map = m.map();
+    inline for (info.fields) |field| {
+        if (std.mem.eql(u8, field.name, @tagName(value))) {
+            try map.serializeEntry(field.name, @field(value, field.name));
+        }
+    }
+    return try map.end();
 }

@@ -386,8 +386,18 @@ test "tuple" {
 test "union" {
     const Union = union(enum) { Int: i32, Bool: bool };
 
-    try t(Union{ .Int = 0 }, &[_]Token{.{ .I32 = 0 }});
-    try t(Union{ .Bool = true }, &[_]Token{.{ .Bool = true }});
+    try t(Union{ .Int = 0 }, &[_]Token{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Int" },
+        .{ .I32 = 0 },
+        .{ .MapEnd = {} },
+    });
+    try t(Union{ .Bool = true }, &[_]Token{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Bool" },
+        .{ .Bool = true },
+        .{ .MapEnd = {} },
+    });
 }
 
 test "vector" {
