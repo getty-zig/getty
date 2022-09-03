@@ -115,29 +115,29 @@ pub const ser = struct {
 
     pub const blocks = struct {
         // std
-        const ArrayList = @import("ser/blocks/array_list.zig");
-        const BoundedArray = @import("ser/blocks/bounded_array.zig");
-        const HashMap = @import("ser/blocks/hash_map.zig");
-        const LinkedList = @import("ser/blocks/linked_list.zig");
-        const TailQueue = @import("ser/blocks/tail_queue.zig");
+        pub const ArrayList = @import("ser/blocks/array_list.zig");
+        pub const BoundedArray = @import("ser/blocks/bounded_array.zig");
+        pub const HashMap = @import("ser/blocks/hash_map.zig");
+        pub const LinkedList = @import("ser/blocks/linked_list.zig");
+        pub const TailQueue = @import("ser/blocks/tail_queue.zig");
 
         // primitives
-        const Array = @import("ser/blocks/array.zig");
-        const Bool = @import("ser/blocks/bool.zig");
-        const Enum = @import("ser/blocks/enum.zig");
-        const Error = @import("ser/blocks/error.zig");
-        const Float = @import("ser/blocks/float.zig");
-        const Int = @import("ser/blocks/int.zig");
-        const Null = @import("ser/blocks/null.zig");
-        const Optional = @import("ser/blocks/optional.zig");
-        const Pointer = @import("ser/blocks/pointer.zig");
-        const Slice = @import("ser/blocks/slice.zig");
-        const String = @import("ser/blocks/string.zig");
-        const Struct = @import("ser/blocks/struct.zig");
-        const Tuple = @import("ser/blocks/tuple.zig");
-        const Union = @import("ser/blocks/union.zig");
-        const Vector = @import("ser/blocks/vector.zig");
-        const Void = @import("ser/blocks/void.zig");
+        pub const Array = @import("ser/blocks/array.zig");
+        pub const Bool = @import("ser/blocks/bool.zig");
+        pub const Enum = @import("ser/blocks/enum.zig");
+        pub const Error = @import("ser/blocks/error.zig");
+        pub const Float = @import("ser/blocks/float.zig");
+        pub const Int = @import("ser/blocks/int.zig");
+        pub const Null = @import("ser/blocks/null.zig");
+        pub const Optional = @import("ser/blocks/optional.zig");
+        pub const Pointer = @import("ser/blocks/pointer.zig");
+        pub const Slice = @import("ser/blocks/slice.zig");
+        pub const String = @import("ser/blocks/string.zig");
+        pub const Struct = @import("ser/blocks/struct.zig");
+        pub const Tuple = @import("ser/blocks/tuple.zig");
+        pub const Union = @import("ser/blocks/union.zig");
+        pub const Vector = @import("ser/blocks/vector.zig");
+        pub const Void = @import("ser/blocks/void.zig");
     };
 };
 
