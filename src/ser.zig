@@ -112,6 +112,33 @@ pub const ser = struct {
 
     /// Struct serialization interface.
     pub usingnamespace @import("ser/interfaces/structure.zig");
+
+    pub const blocks = struct {
+        // std
+        const ArrayList = @import("ser/blocks/array_list.zig");
+        const BoundedArray = @import("ser/blocks/bounded_array.zig");
+        const HashMap = @import("ser/blocks/hash_map.zig");
+        const LinkedList = @import("ser/blocks/linked_list.zig");
+        const TailQueue = @import("ser/blocks/tail_queue.zig");
+
+        // primitives
+        const Array = @import("ser/blocks/array.zig");
+        const Bool = @import("ser/blocks/bool.zig");
+        const Enum = @import("ser/blocks/enum.zig");
+        const Error = @import("ser/blocks/error.zig");
+        const Float = @import("ser/blocks/float.zig");
+        const Int = @import("ser/blocks/int.zig");
+        const Null = @import("ser/blocks/null.zig");
+        const Optional = @import("ser/blocks/optional.zig");
+        const Pointer = @import("ser/blocks/pointer.zig");
+        const Slice = @import("ser/blocks/slice.zig");
+        const String = @import("ser/blocks/string.zig");
+        const Struct = @import("ser/blocks/struct.zig");
+        const Tuple = @import("ser/blocks/tuple.zig");
+        const Union = @import("ser/blocks/union.zig");
+        const Vector = @import("ser/blocks/vector.zig");
+        const Void = @import("ser/blocks/void.zig");
+    };
 };
 
 /// The default Serialization Tuple.
@@ -120,29 +147,29 @@ pub const ser = struct {
 /// the end, thereby taking the lowest priority.
 pub const default_st = .{
     // std
-    @import("ser/blocks/array_list.zig"),
-    @import("ser/blocks/bounded_array.zig"),
-    @import("ser/blocks/hash_map.zig"),
-    @import("ser/blocks/linked_list.zig"),
-    @import("ser/blocks/tail_queue.zig"),
+    ser.blocks.ArrayList,
+    ser.blocks.BoundedArray,
+    ser.blocks.HashMap,
+    ser.blocks.LinkedList,
+    ser.blocks.TailQueue,
 
     // primitives
-    @import("ser/blocks/array.zig"),
-    @import("ser/blocks/bool.zig"),
-    @import("ser/blocks/enum.zig"),
-    @import("ser/blocks/error.zig"),
-    @import("ser/blocks/float.zig"),
-    @import("ser/blocks/int.zig"),
-    @import("ser/blocks/null.zig"),
-    @import("ser/blocks/optional.zig"),
-    @import("ser/blocks/pointer.zig"),
-    @import("ser/blocks/slice.zig"),
-    @import("ser/blocks/string.zig"),
-    @import("ser/blocks/struct.zig"),
-    @import("ser/blocks/tuple.zig"),
-    @import("ser/blocks/union.zig"),
-    @import("ser/blocks/vector.zig"),
-    @import("ser/blocks/void.zig"),
+    ser.blocks.Array,
+    ser.blocks.Bool,
+    ser.blocks.Enum,
+    ser.blocks.Error,
+    ser.blocks.Float,
+    ser.blocks.Int,
+    ser.blocks.Null,
+    ser.blocks.Optional,
+    ser.blocks.Pointer,
+    ser.blocks.Slice,
+    ser.blocks.String,
+    ser.blocks.Struct,
+    ser.blocks.Tuple,
+    ser.blocks.Union,
+    ser.blocks.Vector,
+    ser.blocks.Void,
 };
 
 /// Serializes a value into the given Getty serializer.
