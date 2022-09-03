@@ -322,7 +322,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
                     comptime var i: usize = 0;
 
                     inline while (i < length) : (i += 1) {
-                        //try expectEqual(expected[i], v[i]);
+                        try expectEqual(expected[i], v[i]);
                     }
                 },
                 false => try expectEqual(expected, v),
