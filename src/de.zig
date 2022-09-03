@@ -244,6 +244,28 @@ pub const de = struct {
         }
     }
 
+    pub const blocks = struct {
+        // std
+        const ArrayList = @import("de/blocks/array_list.zig");
+        const HashMap = @import("de/blocks/hash_map.zig");
+        const LinkedList = @import("de/blocks/linked_list.zig");
+        const TailQueue = @import("de/blocks/tail_queue.zig");
+
+        // primitives
+        const Array = @import("de/blocks/array.zig");
+        const Bool = @import("de/blocks/bool.zig");
+        const Enum = @import("de/blocks/enum.zig");
+        const Float = @import("de/blocks/float.zig");
+        const Int = @import("de/blocks/int.zig");
+        const Optional = @import("de/blocks/optional.zig");
+        const Pointer = @import("de/blocks/pointer.zig");
+        const Slice = @import("de/blocks/slice.zig");
+        const Struct = @import("de/blocks/struct.zig");
+        const Tuple = @import("de/blocks/tuple.zig");
+        const Union = @import("de/blocks/union.zig");
+        const Void = @import("de/blocks/void.zig");
+    };
+
     /// Returns the highest priority Deserialization Block for a type given a
     /// deserializer type.
     pub fn find_db(comptime Deserializer: type, comptime T: type) type {
@@ -267,24 +289,24 @@ pub const de = struct {
 /// end, thereby taking the lowest priority.
 pub const default_dt = .{
     // std
-    @import("de/blocks/array_list.zig"),
-    @import("de/blocks/hash_map.zig"),
-    @import("de/blocks/linked_list.zig"),
-    @import("de/blocks/tail_queue.zig"),
+    de.blocks.ArrayList,
+    de.blocks.HashMap,
+    de.blocks.LinkedList,
+    de.blocks.TailQueue,
 
     // primitives
-    @import("de/blocks/array.zig"),
-    @import("de/blocks/bool.zig"),
-    @import("de/blocks/enum.zig"),
-    @import("de/blocks/float.zig"),
-    @import("de/blocks/int.zig"),
-    @import("de/blocks/optional.zig"),
-    @import("de/blocks/pointer.zig"),
-    @import("de/blocks/slice.zig"),
-    @import("de/blocks/struct.zig"),
-    @import("de/blocks/tuple.zig"),
-    @import("de/blocks/union.zig"),
-    @import("de/blocks/void.zig"),
+    de.blocks.Array,
+    de.blocks.Bool,
+    de.blocks.Enum,
+    de.blocks.Float,
+    de.blocks.Int,
+    de.blocks.Optional,
+    de.blocks.Pointer,
+    de.blocks.Slice,
+    de.blocks.Struct,
+    de.blocks.Tuple,
+    de.blocks.Union,
+    de.blocks.Void,
 };
 
 /// Deserializes a value from the given Getty deserializer.
