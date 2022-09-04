@@ -144,7 +144,7 @@ pub const Deserializer = struct {
             },
             .Some => {
                 _ = self.nextToken();
-                return try visitor.visitSome(allocator, Self.@"getty.Deserializer");
+                return try visitor.visitSome(allocator, self.deserializer());
             },
             else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
