@@ -67,9 +67,9 @@ pub fn Visitor(comptime Struct: type) type {
 
             inline for (fields) |field, i| {
                 if (!seen[i]) {
-                    if (field.default_value) |default| {
+                    if (field.default_value) |default_ptr| {
                         if (!field.is_comptime) {
-                            @field(structure, field.name) = default;
+                            @field(structure, field.name) = @ptrCast(*const field.field_type, default_ptr).*;
                         }
                     } else {
                         return error.MissingField;
