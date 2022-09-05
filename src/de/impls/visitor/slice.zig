@@ -35,20 +35,20 @@ pub fn Visitor(comptime Slice: type) type {
         }
 
         fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            errdefer getty.de.free(allocator.?, input);
+            if (Child != u8) return error.InvalidType;
 
-            // TODO: This type check (and InvalidType error) is a temporary
-            // workaround for the case where the child type of `Value` isn't a
-            // u8. In that situation, the compiler keeps both the .ArrayBegin
-            // and the .String branches, which results in a compiler error since
-            // `TokenStream.slice` returns a `[]const u8` and we can't `dupe` into,
-            // say, a `[]const u32` from that.
-            //
-            // Maybe what we could do is use `visitSeq` and in the JSON
-            // deserializer figure out what to do in the Seq based on
-            // whether the input is an Array or a String. If this works, do
-            // we even need a `visitString` method?
-            return if (Child == u8) input else error.InvalidType;
+            const sentinel = @typeInfo(Value).Pointer.sentinel;
+
+            const output = try allocator.?.alloc(u8, input.len + @boolToInt(sentinel != null));
+            std.mem.copy(u8, output, input);
+
+            if (sentinel) |s| {
+                const sentinel_char = @ptrCast(*const u8, s).*;
+                output[input.len] = sentinel_char;
+                return output[0..input.len :sentinel_char];
+            }
+
+            return output;
         }
 
         const Child = std.meta.Child(Value);

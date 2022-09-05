@@ -163,17 +163,35 @@ test "integer" {
 }
 
 test "string" {
-    try t("abc", &[_]Token{
-        .{ .Seq = .{ .len = 3 } },
-        .{ .U8 = 'a' },
-        .{ .U8 = 'b' },
-        .{ .U8 = 'c' },
-        .{ .SeqEnd = {} },
-    });
-
     var arr = [_]u8{ 'a', 'b', 'c' };
-    try t(@as([]u8, &arr), &[_]Token{.{ .String = "abc" }});
-    try t(@as([]const u8, &arr), &[_]Token{.{ .String = "abc" }});
+
+    {
+        // No sentinel
+        try t("abc", &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 'a' },
+            .{ .U8 = 'b' },
+            .{ .U8 = 'c' },
+            .{ .SeqEnd = {} },
+        });
+
+        try t(@as([]u8, &arr), &[_]Token{.{ .String = "abc" }});
+        try t(@as([]const u8, &arr), &[_]Token{.{ .String = "abc" }});
+    }
+
+    {
+        // Sentinel
+        try t("abc", &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 'a' },
+            .{ .U8 = 'b' },
+            .{ .U8 = 'c' },
+            .{ .SeqEnd = {} },
+        });
+
+        try t(@as([:0]u8, &arr), &[_]Token{.{ .String = "abc" }});
+        try t(@as([:0]const u8, &arr), &[_]Token{.{ .String = "abc" }});
+    }
 }
 
 test "struct" {

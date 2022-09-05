@@ -166,11 +166,7 @@ pub const Deserializer = struct {
 
     fn deserializeString(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
         switch (self.nextToken()) {
-            .String => |v| return try visitor.visitString(
-                allocator,
-                Self.@"getty.Deserializer",
-                try allocator.?.dupe(u8, v),
-            ),
+            .String => |v| return try visitor.visitString(allocator, Self.@"getty.Deserializer", v),
             else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         }
     }
