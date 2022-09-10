@@ -148,7 +148,7 @@ pub fn Serializer(
             /// Error set used upon failure.
             pub const Error = E;
 
-            /// Serialization Tuples associated with the serializer.
+            /// Serialization Tuples.
             pub const st = blk: {
                 const ust = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
                 const sst = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
@@ -191,12 +191,12 @@ pub fn Serializer(
                 }
             };
 
-            /// Serializes a `bool` value.
+            /// Serializes a Getty Boolean value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
                 return try serializeBoolFn(self.context, value);
             }
 
-            // Serializes an enum value.
+            // Serializes a Getty Enum value.
             pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
                 switch (@typeInfo(@TypeOf(value))) {
                     .Enum, .EnumLiteral => return try serializeEnumFn(self.context, value),
@@ -204,7 +204,7 @@ pub fn Serializer(
                 }
             }
 
-            /// Serializes a floating-point value.
+            /// Serializes a Getty Float value.
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
                 switch (@typeInfo(@TypeOf(value))) {
                     .Float, .ComptimeFloat => return try serializeFloatFn(self.context, value),
@@ -212,7 +212,7 @@ pub fn Serializer(
                 }
             }
 
-            /// Serializes an integer value.
+            /// Serializes a Getty Integer value.
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
                 switch (@typeInfo(@TypeOf(value))) {
                     .Int, .ComptimeInt => return try serializeIntFn(self.context, value),
@@ -220,27 +220,27 @@ pub fn Serializer(
                 }
             }
 
-            /// Starts the serialization process for a map.
+            /// Begins the serialization process for a Getty Map value.
             pub fn serializeMap(self: Self, length: ?usize) Error!Map {
                 return try serializeMapFn(self.context, length);
             }
 
-            /// Serializes a `null` value.
+            /// Serializes a Getty Null value.
             pub fn serializeNull(self: Self) Error!Ok {
                 return try serializeNullFn(self.context);
             }
 
-            /// Starts the serialization process for a sequence.
+            /// Begins the serialization process for a Getty Sequence value.
             pub fn serializeSeq(self: Self, length: ?usize) Error!Seq {
                 return try serializeSeqFn(self.context, length);
             }
 
-            /// Serializes the payload of an optional.
+            /// Serializes a Getty Optional value.
             pub fn serializeSome(self: Self, value: anytype) Error!Ok {
                 return try serializeSomeFn(self.context, value);
             }
 
-            /// Serializes a string value.
+            /// Serializes a Getty String value.
             pub fn serializeString(self: Self, value: anytype) Error!Ok {
                 if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
                     @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
@@ -249,12 +249,12 @@ pub fn Serializer(
                 return try serializeStringFn(self.context, value);
             }
 
-            /// Starts the serialization process for a struct.
+            /// Begins the serialization process for a Getty Struct value.
             pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
                 return try serializeStructFn(self.context, name, length);
             }
 
-            /// Serializes a `void` value.
+            /// Serializes a Getty Void value.
             pub fn serializeVoid(self: Self) Error!Ok {
                 return try serializeVoidFn(self.context);
             }
