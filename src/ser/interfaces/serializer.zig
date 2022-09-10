@@ -148,24 +148,46 @@ pub fn Serializer(
             /// Error set used upon failure.
             pub const Error = E;
 
-            /// Serialization Tuple associated with the serializer.
+            /// Serialization Tuples associated with the serializer.
             pub const st = blk: {
-                const user_st = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
-                const ser_st = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+                const ust = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
+                const sst = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
                 const default = getty.default_st;
 
-                const U = @TypeOf(user_st);
-                const S = @TypeOf(ser_st);
+                const U = @TypeOf(ust);
+                const S = @TypeOf(sst);
                 const Default = @TypeOf(default);
 
                 if (U == Default and S == Default) {
                     break :blk default;
                 } else if (U != Default and S == Default) {
-                    break :blk user_st ++ default;
+                    break :blk ust ++ default;
                 } else if (U == Default and S != Default) {
-                    break :blk ser_st ++ default;
+                    break :blk sst ++ default;
                 } else {
-                    break :blk user_st ++ ser_st ++ default;
+                    break :blk ust ++ sst ++ default;
+                }
+            };
+
+            pub const user_st = blk: {
+                const t = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
+                const T = @TypeOf(t);
+
+                if (T == @TypeOf(getty.default_st)) {
+                    break :blk getty.default_st;
+                }
+
+                break :blk t;
+            };
+
+            pub const ser_st = blk: {
+                const t = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+                const T = @TypeOf(t);
+
+                if (T == @TypeOf(getty.default_st)) {
+                    break :blk getty.default_st;
+                } else {
+                    break :blk t;
                 }
             };
 
