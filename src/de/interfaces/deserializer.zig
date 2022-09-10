@@ -100,22 +100,44 @@ pub fn Deserializer(
             pub const Error = E;
 
             pub const dt = blk: {
-                const user_dt = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
-                const de_dt = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
+                const udt = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
+                const ddt = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
                 const default = getty.default_dt;
 
-                const U = @TypeOf(user_dt);
-                const D = @TypeOf(de_dt);
+                const U = @TypeOf(udt);
+                const D = @TypeOf(ddt);
                 const Default = @TypeOf(default);
 
                 if (U == Default and D == Default) {
                     break :blk default;
                 } else if (U != Default and D == Default) {
-                    break :blk user_dt ++ default;
+                    break :blk udt ++ default;
                 } else if (U == Default and D != Default) {
-                    break :blk de_dt ++ default;
+                    break :blk ddt ++ default;
                 } else {
-                    break :blk user_dt ++ de_dt ++ default;
+                    break :blk udt ++ ddt ++ default;
+                }
+            };
+
+            pub const user_dt = blk: {
+                const t = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
+                const T = @TypeOf(t);
+
+                if (T == @TypeOf(getty.default_dt)) {
+                    break :blk getty.default_dt;
+                }
+
+                break :blk t;
+            };
+
+            pub const de_dt = blk: {
+                const t = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
+                const T = @TypeOf(t);
+
+                if (T == @TypeOf(getty.default_dt)) {
+                    break :blk getty.default_dt;
+                } else {
+                    break :blk t;
                 }
             };
 

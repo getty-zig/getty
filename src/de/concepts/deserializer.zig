@@ -13,6 +13,8 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
         inline for (.{
             "Error",
             "dt",
+            "user_dt",
+            "de_dt",
             "deserializeBool",
             "deserializeEnum",
             "deserializeFloat",
