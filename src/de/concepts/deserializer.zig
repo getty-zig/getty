@@ -14,7 +14,7 @@ pub fn @"getty.Deserializer"(comptime T: type) void {
             "Error",
             "dt",
             "user_dt",
-            "de_dt",
+            "deserializer_dt",
             "deserializeBool",
             "deserializeEnum",
             "deserializeFloat",

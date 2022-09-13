@@ -44,8 +44,8 @@ const std = @import("std");
 ///         This parameter is intended for users of a deserializer, enabling
 ///         them to use their own custom deserialization logic.
 ///
-///     de_dbt
-///     -------
+///     deserializer_dbt
+///     ----------------
 ///
 ///         A Deserialization Block or Tuple.
 ///
@@ -71,7 +71,7 @@ pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
     comptime user_dbt: anytype,
-    comptime de_dbt: anytype,
+    comptime deserializer_dbt: anytype,
     comptime deserializeBoolFn: Fn(Context, E),
     comptime deserializeEnumFn: Fn(Context, E),
     comptime deserializeFloatFn: Fn(Context, E),
@@ -86,7 +86,7 @@ pub fn Deserializer(
 ) type {
     comptime {
         getty.concepts.@"getty.de.dbt"(user_dbt);
-        getty.concepts.@"getty.de.dbt"(de_dbt);
+        getty.concepts.@"getty.de.dbt"(deserializer_dbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -113,8 +113,8 @@ pub fn Deserializer(
             };
 
             /// Deserializer-defined Deserialization Tuple.
-            pub const de_dt = blk: {
-                const deserializer_tuple = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
+            pub const deserializer_dt = blk: {
+                const deserializer_tuple = if (@TypeOf(deserializer_dbt) == type) .{deserializer_dbt} else deserializer_dbt;
                 const D = @TypeOf(deserializer_tuple);
 
                 if (D == @TypeOf(getty.default_dt)) {
@@ -136,7 +136,7 @@ pub fn Deserializer(
             ///   3. Getty's default DT.
             pub const dt = blk: {
                 const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
-                const deserializer_tuple = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
+                const deserializer_tuple = if (@TypeOf(deserializer_dbt) == type) .{deserializer_dbt} else deserializer_dbt;
                 const default = getty.default_dt;
 
                 const U = @TypeOf(user_tuple);
