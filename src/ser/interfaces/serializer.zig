@@ -55,8 +55,8 @@ const std = @import("std");
 ///         This parameter is intended for users of a serializer, enabling them
 ///         to use their own custom serialization logic.
 ///
-///     ser_sbt
-///     -------
+///     serializer_sbt
+///     --------------
 ///
 ///         A Serialization Block or Tuple.
 ///
@@ -105,7 +105,7 @@ pub fn Serializer(
     comptime O: type,
     comptime E: type,
     comptime user_sbt: anytype,
-    comptime ser_sbt: anytype,
+    comptime serializer_sbt: anytype,
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
@@ -131,7 +131,7 @@ pub fn Serializer(
 ) type {
     comptime {
         getty.concepts.@"getty.ser.sbt"(user_sbt);
-        getty.concepts.@"getty.ser.sbt"(ser_sbt);
+        getty.concepts.@"getty.ser.sbt"(serializer_sbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -161,8 +161,8 @@ pub fn Serializer(
             };
 
             /// Serializer-defined Serialization Tuple.
-            pub const ser_st = blk: {
-                const serializer_tuple = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+            pub const serializer_st = blk: {
+                const serializer_tuple = if (@TypeOf(serializer_sbt) == type) .{serializer_sbt} else serializer_sbt;
                 const S = @TypeOf(serializer_tuple);
 
                 if (S == @TypeOf(getty.default_st)) {
@@ -184,7 +184,7 @@ pub fn Serializer(
             ///   3. Getty's default ST.
             pub const st = blk: {
                 const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
-                const serializer_tuple = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+                const serializer_tuple = if (@TypeOf(serializer_sbt) == type) .{serializer_sbt} else serializer_sbt;
                 const default = getty.default_st;
 
                 const U = @TypeOf(user_tuple);

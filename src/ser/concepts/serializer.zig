@@ -15,7 +15,7 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             "Error",
             "st",
             "user_st",
-            "ser_st",
+            "serializer_st",
             "serializeBool",
             "serializeEnum",
             "serializeFloat",
