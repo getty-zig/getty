@@ -100,46 +100,57 @@ pub fn Deserializer(
             /// Error set used upon failure.
             pub const Error = E;
 
-            /// Deserialization Tuples.
+            /// User-defined Deserialization Tuple.
+            pub const user_dt = blk: {
+                const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
+                const U = @TypeOf(user_tuple);
+
+                if (U == @TypeOf(getty.default_dt)) {
+                    break :blk getty.default_dt;
+                }
+
+                break :blk user_tuple;
+            };
+
+            /// Deserializer-defined Deserialization Tuple.
+            pub const de_dt = blk: {
+                const deserializer_tuple = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
+                const D = @TypeOf(deserializer_tuple);
+
+                if (D == @TypeOf(getty.default_dt)) {
+                    break :blk getty.default_dt;
+                } else {
+                    break :blk deserializer_tuple;
+                }
+            };
+
+            /// Aggregate Deserialization Tuple.
+            ///
+            /// The Aggregate DT combines the user-, deserializer-, and Getty's
+            /// default Deserialization Tuples into one.
+            ///
+            /// The priority of each DT is shown below (from highest to lowest):
+            ///
+            ///   1. User-defined DT.
+            ///   2. Deserializer-defined DT.
+            ///   3. Getty's default DT.
             pub const dt = blk: {
-                const udt = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
-                const ddt = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
+                const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
+                const deserializer_tuple = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
                 const default = getty.default_dt;
 
-                const U = @TypeOf(udt);
-                const D = @TypeOf(ddt);
+                const U = @TypeOf(user_tuple);
+                const D = @TypeOf(deserializer_tuple);
                 const Default = @TypeOf(default);
 
                 if (U == Default and D == Default) {
                     break :blk default;
                 } else if (U != Default and D == Default) {
-                    break :blk udt ++ default;
+                    break :blk user_tuple ++ default;
                 } else if (U == Default and D != Default) {
-                    break :blk ddt ++ default;
+                    break :blk deserializer_tuple ++ default;
                 } else {
-                    break :blk udt ++ ddt ++ default;
-                }
-            };
-
-            pub const user_dt = blk: {
-                const t = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
-                const T = @TypeOf(t);
-
-                if (T == @TypeOf(getty.default_dt)) {
-                    break :blk getty.default_dt;
-                }
-
-                break :blk t;
-            };
-
-            pub const de_dt = blk: {
-                const t = if (@TypeOf(de_dbt) == type) .{de_dbt} else de_dbt;
-                const T = @TypeOf(t);
-
-                if (T == @TypeOf(getty.default_dt)) {
-                    break :blk getty.default_dt;
-                } else {
-                    break :blk t;
+                    break :blk user_tuple ++ deserializer_tuple ++ default;
                 }
             };
 
