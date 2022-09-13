@@ -148,46 +148,57 @@ pub fn Serializer(
             /// Error set used upon failure.
             pub const Error = E;
 
-            /// Serialization Tuples.
+            /// User-defined Serialization Tuple.
+            pub const user_st = blk: {
+                const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
+                const U = @TypeOf(user_tuple);
+
+                if (U == @TypeOf(getty.default_st)) {
+                    break :blk getty.default_st;
+                }
+
+                break :blk user_tuple;
+            };
+
+            /// Serializer-defined Serialization Tuple.
+            pub const ser_st = blk: {
+                const serializer_tuple = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+                const S = @TypeOf(serializer_tuple);
+
+                if (S == @TypeOf(getty.default_st)) {
+                    break :blk getty.default_st;
+                } else {
+                    break :blk serializer_tuple;
+                }
+            };
+
+            /// Aggregate Serialization Tuple.
+            ///
+            /// The Aggregate ST combines the user-, serializer-, and Getty's
+            /// default Serialization Tuples into one.
+            ///
+            /// The priority of each ST is shown below (from highest to lowest):
+            ///
+            ///   1. User-defined ST.
+            ///   2. Serializer-defined ST.
+            ///   3. Getty's default ST.
             pub const st = blk: {
-                const ust = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
-                const sst = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
+                const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
+                const serializer_tuple = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
                 const default = getty.default_st;
 
-                const U = @TypeOf(ust);
-                const S = @TypeOf(sst);
+                const U = @TypeOf(user_tuple);
+                const S = @TypeOf(serializer_tuple);
                 const Default = @TypeOf(default);
 
                 if (U == Default and S == Default) {
                     break :blk default;
                 } else if (U != Default and S == Default) {
-                    break :blk ust ++ default;
+                    break :blk user_tuple ++ default;
                 } else if (U == Default and S != Default) {
-                    break :blk sst ++ default;
+                    break :blk serializer_tuple ++ default;
                 } else {
-                    break :blk ust ++ sst ++ default;
-                }
-            };
-
-            pub const user_st = blk: {
-                const t = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
-                const T = @TypeOf(t);
-
-                if (T == @TypeOf(getty.default_st)) {
-                    break :blk getty.default_st;
-                }
-
-                break :blk t;
-            };
-
-            pub const ser_st = blk: {
-                const t = if (@TypeOf(ser_sbt) == type) .{ser_sbt} else ser_sbt;
-                const T = @TypeOf(t);
-
-                if (T == @TypeOf(getty.default_st)) {
-                    break :blk getty.default_st;
-                } else {
-                    break :blk t;
+                    break :blk user_tuple ++ serializer_tuple ++ default;
                 }
             };
 
