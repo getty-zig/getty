@@ -163,9 +163,9 @@ test "integer" {
 }
 
 test "string" {
-    var arr = [_]u8{ 'a', 'b', 'c' };
-
     {
+        var arr = [_]u8{ 'a', 'b', 'c' };
+
         // No sentinel
         try t("abc", &[_]Token{
             .{ .Seq = .{ .len = 3 } },
@@ -180,6 +180,7 @@ test "string" {
     }
 
     {
+        var arr = [_:0]u8{ 'a', 'b', 'c' };
         // Sentinel
         try t("abc", &[_]Token{
             .{ .Seq = .{ .len = 3 } },
