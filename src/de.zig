@@ -178,15 +178,24 @@ pub const de = struct {
         const name = @typeName(T);
 
         switch (@typeInfo(T)) {
-            .Bool, .Float, .ComptimeFloat, .Int, .ComptimeInt, .Enum, .EnumLiteral, .Null, .Void => {},
+            .AnyFrame, .Bool, .Float, .ComptimeFloat, .Int, .ComptimeInt, .Enum, .EnumLiteral, .Fn, .Null, .Opaque, .Frame, .Void => {},
             .Array => for (value) |v| free(allocator, v),
             .Optional => if (value) |v| free(allocator, v),
             .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
                 true => allocator.free(value),
                 false => switch (info.size) {
                     .One => {
-                        free(allocator, value.*);
-                        allocator.destroy(value);
+                        // Trying to free `anyopaque` or `fn` values here
+                        // triggers the errors in the following issue:
+                        //
+                        //   https://github.com/getty-zig/getty/issues/37.
+                        switch (@typeInfo(info.child)) {
+                            .Fn, .Opaque => return,
+                            else => {
+                                free(allocator, value.*);
+                                allocator.destroy(value);
+                            },
+                        }
                     },
                     .Slice => {
                         for (value) |v| free(allocator, v);
