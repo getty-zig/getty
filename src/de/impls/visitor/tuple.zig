@@ -31,12 +31,12 @@ pub fn Visitor(comptime Tuple: type) type {
             comptime var seen: usize = 0;
 
             errdefer {
-                comptime var i: usize = 0;
-
                 if (allocator) |alloc| {
                     if (len > 0) {
-                        inline while (i < seen) : (i += 1) {
-                            getty.de.free(alloc, tuple[i]);
+                        inline for (tuple) |v, i| {
+                            if (i < seen) {
+                                getty.de.free(alloc, v);
+                            }
                         }
                     }
                 }
