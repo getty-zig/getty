@@ -106,7 +106,7 @@ pub fn Deserializer(
                 const U = @TypeOf(user_tuple);
 
                 if (U == @TypeOf(getty.default_dt)) {
-                    break :blk getty.default_dt;
+                    break :blk .{};
                 }
 
                 break :blk user_tuple;
@@ -118,7 +118,7 @@ pub fn Deserializer(
                 const D = @TypeOf(deserializer_tuple);
 
                 if (D == @TypeOf(getty.default_dt)) {
-                    break :blk getty.default_dt;
+                    break :blk .{};
                 } else {
                     break :blk deserializer_tuple;
                 }

@@ -281,7 +281,37 @@ pub const de = struct {
         comptime {
             getty.concepts.@"getty.Deserializer"(Deserializer);
 
-            inline for (Deserializer.dt) |db| {
+            // Check user DBTs.
+            inline for (Deserializer.user_dt) |db| {
+                if (db.is(T)) {
+                    return db;
+                }
+            }
+
+            // Check type DBTs.
+            if (std.meta.trait.isContainer(T) and
+                std.meta.trait.hasDecls(T, .{"getty.dbt"}) and
+                getty.concepts.traits.is_dbt(T.@"getty.dbt"))
+            {
+                const type_dbt = T.@"getty.dbt";
+                const type_tuple = if (@TypeOf(type_dbt) == type) .{type_dbt} else type_dbt;
+
+                inline for (type_tuple) |db| {
+                    if (db.is(T)) {
+                        return db;
+                    }
+                }
+            }
+
+            // Check deserializer DBTs.
+            inline for (Deserializer.deserializer_dt) |db| {
+                if (db.is(T)) {
+                    return db;
+                }
+            }
+
+            // Check default DBTs.
+            inline for (default_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }

@@ -43,6 +43,8 @@ pub const concepts = struct {
 
     pub const traits = struct {
         pub usingnamespace @import("ser/concepts/traits/sbt.zig");
+
+        pub usingnamespace @import("de/concepts/traits/dbt.zig");
     };
 };
 
