@@ -40,6 +40,10 @@ pub const concepts = struct {
     pub fn err(comptime concept: []const u8, comptime msg: []const u8) void {
         @compileError("concept `" ++ concept ++ "` was not satisfied: " ++ msg);
     }
+
+    pub const traits = struct {
+        pub usingnamespace @import("ser/concepts/traits/sbt.zig");
+    };
 };
 
 /// Placeholder value for compound (de)serialization-related arguments.

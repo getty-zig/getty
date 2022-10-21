@@ -182,7 +182,37 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
 } {
     const T = @TypeOf(value);
 
-    inline for (@TypeOf(serializer).st) |sb| {
+    // Check user SBTs.
+    inline for (@TypeOf(serializer).user_st) |sb| {
+        if (comptime sb.is(T)) {
+            return try sb.serialize(value, serializer);
+        }
+    }
+
+    // Check type SBTs.
+    if (comptime std.meta.trait.isContainer(T) and
+        std.meta.trait.hasDecls(T, .{"getty.sbt"}) and
+        getty.concepts.traits.is_sbt(T.@"getty.sbt"))
+    {
+        const type_sbt = T.@"getty.sbt";
+        const type_tuple = if (@TypeOf(type_sbt) == type) .{type_sbt} else type_sbt;
+
+        inline for (type_tuple) |sb| {
+            if (comptime sb.is(T)) {
+                return try sb.serialize(value, serializer);
+            }
+        }
+    }
+
+    // Check serializer SBTs.
+    inline for (@TypeOf(serializer).serializer_st) |sb| {
+        if (comptime sb.is(T)) {
+            return try sb.serialize(value, serializer);
+        }
+    }
+
+    // Check default SBTs.
+    inline for (default_st) |sb| {
         if (comptime sb.is(T)) {
             return try sb.serialize(value, serializer);
         }

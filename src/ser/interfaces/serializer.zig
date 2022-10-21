@@ -154,7 +154,7 @@ pub fn Serializer(
                 const U = @TypeOf(user_tuple);
 
                 if (U == @TypeOf(getty.default_st)) {
-                    break :blk getty.default_st;
+                    break :blk .{};
                 }
 
                 break :blk user_tuple;
@@ -166,7 +166,7 @@ pub fn Serializer(
                 const S = @TypeOf(serializer_tuple);
 
                 if (S == @TypeOf(getty.default_st)) {
-                    break :blk getty.default_st;
+                    break :blk .{};
                 } else {
                     break :blk serializer_tuple;
                 }
