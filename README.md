@@ -89,7 +89,7 @@ const Seq = struct {
         end,
     );
 
-    fn serializeElement(self: *@This(), value: anytype) !void {
+    fn serializeElement(self: *@This(), value: anytype) Serializer.Error!void {
         switch (self.first) {
             true => self.first = false,
             false => std.debug.print(", ", .{}),
@@ -98,7 +98,7 @@ const Seq = struct {
         try getty.serialize(value, (Serializer{}).serializer());
     }
 
-    fn end(_: *@This()) !Serializer.Ok {
+    fn end(_: *@This()) Serializer.Error!Serializer.Ok {
         std.debug.print("]", .{});
     }
 };
@@ -106,7 +106,7 @@ const Seq = struct {
 pub fn main() anyerror!void {
     const s = Serializer{};
     const value = .{ true, false };
-    
+
     try getty.serialize(value, s.serializer()); // output: [true, false]
 }
 ```
