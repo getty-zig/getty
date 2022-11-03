@@ -41,7 +41,7 @@ pub fn is_dbt(comptime dbt: anytype) bool {
                         }
 
                         const attr_info = @typeInfo(@TypeOf(@field(dbt, "attributes")));
-                        if (attr_info != .Struct or !attr_info.Struct.is_tuple) {
+                        if (attr_info != .Struct or attr_info.Struct.is_tuple) {
                             return false;
                         }
                     },

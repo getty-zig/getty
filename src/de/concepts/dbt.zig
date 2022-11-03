@@ -45,7 +45,7 @@ pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
                         }
 
                         const attr_info = @typeInfo(@TypeOf(@field(dbt, "attributes")));
-                        if (attr_info != .Struct or !attr_info.Struct.is_tuple) {
+                        if (attr_info != .Struct or attr_info.Struct.is_tuple) {
                             concepts.err(concept, "unexpected type for `attributes` declaration");
                         }
                     },
