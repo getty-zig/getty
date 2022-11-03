@@ -1,61 +1,61 @@
 const std = @import("std");
 
 pub fn is_dbt(comptime dbt: anytype) bool {
-    const T = if (@TypeOf(dbt) == type) dbt else @TypeOf(dbt);
-    const info = @typeInfo(T);
-
     comptime {
+        const T = if (@TypeOf(dbt) == type) dbt else @TypeOf(dbt);
+        const info = @typeInfo(T);
+
         if (info == .Struct and info.Struct.is_tuple) {
-            // The DBT is a tuple.
-
-            inline for (std.meta.fields(T)) |field| {
-                const db = @field(dbt, field.name);
-
-                if (@TypeOf(db) != type) {
-                    // The DBT contains unexpected values (i.e., not types).
+            // Check each DB in the DT.
+            for (std.meta.fields(T)) |field| {
+                if (!is_dbt(@field(dbt, field.name))) {
                     return false;
-                }
-
-                switch (@typeInfo(db)) {
-                    .Struct => |db_info| {
-                        if (db_info.is_tuple) {
-                            // The DBT contains structs, but they are tuples.
-                            return false;
-                        }
-
-                        if (db_info.fields.len != 0) {
-                            // The DBT contains structs, but they are not namespaces.
-                            return false;
-                        }
-
-                        inline for (.{ "is", "deserialize", "Visitor" }) |func| {
-                            if (!std.meta.trait.hasFunctions(db, .{func})) {
-                                // The DBT contains structs, but they do not have the correct functions.
-                                return false;
-                            }
-                        }
-                    },
-                    else => return false, // The DBT does not contain structs.
                 }
             }
         } else {
-            // The DBT is not a tuple.
-
-            if (info != .Struct or info.Struct.is_tuple) {
-                // The DBT is not a struct.
+            // Check DB is a namespace.
+            if (@TypeOf(T) != type or info != .Struct or info.Struct.is_tuple) {
                 return false;
             }
 
+            // Check number of fields.
             if (info.Struct.fields.len != 0) {
-                // The DBT is not a struct namespace.
                 return false;
             }
 
-            inline for (.{ "is", "deserialize", "Visitor" }) |func| {
-                if (!std.meta.trait.hasFunctions(T, .{func})) {
-                    // The DBT does not have the correct functions.
-                    return false;
+            // Check number of declarations.
+            var num_decls = 0;
+            for (info.Struct.decls) |decl| {
+                if (decl.is_pub) {
+                    num_decls += 1;
                 }
+            }
+            if (num_decls != 2 and num_decls != 3) {
+                return false;
+            }
+
+            // Check functions.
+            if (!std.meta.trait.hasFunctions(T, .{"is"})) {
+                return false;
+            }
+
+            switch (num_decls) {
+                2 => {
+                    if (!@hasDecl(T, "attributes")) {
+                        return false;
+                    }
+
+                    const attr_info = @typeInfo(@TypeOf(@field(T, "attributes")));
+                    if (attr_info != .Struct or !attr_info.Struct.is_tuple) {
+                        return false;
+                    }
+                },
+                3 => {
+                    if (!std.meta.trait.hasFunctions(T, .{ "deserialize", "Visitor" })) {
+                        return false;
+                    }
+                },
+                else => unreachable, // UNREACHABLE: we've already checked the number of declarations.
             }
         }
 
