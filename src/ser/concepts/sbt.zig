@@ -49,7 +49,7 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
 
                 if (@hasDecl(sbt, "attributes")) {
                     const attr_info = @typeInfo(@TypeOf(@field(sbt, "attributes")));
-                    if (attr_info != .Struct or !attr_info.Struct.is_tuple) {
+                    if (attr_info != .Struct or attr_info.Struct.is_tuple) {
                         concepts.err(concept, "unexpected type for `attributes` declaration");
                     }
                 }

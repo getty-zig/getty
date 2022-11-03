@@ -45,7 +45,7 @@ pub fn is_sbt(comptime sbt: anytype) bool {
 
                 if (@hasDecl(sbt, "attributes")) {
                     const attr_info = @typeInfo(@TypeOf(@field(sbt, "attributes")));
-                    if (attr_info != .Struct or !attr_info.Struct.is_tuple) {
+                    if (attr_info != .Struct or attr_info.Struct.is_tuple) {
                         return false;
                     }
                 }
