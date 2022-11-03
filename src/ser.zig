@@ -185,7 +185,17 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
     // Check user SBTs.
     inline for (@TypeOf(serializer).user_st) |sb| {
         if (comptime sb.is(T)) {
-            return try sb.serialize(value, serializer);
+            if (@hasDecl(sb, "attributes")) {
+                return try switch (@typeInfo(T)) {
+                    .Struct => ser.blocks.Struct.serialize(value, serializer),
+                    .Enum => ser.blocks.Enum.serialize(value, serializer),
+                    .Union => ser.blocks.Union.serialize(value, serializer),
+                    // TODO: Need to validate attributes.
+                    else => unreachable,
+                };
+            } else {
+                return try sb.serialize(value, serializer);
+            }
         }
     }
 
@@ -199,7 +209,17 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
 
         inline for (type_tuple) |sb| {
             if (comptime sb.is(T)) {
-                return try sb.serialize(value, serializer);
+                if (@hasDecl(sb, "attributes")) {
+                    return try switch (@typeInfo(T)) {
+                        .Struct => ser.blocks.Struct.serialize(value, serializer),
+                        .Enum => ser.blocks.Enum.serialize(value, serializer),
+                        .Union => ser.blocks.Union.serialize(value, serializer),
+                        // TODO: Need to validate attributes.
+                        else => unreachable,
+                    };
+                } else {
+                    return try sb.serialize(value, serializer);
+                }
             }
         }
     }
@@ -207,7 +227,17 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
     // Check serializer SBTs.
     inline for (@TypeOf(serializer).serializer_st) |sb| {
         if (comptime sb.is(T)) {
-            return try sb.serialize(value, serializer);
+            if (@hasDecl(sb, "attributes")) {
+                return try switch (@typeInfo(T)) {
+                    .Struct => ser.blocks.Struct.serialize(value, serializer),
+                    .Enum => ser.blocks.Enum.serialize(value, serializer),
+                    .Union => ser.blocks.Union.serialize(value, serializer),
+                    // TODO: Need to validate attributes.
+                    else => unreachable,
+                };
+            } else {
+                return try sb.serialize(value, serializer);
+            }
         }
     }
 

@@ -123,6 +123,15 @@ test "SB" {
         }
     }));
 
+    // Incorrect attributes.
+    try std.testing.expect(!is_sbt(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }));
+
     // Success
     try std.testing.expect(is_sbt(struct {
         pub fn is() void {
@@ -139,7 +148,7 @@ test "SB" {
             unreachable;
         }
 
-        pub const attributes = .{};
+        pub const attributes = .{ .x = 1, .y = 2 };
     }));
 }
 
@@ -194,6 +203,15 @@ test "ST" {
         }
     }}));
 
+    // Incorrect attributes.
+    try std.testing.expect(!is_sbt(.{struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }}));
+
     // Success
     try std.testing.expect(is_sbt(.{struct {
         pub fn is() void {
@@ -210,6 +228,6 @@ test "ST" {
             unreachable;
         }
 
-        pub const attributes = .{};
+        pub const attributes = .{ .x = 1, .y = 2 };
     }}));
 }

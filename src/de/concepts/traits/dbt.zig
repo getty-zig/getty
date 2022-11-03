@@ -115,6 +115,15 @@ test "DB" {
         pub const attributes = .{};
     }));
 
+    // Incorrect attributes.
+    try std.testing.expect(!is_dbt(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }));
+
     // Success
     try std.testing.expect(is_dbt(struct {
         pub fn is() void {
@@ -135,7 +144,7 @@ test "DB" {
             unreachable;
         }
 
-        pub const attributes = .{};
+        pub const attributes = .{ .x = 1, .y = 2 };
     }));
 }
 
@@ -179,6 +188,15 @@ test "DT" {
         pub const attributes = .{};
     }}));
 
+    // Incorrect attributes.
+    try std.testing.expect(!is_dbt(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }));
+
     // Success
     try std.testing.expect(is_dbt(.{struct {
         pub fn is() void {
@@ -199,6 +217,6 @@ test "DT" {
             unreachable;
         }
 
-        pub const attributes = .{};
+        pub const attributes = .{ .x = 1, .y = 2 };
     }}));
 }
