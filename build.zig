@@ -5,6 +5,7 @@ const package_path = "src/lib.zig";
 
 const tests = [_][]const u8{
     "src/ser/concepts/traits/sbt.zig",
+    "src/de/concepts/traits/dbt.zig",
 
     "src/tests/ser/tests.zig",
     "src/tests/de/tests.zig",
