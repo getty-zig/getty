@@ -71,3 +71,145 @@ pub fn is_sbt(comptime sbt: anytype) bool {
         return true;
     }
 }
+
+test "SB" {
+    // Not a type.
+    try std.testing.expect(!is_sbt(1));
+    try std.testing.expect(!is_sbt("foo"));
+    try std.testing.expect(!is_sbt(.{ 1, 2, 3 }));
+    try std.testing.expect(!is_sbt(.{ .x = 1, .serialize = 2 }));
+
+    // Not a POD struct type.
+    try std.testing.expect(!is_sbt(i32));
+    try std.testing.expect(!is_sbt([]u8));
+    try std.testing.expect(!is_sbt(*struct {}));
+    try std.testing.expect(!is_sbt(std.meta.Tuple(&.{ i32, i32 })));
+
+    // Non-zero number of fields.
+    try std.testing.expect(!is_sbt(struct { x: i32 }));
+    try std.testing.expect(!is_sbt(struct { x: i32, y: i32 }));
+
+    // Incorrect number of declarations.
+    try std.testing.expect(!is_sbt(struct {
+        pub const x: i32 = 0;
+    }));
+
+    try std.testing.expect(!is_sbt(struct {
+        pub fn foo() void {
+            unreachable;
+        }
+    }));
+
+    try std.testing.expect(!is_sbt(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub fn serialize() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }));
+
+    // Incorrect functions.
+    try std.testing.expect(!is_sbt(struct {
+        pub fn foo() void {
+            unreachable;
+        }
+
+        pub fn bar() void {
+            unreachable;
+        }
+    }));
+
+    // Success
+    try std.testing.expect(is_sbt(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub fn serialize() void {
+            unreachable;
+        }
+    }));
+
+    try std.testing.expect(is_sbt(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }));
+}
+
+test "ST" {
+    // Not a type.
+    try std.testing.expect(!is_sbt(.{1}));
+    try std.testing.expect(!is_sbt(.{"foo"}));
+    try std.testing.expect(!is_sbt(.{.{ 1, 2, 3 }}));
+    try std.testing.expect(!is_sbt(.{.{ .x = 1, .serialize = 2 }}));
+
+    // Not a POD struct type.
+    try std.testing.expect(!is_sbt(.{i32}));
+    try std.testing.expect(!is_sbt(.{[]u8}));
+    try std.testing.expect(!is_sbt(.{*struct {}}));
+    try std.testing.expect(!is_sbt(.{std.meta.Tuple(&.{ i32, i32 })}));
+
+    // Non-zero number of fields.
+    try std.testing.expect(!is_sbt(.{struct { x: i32 }}));
+    try std.testing.expect(!is_sbt(.{struct { x: i32, y: i32 }}));
+
+    // Incorrect number of declarations.
+    try std.testing.expect(!is_sbt(.{struct {
+        pub const x: i32 = 0;
+    }}));
+
+    try std.testing.expect(!is_sbt(.{struct {
+        pub fn foo() void {
+            unreachable;
+        }
+    }}));
+
+    try std.testing.expect(!is_sbt(.{struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub fn serialize() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }}));
+
+    // Incorrect functions.
+    try std.testing.expect(!is_sbt(.{struct {
+        pub fn foo() void {
+            unreachable;
+        }
+
+        pub fn bar() void {
+            unreachable;
+        }
+    }}));
+
+    // Success
+    try std.testing.expect(is_sbt(.{struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub fn serialize() void {
+            unreachable;
+        }
+    }}));
+
+    try std.testing.expect(is_sbt(.{struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }}));
+}
