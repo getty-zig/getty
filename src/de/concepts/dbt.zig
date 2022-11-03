@@ -16,7 +16,7 @@ pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
             }
         } else {
             // Check DB is a namespace.
-            if (@TypeOf(T) != type or info != .Struct or info.Struct.is_tuple) {
+            if (@TypeOf(dbt) != type or info != .Struct or info.Struct.is_tuple) {
                 concepts.err(concept, "deserialization block is not a namespace");
             }
 

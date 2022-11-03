@@ -14,7 +14,7 @@ pub fn is_dbt(comptime dbt: anytype) bool {
             }
         } else {
             // Check DB is a namespace.
-            if (@TypeOf(T) != type or info != .Struct or info.Struct.is_tuple) {
+            if (@TypeOf(dbt) != type or info != .Struct or info.Struct.is_tuple) {
                 return false;
             }
 
