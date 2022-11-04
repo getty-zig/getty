@@ -182,71 +182,70 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
 } {
     const T = @TypeOf(value);
 
-    // Check user SBTs.
+    // Process user SBTs.
     inline for (@TypeOf(serializer).user_st) |sb| {
         if (comptime sb.is(T)) {
-            if (@hasDecl(sb, "attributes")) {
-                return try switch (@typeInfo(T)) {
-                    .Struct => ser.blocks.Struct.serialize(value, serializer),
-                    .Enum => ser.blocks.Enum.serialize(value, serializer),
-                    .Union => ser.blocks.Union.serialize(value, serializer),
-                    // TODO: Need to validate attributes.
-                    else => unreachable,
-                };
-            } else {
-                return try sb.serialize(value, serializer);
-            }
+            return try _serialize(value, serializer, sb);
         }
     }
 
-    // Check type SBTs.
-    if (comptime std.meta.trait.isContainer(T) and
-        std.meta.trait.hasDecls(T, .{"getty.sbt"}) and
-        getty.concepts.traits.is_sbt(T.@"getty.sbt"))
-    {
-        const type_sbt = T.@"getty.sbt";
-        const type_tuple = if (@TypeOf(type_sbt) == type) .{type_sbt} else type_sbt;
+    // Process type SBTs.
+    if (comptime has_sbt(T)) {
+        const sbt = T.@"getty.sbt";
+        const st = if (@TypeOf(sbt) == type) .{sbt} else sbt;
 
-        inline for (type_tuple) |sb| {
+        inline for (st) |sb| {
             if (comptime sb.is(T)) {
-                if (@hasDecl(sb, "attributes")) {
-                    return try switch (@typeInfo(T)) {
-                        .Struct => ser.blocks.Struct.serialize(value, serializer),
-                        .Enum => ser.blocks.Enum.serialize(value, serializer),
-                        .Union => ser.blocks.Union.serialize(value, serializer),
-                        // TODO: Need to validate attributes.
-                        else => unreachable,
-                    };
-                } else {
-                    return try sb.serialize(value, serializer);
-                }
+                return try _serialize(value, serializer, sb);
             }
         }
     }
 
-    // Check serializer SBTs.
+    // Process serializer SBTs.
     inline for (@TypeOf(serializer).serializer_st) |sb| {
         if (comptime sb.is(T)) {
-            if (@hasDecl(sb, "attributes")) {
-                return try switch (@typeInfo(T)) {
-                    .Struct => ser.blocks.Struct.serialize(value, serializer),
-                    .Enum => ser.blocks.Enum.serialize(value, serializer),
-                    .Union => ser.blocks.Union.serialize(value, serializer),
-                    // TODO: Need to validate attributes.
-                    else => unreachable,
-                };
-            } else {
-                return try sb.serialize(value, serializer);
-            }
+            return try _serialize(value, serializer, sb);
         }
     }
 
-    // Check default SBTs.
+    // Process default SBTs.
     inline for (default_st) |sb| {
         if (comptime sb.is(T)) {
-            return try sb.serialize(value, serializer);
+            return try _serialize(value, serializer, sb);
         }
     }
 
     @compileError("type `" ++ @typeName(T) ++ "` is not supported");
+}
+
+fn _serialize(value: anytype, serializer: anytype, comptime sb: type) blk: {
+    const S = @TypeOf(serializer);
+
+    getty.concepts.@"getty.Serializer"(S);
+    getty.concepts.@"getty.ser.sbt"(sb);
+
+    break :blk S.Error!S.Ok;
+} {
+    const T = @TypeOf(value);
+
+    if (comptime @hasDecl(sb, "attributes")) {
+        // TODO: Validate attributes.
+
+        switch (@typeInfo(T)) {
+            .Struct => return try ser.blocks.Struct.serialize(value, serializer),
+            .Enum => return try ser.blocks.Enum.serialize(value, serializer),
+            .Union => return try ser.blocks.Union.serialize(value, serializer),
+            else => @compileError("unexpected type cannot be serialized using attributes"),
+        }
+    }
+
+    return try sb.serialize(value, serializer);
+}
+
+fn has_sbt(comptime T: type) bool {
+    comptime {
+        return std.meta.trait.isContainer(T) and
+            @hasDecl(T, "getty.sbt") and
+            getty.concepts.traits.is_sbt(T.@"getty.sbt");
+    }
 }
