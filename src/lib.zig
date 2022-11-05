@@ -20,6 +20,9 @@ pub usingnamespace @import("ser.zig");
 /// Deserialization framework.
 pub usingnamespace @import("de.zig");
 
+/// Attributes.
+pub usingnamespace @import("attributes.zig");
+
 /// Compile-time type restraints for various Getty data types.
 pub const concepts = struct {
     pub usingnamespace @import("ser/concepts/map.zig");
@@ -43,8 +46,9 @@ pub const concepts = struct {
 
     pub const traits = struct {
         pub usingnamespace @import("ser/concepts/traits/sbt.zig");
-
         pub usingnamespace @import("de/concepts/traits/dbt.zig");
+
+        pub usingnamespace @import("ser/concepts/traits/attributes.zig");
     };
 };
 
