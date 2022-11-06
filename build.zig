@@ -3,29 +3,40 @@ const std = @import("std");
 const package_name = "getty";
 const package_path = "src/lib.zig";
 
-const tests = [_][]const u8{
-    "src/ser/concepts/traits/sbt.zig",
-    "src/de/concepts/traits/dbt.zig",
-
-    "src/tests/ser/tests.zig",
-    "src/tests/de/tests.zig",
-};
-
 pub fn build(b: *std.build.Builder) void {
-    // Options
-    const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
+    const mode = b.standardReleaseOptions();
 
-    // Tests
-    const step = b.step("test", "Run framework tests");
+    {
+        const unit_tests = b.addTest("src/tests/unit.zig");
+        unit_tests.setTarget(target);
+        unit_tests.setBuildMode(mode);
+        unit_tests.addPackagePath("common/token.zig", "src/tests/common/token.zig");
+        unit_tests.addPackagePath(package_name, package_path);
 
-    for (tests) |path| {
-        const t = b.addTest(path);
+        const test_step = b.step("test", "Run all unit tests");
+        test_step.dependOn(&unit_tests.step);
+    }
 
-        t.setBuildMode(mode);
-        t.setTarget(target);
-        t.addPackagePath("common/token.zig", "src/tests/common/token.zig");
-        t.addPackagePath(package_name, package_path);
-        step.dependOn(&t.step);
+    {
+        const unit_tests = b.addTest("src/tests/ser/unit.zig");
+        unit_tests.setTarget(target);
+        unit_tests.setBuildMode(mode);
+        unit_tests.addPackagePath("common/token.zig", "src/tests/common/token.zig");
+        unit_tests.addPackagePath(package_name, package_path);
+
+        const test_step = b.step("test-ser", "Run serialization unit tests");
+        test_step.dependOn(&unit_tests.step);
+    }
+
+    {
+        const unit_tests = b.addTest("src/tests/de/unit.zig");
+        unit_tests.setTarget(target);
+        unit_tests.setBuildMode(mode);
+        unit_tests.addPackagePath("common/token.zig", "src/tests/common/token.zig");
+        unit_tests.addPackagePath(package_name, package_path);
+
+        const test_step = b.step("test-de", "Run deserialization unit tests");
+        test_step.dependOn(&unit_tests.step);
     }
 }
