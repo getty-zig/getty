@@ -1,3 +1,5 @@
+//! The default Serialization Block for error values.
+
 const ser = @import("../../ser.zig");
 
 pub fn is(comptime T: type) bool {

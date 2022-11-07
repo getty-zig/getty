@@ -1,3 +1,5 @@
+//! The default Serialization Block for bool values.
+
 pub fn is(comptime T: type) bool {
     return T == bool;
 }

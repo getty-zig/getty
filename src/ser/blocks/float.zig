@@ -1,3 +1,5 @@
+//! The default Serialization Block for floating-point values.
+
 pub fn is(comptime T: type) bool {
     return switch (@typeInfo(T)) {
         .Float, .ComptimeFloat => true,

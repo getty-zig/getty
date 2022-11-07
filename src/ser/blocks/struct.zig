@@ -1,3 +1,5 @@
+//! The default Serialization Block for struct values.
+
 const std = @import("std");
 
 const ser = @import("../../ser.zig");

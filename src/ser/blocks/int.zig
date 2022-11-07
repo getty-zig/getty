@@ -1,3 +1,5 @@
+//! The default Serialization Block for integer values.
+
 pub fn is(comptime T: type) bool {
     return switch (@typeInfo(T)) {
         .Int, .ComptimeInt => true,

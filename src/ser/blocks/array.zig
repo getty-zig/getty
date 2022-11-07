@@ -1,3 +1,5 @@
+//! The default Serialization Block for array values.
+
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Array;
 }

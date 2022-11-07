@@ -1,3 +1,5 @@
+//! The default Serialization Block for enum values.
+
 pub fn is(comptime T: type) bool {
     return switch (@typeInfo(T)) {
         .Enum, .EnumLiteral => true,

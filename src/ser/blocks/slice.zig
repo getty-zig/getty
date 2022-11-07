@@ -1,3 +1,5 @@
+//! The default Serialization Block for slice values.
+
 const std = @import("std");
 
 pub fn is(comptime T: type) bool {
