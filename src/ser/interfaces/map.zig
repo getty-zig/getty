@@ -1,4 +1,4 @@
-const ser = @import("../../lib.zig").ser;
+const ser = @import("../../ser.zig");
 
 /// Map serialization interface.
 ///

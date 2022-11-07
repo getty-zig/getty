@@ -24,33 +24,8 @@ pub usingnamespace @import("de.zig");
 pub usingnamespace @import("attributes.zig");
 
 /// Compile-time type restraints for various Getty data types.
-pub const concepts = struct {
-    pub usingnamespace @import("ser/concepts/map.zig");
-    pub usingnamespace @import("ser/concepts/sbt.zig");
-    pub usingnamespace @import("ser/concepts/serializer.zig");
-    pub usingnamespace @import("ser/concepts/seq.zig");
-    pub usingnamespace @import("ser/concepts/structure.zig");
-
-    pub usingnamespace @import("de/concepts/dbt.zig");
-    pub usingnamespace @import("de/concepts/deserializer.zig");
-    pub usingnamespace @import("de/concepts/map_access.zig");
-    pub usingnamespace @import("de/concepts/seed.zig");
-    pub usingnamespace @import("de/concepts/seq_access.zig");
-    pub usingnamespace @import("de/concepts/union_access.zig");
-    pub usingnamespace @import("de/concepts/variant_access.zig");
-    pub usingnamespace @import("de/concepts/visitor.zig");
-
-    pub fn err(comptime concept: []const u8, comptime msg: []const u8) void {
-        @compileError("concept `" ++ concept ++ "` was not satisfied: " ++ msg);
-    }
-
-    pub const traits = struct {
-        pub usingnamespace @import("ser/concepts/traits/sbt.zig");
-        pub usingnamespace @import("de/concepts/traits/dbt.zig");
-
-        pub usingnamespace @import("ser/concepts/traits/attributes.zig");
-    };
-};
+pub const concepts = @import("concepts.zig");
+pub const traits = @import("traits.zig");
 
 /// Placeholder value for compound (de)serialization-related arguments.
 pub const TODO = struct {};

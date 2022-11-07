@@ -4,39 +4,30 @@ const package_name = "getty";
 const package_path = "src/lib.zig";
 
 pub fn build(b: *std.build.Builder) void {
-    const target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
+    const target = b.standardTargetOptions(.{});
 
-    {
-        const unit_tests = b.addTest("src/tests/unit.zig");
-        unit_tests.setTarget(target);
-        unit_tests.setBuildMode(mode);
-        unit_tests.addPackagePath("common/token.zig", "src/tests/common/token.zig");
-        unit_tests.addPackagePath(package_name, package_path);
+    const test_all_step = b.step("test", "Run tests");
+    const test_ser_step = b.step("test-ser", "Run serialization tests");
+    const test_de_step = b.step("test-de", "Run deserialization tests");
 
-        const test_step = b.step("test", "Run all unit tests");
-        test_step.dependOn(&unit_tests.step);
-    }
+    addTest(b, test_ser_step, "src/ser.zig", mode, target);
+    addTest(b, test_de_step, "src/de.zig", mode, target);
+    test_all_step.dependOn(test_ser_step);
+    test_all_step.dependOn(test_de_step);
+}
 
-    {
-        const unit_tests = b.addTest("src/tests/ser/unit.zig");
-        unit_tests.setTarget(target);
-        unit_tests.setBuildMode(mode);
-        unit_tests.addPackagePath("common/token.zig", "src/tests/common/token.zig");
-        unit_tests.addPackagePath(package_name, package_path);
+fn addTest(
+    b: *std.build.Builder,
+    step: *std.build.Step,
+    comptime path: []const u8,
+    mode: std.builtin.Mode,
+    target: std.zig.CrossTarget,
+) void {
+    const t = b.addTest(path);
+    t.setTarget(target);
+    t.setBuildMode(mode);
+    t.setMainPkgPath("src/");
 
-        const test_step = b.step("test-ser", "Run serialization unit tests");
-        test_step.dependOn(&unit_tests.step);
-    }
-
-    {
-        const unit_tests = b.addTest("src/tests/de/unit.zig");
-        unit_tests.setTarget(target);
-        unit_tests.setBuildMode(mode);
-        unit_tests.addPackagePath("common/token.zig", "src/tests/common/token.zig");
-        unit_tests.addPackagePath(package_name, package_path);
-
-        const test_step = b.step("test-de", "Run deserialization unit tests");
-        test_step.dependOn(&unit_tests.step);
-    }
+    step.dependOn(&t.step);
 }

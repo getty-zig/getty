@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const concepts = @import("../../lib.zig").concepts;
+const concepts = @import("../../concepts.zig");
 
 const concept = "getty.ser.Map";
 

@@ -1,5 +1,7 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
+
+const default_st = @import("../../ser.zig").default_st;
+const @"getty.ser.sbt" = @import("../../concepts.zig").@"getty.ser.sbt";
 
 /// Serializer interface.
 ///
@@ -130,8 +132,8 @@ pub fn Serializer(
     comptime serializeVoidFn: fn (Context) E!O,
 ) type {
     comptime {
-        getty.concepts.@"getty.ser.sbt"(user_sbt);
-        getty.concepts.@"getty.ser.sbt"(serializer_sbt);
+        @"getty.ser.sbt"(user_sbt);
+        @"getty.ser.sbt"(serializer_sbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -153,7 +155,7 @@ pub fn Serializer(
                 const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
                 const U = @TypeOf(user_tuple);
 
-                if (U == @TypeOf(getty.default_st)) {
+                if (U == @TypeOf(default_st)) {
                     break :blk .{};
                 }
 
@@ -165,7 +167,7 @@ pub fn Serializer(
                 const serializer_tuple = if (@TypeOf(serializer_sbt) == type) .{serializer_sbt} else serializer_sbt;
                 const S = @TypeOf(serializer_tuple);
 
-                if (S == @TypeOf(getty.default_st)) {
+                if (S == @TypeOf(default_st)) {
                     break :blk .{};
                 } else {
                     break :blk serializer_tuple;
@@ -185,7 +187,7 @@ pub fn Serializer(
             pub const st = blk: {
                 const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
                 const serializer_tuple = if (@TypeOf(serializer_sbt) == type) .{serializer_sbt} else serializer_sbt;
-                const default = getty.default_st;
+                const default = default_st;
 
                 const U = @TypeOf(user_tuple);
                 const S = @TypeOf(serializer_tuple);

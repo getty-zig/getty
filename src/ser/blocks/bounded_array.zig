@@ -1,4 +1,3 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
 
 pub fn is(comptime T: type) bool {

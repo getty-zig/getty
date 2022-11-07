@@ -1,5 +1,5 @@
 test {
-    _ = @import("tests.zig");
+    //@import("std").testing.refAllDeclsRecursive(@import("../../ser.zig"));
 
-    _ = @import("../../ser/concepts/traits/sbt.zig");
+    _ = @import("../../ser.zig");
 }

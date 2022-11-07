@@ -1,15 +1,17 @@
-const getty = @import("../../../lib.zig");
 const std = @import("std");
+
+const is_sbt = @import("../../../traits.zig").is_sbt;
+const Attributes = @import("../../../attributes.zig").Attributes;
 
 pub fn has_attributes(comptime T: type, comptime SBT: type) bool {
     comptime {
-        return getty.concepts.traits.is_sbt(SBT) and @hasDecl(SBT, "attributes") and is_attributes(T, SBT.attributes);
+        return is_sbt(SBT) and @hasDecl(SBT, "attributes") and is_attributes(T, SBT.attributes);
     }
 }
 
 pub fn is_attributes(comptime T: type, attributes: anytype) bool {
     comptime {
-        const A = getty.Attributes(T, attributes);
+        const A = Attributes(T, attributes);
         var a = A{};
 
         inline for (std.meta.fields(@TypeOf(attributes))) |field| {

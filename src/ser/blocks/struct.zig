@@ -1,5 +1,6 @@
 const std = @import("std");
-const getty = @import("../../lib.zig");
+
+const ser = @import("../../ser.zig").ser;
 
 pub fn is(comptime T: type) bool {
     return @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;
@@ -8,7 +9,7 @@ pub fn is(comptime T: type) bool {
 pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
     const fields = std.meta.fields(T);
-    const attributes = comptime getty.ser.getAttributes(T, @TypeOf(serializer));
+    const attributes = comptime ser.getAttributes(T, @TypeOf(serializer));
 
     var s = try serializer.serializeStruct(@typeName(T), fields.len);
     const st = s.structure();
