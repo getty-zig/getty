@@ -1,3 +1,5 @@
+//! The default Deserialization Block for optional values.
+
 const std = @import("std");
 
 const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;

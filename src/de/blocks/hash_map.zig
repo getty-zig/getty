@@ -1,3 +1,5 @@
+//! The default Deserialization Block for std.HashMap values.
+
 const std = @import("std");
 
 const HashMapVisitor = @import("../impls/visitor/hash_map.zig").Visitor;

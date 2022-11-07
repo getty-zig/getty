@@ -1,3 +1,5 @@
+//! The default Deserialization Block for std.ArrayList values.
+
 const std = @import("std");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list.zig").Visitor;

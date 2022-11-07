@@ -1,3 +1,5 @@
+//! The default Deserialization Block for struct values.
+
 const std = @import("std");
 
 const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;

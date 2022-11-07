@@ -1,3 +1,5 @@
+//! The default Deserialization Block for floating-point values.
+
 const std = @import("std");
 
 const FloatVisitor = @import("../impls/visitor/float.zig").Visitor;

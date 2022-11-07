@@ -1,3 +1,5 @@
+//! The default Deserialization Block for one pointer values.
+
 const std = @import("std");
 
 const de = @import("../../de.zig");

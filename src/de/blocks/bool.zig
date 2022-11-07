@@ -1,3 +1,5 @@
+//! The default Deserialization Block for bool values.
+
 const std = @import("std");
 
 const BoolVisitor = @import("../impls/visitor/bool.zig");

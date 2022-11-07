@@ -1,3 +1,5 @@
+//! The default Deserialization Block for enum values.
+
 const std = @import("std");
 
 const EnumVisitor = @import("../impls/visitor/enum.zig").Visitor;

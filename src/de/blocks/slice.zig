@@ -1,3 +1,5 @@
+//! The default Deserialization Block for slice values.
+
 const std = @import("std");
 
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;

@@ -1,3 +1,5 @@
+//! The default Deserialization Block for integer values.
+
 const std = @import("std");
 
 const IntVisitor = @import("../impls/visitor/int.zig").Visitor;

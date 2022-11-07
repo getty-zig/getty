@@ -1,3 +1,5 @@
+//! The default Deserialization Block for tuple values.
+
 const std = @import("std");
 
 const TupleVisitor = @import("../impls/visitor/tuple.zig").Visitor;

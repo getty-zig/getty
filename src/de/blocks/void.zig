@@ -1,3 +1,5 @@
+//! The default Deserialization Block for void values.
+
 const std = @import("std");
 
 const VoidVisitor = @import("../impls/visitor/void.zig");

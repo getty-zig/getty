@@ -1,3 +1,5 @@
+//! The default Deserialization Block for std.SinglyLinkedList values.
+
 const std = @import("std");
 
 const LinkedListVisitor = @import("../impls/visitor/linked_list.zig").Visitor;

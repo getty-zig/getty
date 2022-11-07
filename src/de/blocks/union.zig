@@ -1,3 +1,5 @@
+//! The default Deserialization Block for union values.
+
 const std = @import("std");
 
 const UnionVisitor = @import("../impls/visitor/union.zig").Visitor;

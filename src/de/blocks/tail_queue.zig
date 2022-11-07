@@ -1,3 +1,5 @@
+//! The default Deserialization Block for std.TailQueue values.
+
 const std = @import("std");
 
 const TailQueueVisitor = @import("../impls/visitor/tail_queue.zig").Visitor;
