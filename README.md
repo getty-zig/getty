@@ -30,7 +30,7 @@ Getty provides out-of-the-box support for a variety of standard library types, e
 const std = @import("std");
 const getty = @import("getty");
 
-// Serializer supports the following types:
+// Serializer is a Getty serializer that supports the following types:
 //
 //  - Booleans
 //  - Arrays
@@ -38,13 +38,13 @@ const getty = @import("getty");
 //  - Tuples
 //  - Vectors
 //  - std.ArrayList
-//  - std.TailQueue
 //  - std.SinglyLinkedList
+//  - std.TailQueue
 //  - std.BoundedArray
 //  - and more!
 const Serializer = struct {
     pub usingnamespace getty.Serializer(
-        @This(),
+        Serializer,
         Ok,
         Error,
         getty.default_st,
@@ -68,28 +68,32 @@ const Serializer = struct {
     const Ok = void;
     const Error = error{ Foo, Bar };
 
-    fn serializeBool(_: @This(), value: bool) Error!Ok {
+    fn serializeBool(_: Serializer, value: bool) Error!Ok {
         std.debug.print("{}", .{value});
     }
 
-    fn serializeSeq(_: @This(), _: ?usize) Error!Seq {
+    fn serializeSeq(_: Serializer, _: ?usize) Error!Seq {
         std.debug.print("[", .{});
         return Seq{};
     }
 };
 
+// Seq defines the serialization process for sequences.
+//
+// Specifically, Seq specifies how to serialize elements and how to end
+// serialization for sequences. And that's it! Getty takes care of the rest.
 const Seq = struct {
     first: bool = true,
 
     pub usingnamespace getty.ser.Seq(
-        *@This(),
+        *Seq,
         Serializer.Ok,
         Serializer.Error,
         serializeElement,
         end,
     );
 
-    fn serializeElement(self: *@This(), value: anytype) Serializer.Error!void {
+    fn serializeElement(self: *Seq, value: anytype) Serializer.Error!void {
         switch (self.first) {
             true => self.first = false,
             false => std.debug.print(", ", .{}),
@@ -98,7 +102,7 @@ const Seq = struct {
         try getty.serialize(value, (Serializer{}).serializer());
     }
 
-    fn end(_: *@This()) Serializer.Error!Serializer.Ok {
+    fn end(_: *Seq) Serializer.Error!Serializer.Ok {
         std.debug.print("]", .{});
     }
 };
