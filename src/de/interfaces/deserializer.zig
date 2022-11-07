@@ -32,8 +32,8 @@ const de = @import("../../de.zig");
 ///
 ///         This is the type that implements `getty.Deserializer` (or a pointer to it).
 ///
-///     Error
-///     -----
+///     E
+///     -
 ///
 ///         The error set used by all of `getty.Deserializer`'s methods upon failure.
 ///

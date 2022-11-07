@@ -38,13 +38,13 @@ const ser = @import("../../ser.zig");
 ///
 ///         This is the type that implements `getty.Serializer` (or a pointer to it).
 ///
-///     Ok
-///     --
+///     O
+///     -
 ///
 ///         The successful return type for a majority of `getty.Serializer`'s methods.
 ///
-///     Error
-///     -----
+///     E
+///     -
 ///
 ///         The error set used by all of `getty.Serializer`'s methods upon failure.
 ///

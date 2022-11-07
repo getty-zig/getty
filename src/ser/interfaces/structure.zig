@@ -19,13 +19,13 @@
 ///
 ///         This is the type that implements `getty.ser.Structure` (or a pointer to it).
 ///
-///     Ok
-///     --
+///     O
+///     -
 ///
 ///         The successful return type for all of `getty.ser.Structure`'s methods.
 ///
-///     Error
-///     -----
+///     E
+///     -
 ///
 ///         The error set used by all of `getty.ser.Structure`'s methods upon failure.
 ///

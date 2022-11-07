@@ -20,13 +20,13 @@
 ///
 ///         This is the type that implements `getty.ser.Map` (or a pointer to it).
 ///
-///     Ok
-///     --
+///     O
+///     -
 ///
 ///         The successful return type for all of `getty.ser.Map`'s methods.
 ///
-///     Error
-///     -----
+///     E
+///     -
 ///
 ///         The error set used by all of `getty.ser.Map`'s methods upon failure.
 ///
