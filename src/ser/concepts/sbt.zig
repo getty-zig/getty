@@ -1,3 +1,5 @@
+//! Compile-time type restraint for implementations of getty.ser.sbt.
+
 const std = @import("std");
 
 const concept = "getty.ser.sbt";

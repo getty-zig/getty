@@ -1,3 +1,5 @@
+//! Compile-time type restraint for implementations of getty.de.MapAccess.
+
 const std = @import("std");
 
 const concept = "getty.de.MapAccess";

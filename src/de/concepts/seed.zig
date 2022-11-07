@@ -1,3 +1,5 @@
+//! Compile-time type restraint for implementations of getty.de.Seed.
+
 const std = @import("std");
 
 const concept = "getty.de.Seed";
