@@ -14,18 +14,29 @@
 //! custom "blocks" can be provided to specify how a type can be serialized or
 //! deserialized into.
 
+const s = @import("ser.zig");
+const d = @import("de.zig");
+
 /// Serialization framework.
-pub usingnamespace @import("ser.zig");
+pub const Serializer = s.Serializer;
+pub const default_st = s.default_st;
+pub const ser = s.ser;
+pub const serialize = s.serialize;
 
 /// Deserialization framework.
-pub usingnamespace @import("de.zig");
-
 /// Attributes.
 pub usingnamespace @import("attributes.zig");
 
 /// Compile-time type restraints for various Getty data types.
-pub const concepts = @import("concepts.zig");
-pub const traits = @import("traits.zig");
+pub const concepts = struct {
+    pub usingnamespace s.concepts;
+    pub usingnamespace d.concepts;
+};
+
+pub const traits = struct {
+    pub usingnamespace s.traits;
+    pub usingnamespace d.traits;
+};
 
 /// Placeholder value for compound (de)serialization-related arguments.
 pub const TODO = struct {};

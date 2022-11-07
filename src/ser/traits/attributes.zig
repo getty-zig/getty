@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const is_sbt = @import("../../../traits.zig").is_sbt;
-const Attributes = @import("../../../attributes.zig").Attributes;
+const is_sbt = @import("sbt.zig").is_sbt;
+const Attributes = @import("../../attributes.zig").Attributes;
 
 pub fn has_attributes(comptime T: type, comptime SBT: type) bool {
     comptime {

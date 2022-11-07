@@ -1,5 +1,3 @@
-const ser = @import("../../ser.zig");
-
 /// Struct serialization interface.
 ///
 /// Getty structs are only partially serialized by `getty.Serializer`

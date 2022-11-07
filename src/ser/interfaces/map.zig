@@ -1,5 +1,3 @@
-const ser = @import("../../ser.zig");
-
 /// Map serialization interface.
 ///
 /// Getty maps are only partially serialized by `getty.Serializer`

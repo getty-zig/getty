@@ -1,24 +1,22 @@
 const std = @import("std");
 
-const concepts = @import("../../concepts.zig");
-
 const concept = "getty.ser.Structure";
 
 pub fn @"getty.ser.Structure"(comptime T: type) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
-            concepts.err(concept, "missing `context` field");
+            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `context` field", .{concept}));
         }
 
         inline for (.{ "Ok", "Error" }) |decl| {
             if (!@hasDecl(T, decl)) {
-                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
+                @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `{s}` declaration", .{decl}));
             }
         }
 
         inline for (.{ "serializeField", "end" }) |func| {
             if (!std.meta.trait.hasFunctions(T, .{func})) {
-                concepts.err(concept, "missing `" ++ func ++ "` function");
+                @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `{s}` function", .{func}));
             }
         }
     }

@@ -98,11 +98,53 @@
 
 const std = @import("std");
 
-const concepts = @import("concepts.zig");
-const traits = @import("traits.zig");
-
 /// Serializer interface.
 pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+
+/// The default Serialization Tuple.
+///
+/// If a user or serializer ST is provided, the default ST is appended to
+/// the end, thereby taking the lowest priority.
+pub const default_st = .{
+    // std
+    ser.blocks.ArrayList,
+    ser.blocks.BoundedArray,
+    ser.blocks.HashMap,
+    ser.blocks.LinkedList,
+    ser.blocks.TailQueue,
+
+    // primitives
+    ser.blocks.Array,
+    ser.blocks.Bool,
+    ser.blocks.Enum,
+    ser.blocks.Error,
+    ser.blocks.Float,
+    ser.blocks.Int,
+    ser.blocks.Null,
+    ser.blocks.Optional,
+    ser.blocks.Pointer,
+    ser.blocks.Slice,
+    ser.blocks.String,
+    ser.blocks.Struct,
+    ser.blocks.Tuple,
+    ser.blocks.Union,
+    ser.blocks.Vector,
+    ser.blocks.Void,
+};
+
+/// Compile-time type restraints for various serialization-specific Getty data types.
+pub const concepts = struct {
+    pub usingnamespace @import("ser/concepts/map.zig");
+    pub usingnamespace @import("ser/concepts/sbt.zig");
+    pub usingnamespace @import("ser/concepts/serializer.zig");
+    pub usingnamespace @import("ser/concepts/seq.zig");
+    pub usingnamespace @import("ser/concepts/structure.zig");
+};
+
+pub const traits = struct {
+    pub usingnamespace @import("ser/traits/sbt.zig");
+    pub usingnamespace @import("ser/traits/attributes.zig");
+};
 
 /// Namespace for serialization-specific types and functions.
 pub const ser = struct {
@@ -188,37 +230,6 @@ pub const ser = struct {
             return null;
         }
     }
-};
-
-/// The default Serialization Tuple.
-///
-/// If a user or serializer ST is provided, the default ST is appended to
-/// the end, thereby taking the lowest priority.
-pub const default_st = .{
-    // std
-    ser.blocks.ArrayList,
-    ser.blocks.BoundedArray,
-    ser.blocks.HashMap,
-    ser.blocks.LinkedList,
-    ser.blocks.TailQueue,
-
-    // primitives
-    ser.blocks.Array,
-    ser.blocks.Bool,
-    ser.blocks.Enum,
-    ser.blocks.Error,
-    ser.blocks.Float,
-    ser.blocks.Int,
-    ser.blocks.Null,
-    ser.blocks.Optional,
-    ser.blocks.Pointer,
-    ser.blocks.Slice,
-    ser.blocks.String,
-    ser.blocks.Struct,
-    ser.blocks.Tuple,
-    ser.blocks.Union,
-    ser.blocks.Vector,
-    ser.blocks.Void,
 };
 
 /// Serializes a value into the given Getty serializer.

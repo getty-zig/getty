@@ -1,5 +1,3 @@
-const ser = @import("../../ser.zig");
-
 /// Sequence serialization interface.
 ///
 /// Getty sequences are only partially serialized by `getty.Serializer`

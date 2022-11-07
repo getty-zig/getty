@@ -1,13 +1,11 @@
 const std = @import("std");
 
-const concepts = @import("../../concepts.zig");
-
 const concept = "getty.Serializer";
 
 pub fn @"getty.Serializer"(comptime T: type) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
-            concepts.err(concept, "missing `context` field");
+            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `context` field", .{concept}));
         }
 
         inline for (.{
@@ -29,7 +27,7 @@ pub fn @"getty.Serializer"(comptime T: type) void {
             "serializeVoid",
         }) |decl| {
             if (!@hasDecl(T, decl)) {
-                concepts.err(concept, "missing `" ++ decl ++ "` declaration");
+                @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `{s}` declaration", .{decl}));
             }
         }
     }

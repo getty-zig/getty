@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const concepts = @import("../../concepts.zig");
-
 const concept = "getty.ser.sbt";
 
 pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
@@ -14,12 +12,12 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
 
                 // Check SB is a namespace.
                 if (info != .Struct or info.Struct.is_tuple) {
-                    concepts.err(concept, "serialization block is not a namespace");
+                    @compileError("serialization block is not a namespace");
                 }
 
                 // Check number of fields.
                 if (info.Struct.fields.len != 0) {
-                    concepts.err(concept, "serialization block contains fields");
+                    @compileError("serialization block contains fields");
                 }
 
                 // Check number of declarations.
@@ -30,7 +28,7 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
                     }
                 }
                 if (num_decls != 2) {
-                    concepts.err(concept, "serialization block contains an unexpected number of declarations");
+                    @compileError("serialization block contains an unexpected number of declarations");
                 }
 
                 // Check functions.
@@ -40,17 +38,17 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
                 // declared. Checking that either one of them exists is good enough
                 // as the other declaration must be `is`.
                 if (!std.meta.trait.hasFunctions(sbt, .{"is"})) {
-                    concepts.err(concept, "serialization block missing `is` function");
+                    @compileError("serialization block missing `is` function");
                 }
 
                 if (!std.meta.trait.hasFunctions(sbt, .{"serialize"}) and !@hasDecl(sbt, "attributes")) {
-                    concepts.err(concept, "serialization block must contain a `serialize` function or `attributes` declaration");
+                    @compileError("serialization block must contain a `serialize` function or `attributes` declaration");
                 }
 
                 if (@hasDecl(sbt, "attributes")) {
                     const attr_info = @typeInfo(@TypeOf(@field(sbt, "attributes")));
                     if (attr_info != .Struct or attr_info.Struct.is_tuple) {
-                        concepts.err(concept, "unexpected type for `attributes` declaration");
+                        @compileError("unexpected type for `attributes` declaration");
                     }
                 }
             },
@@ -64,7 +62,7 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
                         @"getty.ser.sbt"(@field(sbt, field.name));
                     }
                 } else {
-                    concepts.err(concept, "unexpected value in serialization tuple");
+                    @compileError("unexpected value in serialization tuple");
                 }
             },
         }
