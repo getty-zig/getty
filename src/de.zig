@@ -892,6 +892,11 @@ test "deserialize - integer" {
     try t(@as(usize, 0), &[_]Token{.{ .U128 = 0 }});
 }
 
+test "deserialize - optional" {
+    try t(@as(?i32, null), &[_]Token{.{ .Null = {} }});
+    try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
+}
+
 test "deserialize - string" {
     {
         var arr = [_]u8{ 'a', 'b', 'c' };
@@ -1047,10 +1052,11 @@ fn t(expected: anytype, tokens: []const Token) !void {
 
     switch (@typeInfo(T)) {
         .Bool,
+        .Enum,
         .Float,
         .Int,
+        .Optional,
         .Void,
-        .Enum,
         => try expectEqual(expected, v),
         .Array => |info| try expectEqualSlices(info.child, &expected, &v),
         .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
