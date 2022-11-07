@@ -892,6 +892,95 @@ test "deserialize - integer" {
     try t(@as(usize, 0), &[_]Token{.{ .U128 = 0 }});
 }
 
+test "deserialize - linked list" {
+    {
+        var expected = std.SinglyLinkedList(i32){};
+
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    {
+        var expected = std.SinglyLinkedList(i32){};
+        var one = @TypeOf(expected).Node{ .data = 1 };
+        var two = @TypeOf(expected).Node{ .data = 2 };
+        var three = @TypeOf(expected).Node{ .data = 3 };
+
+        expected.prepend(&one);
+        one.insertAfter(&two);
+        two.insertAfter(&three);
+
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .I32 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    {
+        const Child = std.SinglyLinkedList(i32);
+        const Parent = std.SinglyLinkedList(Child);
+
+        var expected = Parent{};
+        var a = Child{};
+        var b = Child{};
+        var c = Child{};
+
+        var one = Child.Node{ .data = 1 };
+        var two = Child.Node{ .data = 2 };
+        var three = Child.Node{ .data = 3 };
+        b.prepend(&one);
+        c.prepend(&three);
+        c.prepend(&two);
+
+        expected.prepend(&Parent.Node{ .data = c });
+        expected.prepend(&Parent.Node{ .data = b });
+        expected.prepend(&Parent.Node{ .data = a });
+
+        const tokens = &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 2 } },
+            .{ .I32 = 2 },
+            .{ .I32 = 3 },
+            .{ .SeqEnd = {} },
+            .{ .SeqEnd = {} },
+        };
+
+        // Test manually since the `t` function cannot recursively test
+        // user-defined containers containers without ugly hacks.
+        var d = TestDeserializer.init(tokens);
+        var v = deserialize(test_allocator, Parent, d.deserializer()) catch return error.TestUnexpectedError;
+        defer de.free(test_allocator, v);
+
+        try expectEqual(expected.len(), v.len());
+        var iterator = expected.first;
+        while (iterator) |node| : (iterator = node.next) {
+            var got_node = v.popFirst();
+            try expect(got_node != null);
+            defer test_allocator.destroy(got_node.?);
+
+            try expectEqual(node.data.len(), got_node.?.data.len());
+            var inner_iterator = node.data.first;
+            while (inner_iterator) |inner_node| : (inner_iterator = inner_node.next) {
+                var got_inner_node = got_node.?.data.popFirst();
+                try expect(got_inner_node != null);
+                defer test_allocator.destroy(got_inner_node.?);
+
+                try expectEqual(inner_node.data, got_inner_node.?.data);
+            }
+        }
+    }
+}
+
 test "deserialize - optional" {
     try t(@as(?i32, null), &[_]Token{.{ .Null = {} }});
     try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
@@ -1047,7 +1136,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
     const T = @TypeOf(expected);
 
     var d = TestDeserializer.init(tokens);
-    const v = deserialize(test_allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+    var v = deserialize(test_allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
     defer de.free(test_allocator, v);
 
     switch (@typeInfo(T)) {
@@ -1071,6 +1160,17 @@ fn t(expected: anytype, tokens: []const Token) !void {
             if (comptime std.mem.startsWith(u8, @typeName(T), "array_list")) {
                 try expectEqual(expected.capacity, v.capacity);
                 try expectEqualSlices(std.meta.Child(T.Slice), expected.items, v.items);
+            } else if (comptime std.mem.startsWith(u8, @typeName(T), "linked_list.SinglyLinkedList")) {
+                try expectEqual(expected.len(), v.len());
+                var iterator = expected.first;
+
+                while (iterator) |node| : (iterator = node.next) {
+                    var got_node = v.popFirst();
+                    try expect(got_node != null);
+                    defer test_allocator.destroy(got_node.?);
+
+                    try expectEqual(node.data, got_node.?.data);
+                }
             } else switch (info.is_tuple) {
                 true => {
                     const length = std.meta.fields(T).len;
