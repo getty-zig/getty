@@ -40,7 +40,12 @@ pub fn is_dbt(comptime dbt: anytype) bool {
                             return false;
                         }
 
-                        const attr_info = @typeInfo(@TypeOf(@field(dbt, "attributes")));
+                        // Check that the attributes declaration is a struct.
+                        //
+                        // These are just some prelimary checks. The real checks
+                        // are done just before Getty actually deserializes the
+                        // value.
+                        const attr_info = @typeInfo(@TypeOf(dbt.attributes));
                         if (attr_info != .Struct or attr_info.Struct.is_tuple) {
                             return false;
                         }
