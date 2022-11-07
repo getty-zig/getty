@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const concepts = @import("../../lib.zig").concepts;
+const de = @import("../../de.zig");
 
 pub fn Seed(
     comptime Context: type,
@@ -29,7 +29,7 @@ pub fn Seed(
         }
 
         fn Return(comptime Deserializer: type) type {
-            comptime concepts.@"getty.Deserializer"(Deserializer);
+            comptime de.concepts.@"getty.Deserializer"(Deserializer);
 
             return Deserializer.Error!V;
         }

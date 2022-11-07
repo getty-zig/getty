@@ -1,22 +1,20 @@
 const std = @import("std");
 
-const concepts = @import("../../lib.zig").concepts;
-
 const concept = "getty.de.SeqAccess";
 
 pub fn @"getty.de.SeqAccess"(comptime T: type) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
-            concepts.err(concept, "missing `context` field");
+            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `context` field", .{concept}));
         }
 
         if (!@hasDecl(T, "Error")) {
-            concepts.err(concept, "missing `Error` declaration");
+            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `Error` declaration", .{concept}));
         }
 
         inline for (.{ "nextElementSeed", "nextElement" }) |func| {
             if (!std.meta.trait.hasFunctions(T, .{func})) {
-                concepts.err(concept, "missing `" ++ func ++ "` function");
+                @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `{s}` function", .{ concept, func }));
             }
         }
     }

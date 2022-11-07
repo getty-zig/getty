@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const concepts = @import("../../lib.zig").concepts;
+const de = @import("../../de.zig");
 
 const assert = std.debug.assert;
 
@@ -109,7 +109,7 @@ pub fn Visitor(
             }
 
             pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
-                concepts.@"getty.de.MapAccess"(@TypeOf(map));
+                de.concepts.@"getty.de.MapAccess"(@TypeOf(map));
 
                 break :blk Deserializer.Error!Value;
             } {
@@ -126,7 +126,7 @@ pub fn Visitor(
             /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
             pub fn visitSeq(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) blk: {
-                concepts.@"getty.de.SeqAccess"(@TypeOf(seq));
+                de.concepts.@"getty.de.SeqAccess"(@TypeOf(seq));
 
                 break :blk Deserializer.Error!Value;
             } {
@@ -134,7 +134,7 @@ pub fn Visitor(
             }
 
             pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) blk: {
-                concepts.@"getty.Deserializer"(@TypeOf(deserializer));
+                de.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
 
                 break :blk @TypeOf(deserializer).Error!Value;
             } {
@@ -155,8 +155,8 @@ pub fn Visitor(
             }
 
             pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) blk: {
-                concepts.@"getty.de.UnionAccess"(@TypeOf(ua));
-                concepts.@"getty.de.VariantAccess"(@TypeOf(va));
+                de.concepts.@"getty.de.UnionAccess"(@TypeOf(ua));
+                de.concepts.@"getty.de.VariantAccess"(@TypeOf(va));
 
                 break :blk Deserializer.Error!Value;
             } {

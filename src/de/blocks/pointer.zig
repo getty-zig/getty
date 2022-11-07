@@ -1,5 +1,6 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../de.zig");
 
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 
@@ -18,7 +19,7 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     const Child = std.meta.Child(T);
-    const db = getty.de.find_db(@TypeOf(deserializer), Child);
+    const db = de.de.find_db(@TypeOf(deserializer), Child);
 
     return try db.deserialize(allocator, Child, deserializer, visitor);
 }

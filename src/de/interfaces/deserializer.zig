@@ -1,5 +1,6 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../de.zig");
 
 /// Deserializer interface.
 ///
@@ -85,8 +86,8 @@ pub fn Deserializer(
     comptime deserializeVoidFn: Fn(Context, E),
 ) type {
     comptime {
-        getty.concepts.@"getty.de.dbt"(user_dbt);
-        getty.concepts.@"getty.de.dbt"(deserializer_dbt);
+        de.concepts.@"getty.de.dbt"(user_dbt);
+        de.concepts.@"getty.de.dbt"(deserializer_dbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -105,7 +106,7 @@ pub fn Deserializer(
                 const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
                 const U = @TypeOf(user_tuple);
 
-                if (U == @TypeOf(getty.default_dt)) {
+                if (U == @TypeOf(de.default_dt)) {
                     break :blk .{};
                 }
 
@@ -117,7 +118,7 @@ pub fn Deserializer(
                 const deserializer_tuple = if (@TypeOf(deserializer_dbt) == type) .{deserializer_dbt} else deserializer_dbt;
                 const D = @TypeOf(deserializer_tuple);
 
-                if (D == @TypeOf(getty.default_dt)) {
+                if (D == @TypeOf(de.default_dt)) {
                     break :blk .{};
                 } else {
                     break :blk deserializer_tuple;
@@ -137,7 +138,7 @@ pub fn Deserializer(
             pub const dt = blk: {
                 const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
                 const deserializer_tuple = if (@TypeOf(deserializer_dbt) == type) .{deserializer_dbt} else deserializer_dbt;
-                const default = getty.default_dt;
+                const default = de.default_dt;
 
                 const U = @TypeOf(user_tuple);
                 const D = @TypeOf(deserializer_tuple);
@@ -215,7 +216,7 @@ pub fn Deserializer(
         }
 
         fn Return(comptime Visitor: type) type {
-            comptime getty.concepts.@"getty.de.Visitor"(Visitor);
+            comptime de.concepts.@"getty.de.Visitor"(Visitor);
 
             return E!Visitor.Value;
         }

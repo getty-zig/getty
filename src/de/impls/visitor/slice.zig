@@ -1,11 +1,12 @@
-const getty = @import("../../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime Slice: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,
@@ -25,7 +26,7 @@ pub fn Visitor(comptime Slice: type) type {
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var list = std.ArrayList(Child).init(allocator.?);
-            errdefer getty.de.free(allocator.?, list);
+            errdefer de.free(allocator.?, list);
 
             while (try seq.nextElement(allocator, Child)) |elem| {
                 try list.append(elem);

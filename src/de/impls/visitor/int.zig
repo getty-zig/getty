@@ -1,11 +1,12 @@
-const getty = @import("../../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime Int: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,

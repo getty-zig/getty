@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const concepts = @import("../../lib.zig").concepts;
-
 const concept = "getty.de.dbt";
 
 pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
@@ -14,12 +12,12 @@ pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
 
                 // Check DB is a namespace.
                 if (info != .Struct or info.Struct.is_tuple) {
-                    concepts.err(concept, "deserialization block is not a namespace");
+                    @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: deserialization block is not a namespace", .{concept}));
                 }
 
                 // Check number of fields.
                 if (info.Struct.fields.len != 0) {
-                    concepts.err(concept, "deserialization block contains fields");
+                    @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: deserialization block contains fields", .{concept}));
                 }
 
                 // Check number of declarations.
@@ -30,28 +28,28 @@ pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
                     }
                 }
                 if (num_decls != 2 and num_decls != 3) {
-                    concepts.err(concept, "deserialization block contains an unexpected number of declarations");
+                    @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: deserialization block contains an unexpected number of declarations", .{concept}));
                 }
 
                 // Check functions.
                 if (!std.meta.trait.hasFunctions(dbt, .{"is"})) {
-                    concepts.err(concept, "deserialization block missing `is` function");
+                    @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: deserialization block missing `is` function", .{concept}));
                 }
 
                 switch (num_decls) {
                     2 => {
                         if (!@hasDecl(dbt, "attributes")) {
-                            concepts.err(concept, "deserialization block missing `attributes` declaration");
+                            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: deserialization block missing `attributes` declaration", .{concept}));
                         }
 
                         const attr_info = @typeInfo(@TypeOf(@field(dbt, "attributes")));
                         if (attr_info != .Struct or attr_info.Struct.is_tuple) {
-                            concepts.err(concept, "unexpected type for `attributes` declaration");
+                            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: unexpected type for `attributes` declaration", .{concept}));
                         }
                     },
                     3 => {
                         if (!std.meta.trait.hasFunctions(dbt, .{ "deserialize", "Visitor" })) {
-                            concepts.err(concept, "deserialization block missing `deserialize` and `Visitor` functions");
+                            @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: deserialization block missing `deserialize` and `Visitor` functions", .{concept}));
                         }
                     },
                     else => unreachable, // UNREACHABLE: we've already checked the number of declarations.

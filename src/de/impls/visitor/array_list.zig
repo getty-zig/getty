@@ -1,11 +1,12 @@
-const getty = @import("../../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime ArrayList: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,
@@ -31,7 +32,7 @@ pub fn Visitor(comptime ArrayList: type) type {
             );
 
             var list = if (unmanaged) ArrayList{} else ArrayList.init(allocator.?);
-            errdefer getty.de.free(allocator.?, list);
+            errdefer de.free(allocator.?, list);
 
             while (try seq.nextElement(allocator, std.meta.Child(ArrayList.Slice))) |value| {
                 try if (unmanaged) list.append(allocator.?, value) else list.append(value);

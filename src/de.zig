@@ -130,11 +130,52 @@
 //! deserializers can provide their own through the `getty.Deserializer`
 //! interface.
 
-const getty = @import("lib.zig");
 const std = @import("std");
 
 /// Deserializer interface.
 pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
+
+/// The default Deserialization Tuple.
+///
+/// If a user or deserializer DT is provided, the default DT is appended to the
+/// end, thereby taking the lowest priority.
+pub const default_dt = .{
+    // std
+    de.blocks.ArrayList,
+    de.blocks.HashMap,
+    de.blocks.LinkedList,
+    de.blocks.TailQueue,
+
+    // primitives
+    de.blocks.Array,
+    de.blocks.Bool,
+    de.blocks.Enum,
+    de.blocks.Float,
+    de.blocks.Int,
+    de.blocks.Optional,
+    de.blocks.Pointer,
+    de.blocks.Slice,
+    de.blocks.Struct,
+    de.blocks.Tuple,
+    de.blocks.Union,
+    de.blocks.Void,
+};
+
+/// Compile-time type restraints for various deserialization-specific Getty data types.
+pub const concepts = struct {
+    pub usingnamespace @import("de/concepts/dbt.zig");
+    pub usingnamespace @import("de/concepts/deserializer.zig");
+    pub usingnamespace @import("de/concepts/map_access.zig");
+    pub usingnamespace @import("de/concepts/seed.zig");
+    pub usingnamespace @import("de/concepts/seq_access.zig");
+    pub usingnamespace @import("de/concepts/union_access.zig");
+    pub usingnamespace @import("de/concepts/variant_access.zig");
+    pub usingnamespace @import("de/concepts/visitor.zig");
+};
+
+pub const traits = struct {
+    pub usingnamespace @import("de/traits/dbt.zig");
+};
 
 /// Namespace for deserialization-specific types and functions.
 pub const de = struct {
@@ -279,7 +320,7 @@ pub const de = struct {
     /// deserializer type.
     pub fn find_db(comptime De: type, comptime T: type) type {
         comptime {
-            getty.concepts.@"getty.Deserializer"(De);
+            concepts.@"getty.Deserializer"(De);
 
             // Check user DBTs.
             inline for (De.user_dt) |db| {
@@ -291,7 +332,7 @@ pub const de = struct {
             // Check type DBTs.
             if (std.meta.trait.isContainer(T) and
                 std.meta.trait.hasDecls(T, .{"getty.dbt"}) and
-                getty.concepts.traits.is_dbt(T.@"getty.dbt"))
+                traits.is_dbt(T.@"getty.dbt"))
             {
                 const type_dbt = T.@"getty.dbt";
                 const type_tuple = if (@TypeOf(type_dbt) == type) .{type_dbt} else type_dbt;
@@ -322,53 +363,26 @@ pub const de = struct {
     }
 };
 
-/// The default Deserialization Tuple.
-///
-/// If a user or deserializer DT is provided, the default DT is appended to the
-/// end, thereby taking the lowest priority.
-pub const default_dt = .{
-    // std
-    de.blocks.ArrayList,
-    de.blocks.HashMap,
-    de.blocks.LinkedList,
-    de.blocks.TailQueue,
-
-    // primitives
-    de.blocks.Array,
-    de.blocks.Bool,
-    de.blocks.Enum,
-    de.blocks.Float,
-    de.blocks.Int,
-    de.blocks.Optional,
-    de.blocks.Pointer,
-    de.blocks.Slice,
-    de.blocks.Struct,
-    de.blocks.Tuple,
-    de.blocks.Union,
-    de.blocks.Void,
-};
-
 /// Deserializes a value from the given Getty deserializer.
 pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
     const D = @TypeOf(deserializer);
 
-    getty.concepts.@"getty.Deserializer"(D);
+    concepts.@"getty.Deserializer"(D);
 
     break :blk D.Error!T;
 } {
     const db = de.find_db(@TypeOf(deserializer), T);
     var v = db.Visitor(T){};
 
-    return try _deserialize(allocator, T, deserializer, v.visitor());
+    return try deserializeInternal(allocator, T, deserializer, v.visitor());
 }
 
-// TODO: change to deserializeInternal
-fn _deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype, visitor: anytype) blk: {
+fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype, visitor: anytype) blk: {
     const D = @TypeOf(deserializer);
     const V = @TypeOf(visitor);
 
-    getty.concepts.@"getty.Deserializer"(D);
-    getty.concepts.@"getty.de.Visitor"(V);
+    concepts.@"getty.Deserializer"(D);
+    concepts.@"getty.de.Visitor"(V);
 
     break :blk D.Error!V.Value;
 } {

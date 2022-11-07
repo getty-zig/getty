@@ -1,9 +1,10 @@
-const getty = @import("../../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../../de.zig").de;
 
 const Visitor = @This();
 
-pub usingnamespace getty.de.Visitor(
+pub usingnamespace de.Visitor(
     Visitor,
     Value,
     visitBool,

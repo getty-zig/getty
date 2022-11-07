@@ -1,11 +1,12 @@
-const getty = @import("../../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime HashMap: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,
@@ -33,13 +34,13 @@ pub fn Visitor(comptime HashMap: type) type {
             );
 
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(allocator.?);
-            errdefer getty.de.free(allocator.?, hash_map);
+            errdefer de.free(allocator.?, hash_map);
 
             while (try map.nextKey(allocator, K)) |key| {
-                errdefer getty.de.free(allocator.?, key);
+                errdefer de.free(allocator.?, key);
 
                 const value = try map.nextValue(allocator, V);
-                errdefer getty.de.free(allocator.?, value);
+                errdefer de.free(allocator.?, value);
 
                 try if (unmanaged) hash_map.put(allocator.?, key, value) else hash_map.put(key, value);
             }

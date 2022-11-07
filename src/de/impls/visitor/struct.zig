@@ -1,12 +1,12 @@
 const std = @import("std");
 
-const getty = @import("../../../lib.zig");
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime Struct: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,
@@ -34,7 +34,7 @@ pub fn Visitor(comptime Struct: type) type {
                 if (allocator) |alloc| {
                     inline for (fields) |field, i| {
                         if (!field.is_comptime and seen[i]) {
-                            getty.de.free(alloc, @field(structure, field.name));
+                            de.free(alloc, @field(structure, field.name));
                         }
                     }
                 }

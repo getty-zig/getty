@@ -1,5 +1,6 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../de.zig");
 
 pub fn UnionAccess(
     comptime Context: type,
@@ -23,7 +24,7 @@ pub fn UnionAccess(
             }
 
             pub fn variant(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
-                var ds = getty.de.DefaultSeed(T){};
+                var ds = de.de.DefaultSeed(T){};
                 const seed = ds.seed();
 
                 return try self.variantSeed(allocator, seed);
@@ -37,7 +38,7 @@ pub fn UnionAccess(
 }
 
 fn Return(comptime Error: type, comptime Seed: type) type {
-    comptime getty.concepts.@"getty.de.Seed"(Seed);
+    comptime de.concepts.@"getty.de.Seed"(Seed);
 
     return Error!Seed.Value;
 }

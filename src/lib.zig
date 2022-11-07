@@ -24,6 +24,11 @@ pub const ser = s.ser;
 pub const serialize = s.serialize;
 
 /// Deserialization framework.
+pub const Deserializer = d.Deserializer;
+pub const default_dt = d.default_dt;
+pub const de = d.de;
+pub const deserialize = d.deserialize;
+
 /// Attributes.
 pub usingnamespace @import("attributes.zig");
 

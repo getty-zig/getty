@@ -1,11 +1,12 @@
 const std = @import("std");
-const getty = @import("../../../lib.zig");
+
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime TailQueue: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,
@@ -25,7 +26,7 @@ pub fn Visitor(comptime TailQueue: type) type {
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var list = Value{};
-            errdefer getty.de.free(allocator.?, list);
+            errdefer de.free(allocator.?, list);
 
             const Child = std.meta.fieldInfo(Value.Node, .data).field_type;
 

@@ -1,5 +1,6 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../de.zig");
 
 pub fn SeqAccess(
     comptime Context: type,
@@ -23,14 +24,14 @@ pub fn SeqAccess(
             }
 
             pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {
-                var seed = getty.de.DefaultSeed(Value){};
+                var seed = de.de.DefaultSeed(Value){};
                 const ds = seed.seed();
 
                 return try self.nextElementSeed(allocator, ds);
             }
 
             fn Return(comptime Seed: type) type {
-                comptime getty.concepts.@"getty.de.Seed"(Seed);
+                comptime de.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }

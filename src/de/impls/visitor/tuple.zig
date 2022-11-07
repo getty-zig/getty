@@ -1,11 +1,12 @@
 const std = @import("std");
-const getty = @import("../../../lib.zig");
+
+const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime Tuple: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace getty.de.Visitor(
+        pub usingnamespace de.Visitor(
             Self,
             Value,
             undefined,
@@ -35,7 +36,7 @@ pub fn Visitor(comptime Tuple: type) type {
                     if (len > 0) {
                         inline for (tuple) |v, i| {
                             if (i < seen) {
-                                getty.de.free(alloc, v);
+                                de.free(alloc, v);
                             }
                         }
                     }

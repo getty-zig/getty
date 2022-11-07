@@ -1,5 +1,6 @@
-const getty = @import("../../lib.zig");
 const std = @import("std");
+
+const de = @import("../../de.zig");
 
 pub fn MapAccess(
     comptime Context: type,
@@ -36,14 +37,14 @@ pub fn MapAccess(
             //}
 
             pub fn nextKey(self: Self, allocator: ?std.mem.Allocator, comptime K: type) !?K {
-                var seed = getty.de.DefaultSeed(K){};
+                var seed = de.de.DefaultSeed(K){};
                 const ds = seed.seed();
 
                 return try self.nextKeySeed(allocator, ds);
             }
 
             pub fn nextValue(self: Self, allocator: ?std.mem.Allocator, comptime V: type) !V {
-                var seed = getty.de.DefaultSeed(V){};
+                var seed = de.de.DefaultSeed(V){};
                 const ds = seed.seed();
 
                 return try self.nextValueSeed(allocator, ds);
@@ -54,13 +55,13 @@ pub fn MapAccess(
             //}
 
             fn KeyReturn(comptime Seed: type) type {
-                comptime getty.concepts.@"getty.de.Seed"(Seed);
+                comptime de.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }
 
             fn ValueReturn(comptime Seed: type) type {
-                comptime getty.concepts.@"getty.de.Seed"(Seed);
+                comptime de.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!Seed.Value;
             }
