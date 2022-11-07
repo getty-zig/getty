@@ -1,3 +1,5 @@
+//! Functions for obtaining attribute-related type information at compile-time.
+
 const std = @import("std");
 
 const is_sbt = @import("sbt.zig").is_sbt;

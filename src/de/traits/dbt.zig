@@ -1,3 +1,5 @@
+//! Functions for obtaining DBT-related type information at compile-time.
+
 const std = @import("std");
 
 pub fn is_dbt(comptime dbt: anytype) bool {

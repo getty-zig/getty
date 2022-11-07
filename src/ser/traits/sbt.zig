@@ -1,3 +1,5 @@
+//! Functions for obtaining SBT-related type information at compile-time.
+
 const std = @import("std");
 
 pub fn has_sbt(comptime T: type) bool {
