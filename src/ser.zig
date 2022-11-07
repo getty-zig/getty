@@ -300,7 +300,7 @@ fn serializeInternal(value: anytype, serializer: anytype, comptime sb: type) blk
     return try sb.serialize(value, serializer);
 }
 
-const Token = @import("tests/common/token.zig").Token;
+const Token = @import("tests/common.zig").Token;
 
 const testing = std.testing;
 

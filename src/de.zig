@@ -391,7 +391,7 @@ fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserial
     return try db.deserialize(allocator, T, deserializer, visitor);
 }
 
-const Token = @import("tests/common/token.zig").Token;
+const Token = @import("tests/common.zig").Token;
 
 const testing = std.testing;
 
