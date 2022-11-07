@@ -1,35 +1,33 @@
-//! A serialization and deserialization framework for the Zig programming
-//! language.
-//!
-//! The main contribution of Getty is its data model, a set of types that
-//! establishes a generic baseline from which serializers and deserializers can
-//! operate. By working within Getty's data model, the set of possible
-//! inputs/outputs for a serializer/deserializer is reduced from all possible
-//! types in Zig to a subset of the types within the data model.
-//!
-//! Any type that is mapped to Getty's data model automatically becomes
-//! (de)serializable. Out of the box, Getty maps a number of Zig types,
-//! including many standard library types (e.g., std.ArrayList,
-//! std.StringHashMap). For types that aren't already supported by Getty,
-//! custom "blocks" can be provided to specify how a type can be serialized or
-//! deserialized into.
+//! A (de)serialization framework for the Zig programming language.
 
 const s = @import("ser.zig");
 const d = @import("de.zig");
 
-/// Serialization framework.
+/// The serializer interface.
 pub const Serializer = s.Serializer;
+
+/// The default Serialization Tuple.
 pub const default_st = s.default_st;
-pub const ser = s.ser;
+
+/// Serializes a value into the given Getty serializer.
 pub const serialize = s.serialize;
 
-/// Deserialization framework.
+/// The serialization namespace.
+pub const ser = s.ser;
+
+/// The deserializer interface.
 pub const Deserializer = d.Deserializer;
+
+/// The default Deserialization Tuple.
 pub const default_dt = d.default_dt;
-pub const de = d.de;
+
+/// Deserializes a value from the given Getty deserializer.
 pub const deserialize = d.deserialize;
 
-/// Attributes.
+/// The deserialization namespace.
+pub const de = d.de;
+
+/// TODO: Document this.
 pub usingnamespace @import("attributes.zig");
 
 /// Compile-time type restraints for various Getty data types.
@@ -38,10 +36,11 @@ pub const concepts = struct {
     pub usingnamespace d.concepts;
 };
 
+/// Functions for obtaining type information at compile-time.
 pub const traits = struct {
     pub usingnamespace s.traits;
     pub usingnamespace d.traits;
 };
 
-/// Placeholder value for compound (de)serialization-related arguments.
+/// Placeholder value for aggregate (de)serialization-related arguments.
 pub const TODO = struct {};

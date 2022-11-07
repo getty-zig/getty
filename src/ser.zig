@@ -58,25 +58,23 @@
 //! A serializer is an implementation of the `getty.Serializer` interface. They
 //! define the conversion process between Getty's data model and an output data
 //! format (e.g., JSON, YAML). For example, a JSON serializer would be
-//! responsible for converting Getty maps into JSON maps.
+//! responsible for converting Getty maps into JSON objects.
 //!
 //! Serialization Blocks
 //! ====================
 //!
-//! Serialization Blocks (SB) make up the core of custom serialization in
-//! Getty. SBs define how to serialize values of one or more types.
-//!
-//! An SB is a struct namespace containing two functions:
+//! A Serialization Block (SB) is a struct namespace that defines the
+//! conversion process between Zig data types and Getty's data model. All SBs
+//! must contain the following two functions:
 //!
 //!   1. fn is(comptime T: type) bool
 //!   2. fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok
 //!
 //! The `is` function specifies which types are serializable by the SB, and the
-//! `serialize` function defines how to serialize values of those types.
+//! `serialize` function defines how to serialize values of those types. For
+//! example, the following code defines an SB for booleans:
 //!
-//! For example, the following shows an SB for booleans:
-//!
-//! ```zig
+//! ```
 //! const bool_sb = struct {
 //!     pub fn is(comptime T: type) bool {
 //!         return T == bool;
@@ -91,20 +89,21 @@
 //! Serialization Tuples
 //! ====================
 //!
-//! SBs can be grouped up into a tuple, known as a Serialization Tuple (ST).
+//! A Serialization Tuple (ST) is a group of Serialization Blocks.
 //!
-//! Getty provides its own ST for various Zig data types, but users and
-//! serializers can provide their own through the `getty.Serializer` interface.
+//! Getty provides its own ST for various Zig data types, but users, types, and
+//! serializers can provide their own through the `getty.Serializer` interface
+//! and `getty.ser.sbt` declaration.
 
 const std = @import("std");
 
-/// Serializer interface.
+/// The serializer interface.
 pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
 /// The default Serialization Tuple.
 ///
-/// If a user or serializer ST is provided, the default ST is appended to
-/// the end, thereby taking the lowest priority.
+/// If a user, type, or serializer ST is provided, the default ST will take the
+/// lowest priority.
 pub const default_st = .{
     // std
     ser.blocks.ArrayList,
@@ -132,7 +131,7 @@ pub const default_st = .{
     ser.blocks.Void,
 };
 
-/// Compile-time type restraints for various serialization-specific Getty data types.
+/// Compile-time type restraints for serialization-related Getty data types.
 pub const concepts = struct {
     pub usingnamespace @import("ser/concepts/map.zig");
     pub usingnamespace @import("ser/concepts/sbt.zig");
@@ -141,20 +140,22 @@ pub const concepts = struct {
     pub usingnamespace @import("ser/concepts/structure.zig");
 };
 
+/// Functions for obtaining type information at compile-time for
+/// serialization-related Getty data types.
 pub const traits = struct {
     pub usingnamespace @import("ser/traits/sbt.zig");
     pub usingnamespace @import("ser/traits/attributes.zig");
 };
 
-/// Namespace for serialization-specific types and functions.
+/// A namespace for serialization-specific types and functions.
 pub const ser = struct {
-    /// Map serialization interface.
+    /// The map serialization interface.
     pub usingnamespace @import("ser/interfaces/map.zig");
 
-    /// Sequence serialization interface.
+    /// The sequence serialization interface.
     pub usingnamespace @import("ser/interfaces/seq.zig");
 
-    /// Struct serialization interface.
+    /// The struct serialization interface.
     pub usingnamespace @import("ser/interfaces/structure.zig");
 
     pub const blocks = struct {
