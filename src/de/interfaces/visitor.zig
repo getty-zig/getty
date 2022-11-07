@@ -79,7 +79,7 @@ pub fn Visitor(
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Enum, .EnumLiteral => {},
-                        else => @compileError("expected enum or enum literal, found `" ++ @typeName(@TypeOf(input)) ++ "`"),
+                        else => @compileError(std.fmt.comptimePrint("expected enum or enum literal, found `{s}`", .{@typeName(@TypeOf(input))})),
                     }
                 }
 
@@ -90,7 +90,7 @@ pub fn Visitor(
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Float, .ComptimeFloat => {},
-                        else => @compileError("expected floating-point, found `" ++ @typeName(@TypeOf(input)) ++ "`"),
+                        else => @compileError(std.fmt.comptimePrint("expected floating-point, found `{s}`", .{@typeName(@TypeOf(input))})),
                     }
                 }
 
@@ -101,7 +101,7 @@ pub fn Visitor(
                 comptime {
                     switch (@typeInfo(@TypeOf(input))) {
                         .Int, .ComptimeInt => {},
-                        else => @compileError("expected integer, found `" ++ @typeName(@TypeOf(input)) ++ "`"),
+                        else => @compileError(std.fmt.comptimePrint("expected integer, found `{s}`", .{@typeName(@TypeOf(input))})),
                     }
                 }
 
@@ -147,7 +147,7 @@ pub fn Visitor(
             pub fn visitString(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 comptime {
                     if (!std.meta.trait.isZigString(@TypeOf(input))) {
-                        @compileError("expected string, found `" ++ @typeName(@TypeOf(input)) ++ "`");
+                        @compileError(std.fmt.comptimePrint("expected string, found `{s}`", .{@typeName(@TypeOf(input))}));
                     }
                 }
 

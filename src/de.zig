@@ -358,7 +358,7 @@ pub const de = struct {
                 }
             }
 
-            @compileError("type ` " ++ @typeName(T) ++ "` is not supported");
+            @compileError(std.fmt.comptimePrint("type `{s}` is not supported", .{@typeName(T)}));
         }
     }
 };

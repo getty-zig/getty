@@ -9,7 +9,7 @@ pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!
     const info = @typeInfo(T).Union;
 
     if (info.tag_type == null) {
-        @compileError("type `" ++ @typeName(T) ++ "`" ++ "is not supported");
+        @compileError(std.fmt.comptimePrint("type `{s} is not supported", .{@typeName(T)}));
     }
 
     var m = try serializer.serializeMap(1);

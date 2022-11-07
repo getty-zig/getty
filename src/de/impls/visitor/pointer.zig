@@ -4,7 +4,7 @@ const de = @import("../../../de.zig").de;
 
 pub fn Visitor(comptime Pointer: type) type {
     if (@typeInfo(Pointer) != .Pointer or @typeInfo(Pointer).Pointer.size != .One) {
-        @compileError("expected one pointer, found `" ++ @typeName(Pointer) ++ "`");
+        @compileError(std.fmt.comptimePrint("expected one pointer, found `{s}`", .{@typeName(Pointer)}));
     }
 
     return struct {

@@ -212,7 +212,7 @@ pub fn Serializer(
             pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
                 switch (@typeInfo(@TypeOf(value))) {
                     .Enum, .EnumLiteral => return try serializeEnumFn(self.context, value),
-                    else => @compileError("expected enum, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                    else => @compileError(std.fmt.comptimePrint("expected enum, found `{s}`", .{@typeName(@TypeOf(value))})),
                 }
             }
 
@@ -220,7 +220,7 @@ pub fn Serializer(
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
                 switch (@typeInfo(@TypeOf(value))) {
                     .Float, .ComptimeFloat => return try serializeFloatFn(self.context, value),
-                    else => @compileError("expected float, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                    else => @compileError(std.fmt.comptimePrint("expected float, found `{s}`", .{@typeName(@TypeOf(value))})),
                 }
             }
 
@@ -228,7 +228,7 @@ pub fn Serializer(
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
                 switch (@typeInfo(@TypeOf(value))) {
                     .Int, .ComptimeInt => return try serializeIntFn(self.context, value),
-                    else => @compileError("expected integer, found `" ++ @typeName(@TypeOf(value)) ++ "`"),
+                    else => @compileError(std.fmt.comptimePrint("expected integer, found `{s}`", .{@typeName(@TypeOf(value))})),
                 }
             }
 
@@ -255,7 +255,7 @@ pub fn Serializer(
             /// Serializes a Getty String value.
             pub fn serializeString(self: Self, value: anytype) Error!Ok {
                 if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
-                    @compileError("expected string, found `" ++ @typeName(@TypeOf(value)) ++ "`");
+                    @compileError(std.fmt.comptimePrint("expected string, found `{s}`", .{@typeName(@TypeOf(value))}));
                 }
 
                 return try serializeStringFn(self.context, value);

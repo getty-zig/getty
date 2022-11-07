@@ -276,7 +276,7 @@ pub fn serialize(value: anytype, serializer: anytype) blk: {
         }
     }
 
-    @compileError("type `" ++ @typeName(T) ++ "` is not supported");
+    @compileError(std.fmt.comptimePrint("type `{s}` is not supported", .{@typeName(T)}));
 }
 
 fn serializeInternal(value: anytype, serializer: anytype, comptime sb: type) blk: {

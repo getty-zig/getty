@@ -278,7 +278,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
                     .alignment = 4,
                 };
             } else {
-                @compileError("invalid field: " ++ field.name);
+                @compileError(std.fmt.comptimePrint("invalid field: {s}", .{field.name}));
             }
         }
 
