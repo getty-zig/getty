@@ -214,6 +214,13 @@ pub const de = struct {
     pub usingnamespace @import("de/impls/seed/default.zig");
 
     /// Frees resources allocated during Getty deserialization.
+    ///
+    /// Parameters
+    /// ==========
+    ///
+    /// * allocator: The memory allocator to (de)allocate memory with.
+    /// * value: The value to be deallocated. Values that cannot be deallocated
+    ///          are simply ignored.
     pub fn free(allocator: std.mem.Allocator, value: anytype) void {
         const T = @TypeOf(value);
         const name = @typeName(T);
@@ -316,14 +323,19 @@ pub const de = struct {
         pub const Void = @import("de/blocks/void.zig");
     };
 
-    /// Returns the highest priority Deserialization Block for a type given a
-    /// deserializer type.
-    pub fn find_db(comptime De: type, comptime T: type) type {
+    /// Returns the highest priority Deserialization Block for a type.
+    ///
+    /// Parameters
+    /// ==========
+    ///
+    /// * D: A getty.Deserializer interface type.
+    /// * T: The type being deserialized into.
+    pub fn find_db(comptime D: type, comptime T: type) type {
         comptime {
-            concepts.@"getty.Deserializer"(De);
+            concepts.@"getty.Deserializer"(D);
 
             // Check user DBTs.
-            inline for (De.user_dt) |db| {
+            inline for (D.user_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
@@ -345,7 +357,7 @@ pub const de = struct {
             }
 
             // Check deserializer DBTs.
-            inline for (De.deserializer_dt) |db| {
+            inline for (D.deserializer_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
@@ -364,6 +376,13 @@ pub const de = struct {
 };
 
 /// Deserializes a value from the given Getty deserializer.
+///
+/// Parameters
+/// ==========
+///
+/// * allocator: The memory allocator to (de)allocate memory with.
+/// * T: The type to deserialize into.
+/// * deserializer: A getty.Deserializer interface value.
 pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
     const D = @TypeOf(deserializer);
 

@@ -185,10 +185,16 @@ pub const ser = struct {
         pub const Void = @import("ser/blocks/void.zig");
     };
 
-    /// Returns attributes for a type. If none exists, null is returned.
-    pub fn getAttributes(comptime T: type, comptime Ser: type) blk: {
+    /// Returns an attribute map for a type. If none exists, null is returned.
+    ///
+    /// Parameters
+    /// ==========
+    ///
+    /// * T: The type for which attributes should be returned.
+    /// * S: A getty.Serializer interface type.
+    pub fn getAttributes(comptime T: type, comptime S: type) blk: {
         // Process user SBTs.
-        for (Ser.user_st) |sb| {
+        for (S.user_st) |sb| {
             if (sb.is(T) and traits.has_attributes(T, sb)) {
                 break :blk ?@TypeOf(sb.attributes);
             }
@@ -210,7 +216,7 @@ pub const ser = struct {
     } {
         comptime {
             // Process user SBTs.
-            for (Ser.user_st) |sb| {
+            for (S.user_st) |sb| {
                 if (sb.is(T) and traits.has_attributes(T, sb)) {
                     return @as(?@TypeOf(sb.attributes), sb.attributes);
                 }
@@ -234,6 +240,12 @@ pub const ser = struct {
 };
 
 /// Serializes a value into the given Getty serializer.
+///
+/// Parameters
+/// ==========
+///
+/// * value: The value to serialize.
+/// * serializer: A getty.Serializer interface value.
 pub fn serialize(value: anytype, serializer: anytype) blk: {
     const S = @TypeOf(serializer);
 
