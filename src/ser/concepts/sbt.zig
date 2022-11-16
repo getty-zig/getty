@@ -64,11 +64,6 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
 
                 // Check that the ST is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
-                    // Check that the ST is not empty.
-                    if (std.meta.fields(SBT).len == 0) {
-                        @compileError(std.fmt.comptimePrint("serialization tuple is empty", .{}));
-                    }
-
                     // Check each SB in the ST.
                     for (std.meta.fields(SBT)) |field| {
                         @"getty.ser.sbt"(@field(sbt, field.name));

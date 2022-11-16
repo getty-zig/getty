@@ -217,14 +217,19 @@ pub fn Serializer(
                 const U = @TypeOf(user_tuple);
                 const S = @TypeOf(serializer_tuple);
                 const Default = @TypeOf(default);
+                const Empty = @TypeOf(.{});
 
-                if (U == Default and S == Default) {
+                if ((U == Default or U == Empty) and (S == Default or S == Empty)) {
+                    // Both tuples are empty or the default ST.
                     break :blk default;
-                } else if (U != Default and S == Default) {
+                } else if (U != Default and U != Empty and (S == Default or S == Empty)) {
+                    // User tuple is custom but serializer tuple is empty or the default ST.
                     break :blk user_tuple ++ default;
-                } else if (U == Default and S != Default) {
+                } else if (S != Default and S != Empty and (U == Default or U == Empty)) {
+                    // Serailizer tuple is custom but user tuple is empty or the default ST.
                     break :blk serializer_tuple ++ default;
                 } else {
+                    // Both tuples are custom.
                     break :blk user_tuple ++ serializer_tuple ++ default;
                 }
             };

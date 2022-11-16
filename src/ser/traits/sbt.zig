@@ -67,11 +67,6 @@ pub fn is_sbt(comptime sbt: anytype) bool {
 
                 // Check that the ST is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
-                    // Check that the ST is not empty.
-                    if (std.meta.fields(SBT).len == 0) {
-                        return false;
-                    }
-
                     // Check each SB in the ST.
                     for (std.meta.fields(SBT)) |field| {
                         if (!is_sbt(@field(sbt, field.name))) {
@@ -230,6 +225,8 @@ test "ST" {
     }}));
 
     // Success
+    try std.testing.expect(is_sbt(.{}));
+
     try std.testing.expect(is_sbt(.{struct {
         pub fn is() void {
             unreachable;
