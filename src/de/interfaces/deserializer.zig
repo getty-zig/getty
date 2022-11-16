@@ -169,14 +169,19 @@ pub fn Deserializer(
                 const U = @TypeOf(user_tuple);
                 const D = @TypeOf(deserializer_tuple);
                 const Default = @TypeOf(default);
+                const Empty = @TypeOf(.{});
 
-                if (U == Default and D == Default) {
+                if ((U == Default or U == Empty) and (D == Default or D == Empty)) {
+                    // Both tuples are empty or the default DT.
                     break :blk default;
-                } else if (U != Default and D == Default) {
+                } else if (U != Default and U != Empty and (D == Default or D == Empty)) {
+                    // User tuple is custom but deserializer tuple is empty or the default DT.
                     break :blk user_tuple ++ default;
-                } else if (U == Default and D != Default) {
+                } else if (D != Default and D != Empty and (U == Default or U == Empty)) {
+                    // Deserializer tuple is custom but user tuple is empty or the default DT.
                     break :blk deserializer_tuple ++ default;
                 } else {
+                    // Both tuples are custom.
                     break :blk user_tuple ++ deserializer_tuple ++ default;
                 }
             };

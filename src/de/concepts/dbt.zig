@@ -72,11 +72,6 @@ pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
 
                 // Check that the DT is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
-                    // Check that the DT is not empty.
-                    if (std.meta.fields(DBT).len == 0) {
-                        @compileError(std.fmt.comptimePrint("deserialization tuple is empty", .{}));
-                    }
-
                     // Check each DB in the DT.
                     for (std.meta.fields(DBT)) |field| {
                         @"getty.de.dbt"(@field(dbt, field.name));

@@ -75,11 +75,6 @@ pub fn is_dbt(comptime dbt: anytype) bool {
 
                 // Check that the DT is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
-                    // Check that the DT is not empty.
-                    if (std.meta.fields(DBT).len == 0) {
-                        return false;
-                    }
-
                     // Check each DB in the DT.
                     for (std.meta.fields(DBT)) |field| {
                         if (!is_dbt(@field(dbt, field.name))) {
@@ -219,6 +214,8 @@ test "DT" {
     }));
 
     // Success
+    try std.testing.expect(is_dbt(.{}));
+
     try std.testing.expect(is_dbt(.{struct {
         pub fn is() void {
             unreachable;
