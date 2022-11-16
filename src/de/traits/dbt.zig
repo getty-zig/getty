@@ -2,6 +2,12 @@
 
 const std = @import("std");
 
+pub fn has_dbt(comptime T: type) bool {
+    comptime {
+        return std.meta.trait.isContainer(T) and @hasDecl(T, "getty.dbt") and is_dbt(T.@"getty.dbt");
+    }
+}
+
 pub fn is_dbt(comptime dbt: anytype) bool {
     comptime {
         const DBT = @TypeOf(dbt);
