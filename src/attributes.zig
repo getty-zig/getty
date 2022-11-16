@@ -235,11 +235,12 @@ pub const Case = enum {
 ///   ```
 pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
     comptime {
+        const type_name = @typeName(T);
         const A = @TypeOf(attributes);
         const attributes_info = @typeInfo(A);
 
         if (attributes_info != .Struct) {
-            @compileError("unexpected attribute map type");
+            @compileError(std.fmt.comptimePrint("expected attributes to be a struct, found `{s}`", .{@typeName(A)}));
         }
 
         if (attributes_info.Struct.fields.len == 0) {
@@ -278,7 +279,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
                     .alignment = 4,
                 };
             } else {
-                @compileError(std.fmt.comptimePrint("invalid field: {s}", .{field.name}));
+                @compileError(std.fmt.comptimePrint("nonexistent field/variant `{s}` in type `{s}`", .{ field.name, type_name }));
             }
         }
 

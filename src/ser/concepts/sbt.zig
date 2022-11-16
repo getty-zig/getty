@@ -7,6 +7,7 @@ const concept = "getty.ser.sbt";
 pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
     comptime {
         const SBT = @TypeOf(sbt);
+        const type_name = if (SBT == type) @typeName(sbt) else @typeName(SBT);
 
         switch (SBT == type) {
             true => {
@@ -14,12 +15,12 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
 
                 // Check SB is a namespace.
                 if (info != .Struct or info.Struct.is_tuple) {
-                    @compileError("serialization block is not a namespace");
+                    @compileError(std.fmt.comptimePrint("serialization block is not a struct: {s}", .{type_name}));
                 }
 
                 // Check number of fields.
                 if (info.Struct.fields.len != 0) {
-                    @compileError("serialization block contains fields");
+                    @compileError(std.fmt.comptimePrint("serialization block contains fields: {s}", .{type_name}));
                 }
 
                 // Check number of declarations.
@@ -30,7 +31,7 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
                     }
                 }
                 if (num_decls != 2) {
-                    @compileError("serialization block contains an unexpected number of declarations");
+                    @compileError(std.fmt.comptimePrint("serialization block contains an unexpected number of declarations: {s}", .{type_name}));
                 }
 
                 // Check functions.
@@ -40,22 +41,21 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
                 // declared. Checking that either one of them exists is good enough
                 // as the other declaration must be `is`.
                 if (!std.meta.trait.hasFunctions(sbt, .{"is"})) {
-                    @compileError("serialization block missing `is` function");
+                    @compileError(std.fmt.comptimePrint("serialization block is missing `is` function: {s}", .{type_name}));
                 }
 
                 if (!std.meta.trait.hasFunctions(sbt, .{"serialize"}) and !@hasDecl(sbt, "attributes")) {
-                    @compileError("serialization block must contain a `serialize` function or `attributes` declaration");
+                    @compileError(std.fmt.comptimePrint("serialization block is missing a `serialize` function or `attributes` declaration: {s}", .{type_name}));
                 }
 
+                // These are just some preliminary attribute checks. The real
+                // checks are done just before Getty serializes the value.
                 if (@hasDecl(sbt, "attributes")) {
-                    // Check that the attributes declaration is a struct.
-                    //
-                    // These are just some prelimary checks. The real checks
-                    // are done just before Getty actually serializes the
-                    // value.
                     const attr_info = @typeInfo(@TypeOf(sbt.attributes));
-                    if (attr_info != .Struct or attr_info.Struct.is_tuple) {
-                        @compileError("unexpected type for `attributes` declaration");
+
+                    // Check that the attributes declaration is a struct (or an empty tuple).
+                    if (attr_info != .Struct or (attr_info.Struct.is_tuple and sbt.attributes.len != 0)) {
+                        @compileError(std.fmt.comptimePrint("serialization block contains non-struct `attributes` declaration: {s}", .{@typeName(@TypeOf(sbt.attributes))}));
                     }
                 }
             },
@@ -64,12 +64,17 @@ pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
 
                 // Check that the ST is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
+                    // Check that the ST is not empty.
+                    if (std.meta.fields(SBT).len == 0) {
+                        @compileError(std.fmt.comptimePrint("serialization tuple is empty", .{}));
+                    }
+
                     // Check each SB in the ST.
                     for (std.meta.fields(SBT)) |field| {
                         @"getty.ser.sbt"(@field(sbt, field.name));
                     }
                 } else {
-                    @compileError("unexpected value in serialization tuple");
+                    @compileError(std.fmt.comptimePrint("expected serialization block/tuple, found {s}", .{type_name}));
                 }
             },
         }

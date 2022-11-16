@@ -51,14 +51,13 @@ pub fn is_sbt(comptime sbt: anytype) bool {
                     return false;
                 }
 
+                // These are just some preliminary attribute checks. The real
+                // checks are done just before Getty serializes the value.
                 if (@hasDecl(sbt, "attributes")) {
-                    // Check that the attributes declaration is a struct.
-                    //
-                    // These are just some prelimary checks. The real checks
-                    // are done just before Getty actually serializes the
-                    // value.
                     const attr_info = @typeInfo(@TypeOf(sbt.attributes));
-                    if (attr_info != .Struct or attr_info.Struct.is_tuple) {
+
+                    // Check that the attributes declaration is a struct (or an empty tuple).
+                    if (attr_info != .Struct or (attr_info.Struct.is_tuple and sbt.attributes.len != 0)) {
                         return false;
                     }
                 }
@@ -68,6 +67,11 @@ pub fn is_sbt(comptime sbt: anytype) bool {
 
                 // Check that the ST is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
+                    // Check that the ST is not empty.
+                    if (std.meta.fields(SBT).len == 0) {
+                        return false;
+                    }
+
                     // Check each SB in the ST.
                     for (std.meta.fields(SBT)) |field| {
                         if (!is_sbt(@field(sbt, field.name))) {
@@ -136,8 +140,8 @@ test "SB" {
         }
     }));
 
-    // Incorrect attributes.
-    try std.testing.expect(!is_sbt(struct {
+    // Empty attributes.
+    try std.testing.expect(is_sbt(struct {
         pub fn is() void {
             unreachable;
         }
@@ -216,8 +220,8 @@ test "ST" {
         }
     }}));
 
-    // Incorrect attributes.
-    try std.testing.expect(!is_sbt(.{struct {
+    // Empty attributes.
+    try std.testing.expect(is_sbt(.{struct {
         pub fn is() void {
             unreachable;
         }
