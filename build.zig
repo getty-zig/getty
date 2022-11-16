@@ -13,8 +13,6 @@ pub fn build(b: *std.build.Builder) void {
 
     addTest(b, test_ser_step, "src/ser.zig", mode, target);
     addTest(b, test_de_step, "src/de.zig", mode, target);
-    // TODO: for some reason, this isn't included in de.zig.
-    addTest(b, test_de_step, "src/de/traits/dbt.zig", mode, target);
     test_all_step.dependOn(test_ser_step);
     test_all_step.dependOn(test_de_step);
 }

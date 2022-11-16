@@ -1314,3 +1314,7 @@ fn t(expected: anytype, tokens: []const Token) !void {
 
     try expect(d.remaining() == 0);
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}

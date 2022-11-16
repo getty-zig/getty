@@ -987,3 +987,7 @@ fn t(v: anytype, tokens: []const Token) !void {
     serialize(v, s.serializer()) catch return error.TestUnexpectedError;
     try expect(s.remaining() == 0);
 }
+
+comptime {
+    std.testing.refAllDecls(@This());
+}
