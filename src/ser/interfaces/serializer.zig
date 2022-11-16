@@ -166,9 +166,8 @@ pub fn Serializer(
 
                     break :inner_blk .{user_sbt};
                 };
-                const U = @TypeOf(user_tuple);
 
-                if (U == @TypeOf(ser.default_st)) {
+                if (@TypeOf(user_tuple) == @TypeOf(ser.default_st)) {
                     break :blk .{};
                 }
 
@@ -192,9 +191,8 @@ pub fn Serializer(
 
                     break :inner_blk .{serializer_sbt};
                 };
-                const S = @TypeOf(serializer_tuple);
 
-                if (S == @TypeOf(ser.default_st)) {
+                if (@TypeOf(serializer_tuple) == @TypeOf(ser.default_st)) {
                     break :blk .{};
                 } else {
                     break :blk serializer_tuple;
