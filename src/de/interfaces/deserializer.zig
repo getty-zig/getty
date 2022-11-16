@@ -103,10 +103,23 @@ pub fn Deserializer(
 
             /// User-defined Deserialization Tuple.
             pub const user_dt = blk: {
-                const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
-                const U = @TypeOf(user_tuple);
+                const user_tuple = inner_blk: {
+                    if (@TypeOf(user_dbt) != type) {
+                        break :inner_blk user_dbt;
+                    }
 
-                if (U == @TypeOf(de.default_dt)) {
+                    // If an attribute map exists, but no attributes are
+                    // specified, ignore the BB.
+                    if (@hasDecl(user_dbt, "attributes")) {
+                        if (user_dbt.attributes.len == 0) {
+                            break :inner_blk .{};
+                        }
+                    }
+
+                    break :inner_blk .{user_dbt};
+                };
+
+                if (@TypeOf(user_tuple) == @TypeOf(de.default_dt)) {
                     break :blk .{};
                 }
 
@@ -115,10 +128,23 @@ pub fn Deserializer(
 
             /// Deserializer-defined Deserialization Tuple.
             pub const deserializer_dt = blk: {
-                const deserializer_tuple = if (@TypeOf(deserializer_dbt) == type) .{deserializer_dbt} else deserializer_dbt;
-                const D = @TypeOf(deserializer_tuple);
+                const deserializer_tuple = inner_blk: {
+                    if (@TypeOf(deserializer_dbt) != type) {
+                        break :inner_blk deserializer_dbt;
+                    }
 
-                if (D == @TypeOf(de.default_dt)) {
+                    // If an attribute map exists, but no attributes are
+                    // specified, ignore the SB.
+                    if (@hasDecl(deserializer_dbt, "attributes")) {
+                        if (deserializer_dbt.attributes.len == 0) {
+                            break :inner_blk .{};
+                        }
+                    }
+
+                    break :inner_blk .{deserializer_dbt};
+                };
+
+                if (@TypeOf(deserializer_tuple) == @TypeOf(de.default_dt)) {
                     break :blk .{};
                 } else {
                     break :blk deserializer_tuple;

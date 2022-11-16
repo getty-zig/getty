@@ -38,22 +38,26 @@ pub fn is_dbt(comptime dbt: anytype) bool {
 
                 switch (num_decls) {
                     2 => {
+                        // These are just some preliminary attribute checks. The real
+                        // checks are done just before Getty serializes the value.
+
+                        // Check that an attributes declaration exists.
                         if (!@hasDecl(dbt, "attributes")) {
                             return false;
                         }
 
                         // Check that the attributes declaration is a struct.
-                        //
-                        // These are just some prelimary checks. The real checks
-                        // are done just before Getty actually deserializes the
-                        // value.
                         const attr_info = @typeInfo(@TypeOf(dbt.attributes));
-                        if (attr_info != .Struct or attr_info.Struct.is_tuple) {
+                        if (attr_info != .Struct or (attr_info.Struct.is_tuple and dbt.attributes.len != 0)) {
                             return false;
                         }
                     },
                     3 => {
-                        if (!std.meta.trait.hasFunctions(dbt, .{ "deserialize", "Visitor" })) {
+                        if (!std.meta.trait.hasFunctions(dbt, .{"deserialize"})) {
+                            return false;
+                        }
+
+                        if (!std.meta.trait.hasFunctions(dbt, .{"Visitor"})) {
                             return false;
                         }
                     },
@@ -65,6 +69,11 @@ pub fn is_dbt(comptime dbt: anytype) bool {
 
                 // Check that the DT is a tuple.
                 if (info == .Struct and info.Struct.is_tuple) {
+                    // Check that the DT is not empty.
+                    if (std.meta.fields(DBT).len == 0) {
+                        return false;
+                    }
+
                     // Check each DB in the DT.
                     for (std.meta.fields(DBT)) |field| {
                         if (!is_dbt(@field(dbt, field.name))) {
@@ -72,7 +81,6 @@ pub fn is_dbt(comptime dbt: anytype) bool {
                         }
                     }
                 } else {
-                    // Check that the DT contains only types.
                     return false;
                 }
             },
@@ -122,8 +130,8 @@ test "DB" {
         pub const attributes = .{};
     }));
 
-    // Incorrect attributes.
-    try std.testing.expect(!is_dbt(struct {
+    // Empty attributes.
+    try std.testing.expect(is_dbt(struct {
         pub fn is() void {
             unreachable;
         }
@@ -195,8 +203,8 @@ test "DT" {
         pub const attributes = .{};
     }}));
 
-    // Incorrect attributes.
-    try std.testing.expect(!is_dbt(struct {
+    // Empty attributes.
+    try std.testing.expect(is_dbt(struct {
         pub fn is() void {
             unreachable;
         }
