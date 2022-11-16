@@ -151,7 +151,21 @@ pub fn Serializer(
 
             /// User-defined Serialization Tuple.
             pub const user_st = blk: {
-                const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
+                const user_tuple = inner_blk: {
+                    if (@TypeOf(user_sbt) != type) {
+                        break :inner_blk user_sbt;
+                    }
+
+                    // If an attribute map exists, but no attributes are
+                    // specified, ignore the SB.
+                    if (@hasDecl(user_sbt, "attributes")) {
+                        if (user_sbt.attributes.len == 0) {
+                            break :inner_blk .{};
+                        }
+                    }
+
+                    break :inner_blk .{user_sbt};
+                };
                 const U = @TypeOf(user_tuple);
 
                 if (U == @TypeOf(ser.default_st)) {
@@ -163,7 +177,21 @@ pub fn Serializer(
 
             /// Serializer-defined Serialization Tuple.
             pub const serializer_st = blk: {
-                const serializer_tuple = if (@TypeOf(serializer_sbt) == type) .{serializer_sbt} else serializer_sbt;
+                const serializer_tuple = inner_blk: {
+                    if (@TypeOf(serializer_sbt) != type) {
+                        break :inner_blk serializer_sbt;
+                    }
+
+                    // If an attribute map exists, but no attributes are
+                    // specified, ignore the SB.
+                    if (@hasDecl(serializer_sbt, "attributes")) {
+                        if (serializer_sbt.attributes.len == 0) {
+                            break :inner_blk .{};
+                        }
+                    }
+
+                    break :inner_blk .{serializer_sbt};
+                };
                 const S = @TypeOf(serializer_tuple);
 
                 if (S == @TypeOf(ser.default_st)) {
