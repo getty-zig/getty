@@ -110,25 +110,27 @@ pub fn Serializer(
     comptime Map: type,
     comptime Seq: type,
     comptime Struct: type,
-    comptime serializeBoolFn: fn (Context, bool) E!O,
-    comptime serializeEnumFn: fn (Context, anytype) E!O,
-    comptime serializeFloatFn: fn (Context, anytype) E!O,
-    comptime serializeIntFn: fn (Context, anytype) E!O,
-    comptime serializeMapFn: fn (Context, ?usize) E!Map,
-    comptime serializeNullFn: fn (Context) E!O,
-    comptime serializeSeqFn: fn (Context, ?usize) E!Seq,
-    comptime serializeSomeFn: fn (Context, anytype) E!O,
-    comptime serializeStringFn: fn (Context, anytype) E!O,
-    comptime serializeStructFn: @TypeOf(struct {
-        fn f(self: Context, comptime name: []const u8, length: usize) E!Struct {
-            _ = self;
-            _ = name;
-            _ = length;
+    comptime methods: struct {
+        serializeBool: ?fn (Context, bool) E!O = null,
+        serializeEnum: ?fn (Context, anytype) E!O = null,
+        serializeFloat: ?fn (Context, anytype) E!O = null,
+        serializeInt: ?fn (Context, anytype) E!O = null,
+        serializeMap: ?fn (Context, ?usize) E!Map = null,
+        serializeNull: ?fn (Context) E!O = null,
+        serializeSeq: ?fn (Context, ?usize) E!Seq = null,
+        serializeSome: ?fn (Context, anytype) E!O = null,
+        serializeString: ?fn (Context, anytype) E!O = null,
+        serializeStruct: ?@TypeOf(struct {
+            fn f(self: Context, comptime name: []const u8, length: usize) E!Struct {
+                _ = self;
+                _ = name;
+                _ = length;
 
-            unreachable;
-        }
-    }.f),
-    comptime serializeVoidFn: fn (Context) E!O,
+                unreachable;
+            }
+        }.f) = null,
+        serializeVoid: ?fn (Context) E!O = null,
+    },
 ) type {
     comptime {
         ser.concepts.@"getty.ser.sbt"(user_sbt);
@@ -236,70 +238,114 @@ pub fn Serializer(
 
             /// Serializes a Getty Boolean value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
-                return try serializeBoolFn(self.context, value);
+                if (methods.serializeBool) |f| {
+                    return try f(self.context, value);
+                }
+
+                @compileError("serializeBool is not implemented by type: " ++ @typeName(Context));
             }
 
             // Serializes a Getty Enum value.
             pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
-                switch (@typeInfo(@TypeOf(value))) {
-                    .Enum, .EnumLiteral => return try serializeEnumFn(self.context, value),
-                    else => @compileError(std.fmt.comptimePrint("expected enum, found `{s}`", .{@typeName(@TypeOf(value))})),
+                if (methods.serializeEnum) |f| {
+                    switch (@typeInfo(@TypeOf(value))) {
+                        .Enum, .EnumLiteral => return try f(self.context, value),
+                        else => @compileError("expected enum, found: " ++ @typeName(@TypeOf(value))),
+                    }
                 }
+
+                @compileError("serializeEnum is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Serializes a Getty Float value.
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
-                switch (@typeInfo(@TypeOf(value))) {
-                    .Float, .ComptimeFloat => return try serializeFloatFn(self.context, value),
-                    else => @compileError(std.fmt.comptimePrint("expected float, found `{s}`", .{@typeName(@TypeOf(value))})),
+                if (methods.serializeFloat) |f| {
+                    switch (@typeInfo(@TypeOf(value))) {
+                        .Float, .ComptimeFloat => return try f(self.context, value),
+                        else => @compileError("expected float, found: " ++ @typeName(@TypeOf(value))),
+                    }
                 }
+
+                @compileError("serializeFloat is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Serializes a Getty Integer value.
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
-                switch (@typeInfo(@TypeOf(value))) {
-                    .Int, .ComptimeInt => return try serializeIntFn(self.context, value),
-                    else => @compileError(std.fmt.comptimePrint("expected integer, found `{s}`", .{@typeName(@TypeOf(value))})),
+                if (methods.serializeInt) |f| {
+                    switch (@typeInfo(@TypeOf(value))) {
+                        .Int, .ComptimeInt => return try f(self.context, value),
+                        else => @compileError("expected integer, found: " ++ @typeName(@TypeOf(value))),
+                    }
                 }
+
+                @compileError("serializeInt is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Begins the serialization process for a Getty Map value.
             pub fn serializeMap(self: Self, length: ?usize) Error!Map {
-                return try serializeMapFn(self.context, length);
+                if (methods.serializeMap) |f| {
+                    return try f(self.context, length);
+                }
+
+                @compileError("serializeMap is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Serializes a Getty Null value.
             pub fn serializeNull(self: Self) Error!Ok {
-                return try serializeNullFn(self.context);
+                if (methods.serializeNull) |f| {
+                    return try f(self.context);
+                }
+
+                @compileError("serializeNull is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Begins the serialization process for a Getty Sequence value.
             pub fn serializeSeq(self: Self, length: ?usize) Error!Seq {
-                return try serializeSeqFn(self.context, length);
+                if (methods.serializeSeq) |f| {
+                    return try f(self.context, length);
+                }
+
+                @compileError("serializeSeq is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Serializes a Getty Optional value.
             pub fn serializeSome(self: Self, value: anytype) Error!Ok {
-                return try serializeSomeFn(self.context, value);
+                if (methods.serializeSome) |f| {
+                    return try f(self.context, value);
+                }
+
+                @compileError("serializeSome is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Serializes a Getty String value.
             pub fn serializeString(self: Self, value: anytype) Error!Ok {
-                if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
-                    @compileError(std.fmt.comptimePrint("expected string, found `{s}`", .{@typeName(@TypeOf(value))}));
+                if (methods.serializeString) |f| {
+                    if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
+                        @compileError("expected string, found: " ++ @typeName(@TypeOf(value)));
+                    }
+
+                    return try f(self.context, value);
                 }
 
-                return try serializeStringFn(self.context, value);
+                @compileError("serializeString is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Begins the serialization process for a Getty Struct value.
             pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
-                return try serializeStructFn(self.context, name, length);
+                if (methods.serializeStruct) |f| {
+                    return try f(self.context, name, length);
+                }
+
+                @compileError("serializeStruct is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Serializes a Getty Void value.
             pub fn serializeVoid(self: Self) Error!Ok {
-                return try serializeVoidFn(self.context);
+                if (methods.serializeVoid) |f| {
+                    return try f(self.context);
+                }
+
+                @compileError("serializeVoid is not implemented by type: " ++ @typeName(Context));
             }
         };
 
