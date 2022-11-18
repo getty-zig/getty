@@ -175,52 +175,58 @@ pub fn Serializer(
 
             /// User-defined Serialization Tuple.
             pub const user_st = blk: {
-                const user_tuple = inner_blk: {
-                    if (@TypeOf(user_sbt) != type) {
-                        break :inner_blk user_sbt;
-                    }
+                // Process null.
+                if (@TypeOf(user_sbt) == @TypeOf(null)) {
+                    break :blk .{};
+                }
 
+                // Process SB.
+                if (@TypeOf(user_sbt) == type) {
                     // If an attribute map exists, but no attributes are
                     // specified, ignore the SB.
                     if (@hasDecl(user_sbt, "attributes")) {
                         if (user_sbt.attributes.len == 0) {
-                            break :inner_blk .{};
+                            break :blk .{};
                         }
                     }
 
-                    break :inner_blk .{user_sbt};
-                };
+                    break :blk .{user_sbt};
+                }
 
-                if (@TypeOf(user_tuple) == @TypeOf(ser.default_st)) {
+                // Process ST.
+                if (@TypeOf(user_sbt) == @TypeOf(ser.default_st)) {
                     break :blk .{};
                 }
 
-                break :blk user_tuple;
+                break :blk user_sbt;
             };
 
             /// Serializer-defined Serialization Tuple.
             pub const serializer_st = blk: {
-                const serializer_tuple = inner_blk: {
-                    if (@TypeOf(serializer_sbt) != type) {
-                        break :inner_blk serializer_sbt;
-                    }
+                // Process null.
+                if (@TypeOf(serializer_sbt) == @TypeOf(null)) {
+                    break :blk .{};
+                }
 
+                // Process SB.
+                if (@TypeOf(serializer_sbt) == type) {
                     // If an attribute map exists, but no attributes are
                     // specified, ignore the SB.
                     if (@hasDecl(serializer_sbt, "attributes")) {
                         if (serializer_sbt.attributes.len == 0) {
-                            break :inner_blk .{};
+                            break :blk .{};
                         }
                     }
 
-                    break :inner_blk .{serializer_sbt};
-                };
-
-                if (@TypeOf(serializer_tuple) == @TypeOf(ser.default_st)) {
-                    break :blk .{};
-                } else {
-                    break :blk serializer_tuple;
+                    break :blk .{serializer_sbt};
                 }
+
+                // Process ST.
+                if (@TypeOf(serializer_sbt) == @TypeOf(ser.default_st)) {
+                    break :blk .{};
+                }
+
+                break :blk serializer_sbt;
             };
 
             /// Aggregate Serialization Tuple.
