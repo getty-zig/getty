@@ -6,11 +6,11 @@ pub fn Seed(
     comptime Context: type,
     comptime V: type,
     comptime impls: struct {
-        deserialize: ?@TypeOf(struct {
+        deserialize: @TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
                 unreachable;
             }
-        }.f) = null,
+        }.f),
     },
 ) type {
     return struct {
@@ -22,11 +22,7 @@ pub fn Seed(
             pub const Value = V;
 
             pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
-                if (impls.deserialize) |f| {
-                    return try f(self.context, allocator, deserializer);
-                }
-
-                @compileError("deserialize is not implemented by type: " ++ @typeName(Context));
+                return try impls.deserialize(self.context, allocator, deserializer);
             }
         };
 

@@ -6,11 +6,11 @@ pub fn SeqAccess(
     comptime Context: type,
     comptime E: type,
     comptime impls: struct {
-        nextElementSeed: ?@TypeOf(struct {
+        nextElementSeed: @TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 unreachable;
             }
-        }.f) = null,
+        }.f),
 
         // Provided method.
         nextElement: ?@TypeOf(struct {
@@ -29,11 +29,7 @@ pub fn SeqAccess(
             pub const Error = E;
 
             pub fn nextElementSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(@TypeOf(seed)) {
-                if (impls.nextElementSeed) |f| {
-                    return try f(self.context, allocator, seed);
-                }
-
-                @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Context));
+                return try impls.nextElementSeed(self.context, allocator, seed);
             }
 
             pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {

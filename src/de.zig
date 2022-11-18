@@ -798,7 +798,7 @@ const TestDeserializer = struct {
         pub usingnamespace de.UnionAccess(
             *Union,
             Error,
-            variantSeed,
+            .{ .variantSeed = variantSeed },
         );
 
         pub usingnamespace de.VariantAccess(
