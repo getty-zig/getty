@@ -66,8 +66,10 @@ pub fn Seq(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime serializeElementFn: fn (Context, anytype) E!void,
-    comptime endFn: fn (Context) E!O,
+    comptime methods: struct {
+        serializeElement: ?fn (Context, anytype) E!void = null,
+        end: ?fn (Context) E!O = null,
+    },
 ) type {
     return struct {
         pub const @"getty.ser.Seq" = struct {
@@ -83,12 +85,20 @@ pub fn Seq(
 
             /// Serialize a sequence element.
             pub fn serializeElement(self: Self, value: anytype) Error!void {
-                try serializeElementFn(self.context, value);
+                if (methods.serializeElement) |f| {
+                    try f(self.context, value);
+                } else {
+                    @compileError("serializeElement is not implemented by type: " ++ @typeName(Context));
+                }
             }
 
             /// Finish serializing a sequence.
             pub fn end(self: Self) Error!Ok {
-                return try endFn(self.context);
+                if (methods.end) |f| {
+                    return try f(self.context);
+                }
+
+                @compileError("end is not implemented by type: " ++ @typeName(Context));
             }
         };
 

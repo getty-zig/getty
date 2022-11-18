@@ -490,8 +490,10 @@ const TestSerializer = struct {
             *Seq,
             Ok,
             Error,
-            serializeElement,
-            end,
+            .{
+                .serializeElement = serializeElement,
+                .end = end,
+            },
         );
 
         fn serializeElement(self: *Seq, value: anytype) Error!void {
