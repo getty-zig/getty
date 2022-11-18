@@ -512,8 +512,10 @@ const TestSerializer = struct {
             *Structure,
             Ok,
             Error,
-            serializeField,
-            end,
+            .{
+                .serializeField = serializeField,
+                .end = end,
+            },
         );
 
         fn serializeField(self: *Structure, comptime key: []const u8, value: anytype) Error!void {

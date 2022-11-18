@@ -65,16 +65,18 @@ pub fn Structure(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime serializeFieldFn: @TypeOf(struct {
-        fn f(self: Context, comptime key: []const u8, value: anytype) E!void {
-            _ = self;
-            _ = key;
-            _ = value;
+    comptime methods: struct {
+        serializeField: ?@TypeOf(struct {
+            fn f(self: Context, comptime key: []const u8, value: anytype) E!void {
+                _ = self;
+                _ = key;
+                _ = value;
 
-            unreachable;
-        }
-    }.f),
-    comptime endFn: fn (Context) E!O,
+                unreachable;
+            }
+        }.f) = null,
+        end: ?fn (Context) E!O = null,
+    },
 ) type {
     return struct {
         pub const @"getty.ser.Structure" = struct {
@@ -90,12 +92,20 @@ pub fn Structure(
 
             /// Serialize a struct field.
             pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!void {
-                try serializeFieldFn(self.context, key, value);
+                if (methods.serializeField) |f| {
+                    try f(self.context, key, value);
+                } else {
+                    @compileError("serializeField is not implemented by type: " ++ @typeName(Context));
+                }
             }
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
-                return try endFn(self.context);
+                if (methods.end) |f| {
+                    try f(self.context);
+                } else {
+                    @compileError("end is not implemented by type: " ++ @typeName(Context));
+                }
             }
         };
 
