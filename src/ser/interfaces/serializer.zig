@@ -121,15 +121,7 @@ pub fn Serializer(
         serializeSeq: ?fn (Context, ?usize) E!Seq = null,
         serializeSome: ?fn (Context, anytype) E!O = null,
         serializeString: ?fn (Context, anytype) E!O = null,
-        serializeStruct: ?@TypeOf(struct {
-            fn f(self: Context, comptime name: []const u8, length: usize) E!Struct {
-                _ = self;
-                _ = name;
-                _ = length;
-
-                unreachable;
-            }
-        }.f) = null,
+        serializeStruct: ?fn (Context, comptime []const u8, usize) E!Struct = null,
         serializeVoid: ?fn (Context) E!O = null,
     },
 ) type {
