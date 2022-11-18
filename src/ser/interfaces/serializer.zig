@@ -107,20 +107,50 @@ pub fn Serializer(
     comptime E: type,
     comptime user_sbt: anytype,
     comptime serializer_sbt: anytype,
-    comptime Map: type,
-    comptime Seq: type,
-    comptime Struct: type,
+    comptime Map: ?type,
+    comptime Seq: ?type,
+    comptime Structure: ?type,
     comptime impls: struct {
         serializeBool: ?fn (Context, bool) E!O = null,
         serializeEnum: ?fn (Context, anytype) E!O = null,
         serializeFloat: ?fn (Context, anytype) E!O = null,
         serializeInt: ?fn (Context, anytype) E!O = null,
-        serializeMap: ?fn (Context, ?usize) E!Map = null,
+        serializeMap: blk: {
+            if (Map) |T| {
+                break :blk ?fn (Context, ?usize) E!T;
+            }
+
+            // If Map is null, serializeMap will raise a compile error. The
+            // following type is a sort of catch-all type that can store any
+            // value. It doesn't matter what the value is though since the
+            // compiler will error out as I've mentioned.
+            break :blk E!?*const anyopaque;
+        } = null,
         serializeNull: ?fn (Context) E!O = null,
-        serializeSeq: ?fn (Context, ?usize) E!Seq = null,
+        serializeSeq: blk: {
+            if (Seq) |T| {
+                break :blk ?fn (Context, ?usize) E!T;
+            }
+
+            // If Seq is null, serializeSeq will raise a compile error. The
+            // following type is a sort of catch-all type that can store any
+            // value. It doesn't matter what the value is though since the
+            // compiler will error out as I've mentioned.
+            break :blk E!?*const anyopaque;
+        } = null,
         serializeSome: ?fn (Context, anytype) E!O = null,
         serializeString: ?fn (Context, anytype) E!O = null,
-        serializeStruct: ?fn (Context, comptime []const u8, usize) E!Struct = null,
+        serializeStruct: blk: {
+            if (Structure) |T| {
+                break :blk ?fn (Context, comptime []const u8, usize) E!T;
+            }
+
+            // If Structure is null, serializeStruct will raise a compile
+            // error. The following type is a sort of catch-all type that can
+            // store any value. It doesn't matter what the value is though
+            // since the compiler will error out as I've mentioned.
+            break :blk E!?*const anyopaque;
+        } = null,
         serializeVoid: ?fn (Context) E!O = null,
     },
 ) type {
@@ -269,7 +299,22 @@ pub fn Serializer(
             }
 
             /// Begins the serialization process for a Getty Map value.
-            pub fn serializeMap(self: Self, length: ?usize) Error!Map {
+            pub fn serializeMap(self: Self, length: ?usize) blk: {
+                if (Map) |T| {
+                    break :blk Error!T;
+                }
+
+                // If Map is null, then this function will raise a compile
+                // error, so it doesn't really matter what the return type will
+                // be. However, we use Error!Context specifically for its clean
+                // error messages. It'll result in errors such as "no field or
+                // member function named 'map' in 'ser.TestSerializer'
+                break :blk Error!Context;
+            } {
+                if (Map == null) {
+                    @compileError("serializeMap requires getty.ser.Map to be non-null");
+                }
+
                 if (impls.serializeMap) |f| {
                     return try f(self.context, length);
                 }
@@ -287,7 +332,22 @@ pub fn Serializer(
             }
 
             /// Begins the serialization process for a Getty Sequence value.
-            pub fn serializeSeq(self: Self, length: ?usize) Error!Seq {
+            pub fn serializeSeq(self: Self, length: ?usize) blk: {
+                if (Seq) |T| {
+                    break :blk Error!T;
+                }
+
+                // If Seq is null, then this function will raise a compile
+                // error, so it doesn't really matter what the return type will
+                // be. However, we use Error!Context specifically for its clean
+                // error messages. It'll result in errors such as "no field or
+                // member function named 'seq' in 'ser.TestSerializer'
+                break :blk Error!Context;
+            } {
+                if (Seq == null) {
+                    @compileError("serializeSeq requires getty.ser.Seq to be non-null");
+                }
+
                 if (impls.serializeSeq) |f| {
                     return try f(self.context, length);
                 }
@@ -318,7 +378,22 @@ pub fn Serializer(
             }
 
             /// Begins the serialization process for a Getty Struct value.
-            pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) Error!Struct {
+            pub fn serializeStruct(self: Self, comptime name: []const u8, length: usize) blk: {
+                if (Structure) |T| {
+                    break :blk Error!T;
+                }
+
+                // If Structure is null, then this function will raise a
+                // compile error, so it doesn't really matter what the return
+                // type will be. However, we use Error!Context specifically for
+                // its clean error messages. It'll result in errors such as
+                // "no field or member function named 'structure' in 'ser.TestSerializer'
+                break :blk Error!Context;
+            } {
+                if (Structure == null) {
+                    @compileError("serializeStruct requires getty.ser.Structure to be non-null");
+                }
+
                 if (impls.serializeStruct) |f| {
                     return try f(self.context, name, length);
                 }

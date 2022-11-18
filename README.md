@@ -47,9 +47,9 @@ const Serializer = struct {
         Error,
         getty.default_st,
         getty.default_st,
-        getty.TODO,
+        null,
         Seq,
-        getty.TODO,
+        null,
         .{ .serializeBool = serializeBool, .serializeSeq = serializeSeq },
     );
 
@@ -92,6 +92,6 @@ const Seq = struct {
 };
 
 pub fn main() anyerror!void {
-    try getty.serialize(.{ true, false }, (Serializer{}).serializer()); // output: [true, false]
+    try getty.serialize(.{ true, false }, (Serializer{}).serializer()); // [true, false]
 }
 ```
