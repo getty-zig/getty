@@ -9,7 +9,7 @@ pub fn DefaultSeed(comptime Value: type) type {
         pub usingnamespace de.de.Seed(
             Self,
             Value,
-            deserialize,
+            .{ .deserialize = deserialize },
         );
 
         fn deserialize(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {

@@ -5,11 +5,13 @@ const de = @import("../../de.zig");
 pub fn Seed(
     comptime Context: type,
     comptime V: type,
-    comptime deserializeFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
-            unreachable;
-        }
-    }.f),
+    comptime impls: struct {
+        deserialize: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
+                unreachable;
+            }
+        }.f) = null,
+    },
 ) type {
     return struct {
         pub const @"getty.de.Seed" = struct {
@@ -20,7 +22,11 @@ pub fn Seed(
             pub const Value = V;
 
             pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
-                return try deserializeFn(self.context, allocator, deserializer);
+                if (impls.deserialize) |f| {
+                    return try f(self.context, allocator, deserializer);
+                }
+
+                @compileError("deserialize is not implemented by type: " ++ @typeName(Context));
             }
         };
 
