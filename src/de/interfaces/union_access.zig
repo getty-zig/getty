@@ -10,7 +10,7 @@ pub fn UnionAccess(
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
                 unreachable;
             }
-        }.f),
+        }.f) = null,
 
         // Provided method.
         variant: ?@TypeOf(struct {

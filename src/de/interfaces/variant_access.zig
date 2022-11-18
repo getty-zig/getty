@@ -6,11 +6,11 @@ pub fn VariantAccess(
     comptime Context: type,
     comptime E: type,
     comptime impls: struct {
-        payloadSeed: @TypeOf(struct {
+        payloadSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
                 unreachable;
             }
-        }.f),
+        }.f) = null,
 
         // Provided method.
         payload: ?@TypeOf(struct {
@@ -29,7 +29,11 @@ pub fn VariantAccess(
             pub const Error = E;
 
             pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                return try impls.payloadSeed(self.context, allocator, seed);
+                if (impls.payloadSeed) |f| {
+                    return try f(self.context, allocator, seed);
+                }
+
+                @compileError("payloadSeed is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn payload(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {

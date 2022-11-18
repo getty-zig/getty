@@ -6,17 +6,17 @@ pub fn MapAccess(
     comptime Context: type,
     comptime E: type,
     comptime impls: struct {
-        nextKeySeed: @TypeOf(struct {
+        nextKeySeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 unreachable;
             }
-        }.f),
+        }.f) = null,
 
-        nextValueSeed: @TypeOf(struct {
+        nextValueSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 unreachable;
             }
-        }.f),
+        }.f) = null,
 
         // Provided method.
         nextKey: ?@TypeOf(struct {
@@ -42,11 +42,19 @@ pub fn MapAccess(
             pub const Error = E;
 
             pub fn nextKeySeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) KeyReturn(@TypeOf(seed)) {
-                return try impls.nextKeySeed(self.context, allocator, seed);
+                if (impls.nextKeySeed) |f| {
+                    return try f(self.context, allocator, seed);
+                }
+
+                @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn nextValueSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) ValueReturn(@TypeOf(seed)) {
-                return try impls.nextValueSeed(self.context, allocator, seed);
+                if (impls.nextValueSeed) |f| {
+                    return try f(self.context, allocator, seed);
+                }
+
+                @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Context));
             }
 
             //pub fn nextEntrySeed(self: Self, kseed: anytype, vseed: anytype) Error!?std.meta.Tuple(.{ @TypeOf(kseed).Value, @TypeOf(vseed).Value }) {
