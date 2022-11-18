@@ -73,7 +73,7 @@ pub fn Map(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime methods: struct {
+    comptime impls: struct {
         serializeKey: ?fn (Context, anytype) E!void = null,
         serializeValue: ?fn (Context, anytype) E!void = null,
         serializeEntry: ?fn (Context, anytype, anytype) E!void = null,
@@ -94,7 +94,7 @@ pub fn Map(
 
             /// Serialize a map key.
             pub fn serializeKey(self: Self, key: anytype) Error!void {
-                if (methods.serializeKey) |f| {
+                if (impls.serializeKey) |f| {
                     try f(self.context, key);
                 } else {
                     @compileError("serializeKey is not implemented by type: " ++ @typeName(Context));
@@ -103,7 +103,7 @@ pub fn Map(
 
             /// Serialize a map value.
             pub fn serializeValue(self: Self, value: anytype) Error!void {
-                if (methods.serializeValue) |f| {
+                if (impls.serializeValue) |f| {
                     try f(self.context, value);
                 } else {
                     @compileError("serializeValue is not implemented by type: " ++ @typeName(Context));
@@ -112,7 +112,7 @@ pub fn Map(
 
             /// Serialize a map entry consisting of a key and a value.
             pub fn serializeEntry(self: Self, key: anytype, value: anytype) Error!void {
-                if (methods.serializeEntry) |f| {
+                if (impls.serializeEntry) |f| {
                     try f(self.context, key, value);
                 } else {
                     try self.serializeKey(key);
@@ -122,7 +122,7 @@ pub fn Map(
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
-                if (methods.end) |f| {
+                if (impls.end) |f| {
                     return try f(self.context);
                 }
 

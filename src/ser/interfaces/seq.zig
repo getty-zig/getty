@@ -66,7 +66,7 @@ pub fn Seq(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime methods: struct {
+    comptime impls: struct {
         serializeElement: ?fn (Context, anytype) E!void = null,
         end: ?fn (Context) E!O = null,
     },
@@ -85,7 +85,7 @@ pub fn Seq(
 
             /// Serialize a sequence element.
             pub fn serializeElement(self: Self, value: anytype) Error!void {
-                if (methods.serializeElement) |f| {
+                if (impls.serializeElement) |f| {
                     try f(self.context, value);
                 } else {
                     @compileError("serializeElement is not implemented by type: " ++ @typeName(Context));
@@ -94,7 +94,7 @@ pub fn Seq(
 
             /// Finish serializing a sequence.
             pub fn end(self: Self) Error!Ok {
-                if (methods.end) |f| {
+                if (impls.end) |f| {
                     return try f(self.context);
                 }
 
