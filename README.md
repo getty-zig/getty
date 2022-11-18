@@ -50,10 +50,7 @@ const Serializer = struct {
         getty.TODO,
         Seq,
         getty.TODO,
-        .{
-            .serializeBool = serializeBool,
-            .serializeSeq = serializeSeq,
-        },
+        .{ .serializeBool = serializeBool, .serializeSeq = serializeSeq },
     );
 
     const Ok = void;
@@ -70,9 +67,6 @@ const Serializer = struct {
 };
 
 // Seq defines the serialization process for sequences.
-//
-// Specifically, Seq specifies how to serialize elements and how to end
-// serialization for sequences. And that's it! Getty takes care of the rest.
 const Seq = struct {
     first: bool = true,
 
@@ -80,10 +74,7 @@ const Seq = struct {
         *Seq,
         Serializer.Ok,
         Serializer.Error,
-        .{
-            .serializeElement = serializeElement,
-            .end = end,
-        },
+        .{ .serializeElement = serializeElement, .end = end },
     );
 
     fn serializeElement(self: *Seq, value: anytype) Serializer.Error!void {
@@ -101,9 +92,6 @@ const Seq = struct {
 };
 
 pub fn main() anyerror!void {
-    const s = Serializer{};
-    const value = .{ true, false };
-
-    try getty.serialize(value, s.serializer()); // output: [true, false]
+    try getty.serialize(.{ true, false }, (Serializer{}).serializer()); // output: [true, false]
 }
 ```
