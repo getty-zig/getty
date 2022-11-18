@@ -66,15 +66,7 @@ pub fn Structure(
     comptime O: type,
     comptime E: type,
     comptime impls: struct {
-        serializeField: ?@TypeOf(struct {
-            fn f(self: Context, comptime key: []const u8, value: anytype) E!void {
-                _ = self;
-                _ = key;
-                _ = value;
-
-                unreachable;
-            }
-        }.f) = null,
+        serializeField: ?fn (Context, comptime []const u8, anytype) E!void = null,
         end: ?fn (Context) E!O = null,
     },
 ) type {
