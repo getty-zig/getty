@@ -5,11 +5,20 @@ const de = @import("../../de.zig");
 pub fn SeqAccess(
     comptime Context: type,
     comptime E: type,
-    comptime nextElementSeedFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
-            unreachable;
-        }
-    }.f),
+    comptime impls: struct {
+        nextElementSeed: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+                unreachable;
+            }
+        }.f) = null,
+
+        // Provided method.
+        nextElement: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Value: type) E!?Value {
+                unreachable;
+            }
+        }.f) = null,
+    },
 ) type {
     return struct {
         pub const @"getty.de.SeqAccess" = struct {
@@ -20,14 +29,22 @@ pub fn SeqAccess(
             pub const Error = E;
 
             pub fn nextElementSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(@TypeOf(seed)) {
-                return try nextElementSeedFn(self.context, allocator, seed);
+                if (impls.nextElementSeed) |f| {
+                    return try f(self.context, allocator, seed);
+                }
+
+                @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {
-                var seed = de.de.DefaultSeed(Value){};
-                const ds = seed.seed();
+                if (impls.nextElement) |f| {
+                    return try f(self.context, allocator, Value);
+                } else {
+                    var seed = de.de.DefaultSeed(Value){};
+                    const ds = seed.seed();
 
-                return try self.nextElementSeed(allocator, ds);
+                    return try self.nextElementSeed(allocator, ds);
+                }
             }
 
             fn Return(comptime Seed: type) type {

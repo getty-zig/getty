@@ -710,7 +710,7 @@ const TestDeserializer = struct {
         pub usingnamespace de.SeqAccess(
             *Seq,
             Error,
-            nextElementSeed,
+            .{ .nextElementSeed = nextElementSeed },
         );
 
         fn nextElementSeed(self: *Seq, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
