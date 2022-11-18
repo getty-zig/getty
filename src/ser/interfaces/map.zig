@@ -73,9 +73,12 @@ pub fn Map(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime serializeKeyFn: fn (Context, anytype) E!void,
-    comptime serializeValueFn: fn (Context, anytype) E!void,
-    comptime endFn: fn (Context) E!O,
+    comptime methods: struct {
+        serializeKey: ?fn (Context, anytype) E!void = null,
+        serializeValue: ?fn (Context, anytype) E!void = null,
+        serializeEntry: ?fn (Context, anytype, anytype) E!void = null,
+        end: ?fn (Context) E!O = null,
+    },
 ) type {
     return struct {
         pub const @"getty.ser.Map" = struct {
@@ -91,23 +94,39 @@ pub fn Map(
 
             /// Serialize a map key.
             pub fn serializeKey(self: Self, key: anytype) Error!void {
-                try serializeKeyFn(self.context, key);
+                if (methods.serializeKey) |f| {
+                    try f(self.context, key);
+                } else {
+                    @compileError("serializeKey is not implemented by type: " ++ @typeName(Context));
+                }
             }
 
             /// Serialize a map value.
             pub fn serializeValue(self: Self, value: anytype) Error!void {
-                try serializeValueFn(self.context, value);
+                if (methods.serializeValue) |f| {
+                    try f(self.context, value);
+                } else {
+                    @compileError("serializeValue is not implemented by type: " ++ @typeName(Context));
+                }
             }
 
             /// Serialize a map entry consisting of a key and a value.
             pub fn serializeEntry(self: Self, key: anytype, value: anytype) Error!void {
-                try self.serializeKey(key);
-                try self.serializeValue(value);
+                if (methods.serializeEntry) |f| {
+                    try f(self.context, key, value);
+                } else {
+                    try self.serializeKey(key);
+                    try self.serializeValue(value);
+                }
             }
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
-                return try endFn(self.context);
+                if (methods.end) |f| {
+                    return try f(self.context);
+                }
+
+                @compileError("end is not implemented by type: " ++ @typeName(Context));
             }
         };
 

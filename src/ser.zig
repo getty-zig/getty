@@ -465,9 +465,11 @@ const TestSerializer = struct {
             *Map,
             Ok,
             Error,
-            serializeKey,
-            serializeValue,
-            end,
+            .{
+                .serializeKey = serializeKey,
+                .serializeValue = serializeValue,
+                .end = end,
+            },
         );
 
         fn serializeKey(self: *Map, key: anytype) Error!void {
