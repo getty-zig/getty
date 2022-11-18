@@ -761,8 +761,10 @@ const TestDeserializer = struct {
         pub usingnamespace de.MapAccess(
             *Struct,
             Error,
-            nextKeySeed,
-            nextValueSeed,
+            .{
+                .nextKeySeed = nextKeySeed,
+                .nextValueSeed = nextValueSeed,
+            },
         );
 
         fn nextKeySeed(self: *Struct, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
