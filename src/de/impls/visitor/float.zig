@@ -9,17 +9,10 @@ pub fn Visitor(comptime Float: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            visitFloat,
-            visitInt,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
+            .{
+                .visitFloat = visitFloat,
+                .visitInt = visitInt,
+            },
         );
 
         const Value = Float;

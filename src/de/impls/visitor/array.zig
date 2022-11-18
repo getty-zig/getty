@@ -9,17 +9,10 @@ pub fn Visitor(comptime Array: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            visitSeq,
-            undefined,
-            visitString,
-            undefined,
-            undefined,
+            .{
+                .visitSeq = visitSeq,
+                .visitString = visitString,
+            },
         );
 
         const Value = Array;

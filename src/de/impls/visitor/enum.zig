@@ -9,17 +9,11 @@ pub fn Visitor(comptime Enum: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            visitEnum,
-            undefined,
-            visitInt,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            visitString,
-            undefined,
-            undefined,
+            .{
+                .visitEnum = visitEnum,
+                .visitInt = visitInt,
+                .visitString = visitString,
+            },
         );
 
         const Value = Enum;

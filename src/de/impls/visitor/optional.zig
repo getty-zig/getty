@@ -9,17 +9,10 @@ pub fn Visitor(comptime Optional: type) type {
         pub usingnamespace de.de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            visitNull,
-            undefined,
-            visitSome,
-            undefined,
-            undefined,
-            undefined,
+            .{
+                .visitNull = visitNull,
+                .visitSome = visitSome,
+            },
         );
 
         const Value = Optional;

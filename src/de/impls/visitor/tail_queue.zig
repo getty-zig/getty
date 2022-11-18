@@ -9,17 +9,7 @@ pub fn Visitor(comptime TailQueue: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            visitSeq,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
+            .{ .visitSeq = visitSeq },
         );
 
         const Value = TailQueue;

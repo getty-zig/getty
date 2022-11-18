@@ -5,11 +5,20 @@ const de = @import("../../de.zig");
 pub fn VariantAccess(
     comptime Context: type,
     comptime E: type,
-    comptime payloadSeedFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
-            unreachable;
-        }
-    }.f),
+    comptime impls: struct {
+        payloadSeed: @TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
+                unreachable;
+            }
+        }.f),
+
+        // Provided method.
+        payload: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime T: type) E!T {
+                unreachable;
+            }
+        }.f) = null,
+    },
 ) type {
     return struct {
         pub const @"getty.de.VariantAccess" = struct {
@@ -20,14 +29,18 @@ pub fn VariantAccess(
             pub const Error = E;
 
             pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                return try payloadSeedFn(self.context, allocator, seed);
+                return try impls.payloadSeed(self.context, allocator, seed);
             }
 
             pub fn payload(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
-                var ds = de.de.DefaultSeed(T){};
-                const seed = ds.seed();
+                if (impls.payload) |f| {
+                    return try f(self.context, allocator, T);
+                } else {
+                    var ds = de.de.DefaultSeed(T){};
+                    const seed = ds.seed();
 
-                return try self.payloadSeed(allocator, seed);
+                    return try self.payloadSeed(allocator, seed);
+                }
             }
         };
 

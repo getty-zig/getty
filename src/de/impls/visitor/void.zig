@@ -7,17 +7,7 @@ const Visitor = @This();
 pub usingnamespace de.Visitor(
     Visitor,
     Value,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    visitVoid,
+    .{ .visitVoid = visitVoid },
 );
 
 const Value = void;

@@ -9,17 +9,7 @@ pub fn Visitor(comptime Struct: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            visitMap,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
+            .{ .visitMap = visitMap },
         );
 
         const Value = Struct;

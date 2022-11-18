@@ -7,61 +7,63 @@ const assert = std.debug.assert;
 pub fn Visitor(
     comptime Context: type,
     comptime V: type,
-    comptime visitBoolFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitEnumFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitFloatFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitIntFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitMapFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitNullFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitSeqFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitSomeFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitStringFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitUnionFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype, _: anytype) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
-    comptime visitVoidFn: @TypeOf(struct {
-        fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!V {
-            unreachable;
-        }
-    }.f),
+    comptime impls: struct {
+        visitBool: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitEnum: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitFloat: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitInt: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitMap: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitNull: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitSeq: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitSome: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitString: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitUnion: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype, _: anytype) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+        visitVoid: ?@TypeOf(struct {
+            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!V {
+                unreachable;
+            }
+        }.f) = null,
+    },
 ) type {
     return struct {
         pub const @"getty.de.Visitor" = struct {
@@ -72,40 +74,56 @@ pub fn Visitor(
             pub const Value = V;
 
             pub fn visitBool(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
-                return try visitBoolFn(self.context, allocator, Deserializer, input);
+                if (impls.visitBool) |f| {
+                    return try f(self.context, allocator, Deserializer, input);
+                }
+
+                @compileError("visitBool is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitEnum(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                comptime {
-                    switch (@typeInfo(@TypeOf(input))) {
-                        .Enum, .EnumLiteral => {},
-                        else => @compileError(std.fmt.comptimePrint("expected enum or enum literal, found `{s}`", .{@typeName(@TypeOf(input))})),
+                if (impls.visitEnum) |f| {
+                    comptime {
+                        switch (@typeInfo(@TypeOf(input))) {
+                            .Enum, .EnumLiteral => {},
+                            else => @compileError("expected enum or enum literal, found: " ++ @typeName(@TypeOf(input))),
+                        }
                     }
+
+                    return try f(self.context, allocator, Deserializer, input);
                 }
 
-                return try visitEnumFn(self.context, allocator, Deserializer, input);
+                @compileError("visitEnum is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitFloat(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                comptime {
-                    switch (@typeInfo(@TypeOf(input))) {
-                        .Float, .ComptimeFloat => {},
-                        else => @compileError(std.fmt.comptimePrint("expected floating-point, found `{s}`", .{@typeName(@TypeOf(input))})),
+                if (impls.visitFloat) |f| {
+                    comptime {
+                        switch (@typeInfo(@TypeOf(input))) {
+                            .Float, .ComptimeFloat => {},
+                            else => @compileError("expected float, found: " ++ @typeName(@TypeOf(input))),
+                        }
                     }
+
+                    return try f(self.context, allocator, Deserializer, input);
                 }
 
-                return try visitFloatFn(self.context, allocator, Deserializer, input);
+                @compileError("visitFloat is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitInt(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                comptime {
-                    switch (@typeInfo(@TypeOf(input))) {
-                        .Int, .ComptimeInt => {},
-                        else => @compileError(std.fmt.comptimePrint("expected integer, found `{s}`", .{@typeName(@TypeOf(input))})),
+                if (impls.visitInt) |f| {
+                    comptime {
+                        switch (@typeInfo(@TypeOf(input))) {
+                            .Int, .ComptimeInt => {},
+                            else => @compileError("expected integer, found: " ++ @typeName(@TypeOf(input))),
+                        }
                     }
+
+                    return try f(self.context, allocator, Deserializer, input);
                 }
 
-                return try visitIntFn(self.context, allocator, Deserializer, input);
+                @compileError("visitInt is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
@@ -113,11 +131,19 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitMapFn(self.context, allocator, Deserializer, map);
+                if (impls.visitMap) |f| {
+                    return try f(self.context, allocator, Deserializer, map);
+                }
+
+                @compileError("visitMap is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitNull(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-                return try visitNullFn(self.context, allocator, Deserializer);
+                if (impls.visitNull) |f| {
+                    return try f(self.context, allocator, Deserializer);
+                }
+
+                @compileError("visitNull is not implemented by type: " ++ @typeName(Context));
             }
 
             ///
@@ -130,7 +156,11 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitSeqFn(self.context, allocator, Deserializer, seq);
+                if (impls.visitSeq) |f| {
+                    return try f(self.context, allocator, Deserializer, seq);
+                }
+
+                @compileError("visitSeq is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) blk: {
@@ -138,20 +168,28 @@ pub fn Visitor(
 
                 break :blk @TypeOf(deserializer).Error!Value;
             } {
-                return try visitSomeFn(self.context, allocator, deserializer);
+                if (impls.visitSome) |f| {
+                    return try f(self.context, allocator, deserializer);
+                }
+
+                @compileError("visitSome is not implemented by type: " ++ @typeName(Context));
             }
 
             ///
             ///
             /// The visitor is responsible for visiting the entire slice.
             pub fn visitString(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                comptime {
-                    if (!std.meta.trait.isZigString(@TypeOf(input))) {
-                        @compileError(std.fmt.comptimePrint("expected string, found `{s}`", .{@typeName(@TypeOf(input))}));
+                if (impls.visitString) |f| {
+                    comptime {
+                        if (!std.meta.trait.isZigString(@TypeOf(input))) {
+                            @compileError("expected string, found: " ++ @typeName(@TypeOf(input)));
+                        }
                     }
+
+                    return try f(self.context, allocator, Deserializer, input);
                 }
 
-                return try visitStringFn(self.context, allocator, Deserializer, input);
+                @compileError("visitString is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) blk: {
@@ -160,11 +198,19 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                return try visitUnionFn(self.context, allocator, Deserializer, ua, va);
+                if (impls.visitUnion) |f| {
+                    return try f(self.context, allocator, Deserializer, ua, va);
+                }
+
+                @compileError("visitUnion is not implemented by type: " ++ @typeName(Context));
             }
 
             pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-                return try visitVoidFn(self.context, allocator, Deserializer);
+                if (impls.visitVoid) |f| {
+                    return try f(self.context, allocator, Deserializer);
+                }
+
+                @compileError("visitVoid is not implemented by type: " ++ @typeName(Context));
             }
         };
 

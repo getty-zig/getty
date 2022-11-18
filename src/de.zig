@@ -804,7 +804,7 @@ const TestDeserializer = struct {
         pub usingnamespace de.VariantAccess(
             *Union,
             Error,
-            payloadSeed,
+            .{ .payloadSeed = payloadSeed },
         );
 
         fn variantSeed(self: *Union, _: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {

@@ -9,17 +9,7 @@ pub fn Visitor(comptime Union: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            visitUnion,
-            undefined,
+            .{ .visitUnion = visitUnion },
         );
 
         const Value = Union;

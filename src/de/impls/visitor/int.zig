@@ -9,17 +9,7 @@ pub fn Visitor(comptime Int: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            undefined,
-            undefined,
-            undefined,
-            visitInt,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
+            .{ .visitInt = visitInt },
         );
 
         const Value = Int;

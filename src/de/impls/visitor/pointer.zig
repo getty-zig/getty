@@ -13,17 +13,19 @@ pub fn Visitor(comptime Pointer: type) type {
         pub usingnamespace de.Visitor(
             Self,
             Value,
-            visitBool,
-            visitEnum,
-            visitFloat,
-            visitInt,
-            visitMap,
-            visitNull,
-            visitSeq,
-            visitSome,
-            visitString,
-            visitUnion,
-            visitVoid,
+            .{
+                .visitBool = visitBool,
+                .visitEnum = visitEnum,
+                .visitFloat = visitFloat,
+                .visitInt = visitInt,
+                .visitMap = visitMap,
+                .visitNull = visitNull,
+                .visitSeq = visitSeq,
+                .visitSome = visitSome,
+                .visitString = visitString,
+                .visitUnion = visitUnion,
+                .visitVoid = visitVoid,
+            },
         );
 
         const Value = Pointer;
