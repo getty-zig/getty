@@ -224,7 +224,7 @@ pub fn Serializer(
                     // User tuple is custom but serializer tuple is empty or the default ST.
                     break :blk user_st ++ ser.default_st;
                 } else if (S != Empty and U == Empty) {
-                    // Serailizer tuple is custom but user tuple is empty or the default ST.
+                    // Serializer tuple is custom but user tuple is empty or the default ST.
                     break :blk serializer_st ++ ser.default_st;
                 } else {
                     // Both tuples are custom.

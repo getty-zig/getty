@@ -171,27 +171,22 @@ pub fn Deserializer(
             ///   2. Deserializer-defined DT.
             ///   3. Getty's default DT.
             pub const dt = blk: {
-                const user_tuple = if (@TypeOf(user_dbt) == type) .{user_dbt} else user_dbt;
-                const deserializer_tuple = if (@TypeOf(deserializer_dbt) == type) .{deserializer_dbt} else deserializer_dbt;
-                const default = de.default_dt;
-
-                const U = @TypeOf(user_tuple);
-                const D = @TypeOf(deserializer_tuple);
-                const Default = @TypeOf(default);
+                const U = @TypeOf(user_dt);
+                const D = @TypeOf(deserializer_dt);
                 const Empty = @TypeOf(.{});
 
-                if ((U == Default or U == Empty) and (D == Default or D == Empty)) {
+                if (U == Empty and D == Empty) {
                     // Both tuples are empty or the default DT.
-                    break :blk default;
-                } else if (U != Default and U != Empty and (D == Default or D == Empty)) {
+                    break :blk de.default_dt;
+                } else if (U != Empty and D == Empty) {
                     // User tuple is custom but deserializer tuple is empty or the default DT.
-                    break :blk user_tuple ++ default;
-                } else if (D != Default and D != Empty and (U == Default or U == Empty)) {
+                    break :blk user_dt ++ de.default_dt;
+                } else if (D != Empty and U == Empty) {
                     // Deserializer tuple is custom but user tuple is empty or the default DT.
-                    break :blk deserializer_tuple ++ default;
+                    break :blk deserializer_dt ++ de.default_dt;
                 } else {
                     // Both tuples are custom.
-                    break :blk user_tuple ++ deserializer_tuple ++ default;
+                    break :blk user_dt ++ deserializer_dt ++ de.default_dt;
                 }
             };
 
