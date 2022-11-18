@@ -105,7 +105,6 @@ pub fn Serializer(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    // TODO: Move SBTs into struct.
     comptime user_sbt: anytype,
     comptime serializer_sbt: anytype,
     comptime Map: type,

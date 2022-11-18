@@ -71,7 +71,6 @@ const de = @import("../../de.zig");
 pub fn Deserializer(
     comptime Context: type,
     comptime E: type,
-    // TODO: move the DBTs into struct.
     comptime user_dbt: anytype,
     comptime deserializer_dbt: anytype,
     comptime impls: struct {
