@@ -50,17 +50,10 @@ const Serializer = struct {
         getty.TODO,
         Seq,
         getty.TODO,
-        serializeBool,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        serializeSeq,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+        .{
+            .serializeBool = serializeBool,
+            .serializeSeq = serializeSeq,
+        },
     );
 
     const Ok = void;
@@ -87,8 +80,10 @@ const Seq = struct {
         *Seq,
         Serializer.Ok,
         Serializer.Error,
-        serializeElement,
-        end,
+        .{
+            .serializeElement = serializeElement,
+            .end = end,
+        },
     );
 
     fn serializeElement(self: *Seq, value: anytype) Serializer.Error!void {
