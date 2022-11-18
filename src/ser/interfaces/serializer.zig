@@ -213,27 +213,22 @@ pub fn Serializer(
             ///   2. Serializer-defined ST.
             ///   3. Getty's default ST.
             pub const st = blk: {
-                const user_tuple = if (@TypeOf(user_sbt) == type) .{user_sbt} else user_sbt;
-                const serializer_tuple = if (@TypeOf(serializer_sbt) == type) .{serializer_sbt} else serializer_sbt;
-                const default = ser.default_st;
-
-                const U = @TypeOf(user_tuple);
-                const S = @TypeOf(serializer_tuple);
-                const Default = @TypeOf(default);
+                const U = @TypeOf(user_st);
+                const S = @TypeOf(serializer_st);
                 const Empty = @TypeOf(.{});
 
-                if ((U == Default or U == Empty) and (S == Default or S == Empty)) {
+                if (U == Empty and S == Empty) {
                     // Both tuples are empty or the default ST.
-                    break :blk default;
-                } else if (U != Default and U != Empty and (S == Default or S == Empty)) {
+                    break :blk ser.default_st;
+                } else if (U != Empty and S == Empty) {
                     // User tuple is custom but serializer tuple is empty or the default ST.
-                    break :blk user_tuple ++ default;
-                } else if (S != Default and S != Empty and (U == Default or U == Empty)) {
+                    break :blk user_st ++ ser.default_st;
+                } else if (S != Empty and U == Empty) {
                     // Serailizer tuple is custom but user tuple is empty or the default ST.
-                    break :blk serializer_tuple ++ default;
+                    break :blk serializer_st ++ ser.default_st;
                 } else {
                     // Both tuples are custom.
-                    break :blk user_tuple ++ serializer_tuple ++ default;
+                    break :blk user_st ++ serializer_st ++ ser.default_st;
                 }
             };
 
