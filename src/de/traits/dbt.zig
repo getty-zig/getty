@@ -12,79 +12,80 @@ pub fn is_dbt(comptime dbt: anytype) bool {
     comptime {
         const DBT = @TypeOf(dbt);
 
-        switch (DBT == type) {
-            true => {
-                const info = @typeInfo(dbt);
+        if (DBT == @TypeOf(null)) {
+            return true;
+        }
 
-                // Check DB is a namespace.
-                if (info != .Struct or info.Struct.is_tuple) {
-                    return false;
+        if (DBT == type) {
+            const info = @typeInfo(dbt);
+
+            // Check DB is a namespace.
+            if (info != .Struct or info.Struct.is_tuple) {
+                return false;
+            }
+
+            // Check number of fields.
+            if (info.Struct.fields.len != 0) {
+                return false;
+            }
+
+            // Check number of declarations.
+            var num_decls = 0;
+            for (info.Struct.decls) |decl| {
+                if (decl.is_pub) {
+                    num_decls += 1;
                 }
+            }
+            if (num_decls != 2 and num_decls != 3) {
+                return false;
+            }
 
-                // Check number of fields.
-                if (info.Struct.fields.len != 0) {
-                    return false;
-                }
+            // Check functions.
+            if (!std.meta.trait.hasFunctions(dbt, .{"is"})) {
+                return false;
+            }
 
-                // Check number of declarations.
-                var num_decls = 0;
-                for (info.Struct.decls) |decl| {
-                    if (decl.is_pub) {
-                        num_decls += 1;
+            switch (num_decls) {
+                2 => {
+                    // These are just some preliminary attribute checks. The real
+                    // checks are done just before Getty serializes the value.
+
+                    // Check that an attributes declaration exists.
+                    if (!@hasDecl(dbt, "attributes")) {
+                        return false;
+                    }
+
+                    // Check that the attributes declaration is a struct.
+                    const attr_info = @typeInfo(@TypeOf(dbt.attributes));
+                    if (attr_info != .Struct or (attr_info.Struct.is_tuple and dbt.attributes.len != 0)) {
+                        return false;
+                    }
+                },
+                3 => {
+                    if (!std.meta.trait.hasFunctions(dbt, .{"deserialize"})) {
+                        return false;
+                    }
+
+                    if (!std.meta.trait.hasFunctions(dbt, .{"Visitor"})) {
+                        return false;
+                    }
+                },
+                else => unreachable, // UNREACHABLE: we've already checked the number of declarations.
+            }
+        } else {
+            const info = @typeInfo(DBT);
+
+            // Check that the DT is a tuple.
+            if (info == .Struct and info.Struct.is_tuple) {
+                // Check each DB in the DT.
+                for (std.meta.fields(DBT)) |field| {
+                    if (!is_dbt(@field(dbt, field.name))) {
+                        return false;
                     }
                 }
-                if (num_decls != 2 and num_decls != 3) {
-                    return false;
-                }
-
-                // Check functions.
-                if (!std.meta.trait.hasFunctions(dbt, .{"is"})) {
-                    return false;
-                }
-
-                switch (num_decls) {
-                    2 => {
-                        // These are just some preliminary attribute checks. The real
-                        // checks are done just before Getty serializes the value.
-
-                        // Check that an attributes declaration exists.
-                        if (!@hasDecl(dbt, "attributes")) {
-                            return false;
-                        }
-
-                        // Check that the attributes declaration is a struct.
-                        const attr_info = @typeInfo(@TypeOf(dbt.attributes));
-                        if (attr_info != .Struct or (attr_info.Struct.is_tuple and dbt.attributes.len != 0)) {
-                            return false;
-                        }
-                    },
-                    3 => {
-                        if (!std.meta.trait.hasFunctions(dbt, .{"deserialize"})) {
-                            return false;
-                        }
-
-                        if (!std.meta.trait.hasFunctions(dbt, .{"Visitor"})) {
-                            return false;
-                        }
-                    },
-                    else => unreachable, // UNREACHABLE: we've already checked the number of declarations.
-                }
-            },
-            false => {
-                const info = @typeInfo(DBT);
-
-                // Check that the DT is a tuple.
-                if (info == .Struct and info.Struct.is_tuple) {
-                    // Check each DB in the DT.
-                    for (std.meta.fields(DBT)) |field| {
-                        if (!is_dbt(@field(dbt, field.name))) {
-                            return false;
-                        }
-                    }
-                } else {
-                    return false;
-                }
-            },
+            } else {
+                return false;
+            }
         }
 
         return true;

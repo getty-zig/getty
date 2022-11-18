@@ -111,52 +111,58 @@ pub fn Deserializer(
 
             /// User-defined Deserialization Tuple.
             pub const user_dt = blk: {
-                const user_tuple = inner_blk: {
-                    if (@TypeOf(user_dbt) != type) {
-                        break :inner_blk user_dbt;
-                    }
-
-                    // If an attribute map exists, but no attributes are
-                    // specified, ignore the BB.
-                    if (@hasDecl(user_dbt, "attributes")) {
-                        if (user_dbt.attributes.len == 0) {
-                            break :inner_blk .{};
-                        }
-                    }
-
-                    break :inner_blk .{user_dbt};
-                };
-
-                if (@TypeOf(user_tuple) == @TypeOf(de.default_dt)) {
+                // Process null.
+                if (@TypeOf(user_dbt) == @TypeOf(null)) {
                     break :blk .{};
                 }
 
-                break :blk user_tuple;
+                // Process DB.
+                if (@TypeOf(user_dbt) == type) {
+                    // If an attribute map exists, but no attributes are
+                    // specified, ignore the DB.
+                    if (@hasDecl(user_dbt, "attributes")) {
+                        if (user_dbt.attributes.len == 0) {
+                            break :blk .{};
+                        }
+                    }
+
+                    break :blk .{user_dbt};
+                }
+
+                // Process ST.
+                if (@TypeOf(user_dbt) == @TypeOf(de.default_dt)) {
+                    break :blk .{};
+                }
+
+                break :blk user_dbt;
             };
 
             /// Deserializer-defined Deserialization Tuple.
             pub const deserializer_dt = blk: {
-                const deserializer_tuple = inner_blk: {
-                    if (@TypeOf(deserializer_dbt) != type) {
-                        break :inner_blk deserializer_dbt;
-                    }
+                // Process null.
+                if (@TypeOf(deserializer_dbt) == @TypeOf(null)) {
+                    break :blk .{};
+                }
 
+                // Process DB.
+                if (@TypeOf(deserializer_dbt) == type) {
                     // If an attribute map exists, but no attributes are
-                    // specified, ignore the SB.
+                    // specified, ignore the DB.
                     if (@hasDecl(deserializer_dbt, "attributes")) {
                         if (deserializer_dbt.attributes.len == 0) {
-                            break :inner_blk .{};
+                            break :blk .{};
                         }
                     }
 
-                    break :inner_blk .{deserializer_dbt};
-                };
-
-                if (@TypeOf(deserializer_tuple) == @TypeOf(de.default_dt)) {
-                    break :blk .{};
-                } else {
-                    break :blk deserializer_tuple;
+                    break :blk .{deserializer_dbt};
                 }
+
+                // Process ST.
+                if (@TypeOf(deserializer_dbt) == @TypeOf(de.default_dt)) {
+                    break :blk .{};
+                }
+
+                break :blk deserializer_dbt;
             };
 
             /// Aggregate Deserialization Tuple.
