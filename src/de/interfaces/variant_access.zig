@@ -5,7 +5,7 @@ const de = @import("../../de.zig");
 pub fn VariantAccess(
     comptime Context: type,
     comptime E: type,
-    comptime impls: struct {
+    comptime methods: struct {
         payloadSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
                 unreachable;
@@ -29,7 +29,7 @@ pub fn VariantAccess(
             pub const Error = E;
 
             pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                if (impls.payloadSeed) |f| {
+                if (methods.payloadSeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
 
@@ -37,7 +37,7 @@ pub fn VariantAccess(
             }
 
             pub fn payload(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
-                if (impls.payload) |f| {
+                if (methods.payload) |f| {
                     return try f(self.context, allocator, T);
                 } else {
                     var ds = de.de.DefaultSeed(T){};

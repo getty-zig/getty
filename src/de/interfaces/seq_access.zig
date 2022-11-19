@@ -5,7 +5,7 @@ const de = @import("../../de.zig");
 pub fn SeqAccess(
     comptime Context: type,
     comptime E: type,
-    comptime impls: struct {
+    comptime methods: struct {
         nextElementSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 unreachable;
@@ -29,7 +29,7 @@ pub fn SeqAccess(
             pub const Error = E;
 
             pub fn nextElementSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(@TypeOf(seed)) {
-                if (impls.nextElementSeed) |f| {
+                if (methods.nextElementSeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
 
@@ -37,7 +37,7 @@ pub fn SeqAccess(
             }
 
             pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {
-                if (impls.nextElement) |f| {
+                if (methods.nextElement) |f| {
                     return try f(self.context, allocator, Value);
                 } else {
                     var seed = de.de.DefaultSeed(Value){};

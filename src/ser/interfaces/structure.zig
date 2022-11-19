@@ -65,7 +65,7 @@ pub fn Structure(
     comptime Context: type,
     comptime O: type,
     comptime E: type,
-    comptime impls: struct {
+    comptime methods: struct {
         serializeField: ?fn (Context, comptime []const u8, anytype) E!void = null,
         end: ?fn (Context) E!O = null,
     },
@@ -84,7 +84,7 @@ pub fn Structure(
 
             /// Serialize a struct field.
             pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!void {
-                if (impls.serializeField) |f| {
+                if (methods.serializeField) |f| {
                     try f(self.context, key, value);
                 } else {
                     @compileError("serializeField is not implemented by type: " ++ @typeName(Context));
@@ -93,7 +93,7 @@ pub fn Structure(
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
-                if (impls.end) |f| {
+                if (methods.end) |f| {
                     try f(self.context);
                 } else {
                     @compileError("end is not implemented by type: " ++ @typeName(Context));

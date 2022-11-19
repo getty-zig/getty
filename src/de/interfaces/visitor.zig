@@ -7,7 +7,7 @@ const assert = std.debug.assert;
 pub fn Visitor(
     comptime Context: type,
     comptime V: type,
-    comptime impls: struct {
+    comptime methods: struct {
         visitBool: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!V {
                 unreachable;
@@ -74,7 +74,7 @@ pub fn Visitor(
             pub const Value = V;
 
             pub fn visitBool(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
-                if (impls.visitBool) |f| {
+                if (methods.visitBool) |f| {
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
@@ -82,7 +82,7 @@ pub fn Visitor(
             }
 
             pub fn visitEnum(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                if (impls.visitEnum) |f| {
+                if (methods.visitEnum) |f| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
                             .Enum, .EnumLiteral => {},
@@ -97,7 +97,7 @@ pub fn Visitor(
             }
 
             pub fn visitFloat(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                if (impls.visitFloat) |f| {
+                if (methods.visitFloat) |f| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
                             .Float, .ComptimeFloat => {},
@@ -112,7 +112,7 @@ pub fn Visitor(
             }
 
             pub fn visitInt(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                if (impls.visitInt) |f| {
+                if (methods.visitInt) |f| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
                             .Int, .ComptimeInt => {},
@@ -131,7 +131,7 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                if (impls.visitMap) |f| {
+                if (methods.visitMap) |f| {
                     return try f(self.context, allocator, Deserializer, map);
                 }
 
@@ -139,7 +139,7 @@ pub fn Visitor(
             }
 
             pub fn visitNull(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-                if (impls.visitNull) |f| {
+                if (methods.visitNull) |f| {
                     return try f(self.context, allocator, Deserializer);
                 }
 
@@ -156,7 +156,7 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                if (impls.visitSeq) |f| {
+                if (methods.visitSeq) |f| {
                     return try f(self.context, allocator, Deserializer, seq);
                 }
 
@@ -168,7 +168,7 @@ pub fn Visitor(
 
                 break :blk @TypeOf(deserializer).Error!Value;
             } {
-                if (impls.visitSome) |f| {
+                if (methods.visitSome) |f| {
                     return try f(self.context, allocator, deserializer);
                 }
 
@@ -179,7 +179,7 @@ pub fn Visitor(
             ///
             /// The visitor is responsible for visiting the entire slice.
             pub fn visitString(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                if (impls.visitString) |f| {
+                if (methods.visitString) |f| {
                     comptime {
                         if (!std.meta.trait.isZigString(@TypeOf(input))) {
                             @compileError("expected string, found: " ++ @typeName(@TypeOf(input)));
@@ -198,7 +198,7 @@ pub fn Visitor(
 
                 break :blk Deserializer.Error!Value;
             } {
-                if (impls.visitUnion) |f| {
+                if (methods.visitUnion) |f| {
                     return try f(self.context, allocator, Deserializer, ua, va);
                 }
 
@@ -206,7 +206,7 @@ pub fn Visitor(
             }
 
             pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-                if (impls.visitVoid) |f| {
+                if (methods.visitVoid) |f| {
                     return try f(self.context, allocator, Deserializer);
                 }
 

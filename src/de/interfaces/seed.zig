@@ -5,7 +5,7 @@ const de = @import("../../de.zig");
 pub fn Seed(
     comptime Context: type,
     comptime V: type,
-    comptime impls: struct {
+    comptime methods: struct {
         deserialize: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
                 unreachable;
@@ -22,7 +22,7 @@ pub fn Seed(
             pub const Value = V;
 
             pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
-                if (impls.deserialize) |f| {
+                if (methods.deserialize) |f| {
                     return try f(self.context, allocator, deserializer);
                 }
 

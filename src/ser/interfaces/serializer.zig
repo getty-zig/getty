@@ -110,7 +110,7 @@ pub fn Serializer(
     comptime Map: ?type,
     comptime Seq: ?type,
     comptime Structure: ?type,
-    comptime impls: struct {
+    comptime methods: struct {
         serializeBool: ?fn (Context, bool) E!O = null,
         serializeEnum: ?fn (Context, anytype) E!O = null,
         serializeFloat: ?fn (Context, anytype) E!O = null,
@@ -261,7 +261,7 @@ pub fn Serializer(
 
             /// Serializes a Getty Boolean value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
-                if (impls.serializeBool) |f| {
+                if (methods.serializeBool) |f| {
                     return try f(self.context, value);
                 }
 
@@ -270,7 +270,7 @@ pub fn Serializer(
 
             // Serializes a Getty Enum value.
             pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
-                if (impls.serializeEnum) |f| {
+                if (methods.serializeEnum) |f| {
                     switch (@typeInfo(@TypeOf(value))) {
                         .Enum, .EnumLiteral => return try f(self.context, value),
                         else => @compileError("expected enum, found: " ++ @typeName(@TypeOf(value))),
@@ -282,7 +282,7 @@ pub fn Serializer(
 
             /// Serializes a Getty Float value.
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
-                if (impls.serializeFloat) |f| {
+                if (methods.serializeFloat) |f| {
                     switch (@typeInfo(@TypeOf(value))) {
                         .Float, .ComptimeFloat => return try f(self.context, value),
                         else => @compileError("expected float, found: " ++ @typeName(@TypeOf(value))),
@@ -294,7 +294,7 @@ pub fn Serializer(
 
             /// Serializes a Getty Integer value.
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
-                if (impls.serializeInt) |f| {
+                if (methods.serializeInt) |f| {
                     switch (@typeInfo(@TypeOf(value))) {
                         .Int, .ComptimeInt => return try f(self.context, value),
                         else => @compileError("expected integer, found: " ++ @typeName(@TypeOf(value))),
@@ -321,7 +321,7 @@ pub fn Serializer(
                     @compileError("serializeMap requires getty.ser.Map to be non-null");
                 }
 
-                if (impls.serializeMap) |f| {
+                if (methods.serializeMap) |f| {
                     return try f(self.context, length);
                 }
 
@@ -330,7 +330,7 @@ pub fn Serializer(
 
             /// Serializes a Getty Null value.
             pub fn serializeNull(self: Self) Error!Ok {
-                if (impls.serializeNull) |f| {
+                if (methods.serializeNull) |f| {
                     return try f(self.context);
                 }
 
@@ -354,7 +354,7 @@ pub fn Serializer(
                     @compileError("serializeSeq requires getty.ser.Seq to be non-null");
                 }
 
-                if (impls.serializeSeq) |f| {
+                if (methods.serializeSeq) |f| {
                     return try f(self.context, length);
                 }
 
@@ -363,7 +363,7 @@ pub fn Serializer(
 
             /// Serializes a Getty Optional value.
             pub fn serializeSome(self: Self, value: anytype) Error!Ok {
-                if (impls.serializeSome) |f| {
+                if (methods.serializeSome) |f| {
                     return try f(self.context, value);
                 }
 
@@ -372,7 +372,7 @@ pub fn Serializer(
 
             /// Serializes a Getty String value.
             pub fn serializeString(self: Self, value: anytype) Error!Ok {
-                if (impls.serializeString) |f| {
+                if (methods.serializeString) |f| {
                     if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
                         @compileError("expected string, found: " ++ @typeName(@TypeOf(value)));
                     }
@@ -400,7 +400,7 @@ pub fn Serializer(
                     @compileError("serializeStruct requires getty.ser.Structure to be non-null");
                 }
 
-                if (impls.serializeStruct) |f| {
+                if (methods.serializeStruct) |f| {
                     return try f(self.context, name, length);
                 }
 
@@ -409,7 +409,7 @@ pub fn Serializer(
 
             /// Serializes a Getty Void value.
             pub fn serializeVoid(self: Self) Error!Ok {
-                if (impls.serializeVoid) |f| {
+                if (methods.serializeVoid) |f| {
                     return try f(self.context);
                 }
 

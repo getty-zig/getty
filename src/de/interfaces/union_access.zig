@@ -5,7 +5,7 @@ const de = @import("../../de.zig");
 pub fn UnionAccess(
     comptime Context: type,
     comptime E: type,
-    comptime impls: struct {
+    comptime methods: struct {
         variantSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
                 unreachable;
@@ -29,7 +29,7 @@ pub fn UnionAccess(
             pub const Error = E;
 
             pub fn variantSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
-                if (impls.variantSeed) |f| {
+                if (methods.variantSeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
 
@@ -37,7 +37,7 @@ pub fn UnionAccess(
             }
 
             pub fn variant(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
-                if (impls.variant) |f| {
+                if (methods.variant) |f| {
                     return try f(self.context, allocator, T);
                 } else {
                     var ds = de.de.DefaultSeed(T){};

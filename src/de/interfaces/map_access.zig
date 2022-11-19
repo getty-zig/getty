@@ -5,7 +5,7 @@ const de = @import("../../de.zig");
 pub fn MapAccess(
     comptime Context: type,
     comptime E: type,
-    comptime impls: struct {
+    comptime methods: struct {
         nextKeySeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 unreachable;
@@ -42,7 +42,7 @@ pub fn MapAccess(
             pub const Error = E;
 
             pub fn nextKeySeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) KeyReturn(@TypeOf(seed)) {
-                if (impls.nextKeySeed) |f| {
+                if (methods.nextKeySeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
 
@@ -50,7 +50,7 @@ pub fn MapAccess(
             }
 
             pub fn nextValueSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) ValueReturn(@TypeOf(seed)) {
-                if (impls.nextValueSeed) |f| {
+                if (methods.nextValueSeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
 
@@ -62,7 +62,7 @@ pub fn MapAccess(
             //}
 
             pub fn nextKey(self: Self, allocator: ?std.mem.Allocator, comptime K: type) !?K {
-                if (impls.nextKey) |f| {
+                if (methods.nextKey) |f| {
                     return try f(self.context, allocator, K);
                 } else {
                     var seed = de.de.DefaultSeed(K){};
@@ -73,7 +73,7 @@ pub fn MapAccess(
             }
 
             pub fn nextValue(self: Self, allocator: ?std.mem.Allocator, comptime V: type) !V {
-                if (impls.nextValue) |f| {
+                if (methods.nextValue) |f| {
                     return try f(self.context, allocator, V);
                 } else {
                     var seed = de.de.DefaultSeed(V){};
