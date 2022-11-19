@@ -87,11 +87,16 @@ const Seq = struct {
     }
 
     fn end(_: *Seq) Serializer.Error!Serializer.Ok {
-        std.debug.print("]", .{});
+        std.debug.print("]\n", .{});
     }
 };
 
 pub fn main() anyerror!void {
-    try getty.serialize(.{ true, false }, (Serializer{}).serializer()); // [true, false]
+    const s = (Serializer{}).serializer();
+
+    try getty.serialize(.{ true, false }, s);                // [true, false]
+    try getty.serialize([_]bool{ true, false }, s);          // [true, false]
+    try getty.serialize(&&&[_]bool{ true, false }, s);       // [true, false]
+    try getty.serialize(@Vector(2, bool){ true, false }, s); // [true, false]
 }
 ```
