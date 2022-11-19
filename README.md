@@ -66,7 +66,6 @@ const Serializer = struct {
     }
 };
 
-// Seq defines the serialization process for sequences.
 const Seq = struct {
     first: bool = true,
 
