@@ -185,7 +185,7 @@ pub fn Serializer(
                     // If an attribute map exists, but no attributes are
                     // specified, ignore the SB.
                     if (@hasDecl(user_sbt, "attributes")) {
-                        if (user_sbt.attributes.len == 0) {
+                        if (std.meta.fields(@TypeOf(user_sbt.attributes)).len == 0) {
                             break :blk .{};
                         }
                     }
@@ -213,7 +213,7 @@ pub fn Serializer(
                     // If an attribute map exists, but no attributes are
                     // specified, ignore the SB.
                     if (@hasDecl(serializer_sbt, "attributes")) {
-                        if (serializer_sbt.attributes.len == 0) {
+                        if (std.meta.fields(@TypeOf(serializer_sbt.attributes)).len == 0) {
                             break :blk .{};
                         }
                     }

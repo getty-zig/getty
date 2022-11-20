@@ -121,7 +121,7 @@ pub fn Deserializer(
                     // If an attribute map exists, but no attributes are
                     // specified, ignore the DB.
                     if (@hasDecl(user_dbt, "attributes")) {
-                        if (user_dbt.attributes.len == 0) {
+                        if (std.meta.fields(@TypeOf(user_dbt.attributes)).len == 0) {
                             break :blk .{};
                         }
                     }
@@ -149,7 +149,7 @@ pub fn Deserializer(
                     // If an attribute map exists, but no attributes are
                     // specified, ignore the DB.
                     if (@hasDecl(deserializer_dbt, "attributes")) {
-                        if (deserializer_dbt.attributes.len == 0) {
+                        if (std.meta.fields(@TypeOf(deserializer_dbt.attributes)).len == 0) {
                             break :blk .{};
                         }
                     }
