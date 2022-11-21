@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const package_name = "getty";
-const package_path = "src/lib.zig";
+const package_path = "src/getty.zig";
 
 pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();

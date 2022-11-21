@@ -1,14 +1,22 @@
-//! The default Serialization Block for struct values.
-
 const std = @import("std");
 
 const ser = @import("../../ser.zig");
 
-pub fn is(comptime T: type) bool {
+/// Specifies all types that can be serialized by this block.
+pub fn is(
+    /// The type of a value being serialized.
+    comptime T: type,
+) bool {
     return @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;
 }
 
-pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+/// Specifies the serialization process for values relevant to this block.
+pub fn serialize(
+    /// A value being serialized.
+    value: anytype,
+    /// A `getty.Serializer` interface value.
+    serializer: anytype,
+) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
     const fields = std.meta.fields(T);
     const attributes = comptime ser.ser.getAttributes(T, @TypeOf(serializer));

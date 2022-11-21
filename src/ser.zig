@@ -1,118 +1,25 @@
 //! Serialization framework.
-//!
-//! Visually, serialization in Getty can be represented like so:
-//!
-//!                  Zig data
-//!
-//!                     |          <-----------------------
-//!                     ▼                                 |
-//!                                                       |
-//!              Getty Data Model                         |
-//!                                                       |
-//!                     |          <-------               |
-//!                     ▼                 |               |
-//!                                       |               |
-//!                Data Format            |               |
-//!                                       |               |
-//!                                       |
-//!                                       |      Serialization Block
-//!                                       |
-//!
-//!                               `getty.Serializer`
-//!
-//! Data Model
-//! ==========
-//!
-//! The Getty Data Model (GDM) is the set of types supported by Getty. The
-//! types within the GDM are purely conceptual; they aren't actual Zig types.
-//! For example, there is no `i32` or `u64` in the GDM. Instead, they are both
-//! considered to be the type: integer.
-//!
-//! By maintaining a data model, Getty establishes a generic baseline from
-//! which serializers can operate. This often simplifies the job of a
-//! serializer significantly. For example, Zig considers `struct { x: i32 }`
-//! and `struct { y: bool }` to be different types. However, in Getty they are
-//! both considered to be the same type: struct. This means that if a
-//! serializer knows how to serialize a struct (as defined by the GDM), then it
-//! will be able to serialize `struct { x: i32 }` values, `struct { y: bool }`
-//! values, and values of any other struct type that is composed of data types
-//! supported by Getty.
-//!
-//! The serialization GDM consists of the following types:
-//!
-//!   1. Boolean
-//!   2. Enum
-//!   3. Float
-//!   4. Integer
-//!   5. Map
-//!   6. Null
-//!   7. Sequence
-//!   8. Some
-//!   9. String
-//!   10. Struct
-//!   11. Void
-//!
-//! Serializers
-//! ===========
-//!
-//! A serializer is an implementation of the `getty.Serializer` interface. They
-//! define the conversion process between Getty's data model and an output data
-//! format (e.g., JSON, YAML). For example, a JSON serializer would be
-//! responsible for converting Getty maps into JSON objects.
-//!
-//! Serialization Blocks
-//! ====================
-//!
-//! A Serialization Block (SB) is a struct namespace that defines the
-//! conversion process between Zig data types and Getty's data model. All SBs
-//! must contain the following two functions:
-//!
-//!   1. fn is(comptime T: type) bool
-//!   2. fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok
-//!
-//! The `is` function specifies which types are serializable by the SB, and the
-//! `serialize` function defines how to serialize values of those types. For
-//! example, the following code defines an SB for booleans:
-//!
-//! ```
-//! const bool_sb = struct {
-//!     pub fn is(comptime T: type) bool {
-//!         return T == bool;
-//!     }
-//!
-//!     pub fn serialize(value: anytype, serializer: anytype) !@TypeOf(serializer).Ok {
-//!         return try serializer.serializeBool(value);
-//!     }
-//! };
-//! ```
-//!
-//! Serialization Tuples
-//! ====================
-//!
-//! A Serialization Tuple (ST) is a group of Serialization Blocks.
-//!
-//! Getty provides its own ST for various Zig data types, but users, types, and
-//! serializers can provide their own through the `getty.Serializer` interface
-//! and `getty.ser.sbt` declaration.
 
 const std = @import("std");
 
-/// The serializer interface.
+/// Serializer interface.
 pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
-/// The default Serialization Tuple.
-///
-/// If a user, type, or serializer ST is provided, the default ST will take the
-/// lowest priority.
 pub const default_st = .{
-    // std
+    ////////////////////////////////////////////////////////////////////////////
+    // Standard Library
+    ////////////////////////////////////////////////////////////////////////////
+
     ser.blocks.ArrayList,
     ser.blocks.BoundedArray,
     ser.blocks.HashMap,
     ser.blocks.LinkedList,
     ser.blocks.TailQueue,
 
-    // primitives
+    ////////////////////////////////////////////////////////////////////////////
+    // Primitives
+    ////////////////////////////////////////////////////////////////////////////
+
     ser.blocks.Array,
     ser.blocks.Bool,
     ser.blocks.Enum,
@@ -131,17 +38,14 @@ pub const default_st = .{
     ser.blocks.Void,
 };
 
-/// Compile-time type restraints for serialization-related Getty data types.
 pub const concepts = struct {
-    pub usingnamespace @import("ser/concepts/map.zig");
-    pub usingnamespace @import("ser/concepts/sbt.zig");
     pub usingnamespace @import("ser/concepts/serializer.zig");
+    pub usingnamespace @import("ser/concepts/map.zig");
     pub usingnamespace @import("ser/concepts/seq.zig");
     pub usingnamespace @import("ser/concepts/structure.zig");
+    pub usingnamespace @import("ser/concepts/sbt.zig");
 };
 
-/// Functions for obtaining type information at compile-time for
-/// serialization-related Getty data types.
 pub const traits = struct {
     pub usingnamespace @import("ser/traits/sbt.zig");
     pub usingnamespace @import("ser/traits/attributes.zig");
@@ -149,50 +53,96 @@ pub const traits = struct {
 
 /// A namespace for serialization-specific types and functions.
 pub const ser = struct {
-    /// The map serialization interface.
-    pub usingnamespace @import("ser/interfaces/map.zig");
+    /// Serialization interface for Getty Maps.
+    pub const Map = @import("ser/interfaces/map.zig").Map;
 
-    /// The sequence serialization interface.
-    pub usingnamespace @import("ser/interfaces/seq.zig");
+    /// Serialization interface for Getty Sequences.
+    pub const Seq = @import("ser/interfaces/seq.zig").Seq;
 
-    /// The struct serialization interface.
-    pub usingnamespace @import("ser/interfaces/structure.zig");
+    /// Serialization interface for Getty Structures.
+    pub const Structure = @import("ser/interfaces/structure.zig").Structure;
 
+    /// Serialization blocks provided by Getty.
     pub const blocks = struct {
-        // std
+        ////////////////////////////////////////////////////////////////////////
+        // Standard Library
+        ////////////////////////////////////////////////////////////////////////
+
+        /// Serialization block for `std.ArrayList` values.
         pub const ArrayList = @import("ser/blocks/array_list.zig");
+
+        /// Serialization block for `std.BoundedArray` values.
         pub const BoundedArray = @import("ser/blocks/bounded_array.zig");
+
+        /// Serialization block for `std.HashMap` values.
         pub const HashMap = @import("ser/blocks/hash_map.zig");
+
+        /// Serialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("ser/blocks/linked_list.zig");
+
+        /// Serialization block for `std.TailQueue`.
         pub const TailQueue = @import("ser/blocks/tail_queue.zig");
 
-        // primitives
+        ////////////////////////////////////////////////////////////////////////
+        // Primitives
+        ////////////////////////////////////////////////////////////////////////
+
+        /// Serialization block for array values.
         pub const Array = @import("ser/blocks/array.zig");
+
+        /// Serialization block for `bool` values.
         pub const Bool = @import("ser/blocks/bool.zig");
+
+        /// Serialization block for `enum` values.
         pub const Enum = @import("ser/blocks/enum.zig");
+
+        /// Serialization block for `error` values.
         pub const Error = @import("ser/blocks/error.zig");
+
+        /// Serialization block for floating-point values.
         pub const Float = @import("ser/blocks/float.zig");
+
+        /// Serialization block for integer values.
         pub const Int = @import("ser/blocks/int.zig");
+
+        /// Serialization block for `null` values.
         pub const Null = @import("ser/blocks/null.zig");
+
+        /// Serialization block for optional values.
         pub const Optional = @import("ser/blocks/optional.zig");
+
+        /// Serialization block for pointer values.
         pub const Pointer = @import("ser/blocks/pointer.zig");
+
+        /// Serialization block for slice values.
         pub const Slice = @import("ser/blocks/slice.zig");
+
+        /// Serialization block for string values.
         pub const String = @import("ser/blocks/string.zig");
+
+        /// Serialization block for `struct` values.
         pub const Struct = @import("ser/blocks/struct.zig");
+
+        /// Serialization block for tuple values.
         pub const Tuple = @import("ser/blocks/tuple.zig");
+
+        /// Serialization block for `union` values.
         pub const Union = @import("ser/blocks/union.zig");
+
+        /// Serialization block for vector values.
         pub const Vector = @import("ser/blocks/vector.zig");
+
+        /// Serialization block for `void` values.
         pub const Void = @import("ser/blocks/void.zig");
     };
 
-    /// Returns an attribute map for a type. If none exists, null is returned.
-    ///
-    /// Parameters
-    /// ==========
-    ///
-    /// * T: The type for which attributes should be returned.
-    /// * S: A getty.Serializer interface type.
-    pub fn getAttributes(comptime T: type, comptime S: type) blk: {
+    /// Returns the attributes for a type. If none exists, `null` is returned.
+    pub fn getAttributes(
+        /// The type for which attributes should be returned.
+        comptime T: type,
+        /// A `getty.Serializer` interface type.
+        comptime S: type,
+    ) blk: {
         // Process user SBTs.
         for (S.user_st) |sb| {
             if (sb.is(T) and traits.has_attributes(T, sb)) {
@@ -239,14 +189,13 @@ pub const ser = struct {
     }
 };
 
-/// Serializes a value into the given Getty serializer.
-///
-/// Parameters
-/// ==========
-///
-/// * value: The value to serialize.
-/// * serializer: A getty.Serializer interface value.
-pub fn serialize(value: anytype, serializer: anytype) blk: {
+/// Serializes a value.
+pub fn serialize(
+    /// A value to serialize.
+    value: anytype,
+    /// A `getty.Serializer` interface value.
+    serializer: anytype,
+) blk: {
     const S = @TypeOf(serializer);
 
     concepts.@"getty.Serializer"(S);

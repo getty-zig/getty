@@ -1,77 +1,19 @@
-/// Sequence serialization interface.
-///
-/// Getty sequences are only partially serialized by `getty.Serializer`
-/// implementations due to the fact that there are many different ways to
-/// iterate over and access the elements of a sequence. As such, this interface
-/// is provided so that serialization may be driven and completed by the user
-/// of a serializer.
-///
-/// The interface specifies the following:
-///
-///     - How to serialize an element of a sequence.
-///     - How to finish serialization for a sequence.
-///
-/// Parameters
-/// ==========
-///
-///     Context
-///     -------
-///
-///         This is the type that implements `getty.ser.Seq` (or a pointer to it).
-///
-///     O
-///     -
-///
-///         The successful return type for all of `getty.ser.Seq`'s methods.
-///
-///     E
-///     -
-///
-///         The error set used by all of `getty.ser.Seq`'s methods upon failure.
-///
-///     serializeElement
-///     ----------------
-///
-///         A method that serializes an element of a sequence.
-///
-///     end
-///     ---
-///
-///         A method that ends the serialization of a sequence.
-///
-/// Examples
-/// ========
-///
-/// ```zig
-/// const seq_sb = struct {
-///     pub fn is(comptime T: type) bool {
-///         return T == [3]i32;
-///     }
-///
-///     pub fn serialize(value: anytype, serializer: anytype) !@TypeOf(serializer).Ok {
-///         // Begin sequence serialization.
-///         const seq = (try serializer.serializeSeq(3)).seq();
-///
-///         // Serialize sequence elements.
-///         for (value) |elem| {
-///             try seq.serializeElement(elem);
-///         }
-///
-///         // End sequence serialization.
-///         return try seq.end();
-///     }
-/// };
-/// ```
+/// Serialization interface for Getty Sequences.
 pub fn Seq(
+    /// The namespace that owns the method implementations provided in `methods`.
     comptime Context: type,
+    /// The successful return type of the interface's `end` method.
     comptime O: type,
+    /// The error set returned by the interface's methods upon failure.
     comptime E: type,
+    /// A namespace for the methods that implementations of the interface can implement.
     comptime methods: struct {
         serializeElement: ?fn (Context, anytype) E!void = null,
         end: ?fn (Context) E!O = null,
     },
 ) type {
     return struct {
+        /// An interface type.
         pub const @"getty.ser.Seq" = struct {
             context: Context,
 
@@ -102,6 +44,7 @@ pub fn Seq(
             }
         };
 
+        /// Returns an interface value.
         pub fn seq(self: Context) @"getty.ser.Seq" {
             return .{ .context = self };
         }

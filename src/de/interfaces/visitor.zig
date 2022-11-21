@@ -4,9 +4,13 @@ const de = @import("../../de.zig");
 
 const assert = std.debug.assert;
 
+/// Deserialization visitor interface.
 pub fn Visitor(
+    /// The namespace that owns the method implementations provided in `methods`.
     comptime Context: type,
+    /// The type of the value produced by the visitor.
     comptime V: type,
+    /// A namespace for the methods that implementations of the interface can implement.
     comptime methods: struct {
         visitBool: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!V {
@@ -66,6 +70,7 @@ pub fn Visitor(
     },
 ) type {
     return struct {
+        /// An interface type.
         pub const @"getty.de.Visitor" = struct {
             context: Context,
 
@@ -214,6 +219,7 @@ pub fn Visitor(
             }
         };
 
+        /// Returns an interface value.
         pub fn visitor(ctx: Context) @"getty.de.Visitor" {
             return .{ .context = ctx };
         }

@@ -2,9 +2,13 @@ const std = @import("std");
 
 const de = @import("../../de.zig");
 
+/// Deserialization and access interface for Getty Maps.
 pub fn SeqAccess(
+    /// The namespace that owns the method implementations provided in `methods`.
     comptime Context: type,
+    /// The error set returned by the interface's methods upon failure.
     comptime E: type,
+    /// A namespace for the methods that implementations of the interface can implement.
     comptime methods: struct {
         nextElementSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
@@ -21,6 +25,7 @@ pub fn SeqAccess(
     },
 ) type {
     return struct {
+        /// An interface type.
         pub const @"getty.de.SeqAccess" = struct {
             context: Context,
 
@@ -54,6 +59,7 @@ pub fn SeqAccess(
             }
         };
 
+        /// Returns an interface value.
         pub fn seqAccess(self: Context) @"getty.de.SeqAccess" {
             return .{ .context = self };
         }

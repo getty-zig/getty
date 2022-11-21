@@ -2,9 +2,13 @@ const std = @import("std");
 
 const de = @import("../../de.zig");
 
+/// Deserialization seed interface.
 pub fn Seed(
+    /// The namespace that owns the method implementations provided in `methods`.
     comptime Context: type,
+    /// The type to deserialize into.
     comptime V: type,
+    /// A namespace for the methods that implementations of the interface can implement.
     comptime methods: struct {
         deserialize: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
@@ -14,6 +18,7 @@ pub fn Seed(
     },
 ) type {
     return struct {
+        /// An interface type.
         pub const @"getty.de.Seed" = struct {
             context: Context,
 
@@ -30,6 +35,7 @@ pub fn Seed(
             }
         };
 
+        /// Returns an interface value.
         pub fn seed(self: Context) @"getty.de.Seed" {
             return .{ .context = self };
         }

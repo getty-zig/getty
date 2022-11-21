@@ -17,11 +17,14 @@ pub const Deserializer = d.Deserializer;
 pub const ser = s.ser;
 pub const de = d.de;
 
+/// Compile-time type restraints for Getty data structures.
 pub const concepts = struct {
     pub usingnamespace s.concepts;
     pub usingnamespace d.concepts;
 };
 
+/// Functions for obtaining type information at compile-time for Getty data
+/// structures.
 pub const traits = struct {
     pub usingnamespace s.traits;
     pub usingnamespace d.traits;
@@ -31,20 +34,20 @@ pub const traits = struct {
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Serialize a value into a Getty serializer.
+/// Serializes a value.
 pub const serialize = s.serialize;
 
-/// Deserialize a value from a Getty deserializer.
+/// Deserializes a value.
 pub const deserialize = d.deserialize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Values
 ////////////////////////////////////////////////////////////////////////////////
 
-/// The default serialization tuple.
+/// Default serialization tuple.
 pub const default_st = s.default_st;
 
-/// The default deserialization tuple.
+/// Default deserialization tuple.
 pub const default_dt = d.default_dt;
 
 ////////////////////////////////////////////////////////////////////////////////

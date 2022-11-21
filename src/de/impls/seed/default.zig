@@ -2,7 +2,11 @@ const std = @import("std");
 
 const de = @import("../../../de.zig");
 
-pub fn DefaultSeed(comptime Value: type) type {
+/// Default `getty.de.Seed` implementation.
+pub fn DefaultSeed(
+    /// The type to deserialize into.
+    comptime Value: type,
+) type {
     return struct {
         const Self = @This();
 

@@ -1,152 +1,24 @@
 //! Deserialization framework.
-//!
-//! Visually, deserialization in Getty can be represented like so:
-//!
-//!                  Zig data
-//!
-//!                     ▲          <-----------------------
-//!                     |                                 |
-//!                                                       |
-//!              Getty Data Model                         |
-//!                                                       |
-//!                     ▲          <-------               |
-//!                     |                 |               |
-//!                                       |               |
-//!                Data Format            |               |
-//!                                       |               |
-//!                                       |
-//!                                       |      Deserialization Block
-//!                                       |
-//!
-//!                               `getty.Deserializer`
-//!
-//! Data Model
-//! ==========
-//!
-//! The Getty Data Model (GDM) is the set of types supported by Getty. The
-//! types within the GDM are purely conceptual; they aren't actual Zig types.
-//! For example, there is no `i32` or `u64` in the GDM. Instead, they are both
-//! considered to be the type: integer.
-//!
-//! By maintaining a data model, Getty establishes a generic baseline from
-//! which deserializers can operate. This often simplifies the job of a
-//! deserializer significantly. For example, Zig considers `struct { x: i32 }`
-//! and `struct { y: bool }` to be different types. However, in Getty they are
-//! both considered to be the same type: struct. This means that if a
-//! deserializer knows how to deserialize into a struct (as defined by the
-//! GDM), then it will be able to deserialize into `struct { x: i32 }` values,
-//! `struct { y: bool }` values, and values of any other struct type that is
-//! composed of data types supported by Getty.
-//!
-//! The deserialization GDM consists of the following types:
-//!
-//!   1. Boolean
-//!   2. Enum
-//!   3. Float
-//!   4. Integer
-//!   5. Map
-//!   6. Optional
-//!   7. Sequence
-//!   8. String
-//!   9. Struct
-//!   10. Void
-//!
-//! Deserializers
-//! =============
-//!
-//! A deserializer is an implementation of the `getty.Deserializer` interface.
-//! They define the conversion process between an input data format (e.g.,
-//! JSON, YAML) and Getty's data model. For example, a JSON deserializer would
-//! be responsible for converting JSON maps into Getty maps.
-//!
-//! Deserialization Blocks
-//! ======================
-//!
-//! Deserialization Blocks (DB) make up the core of custom deserialization in
-//! Getty. DBs define how to deserialize into values of one or more types.
-//!
-//! A DB is a struct namespace containing three functions:
-//!
-//!   1. fn is(comptime T: type) bool
-//!   2. fn deserialize(comptime T: type, deserializer: anytype, visitor: anytype) @TypeOf(deserializer).Error!@TypeOf(visitor).Value
-//!   3. fn visitor(allocator: ?std.mem.Allocator, comptime T: type) ...
-//!
-//! The `is` function specifies which types are deserializable by the DB. The
-//! `deserialize` defines how to deserialize the input data format into Getty's
-//! data model. Finally, the `visitor` function returns an instance of an
-//! implementation of the `getty.de.Visitor` interface, which Getty will use to
-//! produce an actual Zig value.
-//!
-//! For example, the following shows a DB for booleans. With it, you can
-//! deserialize into a `bool` from a JSON boolean or a JSON integer:
-//!
-//! ```zig
-//! const bool_db = struct {
-//!     pub fn is(comptime T: type) bool {
-//!         return T == bool;
-//!     }
-//!
-//!     pub fn deserialize(comptime _: anytype, deserializer: anytype, v: anytype) !@TypeOf(v).Value {
-//!         return try deserializer.deserializeBool(v);
-//!     }
-//!
-//!     pub fn visitor(_: ?std.mem.Allocator, comptime _: type) Visitor {
-//!         return .{};
-//!     }
-//!
-//!     const Visitor = struct {
-//!         pub usingnamespace getty.de.Visitor(
-//!             @This(),
-//!             bool,
-//!             visitBool,
-//!             undefined,
-//!             undefined,
-//!             visitInt,
-//!             undefined,
-//!             undefined,
-//!             undefined,
-//!             undefined,
-//!             undefined,
-//!             undefined,
-//!         );
-//!
-//!         pub fn visitBool(_: @This(), comptime _: type, input: bool) !bool {
-//!             return input;
-//!         }
-//!
-//!         pub fn visitInt(_: @This(), comptime _: type, input: anytype) !bool {
-//!             return input > 0;
-//!         }
-//!     };
-//! };
-//! ```
-//!
-//! Deserialization Tuples
-//! ======================
-//!
-//! DBs can be grouped up into a tuple, known as a Deserialization Tuple (DT).
-//!
-//! Getty provides its own DT for various Zig data types, but users and
-//! deserializers can provide their own through the `getty.Deserializer`
-//! interface.
 
 const std = @import("std");
 
 /// Deserializer interface.
 pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 
-/// The default Deserialization Tuple.
-///
-/// If a user or deserializer DT is provided, the default DT is appended to the
-/// end, thereby taking the lowest priority.
 pub const default_dt = .{
-    // std
+    ////////////////////////////////////////////////////////////////////////////
+    // Standard Library
+    ////////////////////////////////////////////////////////////////////////////
+
     de.blocks.ArrayList,
     de.blocks.HashMap,
     de.blocks.LinkedList,
     de.blocks.TailQueue,
 
-    // primitives
+    ////////////////////////////////////////////////////////////////////////////
+    // Primitives
+    ////////////////////////////////////////////////////////////////////////////
+
     de.blocks.Array,
     de.blocks.Bool,
     de.blocks.Enum,
@@ -161,7 +33,6 @@ pub const default_dt = .{
     de.blocks.Void,
 };
 
-/// Compile-time type restraints for various deserialization-specific Getty data types.
 pub const concepts = struct {
     pub usingnamespace @import("de/concepts/dbt.zig");
     pub usingnamespace @import("de/concepts/deserializer.zig");
@@ -179,7 +50,7 @@ pub const traits = struct {
 
 /// Namespace for deserialization-specific types and functions.
 pub const de = struct {
-    /// Generic error set for `getty.de.Visitor` implementations.
+    /// A generic error set for `getty.de.Visitor` implementations.
     pub const Error = std.mem.Allocator.Error || error{
         DuplicateField,
         InvalidLength,
@@ -192,36 +63,25 @@ pub const de = struct {
         Unsupported,
     };
 
-    /// Map access and deserialization interface.
-    pub usingnamespace @import("de/interfaces/map_access.zig");
+    pub const MapAccess = @import("de/interfaces/map_access.zig").MapAccess;
+    pub const SeqAccess = @import("de/interfaces/seq_access.zig").SeqAccess;
+    pub const UnionAccess = @import("de/interfaces/union_access.zig").UnionAccess;
+    pub const VariantAccess = @import("de/interfaces/variant_access.zig").VariantAccess;
 
-    /// Deserialization seed interface.
-    pub usingnamespace @import("de/interfaces/seed.zig");
+    pub const Visitor = @import("de/interfaces/visitor.zig").Visitor;
 
-    /// Sequence access and deserialization interface.
-    pub usingnamespace @import("de/interfaces/seq_access.zig");
-
-    /// Union access and deserialization interface.
-    pub usingnamespace @import("de/interfaces/union_access.zig");
-
-    /// Variant access and deserialization interface.
-    pub usingnamespace @import("de/interfaces/variant_access.zig");
-
-    /// Visitor interface.
-    pub usingnamespace @import("de/interfaces/visitor.zig");
-
-    /// Default deserialization seed implementation.
-    pub usingnamespace @import("de/impls/seed/default.zig");
+    pub const Seed = @import("de/interfaces/seed.zig").Seed;
+    pub const DefaultSeed = @import("de/impls/seed/default.zig").DefaultSeed;
 
     /// Frees resources allocated during Getty deserialization.
     ///
-    /// Parameters
-    /// ==========
-    ///
-    /// * allocator: The memory allocator to (de)allocate memory with.
-    /// * value: The value to be deallocated. Values that cannot be deallocated
-    ///          are simply ignored.
-    pub fn free(allocator: std.mem.Allocator, value: anytype) void {
+    /// Values that cannot be deallocated, such as `bool` values, are ignored.
+    pub fn free(
+        /// A memory allocator.
+        allocator: std.mem.Allocator,
+        /// A value to deallocate.
+        value: anytype,
+    ) void {
         const T = @TypeOf(value);
         const name = @typeName(T);
 
@@ -302,35 +162,70 @@ pub const de = struct {
     }
 
     pub const blocks = struct {
-        // std
+        ////////////////////////////////////////////////////////////////////////
+        // Standard Library
+        ////////////////////////////////////////////////////////////////////////
+
+        /// Serialization block for `std.ArrayList` values.
         pub const ArrayList = @import("de/blocks/array_list.zig");
+
+        /// Serialization block for `std.HashMap` values.
         pub const HashMap = @import("de/blocks/hash_map.zig");
+
+        /// Serialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("de/blocks/linked_list.zig");
+
+        /// Serialization block for `std.TailQueue`.
         pub const TailQueue = @import("de/blocks/tail_queue.zig");
 
-        // primitives
+        ////////////////////////////////////////////////////////////////////////
+        // Primitives
+        ////////////////////////////////////////////////////////////////////////
+
+        /// Serialization block for array values.
         pub const Array = @import("de/blocks/array.zig");
+
+        /// Serialization block for `bool` values.
         pub const Bool = @import("de/blocks/bool.zig");
+
+        /// Serialization block for `enum` values.
         pub const Enum = @import("de/blocks/enum.zig");
+
+        /// Serialization block for floating-point values.
         pub const Float = @import("de/blocks/float.zig");
+
+        /// Serialization block for integer values.
         pub const Int = @import("de/blocks/int.zig");
+
+        /// Serialization block for optional values.
         pub const Optional = @import("de/blocks/optional.zig");
+
+        /// Serialization block for pointer values.
         pub const Pointer = @import("de/blocks/pointer.zig");
+
+        /// Serialization block for slice values.
         pub const Slice = @import("de/blocks/slice.zig");
+
+        /// Serialization block for `struct` values.
         pub const Struct = @import("de/blocks/struct.zig");
+
+        /// Serialization block for tuple values.
         pub const Tuple = @import("de/blocks/tuple.zig");
+
+        /// Serialization block for `union` values.
         pub const Union = @import("de/blocks/union.zig");
+
+        /// Serialization block for `void` values.
         pub const Void = @import("de/blocks/void.zig");
     };
 
-    /// Returns an attribute map for a type. If none exists, null is returned.
-    ///
-    /// Parameters
-    /// ==========
-    ///
-    /// * T: The type for which attributes should be returned.
-    /// * D: A getty.Deserializer interface type.
-    pub fn getAttributes(comptime T: type, comptime D: type) blk: {
+    /// Returns the attributes for a type. If none exists, `null` is returned.
+    pub fn getAttributes(
+        /// The type for which attributes should be returned.
+        comptime T: type,
+        /// A `getty.Deserializer` interface type.
+        comptime D: type,
+    ) blk: {
         // Process user DBTs.
         for (D.user_dt) |db| {
             if (db.is(T) and traits.has_attributes(T, db)) {
@@ -376,14 +271,14 @@ pub const de = struct {
         }
     }
 
+    // TODO: Swap function parameters.
     /// Returns the highest priority Deserialization Block for a type.
-    ///
-    /// Parameters
-    /// ==========
-    ///
-    /// * D: A getty.Deserializer interface type.
-    /// * T: The type being deserialized into.
-    pub fn find_db(comptime D: type, comptime T: type) type {
+    pub fn find_db(
+        /// A `getty.Deserializer` interface type.
+        comptime D: type,
+        /// The type being deserialized into.
+        comptime T: type,
+    ) type {
         comptime {
             concepts.@"getty.Deserializer"(D);
 
@@ -440,15 +335,15 @@ pub const de = struct {
     }
 };
 
-/// Deserializes a value from the given Getty deserializer.
-///
-/// Parameters
-/// ==========
-///
-/// * allocator: The memory allocator to (de)allocate memory with.
-/// * T: The type to deserialize into.
-/// * deserializer: A getty.Deserializer interface value.
-pub fn deserialize(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype) blk: {
+/// Deserializes a value.
+pub fn deserialize(
+    /// An optional memory allocator.
+    allocator: ?std.mem.Allocator,
+    /// The type to deserialize into.
+    comptime T: type,
+    /// A `getty.Deserializer` interface value.
+    deserializer: anytype,
+) blk: {
     const D = @TypeOf(deserializer);
 
     concepts.@"getty.Deserializer"(D);
