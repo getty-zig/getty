@@ -1,10 +1,12 @@
-//! Compile-time type restraint for implementations of getty.ser.sbt.
-
 const std = @import("std");
 
 const concept = "getty.ser.sbt";
 
-pub fn @"getty.ser.sbt"(comptime sbt: anytype) void {
+/// Compile-time type restraint for `getty.ser.sbt`.
+pub fn @"getty.ser.sbt"(
+    /// A serialization block or tuple.
+    comptime sbt: anytype,
+) void {
     comptime {
         const SBT = @TypeOf(sbt);
         const type_name = if (SBT == type) @typeName(sbt) else @typeName(SBT);

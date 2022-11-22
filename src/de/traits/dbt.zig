@@ -1,14 +1,20 @@
-//! Functions for obtaining DBT-related type information at compile-time.
-
 const std = @import("std");
 
-pub fn has_dbt(comptime T: type) bool {
+/// Checks to see if a type `T` contains a deserialization block or tuple.
+pub fn has_dbt(
+    /// The type to check.
+    comptime T: type,
+) bool {
     comptime {
         return std.meta.trait.isContainer(T) and @hasDecl(T, "getty.dbt") and is_dbt(T.@"getty.dbt");
     }
 }
 
-pub fn is_dbt(comptime dbt: anytype) bool {
+/// Validates a deserialization block or tuple.
+pub fn is_dbt(
+    /// A deserialization block or tuple.
+    comptime dbt: anytype,
+) bool {
     comptime {
         const DBT = @TypeOf(dbt);
 

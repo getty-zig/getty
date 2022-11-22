@@ -1,10 +1,12 @@
-//! Compile-time type restraint for implementations of getty.de.dbt.
-
 const std = @import("std");
 
 const concept = "getty.de.dbt";
 
-pub fn @"getty.de.dbt"(comptime dbt: anytype) void {
+/// Compile-time type restraint for `getty.de.dbt`.
+pub fn @"getty.de.dbt"(
+    /// A deserialization block or tuple.
+    comptime dbt: anytype,
+) void {
     comptime {
         const DBT = @TypeOf(dbt);
         const type_name = if (DBT == type) @typeName(dbt) else @typeName(DBT);

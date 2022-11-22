@@ -1,17 +1,27 @@
-//! Functions for obtaining attribute-related type information at compile-time.
-
 const std = @import("std");
 
 const is_sbt = @import("sbt.zig").is_sbt;
 const Attributes = @import("../../attributes.zig").Attributes;
 
-pub fn has_attributes(comptime T: type, comptime SBT: type) bool {
+/// Checks to see if a type `T` has associated attributes.
+pub fn has_attributes(
+    /// The type to check.
+    comptime T: type,
+    /// A serialization block or tuple.
+    comptime SBT: type,
+) bool {
     comptime {
         return is_sbt(SBT) and @hasDecl(SBT, "attributes") and is_attributes(T, SBT.attributes);
     }
 }
 
-pub fn is_attributes(comptime T: type, attributes: anytype) bool {
+/// Validates a type's attributes.
+pub fn is_attributes(
+    /// The type containing the attributes being checked.
+    comptime T: type,
+    /// The attributes to validate.
+    attributes: anytype,
+) bool {
     comptime {
         const A = Attributes(T, attributes);
         var a = A{};

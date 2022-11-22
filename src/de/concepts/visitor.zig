@@ -1,10 +1,12 @@
-//! Compile-time type restraint for implementations of getty.de.Visitor.
-
 const std = @import("std");
 
 const concept = "getty.de.Visitor";
 
-pub fn @"getty.de.Visitor"(comptime T: type) void {
+/// Compile-time type restraint for `getty.de.Visitor`.
+pub fn @"getty.de.Visitor"(
+    /// A type that implements `getty.de.Visitor`.
+    comptime T: type,
+) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
             @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `context` field", .{concept}));

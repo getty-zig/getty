@@ -166,56 +166,56 @@ pub const de = struct {
         // Standard Library
         ////////////////////////////////////////////////////////////////////////
 
-        /// Serialization block for `std.ArrayList` values.
+        /// Deserialization block for `std.ArrayList` values.
         pub const ArrayList = @import("de/blocks/array_list.zig");
 
-        /// Serialization block for `std.HashMap` values.
+        /// Deserialization block for `std.HashMap` values.
         pub const HashMap = @import("de/blocks/hash_map.zig");
 
-        /// Serialization block for `std.SinglyLinkedList` values.
+        /// Deserialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("de/blocks/linked_list.zig");
 
-        /// Serialization block for `std.TailQueue`.
+        /// Deserialization block for `std.TailQueue`.
         pub const TailQueue = @import("de/blocks/tail_queue.zig");
 
         ////////////////////////////////////////////////////////////////////////
         // Primitives
         ////////////////////////////////////////////////////////////////////////
 
-        /// Serialization block for array values.
+        /// Deserializaton block for array values.
         pub const Array = @import("de/blocks/array.zig");
 
-        /// Serialization block for `bool` values.
+        /// Deserialization block for `bool` values.
         pub const Bool = @import("de/blocks/bool.zig");
 
-        /// Serialization block for `enum` values.
+        /// Deserialization block for `enum` values.
         pub const Enum = @import("de/blocks/enum.zig");
 
-        /// Serialization block for floating-point values.
+        /// Deserialization block for floating-point values.
         pub const Float = @import("de/blocks/float.zig");
 
-        /// Serialization block for integer values.
+        /// Deserialization block for integer values.
         pub const Int = @import("de/blocks/int.zig");
 
-        /// Serialization block for optional values.
+        /// Deserialization block for optional values.
         pub const Optional = @import("de/blocks/optional.zig");
 
-        /// Serialization block for pointer values.
+        /// Deserialization block for pointer values.
         pub const Pointer = @import("de/blocks/pointer.zig");
 
-        /// Serialization block for slice values.
+        /// Deserialization block for slice values.
         pub const Slice = @import("de/blocks/slice.zig");
 
-        /// Serialization block for `struct` values.
+        /// Deserialization block for `struct` values.
         pub const Struct = @import("de/blocks/struct.zig");
 
-        /// Serialization block for tuple values.
+        /// Deserialization block for tuple values.
         pub const Tuple = @import("de/blocks/tuple.zig");
 
-        /// Serialization block for `union` values.
+        /// Deserialization block for `union` values.
         pub const Union = @import("de/blocks/union.zig");
 
-        /// Serialization block for `void` values.
+        /// Deserialization block for `void` values.
         pub const Void = @import("de/blocks/void.zig");
     };
 

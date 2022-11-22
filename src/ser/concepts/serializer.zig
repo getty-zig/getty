@@ -1,10 +1,12 @@
-//! Compile-time type restraint for implementations of getty.Serializer.
-
 const std = @import("std");
 
 const concept = "getty.Serializer";
 
-pub fn @"getty.Serializer"(comptime T: type) void {
+/// Compile-time type restraint for `getty.Serializer`.
+pub fn @"getty.Serializer"(
+    /// A type that implements `getty.Serializer`.
+    comptime T: type,
+) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
             @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `context` field", .{concept}));

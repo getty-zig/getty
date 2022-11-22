@@ -1,23 +1,34 @@
-//! The default Deserialization Block for one pointer values.
-
 const std = @import("std");
 
 const de = @import("../../de.zig");
 
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 
-pub fn is(comptime T: type) bool {
+/// Specifies all types that can be deserialized by this block.
+pub fn is(
+    /// The type being deserialized into.
+    comptime T: type,
+) bool {
     return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;
 }
 
-pub fn Visitor(comptime T: type) type {
+/// Returns a type that implements `getty.de.Visitor`.
+pub fn Visitor(
+    /// The type being deserialized into.
+    comptime T: type,
+) type {
     return PointerVisitor(T);
 }
 
+/// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
+    /// An optional memory allocator.
     allocator: ?std.mem.Allocator,
+    /// The type being deserialized into.
     comptime T: type,
+    /// A `getty.Deserializer` interface value.
     deserializer: anytype,
+    /// A `getty.de.Visitor` interface value.
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     const Child = std.meta.Child(T);

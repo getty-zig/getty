@@ -1,14 +1,20 @@
-//! Functions for obtaining SBT-related type information at compile-time.
-
 const std = @import("std");
 
-pub fn has_sbt(comptime T: type) bool {
+/// Checks to see if a type `T` contains a serialization block or tuple.
+pub fn has_sbt(
+    /// The type to check.
+    comptime T: type,
+) bool {
     comptime {
         return std.meta.trait.isContainer(T) and @hasDecl(T, "getty.sbt") and is_sbt(T.@"getty.sbt");
     }
 }
 
-pub fn is_sbt(comptime sbt: anytype) bool {
+/// Validates a serialization block or tuple.
+pub fn is_sbt(
+    /// A serialization block or tuple.
+    comptime sbt: anytype,
+) bool {
     comptime {
         const SBT = @TypeOf(sbt);
 

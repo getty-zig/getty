@@ -1,10 +1,12 @@
-//! Compile-time type restraint for implementations of getty.Deserializer.
-
 const std = @import("std");
 
 const concept = "getty.Deserializer";
 
-pub fn @"getty.Deserializer"(comptime T: type) void {
+/// Compile-time type restraint for `getty.Deserializer`.
+pub fn @"getty.Deserializer"(
+    /// A type that implements `getty.Deserializer`.
+    comptime T: type,
+) void {
     comptime {
         if (!std.meta.trait.isContainer(T) or !std.meta.trait.hasField("context")(T)) {
             @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `context` declaration", .{concept}));
