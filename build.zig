@@ -9,6 +9,7 @@ pub fn build(b: *std.build.Builder) void {
 
     tests(b, mode, target);
     docs(b);
+    clean(b);
 }
 
 fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTarget) void {
@@ -30,6 +31,21 @@ fn docs(b: *std.build.Builder) void {
 
     const docs_step = b.step("docs", "Generate project documentation");
     docs_step.dependOn(&cmd.step);
+}
+
+fn clean(b: *std.build.Builder) void {
+    const cmd = b.addSystemCommand(&[_][]const u8{
+        "rm",
+        "-rf",
+        "zig-cache",
+        "docs",
+        "*.o",
+        "gyro.lock",
+        ".gyro",
+    });
+
+    const clean_step = b.step("clean", "Remove project artifacts");
+    clean_step.dependOn(&cmd.step);
 }
 
 fn addTest(
