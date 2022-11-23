@@ -202,42 +202,46 @@ pub fn serialize(
 
     break :blk S.Error!S.Ok;
 } {
-    const T = @TypeOf(value);
+    const block = comptime blk: {
+        const T = @TypeOf(value);
 
-    // Process user SBTs.
-    inline for (@TypeOf(serializer).user_st) |sb| {
-        if (comptime sb.is(T)) {
-            return try serializeInternal(value, serializer, sb);
-        }
-    }
-
-    // Process type SBTs.
-    if (comptime traits.has_sbt(T)) {
-        const sbt = T.@"getty.sbt";
-        const st = if (@TypeOf(sbt) == type) .{sbt} else sbt;
-
-        inline for (st) |sb| {
-            if (comptime sb.is(T)) {
-                return try serializeInternal(value, serializer, sb);
+        // Process user SBTs.
+        for (@TypeOf(serializer).user_st) |sb| {
+            if (sb.is(T)) {
+                break :blk sb;
             }
         }
-    }
 
-    // Process serializer SBTs.
-    inline for (@TypeOf(serializer).serializer_st) |sb| {
-        if (comptime sb.is(T)) {
-            return try serializeInternal(value, serializer, sb);
+        // Process type SBTs.
+        if (traits.has_sbt(T)) {
+            const sbt = T.@"getty.sbt";
+            const st = if (@TypeOf(sbt) == type) .{sbt} else sbt;
+
+            for (st) |sb| {
+                if (sb.is(T)) {
+                    break :blk sb;
+                }
+            }
         }
-    }
 
-    // Process default SBTs.
-    inline for (default_st) |sb| {
-        if (comptime sb.is(T)) {
-            return try serializeInternal(value, serializer, sb);
+        // Process serializer SBTs.
+        for (@TypeOf(serializer).serializer_st) |sb| {
+            if (sb.is(T)) {
+                break :blk sb;
+            }
         }
-    }
 
-    @compileError(std.fmt.comptimePrint("type `{s}` is not supported", .{@typeName(T)}));
+        // Process default SBTs.
+        inline for (default_st) |sb| {
+            if (sb.is(T)) {
+                break :blk sb;
+            }
+        }
+
+        @compileError("type is not supported: " ++ @typeName(T));
+    };
+
+    return try serializeInternal(value, serializer, block);
 }
 
 fn serializeInternal(value: anytype, serializer: anytype, comptime sb: type) blk: {
