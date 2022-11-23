@@ -283,7 +283,7 @@ pub const de = struct {
             concepts.@"getty.Deserializer"(D);
 
             // Process user DBTs.
-            inline for (D.user_dt) |db| {
+            for (D.user_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
@@ -317,20 +317,20 @@ pub const de = struct {
             }
 
             // Process deserializer DBTs.
-            inline for (D.deserializer_dt) |db| {
+            for (D.deserializer_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
             }
 
             // Process default DBTs.
-            inline for (default_dt) |db| {
+            for (default_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
             }
 
-            @compileError(std.fmt.comptimePrint("type `{s}` is not supported", .{@typeName(T)}));
+            @compileError("type is not supported: " ++ @typeName(T));
         }
     }
 };
@@ -350,7 +350,7 @@ pub fn deserialize(
 
     break :blk D.Error!T;
 } {
-    const db = de.find_db(@TypeOf(deserializer), T);
+    const db = comptime de.find_db(@TypeOf(deserializer), T);
     var v = db.Visitor(T){};
 
     return try deserializeInternal(allocator, T, deserializer, v.visitor());
@@ -365,7 +365,7 @@ fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserial
 
     break :blk D.Error!V.Value;
 } {
-    const db = de.find_db(@TypeOf(deserializer), T);
+    const db = comptime de.find_db(@TypeOf(deserializer), T);
 
     return try db.deserialize(allocator, T, deserializer, visitor);
 }
