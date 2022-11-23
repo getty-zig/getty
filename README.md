@@ -19,7 +19,7 @@ Getty provides out-of-the-box support for a variety of standard library types, e
 ## Resources
 
 - [Website](https://getty.so)
+- [Installation](https://getty.so/installation)
 - [Guide](https://getty.so/guide)
 - [API Reference](https://docs.getty.so)
 - [Examples](examples)
-- [Wiki](https://github.com/getty-zig/getty/wiki)
