@@ -46,6 +46,7 @@ pub const concepts = struct {
 
 pub const traits = struct {
     pub usingnamespace @import("de/traits/dbt.zig");
+    pub usingnamespace @import("de/traits/attributes.zig");
 };
 
 /// Namespace for deserialization-specific types and functions.
@@ -351,7 +352,19 @@ pub fn deserialize(
     break :blk D.Error!T;
 } {
     const db = comptime de.find_db(@TypeOf(deserializer), T);
-    var v = db.Visitor(T){};
+
+    var v = blk: {
+        if (comptime traits.has_attributes(T, db)) {
+            break :blk switch (@typeInfo(T)) {
+                .Struct => de.blocks.Struct.Visitor(T){},
+                .Enum => de.blocks.Enum.Visitor(T){},
+                .Union => de.blocks.Union.Visitor(T){},
+                else => @compileError("unexpected type cannot be deserialized using attributes"),
+            };
+        }
+
+        break :blk db.Visitor(T){};
+    };
 
     return try deserializeInternal(allocator, T, deserializer, v.visitor());
 }
@@ -366,6 +379,15 @@ fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserial
     break :blk D.Error!V.Value;
 } {
     const db = comptime de.find_db(@TypeOf(deserializer), T);
+
+    if (comptime traits.has_attributes(T, db)) {
+        switch (@typeInfo(T)) {
+            .Struct => return try de.blocks.Struct.deserialize(allocator, T, deserializer, visitor),
+            .Enum => return try de.blocks.Enum.deserialize(allocator, T, deserializer, visitor),
+            .Union => return try de.blocks.Union.deserialize(allocator, T, deserializer, visitor),
+            else => @compileError("unexpected type cannot be deserialized using attributes"),
+        }
+    }
 
     return try db.deserialize(allocator, T, deserializer, visitor);
 }
