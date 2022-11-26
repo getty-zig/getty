@@ -31,6 +31,20 @@ pub fn Visitor(comptime Struct: type) type {
                 }
             }
 
+            const ignore_unknown_fields = comptime blk: {
+                if (attributes) |attrs| {
+                    if (@hasField(@TypeOf(attrs), "Container")) {
+                        const attr = attrs.Container;
+
+                        if (@hasField(@TypeOf(attr), "ignore_unknown_fields") and attr.ignore_unknown_fields) {
+                            break :blk true;
+                        }
+                    }
+                }
+
+                break :blk false;
+            };
+
             key_loop: while (try map.nextKey(allocator, []const u8)) |key| {
                 var found = false;
 
@@ -75,9 +89,10 @@ pub fn Visitor(comptime Struct: type) type {
                             }
                         }
 
+                        // Deserialize and assign value to field.
                         switch (field.is_comptime) {
-                            true => @compileError("TODO"),
                             false => @field(structure, field.name) = try map.nextValue(allocator, field.field_type),
+                            true => @compileError("TODO"),
                         }
 
                         seen[i] = true;
@@ -88,7 +103,10 @@ pub fn Visitor(comptime Struct: type) type {
                 }
 
                 if (!found) {
-                    return error.UnknownField;
+                    switch (ignore_unknown_fields) {
+                        true => _ = try map.nextValueSeed(allocator, (de.Ignored{}).seed()),
+                        false => return error.UnknownField,
+                    }
                 }
             }
 

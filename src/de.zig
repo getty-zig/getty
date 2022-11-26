@@ -74,6 +74,8 @@ pub const de = struct {
     pub const Seed = @import("de/interfaces/seed.zig").Seed;
     pub const DefaultSeed = @import("de/impls/seed/default.zig").DefaultSeed;
 
+    pub const Ignored = @import("de/impls/ignored.zig").Ignored;
+
     /// Frees resources allocated during Getty deserialization.
     ///
     /// Values that cannot be deallocated, such as `bool` values, are ignored.

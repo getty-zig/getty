@@ -164,7 +164,7 @@ pub fn Deserializer(
                 @compileError("deserializeFloat is not implemented by type: " ++ @typeName(Context));
             }
 
-            /// Hint that the value being deserialized into is expecting to
+            /// Hint that the type being deserialized into is expecting to
             /// deserialize a value whose type does not matter because it is
             /// ignored.
             pub fn deserializeIgnored(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {

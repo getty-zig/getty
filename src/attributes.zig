@@ -18,7 +18,7 @@ const ContainerAttributes = struct {
     // Always error during deserialization when encountering unknown fields.
     //
     // This attribute isn't compatible with `flatten`.
-    //deny_unknown_fields: bool = false,
+    ignore_unknown_fields: bool = false,
 
     // Deserialize this type by deserializing into the given type, then
     // converting.
@@ -71,8 +71,8 @@ const FieldAttributes = struct {
     // Flatten the contents of this field into the container it is
     // defined in.
     //
-    // This attribute is not compatible with the
-    // deny_unknown_fields attribute.
+    // This attribute is not compatible with the ignore_unknown_fields
+    // attribute.
     //flatten: bool = false,
 
     // Serialize and deserialize this field with the given name

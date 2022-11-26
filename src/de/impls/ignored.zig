@@ -1,19 +1,19 @@
 const std = @import("std");
 
-const de = @import("../../../de.zig");
+const de = @import("../../de.zig").de;
 
 /// Default `getty.de.Seed` implementation.
-const Ignored = struct {
+pub const Ignored = struct {
     const Value = void;
 
-    pub usingnamespace de.de.Seed(
+    pub usingnamespace de.Seed(
         Ignored,
         Value,
         .{ .deserialize = deserialize },
     );
 
     fn deserialize(i: Ignored, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-        return try deserializer.deserializeIgnored(allocator, i);
+        return try deserializer.deserializeIgnored(allocator, i.visitor());
     }
 
     pub usingnamespace de.Visitor(
