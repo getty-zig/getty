@@ -20,6 +20,7 @@ pub fn @"getty.Deserializer"(
             "deserializeBool",
             "deserializeEnum",
             "deserializeFloat",
+            "deserializeIgnored",
             "deserializeInt",
             "deserializeMap",
             "deserializeOptional",

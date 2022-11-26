@@ -23,6 +23,7 @@ pub fn Deserializer(
         deserializeBool: T = null,
         deserializeEnum: T = null,
         deserializeFloat: T = null,
+        deserializeIgnored: T = null,
         deserializeInt: T = null,
         deserializeMap: T = null,
         deserializeOptional: T = null,
@@ -161,6 +162,17 @@ pub fn Deserializer(
                 }
 
                 @compileError("deserializeFloat is not implemented by type: " ++ @typeName(Context));
+            }
+
+            /// Hint that the value being deserialized into is expecting to
+            /// deserialize a value whose type does not matter because it is
+            /// ignored.
+            pub fn deserializeIgnored(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                if (methods.deserializeIgnored) |f| {
+                    return try f(self.context, allocator, visitor);
+                }
+
+                @compileError("deserializeIgnored is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Integer.
