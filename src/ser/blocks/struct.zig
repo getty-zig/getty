@@ -26,8 +26,10 @@ pub fn serialize(
 
     inline for (fields) |field| {
         if (field.field_type != void) {
+            // The name of the field to be deserialized.
             comptime var name: []const u8 = field.name;
 
+            // Process attributes.
             if (attributes) |attrs| {
                 if (@hasField(@TypeOf(attrs), field.name)) {
                     const attr = @field(attrs, field.name);
@@ -42,6 +44,7 @@ pub fn serialize(
                 }
             }
 
+            // Serialize field.
             try st.serializeField(name, @field(value, field.name));
         }
     }
