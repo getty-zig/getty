@@ -12,6 +12,7 @@ pub const default_st = .{
 
     ser.blocks.ArrayList,
     ser.blocks.BoundedArray,
+    ser.blocks.BufMap,
     ser.blocks.HashMap,
     ser.blocks.LinkedList,
     ser.blocks.TailQueue,
@@ -73,6 +74,9 @@ pub const ser = struct {
 
         /// Serialization block for `std.BoundedArray` values.
         pub const BoundedArray = @import("ser/blocks/bounded_array.zig");
+
+        /// Serialization block for `std.BufMap` values.
+        pub const BufMap = @import("ser/blocks/buf_map.zig");
 
         /// Serialization block for `std.HashMap` values.
         pub const HashMap = @import("ser/blocks/hash_map.zig");
@@ -653,6 +657,25 @@ test "serialize - bounded array" {
         .{ .U8 = 1 },
         .{ .U8 = 1 },
         .{ .SeqEnd = {} },
+    });
+}
+
+test "serialize - buf map" {
+    var map = std.BufMap.init(test_allocator);
+    defer map.deinit();
+
+    try t(map, &[_]Token{
+        .{ .Map = .{ .len = 0 } },
+        .{ .MapEnd = {} },
+    });
+
+    try map.put("1", "foobar");
+
+    try t(map, &[_]Token{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "1" },
+        .{ .String = "foobar" },
+        .{ .MapEnd = {} },
     });
 }
 
