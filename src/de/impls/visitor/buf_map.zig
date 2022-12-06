@@ -22,6 +22,8 @@ pub fn Visitor(comptime BufMap: type) type {
                 errdefer de.free(allocator.?, k);
 
                 const v = try map.nextValue(allocator, []u8);
+                errdefer de.free(allocator.?, v);
+
                 try m.putMove(k, v);
             }
 
