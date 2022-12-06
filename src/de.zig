@@ -11,6 +11,7 @@ pub const default_dt = .{
     ////////////////////////////////////////////////////////////////////////////
 
     de.blocks.ArrayList,
+    de.blocks.BufMap,
     de.blocks.HashMap,
     de.blocks.LinkedList,
     de.blocks.TailQueue,
@@ -131,6 +132,14 @@ pub const de = struct {
                 } else if (comptime std.mem.startsWith(u8, name, "array_list.ArrayList")) {
                     for (value.items) |v| free(allocator, v);
                     value.deinit();
+                } else if (T == std.BufMap) {
+                    var it = value.hash_map.iterator();
+                    while (it.next()) |entry| {
+                        free(allocator, entry.key_ptr.*);
+                        free(allocator, entry.value_ptr.*);
+                    }
+                    var mut = value;
+                    mut.hash_map.deinit();
                 } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMapUnmanaged")) {
                     var iterator = value.iterator();
                     while (iterator.next()) |entry| {
@@ -171,6 +180,9 @@ pub const de = struct {
 
         /// Deserialization block for `std.ArrayList` values.
         pub const ArrayList = @import("de/blocks/array_list.zig");
+
+        /// Deserialization block for `std.BufMap` values.
+        pub const BufMap = @import("de/blocks/buf_map.zig");
 
         /// Deserialization block for `std.HashMap` values.
         pub const HashMap = @import("de/blocks/hash_map.zig");
@@ -863,6 +875,38 @@ test "deserialize - bool" {
     try t(false, &[_]Token{.{ .Bool = false }});
 }
 
+test "deserialize - buf map" {
+    {
+        var expected = std.BufMap.init(test_allocator);
+        defer expected.deinit();
+
+        try t(expected, &[_]Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+    }
+
+    {
+        var expected = std.BufMap.init(test_allocator);
+        defer expected.deinit();
+
+        try expected.put("one", "foo");
+        try expected.put("two", "bar");
+        try expected.put("three", "baz");
+
+        try t(expected, &[_]Token{
+            .{ .Map = .{ .len = 3 } },
+            .{ .String = "one" },
+            .{ .String = "foo" },
+            .{ .String = "two" },
+            .{ .String = "bar" },
+            .{ .String = "three" },
+            .{ .String = "baz" },
+            .{ .MapEnd = {} },
+        });
+    }
+}
+
 test "deserialize - enum" {
     const T = enum { zero, one, two, three, four };
 
@@ -1279,6 +1323,13 @@ fn t(expected: anytype, tokens: []const Token) !void {
                     defer test_allocator.destroy(got_node.?);
 
                     try expectEqual(node.data, got_node.?.data);
+                }
+            } else if (T == std.BufMap) {
+                try expectEqual(expected.count(), v.count());
+
+                var it = expected.iterator();
+                while (it.next()) |kv| {
+                    try expectEqualSlices(u8, expected.get(kv.key_ptr.*).?, v.get(kv.key_ptr.*).?);
                 }
             } else switch (info.is_tuple) {
                 true => {
