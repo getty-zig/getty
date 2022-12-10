@@ -49,7 +49,13 @@ pub fn Deserializer(
             const Self = @This();
 
             /// Error set used upon failure.
-            pub const Error = E;
+            pub const Error = blk: {
+                if (E != E || de.de.Error) {
+                    @compileError("error set must include `getty.de.Error`");
+                }
+
+                break :blk E;
+            };
 
             /// User-defined Deserialization Tuple.
             pub const user_dt = blk: {
@@ -246,17 +252,17 @@ pub fn Deserializer(
 
                 @compileError("deserializeVoid is not implemented by type: " ++ @typeName(Context));
             }
+
+            fn Return(comptime Visitor: type) type {
+                comptime de.concepts.@"getty.de.Visitor"(Visitor);
+
+                return Error!Visitor.Value;
+            }
         };
 
         /// Returns an interface value.
         pub fn deserializer(self: Context) @"getty.Deserializer" {
             return .{ .context = self };
-        }
-
-        fn Return(comptime Visitor: type) type {
-            comptime de.concepts.@"getty.de.Visitor"(Visitor);
-
-            return E!Visitor.Value;
         }
     };
 }
