@@ -17,6 +17,7 @@ pub fn @"getty.Deserializer"(
             "dt",
             "user_dt",
             "deserializer_dt",
+            "deserializeAny",
             "deserializeBool",
             "deserializeEnum",
             "deserializeFloat",
