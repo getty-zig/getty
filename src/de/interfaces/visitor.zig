@@ -83,7 +83,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
-                @compileError("visitBool is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitEnum(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
@@ -98,7 +98,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
-                @compileError("visitEnum is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitFloat(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
@@ -113,7 +113,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
-                @compileError("visitFloat is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitInt(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
@@ -128,7 +128,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
-                @compileError("visitInt is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
@@ -140,7 +140,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, map);
                 }
 
-                @compileError("visitMap is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitNull(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
@@ -148,7 +148,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer);
                 }
 
-                @compileError("visitNull is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             ///
@@ -165,7 +165,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, seq);
                 }
 
-                @compileError("visitSeq is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) blk: {
@@ -177,7 +177,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, deserializer);
                 }
 
-                @compileError("visitSome is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             ///
@@ -194,7 +194,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
-                @compileError("visitString is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) blk: {
@@ -207,7 +207,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer, ua, va);
                 }
 
-                @compileError("visitUnion is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
 
             pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
@@ -215,7 +215,7 @@ pub fn Visitor(
                     return try f(self.context, allocator, Deserializer);
                 }
 
-                @compileError("visitVoid is not implemented by type: " ++ @typeName(Context));
+                return error.Unsupported;
             }
         };
 
