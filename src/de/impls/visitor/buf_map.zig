@@ -18,13 +18,13 @@ pub fn Visitor(comptime BufMap: type) type {
             var m = BufMap.init(allocator.?);
             errdefer de.free(allocator.?, m);
 
-            while (try map.nextKey(allocator, []u8)) |k| {
-                errdefer de.free(allocator.?, k);
+            while (try map.nextKey(allocator, []const u8)) |k| {
+                defer de.free(allocator.?, k);
 
-                const v = try map.nextValue(allocator, []u8);
-                errdefer de.free(allocator.?, v);
+                const v = try map.nextValue(allocator, []const u8);
+                defer de.free(allocator.?, v);
 
-                try m.putMove(k, v);
+                try m.put(k, v);
             }
 
             return m;
