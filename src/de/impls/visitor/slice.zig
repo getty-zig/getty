@@ -25,7 +25,12 @@ pub fn Visitor(comptime Slice: type) type {
                 try list.append(elem);
             }
 
-            return list.toOwnedSlice();
+            if (@typeInfo(Value).Pointer.sentinel) |s| {
+                const sentinel_char = @ptrCast(*const Child, s).*;
+                return try list.toOwnedSliceSentinel(sentinel_char);
+            }
+
+            return try list.toOwnedSlice();
         }
 
         fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {

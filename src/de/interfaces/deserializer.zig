@@ -20,6 +20,7 @@ pub fn Deserializer(
             }
         }.f);
 
+        deserializeAny: T = null,
         deserializeBool: T = null,
         deserializeEnum: T = null,
         deserializeFloat: T = null,
@@ -49,7 +50,13 @@ pub fn Deserializer(
             const Self = @This();
 
             /// Error set used upon failure.
-            pub const Error = E;
+            pub const Error = blk: {
+                if (E != E || de.de.Error) {
+                    @compileError("error set must include `getty.de.Error`");
+                }
+
+                break :blk E;
+            };
 
             /// User-defined Deserialization Tuple.
             pub const user_dt = blk: {
@@ -136,6 +143,15 @@ pub fn Deserializer(
                     break :blk user_dt ++ deserializer_dt ++ de.default_dt;
                 }
             };
+
+            /// Deserializes a deserializer's input data into some Getty value.
+            pub fn deserializeAny(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
+                if (methods.deserializeAny) |f| {
+                    return try f(self.context, allocator, visitor);
+                }
+
+                @compileError("deserializeAny is not implemented by type: " ++ @typeName(Context));
+            }
 
             /// Deserializes a deserializer's input data into a Getty Boolean.
             pub fn deserializeBool(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Return(@TypeOf(visitor)) {
@@ -246,17 +262,17 @@ pub fn Deserializer(
 
                 @compileError("deserializeVoid is not implemented by type: " ++ @typeName(Context));
             }
+
+            fn Return(comptime Visitor: type) type {
+                comptime de.concepts.@"getty.de.Visitor"(Visitor);
+
+                return Error!Visitor.Value;
+            }
         };
 
         /// Returns an interface value.
         pub fn deserializer(self: Context) @"getty.Deserializer" {
             return .{ .context = self };
-        }
-
-        fn Return(comptime Visitor: type) type {
-            comptime de.concepts.@"getty.de.Visitor"(Visitor);
-
-            return E!Visitor.Value;
         }
     };
 }
