@@ -2,7 +2,7 @@ const std = @import("std");
 
 const de = @import("../../de.zig").de;
 
-/// Default `getty.de.Seed` implementation.
+/// A `getty.de.Seed` implementation that ignores values.
 pub const Ignored = struct {
     const Value = void;
 
