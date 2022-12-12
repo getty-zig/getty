@@ -66,7 +66,7 @@ pub fn MapAccess(
             //_ = self;
             //}
 
-            pub fn nextKey(self: Self, allocator: ?std.mem.Allocator, comptime K: type) !?K {
+            pub fn nextKey(self: Self, allocator: ?std.mem.Allocator, comptime K: type) Error!?K {
                 if (methods.nextKey) |f| {
                     return try f(self.context, allocator, K);
                 } else {
@@ -77,7 +77,7 @@ pub fn MapAccess(
                 }
             }
 
-            pub fn nextValue(self: Self, allocator: ?std.mem.Allocator, comptime V: type) !V {
+            pub fn nextValue(self: Self, allocator: ?std.mem.Allocator, comptime V: type) Error!V {
                 if (methods.nextValue) |f| {
                     return try f(self.context, allocator, V);
                 } else {
