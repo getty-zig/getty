@@ -639,6 +639,7 @@ const TestDeserializer = struct {
             .{
                 .nextKeySeed = nextKeySeed,
                 .nextValueSeed = nextValueSeed,
+                .isKeyAllocated = isKeyAllocated,
             },
         );
 
@@ -664,6 +665,10 @@ const TestDeserializer = struct {
 
         fn nextValueSeed(self: *Struct, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
             return try seed.deserialize(allocator, self.de.deserializer());
+        }
+
+        fn isKeyAllocated(_: *Struct, comptime _: type) bool {
+            return false;
         }
     };
 

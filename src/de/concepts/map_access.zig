@@ -21,6 +21,7 @@ pub fn @"getty.de.MapAccess"(
             "nextValueSeed",
             "nextKey",
             "nextValue",
+            "isKeyAllocated",
         }) |func| {
             if (!std.meta.trait.hasFunctions(T, .{func})) {
                 @compileError(std.fmt.comptimePrint("concept `{s}` was not satisfied: missing `{s}` function", .{ concept, func }));
