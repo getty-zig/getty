@@ -22,19 +22,25 @@ pub fn MapAccess(
             }
         }.f) = null,
 
-        // Provided method.
+        ////////////////////////////////////////////////////////////////////////
+        // Provided methods.
+        ////////////////////////////////////////////////////////////////////////
+
         nextKey: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime K: type) E!?K {
                 unreachable;
             }
         }.f) = null,
 
-        // Provided method.
         nextValue: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime V: type) E!V {
                 unreachable;
             }
         }.f) = null,
+
+        /// Returns true if the latest key deserialized by nextKeySeed was
+        /// allocated on the heap. Otherwise, false is returned.
+        isKeyAllocated: ?fn (Context, comptime K: type) bool = null,
     },
 ) type {
     return struct {
@@ -91,6 +97,14 @@ pub fn MapAccess(
             //pub fn nextEntry(self: Self, comptime K: type, comptime V: type) !?std.meta.Tuple(.{ K, V }) {
             //_ = self;
             //}
+
+            pub fn isKeyAllocated(self: Self, comptime K: type) bool {
+                if (methods.isKeyAllocated) |f| {
+                    return f(self.context, K);
+                }
+
+                return @typeInfo(K) == .Pointer;
+            }
 
             fn KeyReturn(comptime Seed: type) type {
                 comptime de.concepts.@"getty.de.Seed"(Seed);

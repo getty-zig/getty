@@ -46,6 +46,10 @@ pub fn Visitor(comptime Struct: type) type {
             };
 
             key_loop: while (try map.nextKey(allocator, []const u8)) |key| {
+                defer if (map.isKeyAllocated(@TypeOf(key))) {
+                    de.free(allocator.?, key);
+                };
+
                 var found = false;
 
                 // Check to see if the key matches any field in Struct.

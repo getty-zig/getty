@@ -19,7 +19,9 @@ pub fn Visitor(comptime BufMap: type) type {
             errdefer de.free(allocator.?, m);
 
             while (try map.nextKey(allocator, []const u8)) |k| {
-                defer de.free(allocator.?, k);
+                defer if (map.isKeyAllocated(@TypeOf(k))) {
+                    de.free(allocator.?, k);
+                };
 
                 const v = try map.nextValue(allocator, []const u8);
                 defer de.free(allocator.?, v);
