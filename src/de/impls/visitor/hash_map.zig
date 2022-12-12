@@ -27,7 +27,9 @@ pub fn Visitor(comptime HashMap: type) type {
             errdefer de.free(allocator.?, hash_map);
 
             while (try map.nextKey(allocator, K)) |key| {
-                errdefer de.free(allocator.?, key);
+                errdefer if (map.isKeyAllocated(@TypeOf(key))) {
+                    de.free(allocator.?, key);
+                };
 
                 const value = try map.nextValue(allocator, V);
                 errdefer de.free(allocator.?, value);
