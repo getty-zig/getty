@@ -35,7 +35,7 @@ pub const default_dt = .{
 };
 
 pub const concepts = struct {
-    pub usingnamespace @import("de/concepts/dbt.zig");
+    pub usingnamespace @import("de/concepts/block.zig");
     pub usingnamespace @import("de/concepts/deserializer.zig");
     pub usingnamespace @import("de/concepts/map_access.zig");
     pub usingnamespace @import("de/concepts/seed.zig");
@@ -46,7 +46,7 @@ pub const concepts = struct {
 };
 
 pub const traits = struct {
-    pub usingnamespace @import("de/traits/dbt.zig");
+    pub usingnamespace @import("de/traits/block.zig");
     pub usingnamespace @import("de/traits/attributes.zig");
 };
 
