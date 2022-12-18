@@ -1,12 +1,12 @@
 const std = @import("std");
 
 /// Checks to see if a type `T` contains a deserialization block or tuple.
-pub fn has_dbt(
-    /// The type to check.
+pub fn has_db(
+    /// A type containing a deserialization block.
     comptime T: type,
 ) bool {
     comptime {
-        return std.meta.trait.isContainer(T) and @hasDecl(T, "getty.dbt") and is_dbt(T.@"getty.dbt");
+        return std.meta.trait.isContainer(T) and @hasDecl(T, "getty.db") and is_tdb(T.@"getty.db");
     }
 }
 
@@ -98,7 +98,7 @@ pub fn is_dbt(
     }
 }
 
-test "DB" {
+test "is_dbt (DB)" {
     // Not a type.
     try std.testing.expect(!is_dbt(1));
     try std.testing.expect(!is_dbt("foo"));
@@ -171,7 +171,7 @@ test "DB" {
     }));
 }
 
-test "DT" {
+test "is_dbt (DT)" {
     // Not a type.
     try std.testing.expect(!is_dbt(.{1}));
     try std.testing.expect(!is_dbt(.{"foo"}));
@@ -244,4 +244,128 @@ test "DT" {
 
         pub const attributes = .{ .x = 1, .y = 2 };
     }}));
+}
+
+/// Validates a type-defined deserialization block.
+pub fn is_tdb(
+    /// A type-defined deserialization block.
+    comptime db: anytype,
+) bool {
+    comptime {
+        const DB = @TypeOf(db);
+
+        if (DB != type) {
+            return false;
+        }
+
+        const info = @typeInfo(db);
+
+        // Check DB is a namespace.
+        if (info != .Struct or info.Struct.is_tuple) {
+            return false;
+        }
+
+        // Check number of fields.
+        if (info.Struct.fields.len != 0) {
+            return false;
+        }
+
+        // Check declarations.
+        var num_decls = 0;
+        for (info.Struct.decls) |decl| {
+            if (decl.is_pub) {
+                num_decls += 1;
+            }
+        }
+
+        switch (num_decls) {
+            1 => {
+                // These are just some preliminary attribute checks. The real
+                // checks are done just before Getty serializes the value.
+
+                // Check that an attributes declaration exists.
+                if (!@hasDecl(db, "attributes")) {
+                    return false;
+                }
+
+                // Check that the attributes declaration is a struct.
+                const attr_info = @typeInfo(@TypeOf(db.attributes));
+                if (attr_info != .Struct or (attr_info.Struct.is_tuple and db.attributes.len != 0)) {
+                    return false;
+                }
+            },
+            2 => {
+                if (!std.meta.trait.hasFunctions(db, .{"deserialize"})) {
+                    return false;
+                }
+
+                if (!std.meta.trait.hasFunctions(db, .{"Visitor"})) {
+                    return false;
+                }
+            },
+            else => return false,
+        }
+
+        return true;
+    }
+}
+
+test "is_tdb" {
+    // Not a type.
+    try std.testing.expect(!is_tdb(1));
+    try std.testing.expect(!is_tdb("foo"));
+    try std.testing.expect(!is_tdb(.{ 1, 2, 3 }));
+    try std.testing.expect(!is_tdb(.{ .x = 1, .serialize = 2 }));
+
+    // Not a POD struct type.
+    try std.testing.expect(!is_tdb(i32));
+    try std.testing.expect(!is_tdb([]u8));
+    try std.testing.expect(!is_tdb(*struct {}));
+    try std.testing.expect(!is_tdb(std.meta.Tuple(&.{ i32, i32 })));
+
+    // Non-zero number of fields.
+    try std.testing.expect(!is_tdb(struct { x: i32 }));
+    try std.testing.expect(!is_tdb(struct { x: i32, y: i32 }));
+
+    // Incorrect declarations.
+    try std.testing.expect(!is_tdb(struct {
+        pub const x: i32 = 0;
+    }));
+
+    try std.testing.expect(!is_tdb(struct {
+        pub fn foo() void {
+            unreachable;
+        }
+    }));
+
+    try std.testing.expect(!is_tdb(struct {
+        pub fn is() void {
+            unreachable;
+        }
+
+        pub fn deserialize() void {
+            unreachable;
+        }
+
+        pub const attributes = .{};
+    }));
+
+    // Success
+    try std.testing.expect(is_tdb(struct {
+        pub fn deserialize() void {
+            unreachable;
+        }
+
+        pub fn Visitor() void {
+            unreachable;
+        }
+    }));
+
+    try std.testing.expect(is_tdb(struct {
+        pub const attributes = .{};
+    }));
+
+    try std.testing.expect(is_tdb(struct {
+        pub const attributes = .{ .x = 1, .y = 2 };
+    }));
 }
