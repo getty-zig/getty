@@ -239,27 +239,24 @@ pub const de = struct {
 
     /// Returns the attributes for a type. If none exists, `null` is returned.
     pub fn getAttributes(
-        /// The type for which attributes should be returned.
+        /// A type with attributes.
         comptime T: type,
         /// A `getty.Deserializer` interface type.
         comptime D: type,
     ) blk: {
-        // Process user DBTs.
+        // Process user DBs.
         for (D.user_dt) |db| {
             if (db.is(T) and traits.has_attributes(T, db)) {
                 break :blk ?@TypeOf(db.attributes);
             }
         }
 
-        // Process type DBTs.
-        if (traits.has_dbt(T)) {
-            const dbt = T.@"getty.dbt";
-            const dt = if (@TypeOf(dbt) == type) .{dbt} else dbt;
+        // Process type DBs.
+        if (traits.has_db(T)) {
+            const db = T.@"getty.db";
 
-            for (dt) |db| {
-                if (db.is(T) and traits.has_attributes(T, db)) {
-                    break :blk ?@TypeOf(db.attributes);
-                }
+            if (traits.has_attributes(T, db)) {
+                break :blk ?@TypeOf(db.attributes);
             }
         }
 
@@ -274,14 +271,11 @@ pub const de = struct {
             }
 
             // Process type DBTs.
-            if (traits.has_dbt(T)) {
-                const dbt = T.@"getty.dbt";
-                const dt = if (@TypeOf(dbt) == type) .{dbt} else dbt;
+            if (traits.has_db(T)) {
+                const db = T.@"getty.db";
 
-                for (dt) |db| {
-                    if (db.is(T) and traits.has_attributes(T, db)) {
-                        return @as(?@TypeOf(db.attributes), db.attributes);
-                    }
+                if (traits.has_attributes(T, db)) {
+                    return @as(?@TypeOf(db.attributes), db.attributes);
                 }
             }
 
@@ -300,48 +294,26 @@ pub const de = struct {
         comptime {
             concepts.@"getty.Deserializer"(D);
 
-            // Process user DBTs.
+            // Process user DBs.
             for (D.user_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
             }
 
-            // Process type DBTs.
-            if (traits.has_dbt(T)) {
-                const dbt = T.@"getty.dbt";
-                const dt = if (@TypeOf(dbt) == type) .{dbt} else dbt;
-
-                inline for (dt) |db| {
-                    if (db.is(T)) {
-                        return db;
-                    }
-                }
+            // Process type DBs.
+            if (traits.has_db(T)) {
+                return T.@"getty.db";
             }
 
-            // Process type DBTs.
-            if (std.meta.trait.isContainer(T) and
-                std.meta.trait.hasDecls(T, .{"getty.dbt"}) and
-                traits.is_dbt(T.@"getty.dbt"))
-            {
-                const type_dbt = T.@"getty.dbt";
-                const type_tuple = if (@TypeOf(type_dbt) == type) .{type_dbt} else type_dbt;
-
-                inline for (type_tuple) |db| {
-                    if (db.is(T)) {
-                        return db;
-                    }
-                }
-            }
-
-            // Process deserializer DBTs.
+            // Process deserializer DBs.
             for (D.deserializer_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
             }
 
-            // Process default DBTs.
+            // Process default DBs.
             for (default_dt) |db| {
                 if (db.is(T)) {
                     return db;
