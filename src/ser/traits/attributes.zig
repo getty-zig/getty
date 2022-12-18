@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const is_sbt = @import("sbt.zig").is_sbt;
-const is_tsb = @import("sbt.zig").is_tsb;
+const is_sbt = @import("block.zig").is_sbt;
+const is_tsb = @import("block.zig").is_tsb;
 const Attributes = @import("../../attributes.zig").Attributes;
 
 /// Checks to see if a type `T` has associated attributes.
