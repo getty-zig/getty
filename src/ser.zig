@@ -44,11 +44,11 @@ pub const concepts = struct {
     pub usingnamespace @import("ser/concepts/map.zig");
     pub usingnamespace @import("ser/concepts/seq.zig");
     pub usingnamespace @import("ser/concepts/structure.zig");
-    pub usingnamespace @import("ser/concepts/sbt.zig");
+    pub usingnamespace @import("ser/concepts/block.zig");
 };
 
 pub const traits = struct {
-    pub usingnamespace @import("ser/traits/sbt.zig");
+    pub usingnamespace @import("ser/traits/block.zig");
     pub usingnamespace @import("ser/traits/attributes.zig");
 };
 
