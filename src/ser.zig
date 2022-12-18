@@ -44,11 +44,11 @@ pub const concepts = struct {
     pub usingnamespace @import("ser/concepts/map.zig");
     pub usingnamespace @import("ser/concepts/seq.zig");
     pub usingnamespace @import("ser/concepts/structure.zig");
-    pub usingnamespace @import("ser/concepts/sbt.zig");
+    pub usingnamespace @import("ser/concepts/block.zig");
 };
 
 pub const traits = struct {
-    pub usingnamespace @import("ser/traits/sbt.zig");
+    pub usingnamespace @import("ser/traits/block.zig");
     pub usingnamespace @import("ser/traits/attributes.zig");
 };
 
@@ -147,44 +147,38 @@ pub const ser = struct {
         /// A `getty.Serializer` interface type.
         comptime S: type,
     ) blk: {
-        // Process user SBTs.
+        // Process user SBs.
         for (S.user_st) |sb| {
             if (sb.is(T) and traits.has_attributes(T, sb)) {
                 break :blk ?@TypeOf(sb.attributes);
             }
         }
 
-        // Process type SBTs.
-        if (traits.has_sbt(T)) {
-            const sbt = T.@"getty.sbt";
-            const st = if (@TypeOf(sbt) == type) .{sbt} else sbt;
+        // Process type SBs.
+        if (traits.has_sb(T)) {
+            const sb = T.@"getty.sb";
 
-            for (st) |sb| {
-                if (sb.is(T) and traits.has_attributes(T, sb)) {
-                    break :blk ?@TypeOf(sb.attributes);
-                }
+            if (traits.has_attributes(T, sb)) {
+                break :blk ?@TypeOf(sb.attributes);
             }
         }
 
         break :blk ?void;
     } {
         comptime {
-            // Process user SBTs.
+            // Process user SBs.
             for (S.user_st) |sb| {
                 if (sb.is(T) and traits.has_attributes(T, sb)) {
                     return @as(?@TypeOf(sb.attributes), sb.attributes);
                 }
             }
 
-            // Process type SBTs.
-            if (traits.has_sbt(T)) {
-                const sbt = T.@"getty.sbt";
-                const st = if (@TypeOf(sbt) == type) .{sbt} else sbt;
+            // Process type SBs.
+            if (traits.has_sb(T)) {
+                const sb = T.@"getty.sb";
 
-                for (st) |sb| {
-                    if (sb.is(T) and traits.has_attributes(T, sb)) {
-                        return @as(?@TypeOf(sb.attributes), sb.attributes);
-                    }
+                if (traits.has_attributes(T, sb)) {
+                    return @as(?@TypeOf(sb.attributes), sb.attributes);
                 }
             }
 
@@ -206,36 +200,29 @@ pub fn serialize(
 
     break :blk S.Error!S.Ok;
 } {
-    const block = comptime blk: {
-        const T = @TypeOf(value);
+    const T = @TypeOf(value);
 
-        // Process user SBTs.
+    const block = comptime blk: {
+        // Process user SBs.
         for (@TypeOf(serializer).user_st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
             }
         }
 
-        // Process type SBTs.
-        if (traits.has_sbt(T)) {
-            const sbt = T.@"getty.sbt";
-            const st = if (@TypeOf(sbt) == type) .{sbt} else sbt;
-
-            for (st) |sb| {
-                if (sb.is(T)) {
-                    break :blk sb;
-                }
-            }
+        // Process type SBs.
+        if (traits.has_sb(T)) {
+            break :blk T.@"getty.sb";
         }
 
-        // Process serializer SBTs.
+        // Process serializer SBs.
         for (@TypeOf(serializer).serializer_st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
             }
         }
 
-        // Process default SBTs.
+        // Process default SBs.
         inline for (default_st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
@@ -245,20 +232,8 @@ pub fn serialize(
         @compileError("type is not supported: " ++ @typeName(T));
     };
 
-    return try serializeInternal(value, serializer, block);
-}
-
-fn serializeInternal(value: anytype, serializer: anytype, comptime sb: type) blk: {
-    const S = @TypeOf(serializer);
-
-    concepts.@"getty.Serializer"(S);
-    concepts.@"getty.ser.sbt"(sb);
-
-    break :blk S.Error!S.Ok;
-} {
-    const T = @TypeOf(value);
-
-    if (comptime traits.has_attributes(T, sb)) {
+    // Process attributes, if any exist.
+    if (comptime traits.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
             .Struct => return try ser.blocks.Struct.serialize(value, serializer),
             .Enum => return try ser.blocks.Enum.serialize(value, serializer),
@@ -267,7 +242,7 @@ fn serializeInternal(value: anytype, serializer: anytype, comptime sb: type) blk
         }
     }
 
-    return try sb.serialize(value, serializer);
+    return try block.serialize(value, serializer);
 }
 
 const Token = @import("tests/common.zig").Token;

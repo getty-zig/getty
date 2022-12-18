@@ -1,17 +1,18 @@
 const std = @import("std");
 
-const is_sbt = @import("sbt.zig").is_sbt;
+const is_sbt = @import("block.zig").is_sbt;
+const is_tsb = @import("block.zig").is_tsb;
 const Attributes = @import("../../attributes.zig").Attributes;
 
 /// Checks to see if a type `T` has associated attributes.
 pub fn has_attributes(
-    /// The type to check.
+    /// A type with attributes.
     comptime T: type,
-    /// A serialization block or tuple.
-    comptime SBT: type,
+    /// A type-defined serialization block.
+    comptime TSB: type,
 ) bool {
     comptime {
-        return is_sbt(SBT) and @hasDecl(SBT, "attributes") and is_attributes(T, SBT.attributes);
+        return is_tsb(TSB) and @hasDecl(TSB, "attributes") and is_attributes(T, TSB.attributes);
     }
 }
 
