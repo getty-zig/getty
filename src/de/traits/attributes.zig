@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const is_dbt = @import("dbt.zig").is_dbt;
+const is_dbt = @import("block.zig").is_dbt;
 const Attributes = @import("../../attributes.zig").Attributes;
 
 /// Checks to see if a type `T` has associated attributes.
