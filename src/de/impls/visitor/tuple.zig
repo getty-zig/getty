@@ -41,7 +41,7 @@ pub fn Visitor(comptime Tuple: type) type {
                     inline while (i < len) : (i += 1) {
                         // NOTE: Using an if to unwrap `value` runs into a
                         // compiler bug, so this is a workaround.
-                        const value = try seq.nextElement(allocator, fields[i].field_type);
+                        const value = try seq.nextElement(allocator, fields[i].type);
                         if (value == null) return error.InvalidLength;
 
                         tuple[i] = value.?;
