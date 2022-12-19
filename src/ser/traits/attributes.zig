@@ -8,11 +8,11 @@ const Attributes = @import("../../attributes.zig").Attributes;
 pub fn has_attributes(
     /// A type with attributes.
     comptime T: type,
-    /// A type-defined serialization block.
-    comptime TSB: type,
+    /// A serialization block.
+    comptime SB: type,
 ) bool {
     comptime {
-        return is_tsb(TSB) and @hasDecl(TSB, "attributes") and is_attributes(T, TSB.attributes);
+        return (is_sbt(SB) or is_tsb(SB)) and @hasDecl(SB, "attributes") and is_attributes(T, SB.attributes);
     }
 }
 

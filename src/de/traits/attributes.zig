@@ -8,11 +8,11 @@ const Attributes = @import("../../attributes.zig").Attributes;
 pub fn has_attributes(
     /// A type with attributes.
     comptime T: type,
-    /// A type-defined deserialization block.
-    comptime TDB: type,
+    /// A deserialization block.
+    comptime DB: type,
 ) bool {
     comptime {
-        return is_tdb(TDB) and @hasDecl(TDB, "attributes") and is_attributes(T, TDB.attributes);
+        return (is_dbt(DB) or is_tdb(DB)) and @hasDecl(DB, "attributes") and is_attributes(T, DB.attributes);
     }
 }
 
