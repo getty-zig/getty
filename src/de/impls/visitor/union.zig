@@ -19,8 +19,8 @@ pub fn Visitor(comptime Union: type) type {
 
             inline for (std.meta.fields(Value)) |f| {
                 if (std.mem.eql(u8, f.name, variant)) {
-                    const alloc = if (f.field_type == void) null else allocator;
-                    return @unionInit(Value, f.name, try va.payload(alloc, f.field_type));
+                    const alloc = if (f.type == void) null else allocator;
+                    return @unionInit(Value, f.name, try va.payload(alloc, f.type));
                 }
             }
 

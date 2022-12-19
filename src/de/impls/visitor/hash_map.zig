@@ -15,8 +15,8 @@ pub fn Visitor(comptime HashMap: type) type {
         const Value = HashMap;
 
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
-            const K = std.meta.fieldInfo(Value.KV, .key).field_type;
-            const V = std.meta.fieldInfo(Value.KV, .value).field_type;
+            const K = std.meta.fieldInfo(Value.KV, .key).type;
+            const V = std.meta.fieldInfo(Value.KV, .value).type;
             const unmanaged = comptime std.mem.startsWith(
                 u8,
                 @typeName(Value),

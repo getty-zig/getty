@@ -263,7 +263,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
                 // passed-in value, add the inner attribute to the fields array.
                 fields[i] = .{
                     .name = field.name,
-                    .field_type = InnerAttributes,
+                    .type = InnerAttributes,
                     .default_value = inner,
                     .is_comptime = false,
                     .alignment = 4,
@@ -273,7 +273,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
                 // "Container", add the container attribute to the fields array.
                 fields[i] = .{
                     .name = "Container",
-                    .field_type = ContainerAttributes,
+                    .type = ContainerAttributes,
                     .default_value = container,
                     .is_comptime = false,
                     .alignment = 4,

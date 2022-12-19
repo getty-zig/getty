@@ -25,7 +25,7 @@ pub fn serialize(
     const st = s.structure();
 
     inline for (fields) |field| {
-        if (field.field_type != void) {
+        if (field.type != void) {
             // The name of the field to be deserialized.
             comptime var name: []const u8 = field.name;
 
