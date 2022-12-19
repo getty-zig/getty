@@ -81,7 +81,7 @@ pub fn Visitor(comptime Struct: type) type {
 
                                 if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
                                     // Skip value, but check its validity.
-                                    _ = try map.nextValue(allocator, field.field_type);
+                                    _ = try map.nextValue(allocator, field.type);
 
                                     // Move on to next key.
                                     continue :key_loop;
@@ -91,7 +91,7 @@ pub fn Visitor(comptime Struct: type) type {
 
                         // Deserialize and assign value to field.
                         switch (field.is_comptime) {
-                            false => @field(structure, field.name) = try map.nextValue(allocator, field.field_type),
+                            false => @field(structure, field.name) = try map.nextValue(allocator, field.type),
                             true => @compileError("TODO"),
                         }
 
@@ -116,8 +116,8 @@ pub fn Visitor(comptime Struct: type) type {
                 if (!seen[i]) {
                     if (field.default_value) |default_ptr| {
                         if (!field.is_comptime) {
-                            const aligned_default_ptr = @alignCast(@alignOf(field.field_type), default_ptr);
-                            const default_value = @ptrCast(*const field.field_type, aligned_default_ptr).*;
+                            const aligned_default_ptr = @alignCast(@alignOf(field.type), default_ptr);
+                            const default_value = @ptrCast(*const field.type, aligned_default_ptr).*;
                             @field(structure, field.name) = default_value;
                         }
                     } else {
