@@ -515,10 +515,10 @@
 <span class="line" id="L387"></span>
 <span class="line" id="L388">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(f)).Fn.return_type.?)) {</span>
 <span class="line" id="L389">        .NoReturn =&gt; {</span>
-<span class="line" id="L390">            <span class="tok-builtin">@call</span>(.{}, f, args);</span>
+<span class="line" id="L390">            <span class="tok-builtin">@call</span>(.auto, f, args);</span>
 <span class="line" id="L391">        },</span>
 <span class="line" id="L392">        .Void =&gt; {</span>
-<span class="line" id="L393">            <span class="tok-builtin">@call</span>(.{}, f, args);</span>
+<span class="line" id="L393">            <span class="tok-builtin">@call</span>(.auto, f, args);</span>
 <span class="line" id="L394">            <span class="tok-kw">return</span> default_value;</span>
 <span class="line" id="L395">        },</span>
 <span class="line" id="L396">        .Int =&gt; |info| {</span>
@@ -526,7 +526,7 @@
 <span class="line" id="L398">                <span class="tok-builtin">@compileError</span>(bad_fn_ret);</span>
 <span class="line" id="L399">            }</span>
 <span class="line" id="L400"></span>
-<span class="line" id="L401">            <span class="tok-kw">const</span> status = <span class="tok-builtin">@call</span>(.{}, f, args);</span>
+<span class="line" id="L401">            <span class="tok-kw">const</span> status = <span class="tok-builtin">@call</span>(.auto, f, args);</span>
 <span class="line" id="L402">            <span class="tok-kw">if</span> (Impl != PosixThreadImpl) {</span>
 <span class="line" id="L403">                <span class="tok-kw">return</span> status;</span>
 <span class="line" id="L404">            }</span>
@@ -540,7 +540,7 @@
 <span class="line" id="L411">                <span class="tok-builtin">@compileError</span>(bad_fn_ret);</span>
 <span class="line" id="L412">            }</span>
 <span class="line" id="L413"></span>
-<span class="line" id="L414">            <span class="tok-builtin">@call</span>(.{}, f, args) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L414">            <span class="tok-builtin">@call</span>(.auto, f, args) <span class="tok-kw">catch</span> |err| {</span>
 <span class="line" id="L415">                std.debug.print(<span class="tok-str">&quot;error: {s}\n&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
 <span class="line" id="L416">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
 <span class="line" id="L417">                    std.debug.dumpStackTrace(trace.*);</span>
@@ -899,7 +899,7 @@
 <span class="line" id="L753">        <span class="tok-comment">/// https://github.com/ifduyue/musl/search?q=__unmapself</span></span>
 <span class="line" id="L754">        <span class="tok-kw">fn</span> <span class="tok-fn">freeAndExit</span>(self: *ThreadCompletion) <span class="tok-type">noreturn</span> {</span>
 <span class="line" id="L755">            <span class="tok-kw">switch</span> (target.cpu.arch) {</span>
-<span class="line" id="L756">                .<span class="tok-type">i386</span> =&gt; <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (</span>
+<span class="line" id="L756">                .x86 =&gt; <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (</span>
 <span class="line" id="L757">                    <span class="tok-str">\\  movl $91, %%eax</span></span>
 
 <span class="line" id="L758">                    <span class="tok-str">\\  movl %[ptr], %%ebx</span></span>
@@ -1185,11 +1185,11 @@
 <span class="line" id="L959">            <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
 <span class="line" id="L960">        };</span>
 <span class="line" id="L961"></span>
-<span class="line" id="L962">        <span class="tok-comment">// Prepare the TLS segment and prepare a user_desc struct when needed on i386</span>
+<span class="line" id="L962">        <span class="tok-comment">// Prepare the TLS segment and prepare a user_desc struct when needed on x86</span>
 </span>
 <span class="line" id="L963">        <span class="tok-kw">var</span> tls_ptr = os.linux.tls.prepareTLS(mapped[tls_offset..]);</span>
-<span class="line" id="L964">        <span class="tok-kw">var</span> user_desc: <span class="tok-kw">if</span> (target.cpu.arch == .<span class="tok-type">i386</span>) os.linux.user_desc <span class="tok-kw">else</span> <span class="tok-type">void</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L965">        <span class="tok-kw">if</span> (target.cpu.arch == .<span class="tok-type">i386</span>) {</span>
+<span class="line" id="L964">        <span class="tok-kw">var</span> user_desc: <span class="tok-kw">if</span> (target.cpu.arch == .x86) os.linux.user_desc <span class="tok-kw">else</span> <span class="tok-type">void</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L965">        <span class="tok-kw">if</span> (target.cpu.arch == .x86) {</span>
 <span class="line" id="L966">            <span class="tok-kw">defer</span> tls_ptr = <span class="tok-builtin">@ptrToInt</span>(&amp;user_desc);</span>
 <span class="line" id="L967">            user_desc = .{</span>
 <span class="line" id="L968">                .entry_number = os.linux.tls.tls_image.gdt_entry_number,</span>

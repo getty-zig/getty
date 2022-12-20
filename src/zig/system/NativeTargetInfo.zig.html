@@ -345,14 +345,14 @@
 </span>
 <span class="line" id="L201">    <span class="tok-comment">//  * 16bit_mode =&gt; if the abi is code16</span>
 </span>
-<span class="line" id="L202">    <span class="tok-comment">//  * 32bit_mode =&gt; if the arch is i386</span>
+<span class="line" id="L202">    <span class="tok-comment">//  * 32bit_mode =&gt; if the arch is x86</span>
 </span>
 <span class="line" id="L203">    <span class="tok-comment">// However, the &quot;mode&quot; flags can be used as overrides, so if the user explicitly</span>
 </span>
 <span class="line" id="L204">    <span class="tok-comment">// sets one of them, that takes precedence.</span>
 </span>
 <span class="line" id="L205">    <span class="tok-kw">switch</span> (cpu_arch) {</span>
-<span class="line" id="L206">        .<span class="tok-type">i386</span> =&gt; {</span>
+<span class="line" id="L206">        .x86 =&gt; {</span>
 <span class="line" id="L207">            <span class="tok-kw">if</span> (!std.Target.x86.featureSetHasAny(cross_target.cpu_features_add, .{</span>
 <span class="line" id="L208">                .@&quot;16bit_mode&quot;, .@&quot;32bit_mode&quot;,</span>
 <span class="line" id="L209">            })) {</span>
@@ -1202,7 +1202,7 @@
 <span class="line" id="L970">    <span class="tok-comment">// of the respective switch prong.</span>
 </span>
 <span class="line" id="L971">    <span class="tok-kw">switch</span> (builtin.cpu.arch) {</span>
-<span class="line" id="L972">        .x86_64, .<span class="tok-type">i386</span> =&gt; {</span>
+<span class="line" id="L972">        .x86_64, .x86 =&gt; {</span>
 <span class="line" id="L973">            <span class="tok-kw">return</span> <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;x86.zig&quot;</span>).detectNativeCpuAndFeatures(cpu_arch, os, cross_target);</span>
 <span class="line" id="L974">        },</span>
 <span class="line" id="L975">        <span class="tok-kw">else</span> =&gt; {},</span>
@@ -1211,161 +1211,162 @@
 <span class="line" id="L978">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
 <span class="line" id="L979">        .linux =&gt; <span class="tok-kw">return</span> linux.detectNativeCpuAndFeatures(),</span>
 <span class="line" id="L980">        .macos =&gt; <span class="tok-kw">return</span> darwin.macos.detectNativeCpuAndFeatures(),</span>
-<span class="line" id="L981">        <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L982">    }</span>
-<span class="line" id="L983"></span>
-<span class="line" id="L984">    <span class="tok-comment">// This architecture does not have CPU model &amp; feature detection yet.</span>
+<span class="line" id="L981">        .windows =&gt; <span class="tok-kw">return</span> windows.detectNativeCpuAndFeatures(),</span>
+<span class="line" id="L982">        <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L983">    }</span>
+<span class="line" id="L984"></span>
+<span class="line" id="L985">    <span class="tok-comment">// This architecture does not have CPU model &amp; feature detection yet.</span>
 </span>
-<span class="line" id="L985">    <span class="tok-comment">// See https://github.com/ziglang/zig/issues/4591</span>
+<span class="line" id="L986">    <span class="tok-comment">// See https://github.com/ziglang/zig/issues/4591</span>
 </span>
-<span class="line" id="L986">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L987">}</span>
-<span class="line" id="L988"></span>
-<span class="line" id="L989"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Executor = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L990">    native,</span>
-<span class="line" id="L991">    rosetta,</span>
-<span class="line" id="L992">    qemu: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L993">    wine: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L994">    wasmtime: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L995">    darling: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L996">    bad_dl: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L997">    bad_os_or_cpu,</span>
-<span class="line" id="L998">};</span>
-<span class="line" id="L999"></span>
-<span class="line" id="L1000"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> GetExternalExecutorOptions = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1001">    allow_darling: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L1002">    allow_qemu: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L1003">    allow_rosetta: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L1004">    allow_wasmtime: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L1005">    allow_wine: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L1006">    qemu_fixes_dl: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L1007">    link_libc: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L1008">};</span>
-<span class="line" id="L1009"></span>
-<span class="line" id="L1010"><span class="tok-comment">/// Return whether or not the given host target is capable of executing natively executables</span></span>
-<span class="line" id="L1011"><span class="tok-comment">/// of the other target.</span></span>
-<span class="line" id="L1012"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getExternalExecutor</span>(</span>
-<span class="line" id="L1013">    host: NativeTargetInfo,</span>
-<span class="line" id="L1014">    candidate: NativeTargetInfo,</span>
-<span class="line" id="L1015">    options: GetExternalExecutorOptions,</span>
-<span class="line" id="L1016">) Executor {</span>
-<span class="line" id="L1017">    <span class="tok-kw">const</span> os_match = host.target.os.tag == candidate.target.os.tag;</span>
-<span class="line" id="L1018">    <span class="tok-kw">const</span> cpu_ok = cpu_ok: {</span>
-<span class="line" id="L1019">        <span class="tok-kw">if</span> (host.target.cpu.arch == candidate.target.cpu.arch)</span>
-<span class="line" id="L1020">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
-<span class="line" id="L1021"></span>
-<span class="line" id="L1022">        <span class="tok-kw">if</span> (host.target.cpu.arch == .x86_64 <span class="tok-kw">and</span> candidate.target.cpu.arch == .<span class="tok-type">i386</span>)</span>
-<span class="line" id="L1023">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
-<span class="line" id="L1024"></span>
-<span class="line" id="L1025">        <span class="tok-kw">if</span> (host.target.cpu.arch == .aarch64 <span class="tok-kw">and</span> candidate.target.cpu.arch == .arm)</span>
-<span class="line" id="L1026">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
-<span class="line" id="L1027"></span>
-<span class="line" id="L1028">        <span class="tok-kw">if</span> (host.target.cpu.arch == .aarch64_be <span class="tok-kw">and</span> candidate.target.cpu.arch == .armeb)</span>
-<span class="line" id="L1029">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
-<span class="line" id="L1030"></span>
-<span class="line" id="L1031">        <span class="tok-comment">// TODO additionally detect incompatible CPU features.</span>
+<span class="line" id="L987">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L988">}</span>
+<span class="line" id="L989"></span>
+<span class="line" id="L990"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Executor = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L991">    native,</span>
+<span class="line" id="L992">    rosetta,</span>
+<span class="line" id="L993">    qemu: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L994">    wine: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L995">    wasmtime: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L996">    darling: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L997">    bad_dl: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L998">    bad_os_or_cpu,</span>
+<span class="line" id="L999">};</span>
+<span class="line" id="L1000"></span>
+<span class="line" id="L1001"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> GetExternalExecutorOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1002">    allow_darling: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L1003">    allow_qemu: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L1004">    allow_rosetta: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L1005">    allow_wasmtime: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L1006">    allow_wine: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L1007">    qemu_fixes_dl: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1008">    link_libc: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1009">};</span>
+<span class="line" id="L1010"></span>
+<span class="line" id="L1011"><span class="tok-comment">/// Return whether or not the given host target is capable of executing natively executables</span></span>
+<span class="line" id="L1012"><span class="tok-comment">/// of the other target.</span></span>
+<span class="line" id="L1013"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getExternalExecutor</span>(</span>
+<span class="line" id="L1014">    host: NativeTargetInfo,</span>
+<span class="line" id="L1015">    candidate: NativeTargetInfo,</span>
+<span class="line" id="L1016">    options: GetExternalExecutorOptions,</span>
+<span class="line" id="L1017">) Executor {</span>
+<span class="line" id="L1018">    <span class="tok-kw">const</span> os_match = host.target.os.tag == candidate.target.os.tag;</span>
+<span class="line" id="L1019">    <span class="tok-kw">const</span> cpu_ok = cpu_ok: {</span>
+<span class="line" id="L1020">        <span class="tok-kw">if</span> (host.target.cpu.arch == candidate.target.cpu.arch)</span>
+<span class="line" id="L1021">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
+<span class="line" id="L1022"></span>
+<span class="line" id="L1023">        <span class="tok-kw">if</span> (host.target.cpu.arch == .x86_64 <span class="tok-kw">and</span> candidate.target.cpu.arch == .x86)</span>
+<span class="line" id="L1024">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
+<span class="line" id="L1025"></span>
+<span class="line" id="L1026">        <span class="tok-kw">if</span> (host.target.cpu.arch == .aarch64 <span class="tok-kw">and</span> candidate.target.cpu.arch == .arm)</span>
+<span class="line" id="L1027">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
+<span class="line" id="L1028"></span>
+<span class="line" id="L1029">        <span class="tok-kw">if</span> (host.target.cpu.arch == .aarch64_be <span class="tok-kw">and</span> candidate.target.cpu.arch == .armeb)</span>
+<span class="line" id="L1030">            <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">true</span>;</span>
+<span class="line" id="L1031"></span>
+<span class="line" id="L1032">        <span class="tok-comment">// TODO additionally detect incompatible CPU features.</span>
 </span>
-<span class="line" id="L1032">        <span class="tok-comment">// Note that in some cases the OS kernel will emulate missing CPU features</span>
+<span class="line" id="L1033">        <span class="tok-comment">// Note that in some cases the OS kernel will emulate missing CPU features</span>
 </span>
-<span class="line" id="L1033">        <span class="tok-comment">// when an illegal instruction is encountered.</span>
+<span class="line" id="L1034">        <span class="tok-comment">// when an illegal instruction is encountered.</span>
 </span>
-<span class="line" id="L1034"></span>
-<span class="line" id="L1035">        <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">false</span>;</span>
-<span class="line" id="L1036">    };</span>
-<span class="line" id="L1037"></span>
-<span class="line" id="L1038">    <span class="tok-kw">var</span> bad_result: Executor = .bad_os_or_cpu;</span>
-<span class="line" id="L1039"></span>
-<span class="line" id="L1040">    <span class="tok-kw">if</span> (os_match <span class="tok-kw">and</span> cpu_ok) native: {</span>
-<span class="line" id="L1041">        <span class="tok-kw">if</span> (options.link_libc) {</span>
-<span class="line" id="L1042">            <span class="tok-kw">if</span> (candidate.dynamic_linker.get()) |candidate_dl| {</span>
-<span class="line" id="L1043">                fs.cwd().access(candidate_dl, .{}) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L1044">                    bad_result = .{ .bad_dl = candidate_dl };</span>
-<span class="line" id="L1045">                    <span class="tok-kw">break</span> :native;</span>
-<span class="line" id="L1046">                };</span>
-<span class="line" id="L1047">            }</span>
-<span class="line" id="L1048">        }</span>
-<span class="line" id="L1049">        <span class="tok-kw">return</span> .native;</span>
-<span class="line" id="L1050">    }</span>
-<span class="line" id="L1051"></span>
-<span class="line" id="L1052">    <span class="tok-comment">// If the OS match and OS is macOS and CPU is arm64, we can use Rosetta 2</span>
+<span class="line" id="L1035"></span>
+<span class="line" id="L1036">        <span class="tok-kw">break</span> :cpu_ok <span class="tok-null">false</span>;</span>
+<span class="line" id="L1037">    };</span>
+<span class="line" id="L1038"></span>
+<span class="line" id="L1039">    <span class="tok-kw">var</span> bad_result: Executor = .bad_os_or_cpu;</span>
+<span class="line" id="L1040"></span>
+<span class="line" id="L1041">    <span class="tok-kw">if</span> (os_match <span class="tok-kw">and</span> cpu_ok) native: {</span>
+<span class="line" id="L1042">        <span class="tok-kw">if</span> (options.link_libc) {</span>
+<span class="line" id="L1043">            <span class="tok-kw">if</span> (candidate.dynamic_linker.get()) |candidate_dl| {</span>
+<span class="line" id="L1044">                fs.cwd().access(candidate_dl, .{}) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L1045">                    bad_result = .{ .bad_dl = candidate_dl };</span>
+<span class="line" id="L1046">                    <span class="tok-kw">break</span> :native;</span>
+<span class="line" id="L1047">                };</span>
+<span class="line" id="L1048">            }</span>
+<span class="line" id="L1049">        }</span>
+<span class="line" id="L1050">        <span class="tok-kw">return</span> .native;</span>
+<span class="line" id="L1051">    }</span>
+<span class="line" id="L1052"></span>
+<span class="line" id="L1053">    <span class="tok-comment">// If the OS match and OS is macOS and CPU is arm64, we can use Rosetta 2</span>
 </span>
-<span class="line" id="L1053">    <span class="tok-comment">// to emulate the foreign architecture.</span>
+<span class="line" id="L1054">    <span class="tok-comment">// to emulate the foreign architecture.</span>
 </span>
-<span class="line" id="L1054">    <span class="tok-kw">if</span> (options.allow_rosetta <span class="tok-kw">and</span> os_match <span class="tok-kw">and</span></span>
-<span class="line" id="L1055">        host.target.os.tag == .macos <span class="tok-kw">and</span> host.target.cpu.arch == .aarch64)</span>
-<span class="line" id="L1056">    {</span>
-<span class="line" id="L1057">        <span class="tok-kw">switch</span> (candidate.target.cpu.arch) {</span>
-<span class="line" id="L1058">            .x86_64 =&gt; <span class="tok-kw">return</span> .rosetta,</span>
-<span class="line" id="L1059">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1060">        }</span>
-<span class="line" id="L1061">    }</span>
-<span class="line" id="L1062"></span>
-<span class="line" id="L1063">    <span class="tok-comment">// If the OS matches, we can use QEMU to emulate a foreign architecture.</span>
+<span class="line" id="L1055">    <span class="tok-kw">if</span> (options.allow_rosetta <span class="tok-kw">and</span> os_match <span class="tok-kw">and</span></span>
+<span class="line" id="L1056">        host.target.os.tag == .macos <span class="tok-kw">and</span> host.target.cpu.arch == .aarch64)</span>
+<span class="line" id="L1057">    {</span>
+<span class="line" id="L1058">        <span class="tok-kw">switch</span> (candidate.target.cpu.arch) {</span>
+<span class="line" id="L1059">            .x86_64 =&gt; <span class="tok-kw">return</span> .rosetta,</span>
+<span class="line" id="L1060">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1061">        }</span>
+<span class="line" id="L1062">    }</span>
+<span class="line" id="L1063"></span>
+<span class="line" id="L1064">    <span class="tok-comment">// If the OS matches, we can use QEMU to emulate a foreign architecture.</span>
 </span>
-<span class="line" id="L1064">    <span class="tok-kw">if</span> (options.allow_qemu <span class="tok-kw">and</span> os_match <span class="tok-kw">and</span> (!cpu_ok <span class="tok-kw">or</span> options.qemu_fixes_dl)) {</span>
-<span class="line" id="L1065">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (candidate.target.cpu.arch) {</span>
-<span class="line" id="L1066">            .aarch64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-aarch64&quot;</span> },</span>
-<span class="line" id="L1067">            .aarch64_be =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-aarch64_be&quot;</span> },</span>
-<span class="line" id="L1068">            .arm =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-arm&quot;</span> },</span>
-<span class="line" id="L1069">            .armeb =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-armeb&quot;</span> },</span>
-<span class="line" id="L1070">            .hexagon =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-hexagon&quot;</span> },</span>
-<span class="line" id="L1071">            .<span class="tok-type">i386</span> =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-i386&quot;</span> },</span>
-<span class="line" id="L1072">            .m68k =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-m68k&quot;</span> },</span>
-<span class="line" id="L1073">            .mips =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mips&quot;</span> },</span>
-<span class="line" id="L1074">            .mipsel =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mipsel&quot;</span> },</span>
-<span class="line" id="L1075">            .mips64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mips64&quot;</span> },</span>
-<span class="line" id="L1076">            .mips64el =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mips64el&quot;</span> },</span>
-<span class="line" id="L1077">            .powerpc =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-ppc&quot;</span> },</span>
-<span class="line" id="L1078">            .powerpc64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-ppc64&quot;</span> },</span>
-<span class="line" id="L1079">            .powerpc64le =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-ppc64le&quot;</span> },</span>
-<span class="line" id="L1080">            .riscv32 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-riscv32&quot;</span> },</span>
-<span class="line" id="L1081">            .riscv64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-riscv64&quot;</span> },</span>
-<span class="line" id="L1082">            .s390x =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-s390x&quot;</span> },</span>
-<span class="line" id="L1083">            .sparc =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-sparc&quot;</span> },</span>
-<span class="line" id="L1084">            .sparc64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-sparc64&quot;</span> },</span>
-<span class="line" id="L1085">            .x86_64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-x86_64&quot;</span> },</span>
-<span class="line" id="L1086">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1087">        };</span>
-<span class="line" id="L1088">    }</span>
-<span class="line" id="L1089"></span>
-<span class="line" id="L1090">    <span class="tok-kw">switch</span> (candidate.target.os.tag) {</span>
-<span class="line" id="L1091">        .windows =&gt; {</span>
-<span class="line" id="L1092">            <span class="tok-kw">if</span> (options.allow_wine) {</span>
-<span class="line" id="L1093">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
-<span class="line" id="L1094">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine&quot;</span> },</span>
-<span class="line" id="L1095">                    <span class="tok-number">64</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine64&quot;</span> },</span>
-<span class="line" id="L1096">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1097">                }</span>
-<span class="line" id="L1098">            }</span>
-<span class="line" id="L1099">            <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1100">        },</span>
-<span class="line" id="L1101">        .wasi =&gt; {</span>
-<span class="line" id="L1102">            <span class="tok-kw">if</span> (options.allow_wasmtime) {</span>
-<span class="line" id="L1103">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
-<span class="line" id="L1104">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wasmtime = <span class="tok-str">&quot;wasmtime&quot;</span> },</span>
-<span class="line" id="L1105">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1106">                }</span>
-<span class="line" id="L1107">            }</span>
-<span class="line" id="L1108">            <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1109">        },</span>
-<span class="line" id="L1110">        .macos =&gt; {</span>
-<span class="line" id="L1111">            <span class="tok-kw">if</span> (options.allow_darling) {</span>
-<span class="line" id="L1112">                <span class="tok-comment">// This check can be loosened once darling adds a QEMU-based emulation</span>
+<span class="line" id="L1065">    <span class="tok-kw">if</span> (options.allow_qemu <span class="tok-kw">and</span> os_match <span class="tok-kw">and</span> (!cpu_ok <span class="tok-kw">or</span> options.qemu_fixes_dl)) {</span>
+<span class="line" id="L1066">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (candidate.target.cpu.arch) {</span>
+<span class="line" id="L1067">            .aarch64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-aarch64&quot;</span> },</span>
+<span class="line" id="L1068">            .aarch64_be =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-aarch64_be&quot;</span> },</span>
+<span class="line" id="L1069">            .arm =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-arm&quot;</span> },</span>
+<span class="line" id="L1070">            .armeb =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-armeb&quot;</span> },</span>
+<span class="line" id="L1071">            .hexagon =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-hexagon&quot;</span> },</span>
+<span class="line" id="L1072">            .x86 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-i386&quot;</span> },</span>
+<span class="line" id="L1073">            .m68k =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-m68k&quot;</span> },</span>
+<span class="line" id="L1074">            .mips =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mips&quot;</span> },</span>
+<span class="line" id="L1075">            .mipsel =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mipsel&quot;</span> },</span>
+<span class="line" id="L1076">            .mips64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mips64&quot;</span> },</span>
+<span class="line" id="L1077">            .mips64el =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-mips64el&quot;</span> },</span>
+<span class="line" id="L1078">            .powerpc =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-ppc&quot;</span> },</span>
+<span class="line" id="L1079">            .powerpc64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-ppc64&quot;</span> },</span>
+<span class="line" id="L1080">            .powerpc64le =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-ppc64le&quot;</span> },</span>
+<span class="line" id="L1081">            .riscv32 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-riscv32&quot;</span> },</span>
+<span class="line" id="L1082">            .riscv64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-riscv64&quot;</span> },</span>
+<span class="line" id="L1083">            .s390x =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-s390x&quot;</span> },</span>
+<span class="line" id="L1084">            .sparc =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-sparc&quot;</span> },</span>
+<span class="line" id="L1085">            .sparc64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-sparc64&quot;</span> },</span>
+<span class="line" id="L1086">            .x86_64 =&gt; Executor{ .qemu = <span class="tok-str">&quot;qemu-x86_64&quot;</span> },</span>
+<span class="line" id="L1087">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1088">        };</span>
+<span class="line" id="L1089">    }</span>
+<span class="line" id="L1090"></span>
+<span class="line" id="L1091">    <span class="tok-kw">switch</span> (candidate.target.os.tag) {</span>
+<span class="line" id="L1092">        .windows =&gt; {</span>
+<span class="line" id="L1093">            <span class="tok-kw">if</span> (options.allow_wine) {</span>
+<span class="line" id="L1094">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
+<span class="line" id="L1095">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine&quot;</span> },</span>
+<span class="line" id="L1096">                    <span class="tok-number">64</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine64&quot;</span> },</span>
+<span class="line" id="L1097">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1098">                }</span>
+<span class="line" id="L1099">            }</span>
+<span class="line" id="L1100">            <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1101">        },</span>
+<span class="line" id="L1102">        .wasi =&gt; {</span>
+<span class="line" id="L1103">            <span class="tok-kw">if</span> (options.allow_wasmtime) {</span>
+<span class="line" id="L1104">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
+<span class="line" id="L1105">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wasmtime = <span class="tok-str">&quot;wasmtime&quot;</span> },</span>
+<span class="line" id="L1106">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1107">                }</span>
+<span class="line" id="L1108">            }</span>
+<span class="line" id="L1109">            <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1110">        },</span>
+<span class="line" id="L1111">        .macos =&gt; {</span>
+<span class="line" id="L1112">            <span class="tok-kw">if</span> (options.allow_darling) {</span>
+<span class="line" id="L1113">                <span class="tok-comment">// This check can be loosened once darling adds a QEMU-based emulation</span>
 </span>
-<span class="line" id="L1113">                <span class="tok-comment">// layer for non-host architectures:</span>
+<span class="line" id="L1114">                <span class="tok-comment">// layer for non-host architectures:</span>
 </span>
-<span class="line" id="L1114">                <span class="tok-comment">// https://github.com/darlinghq/darling/issues/863</span>
+<span class="line" id="L1115">                <span class="tok-comment">// https://github.com/darlinghq/darling/issues/863</span>
 </span>
-<span class="line" id="L1115">                <span class="tok-kw">if</span> (candidate.target.cpu.arch != builtin.cpu.arch) {</span>
-<span class="line" id="L1116">                    <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1117">                }</span>
-<span class="line" id="L1118">                <span class="tok-kw">return</span> Executor{ .darling = <span class="tok-str">&quot;darling&quot;</span> };</span>
-<span class="line" id="L1119">            }</span>
-<span class="line" id="L1120">            <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1121">        },</span>
-<span class="line" id="L1122">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1123">    }</span>
-<span class="line" id="L1124">}</span>
-<span class="line" id="L1125"></span>
+<span class="line" id="L1116">                <span class="tok-kw">if</span> (candidate.target.cpu.arch != builtin.cpu.arch) {</span>
+<span class="line" id="L1117">                    <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1118">                }</span>
+<span class="line" id="L1119">                <span class="tok-kw">return</span> Executor{ .darling = <span class="tok-str">&quot;darling&quot;</span> };</span>
+<span class="line" id="L1120">            }</span>
+<span class="line" id="L1121">            <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1122">        },</span>
+<span class="line" id="L1123">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1124">    }</span>
+<span class="line" id="L1125">}</span>
+<span class="line" id="L1126"></span>
 </code></pre></body>
 </html>

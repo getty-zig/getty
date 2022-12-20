@@ -533,7 +533,7 @@
 </span>
 <span class="line" id="L336">        <span class="tok-comment">// and decompression state.</span>
 </span>
-<span class="line" id="L337">        step: std.meta.FnPtr(<span class="tok-kw">fn</span> (*Self) Error!<span class="tok-type">void</span>),</span>
+<span class="line" id="L337">        step: *<span class="tok-kw">const</span> <span class="tok-kw">fn</span> (*Self) Error!<span class="tok-type">void</span>,</span>
 <span class="line" id="L338">        step_state: DecompressorState,</span>
 <span class="line" id="L339">        final: <span class="tok-type">bool</span>,</span>
 <span class="line" id="L340">        err: ?Error,</span>
@@ -691,700 +691,693 @@
 <span class="line" id="L479">        }</span>
 <span class="line" id="L480"></span>
 <span class="line" id="L481">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: *Self) ?Error {</span>
-<span class="line" id="L482">            <span class="tok-kw">if</span> (<span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>).zig_backend == .stage1) {</span>
-<span class="line" id="L483">                <span class="tok-kw">if</span> (self.err == Error.EndOfStreamWithNoError) {</span>
-<span class="line" id="L484">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L485">                }</span>
-<span class="line" id="L486">                <span class="tok-kw">return</span> self.err;</span>
-<span class="line" id="L487">            }</span>
-<span class="line" id="L488">            <span class="tok-kw">if</span> (self.err == <span class="tok-builtin">@as</span>(?Error, <span class="tok-kw">error</span>.EndOfStreamWithNoError)) {</span>
-<span class="line" id="L489">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L490">            }</span>
-<span class="line" id="L491">            <span class="tok-kw">return</span> self.err;</span>
-<span class="line" id="L492">        }</span>
-<span class="line" id="L493"></span>
-<span class="line" id="L494">        <span class="tok-comment">// RFC 1951 section 3.2.7.</span>
+<span class="line" id="L482">            <span class="tok-kw">if</span> (self.err == <span class="tok-builtin">@as</span>(?Error, <span class="tok-kw">error</span>.EndOfStreamWithNoError)) {</span>
+<span class="line" id="L483">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L484">            }</span>
+<span class="line" id="L485">            <span class="tok-kw">return</span> self.err;</span>
+<span class="line" id="L486">        }</span>
+<span class="line" id="L487"></span>
+<span class="line" id="L488">        <span class="tok-comment">// RFC 1951 section 3.2.7.</span>
 </span>
-<span class="line" id="L495">        <span class="tok-comment">// Compression with dynamic Huffman codes</span>
+<span class="line" id="L489">        <span class="tok-comment">// Compression with dynamic Huffman codes</span>
 </span>
-<span class="line" id="L496"></span>
-<span class="line" id="L497">        <span class="tok-kw">const</span> code_order = [_]<span class="tok-type">u32</span>{ <span class="tok-number">16</span>, <span class="tok-number">17</span>, <span class="tok-number">18</span>, <span class="tok-number">0</span>, <span class="tok-number">8</span>, <span class="tok-number">7</span>, <span class="tok-number">9</span>, <span class="tok-number">6</span>, <span class="tok-number">10</span>, <span class="tok-number">5</span>, <span class="tok-number">11</span>, <span class="tok-number">4</span>, <span class="tok-number">12</span>, <span class="tok-number">3</span>, <span class="tok-number">13</span>, <span class="tok-number">2</span>, <span class="tok-number">14</span>, <span class="tok-number">1</span>, <span class="tok-number">15</span> };</span>
-<span class="line" id="L498"></span>
-<span class="line" id="L499">        <span class="tok-kw">fn</span> <span class="tok-fn">readHuffman</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L500">            <span class="tok-comment">// HLIT[5], HDIST[5], HCLEN[4].</span>
+<span class="line" id="L490"></span>
+<span class="line" id="L491">        <span class="tok-kw">const</span> code_order = [_]<span class="tok-type">u32</span>{ <span class="tok-number">16</span>, <span class="tok-number">17</span>, <span class="tok-number">18</span>, <span class="tok-number">0</span>, <span class="tok-number">8</span>, <span class="tok-number">7</span>, <span class="tok-number">9</span>, <span class="tok-number">6</span>, <span class="tok-number">10</span>, <span class="tok-number">5</span>, <span class="tok-number">11</span>, <span class="tok-number">4</span>, <span class="tok-number">12</span>, <span class="tok-number">3</span>, <span class="tok-number">13</span>, <span class="tok-number">2</span>, <span class="tok-number">14</span>, <span class="tok-number">1</span>, <span class="tok-number">15</span> };</span>
+<span class="line" id="L492"></span>
+<span class="line" id="L493">        <span class="tok-kw">fn</span> <span class="tok-fn">readHuffman</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L494">            <span class="tok-comment">// HLIT[5], HDIST[5], HCLEN[4].</span>
 </span>
-<span class="line" id="L501">            <span class="tok-kw">while</span> (self.nb &lt; <span class="tok-number">5</span> + <span class="tok-number">5</span> + <span class="tok-number">4</span>) {</span>
-<span class="line" id="L502">                <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L495">            <span class="tok-kw">while</span> (self.nb &lt; <span class="tok-number">5</span> + <span class="tok-number">5</span> + <span class="tok-number">4</span>) {</span>
+<span class="line" id="L496">                <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L497">            }</span>
+<span class="line" id="L498">            <span class="tok-kw">var</span> nlit = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0x1F</span>) + <span class="tok-number">257</span>;</span>
+<span class="line" id="L499">            <span class="tok-kw">if</span> (nlit &gt; max_num_lit) {</span>
+<span class="line" id="L500">                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L501">                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L502">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
 <span class="line" id="L503">            }</span>
-<span class="line" id="L504">            <span class="tok-kw">var</span> nlit = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0x1F</span>) + <span class="tok-number">257</span>;</span>
-<span class="line" id="L505">            <span class="tok-kw">if</span> (nlit &gt; max_num_lit) {</span>
-<span class="line" id="L506">                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L507">                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L508">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L509">            }</span>
-<span class="line" id="L510">            self.b &gt;&gt;= <span class="tok-number">5</span>;</span>
-<span class="line" id="L511">            <span class="tok-kw">var</span> ndist = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0x1F</span>) + <span class="tok-number">1</span>;</span>
-<span class="line" id="L512">            <span class="tok-kw">if</span> (ndist &gt; max_num_dist) {</span>
-<span class="line" id="L513">                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L514">                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L515">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L516">            }</span>
-<span class="line" id="L517">            self.b &gt;&gt;= <span class="tok-number">5</span>;</span>
-<span class="line" id="L518">            <span class="tok-kw">var</span> nclen = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0xF</span>) + <span class="tok-number">4</span>;</span>
-<span class="line" id="L519">            <span class="tok-comment">// num_codes is 19, so nclen is always valid.</span>
+<span class="line" id="L504">            self.b &gt;&gt;= <span class="tok-number">5</span>;</span>
+<span class="line" id="L505">            <span class="tok-kw">var</span> ndist = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0x1F</span>) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L506">            <span class="tok-kw">if</span> (ndist &gt; max_num_dist) {</span>
+<span class="line" id="L507">                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L508">                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L509">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L510">            }</span>
+<span class="line" id="L511">            self.b &gt;&gt;= <span class="tok-number">5</span>;</span>
+<span class="line" id="L512">            <span class="tok-kw">var</span> nclen = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0xF</span>) + <span class="tok-number">4</span>;</span>
+<span class="line" id="L513">            <span class="tok-comment">// num_codes is 19, so nclen is always valid.</span>
 </span>
-<span class="line" id="L520">            self.b &gt;&gt;= <span class="tok-number">4</span>;</span>
-<span class="line" id="L521">            self.nb -= <span class="tok-number">5</span> + <span class="tok-number">5</span> + <span class="tok-number">4</span>;</span>
-<span class="line" id="L522"></span>
-<span class="line" id="L523">            <span class="tok-comment">// (HCLEN+4)*3 bits: code lengths in the magic code_order order.</span>
+<span class="line" id="L514">            self.b &gt;&gt;= <span class="tok-number">4</span>;</span>
+<span class="line" id="L515">            self.nb -= <span class="tok-number">5</span> + <span class="tok-number">5</span> + <span class="tok-number">4</span>;</span>
+<span class="line" id="L516"></span>
+<span class="line" id="L517">            <span class="tok-comment">// (HCLEN+4)*3 bits: code lengths in the magic code_order order.</span>
 </span>
-<span class="line" id="L524">            <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L525">            <span class="tok-kw">while</span> (i &lt; nclen) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L526">                <span class="tok-kw">while</span> (self.nb &lt; <span class="tok-number">3</span>) {</span>
-<span class="line" id="L527">                    <span class="tok-kw">try</span> self.moreBits();</span>
-<span class="line" id="L528">                }</span>
-<span class="line" id="L529">                self.codebits[code_order[i]] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0x7</span>);</span>
-<span class="line" id="L530">                self.b &gt;&gt;= <span class="tok-number">3</span>;</span>
-<span class="line" id="L531">                self.nb -= <span class="tok-number">3</span>;</span>
-<span class="line" id="L532">            }</span>
-<span class="line" id="L533">            i = nclen;</span>
-<span class="line" id="L534">            <span class="tok-kw">while</span> (i &lt; code_order.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L535">                self.codebits[code_order[i]] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L536">            }</span>
-<span class="line" id="L537">            <span class="tok-kw">if</span> (!<span class="tok-kw">try</span> self.hd1.init(self.allocator, self.codebits[<span class="tok-number">0</span>..])) {</span>
-<span class="line" id="L538">                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L539">                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L540">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L541">            }</span>
-<span class="line" id="L542"></span>
-<span class="line" id="L543">            <span class="tok-comment">// HLIT + 257 code lengths, HDIST + 1 code lengths,</span>
+<span class="line" id="L518">            <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L519">            <span class="tok-kw">while</span> (i &lt; nclen) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L520">                <span class="tok-kw">while</span> (self.nb &lt; <span class="tok-number">3</span>) {</span>
+<span class="line" id="L521">                    <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L522">                }</span>
+<span class="line" id="L523">                self.codebits[code_order[i]] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; <span class="tok-number">0x7</span>);</span>
+<span class="line" id="L524">                self.b &gt;&gt;= <span class="tok-number">3</span>;</span>
+<span class="line" id="L525">                self.nb -= <span class="tok-number">3</span>;</span>
+<span class="line" id="L526">            }</span>
+<span class="line" id="L527">            i = nclen;</span>
+<span class="line" id="L528">            <span class="tok-kw">while</span> (i &lt; code_order.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L529">                self.codebits[code_order[i]] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L530">            }</span>
+<span class="line" id="L531">            <span class="tok-kw">if</span> (!<span class="tok-kw">try</span> self.hd1.init(self.allocator, self.codebits[<span class="tok-number">0</span>..])) {</span>
+<span class="line" id="L532">                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L533">                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L534">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L535">            }</span>
+<span class="line" id="L536"></span>
+<span class="line" id="L537">            <span class="tok-comment">// HLIT + 257 code lengths, HDIST + 1 code lengths,</span>
 </span>
-<span class="line" id="L544">            <span class="tok-comment">// using the code length Huffman code.</span>
+<span class="line" id="L538">            <span class="tok-comment">// using the code length Huffman code.</span>
 </span>
-<span class="line" id="L545">            i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L546">            <span class="tok-kw">var</span> n = nlit + ndist;</span>
-<span class="line" id="L547">            <span class="tok-kw">while</span> (i &lt; n) {</span>
-<span class="line" id="L548">                <span class="tok-kw">var</span> x = <span class="tok-kw">try</span> self.huffSym(&amp;self.hd1);</span>
-<span class="line" id="L549">                <span class="tok-kw">if</span> (x &lt; <span class="tok-number">16</span>) {</span>
-<span class="line" id="L550">                    <span class="tok-comment">// Actual length.</span>
+<span class="line" id="L539">            i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L540">            <span class="tok-kw">var</span> n = nlit + ndist;</span>
+<span class="line" id="L541">            <span class="tok-kw">while</span> (i &lt; n) {</span>
+<span class="line" id="L542">                <span class="tok-kw">var</span> x = <span class="tok-kw">try</span> self.huffSym(&amp;self.hd1);</span>
+<span class="line" id="L543">                <span class="tok-kw">if</span> (x &lt; <span class="tok-number">16</span>) {</span>
+<span class="line" id="L544">                    <span class="tok-comment">// Actual length.</span>
 </span>
-<span class="line" id="L551">                    self.bits[i] = x;</span>
-<span class="line" id="L552">                    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L553">                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L554">                }</span>
-<span class="line" id="L555">                <span class="tok-comment">// Repeat previous length or zero.</span>
+<span class="line" id="L545">                    self.bits[i] = x;</span>
+<span class="line" id="L546">                    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L547">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L548">                }</span>
+<span class="line" id="L549">                <span class="tok-comment">// Repeat previous length or zero.</span>
 </span>
-<span class="line" id="L556">                <span class="tok-kw">var</span> rep: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L557">                <span class="tok-kw">var</span> nb: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L558">                <span class="tok-kw">var</span> b: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L559">                <span class="tok-kw">switch</span> (x) {</span>
-<span class="line" id="L560">                    <span class="tok-number">16</span> =&gt; {</span>
-<span class="line" id="L561">                        rep = <span class="tok-number">3</span>;</span>
-<span class="line" id="L562">                        nb = <span class="tok-number">2</span>;</span>
-<span class="line" id="L563">                        <span class="tok-kw">if</span> (i == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L564">                            corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L565">                            self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L566">                            <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L567">                        }</span>
-<span class="line" id="L568">                        b = self.bits[i - <span class="tok-number">1</span>];</span>
-<span class="line" id="L569">                    },</span>
-<span class="line" id="L570">                    <span class="tok-number">17</span> =&gt; {</span>
-<span class="line" id="L571">                        rep = <span class="tok-number">3</span>;</span>
-<span class="line" id="L572">                        nb = <span class="tok-number">3</span>;</span>
-<span class="line" id="L573">                        b = <span class="tok-number">0</span>;</span>
-<span class="line" id="L574">                    },</span>
-<span class="line" id="L575">                    <span class="tok-number">18</span> =&gt; {</span>
-<span class="line" id="L576">                        rep = <span class="tok-number">11</span>;</span>
-<span class="line" id="L577">                        nb = <span class="tok-number">7</span>;</span>
-<span class="line" id="L578">                        b = <span class="tok-number">0</span>;</span>
-<span class="line" id="L579">                    },</span>
-<span class="line" id="L580">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BadInternalState, <span class="tok-comment">// unexpected length code</span>
+<span class="line" id="L550">                <span class="tok-kw">var</span> rep: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L551">                <span class="tok-kw">var</span> nb: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L552">                <span class="tok-kw">var</span> b: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L553">                <span class="tok-kw">switch</span> (x) {</span>
+<span class="line" id="L554">                    <span class="tok-number">16</span> =&gt; {</span>
+<span class="line" id="L555">                        rep = <span class="tok-number">3</span>;</span>
+<span class="line" id="L556">                        nb = <span class="tok-number">2</span>;</span>
+<span class="line" id="L557">                        <span class="tok-kw">if</span> (i == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L558">                            corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L559">                            self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L560">                            <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L561">                        }</span>
+<span class="line" id="L562">                        b = self.bits[i - <span class="tok-number">1</span>];</span>
+<span class="line" id="L563">                    },</span>
+<span class="line" id="L564">                    <span class="tok-number">17</span> =&gt; {</span>
+<span class="line" id="L565">                        rep = <span class="tok-number">3</span>;</span>
+<span class="line" id="L566">                        nb = <span class="tok-number">3</span>;</span>
+<span class="line" id="L567">                        b = <span class="tok-number">0</span>;</span>
+<span class="line" id="L568">                    },</span>
+<span class="line" id="L569">                    <span class="tok-number">18</span> =&gt; {</span>
+<span class="line" id="L570">                        rep = <span class="tok-number">11</span>;</span>
+<span class="line" id="L571">                        nb = <span class="tok-number">7</span>;</span>
+<span class="line" id="L572">                        b = <span class="tok-number">0</span>;</span>
+<span class="line" id="L573">                    },</span>
+<span class="line" id="L574">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BadInternalState, <span class="tok-comment">// unexpected length code</span>
 </span>
-<span class="line" id="L581">                }</span>
-<span class="line" id="L582">                <span class="tok-kw">while</span> (self.nb &lt; nb) {</span>
-<span class="line" id="L583">                    <span class="tok-kw">try</span> self.moreBits();</span>
-<span class="line" id="L584">                }</span>
-<span class="line" id="L585">                rep += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb)) - <span class="tok-number">1</span>);</span>
-<span class="line" id="L586">                self.b &gt;&gt;= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb);</span>
-<span class="line" id="L587">                self.nb -= nb;</span>
-<span class="line" id="L588">                <span class="tok-kw">if</span> (i + rep &gt; n) {</span>
-<span class="line" id="L589">                    corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L590">                    self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L591">                    <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L592">                }</span>
-<span class="line" id="L593">                <span class="tok-kw">var</span> j: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L594">                <span class="tok-kw">while</span> (j &lt; rep) : (j += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L595">                    self.bits[i] = b;</span>
-<span class="line" id="L596">                    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L597">                }</span>
-<span class="line" id="L598">            }</span>
-<span class="line" id="L599"></span>
-<span class="line" id="L600">            <span class="tok-kw">if</span> (!<span class="tok-kw">try</span> self.hd1.init(self.allocator, self.bits[<span class="tok-number">0</span>..nlit]) <span class="tok-kw">or</span></span>
-<span class="line" id="L601">                !<span class="tok-kw">try</span> self.hd2.init(self.allocator, self.bits[nlit .. nlit + ndist]))</span>
-<span class="line" id="L602">            {</span>
-<span class="line" id="L603">                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L604">                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L605">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L606">            }</span>
-<span class="line" id="L607"></span>
-<span class="line" id="L608">            <span class="tok-comment">// As an optimization, we can initialize the min bits to read at a time</span>
+<span class="line" id="L575">                }</span>
+<span class="line" id="L576">                <span class="tok-kw">while</span> (self.nb &lt; nb) {</span>
+<span class="line" id="L577">                    <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L578">                }</span>
+<span class="line" id="L579">                rep += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb)) - <span class="tok-number">1</span>);</span>
+<span class="line" id="L580">                self.b &gt;&gt;= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb);</span>
+<span class="line" id="L581">                self.nb -= nb;</span>
+<span class="line" id="L582">                <span class="tok-kw">if</span> (i + rep &gt; n) {</span>
+<span class="line" id="L583">                    corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L584">                    self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L585">                    <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L586">                }</span>
+<span class="line" id="L587">                <span class="tok-kw">var</span> j: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L588">                <span class="tok-kw">while</span> (j &lt; rep) : (j += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L589">                    self.bits[i] = b;</span>
+<span class="line" id="L590">                    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L591">                }</span>
+<span class="line" id="L592">            }</span>
+<span class="line" id="L593"></span>
+<span class="line" id="L594">            <span class="tok-kw">if</span> (!<span class="tok-kw">try</span> self.hd1.init(self.allocator, self.bits[<span class="tok-number">0</span>..nlit]) <span class="tok-kw">or</span></span>
+<span class="line" id="L595">                !<span class="tok-kw">try</span> self.hd2.init(self.allocator, self.bits[nlit .. nlit + ndist]))</span>
+<span class="line" id="L596">            {</span>
+<span class="line" id="L597">                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L598">                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L599">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L600">            }</span>
+<span class="line" id="L601"></span>
+<span class="line" id="L602">            <span class="tok-comment">// As an optimization, we can initialize the min bits to read at a time</span>
 </span>
-<span class="line" id="L609">            <span class="tok-comment">// for the HLIT tree to the length of the EOB marker since we know that</span>
+<span class="line" id="L603">            <span class="tok-comment">// for the HLIT tree to the length of the EOB marker since we know that</span>
 </span>
-<span class="line" id="L610">            <span class="tok-comment">// every block must terminate with one. This preserves the property that</span>
+<span class="line" id="L604">            <span class="tok-comment">// every block must terminate with one. This preserves the property that</span>
 </span>
-<span class="line" id="L611">            <span class="tok-comment">// we never read any extra bytes after the end of the DEFLATE stream.</span>
+<span class="line" id="L605">            <span class="tok-comment">// we never read any extra bytes after the end of the DEFLATE stream.</span>
 </span>
-<span class="line" id="L612">            <span class="tok-kw">if</span> (self.hd1.min &lt; self.bits[end_block_marker]) {</span>
-<span class="line" id="L613">                self.hd1.min = self.bits[end_block_marker];</span>
-<span class="line" id="L614">            }</span>
-<span class="line" id="L615"></span>
-<span class="line" id="L616">            <span class="tok-kw">return</span>;</span>
-<span class="line" id="L617">        }</span>
-<span class="line" id="L618"></span>
-<span class="line" id="L619">        <span class="tok-comment">// Decode a single Huffman block.</span>
+<span class="line" id="L606">            <span class="tok-kw">if</span> (self.hd1.min &lt; self.bits[end_block_marker]) {</span>
+<span class="line" id="L607">                self.hd1.min = self.bits[end_block_marker];</span>
+<span class="line" id="L608">            }</span>
+<span class="line" id="L609"></span>
+<span class="line" id="L610">            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L611">        }</span>
+<span class="line" id="L612"></span>
+<span class="line" id="L613">        <span class="tok-comment">// Decode a single Huffman block.</span>
 </span>
-<span class="line" id="L620">        <span class="tok-comment">// hl and hd are the Huffman states for the lit/length values</span>
+<span class="line" id="L614">        <span class="tok-comment">// hl and hd are the Huffman states for the lit/length values</span>
 </span>
-<span class="line" id="L621">        <span class="tok-comment">// and the distance values, respectively. If hd == null, using the</span>
+<span class="line" id="L615">        <span class="tok-comment">// and the distance values, respectively. If hd == null, using the</span>
 </span>
-<span class="line" id="L622">        <span class="tok-comment">// fixed distance encoding associated with fixed Huffman blocks.</span>
+<span class="line" id="L616">        <span class="tok-comment">// fixed distance encoding associated with fixed Huffman blocks.</span>
 </span>
-<span class="line" id="L623">        <span class="tok-kw">fn</span> <span class="tok-fn">huffmanBlock</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L624">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L625">                <span class="tok-kw">switch</span> (self.step_state) {</span>
-<span class="line" id="L626">                    .init =&gt; {</span>
-<span class="line" id="L627">                        <span class="tok-comment">// Read literal and/or (length, distance) according to RFC section 3.2.3.</span>
+<span class="line" id="L617">        <span class="tok-kw">fn</span> <span class="tok-fn">huffmanBlock</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L618">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L619">                <span class="tok-kw">switch</span> (self.step_state) {</span>
+<span class="line" id="L620">                    .init =&gt; {</span>
+<span class="line" id="L621">                        <span class="tok-comment">// Read literal and/or (length, distance) according to RFC section 3.2.3.</span>
 </span>
-<span class="line" id="L628">                        <span class="tok-kw">var</span> v = <span class="tok-kw">try</span> self.huffSym(self.hl.?);</span>
-<span class="line" id="L629">                        <span class="tok-kw">var</span> n: <span class="tok-type">u32</span> = <span class="tok-number">0</span>; <span class="tok-comment">// number of bits extra</span>
+<span class="line" id="L622">                        <span class="tok-kw">var</span> v = <span class="tok-kw">try</span> self.huffSym(self.hl.?);</span>
+<span class="line" id="L623">                        <span class="tok-kw">var</span> n: <span class="tok-type">u32</span> = <span class="tok-number">0</span>; <span class="tok-comment">// number of bits extra</span>
 </span>
-<span class="line" id="L630">                        <span class="tok-kw">var</span> length: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L631">                        <span class="tok-kw">switch</span> (v) {</span>
-<span class="line" id="L632">                            <span class="tok-number">0</span>...<span class="tok-number">255</span> =&gt; {</span>
-<span class="line" id="L633">                                self.dict.writeByte(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, v));</span>
-<span class="line" id="L634">                                <span class="tok-kw">if</span> (self.dict.availWrite() == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L635">                                    self.to_read = self.dict.readFlush();</span>
-<span class="line" id="L636">                                    self.step = huffmanBlock;</span>
-<span class="line" id="L637">                                    self.step_state = .init;</span>
-<span class="line" id="L638">                                    <span class="tok-kw">return</span>;</span>
-<span class="line" id="L639">                                }</span>
-<span class="line" id="L640">                                self.step_state = .init;</span>
-<span class="line" id="L641">                                <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L642">                            },</span>
-<span class="line" id="L643">                            <span class="tok-number">256</span> =&gt; {</span>
-<span class="line" id="L644">                                self.finishBlock();</span>
-<span class="line" id="L645">                                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L646">                            },</span>
-<span class="line" id="L647">                            <span class="tok-comment">// otherwise, reference to older data</span>
+<span class="line" id="L624">                        <span class="tok-kw">var</span> length: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L625">                        <span class="tok-kw">switch</span> (v) {</span>
+<span class="line" id="L626">                            <span class="tok-number">0</span>...<span class="tok-number">255</span> =&gt; {</span>
+<span class="line" id="L627">                                self.dict.writeByte(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, v));</span>
+<span class="line" id="L628">                                <span class="tok-kw">if</span> (self.dict.availWrite() == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L629">                                    self.to_read = self.dict.readFlush();</span>
+<span class="line" id="L630">                                    self.step = huffmanBlock;</span>
+<span class="line" id="L631">                                    self.step_state = .init;</span>
+<span class="line" id="L632">                                    <span class="tok-kw">return</span>;</span>
+<span class="line" id="L633">                                }</span>
+<span class="line" id="L634">                                self.step_state = .init;</span>
+<span class="line" id="L635">                                <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L636">                            },</span>
+<span class="line" id="L637">                            <span class="tok-number">256</span> =&gt; {</span>
+<span class="line" id="L638">                                self.finishBlock();</span>
+<span class="line" id="L639">                                <span class="tok-kw">return</span>;</span>
+<span class="line" id="L640">                            },</span>
+<span class="line" id="L641">                            <span class="tok-comment">// otherwise, reference to older data</span>
 </span>
-<span class="line" id="L648">                            <span class="tok-number">257</span>...<span class="tok-number">264</span> =&gt; {</span>
-<span class="line" id="L649">                                length = v - (<span class="tok-number">257</span> - <span class="tok-number">3</span>);</span>
-<span class="line" id="L650">                                n = <span class="tok-number">0</span>;</span>
-<span class="line" id="L651">                            },</span>
-<span class="line" id="L652">                            <span class="tok-number">265</span>...<span class="tok-number">268</span> =&gt; {</span>
-<span class="line" id="L653">                                length = v * <span class="tok-number">2</span> - (<span class="tok-number">265</span> * <span class="tok-number">2</span> - <span class="tok-number">11</span>);</span>
-<span class="line" id="L654">                                n = <span class="tok-number">1</span>;</span>
-<span class="line" id="L655">                            },</span>
-<span class="line" id="L656">                            <span class="tok-number">269</span>...<span class="tok-number">272</span> =&gt; {</span>
-<span class="line" id="L657">                                length = v * <span class="tok-number">4</span> - (<span class="tok-number">269</span> * <span class="tok-number">4</span> - <span class="tok-number">19</span>);</span>
-<span class="line" id="L658">                                n = <span class="tok-number">2</span>;</span>
-<span class="line" id="L659">                            },</span>
-<span class="line" id="L660">                            <span class="tok-number">273</span>...<span class="tok-number">276</span> =&gt; {</span>
-<span class="line" id="L661">                                length = v * <span class="tok-number">8</span> - (<span class="tok-number">273</span> * <span class="tok-number">8</span> - <span class="tok-number">35</span>);</span>
-<span class="line" id="L662">                                n = <span class="tok-number">3</span>;</span>
-<span class="line" id="L663">                            },</span>
-<span class="line" id="L664">                            <span class="tok-number">277</span>...<span class="tok-number">280</span> =&gt; {</span>
-<span class="line" id="L665">                                length = v * <span class="tok-number">16</span> - (<span class="tok-number">277</span> * <span class="tok-number">16</span> - <span class="tok-number">67</span>);</span>
-<span class="line" id="L666">                                n = <span class="tok-number">4</span>;</span>
-<span class="line" id="L667">                            },</span>
-<span class="line" id="L668">                            <span class="tok-number">281</span>...<span class="tok-number">284</span> =&gt; {</span>
-<span class="line" id="L669">                                length = v * <span class="tok-number">32</span> - (<span class="tok-number">281</span> * <span class="tok-number">32</span> - <span class="tok-number">131</span>);</span>
-<span class="line" id="L670">                                n = <span class="tok-number">5</span>;</span>
-<span class="line" id="L671">                            },</span>
-<span class="line" id="L672">                            max_num_lit - <span class="tok-number">1</span> =&gt; { <span class="tok-comment">// 285</span>
+<span class="line" id="L642">                            <span class="tok-number">257</span>...<span class="tok-number">264</span> =&gt; {</span>
+<span class="line" id="L643">                                length = v - (<span class="tok-number">257</span> - <span class="tok-number">3</span>);</span>
+<span class="line" id="L644">                                n = <span class="tok-number">0</span>;</span>
+<span class="line" id="L645">                            },</span>
+<span class="line" id="L646">                            <span class="tok-number">265</span>...<span class="tok-number">268</span> =&gt; {</span>
+<span class="line" id="L647">                                length = v * <span class="tok-number">2</span> - (<span class="tok-number">265</span> * <span class="tok-number">2</span> - <span class="tok-number">11</span>);</span>
+<span class="line" id="L648">                                n = <span class="tok-number">1</span>;</span>
+<span class="line" id="L649">                            },</span>
+<span class="line" id="L650">                            <span class="tok-number">269</span>...<span class="tok-number">272</span> =&gt; {</span>
+<span class="line" id="L651">                                length = v * <span class="tok-number">4</span> - (<span class="tok-number">269</span> * <span class="tok-number">4</span> - <span class="tok-number">19</span>);</span>
+<span class="line" id="L652">                                n = <span class="tok-number">2</span>;</span>
+<span class="line" id="L653">                            },</span>
+<span class="line" id="L654">                            <span class="tok-number">273</span>...<span class="tok-number">276</span> =&gt; {</span>
+<span class="line" id="L655">                                length = v * <span class="tok-number">8</span> - (<span class="tok-number">273</span> * <span class="tok-number">8</span> - <span class="tok-number">35</span>);</span>
+<span class="line" id="L656">                                n = <span class="tok-number">3</span>;</span>
+<span class="line" id="L657">                            },</span>
+<span class="line" id="L658">                            <span class="tok-number">277</span>...<span class="tok-number">280</span> =&gt; {</span>
+<span class="line" id="L659">                                length = v * <span class="tok-number">16</span> - (<span class="tok-number">277</span> * <span class="tok-number">16</span> - <span class="tok-number">67</span>);</span>
+<span class="line" id="L660">                                n = <span class="tok-number">4</span>;</span>
+<span class="line" id="L661">                            },</span>
+<span class="line" id="L662">                            <span class="tok-number">281</span>...<span class="tok-number">284</span> =&gt; {</span>
+<span class="line" id="L663">                                length = v * <span class="tok-number">32</span> - (<span class="tok-number">281</span> * <span class="tok-number">32</span> - <span class="tok-number">131</span>);</span>
+<span class="line" id="L664">                                n = <span class="tok-number">5</span>;</span>
+<span class="line" id="L665">                            },</span>
+<span class="line" id="L666">                            max_num_lit - <span class="tok-number">1</span> =&gt; { <span class="tok-comment">// 285</span>
 </span>
-<span class="line" id="L673">                                length = <span class="tok-number">258</span>;</span>
-<span class="line" id="L674">                                n = <span class="tok-number">0</span>;</span>
-<span class="line" id="L675">                            },</span>
-<span class="line" id="L676">                            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L677">                                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L678">                                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L679">                                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L680">                            },</span>
-<span class="line" id="L681">                        }</span>
-<span class="line" id="L682">                        <span class="tok-kw">if</span> (n &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L683">                            <span class="tok-kw">while</span> (self.nb &lt; n) {</span>
-<span class="line" id="L684">                                <span class="tok-kw">try</span> self.moreBits();</span>
-<span class="line" id="L685">                            }</span>
-<span class="line" id="L686">                            length += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b) &amp; ((<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, n)) - <span class="tok-number">1</span>);</span>
-<span class="line" id="L687">                            self.b &gt;&gt;= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, n);</span>
-<span class="line" id="L688">                            self.nb -= n;</span>
-<span class="line" id="L689">                        }</span>
-<span class="line" id="L690"></span>
-<span class="line" id="L691">                        <span class="tok-kw">var</span> dist: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L692">                        <span class="tok-kw">if</span> (self.hd == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L693">                            <span class="tok-kw">while</span> (self.nb &lt; <span class="tok-number">5</span>) {</span>
-<span class="line" id="L694">                                <span class="tok-kw">try</span> self.moreBits();</span>
-<span class="line" id="L695">                            }</span>
-<span class="line" id="L696">                            dist = <span class="tok-builtin">@intCast</span>(</span>
-<span class="line" id="L697">                                <span class="tok-type">u32</span>,</span>
-<span class="line" id="L698">                                bu.bitReverse(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (self.b &amp; <span class="tok-number">0x1F</span>) &lt;&lt; <span class="tok-number">3</span>), <span class="tok-number">8</span>),</span>
-<span class="line" id="L699">                            );</span>
-<span class="line" id="L700">                            self.b &gt;&gt;= <span class="tok-number">5</span>;</span>
-<span class="line" id="L701">                            self.nb -= <span class="tok-number">5</span>;</span>
-<span class="line" id="L702">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L703">                            dist = <span class="tok-kw">try</span> self.huffSym(self.hd.?);</span>
-<span class="line" id="L704">                        }</span>
-<span class="line" id="L705"></span>
-<span class="line" id="L706">                        <span class="tok-kw">switch</span> (dist) {</span>
-<span class="line" id="L707">                            <span class="tok-number">0</span>...<span class="tok-number">3</span> =&gt; dist += <span class="tok-number">1</span>,</span>
-<span class="line" id="L708">                            <span class="tok-number">4</span>...max_num_dist - <span class="tok-number">1</span> =&gt; { <span class="tok-comment">// 4...29</span>
+<span class="line" id="L667">                                length = <span class="tok-number">258</span>;</span>
+<span class="line" id="L668">                                n = <span class="tok-number">0</span>;</span>
+<span class="line" id="L669">                            },</span>
+<span class="line" id="L670">                            <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L671">                                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L672">                                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L673">                                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L674">                            },</span>
+<span class="line" id="L675">                        }</span>
+<span class="line" id="L676">                        <span class="tok-kw">if</span> (n &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L677">                            <span class="tok-kw">while</span> (self.nb &lt; n) {</span>
+<span class="line" id="L678">                                <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L679">                            }</span>
+<span class="line" id="L680">                            length += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b) &amp; ((<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, n)) - <span class="tok-number">1</span>);</span>
+<span class="line" id="L681">                            self.b &gt;&gt;= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, n);</span>
+<span class="line" id="L682">                            self.nb -= n;</span>
+<span class="line" id="L683">                        }</span>
+<span class="line" id="L684"></span>
+<span class="line" id="L685">                        <span class="tok-kw">var</span> dist: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L686">                        <span class="tok-kw">if</span> (self.hd == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L687">                            <span class="tok-kw">while</span> (self.nb &lt; <span class="tok-number">5</span>) {</span>
+<span class="line" id="L688">                                <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L689">                            }</span>
+<span class="line" id="L690">                            dist = <span class="tok-builtin">@intCast</span>(</span>
+<span class="line" id="L691">                                <span class="tok-type">u32</span>,</span>
+<span class="line" id="L692">                                bu.bitReverse(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (self.b &amp; <span class="tok-number">0x1F</span>) &lt;&lt; <span class="tok-number">3</span>), <span class="tok-number">8</span>),</span>
+<span class="line" id="L693">                            );</span>
+<span class="line" id="L694">                            self.b &gt;&gt;= <span class="tok-number">5</span>;</span>
+<span class="line" id="L695">                            self.nb -= <span class="tok-number">5</span>;</span>
+<span class="line" id="L696">                        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L697">                            dist = <span class="tok-kw">try</span> self.huffSym(self.hd.?);</span>
+<span class="line" id="L698">                        }</span>
+<span class="line" id="L699"></span>
+<span class="line" id="L700">                        <span class="tok-kw">switch</span> (dist) {</span>
+<span class="line" id="L701">                            <span class="tok-number">0</span>...<span class="tok-number">3</span> =&gt; dist += <span class="tok-number">1</span>,</span>
+<span class="line" id="L702">                            <span class="tok-number">4</span>...max_num_dist - <span class="tok-number">1</span> =&gt; { <span class="tok-comment">// 4...29</span>
 </span>
-<span class="line" id="L709">                                <span class="tok-kw">var</span> nb = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, dist - <span class="tok-number">2</span>) &gt;&gt; <span class="tok-number">1</span>;</span>
-<span class="line" id="L710">                                <span class="tok-comment">// have 1 bit in bottom of dist, need nb more.</span>
+<span class="line" id="L703">                                <span class="tok-kw">var</span> nb = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, dist - <span class="tok-number">2</span>) &gt;&gt; <span class="tok-number">1</span>;</span>
+<span class="line" id="L704">                                <span class="tok-comment">// have 1 bit in bottom of dist, need nb more.</span>
 </span>
-<span class="line" id="L711">                                <span class="tok-kw">var</span> extra = (dist &amp; <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb);</span>
-<span class="line" id="L712">                                <span class="tok-kw">while</span> (self.nb &lt; nb) {</span>
-<span class="line" id="L713">                                    <span class="tok-kw">try</span> self.moreBits();</span>
-<span class="line" id="L714">                                }</span>
-<span class="line" id="L715">                                extra |= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb)) - <span class="tok-number">1</span>);</span>
-<span class="line" id="L716">                                self.b &gt;&gt;= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb);</span>
-<span class="line" id="L717">                                self.nb -= nb;</span>
-<span class="line" id="L718">                                dist = (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb + <span class="tok-number">1</span>)) + <span class="tok-number">1</span> + extra;</span>
-<span class="line" id="L719">                            },</span>
-<span class="line" id="L720">                            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L721">                                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L722">                                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L723">                                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L724">                            },</span>
-<span class="line" id="L725">                        }</span>
-<span class="line" id="L726"></span>
-<span class="line" id="L727">                        <span class="tok-comment">// No check on length; encoding can be prescient.</span>
+<span class="line" id="L705">                                <span class="tok-kw">var</span> extra = (dist &amp; <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb);</span>
+<span class="line" id="L706">                                <span class="tok-kw">while</span> (self.nb &lt; nb) {</span>
+<span class="line" id="L707">                                    <span class="tok-kw">try</span> self.moreBits();</span>
+<span class="line" id="L708">                                }</span>
+<span class="line" id="L709">                                extra |= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.b &amp; (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb)) - <span class="tok-number">1</span>);</span>
+<span class="line" id="L710">                                self.b &gt;&gt;= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb);</span>
+<span class="line" id="L711">                                self.nb -= nb;</span>
+<span class="line" id="L712">                                dist = (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb + <span class="tok-number">1</span>)) + <span class="tok-number">1</span> + extra;</span>
+<span class="line" id="L713">                            },</span>
+<span class="line" id="L714">                            <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L715">                                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L716">                                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L717">                                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L718">                            },</span>
+<span class="line" id="L719">                        }</span>
+<span class="line" id="L720"></span>
+<span class="line" id="L721">                        <span class="tok-comment">// No check on length; encoding can be prescient.</span>
 </span>
-<span class="line" id="L728">                        <span class="tok-kw">if</span> (dist &gt; self.dict.histSize()) {</span>
-<span class="line" id="L729">                            corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L730">                            self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L731">                            <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L732">                        }</span>
-<span class="line" id="L733"></span>
-<span class="line" id="L734">                        self.copy_len = length;</span>
-<span class="line" id="L735">                        self.copy_dist = dist;</span>
-<span class="line" id="L736">                        self.step_state = .dict;</span>
-<span class="line" id="L737">                    },</span>
-<span class="line" id="L738"></span>
-<span class="line" id="L739">                    .dict =&gt; {</span>
-<span class="line" id="L740">                        <span class="tok-comment">// Perform a backwards copy according to RFC section 3.2.3.</span>
+<span class="line" id="L722">                        <span class="tok-kw">if</span> (dist &gt; self.dict.histSize()) {</span>
+<span class="line" id="L723">                            corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L724">                            self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L725">                            <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L726">                        }</span>
+<span class="line" id="L727"></span>
+<span class="line" id="L728">                        self.copy_len = length;</span>
+<span class="line" id="L729">                        self.copy_dist = dist;</span>
+<span class="line" id="L730">                        self.step_state = .dict;</span>
+<span class="line" id="L731">                    },</span>
+<span class="line" id="L732"></span>
+<span class="line" id="L733">                    .dict =&gt; {</span>
+<span class="line" id="L734">                        <span class="tok-comment">// Perform a backwards copy according to RFC section 3.2.3.</span>
 </span>
-<span class="line" id="L741">                        <span class="tok-kw">var</span> cnt = self.dict.tryWriteCopy(self.copy_dist, self.copy_len);</span>
-<span class="line" id="L742">                        <span class="tok-kw">if</span> (cnt == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L743">                            cnt = self.dict.writeCopy(self.copy_dist, self.copy_len);</span>
-<span class="line" id="L744">                        }</span>
-<span class="line" id="L745">                        self.copy_len -= cnt;</span>
-<span class="line" id="L746"></span>
-<span class="line" id="L747">                        <span class="tok-kw">if</span> (self.dict.availWrite() == <span class="tok-number">0</span> <span class="tok-kw">or</span> self.copy_len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L748">                            self.to_read = self.dict.readFlush();</span>
-<span class="line" id="L749">                            self.step = huffmanBlock; <span class="tok-comment">// We need to continue this work</span>
+<span class="line" id="L735">                        <span class="tok-kw">var</span> cnt = self.dict.tryWriteCopy(self.copy_dist, self.copy_len);</span>
+<span class="line" id="L736">                        <span class="tok-kw">if</span> (cnt == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L737">                            cnt = self.dict.writeCopy(self.copy_dist, self.copy_len);</span>
+<span class="line" id="L738">                        }</span>
+<span class="line" id="L739">                        self.copy_len -= cnt;</span>
+<span class="line" id="L740"></span>
+<span class="line" id="L741">                        <span class="tok-kw">if</span> (self.dict.availWrite() == <span class="tok-number">0</span> <span class="tok-kw">or</span> self.copy_len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L742">                            self.to_read = self.dict.readFlush();</span>
+<span class="line" id="L743">                            self.step = huffmanBlock; <span class="tok-comment">// We need to continue this work</span>
 </span>
-<span class="line" id="L750">                            self.step_state = .dict;</span>
-<span class="line" id="L751">                            <span class="tok-kw">return</span>;</span>
-<span class="line" id="L752">                        }</span>
-<span class="line" id="L753">                        self.step_state = .init;</span>
-<span class="line" id="L754">                    },</span>
-<span class="line" id="L755">                }</span>
-<span class="line" id="L756">            }</span>
-<span class="line" id="L757">        }</span>
-<span class="line" id="L758"></span>
-<span class="line" id="L759">        <span class="tok-comment">// Copy a single uncompressed data block from input to output.</span>
+<span class="line" id="L744">                            self.step_state = .dict;</span>
+<span class="line" id="L745">                            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L746">                        }</span>
+<span class="line" id="L747">                        self.step_state = .init;</span>
+<span class="line" id="L748">                    },</span>
+<span class="line" id="L749">                }</span>
+<span class="line" id="L750">            }</span>
+<span class="line" id="L751">        }</span>
+<span class="line" id="L752"></span>
+<span class="line" id="L753">        <span class="tok-comment">// Copy a single uncompressed data block from input to output.</span>
 </span>
-<span class="line" id="L760">        <span class="tok-kw">fn</span> <span class="tok-fn">dataBlock</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L761">            <span class="tok-comment">// Uncompressed.</span>
+<span class="line" id="L754">        <span class="tok-kw">fn</span> <span class="tok-fn">dataBlock</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L755">            <span class="tok-comment">// Uncompressed.</span>
 </span>
-<span class="line" id="L762">            <span class="tok-comment">// Discard current half-byte.</span>
+<span class="line" id="L756">            <span class="tok-comment">// Discard current half-byte.</span>
 </span>
-<span class="line" id="L763">            self.nb = <span class="tok-number">0</span>;</span>
-<span class="line" id="L764">            self.b = <span class="tok-number">0</span>;</span>
-<span class="line" id="L765"></span>
-<span class="line" id="L766">            <span class="tok-comment">// Length then ones-complement of length.</span>
+<span class="line" id="L757">            self.nb = <span class="tok-number">0</span>;</span>
+<span class="line" id="L758">            self.b = <span class="tok-number">0</span>;</span>
+<span class="line" id="L759"></span>
+<span class="line" id="L760">            <span class="tok-comment">// Length then ones-complement of length.</span>
 </span>
-<span class="line" id="L767">            <span class="tok-kw">var</span> nr: <span class="tok-type">u32</span> = <span class="tok-number">4</span>;</span>
-<span class="line" id="L768">            self.inner_reader.readNoEof(self.buf[<span class="tok-number">0</span>..nr]) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L769">                self.err = InflateError.UnexpectedEndOfStream;</span>
-<span class="line" id="L770">                <span class="tok-kw">return</span> InflateError.UnexpectedEndOfStream;</span>
-<span class="line" id="L771">            };</span>
-<span class="line" id="L772">            self.roffset += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, nr);</span>
-<span class="line" id="L773">            <span class="tok-kw">var</span> n = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">0</span>]) | <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">1</span>]) &lt;&lt; <span class="tok-number">8</span>;</span>
-<span class="line" id="L774">            <span class="tok-kw">var</span> nn = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">2</span>]) | <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">3</span>]) &lt;&lt; <span class="tok-number">8</span>;</span>
-<span class="line" id="L775">            <span class="tok-kw">if</span> (<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, nn) != <span class="tok-builtin">@truncate</span>(<span class="tok-type">u16</span>, ~n)) {</span>
-<span class="line" id="L776">                corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L777">                self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L778">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L761">            <span class="tok-kw">var</span> nr: <span class="tok-type">u32</span> = <span class="tok-number">4</span>;</span>
+<span class="line" id="L762">            self.inner_reader.readNoEof(self.buf[<span class="tok-number">0</span>..nr]) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L763">                self.err = InflateError.UnexpectedEndOfStream;</span>
+<span class="line" id="L764">                <span class="tok-kw">return</span> InflateError.UnexpectedEndOfStream;</span>
+<span class="line" id="L765">            };</span>
+<span class="line" id="L766">            self.roffset += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, nr);</span>
+<span class="line" id="L767">            <span class="tok-kw">var</span> n = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">0</span>]) | <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">1</span>]) &lt;&lt; <span class="tok-number">8</span>;</span>
+<span class="line" id="L768">            <span class="tok-kw">var</span> nn = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">2</span>]) | <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.buf[<span class="tok-number">3</span>]) &lt;&lt; <span class="tok-number">8</span>;</span>
+<span class="line" id="L769">            <span class="tok-kw">if</span> (<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, nn) != <span class="tok-builtin">@truncate</span>(<span class="tok-type">u16</span>, ~n)) {</span>
+<span class="line" id="L770">                corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L771">                self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L772">                <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L773">            }</span>
+<span class="line" id="L774"></span>
+<span class="line" id="L775">            <span class="tok-kw">if</span> (n == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L776">                self.to_read = self.dict.readFlush();</span>
+<span class="line" id="L777">                self.finishBlock();</span>
+<span class="line" id="L778">                <span class="tok-kw">return</span>;</span>
 <span class="line" id="L779">            }</span>
 <span class="line" id="L780"></span>
-<span class="line" id="L781">            <span class="tok-kw">if</span> (n == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L782">                self.to_read = self.dict.readFlush();</span>
-<span class="line" id="L783">                self.finishBlock();</span>
-<span class="line" id="L784">                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L785">            }</span>
-<span class="line" id="L786"></span>
-<span class="line" id="L787">            self.copy_len = n;</span>
-<span class="line" id="L788">            <span class="tok-kw">try</span> self.copyData();</span>
-<span class="line" id="L789">        }</span>
-<span class="line" id="L790"></span>
-<span class="line" id="L791">        <span class="tok-comment">// copyData copies self.copy_len bytes from the underlying reader into self.hist.</span>
+<span class="line" id="L781">            self.copy_len = n;</span>
+<span class="line" id="L782">            <span class="tok-kw">try</span> self.copyData();</span>
+<span class="line" id="L783">        }</span>
+<span class="line" id="L784"></span>
+<span class="line" id="L785">        <span class="tok-comment">// copyData copies self.copy_len bytes from the underlying reader into self.hist.</span>
 </span>
-<span class="line" id="L792">        <span class="tok-comment">// It pauses for reads when self.hist is full.</span>
+<span class="line" id="L786">        <span class="tok-comment">// It pauses for reads when self.hist is full.</span>
 </span>
-<span class="line" id="L793">        <span class="tok-kw">fn</span> <span class="tok-fn">copyData</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L794">            <span class="tok-kw">var</span> buf = self.dict.writeSlice();</span>
-<span class="line" id="L795">            <span class="tok-kw">if</span> (buf.len &gt; self.copy_len) {</span>
-<span class="line" id="L796">                buf = buf[<span class="tok-number">0</span>..self.copy_len];</span>
-<span class="line" id="L797">            }</span>
-<span class="line" id="L798"></span>
-<span class="line" id="L799">            <span class="tok-kw">var</span> cnt = <span class="tok-kw">try</span> self.inner_reader.read(buf);</span>
-<span class="line" id="L800">            <span class="tok-kw">if</span> (cnt &lt; buf.len) {</span>
-<span class="line" id="L801">                self.err = InflateError.UnexpectedEndOfStream;</span>
+<span class="line" id="L787">        <span class="tok-kw">fn</span> <span class="tok-fn">copyData</span>(self: *Self) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L788">            <span class="tok-kw">var</span> buf = self.dict.writeSlice();</span>
+<span class="line" id="L789">            <span class="tok-kw">if</span> (buf.len &gt; self.copy_len) {</span>
+<span class="line" id="L790">                buf = buf[<span class="tok-number">0</span>..self.copy_len];</span>
+<span class="line" id="L791">            }</span>
+<span class="line" id="L792"></span>
+<span class="line" id="L793">            <span class="tok-kw">var</span> cnt = <span class="tok-kw">try</span> self.inner_reader.read(buf);</span>
+<span class="line" id="L794">            <span class="tok-kw">if</span> (cnt &lt; buf.len) {</span>
+<span class="line" id="L795">                self.err = InflateError.UnexpectedEndOfStream;</span>
+<span class="line" id="L796">            }</span>
+<span class="line" id="L797">            self.roffset += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, cnt);</span>
+<span class="line" id="L798">            self.copy_len -= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, cnt);</span>
+<span class="line" id="L799">            self.dict.writeMark(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, cnt));</span>
+<span class="line" id="L800">            <span class="tok-kw">if</span> (self.err != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L801">                <span class="tok-kw">return</span> InflateError.UnexpectedEndOfStream;</span>
 <span class="line" id="L802">            }</span>
-<span class="line" id="L803">            self.roffset += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, cnt);</span>
-<span class="line" id="L804">            self.copy_len -= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, cnt);</span>
-<span class="line" id="L805">            self.dict.writeMark(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, cnt));</span>
-<span class="line" id="L806">            <span class="tok-kw">if</span> (self.err != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L807">                <span class="tok-kw">return</span> InflateError.UnexpectedEndOfStream;</span>
+<span class="line" id="L803"></span>
+<span class="line" id="L804">            <span class="tok-kw">if</span> (self.dict.availWrite() == <span class="tok-number">0</span> <span class="tok-kw">or</span> self.copy_len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L805">                self.to_read = self.dict.readFlush();</span>
+<span class="line" id="L806">                self.step = copyData;</span>
+<span class="line" id="L807">                <span class="tok-kw">return</span>;</span>
 <span class="line" id="L808">            }</span>
-<span class="line" id="L809"></span>
-<span class="line" id="L810">            <span class="tok-kw">if</span> (self.dict.availWrite() == <span class="tok-number">0</span> <span class="tok-kw">or</span> self.copy_len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L811">                self.to_read = self.dict.readFlush();</span>
-<span class="line" id="L812">                self.step = copyData;</span>
-<span class="line" id="L813">                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L814">            }</span>
-<span class="line" id="L815">            self.finishBlock();</span>
-<span class="line" id="L816">        }</span>
-<span class="line" id="L817"></span>
-<span class="line" id="L818">        <span class="tok-kw">fn</span> <span class="tok-fn">finishBlock</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L819">            <span class="tok-kw">if</span> (self.final) {</span>
-<span class="line" id="L820">                <span class="tok-kw">if</span> (self.dict.availRead() &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L821">                    self.to_read = self.dict.readFlush();</span>
-<span class="line" id="L822">                }</span>
-<span class="line" id="L823">                self.err = InflateError.EndOfStreamWithNoError;</span>
-<span class="line" id="L824">            }</span>
-<span class="line" id="L825">            self.step = nextBlock;</span>
-<span class="line" id="L826">        }</span>
-<span class="line" id="L827"></span>
-<span class="line" id="L828">        <span class="tok-kw">fn</span> <span class="tok-fn">moreBits</span>(self: *Self) InflateError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L829">            <span class="tok-kw">var</span> c = self.inner_reader.readByte() <span class="tok-kw">catch</span> |e| {</span>
-<span class="line" id="L830">                <span class="tok-kw">if</span> (e == <span class="tok-kw">error</span>.EndOfStream) {</span>
-<span class="line" id="L831">                    <span class="tok-kw">return</span> InflateError.UnexpectedEndOfStream;</span>
-<span class="line" id="L832">                }</span>
-<span class="line" id="L833">                <span class="tok-kw">return</span> InflateError.BadReaderState;</span>
-<span class="line" id="L834">            };</span>
-<span class="line" id="L835">            self.roffset += <span class="tok-number">1</span>;</span>
-<span class="line" id="L836">            self.b |= <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, c) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, self.nb);</span>
-<span class="line" id="L837">            self.nb += <span class="tok-number">8</span>;</span>
-<span class="line" id="L838">            <span class="tok-kw">return</span>;</span>
-<span class="line" id="L839">        }</span>
-<span class="line" id="L840"></span>
-<span class="line" id="L841">        <span class="tok-comment">// Read the next Huffman-encoded symbol according to h.</span>
+<span class="line" id="L809">            self.finishBlock();</span>
+<span class="line" id="L810">        }</span>
+<span class="line" id="L811"></span>
+<span class="line" id="L812">        <span class="tok-kw">fn</span> <span class="tok-fn">finishBlock</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L813">            <span class="tok-kw">if</span> (self.final) {</span>
+<span class="line" id="L814">                <span class="tok-kw">if</span> (self.dict.availRead() &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L815">                    self.to_read = self.dict.readFlush();</span>
+<span class="line" id="L816">                }</span>
+<span class="line" id="L817">                self.err = InflateError.EndOfStreamWithNoError;</span>
+<span class="line" id="L818">            }</span>
+<span class="line" id="L819">            self.step = nextBlock;</span>
+<span class="line" id="L820">        }</span>
+<span class="line" id="L821"></span>
+<span class="line" id="L822">        <span class="tok-kw">fn</span> <span class="tok-fn">moreBits</span>(self: *Self) InflateError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L823">            <span class="tok-kw">var</span> c = self.inner_reader.readByte() <span class="tok-kw">catch</span> |e| {</span>
+<span class="line" id="L824">                <span class="tok-kw">if</span> (e == <span class="tok-kw">error</span>.EndOfStream) {</span>
+<span class="line" id="L825">                    <span class="tok-kw">return</span> InflateError.UnexpectedEndOfStream;</span>
+<span class="line" id="L826">                }</span>
+<span class="line" id="L827">                <span class="tok-kw">return</span> InflateError.BadReaderState;</span>
+<span class="line" id="L828">            };</span>
+<span class="line" id="L829">            self.roffset += <span class="tok-number">1</span>;</span>
+<span class="line" id="L830">            self.b |= <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, c) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, self.nb);</span>
+<span class="line" id="L831">            self.nb += <span class="tok-number">8</span>;</span>
+<span class="line" id="L832">            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L833">        }</span>
+<span class="line" id="L834"></span>
+<span class="line" id="L835">        <span class="tok-comment">// Read the next Huffman-encoded symbol according to h.</span>
 </span>
-<span class="line" id="L842">        <span class="tok-kw">fn</span> <span class="tok-fn">huffSym</span>(self: *Self, h: *HuffmanDecoder) InflateError!<span class="tok-type">u32</span> {</span>
-<span class="line" id="L843">            <span class="tok-comment">// Since a HuffmanDecoder can be empty or be composed of a degenerate tree</span>
+<span class="line" id="L836">        <span class="tok-kw">fn</span> <span class="tok-fn">huffSym</span>(self: *Self, h: *HuffmanDecoder) InflateError!<span class="tok-type">u32</span> {</span>
+<span class="line" id="L837">            <span class="tok-comment">// Since a HuffmanDecoder can be empty or be composed of a degenerate tree</span>
 </span>
-<span class="line" id="L844">            <span class="tok-comment">// with single element, huffSym must error on these two edge cases. In both</span>
+<span class="line" id="L838">            <span class="tok-comment">// with single element, huffSym must error on these two edge cases. In both</span>
 </span>
-<span class="line" id="L845">            <span class="tok-comment">// cases, the chunks slice will be 0 for the invalid sequence, leading it</span>
+<span class="line" id="L839">            <span class="tok-comment">// cases, the chunks slice will be 0 for the invalid sequence, leading it</span>
 </span>
-<span class="line" id="L846">            <span class="tok-comment">// satisfy the n == 0 check below.</span>
+<span class="line" id="L840">            <span class="tok-comment">// satisfy the n == 0 check below.</span>
 </span>
-<span class="line" id="L847">            <span class="tok-kw">var</span> n: <span class="tok-type">u32</span> = h.min;</span>
-<span class="line" id="L848">            <span class="tok-comment">// Optimization. Go compiler isn't smart enough to keep self.b, self.nb in registers,</span>
+<span class="line" id="L841">            <span class="tok-kw">var</span> n: <span class="tok-type">u32</span> = h.min;</span>
+<span class="line" id="L842">            <span class="tok-comment">// Optimization. Go compiler isn't smart enough to keep self.b, self.nb in registers,</span>
 </span>
-<span class="line" id="L849">            <span class="tok-comment">// but is smart enough to keep local variables in registers, so use nb and b,</span>
+<span class="line" id="L843">            <span class="tok-comment">// but is smart enough to keep local variables in registers, so use nb and b,</span>
 </span>
-<span class="line" id="L850">            <span class="tok-comment">// inline call to moreBits and reassign b, nb back to self on return.</span>
+<span class="line" id="L844">            <span class="tok-comment">// inline call to moreBits and reassign b, nb back to self on return.</span>
 </span>
-<span class="line" id="L851">            <span class="tok-kw">var</span> nb = self.nb;</span>
-<span class="line" id="L852">            <span class="tok-kw">var</span> b = self.b;</span>
-<span class="line" id="L853">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L854">                <span class="tok-kw">while</span> (nb &lt; n) {</span>
-<span class="line" id="L855">                    <span class="tok-kw">var</span> c = self.inner_reader.readByte() <span class="tok-kw">catch</span> |e| {</span>
-<span class="line" id="L856">                        self.b = b;</span>
-<span class="line" id="L857">                        self.nb = nb;</span>
-<span class="line" id="L858">                        <span class="tok-kw">if</span> (e == <span class="tok-kw">error</span>.EndOfStream) {</span>
-<span class="line" id="L859">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream;</span>
-<span class="line" id="L860">                        }</span>
-<span class="line" id="L861">                        <span class="tok-kw">return</span> InflateError.BadReaderState;</span>
-<span class="line" id="L862">                    };</span>
-<span class="line" id="L863">                    self.roffset += <span class="tok-number">1</span>;</span>
-<span class="line" id="L864">                    b |= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, c) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb &amp; <span class="tok-number">31</span>);</span>
-<span class="line" id="L865">                    nb += <span class="tok-number">8</span>;</span>
+<span class="line" id="L845">            <span class="tok-kw">var</span> nb = self.nb;</span>
+<span class="line" id="L846">            <span class="tok-kw">var</span> b = self.b;</span>
+<span class="line" id="L847">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L848">                <span class="tok-kw">while</span> (nb &lt; n) {</span>
+<span class="line" id="L849">                    <span class="tok-kw">var</span> c = self.inner_reader.readByte() <span class="tok-kw">catch</span> |e| {</span>
+<span class="line" id="L850">                        self.b = b;</span>
+<span class="line" id="L851">                        self.nb = nb;</span>
+<span class="line" id="L852">                        <span class="tok-kw">if</span> (e == <span class="tok-kw">error</span>.EndOfStream) {</span>
+<span class="line" id="L853">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream;</span>
+<span class="line" id="L854">                        }</span>
+<span class="line" id="L855">                        <span class="tok-kw">return</span> InflateError.BadReaderState;</span>
+<span class="line" id="L856">                    };</span>
+<span class="line" id="L857">                    self.roffset += <span class="tok-number">1</span>;</span>
+<span class="line" id="L858">                    b |= <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, c) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, nb &amp; <span class="tok-number">31</span>);</span>
+<span class="line" id="L859">                    nb += <span class="tok-number">8</span>;</span>
+<span class="line" id="L860">                }</span>
+<span class="line" id="L861">                <span class="tok-kw">var</span> chunk = h.chunks[b &amp; (huffman_num_chunks - <span class="tok-number">1</span>)];</span>
+<span class="line" id="L862">                n = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, chunk &amp; huffman_count_mask);</span>
+<span class="line" id="L863">                <span class="tok-kw">if</span> (n &gt; huffman_chunk_bits) {</span>
+<span class="line" id="L864">                    chunk = h.links[chunk &gt;&gt; huffman_value_shift][(b &gt;&gt; huffman_chunk_bits) &amp; h.link_mask];</span>
+<span class="line" id="L865">                    n = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, chunk &amp; huffman_count_mask);</span>
 <span class="line" id="L866">                }</span>
-<span class="line" id="L867">                <span class="tok-kw">var</span> chunk = h.chunks[b &amp; (huffman_num_chunks - <span class="tok-number">1</span>)];</span>
-<span class="line" id="L868">                n = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, chunk &amp; huffman_count_mask);</span>
-<span class="line" id="L869">                <span class="tok-kw">if</span> (n &gt; huffman_chunk_bits) {</span>
-<span class="line" id="L870">                    chunk = h.links[chunk &gt;&gt; huffman_value_shift][(b &gt;&gt; huffman_chunk_bits) &amp; h.link_mask];</span>
-<span class="line" id="L871">                    n = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, chunk &amp; huffman_count_mask);</span>
-<span class="line" id="L872">                }</span>
-<span class="line" id="L873">                <span class="tok-kw">if</span> (n &lt;= nb) {</span>
-<span class="line" id="L874">                    <span class="tok-kw">if</span> (n == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L875">                        self.b = b;</span>
-<span class="line" id="L876">                        self.nb = nb;</span>
-<span class="line" id="L877">                        corrupt_input_error_offset = self.roffset;</span>
-<span class="line" id="L878">                        self.err = InflateError.CorruptInput;</span>
-<span class="line" id="L879">                        <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
-<span class="line" id="L880">                    }</span>
-<span class="line" id="L881">                    self.b = b &gt;&gt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, n &amp; <span class="tok-number">31</span>);</span>
-<span class="line" id="L882">                    self.nb = nb - n;</span>
-<span class="line" id="L883">                    <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, chunk &gt;&gt; huffman_value_shift);</span>
-<span class="line" id="L884">                }</span>
-<span class="line" id="L885">            }</span>
-<span class="line" id="L886">        }</span>
-<span class="line" id="L887"></span>
-<span class="line" id="L888">        <span class="tok-comment">/// Replaces the inner reader and dictionary with new_reader and new_dict.</span></span>
-<span class="line" id="L889">        <span class="tok-comment">/// new_reader must be of the same type as the reader being replaced.</span></span>
-<span class="line" id="L890">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reset</span>(s: *Self, new_reader: ReaderType, new_dict: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L891">            s.inner_reader = new_reader;</span>
-<span class="line" id="L892">            s.step = nextBlock;</span>
-<span class="line" id="L893">            s.err = <span class="tok-null">null</span>;</span>
-<span class="line" id="L894"></span>
-<span class="line" id="L895">            s.dict.deinit();</span>
-<span class="line" id="L896">            <span class="tok-kw">try</span> s.dict.init(s.allocator, max_match_offset, new_dict);</span>
-<span class="line" id="L897"></span>
-<span class="line" id="L898">            <span class="tok-kw">return</span>;</span>
-<span class="line" id="L899">        }</span>
-<span class="line" id="L900">    };</span>
-<span class="line" id="L901">}</span>
-<span class="line" id="L902"></span>
-<span class="line" id="L903"><span class="tok-comment">// tests</span>
+<span class="line" id="L867">                <span class="tok-kw">if</span> (n &lt;= nb) {</span>
+<span class="line" id="L868">                    <span class="tok-kw">if</span> (n == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L869">                        self.b = b;</span>
+<span class="line" id="L870">                        self.nb = nb;</span>
+<span class="line" id="L871">                        corrupt_input_error_offset = self.roffset;</span>
+<span class="line" id="L872">                        self.err = InflateError.CorruptInput;</span>
+<span class="line" id="L873">                        <span class="tok-kw">return</span> InflateError.CorruptInput;</span>
+<span class="line" id="L874">                    }</span>
+<span class="line" id="L875">                    self.b = b &gt;&gt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, n &amp; <span class="tok-number">31</span>);</span>
+<span class="line" id="L876">                    self.nb = nb - n;</span>
+<span class="line" id="L877">                    <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, chunk &gt;&gt; huffman_value_shift);</span>
+<span class="line" id="L878">                }</span>
+<span class="line" id="L879">            }</span>
+<span class="line" id="L880">        }</span>
+<span class="line" id="L881"></span>
+<span class="line" id="L882">        <span class="tok-comment">/// Replaces the inner reader and dictionary with new_reader and new_dict.</span></span>
+<span class="line" id="L883">        <span class="tok-comment">/// new_reader must be of the same type as the reader being replaced.</span></span>
+<span class="line" id="L884">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reset</span>(s: *Self, new_reader: ReaderType, new_dict: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L885">            s.inner_reader = new_reader;</span>
+<span class="line" id="L886">            s.step = nextBlock;</span>
+<span class="line" id="L887">            s.err = <span class="tok-null">null</span>;</span>
+<span class="line" id="L888"></span>
+<span class="line" id="L889">            s.dict.deinit();</span>
+<span class="line" id="L890">            <span class="tok-kw">try</span> s.dict.init(s.allocator, max_match_offset, new_dict);</span>
+<span class="line" id="L891"></span>
+<span class="line" id="L892">            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L893">        }</span>
+<span class="line" id="L894">    };</span>
+<span class="line" id="L895">}</span>
+<span class="line" id="L896"></span>
+<span class="line" id="L897"><span class="tok-comment">// tests</span>
 </span>
-<span class="line" id="L904"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
-<span class="line" id="L905"><span class="tok-kw">const</span> expectError = std.testing.expectError;</span>
-<span class="line" id="L906"><span class="tok-kw">const</span> io = std.io;</span>
-<span class="line" id="L907"><span class="tok-kw">const</span> testing = std.testing;</span>
-<span class="line" id="L908"></span>
-<span class="line" id="L909"><span class="tok-kw">test</span> <span class="tok-str">&quot;truncated input&quot;</span> {</span>
-<span class="line" id="L910">    <span class="tok-kw">const</span> TruncatedTest = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L911">        input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L912">        output: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L913">    };</span>
-<span class="line" id="L914"></span>
-<span class="line" id="L915">    <span class="tok-kw">const</span> tests = [_]TruncatedTest{</span>
-<span class="line" id="L916">        .{ .input = <span class="tok-str">&quot;\x00&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
-<span class="line" id="L917">        .{ .input = <span class="tok-str">&quot;\x00\x0c&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
-<span class="line" id="L918">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
-<span class="line" id="L919">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00\xf3\xff&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
-<span class="line" id="L920">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00\xf3\xffhello&quot;</span>, .output = <span class="tok-str">&quot;hello&quot;</span> },</span>
-<span class="line" id="L921">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00\xf3\xffhello, world&quot;</span>, .output = <span class="tok-str">&quot;hello, world&quot;</span> },</span>
-<span class="line" id="L922">        .{ .input = <span class="tok-str">&quot;\x02&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
-<span class="line" id="L923">        .{ .input = <span class="tok-str">&quot;\xf2H\xcd&quot;</span>, .output = <span class="tok-str">&quot;He&quot;</span> },</span>
-<span class="line" id="L924">        .{ .input = <span class="tok-str">&quot;\xf2H͙0a\u{0084}\t&quot;</span>, .output = <span class="tok-str">&quot;Hel\x90\x90\x90\x90\x90&quot;</span> },</span>
-<span class="line" id="L925">        .{ .input = <span class="tok-str">&quot;\xf2H͙0a\u{0084}\t\x00&quot;</span>, .output = <span class="tok-str">&quot;Hel\x90\x90\x90\x90\x90&quot;</span> },</span>
-<span class="line" id="L926">    };</span>
+<span class="line" id="L898"><span class="tok-kw">const</span> expectError = std.testing.expectError;</span>
+<span class="line" id="L899"><span class="tok-kw">const</span> io = std.io;</span>
+<span class="line" id="L900"><span class="tok-kw">const</span> testing = std.testing;</span>
+<span class="line" id="L901"></span>
+<span class="line" id="L902"><span class="tok-kw">test</span> <span class="tok-str">&quot;truncated input&quot;</span> {</span>
+<span class="line" id="L903">    <span class="tok-kw">const</span> TruncatedTest = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L904">        input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L905">        output: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L906">    };</span>
+<span class="line" id="L907"></span>
+<span class="line" id="L908">    <span class="tok-kw">const</span> tests = [_]TruncatedTest{</span>
+<span class="line" id="L909">        .{ .input = <span class="tok-str">&quot;\x00&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
+<span class="line" id="L910">        .{ .input = <span class="tok-str">&quot;\x00\x0c&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
+<span class="line" id="L911">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
+<span class="line" id="L912">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00\xf3\xff&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
+<span class="line" id="L913">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00\xf3\xffhello&quot;</span>, .output = <span class="tok-str">&quot;hello&quot;</span> },</span>
+<span class="line" id="L914">        .{ .input = <span class="tok-str">&quot;\x00\x0c\x00\xf3\xffhello, world&quot;</span>, .output = <span class="tok-str">&quot;hello, world&quot;</span> },</span>
+<span class="line" id="L915">        .{ .input = <span class="tok-str">&quot;\x02&quot;</span>, .output = <span class="tok-str">&quot;&quot;</span> },</span>
+<span class="line" id="L916">        .{ .input = <span class="tok-str">&quot;\xf2H\xcd&quot;</span>, .output = <span class="tok-str">&quot;He&quot;</span> },</span>
+<span class="line" id="L917">        .{ .input = <span class="tok-str">&quot;\xf2H͙0a\u{0084}\t&quot;</span>, .output = <span class="tok-str">&quot;Hel\x90\x90\x90\x90\x90&quot;</span> },</span>
+<span class="line" id="L918">        .{ .input = <span class="tok-str">&quot;\xf2H͙0a\u{0084}\t\x00&quot;</span>, .output = <span class="tok-str">&quot;Hel\x90\x90\x90\x90\x90&quot;</span> },</span>
+<span class="line" id="L919">    };</span>
+<span class="line" id="L920"></span>
+<span class="line" id="L921">    <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L922">        <span class="tok-kw">var</span> fib = io.fixedBufferStream(t.input);</span>
+<span class="line" id="L923">        <span class="tok-kw">const</span> r = fib.reader();</span>
+<span class="line" id="L924">        <span class="tok-kw">var</span> z = <span class="tok-kw">try</span> decompressor(testing.allocator, r, <span class="tok-null">null</span>);</span>
+<span class="line" id="L925">        <span class="tok-kw">defer</span> z.deinit();</span>
+<span class="line" id="L926">        <span class="tok-kw">var</span> zr = z.reader();</span>
 <span class="line" id="L927"></span>
-<span class="line" id="L928">    <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L929">        <span class="tok-kw">var</span> fib = io.fixedBufferStream(t.input);</span>
-<span class="line" id="L930">        <span class="tok-kw">const</span> r = fib.reader();</span>
-<span class="line" id="L931">        <span class="tok-kw">var</span> z = <span class="tok-kw">try</span> decompressor(testing.allocator, r, <span class="tok-null">null</span>);</span>
-<span class="line" id="L932">        <span class="tok-kw">defer</span> z.deinit();</span>
-<span class="line" id="L933">        <span class="tok-kw">var</span> zr = z.reader();</span>
-<span class="line" id="L934"></span>
-<span class="line" id="L935">        <span class="tok-kw">var</span> output = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">12</span>;</span>
-<span class="line" id="L936">        <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.UnexpectedEndOfStream, zr.readAll(&amp;output));</span>
-<span class="line" id="L937">        <span class="tok-kw">try</span> expect(mem.eql(<span class="tok-type">u8</span>, output[<span class="tok-number">0</span>..t.output.len], t.output));</span>
-<span class="line" id="L938">    }</span>
-<span class="line" id="L939">}</span>
-<span class="line" id="L940"></span>
-<span class="line" id="L941"><span class="tok-kw">test</span> <span class="tok-str">&quot;Go non-regression test for 9842&quot;</span> {</span>
-<span class="line" id="L942">    <span class="tok-comment">// See https://golang.org/issue/9842</span>
+<span class="line" id="L928">        <span class="tok-kw">var</span> output = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">12</span>;</span>
+<span class="line" id="L929">        <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.UnexpectedEndOfStream, zr.readAll(&amp;output));</span>
+<span class="line" id="L930">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, t.output, output[<span class="tok-number">0</span>..t.output.len]);</span>
+<span class="line" id="L931">    }</span>
+<span class="line" id="L932">}</span>
+<span class="line" id="L933"></span>
+<span class="line" id="L934"><span class="tok-kw">test</span> <span class="tok-str">&quot;Go non-regression test for 9842&quot;</span> {</span>
+<span class="line" id="L935">    <span class="tok-comment">// See https://golang.org/issue/9842</span>
 </span>
-<span class="line" id="L943"></span>
-<span class="line" id="L944">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L945">        err: ?<span class="tok-type">anyerror</span>,</span>
-<span class="line" id="L946">        input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L947">    };</span>
-<span class="line" id="L948"></span>
-<span class="line" id="L949">    <span class="tok-kw">const</span> tests = [_]Test{</span>
-<span class="line" id="L950">        .{ .err = <span class="tok-kw">error</span>.UnexpectedEndOfStream, .input = (<span class="tok-str">&quot;\x95\x90=o\xc20\x10\x86\xf30&quot;</span>) },</span>
-<span class="line" id="L951">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x950\x00\x0000000&quot;</span>) },</span>
-<span class="line" id="L952"></span>
-<span class="line" id="L953">        <span class="tok-comment">// Huffman.construct errors</span>
+<span class="line" id="L936"></span>
+<span class="line" id="L937">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L938">        err: ?<span class="tok-type">anyerror</span>,</span>
+<span class="line" id="L939">        input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L940">    };</span>
+<span class="line" id="L941"></span>
+<span class="line" id="L942">    <span class="tok-kw">const</span> tests = [_]Test{</span>
+<span class="line" id="L943">        .{ .err = <span class="tok-kw">error</span>.UnexpectedEndOfStream, .input = (<span class="tok-str">&quot;\x95\x90=o\xc20\x10\x86\xf30&quot;</span>) },</span>
+<span class="line" id="L944">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x950\x00\x0000000&quot;</span>) },</span>
+<span class="line" id="L945"></span>
+<span class="line" id="L946">        <span class="tok-comment">// Huffman.construct errors</span>
 </span>
-<span class="line" id="L954"></span>
-<span class="line" id="L955">        <span class="tok-comment">// lencode</span>
+<span class="line" id="L947"></span>
+<span class="line" id="L948">        <span class="tok-comment">// lencode</span>
 </span>
-<span class="line" id="L956">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x950000&quot;</span>) },</span>
-<span class="line" id="L957">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05000&quot;</span>) },</span>
-<span class="line" id="L958">        <span class="tok-comment">// hlen</span>
+<span class="line" id="L949">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x950000&quot;</span>) },</span>
+<span class="line" id="L950">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05000&quot;</span>) },</span>
+<span class="line" id="L951">        <span class="tok-comment">// hlen</span>
 </span>
-<span class="line" id="L959">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05\xea\x01\t\x00\x00\x00\x01\x00\\\xbf.\t\x00&quot;</span>) },</span>
-<span class="line" id="L960">        <span class="tok-comment">// hdist</span>
+<span class="line" id="L952">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05\xea\x01\t\x00\x00\x00\x01\x00\\\xbf.\t\x00&quot;</span>) },</span>
+<span class="line" id="L953">        <span class="tok-comment">// hdist</span>
 </span>
-<span class="line" id="L961">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05\xe0\x01A\x00\x00\x00\x00\x10\\\xbf.&quot;</span>) },</span>
-<span class="line" id="L962"></span>
-<span class="line" id="L963">        <span class="tok-comment">// like the &quot;empty distance alphabet&quot; test but for ndist instead of nlen</span>
+<span class="line" id="L954">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05\xe0\x01A\x00\x00\x00\x00\x10\\\xbf.&quot;</span>) },</span>
+<span class="line" id="L955"></span>
+<span class="line" id="L956">        <span class="tok-comment">// like the &quot;empty distance alphabet&quot; test but for ndist instead of nlen</span>
 </span>
-<span class="line" id="L964">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf\xce&quot;</span>) },</span>
-<span class="line" id="L965">        .{ .err = <span class="tok-null">null</span>, .input = <span class="tok-str">&quot;\x15\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf.0&quot;</span> },</span>
-<span class="line" id="L966">    };</span>
-<span class="line" id="L967"></span>
-<span class="line" id="L968">    <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L969">        <span class="tok-kw">var</span> fib = std.io.fixedBufferStream(t.input);</span>
-<span class="line" id="L970">        <span class="tok-kw">const</span> reader = fib.reader();</span>
-<span class="line" id="L971">        <span class="tok-kw">var</span> decomp = <span class="tok-kw">try</span> decompressor(testing.allocator, reader, <span class="tok-null">null</span>);</span>
-<span class="line" id="L972">        <span class="tok-kw">defer</span> decomp.deinit();</span>
-<span class="line" id="L973"></span>
-<span class="line" id="L974">        <span class="tok-kw">var</span> output: [<span class="tok-number">10</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L975">        <span class="tok-kw">if</span> (t.err != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L976">            <span class="tok-kw">try</span> expectError(t.err.?, decomp.reader().read(&amp;output));</span>
-<span class="line" id="L977">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L978">            _ = <span class="tok-kw">try</span> decomp.reader().read(&amp;output);</span>
-<span class="line" id="L979">        }</span>
-<span class="line" id="L980">    }</span>
-<span class="line" id="L981">}</span>
-<span class="line" id="L982"></span>
-<span class="line" id="L983"><span class="tok-kw">test</span> <span class="tok-str">&quot;inflate A Tale of Two Cities (1859) intro&quot;</span> {</span>
-<span class="line" id="L984">    <span class="tok-kw">const</span> compressed = [_]<span class="tok-type">u8</span>{</span>
-<span class="line" id="L985">        <span class="tok-number">0x74</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0xcd</span>, <span class="tok-number">0x0d</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x20</span>, <span class="tok-number">0x0c</span>, <span class="tok-number">0x47</span>, <span class="tok-number">0x71</span>, <span class="tok-number">0xdc</span>, <span class="tok-number">0x9d</span>, <span class="tok-number">0xa2</span>, <span class="tok-number">0x03</span>, <span class="tok-number">0xb8</span>, <span class="tok-number">0x88</span>,</span>
-<span class="line" id="L986">        <span class="tok-number">0x63</span>, <span class="tok-number">0xf0</span>, <span class="tok-number">0xf1</span>, <span class="tok-number">0x47</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x35</span>, <span class="tok-number">0xb4</span>, <span class="tok-number">0x86</span>, <span class="tok-number">0xf5</span>, <span class="tok-number">0x0d</span>, <span class="tok-number">0x27</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x82</span>, <span class="tok-number">0xe7</span>,</span>
-<span class="line" id="L987">        <span class="tok-number">0xdf</span>, <span class="tok-number">0x7b</span>, <span class="tok-number">0x87</span>, <span class="tok-number">0xd1</span>, <span class="tok-number">0x70</span>, <span class="tok-number">0x4a</span>, <span class="tok-number">0x96</span>, <span class="tok-number">0x41</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0x6a</span>, <span class="tok-number">0x24</span>, <span class="tok-number">0x89</span>, <span class="tok-number">0x8c</span>, <span class="tok-number">0x2b</span>, <span class="tok-number">0x74</span>,</span>
-<span class="line" id="L988">        <span class="tok-number">0xdf</span>, <span class="tok-number">0xf8</span>, <span class="tok-number">0x95</span>, <span class="tok-number">0x21</span>, <span class="tok-number">0xfd</span>, <span class="tok-number">0x8f</span>, <span class="tok-number">0xdc</span>, <span class="tok-number">0x89</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x83</span>, <span class="tok-number">0x35</span>, <span class="tok-number">0x4a</span>, <span class="tok-number">0x5d</span>, <span class="tok-number">0x49</span>, <span class="tok-number">0x12</span>,</span>
-<span class="line" id="L989">        <span class="tok-number">0x29</span>, <span class="tok-number">0xac</span>, <span class="tok-number">0xb9</span>, <span class="tok-number">0x41</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x23</span>, <span class="tok-number">0x2e</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x79</span>, <span class="tok-number">0x06</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0x85</span>, <span class="tok-number">0x91</span>, <span class="tok-number">0xd6</span>, <span class="tok-number">0xc6</span>,</span>
-<span class="line" id="L990">        <span class="tok-number">0x2d</span>, <span class="tok-number">0x74</span>, <span class="tok-number">0xc4</span>, <span class="tok-number">0xfb</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0x7b</span>, <span class="tok-number">0x0f</span>, <span class="tok-number">0x52</span>, <span class="tok-number">0x20</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x61</span>, <span class="tok-number">0x28</span>, <span class="tok-number">0x0c</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0xdf</span>,</span>
-<span class="line" id="L991">        <span class="tok-number">0x53</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0x97</span>, <span class="tok-number">0x88</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0xd9</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0x2d</span>, <span class="tok-number">0x49</span>, <span class="tok-number">0x54</span>,</span>
-<span class="line" id="L992">        <span class="tok-number">0xbc</span>, <span class="tok-number">0xfd</span>, <span class="tok-number">0x90</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0x0c</span>, <span class="tok-number">0xae</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x3f</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x77</span>, <span class="tok-number">0x88</span>, <span class="tok-number">0x3f</span>, <span class="tok-number">0xaf</span>, <span class="tok-number">0xc0</span>, <span class="tok-number">0x40</span>,</span>
-<span class="line" id="L993">        <span class="tok-number">0xd6</span>, <span class="tok-number">0x5b</span>, <span class="tok-number">0x14</span>, <span class="tok-number">0x8b</span>, <span class="tok-number">0x54</span>, <span class="tok-number">0xf6</span>, <span class="tok-number">0x0f</span>, <span class="tok-number">0x9b</span>, <span class="tok-number">0x49</span>, <span class="tok-number">0xf7</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0x54</span>, <span class="tok-number">0x5a</span>,</span>
-<span class="line" id="L994">        <span class="tok-number">0x0d</span>, <span class="tok-number">0xe6</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0xf0</span>, <span class="tok-number">0x9e</span>, <span class="tok-number">0x29</span>, <span class="tok-number">0xcd</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0x41</span>, <span class="tok-number">0x05</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0x48</span>, <span class="tok-number">0x74</span>, <span class="tok-number">0x4a</span>, <span class="tok-number">0xe9</span>,</span>
-<span class="line" id="L995">        <span class="tok-number">0x46</span>, <span class="tok-number">0x66</span>, <span class="tok-number">0x2a</span>, <span class="tok-number">0x19</span>, <span class="tok-number">0x17</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0x71</span>, <span class="tok-number">0x8e</span>, <span class="tok-number">0xcb</span>, <span class="tok-number">0x15</span>, <span class="tok-number">0x5b</span>, <span class="tok-number">0x57</span>, <span class="tok-number">0xe4</span>, <span class="tok-number">0xf3</span>, <span class="tok-number">0xc7</span>,</span>
-<span class="line" id="L996">        <span class="tok-number">0xe7</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0x9d</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0x08</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0x18</span>, <span class="tok-number">0xc6</span>, <span class="tok-number">0x2a</span>, <span class="tok-number">0x19</span>, <span class="tok-number">0xa0</span>, <span class="tok-number">0xdd</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0x35</span>,</span>
-<span class="line" id="L997">        <span class="tok-number">0x82</span>, <span class="tok-number">0x3d</span>, <span class="tok-number">0x6a</span>, <span class="tok-number">0xb0</span>, <span class="tok-number">0x34</span>, <span class="tok-number">0x92</span>, <span class="tok-number">0x16</span>, <span class="tok-number">0x8b</span>, <span class="tok-number">0xdb</span>, <span class="tok-number">0x1b</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0x7d</span>, <span class="tok-number">0xbc</span>, <span class="tok-number">0xf8</span>, <span class="tok-number">0x16</span>,</span>
-<span class="line" id="L998">        <span class="tok-number">0xf8</span>, <span class="tok-number">0xc2</span>, <span class="tok-number">0xe1</span>, <span class="tok-number">0xaf</span>, <span class="tok-number">0x81</span>, <span class="tok-number">0x7e</span>, <span class="tok-number">0x58</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0x9f</span>, <span class="tok-number">0x74</span>, <span class="tok-number">0xf8</span>, <span class="tok-number">0xcd</span>, <span class="tok-number">0x39</span>, <span class="tok-number">0xd3</span>, <span class="tok-number">0xaa</span>,</span>
-<span class="line" id="L999">        <span class="tok-number">0x0f</span>, <span class="tok-number">0x26</span>, <span class="tok-number">0x31</span>, <span class="tok-number">0xcc</span>, <span class="tok-number">0x8d</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0xd2</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0x51</span>, <span class="tok-number">0xbe</span>, <span class="tok-number">0x7e</span>, <span class="tok-number">0xbc</span>, <span class="tok-number">0xc5</span>, <span class="tok-number">0x27</span>,</span>
-<span class="line" id="L1000">        <span class="tok-number">0x3d</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0xf3</span>, <span class="tok-number">0x15</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x94</span>, <span class="tok-number">0x42</span>, <span class="tok-number">0x75</span>, <span class="tok-number">0x53</span>, <span class="tok-number">0x6b</span>, <span class="tok-number">0x61</span>, <span class="tok-number">0xc8</span>, <span class="tok-number">0x01</span>, <span class="tok-number">0x13</span>, <span class="tok-number">0x4d</span>,</span>
-<span class="line" id="L1001">        <span class="tok-number">0x23</span>, <span class="tok-number">0xba</span>, <span class="tok-number">0x2a</span>, <span class="tok-number">0x2d</span>, <span class="tok-number">0x6c</span>, <span class="tok-number">0x94</span>, <span class="tok-number">0x65</span>, <span class="tok-number">0xc7</span>, <span class="tok-number">0x4b</span>, <span class="tok-number">0x86</span>, <span class="tok-number">0x9b</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0xba</span>, <span class="tok-number">0x01</span>,</span>
-<span class="line" id="L1002">        <span class="tok-number">0x10</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x81</span>, <span class="tok-number">0x28</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x55</span>, <span class="tok-number">0x1c</span>, <span class="tok-number">0xc0</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0xaa</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0xa6</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0xa8</span>, <span class="tok-number">0xa1</span>,</span>
-<span class="line" id="L1003">        <span class="tok-number">0x85</span>, <span class="tok-number">0xf9</span>, <span class="tok-number">0x7d</span>, <span class="tok-number">0x45</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0xe4</span>, <span class="tok-number">0xd1</span>, <span class="tok-number">0xbb</span>, <span class="tok-number">0xde</span>, <span class="tok-number">0xb9</span>, <span class="tok-number">0x5e</span>, <span class="tok-number">0xf1</span>, <span class="tok-number">0x23</span>, <span class="tok-number">0x89</span>,</span>
-<span class="line" id="L1004">        <span class="tok-number">0x4b</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0xd5</span>, <span class="tok-number">0x59</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x85</span>, <span class="tok-number">0xe3</span>, <span class="tok-number">0xd4</span>, <span class="tok-number">0xdc</span>, <span class="tok-number">0xb2</span>, <span class="tok-number">0x66</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0xc1</span>, <span class="tok-number">0x44</span>, <span class="tok-number">0x0b</span>,</span>
-<span class="line" id="L1005">        <span class="tok-number">0x1e</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0xec</span>, <span class="tok-number">0xe6</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0xc7</span>, <span class="tok-number">0x42</span>, <span class="tok-number">0x6a</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x6d</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0x5e</span>, <span class="tok-number">0x70</span>, <span class="tok-number">0xa2</span>, <span class="tok-number">0x36</span>,</span>
-<span class="line" id="L1006">        <span class="tok-number">0x94</span>, <span class="tok-number">0x29</span>, <span class="tok-number">0x2c</span>, <span class="tok-number">0x85</span>, <span class="tok-number">0x3f</span>, <span class="tok-number">0x24</span>, <span class="tok-number">0x39</span>, <span class="tok-number">0xf3</span>, <span class="tok-number">0xae</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0xca</span>, <span class="tok-number">0xca</span>, <span class="tok-number">0xaf</span>, <span class="tok-number">0x2f</span>, <span class="tok-number">0xce</span>,</span>
-<span class="line" id="L1007">        <span class="tok-number">0x8e</span>, <span class="tok-number">0x58</span>, <span class="tok-number">0x91</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0xb5</span>, <span class="tok-number">0xb3</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0xd4</span>, <span class="tok-number">0xda</span>, <span class="tok-number">0xef</span>, <span class="tok-number">0xfa</span>, <span class="tok-number">0x48</span>, <span class="tok-number">0x7b</span>, <span class="tok-number">0x3b</span>,</span>
-<span class="line" id="L1008">        <span class="tok-number">0xe2</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x12</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x20</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x70</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0x8c</span>, <span class="tok-number">0xbd</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x71</span>, <span class="tok-number">0xff</span>,</span>
-<span class="line" id="L1009">        <span class="tok-number">0xf6</span>, <span class="tok-number">0x0f</span>, <span class="tok-number">0x66</span>, <span class="tok-number">0x38</span>, <span class="tok-number">0xcf</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0x39</span>, <span class="tok-number">0x11</span>, <span class="tok-number">0x0f</span>,</span>
-<span class="line" id="L1010">    };</span>
-<span class="line" id="L1011"></span>
-<span class="line" id="L1012">    <span class="tok-kw">const</span> expected =</span>
-<span class="line" id="L1013">        <span class="tok-str">\\It was the best of times,</span></span>
+<span class="line" id="L957">        .{ .err = <span class="tok-kw">error</span>.CorruptInput, .input = (<span class="tok-str">&quot;\x05\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf\xce&quot;</span>) },</span>
+<span class="line" id="L958">        .{ .err = <span class="tok-null">null</span>, .input = <span class="tok-str">&quot;\x15\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf.0&quot;</span> },</span>
+<span class="line" id="L959">    };</span>
+<span class="line" id="L960"></span>
+<span class="line" id="L961">    <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L962">        <span class="tok-kw">var</span> fib = std.io.fixedBufferStream(t.input);</span>
+<span class="line" id="L963">        <span class="tok-kw">const</span> reader = fib.reader();</span>
+<span class="line" id="L964">        <span class="tok-kw">var</span> decomp = <span class="tok-kw">try</span> decompressor(testing.allocator, reader, <span class="tok-null">null</span>);</span>
+<span class="line" id="L965">        <span class="tok-kw">defer</span> decomp.deinit();</span>
+<span class="line" id="L966"></span>
+<span class="line" id="L967">        <span class="tok-kw">var</span> output: [<span class="tok-number">10</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L968">        <span class="tok-kw">if</span> (t.err != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L969">            <span class="tok-kw">try</span> expectError(t.err.?, decomp.reader().read(&amp;output));</span>
+<span class="line" id="L970">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L971">            _ = <span class="tok-kw">try</span> decomp.reader().read(&amp;output);</span>
+<span class="line" id="L972">        }</span>
+<span class="line" id="L973">    }</span>
+<span class="line" id="L974">}</span>
+<span class="line" id="L975"></span>
+<span class="line" id="L976"><span class="tok-kw">test</span> <span class="tok-str">&quot;inflate A Tale of Two Cities (1859) intro&quot;</span> {</span>
+<span class="line" id="L977">    <span class="tok-kw">const</span> compressed = [_]<span class="tok-type">u8</span>{</span>
+<span class="line" id="L978">        <span class="tok-number">0x74</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0xcd</span>, <span class="tok-number">0x0d</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x20</span>, <span class="tok-number">0x0c</span>, <span class="tok-number">0x47</span>, <span class="tok-number">0x71</span>, <span class="tok-number">0xdc</span>, <span class="tok-number">0x9d</span>, <span class="tok-number">0xa2</span>, <span class="tok-number">0x03</span>, <span class="tok-number">0xb8</span>, <span class="tok-number">0x88</span>,</span>
+<span class="line" id="L979">        <span class="tok-number">0x63</span>, <span class="tok-number">0xf0</span>, <span class="tok-number">0xf1</span>, <span class="tok-number">0x47</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x35</span>, <span class="tok-number">0xb4</span>, <span class="tok-number">0x86</span>, <span class="tok-number">0xf5</span>, <span class="tok-number">0x0d</span>, <span class="tok-number">0x27</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x82</span>, <span class="tok-number">0xe7</span>,</span>
+<span class="line" id="L980">        <span class="tok-number">0xdf</span>, <span class="tok-number">0x7b</span>, <span class="tok-number">0x87</span>, <span class="tok-number">0xd1</span>, <span class="tok-number">0x70</span>, <span class="tok-number">0x4a</span>, <span class="tok-number">0x96</span>, <span class="tok-number">0x41</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0x6a</span>, <span class="tok-number">0x24</span>, <span class="tok-number">0x89</span>, <span class="tok-number">0x8c</span>, <span class="tok-number">0x2b</span>, <span class="tok-number">0x74</span>,</span>
+<span class="line" id="L981">        <span class="tok-number">0xdf</span>, <span class="tok-number">0xf8</span>, <span class="tok-number">0x95</span>, <span class="tok-number">0x21</span>, <span class="tok-number">0xfd</span>, <span class="tok-number">0x8f</span>, <span class="tok-number">0xdc</span>, <span class="tok-number">0x89</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x83</span>, <span class="tok-number">0x35</span>, <span class="tok-number">0x4a</span>, <span class="tok-number">0x5d</span>, <span class="tok-number">0x49</span>, <span class="tok-number">0x12</span>,</span>
+<span class="line" id="L982">        <span class="tok-number">0x29</span>, <span class="tok-number">0xac</span>, <span class="tok-number">0xb9</span>, <span class="tok-number">0x41</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x23</span>, <span class="tok-number">0x2e</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x79</span>, <span class="tok-number">0x06</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0x85</span>, <span class="tok-number">0x91</span>, <span class="tok-number">0xd6</span>, <span class="tok-number">0xc6</span>,</span>
+<span class="line" id="L983">        <span class="tok-number">0x2d</span>, <span class="tok-number">0x74</span>, <span class="tok-number">0xc4</span>, <span class="tok-number">0xfb</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0x7b</span>, <span class="tok-number">0x0f</span>, <span class="tok-number">0x52</span>, <span class="tok-number">0x20</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x61</span>, <span class="tok-number">0x28</span>, <span class="tok-number">0x0c</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0xdf</span>,</span>
+<span class="line" id="L984">        <span class="tok-number">0x53</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0x97</span>, <span class="tok-number">0x88</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0xd9</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0x2d</span>, <span class="tok-number">0x49</span>, <span class="tok-number">0x54</span>,</span>
+<span class="line" id="L985">        <span class="tok-number">0xbc</span>, <span class="tok-number">0xfd</span>, <span class="tok-number">0x90</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0x0c</span>, <span class="tok-number">0xae</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x3f</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x77</span>, <span class="tok-number">0x88</span>, <span class="tok-number">0x3f</span>, <span class="tok-number">0xaf</span>, <span class="tok-number">0xc0</span>, <span class="tok-number">0x40</span>,</span>
+<span class="line" id="L986">        <span class="tok-number">0xd6</span>, <span class="tok-number">0x5b</span>, <span class="tok-number">0x14</span>, <span class="tok-number">0x8b</span>, <span class="tok-number">0x54</span>, <span class="tok-number">0xf6</span>, <span class="tok-number">0x0f</span>, <span class="tok-number">0x9b</span>, <span class="tok-number">0x49</span>, <span class="tok-number">0xf7</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0x54</span>, <span class="tok-number">0x5a</span>,</span>
+<span class="line" id="L987">        <span class="tok-number">0x0d</span>, <span class="tok-number">0xe6</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0xf0</span>, <span class="tok-number">0x9e</span>, <span class="tok-number">0x29</span>, <span class="tok-number">0xcd</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0x41</span>, <span class="tok-number">0x05</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0x48</span>, <span class="tok-number">0x74</span>, <span class="tok-number">0x4a</span>, <span class="tok-number">0xe9</span>,</span>
+<span class="line" id="L988">        <span class="tok-number">0x46</span>, <span class="tok-number">0x66</span>, <span class="tok-number">0x2a</span>, <span class="tok-number">0x19</span>, <span class="tok-number">0x17</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0x71</span>, <span class="tok-number">0x8e</span>, <span class="tok-number">0xcb</span>, <span class="tok-number">0x15</span>, <span class="tok-number">0x5b</span>, <span class="tok-number">0x57</span>, <span class="tok-number">0xe4</span>, <span class="tok-number">0xf3</span>, <span class="tok-number">0xc7</span>,</span>
+<span class="line" id="L989">        <span class="tok-number">0xe7</span>, <span class="tok-number">0x1e</span>, <span class="tok-number">0x9d</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0x08</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0x18</span>, <span class="tok-number">0xc6</span>, <span class="tok-number">0x2a</span>, <span class="tok-number">0x19</span>, <span class="tok-number">0xa0</span>, <span class="tok-number">0xdd</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0x35</span>,</span>
+<span class="line" id="L990">        <span class="tok-number">0x82</span>, <span class="tok-number">0x3d</span>, <span class="tok-number">0x6a</span>, <span class="tok-number">0xb0</span>, <span class="tok-number">0x34</span>, <span class="tok-number">0x92</span>, <span class="tok-number">0x16</span>, <span class="tok-number">0x8b</span>, <span class="tok-number">0xdb</span>, <span class="tok-number">0x1b</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0x7d</span>, <span class="tok-number">0xbc</span>, <span class="tok-number">0xf8</span>, <span class="tok-number">0x16</span>,</span>
+<span class="line" id="L991">        <span class="tok-number">0xf8</span>, <span class="tok-number">0xc2</span>, <span class="tok-number">0xe1</span>, <span class="tok-number">0xaf</span>, <span class="tok-number">0x81</span>, <span class="tok-number">0x7e</span>, <span class="tok-number">0x58</span>, <span class="tok-number">0xf4</span>, <span class="tok-number">0x9f</span>, <span class="tok-number">0x74</span>, <span class="tok-number">0xf8</span>, <span class="tok-number">0xcd</span>, <span class="tok-number">0x39</span>, <span class="tok-number">0xd3</span>, <span class="tok-number">0xaa</span>,</span>
+<span class="line" id="L992">        <span class="tok-number">0x0f</span>, <span class="tok-number">0x26</span>, <span class="tok-number">0x31</span>, <span class="tok-number">0xcc</span>, <span class="tok-number">0x8d</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0xd2</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0x51</span>, <span class="tok-number">0xbe</span>, <span class="tok-number">0x7e</span>, <span class="tok-number">0xbc</span>, <span class="tok-number">0xc5</span>, <span class="tok-number">0x27</span>,</span>
+<span class="line" id="L993">        <span class="tok-number">0x3d</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0xf3</span>, <span class="tok-number">0x15</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x94</span>, <span class="tok-number">0x42</span>, <span class="tok-number">0x75</span>, <span class="tok-number">0x53</span>, <span class="tok-number">0x6b</span>, <span class="tok-number">0x61</span>, <span class="tok-number">0xc8</span>, <span class="tok-number">0x01</span>, <span class="tok-number">0x13</span>, <span class="tok-number">0x4d</span>,</span>
+<span class="line" id="L994">        <span class="tok-number">0x23</span>, <span class="tok-number">0xba</span>, <span class="tok-number">0x2a</span>, <span class="tok-number">0x2d</span>, <span class="tok-number">0x6c</span>, <span class="tok-number">0x94</span>, <span class="tok-number">0x65</span>, <span class="tok-number">0xc7</span>, <span class="tok-number">0x4b</span>, <span class="tok-number">0x86</span>, <span class="tok-number">0x9b</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0xba</span>, <span class="tok-number">0x01</span>,</span>
+<span class="line" id="L995">        <span class="tok-number">0x10</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x81</span>, <span class="tok-number">0x28</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x55</span>, <span class="tok-number">0x1c</span>, <span class="tok-number">0xc0</span>, <span class="tok-number">0xa5</span>, <span class="tok-number">0xaa</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0xa6</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0xa8</span>, <span class="tok-number">0xa1</span>,</span>
+<span class="line" id="L996">        <span class="tok-number">0x85</span>, <span class="tok-number">0xf9</span>, <span class="tok-number">0x7d</span>, <span class="tok-number">0x45</span>, <span class="tok-number">0xbf</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0xe4</span>, <span class="tok-number">0xd1</span>, <span class="tok-number">0xbb</span>, <span class="tok-number">0xde</span>, <span class="tok-number">0xb9</span>, <span class="tok-number">0x5e</span>, <span class="tok-number">0xf1</span>, <span class="tok-number">0x23</span>, <span class="tok-number">0x89</span>,</span>
+<span class="line" id="L997">        <span class="tok-number">0x4b</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0xd5</span>, <span class="tok-number">0x59</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0x85</span>, <span class="tok-number">0xe3</span>, <span class="tok-number">0xd4</span>, <span class="tok-number">0xdc</span>, <span class="tok-number">0xb2</span>, <span class="tok-number">0x66</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0xc1</span>, <span class="tok-number">0x44</span>, <span class="tok-number">0x0b</span>,</span>
+<span class="line" id="L998">        <span class="tok-number">0x1e</span>, <span class="tok-number">0x84</span>, <span class="tok-number">0xec</span>, <span class="tok-number">0xe6</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0xc7</span>, <span class="tok-number">0x42</span>, <span class="tok-number">0x6a</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x6d</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0x5e</span>, <span class="tok-number">0x70</span>, <span class="tok-number">0xa2</span>, <span class="tok-number">0x36</span>,</span>
+<span class="line" id="L999">        <span class="tok-number">0x94</span>, <span class="tok-number">0x29</span>, <span class="tok-number">0x2c</span>, <span class="tok-number">0x85</span>, <span class="tok-number">0x3f</span>, <span class="tok-number">0x24</span>, <span class="tok-number">0x39</span>, <span class="tok-number">0xf3</span>, <span class="tok-number">0xae</span>, <span class="tok-number">0xc3</span>, <span class="tok-number">0xca</span>, <span class="tok-number">0xca</span>, <span class="tok-number">0xaf</span>, <span class="tok-number">0x2f</span>, <span class="tok-number">0xce</span>,</span>
+<span class="line" id="L1000">        <span class="tok-number">0x8e</span>, <span class="tok-number">0x58</span>, <span class="tok-number">0x91</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0xb5</span>, <span class="tok-number">0xb3</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0xd4</span>, <span class="tok-number">0xda</span>, <span class="tok-number">0xef</span>, <span class="tok-number">0xfa</span>, <span class="tok-number">0x48</span>, <span class="tok-number">0x7b</span>, <span class="tok-number">0x3b</span>,</span>
+<span class="line" id="L1001">        <span class="tok-number">0xe2</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x12</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0x20</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x70</span>, <span class="tok-number">0x36</span>, <span class="tok-number">0x8c</span>, <span class="tok-number">0xbd</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x71</span>, <span class="tok-number">0xff</span>,</span>
+<span class="line" id="L1002">        <span class="tok-number">0xf6</span>, <span class="tok-number">0x0f</span>, <span class="tok-number">0x66</span>, <span class="tok-number">0x38</span>, <span class="tok-number">0xcf</span>, <span class="tok-number">0xa1</span>, <span class="tok-number">0x39</span>, <span class="tok-number">0x11</span>, <span class="tok-number">0x0f</span>,</span>
+<span class="line" id="L1003">    };</span>
+<span class="line" id="L1004"></span>
+<span class="line" id="L1005">    <span class="tok-kw">const</span> expected =</span>
+<span class="line" id="L1006">        <span class="tok-str">\\It was the best of times,</span></span>
 
-<span class="line" id="L1014">        <span class="tok-str">\\it was the worst of times,</span></span>
+<span class="line" id="L1007">        <span class="tok-str">\\it was the worst of times,</span></span>
 
-<span class="line" id="L1015">        <span class="tok-str">\\it was the age of wisdom,</span></span>
+<span class="line" id="L1008">        <span class="tok-str">\\it was the age of wisdom,</span></span>
 
-<span class="line" id="L1016">        <span class="tok-str">\\it was the age of foolishness,</span></span>
+<span class="line" id="L1009">        <span class="tok-str">\\it was the age of foolishness,</span></span>
 
-<span class="line" id="L1017">        <span class="tok-str">\\it was the epoch of belief,</span></span>
+<span class="line" id="L1010">        <span class="tok-str">\\it was the epoch of belief,</span></span>
 
-<span class="line" id="L1018">        <span class="tok-str">\\it was the epoch of incredulity,</span></span>
+<span class="line" id="L1011">        <span class="tok-str">\\it was the epoch of incredulity,</span></span>
 
-<span class="line" id="L1019">        <span class="tok-str">\\it was the season of Light,</span></span>
+<span class="line" id="L1012">        <span class="tok-str">\\it was the season of Light,</span></span>
 
-<span class="line" id="L1020">        <span class="tok-str">\\it was the season of Darkness,</span></span>
+<span class="line" id="L1013">        <span class="tok-str">\\it was the season of Darkness,</span></span>
 
-<span class="line" id="L1021">        <span class="tok-str">\\it was the spring of hope,</span></span>
+<span class="line" id="L1014">        <span class="tok-str">\\it was the spring of hope,</span></span>
 
-<span class="line" id="L1022">        <span class="tok-str">\\it was the winter of despair,</span></span>
+<span class="line" id="L1015">        <span class="tok-str">\\it was the winter of despair,</span></span>
 
-<span class="line" id="L1023">        <span class="tok-str">\\</span></span>
+<span class="line" id="L1016">        <span class="tok-str">\\</span></span>
 
-<span class="line" id="L1024">        <span class="tok-str">\\we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way---in short, the period was so far like the present period, that some of its noisiest authorities insisted on its being received, for good or for evil, in the superlative degree of comparison only.</span></span>
+<span class="line" id="L1017">        <span class="tok-str">\\we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way---in short, the period was so far like the present period, that some of its noisiest authorities insisted on its being received, for good or for evil, in the superlative degree of comparison only.</span></span>
 
-<span class="line" id="L1025">        <span class="tok-str">\\</span></span>
+<span class="line" id="L1018">        <span class="tok-str">\\</span></span>
 
-<span class="line" id="L1026">    ;</span>
-<span class="line" id="L1027"></span>
-<span class="line" id="L1028">    <span class="tok-kw">var</span> fib = std.io.fixedBufferStream(&amp;compressed);</span>
-<span class="line" id="L1029">    <span class="tok-kw">const</span> reader = fib.reader();</span>
-<span class="line" id="L1030">    <span class="tok-kw">var</span> decomp = <span class="tok-kw">try</span> decompressor(testing.allocator, reader, <span class="tok-null">null</span>);</span>
-<span class="line" id="L1031">    <span class="tok-kw">defer</span> decomp.deinit();</span>
-<span class="line" id="L1032"></span>
-<span class="line" id="L1033">    <span class="tok-kw">var</span> got: [<span class="tok-number">700</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1034">    <span class="tok-kw">var</span> got_len = <span class="tok-kw">try</span> decomp.reader().read(&amp;got);</span>
-<span class="line" id="L1035">    <span class="tok-kw">try</span> expect(got_len == <span class="tok-number">616</span>);</span>
-<span class="line" id="L1036">    <span class="tok-kw">try</span> expect(mem.eql(<span class="tok-type">u8</span>, got[<span class="tok-number">0</span>..expected.len], expected));</span>
-<span class="line" id="L1037">}</span>
-<span class="line" id="L1038"></span>
-<span class="line" id="L1039"><span class="tok-kw">test</span> <span class="tok-str">&quot;lengths overflow&quot;</span> {</span>
-<span class="line" id="L1040">    <span class="tok-comment">// malformed final dynamic block, tries to write 321 code lengths (MAXCODES is 316)</span>
+<span class="line" id="L1019">    ;</span>
+<span class="line" id="L1020"></span>
+<span class="line" id="L1021">    <span class="tok-kw">var</span> fib = std.io.fixedBufferStream(&amp;compressed);</span>
+<span class="line" id="L1022">    <span class="tok-kw">const</span> reader = fib.reader();</span>
+<span class="line" id="L1023">    <span class="tok-kw">var</span> decomp = <span class="tok-kw">try</span> decompressor(testing.allocator, reader, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1024">    <span class="tok-kw">defer</span> decomp.deinit();</span>
+<span class="line" id="L1025"></span>
+<span class="line" id="L1026">    <span class="tok-kw">var</span> got: [<span class="tok-number">700</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1027">    <span class="tok-kw">var</span> got_len = <span class="tok-kw">try</span> decomp.reader().read(&amp;got);</span>
+<span class="line" id="L1028">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">616</span>), got_len);</span>
+<span class="line" id="L1029">    <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, got[<span class="tok-number">0</span>..expected.len]);</span>
+<span class="line" id="L1030">}</span>
+<span class="line" id="L1031"></span>
+<span class="line" id="L1032"><span class="tok-kw">test</span> <span class="tok-str">&quot;lengths overflow&quot;</span> {</span>
+<span class="line" id="L1033">    <span class="tok-comment">// malformed final dynamic block, tries to write 321 code lengths (MAXCODES is 316)</span>
 </span>
-<span class="line" id="L1041">    <span class="tok-comment">// f dy  hlit hdist hclen 16  17  18   0 (18)    x138 (18)    x138 (18)     x39 (16) x6</span>
+<span class="line" id="L1034">    <span class="tok-comment">// f dy  hlit hdist hclen 16  17  18   0 (18)    x138 (18)    x138 (18)     x39 (16) x6</span>
 </span>
-<span class="line" id="L1042">    <span class="tok-comment">// 1 10 11101 11101 0000 010 010 010 010 (11) 1111111 (11) 1111111 (11) 0011100 (01) 11</span>
+<span class="line" id="L1035">    <span class="tok-comment">// 1 10 11101 11101 0000 010 010 010 010 (11) 1111111 (11) 1111111 (11) 0011100 (01) 11</span>
 </span>
-<span class="line" id="L1043">    <span class="tok-kw">const</span> stream = [_]<span class="tok-type">u8</span>{</span>
-<span class="line" id="L1044">        <span class="tok-number">0b11101101</span>, <span class="tok-number">0b00011101</span>, <span class="tok-number">0b00100100</span>, <span class="tok-number">0b11101001</span>, <span class="tok-number">0b11111111</span>, <span class="tok-number">0b11111111</span>, <span class="tok-number">0b00111001</span>,</span>
-<span class="line" id="L1045">        <span class="tok-number">0b00001110</span>,</span>
-<span class="line" id="L1046">    };</span>
-<span class="line" id="L1047">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(stream[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L1048">}</span>
-<span class="line" id="L1049"></span>
-<span class="line" id="L1050"><span class="tok-kw">test</span> <span class="tok-str">&quot;empty distance alphabet&quot;</span> {</span>
-<span class="line" id="L1051">    <span class="tok-comment">// dynamic block with empty distance alphabet is valid if only literals and end of data symbol are used</span>
+<span class="line" id="L1036">    <span class="tok-kw">const</span> stream = [_]<span class="tok-type">u8</span>{</span>
+<span class="line" id="L1037">        <span class="tok-number">0b11101101</span>, <span class="tok-number">0b00011101</span>, <span class="tok-number">0b00100100</span>, <span class="tok-number">0b11101001</span>, <span class="tok-number">0b11111111</span>, <span class="tok-number">0b11111111</span>, <span class="tok-number">0b00111001</span>,</span>
+<span class="line" id="L1038">        <span class="tok-number">0b00001110</span>,</span>
+<span class="line" id="L1039">    };</span>
+<span class="line" id="L1040">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(stream[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L1041">}</span>
+<span class="line" id="L1042"></span>
+<span class="line" id="L1043"><span class="tok-kw">test</span> <span class="tok-str">&quot;empty distance alphabet&quot;</span> {</span>
+<span class="line" id="L1044">    <span class="tok-comment">// dynamic block with empty distance alphabet is valid if only literals and end of data symbol are used</span>
 </span>
-<span class="line" id="L1052">    <span class="tok-comment">// f dy  hlit hdist hclen 16  17  18   0   8   7   9   6  10   5  11   4  12   3  13   2  14   1  15 (18)    x128 (18)    x128 (1)  ( 0) (256)</span>
+<span class="line" id="L1045">    <span class="tok-comment">// f dy  hlit hdist hclen 16  17  18   0   8   7   9   6  10   5  11   4  12   3  13   2  14   1  15 (18)    x128 (18)    x128 (1)  ( 0) (256)</span>
 </span>
-<span class="line" id="L1053">    <span class="tok-comment">// 1 10 00000 00000 1111 000 000 010 010 000 000 000 000 000 000 000 000 000 000 000 000 000 001 000 (11) 1110101 (11) 1110101 (0)  (10)  (0)</span>
+<span class="line" id="L1046">    <span class="tok-comment">// 1 10 00000 00000 1111 000 000 010 010 000 000 000 000 000 000 000 000 000 000 000 000 000 001 000 (11) 1110101 (11) 1110101 (0)  (10)  (0)</span>
 </span>
-<span class="line" id="L1054">    <span class="tok-kw">const</span> stream = [_]<span class="tok-type">u8</span>{</span>
-<span class="line" id="L1055">        <span class="tok-number">0b00000101</span>, <span class="tok-number">0b11100000</span>, <span class="tok-number">0b00000001</span>, <span class="tok-number">0b00001001</span>, <span class="tok-number">0b00000000</span>, <span class="tok-number">0b00000000</span>,</span>
-<span class="line" id="L1056">        <span class="tok-number">0b00000000</span>, <span class="tok-number">0b00000000</span>, <span class="tok-number">0b00010000</span>, <span class="tok-number">0b01011100</span>, <span class="tok-number">0b10111111</span>, <span class="tok-number">0b00101110</span>,</span>
-<span class="line" id="L1057">    };</span>
-<span class="line" id="L1058">    <span class="tok-kw">try</span> decompress(stream[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L1047">    <span class="tok-kw">const</span> stream = [_]<span class="tok-type">u8</span>{</span>
+<span class="line" id="L1048">        <span class="tok-number">0b00000101</span>, <span class="tok-number">0b11100000</span>, <span class="tok-number">0b00000001</span>, <span class="tok-number">0b00001001</span>, <span class="tok-number">0b00000000</span>, <span class="tok-number">0b00000000</span>,</span>
+<span class="line" id="L1049">        <span class="tok-number">0b00000000</span>, <span class="tok-number">0b00000000</span>, <span class="tok-number">0b00010000</span>, <span class="tok-number">0b01011100</span>, <span class="tok-number">0b10111111</span>, <span class="tok-number">0b00101110</span>,</span>
+<span class="line" id="L1050">    };</span>
+<span class="line" id="L1051">    <span class="tok-kw">try</span> decompress(stream[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L1052">}</span>
+<span class="line" id="L1053"></span>
+<span class="line" id="L1054"><span class="tok-kw">test</span> <span class="tok-str">&quot;distance past beginning of output stream&quot;</span> {</span>
+<span class="line" id="L1055">    <span class="tok-comment">// f fx ('A')      ('B')      ('C')      &lt;len=4,   dist=4&gt; (end)</span>
+</span>
+<span class="line" id="L1056">    <span class="tok-comment">// 1 01 (01110001) (01110010) (01110011) (0000010) (00011) (0000000)</span>
+</span>
+<span class="line" id="L1057">    <span class="tok-kw">const</span> stream = [_]<span class="tok-type">u8</span>{ <span class="tok-number">0b01110011</span>, <span class="tok-number">0b01110100</span>, <span class="tok-number">0b01110010</span>, <span class="tok-number">0b00000110</span>, <span class="tok-number">0b01100001</span>, <span class="tok-number">0b00000000</span> };</span>
+<span class="line" id="L1058">    <span class="tok-kw">try</span> std.testing.expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(stream[<span class="tok-number">0</span>..]));</span>
 <span class="line" id="L1059">}</span>
 <span class="line" id="L1060"></span>
-<span class="line" id="L1061"><span class="tok-kw">test</span> <span class="tok-str">&quot;distance past beginning of output stream&quot;</span> {</span>
-<span class="line" id="L1062">    <span class="tok-comment">// f fx ('A')      ('B')      ('C')      &lt;len=4,   dist=4&gt; (end)</span>
+<span class="line" id="L1061"><span class="tok-kw">test</span> <span class="tok-str">&quot;fuzzing&quot;</span> {</span>
+<span class="line" id="L1062">    <span class="tok-kw">const</span> compressed = [_]<span class="tok-type">u8</span>{</span>
+<span class="line" id="L1063">        <span class="tok-number">0x0a</span>, <span class="tok-number">0x08</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0x05</span>, <span class="tok-number">0xfc</span>, <span class="tok-number">0x30</span>, <span class="tok-number">0x0b</span>, <span class="tok-number">0x0a</span>, <span class="tok-number">0x08</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0x05</span>,</span>
+<span class="line" id="L1064">    } ++ [_]<span class="tok-type">u8</span>{<span class="tok-number">0xe1</span>} ** <span class="tok-number">15</span> ++ [_]<span class="tok-type">u8</span>{<span class="tok-number">0x30</span>} ++ [_]<span class="tok-type">u8</span>{<span class="tok-number">0xe1</span>} ** <span class="tok-number">1481</span>;</span>
+<span class="line" id="L1065">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.UnexpectedEndOfStream, decompress(&amp;compressed));</span>
+<span class="line" id="L1066"></span>
+<span class="line" id="L1067">    <span class="tok-comment">// see https://github.com/ziglang/zig/issues/9842</span>
 </span>
-<span class="line" id="L1063">    <span class="tok-comment">// 1 01 (01110001) (01110010) (01110011) (0000010) (00011) (0000000)</span>
+<span class="line" id="L1068">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.UnexpectedEndOfStream, decompress(<span class="tok-str">&quot;\x95\x90=o\xc20\x10\x86\xf30&quot;</span>));</span>
+<span class="line" id="L1069">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x950\x00\x0000000&quot;</span>));</span>
+<span class="line" id="L1070"></span>
+<span class="line" id="L1071">    <span class="tok-comment">// Huffman errors</span>
 </span>
-<span class="line" id="L1064">    <span class="tok-kw">const</span> stream = [_]<span class="tok-type">u8</span>{ <span class="tok-number">0b01110011</span>, <span class="tok-number">0b01110100</span>, <span class="tok-number">0b01110010</span>, <span class="tok-number">0b00000110</span>, <span class="tok-number">0b01100001</span>, <span class="tok-number">0b00000000</span> };</span>
-<span class="line" id="L1065">    <span class="tok-kw">try</span> std.testing.expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(stream[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L1066">}</span>
-<span class="line" id="L1067"></span>
-<span class="line" id="L1068"><span class="tok-kw">test</span> <span class="tok-str">&quot;fuzzing&quot;</span> {</span>
-<span class="line" id="L1069">    <span class="tok-kw">const</span> compressed = [_]<span class="tok-type">u8</span>{</span>
-<span class="line" id="L1070">        <span class="tok-number">0x0a</span>, <span class="tok-number">0x08</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0x05</span>, <span class="tok-number">0xfc</span>, <span class="tok-number">0x30</span>, <span class="tok-number">0x0b</span>, <span class="tok-number">0x0a</span>, <span class="tok-number">0x08</span>, <span class="tok-number">0x50</span>, <span class="tok-number">0xeb</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0x05</span>,</span>
-<span class="line" id="L1071">    } ++ [_]<span class="tok-type">u8</span>{<span class="tok-number">0xe1</span>} ** <span class="tok-number">15</span> ++ [_]<span class="tok-type">u8</span>{<span class="tok-number">0x30</span>} ++ [_]<span class="tok-type">u8</span>{<span class="tok-number">0xe1</span>} ** <span class="tok-number">1481</span>;</span>
-<span class="line" id="L1072">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.UnexpectedEndOfStream, decompress(&amp;compressed));</span>
-<span class="line" id="L1073"></span>
-<span class="line" id="L1074">    <span class="tok-comment">// see https://github.com/ziglang/zig/issues/9842</span>
+<span class="line" id="L1072">    <span class="tok-comment">// lencode</span>
 </span>
-<span class="line" id="L1075">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.UnexpectedEndOfStream, decompress(<span class="tok-str">&quot;\x95\x90=o\xc20\x10\x86\xf30&quot;</span>));</span>
-<span class="line" id="L1076">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x950\x00\x0000000&quot;</span>));</span>
-<span class="line" id="L1077"></span>
-<span class="line" id="L1078">    <span class="tok-comment">// Huffman errors</span>
+<span class="line" id="L1073">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x950000&quot;</span>));</span>
+<span class="line" id="L1074">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05000&quot;</span>));</span>
+<span class="line" id="L1075">    <span class="tok-comment">// hlen</span>
 </span>
-<span class="line" id="L1079">    <span class="tok-comment">// lencode</span>
+<span class="line" id="L1076">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05\xea\x01\t\x00\x00\x00\x01\x00\\\xbf.\t\x00&quot;</span>));</span>
+<span class="line" id="L1077">    <span class="tok-comment">// hdist</span>
 </span>
-<span class="line" id="L1080">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x950000&quot;</span>));</span>
-<span class="line" id="L1081">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05000&quot;</span>));</span>
-<span class="line" id="L1082">    <span class="tok-comment">// hlen</span>
+<span class="line" id="L1078">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05\xe0\x01A\x00\x00\x00\x00\x10\\\xbf.&quot;</span>));</span>
+<span class="line" id="L1079"></span>
+<span class="line" id="L1080">    <span class="tok-comment">// like the &quot;empty distance alphabet&quot; test but for ndist instead of nlen</span>
 </span>
-<span class="line" id="L1083">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05\xea\x01\t\x00\x00\x00\x01\x00\\\xbf.\t\x00&quot;</span>));</span>
-<span class="line" id="L1084">    <span class="tok-comment">// hdist</span>
-</span>
-<span class="line" id="L1085">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05\xe0\x01A\x00\x00\x00\x00\x10\\\xbf.&quot;</span>));</span>
-<span class="line" id="L1086"></span>
-<span class="line" id="L1087">    <span class="tok-comment">// like the &quot;empty distance alphabet&quot; test but for ndist instead of nlen</span>
-</span>
-<span class="line" id="L1088">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf\xce&quot;</span>));</span>
-<span class="line" id="L1089">    <span class="tok-kw">try</span> decompress(<span class="tok-str">&quot;\x15\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf.0&quot;</span>);</span>
-<span class="line" id="L1090">}</span>
-<span class="line" id="L1091"></span>
-<span class="line" id="L1092"><span class="tok-kw">fn</span> <span class="tok-fn">decompress</span>(input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1093">    <span class="tok-kw">const</span> allocator = testing.allocator;</span>
-<span class="line" id="L1094">    <span class="tok-kw">var</span> fib = std.io.fixedBufferStream(input);</span>
-<span class="line" id="L1095">    <span class="tok-kw">const</span> reader = fib.reader();</span>
-<span class="line" id="L1096">    <span class="tok-kw">var</span> decomp = <span class="tok-kw">try</span> decompressor(allocator, reader, <span class="tok-null">null</span>);</span>
-<span class="line" id="L1097">    <span class="tok-kw">defer</span> decomp.deinit();</span>
-<span class="line" id="L1098">    <span class="tok-kw">var</span> output = <span class="tok-kw">try</span> decomp.reader().readAllAlloc(allocator, math.maxInt(<span class="tok-type">usize</span>));</span>
-<span class="line" id="L1099">    <span class="tok-kw">defer</span> std.testing.allocator.free(output);</span>
-<span class="line" id="L1100">}</span>
-<span class="line" id="L1101"></span>
+<span class="line" id="L1081">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.CorruptInput, decompress(<span class="tok-str">&quot;\x05\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf\xce&quot;</span>));</span>
+<span class="line" id="L1082">    <span class="tok-kw">try</span> decompress(<span class="tok-str">&quot;\x15\xe0\x01\t\x00\x00\x00\x00\x10\\\xbf.0&quot;</span>);</span>
+<span class="line" id="L1083">}</span>
+<span class="line" id="L1084"></span>
+<span class="line" id="L1085"><span class="tok-kw">fn</span> <span class="tok-fn">decompress</span>(input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1086">    <span class="tok-kw">const</span> allocator = testing.allocator;</span>
+<span class="line" id="L1087">    <span class="tok-kw">var</span> fib = std.io.fixedBufferStream(input);</span>
+<span class="line" id="L1088">    <span class="tok-kw">const</span> reader = fib.reader();</span>
+<span class="line" id="L1089">    <span class="tok-kw">var</span> decomp = <span class="tok-kw">try</span> decompressor(allocator, reader, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1090">    <span class="tok-kw">defer</span> decomp.deinit();</span>
+<span class="line" id="L1091">    <span class="tok-kw">var</span> output = <span class="tok-kw">try</span> decomp.reader().readAllAlloc(allocator, math.maxInt(<span class="tok-type">usize</span>));</span>
+<span class="line" id="L1092">    <span class="tok-kw">defer</span> std.testing.allocator.free(output);</span>
+<span class="line" id="L1093">}</span>
+<span class="line" id="L1094"></span>
 </code></pre></body>
 </html>

@@ -487,410 +487,406 @@
 <span class="line" id="L374"></span>
 <span class="line" id="L375">    <span class="tok-kw">const</span> Halves = <span class="tok-kw">struct</span> { l: <span class="tok-type">u32</span>, r: <span class="tok-type">u32</span> };</span>
 <span class="line" id="L376"></span>
-<span class="line" id="L377">    <span class="tok-kw">fn</span> <span class="tok-fn">feistelF</span>(state: State, x: <span class="tok-type">u32</span>) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L378">        <span class="tok-kw">var</span> r = state.sboxes[<span class="tok-number">0</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">24</span>)];</span>
-<span class="line" id="L379">        r +%= state.sboxes[<span class="tok-number">1</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">16</span>)];</span>
-<span class="line" id="L380">        r ^= state.sboxes[<span class="tok-number">2</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">8</span>)];</span>
-<span class="line" id="L381">        r +%= state.sboxes[<span class="tok-number">3</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x)];</span>
-<span class="line" id="L382">        <span class="tok-kw">return</span> r;</span>
+<span class="line" id="L377">    <span class="tok-kw">fn</span> <span class="tok-fn">halfRound</span>(state: *<span class="tok-kw">const</span> State, i: <span class="tok-type">u32</span>, j: <span class="tok-type">u32</span>, n: <span class="tok-type">usize</span>) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L378">        <span class="tok-kw">var</span> r = state.sboxes[<span class="tok-number">0</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, j &gt;&gt; <span class="tok-number">24</span>)];</span>
+<span class="line" id="L379">        r +%= state.sboxes[<span class="tok-number">1</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, j &gt;&gt; <span class="tok-number">16</span>)];</span>
+<span class="line" id="L380">        r ^= state.sboxes[<span class="tok-number">2</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, j &gt;&gt; <span class="tok-number">8</span>)];</span>
+<span class="line" id="L381">        r +%= state.sboxes[<span class="tok-number">3</span>][<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, j)];</span>
+<span class="line" id="L382">        <span class="tok-kw">return</span> i ^ r ^ state.subkeys[n];</span>
 <span class="line" id="L383">    }</span>
 <span class="line" id="L384"></span>
-<span class="line" id="L385">    <span class="tok-kw">fn</span> <span class="tok-fn">halfRound</span>(state: State, i: <span class="tok-type">u32</span>, j: <span class="tok-type">u32</span>, n: <span class="tok-type">usize</span>) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L386">        <span class="tok-kw">return</span> i ^ state.feistelF(j) ^ state.subkeys[n];</span>
-<span class="line" id="L387">    }</span>
-<span class="line" id="L388"></span>
-<span class="line" id="L389">    <span class="tok-kw">fn</span> <span class="tok-fn">encipher</span>(state: State, halves: *Halves) <span class="tok-type">void</span> {</span>
-<span class="line" id="L390">        halves.l ^= state.subkeys[<span class="tok-number">0</span>];</span>
-<span class="line" id="L391">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L392">        <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">2</span>) {</span>
-<span class="line" id="L393">            halves.r = state.halfRound(halves.r, halves.l, i);</span>
-<span class="line" id="L394">            halves.l = state.halfRound(halves.l, halves.r, i + <span class="tok-number">1</span>);</span>
-<span class="line" id="L395">        }</span>
-<span class="line" id="L396">        <span class="tok-kw">const</span> halves_last = Halves{ .l = halves.r ^ state.subkeys[i], .r = halves.l };</span>
-<span class="line" id="L397">        halves.* = halves_last;</span>
-<span class="line" id="L398">    }</span>
-<span class="line" id="L399"></span>
-<span class="line" id="L400">    <span class="tok-kw">fn</span> <span class="tok-fn">encrypt</span>(state: State, data: []<span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L401">        debug.assert(data.len % <span class="tok-number">2</span> == <span class="tok-number">0</span>);</span>
-<span class="line" id="L402">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L403">        <span class="tok-kw">while</span> (i &lt; data.len) : (i += <span class="tok-number">2</span>) {</span>
-<span class="line" id="L404">            <span class="tok-kw">var</span> halves = Halves{ .l = data[i], .r = data[i + <span class="tok-number">1</span>] };</span>
-<span class="line" id="L405">            state.encipher(&amp;halves);</span>
-<span class="line" id="L406">            data[i] = halves.l;</span>
-<span class="line" id="L407">            data[i + <span class="tok-number">1</span>] = halves.r;</span>
-<span class="line" id="L408">        }</span>
-<span class="line" id="L409">    }</span>
+<span class="line" id="L385">    <span class="tok-kw">fn</span> <span class="tok-fn">encipher</span>(state: *<span class="tok-kw">const</span> State, halves: *Halves) <span class="tok-type">void</span> {</span>
+<span class="line" id="L386">        halves.l ^= state.subkeys[<span class="tok-number">0</span>];</span>
+<span class="line" id="L387">        <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> i = <span class="tok-number">1</span>;</span>
+<span class="line" id="L388">        <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">2</span>) {</span>
+<span class="line" id="L389">            halves.r = state.halfRound(halves.r, halves.l, i);</span>
+<span class="line" id="L390">            halves.l = state.halfRound(halves.l, halves.r, i + <span class="tok-number">1</span>);</span>
+<span class="line" id="L391">        }</span>
+<span class="line" id="L392">        <span class="tok-kw">const</span> halves_last = Halves{ .l = halves.r ^ state.subkeys[i], .r = halves.l };</span>
+<span class="line" id="L393">        halves.* = halves_last;</span>
+<span class="line" id="L394">    }</span>
+<span class="line" id="L395"></span>
+<span class="line" id="L396">    <span class="tok-kw">fn</span> <span class="tok-fn">encrypt</span>(state: *<span class="tok-kw">const</span> State, data: []<span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L397">        debug.assert(data.len % <span class="tok-number">2</span> == <span class="tok-number">0</span>);</span>
+<span class="line" id="L398">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L399">        <span class="tok-kw">while</span> (i &lt; data.len) : (i += <span class="tok-number">2</span>) {</span>
+<span class="line" id="L400">            <span class="tok-kw">var</span> halves = Halves{ .l = data[i], .r = data[i + <span class="tok-number">1</span>] };</span>
+<span class="line" id="L401">            state.encipher(&amp;halves);</span>
+<span class="line" id="L402">            data[i] = halves.l;</span>
+<span class="line" id="L403">            data[i + <span class="tok-number">1</span>] = halves.r;</span>
+<span class="line" id="L404">        }</span>
+<span class="line" id="L405">    }</span>
+<span class="line" id="L406">};</span>
+<span class="line" id="L407"></span>
+<span class="line" id="L408"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Params = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L409">    rounds_log: <span class="tok-type">u6</span>,</span>
 <span class="line" id="L410">};</span>
 <span class="line" id="L411"></span>
-<span class="line" id="L412"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Params = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L413">    rounds_log: <span class="tok-type">u6</span>,</span>
-<span class="line" id="L414">};</span>
-<span class="line" id="L415"></span>
-<span class="line" id="L416"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">bcrypt</span>(</span>
-<span class="line" id="L417">    password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L418">    salt: [salt_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L419">    params: Params,</span>
-<span class="line" id="L420">) [dk_length]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L421">    <span class="tok-kw">var</span> state = State{};</span>
-<span class="line" id="L422">    <span class="tok-kw">var</span> password_buf: [<span class="tok-number">73</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L423">    <span class="tok-kw">const</span> trimmed_len = math.min(password.len, password_buf.len - <span class="tok-number">1</span>);</span>
-<span class="line" id="L424">    mem.copy(<span class="tok-type">u8</span>, password_buf[<span class="tok-number">0</span>..], password[<span class="tok-number">0</span>..trimmed_len]);</span>
-<span class="line" id="L425">    password_buf[trimmed_len] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L426">    <span class="tok-kw">var</span> passwordZ = password_buf[<span class="tok-number">0</span> .. trimmed_len + <span class="tok-number">1</span>];</span>
-<span class="line" id="L427">    state.expand(salt[<span class="tok-number">0</span>..], passwordZ);</span>
-<span class="line" id="L428"></span>
-<span class="line" id="L429">    <span class="tok-kw">const</span> rounds: <span class="tok-type">u64</span> = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">1</span>) &lt;&lt; params.rounds_log;</span>
-<span class="line" id="L430">    <span class="tok-kw">var</span> k: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L431">    <span class="tok-kw">while</span> (k &lt; rounds) : (k += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L432">        state.expand0(passwordZ);</span>
-<span class="line" id="L433">        state.expand0(salt[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L434">    }</span>
-<span class="line" id="L435">    utils.secureZero(<span class="tok-type">u8</span>, &amp;password_buf);</span>
-<span class="line" id="L436"></span>
-<span class="line" id="L437">    <span class="tok-kw">var</span> cdata = [<span class="tok-number">6</span>]<span class="tok-type">u32</span>{ <span class="tok-number">0x4f727068</span>, <span class="tok-number">0x65616e42</span>, <span class="tok-number">0x65686f6c</span>, <span class="tok-number">0x64657253</span>, <span class="tok-number">0x63727944</span>, <span class="tok-number">0x6f756274</span> }; <span class="tok-comment">// &quot;OrpheanBeholderScryDoubt&quot;</span>
+<span class="line" id="L412"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">bcrypt</span>(</span>
+<span class="line" id="L413">    password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L414">    salt: [salt_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L415">    params: Params,</span>
+<span class="line" id="L416">) [dk_length]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L417">    <span class="tok-kw">var</span> state = State{};</span>
+<span class="line" id="L418">    <span class="tok-kw">var</span> password_buf: [<span class="tok-number">73</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L419">    <span class="tok-kw">const</span> trimmed_len = math.min(password.len, password_buf.len - <span class="tok-number">1</span>);</span>
+<span class="line" id="L420">    mem.copy(<span class="tok-type">u8</span>, password_buf[<span class="tok-number">0</span>..], password[<span class="tok-number">0</span>..trimmed_len]);</span>
+<span class="line" id="L421">    password_buf[trimmed_len] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L422">    <span class="tok-kw">var</span> passwordZ = password_buf[<span class="tok-number">0</span> .. trimmed_len + <span class="tok-number">1</span>];</span>
+<span class="line" id="L423">    state.expand(salt[<span class="tok-number">0</span>..], passwordZ);</span>
+<span class="line" id="L424"></span>
+<span class="line" id="L425">    <span class="tok-kw">const</span> rounds: <span class="tok-type">u64</span> = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">1</span>) &lt;&lt; params.rounds_log;</span>
+<span class="line" id="L426">    <span class="tok-kw">var</span> k: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L427">    <span class="tok-kw">while</span> (k &lt; rounds) : (k += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L428">        state.expand0(passwordZ);</span>
+<span class="line" id="L429">        state.expand0(salt[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L430">    }</span>
+<span class="line" id="L431">    utils.secureZero(<span class="tok-type">u8</span>, &amp;password_buf);</span>
+<span class="line" id="L432"></span>
+<span class="line" id="L433">    <span class="tok-kw">var</span> cdata = [<span class="tok-number">6</span>]<span class="tok-type">u32</span>{ <span class="tok-number">0x4f727068</span>, <span class="tok-number">0x65616e42</span>, <span class="tok-number">0x65686f6c</span>, <span class="tok-number">0x64657253</span>, <span class="tok-number">0x63727944</span>, <span class="tok-number">0x6f756274</span> }; <span class="tok-comment">// &quot;OrpheanBeholderScryDoubt&quot;</span>
 </span>
-<span class="line" id="L438">    k = <span class="tok-number">0</span>;</span>
-<span class="line" id="L439">    <span class="tok-kw">while</span> (k &lt; <span class="tok-number">64</span>) : (k += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L440">        state.encrypt(&amp;cdata);</span>
-<span class="line" id="L441">    }</span>
-<span class="line" id="L442"></span>
-<span class="line" id="L443">    <span class="tok-kw">var</span> ct: [ct_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L444">    <span class="tok-kw">for</span> (cdata) |c, i| {</span>
-<span class="line" id="L445">        mem.writeIntBig(<span class="tok-type">u32</span>, ct[i * <span class="tok-number">4</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], c);</span>
-<span class="line" id="L446">    }</span>
-<span class="line" id="L447">    <span class="tok-kw">return</span> ct[<span class="tok-number">0</span>..dk_length].*;</span>
-<span class="line" id="L448">}</span>
+<span class="line" id="L434">    k = <span class="tok-number">0</span>;</span>
+<span class="line" id="L435">    <span class="tok-kw">while</span> (k &lt; <span class="tok-number">64</span>) : (k += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L436">        state.encrypt(&amp;cdata);</span>
+<span class="line" id="L437">    }</span>
+<span class="line" id="L438"></span>
+<span class="line" id="L439">    <span class="tok-kw">var</span> ct: [ct_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L440">    <span class="tok-kw">for</span> (cdata) |c, i| {</span>
+<span class="line" id="L441">        mem.writeIntBig(<span class="tok-type">u32</span>, ct[i * <span class="tok-number">4</span> ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], c);</span>
+<span class="line" id="L442">    }</span>
+<span class="line" id="L443">    <span class="tok-kw">return</span> ct[<span class="tok-number">0</span>..dk_length].*;</span>
+<span class="line" id="L444">}</span>
+<span class="line" id="L445"></span>
+<span class="line" id="L446"><span class="tok-kw">const</span> pbkdf_prf = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L447">    <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L448">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> mac_length = <span class="tok-number">32</span>;</span>
 <span class="line" id="L449"></span>
-<span class="line" id="L450"><span class="tok-kw">const</span> pbkdf_prf = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L451">    <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L452">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> mac_length = <span class="tok-number">32</span>;</span>
-<span class="line" id="L453"></span>
-<span class="line" id="L454">    hasher: Sha512,</span>
-<span class="line" id="L455">    sha2pass: [Sha512.digest_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L456"></span>
-<span class="line" id="L457">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(out: *[mac_length]<span class="tok-type">u8</span>, msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L458">        <span class="tok-kw">var</span> ctx = Self.init(key);</span>
-<span class="line" id="L459">        ctx.update(msg);</span>
-<span class="line" id="L460">        ctx.final(out);</span>
-<span class="line" id="L461">    }</span>
-<span class="line" id="L462"></span>
-<span class="line" id="L463">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Self {</span>
-<span class="line" id="L464">        <span class="tok-kw">var</span> self: Self = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L465">        self.hasher = Sha512.init(.{});</span>
-<span class="line" id="L466">        Sha512.hash(key, &amp;self.sha2pass, .{});</span>
-<span class="line" id="L467">        <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L450">    hasher: Sha512,</span>
+<span class="line" id="L451">    sha2pass: [Sha512.digest_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L452"></span>
+<span class="line" id="L453">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(out: *[mac_length]<span class="tok-type">u8</span>, msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L454">        <span class="tok-kw">var</span> ctx = Self.init(key);</span>
+<span class="line" id="L455">        ctx.update(msg);</span>
+<span class="line" id="L456">        ctx.final(out);</span>
+<span class="line" id="L457">    }</span>
+<span class="line" id="L458"></span>
+<span class="line" id="L459">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Self {</span>
+<span class="line" id="L460">        <span class="tok-kw">var</span> self: Self = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L461">        self.hasher = Sha512.init(.{});</span>
+<span class="line" id="L462">        Sha512.hash(key, &amp;self.sha2pass, .{});</span>
+<span class="line" id="L463">        <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L464">    }</span>
+<span class="line" id="L465"></span>
+<span class="line" id="L466">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">update</span>(self: *Self, msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L467">        self.hasher.update(msg);</span>
 <span class="line" id="L468">    }</span>
 <span class="line" id="L469"></span>
-<span class="line" id="L470">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">update</span>(self: *Self, msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L471">        self.hasher.update(msg);</span>
-<span class="line" id="L472">    }</span>
-<span class="line" id="L473"></span>
-<span class="line" id="L474">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">final</span>(self: *Self, out: *[mac_length]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L475">        <span class="tok-kw">var</span> sha2salt: [Sha512.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L476">        self.hasher.final(&amp;sha2salt);</span>
-<span class="line" id="L477">        out.* = hash(self.sha2pass, sha2salt);</span>
-<span class="line" id="L478">    }</span>
-<span class="line" id="L479"></span>
-<span class="line" id="L480">    <span class="tok-comment">/// Matches OpenBSD function</span></span>
-<span class="line" id="L481">    <span class="tok-comment">/// https://github.com/openbsd/src/blob/6df1256b7792691e66c2ed9d86a8c103069f9e34/lib/libutil/bcrypt_pbkdf.c#L98</span></span>
-<span class="line" id="L482">    <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(sha2pass: [Sha512.digest_length]<span class="tok-type">u8</span>, sha2salt: [Sha512.digest_length]<span class="tok-type">u8</span>) [<span class="tok-number">32</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L483">        <span class="tok-kw">var</span> cdata: [<span class="tok-number">8</span>]<span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L484">        {</span>
-<span class="line" id="L485">            <span class="tok-kw">const</span> ciphertext = <span class="tok-str">&quot;OxychromaticBlowfishSwatDynamite&quot;</span>;</span>
-<span class="line" id="L486">            <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L487">            <span class="tok-kw">for</span> (cdata) |*v| {</span>
-<span class="line" id="L488">                v.* = State.toWord(ciphertext, &amp;j);</span>
-<span class="line" id="L489">            }</span>
-<span class="line" id="L490">        }</span>
-<span class="line" id="L491"></span>
-<span class="line" id="L492">        <span class="tok-kw">var</span> state = State{};</span>
-<span class="line" id="L493"></span>
-<span class="line" id="L494">        { <span class="tok-comment">// key expansion</span>
+<span class="line" id="L470">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">final</span>(self: *Self, out: *[mac_length]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L471">        <span class="tok-kw">var</span> sha2salt: [Sha512.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L472">        self.hasher.final(&amp;sha2salt);</span>
+<span class="line" id="L473">        out.* = hash(self.sha2pass, sha2salt);</span>
+<span class="line" id="L474">    }</span>
+<span class="line" id="L475"></span>
+<span class="line" id="L476">    <span class="tok-comment">/// Matches OpenBSD function</span></span>
+<span class="line" id="L477">    <span class="tok-comment">/// https://github.com/openbsd/src/blob/6df1256b7792691e66c2ed9d86a8c103069f9e34/lib/libutil/bcrypt_pbkdf.c#L98</span></span>
+<span class="line" id="L478">    <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(sha2pass: [Sha512.digest_length]<span class="tok-type">u8</span>, sha2salt: [Sha512.digest_length]<span class="tok-type">u8</span>) [<span class="tok-number">32</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L479">        <span class="tok-kw">var</span> cdata: [<span class="tok-number">8</span>]<span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L480">        {</span>
+<span class="line" id="L481">            <span class="tok-kw">const</span> ciphertext = <span class="tok-str">&quot;OxychromaticBlowfishSwatDynamite&quot;</span>;</span>
+<span class="line" id="L482">            <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L483">            <span class="tok-kw">for</span> (cdata) |*v| {</span>
+<span class="line" id="L484">                v.* = State.toWord(ciphertext, &amp;j);</span>
+<span class="line" id="L485">            }</span>
+<span class="line" id="L486">        }</span>
+<span class="line" id="L487"></span>
+<span class="line" id="L488">        <span class="tok-kw">var</span> state = State{};</span>
+<span class="line" id="L489"></span>
+<span class="line" id="L490">        { <span class="tok-comment">// key expansion</span>
 </span>
-<span class="line" id="L495">            state.expand(&amp;sha2salt, &amp;sha2pass);</span>
-<span class="line" id="L496">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L497">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">64</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L498">                state.expand0(&amp;sha2salt);</span>
-<span class="line" id="L499">                state.expand0(&amp;sha2pass);</span>
-<span class="line" id="L500">            }</span>
-<span class="line" id="L501">        }</span>
-<span class="line" id="L502"></span>
-<span class="line" id="L503">        { <span class="tok-comment">// encryption</span>
+<span class="line" id="L491">            state.expand(&amp;sha2salt, &amp;sha2pass);</span>
+<span class="line" id="L492">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L493">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">64</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L494">                state.expand0(&amp;sha2salt);</span>
+<span class="line" id="L495">                state.expand0(&amp;sha2pass);</span>
+<span class="line" id="L496">            }</span>
+<span class="line" id="L497">        }</span>
+<span class="line" id="L498"></span>
+<span class="line" id="L499">        { <span class="tok-comment">// encryption</span>
 </span>
-<span class="line" id="L504">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L505">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">64</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L506">                state.encrypt(&amp;cdata);</span>
-<span class="line" id="L507">            }</span>
-<span class="line" id="L508">        }</span>
-<span class="line" id="L509"></span>
-<span class="line" id="L510">        <span class="tok-comment">// copy out</span>
+<span class="line" id="L500">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L501">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">64</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L502">                state.encrypt(&amp;cdata);</span>
+<span class="line" id="L503">            }</span>
+<span class="line" id="L504">        }</span>
+<span class="line" id="L505"></span>
+<span class="line" id="L506">        <span class="tok-comment">// copy out</span>
 </span>
-<span class="line" id="L511">        <span class="tok-kw">var</span> out: [<span class="tok-number">32</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L512">        <span class="tok-kw">for</span> (cdata) |v, i| {</span>
-<span class="line" id="L513">            std.mem.writeIntLittle(<span class="tok-type">u32</span>, out[<span class="tok-number">4</span> * i ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], v);</span>
-<span class="line" id="L514">        }</span>
+<span class="line" id="L507">        <span class="tok-kw">var</span> out: [<span class="tok-number">32</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L508">        <span class="tok-kw">for</span> (cdata) |v, i| {</span>
+<span class="line" id="L509">            std.mem.writeIntLittle(<span class="tok-type">u32</span>, out[<span class="tok-number">4</span> * i ..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], v);</span>
+<span class="line" id="L510">        }</span>
+<span class="line" id="L511"></span>
+<span class="line" id="L512">        <span class="tok-comment">// zap</span>
+</span>
+<span class="line" id="L513">        crypto.utils.secureZero(<span class="tok-type">u32</span>, &amp;cdata);</span>
+<span class="line" id="L514">        crypto.utils.secureZero(State, <span class="tok-builtin">@as</span>(*[<span class="tok-number">1</span>]State, &amp;state));</span>
 <span class="line" id="L515"></span>
-<span class="line" id="L516">        <span class="tok-comment">// zap</span>
-</span>
-<span class="line" id="L517">        crypto.utils.secureZero(<span class="tok-type">u32</span>, &amp;cdata);</span>
-<span class="line" id="L518">        crypto.utils.secureZero(State, <span class="tok-builtin">@as</span>(*[<span class="tok-number">1</span>]State, &amp;state));</span>
+<span class="line" id="L516">        <span class="tok-kw">return</span> out;</span>
+<span class="line" id="L517">    }</span>
+<span class="line" id="L518">};</span>
 <span class="line" id="L519"></span>
-<span class="line" id="L520">        <span class="tok-kw">return</span> out;</span>
-<span class="line" id="L521">    }</span>
-<span class="line" id="L522">};</span>
-<span class="line" id="L523"></span>
-<span class="line" id="L524"><span class="tok-comment">/// bcrypt PBKDF2 implementation with variations to match OpenBSD</span></span>
-<span class="line" id="L525"><span class="tok-comment">/// https://github.com/openbsd/src/blob/6df1256b7792691e66c2ed9d86a8c103069f9e34/lib/libutil/bcrypt_pbkdf.c#L98</span></span>
-<span class="line" id="L526"><span class="tok-comment">///</span></span>
-<span class="line" id="L527"><span class="tok-comment">/// This particular variant is used in e.g. SSH</span></span>
-<span class="line" id="L528"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pbkdf</span>(pass: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, salt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, key: []<span class="tok-type">u8</span>, rounds: <span class="tok-type">u32</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L529">    <span class="tok-kw">try</span> crypto.pwhash.pbkdf2(key, pass, salt, rounds, pbkdf_prf);</span>
-<span class="line" id="L530">}</span>
+<span class="line" id="L520"><span class="tok-comment">/// bcrypt PBKDF2 implementation with variations to match OpenBSD</span></span>
+<span class="line" id="L521"><span class="tok-comment">/// https://github.com/openbsd/src/blob/6df1256b7792691e66c2ed9d86a8c103069f9e34/lib/libutil/bcrypt_pbkdf.c#L98</span></span>
+<span class="line" id="L522"><span class="tok-comment">///</span></span>
+<span class="line" id="L523"><span class="tok-comment">/// This particular variant is used in e.g. SSH</span></span>
+<span class="line" id="L524"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pbkdf</span>(pass: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, salt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, key: []<span class="tok-type">u8</span>, rounds: <span class="tok-type">u32</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L525">    <span class="tok-kw">try</span> crypto.pwhash.pbkdf2(key, pass, salt, rounds, pbkdf_prf);</span>
+<span class="line" id="L526">}</span>
+<span class="line" id="L527"></span>
+<span class="line" id="L528"><span class="tok-kw">const</span> crypt_format = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L529">    <span class="tok-comment">/// String prefix for bcrypt</span></span>
+<span class="line" id="L530">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> prefix = <span class="tok-str">&quot;$2&quot;</span>;</span>
 <span class="line" id="L531"></span>
-<span class="line" id="L532"><span class="tok-kw">const</span> crypt_format = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L533">    <span class="tok-comment">/// String prefix for bcrypt</span></span>
-<span class="line" id="L534">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> prefix = <span class="tok-str">&quot;$2&quot;</span>;</span>
-<span class="line" id="L535"></span>
-<span class="line" id="L536">    <span class="tok-comment">// bcrypt has its own variant of base64, with its own alphabet and no padding</span>
+<span class="line" id="L532">    <span class="tok-comment">// bcrypt has its own variant of base64, with its own alphabet and no padding</span>
 </span>
-<span class="line" id="L537">    <span class="tok-kw">const</span> bcrypt_alphabet = <span class="tok-str">&quot;./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span>.*;</span>
-<span class="line" id="L538">    <span class="tok-kw">const</span> Codec = <span class="tok-kw">struct</span> { Encoder: base64.Base64Encoder, Decoder: base64.Base64Decoder }{</span>
-<span class="line" id="L539">        .Encoder = base64.Base64Encoder.init(bcrypt_alphabet, <span class="tok-null">null</span>),</span>
-<span class="line" id="L540">        .Decoder = base64.Base64Decoder.init(bcrypt_alphabet, <span class="tok-null">null</span>),</span>
-<span class="line" id="L541">    };</span>
-<span class="line" id="L542"></span>
-<span class="line" id="L543">    <span class="tok-kw">fn</span> <span class="tok-fn">strHashInternal</span>(</span>
-<span class="line" id="L544">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L545">        salt: [salt_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L546">        params: Params,</span>
-<span class="line" id="L547">    ) [hash_length]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L548">        <span class="tok-kw">var</span> dk = bcrypt(password, salt, params);</span>
-<span class="line" id="L549"></span>
-<span class="line" id="L550">        <span class="tok-kw">var</span> salt_str: [salt_str_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L551">        _ = Codec.Encoder.encode(salt_str[<span class="tok-number">0</span>..], salt[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L552"></span>
-<span class="line" id="L553">        <span class="tok-kw">var</span> ct_str: [ct_str_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L554">        _ = Codec.Encoder.encode(ct_str[<span class="tok-number">0</span>..], dk[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L555"></span>
-<span class="line" id="L556">        <span class="tok-kw">var</span> s_buf: [hash_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L557">        <span class="tok-kw">const</span> s = fmt.bufPrint(</span>
-<span class="line" id="L558">            s_buf[<span class="tok-number">0</span>..],</span>
-<span class="line" id="L559">            <span class="tok-str">&quot;{s}b${d}{d}${s}{s}&quot;</span>,</span>
-<span class="line" id="L560">            .{ prefix, params.rounds_log / <span class="tok-number">10</span>, params.rounds_log % <span class="tok-number">10</span>, salt_str, ct_str },</span>
-<span class="line" id="L561">        ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L562">        debug.assert(s.len == s_buf.len);</span>
-<span class="line" id="L563">        <span class="tok-kw">return</span> s_buf;</span>
-<span class="line" id="L564">    }</span>
-<span class="line" id="L565">};</span>
-<span class="line" id="L566"></span>
-<span class="line" id="L567"><span class="tok-comment">/// Hash and verify passwords using the PHC format.</span></span>
-<span class="line" id="L568"><span class="tok-kw">const</span> PhcFormatHasher = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L569">    <span class="tok-kw">const</span> alg_id = <span class="tok-str">&quot;bcrypt&quot;</span>;</span>
-<span class="line" id="L570">    <span class="tok-kw">const</span> BinValue = phc_format.BinValue;</span>
-<span class="line" id="L571"></span>
-<span class="line" id="L572">    <span class="tok-kw">const</span> HashResult = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L573">        alg_id: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L574">        r: <span class="tok-type">u6</span>,</span>
-<span class="line" id="L575">        salt: BinValue(salt_length),</span>
-<span class="line" id="L576">        hash: BinValue(dk_length),</span>
-<span class="line" id="L577">    };</span>
-<span class="line" id="L578"></span>
-<span class="line" id="L579">    <span class="tok-comment">/// Return a non-deterministic hash of the password encoded as a PHC-format string</span></span>
-<span class="line" id="L580">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(</span>
-<span class="line" id="L581">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L582">        params: Params,</span>
-<span class="line" id="L583">        buf: []<span class="tok-type">u8</span>,</span>
-<span class="line" id="L584">    ) HasherError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L585">        <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L586">        crypto.random.bytes(&amp;salt);</span>
-<span class="line" id="L587"></span>
-<span class="line" id="L588">        <span class="tok-kw">const</span> hash = bcrypt(password, salt, params);</span>
-<span class="line" id="L589"></span>
-<span class="line" id="L590">        <span class="tok-kw">return</span> phc_format.serialize(HashResult{</span>
-<span class="line" id="L591">            .alg_id = alg_id,</span>
-<span class="line" id="L592">            .r = params.rounds_log,</span>
-<span class="line" id="L593">            .salt = <span class="tok-kw">try</span> BinValue(salt_length).fromSlice(&amp;salt),</span>
-<span class="line" id="L594">            .hash = <span class="tok-kw">try</span> BinValue(dk_length).fromSlice(&amp;hash),</span>
-<span class="line" id="L595">        }, buf);</span>
-<span class="line" id="L596">    }</span>
-<span class="line" id="L597"></span>
-<span class="line" id="L598">    <span class="tok-comment">/// Verify a password against a PHC-format encoded string</span></span>
-<span class="line" id="L599">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">verify</span>(</span>
-<span class="line" id="L600">        str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L601">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L602">    ) HasherError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L603">        <span class="tok-kw">const</span> hash_result = <span class="tok-kw">try</span> phc_format.deserialize(HashResult, str);</span>
+<span class="line" id="L533">    <span class="tok-kw">const</span> bcrypt_alphabet = <span class="tok-str">&quot;./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span>.*;</span>
+<span class="line" id="L534">    <span class="tok-kw">const</span> Codec = <span class="tok-kw">struct</span> { Encoder: base64.Base64Encoder, Decoder: base64.Base64Decoder }{</span>
+<span class="line" id="L535">        .Encoder = base64.Base64Encoder.init(bcrypt_alphabet, <span class="tok-null">null</span>),</span>
+<span class="line" id="L536">        .Decoder = base64.Base64Decoder.init(bcrypt_alphabet, <span class="tok-null">null</span>),</span>
+<span class="line" id="L537">    };</span>
+<span class="line" id="L538"></span>
+<span class="line" id="L539">    <span class="tok-kw">fn</span> <span class="tok-fn">strHashInternal</span>(</span>
+<span class="line" id="L540">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L541">        salt: [salt_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L542">        params: Params,</span>
+<span class="line" id="L543">    ) [hash_length]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L544">        <span class="tok-kw">var</span> dk = bcrypt(password, salt, params);</span>
+<span class="line" id="L545"></span>
+<span class="line" id="L546">        <span class="tok-kw">var</span> salt_str: [salt_str_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L547">        _ = Codec.Encoder.encode(salt_str[<span class="tok-number">0</span>..], salt[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L548"></span>
+<span class="line" id="L549">        <span class="tok-kw">var</span> ct_str: [ct_str_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L550">        _ = Codec.Encoder.encode(ct_str[<span class="tok-number">0</span>..], dk[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L551"></span>
+<span class="line" id="L552">        <span class="tok-kw">var</span> s_buf: [hash_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L553">        <span class="tok-kw">const</span> s = fmt.bufPrint(</span>
+<span class="line" id="L554">            s_buf[<span class="tok-number">0</span>..],</span>
+<span class="line" id="L555">            <span class="tok-str">&quot;{s}b${d}{d}${s}{s}&quot;</span>,</span>
+<span class="line" id="L556">            .{ prefix, params.rounds_log / <span class="tok-number">10</span>, params.rounds_log % <span class="tok-number">10</span>, salt_str, ct_str },</span>
+<span class="line" id="L557">        ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L558">        debug.assert(s.len == s_buf.len);</span>
+<span class="line" id="L559">        <span class="tok-kw">return</span> s_buf;</span>
+<span class="line" id="L560">    }</span>
+<span class="line" id="L561">};</span>
+<span class="line" id="L562"></span>
+<span class="line" id="L563"><span class="tok-comment">/// Hash and verify passwords using the PHC format.</span></span>
+<span class="line" id="L564"><span class="tok-kw">const</span> PhcFormatHasher = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L565">    <span class="tok-kw">const</span> alg_id = <span class="tok-str">&quot;bcrypt&quot;</span>;</span>
+<span class="line" id="L566">    <span class="tok-kw">const</span> BinValue = phc_format.BinValue;</span>
+<span class="line" id="L567"></span>
+<span class="line" id="L568">    <span class="tok-kw">const</span> HashResult = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L569">        alg_id: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L570">        r: <span class="tok-type">u6</span>,</span>
+<span class="line" id="L571">        salt: BinValue(salt_length),</span>
+<span class="line" id="L572">        hash: BinValue(dk_length),</span>
+<span class="line" id="L573">    };</span>
+<span class="line" id="L574"></span>
+<span class="line" id="L575">    <span class="tok-comment">/// Return a non-deterministic hash of the password encoded as a PHC-format string</span></span>
+<span class="line" id="L576">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(</span>
+<span class="line" id="L577">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L578">        params: Params,</span>
+<span class="line" id="L579">        buf: []<span class="tok-type">u8</span>,</span>
+<span class="line" id="L580">    ) HasherError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L581">        <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L582">        crypto.random.bytes(&amp;salt);</span>
+<span class="line" id="L583"></span>
+<span class="line" id="L584">        <span class="tok-kw">const</span> hash = bcrypt(password, salt, params);</span>
+<span class="line" id="L585"></span>
+<span class="line" id="L586">        <span class="tok-kw">return</span> phc_format.serialize(HashResult{</span>
+<span class="line" id="L587">            .alg_id = alg_id,</span>
+<span class="line" id="L588">            .r = params.rounds_log,</span>
+<span class="line" id="L589">            .salt = <span class="tok-kw">try</span> BinValue(salt_length).fromSlice(&amp;salt),</span>
+<span class="line" id="L590">            .hash = <span class="tok-kw">try</span> BinValue(dk_length).fromSlice(&amp;hash),</span>
+<span class="line" id="L591">        }, buf);</span>
+<span class="line" id="L592">    }</span>
+<span class="line" id="L593"></span>
+<span class="line" id="L594">    <span class="tok-comment">/// Verify a password against a PHC-format encoded string</span></span>
+<span class="line" id="L595">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">verify</span>(</span>
+<span class="line" id="L596">        str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L597">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L598">    ) HasherError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L599">        <span class="tok-kw">const</span> hash_result = <span class="tok-kw">try</span> phc_format.deserialize(HashResult, str);</span>
+<span class="line" id="L600"></span>
+<span class="line" id="L601">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, hash_result.alg_id, alg_id)) <span class="tok-kw">return</span> HasherError.PasswordVerificationFailed;</span>
+<span class="line" id="L602">        <span class="tok-kw">if</span> (hash_result.salt.len != salt_length <span class="tok-kw">or</span> hash_result.hash.len != dk_length)</span>
+<span class="line" id="L603">            <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
 <span class="line" id="L604"></span>
-<span class="line" id="L605">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, hash_result.alg_id, alg_id)) <span class="tok-kw">return</span> HasherError.PasswordVerificationFailed;</span>
-<span class="line" id="L606">        <span class="tok-kw">if</span> (hash_result.salt.len != salt_length <span class="tok-kw">or</span> hash_result.hash.len != dk_length)</span>
-<span class="line" id="L607">            <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
-<span class="line" id="L608"></span>
-<span class="line" id="L609">        <span class="tok-kw">const</span> hash = bcrypt(password, hash_result.salt.buf, .{ .rounds_log = hash_result.r });</span>
-<span class="line" id="L610">        <span class="tok-kw">const</span> expected_hash = hash_result.hash.constSlice();</span>
+<span class="line" id="L605">        <span class="tok-kw">const</span> hash = bcrypt(password, hash_result.salt.buf, .{ .rounds_log = hash_result.r });</span>
+<span class="line" id="L606">        <span class="tok-kw">const</span> expected_hash = hash_result.hash.constSlice();</span>
+<span class="line" id="L607"></span>
+<span class="line" id="L608">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, &amp;hash, expected_hash)) <span class="tok-kw">return</span> HasherError.PasswordVerificationFailed;</span>
+<span class="line" id="L609">    }</span>
+<span class="line" id="L610">};</span>
 <span class="line" id="L611"></span>
-<span class="line" id="L612">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, &amp;hash, expected_hash)) <span class="tok-kw">return</span> HasherError.PasswordVerificationFailed;</span>
-<span class="line" id="L613">    }</span>
-<span class="line" id="L614">};</span>
-<span class="line" id="L615"></span>
-<span class="line" id="L616"><span class="tok-comment">/// Hash and verify passwords using the modular crypt format.</span></span>
-<span class="line" id="L617"><span class="tok-kw">const</span> CryptFormatHasher = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L618">    <span class="tok-comment">/// Length of a string returned by the create() function</span></span>
-<span class="line" id="L619">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> pwhash_str_length: <span class="tok-type">usize</span> = hash_length;</span>
-<span class="line" id="L620"></span>
-<span class="line" id="L621">    <span class="tok-comment">/// Return a non-deterministic hash of the password encoded into the modular crypt format</span></span>
-<span class="line" id="L622">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(</span>
-<span class="line" id="L623">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L624">        params: Params,</span>
-<span class="line" id="L625">        buf: []<span class="tok-type">u8</span>,</span>
-<span class="line" id="L626">    ) HasherError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L627">        <span class="tok-kw">if</span> (buf.len &lt; pwhash_str_length) <span class="tok-kw">return</span> HasherError.NoSpaceLeft;</span>
-<span class="line" id="L628"></span>
-<span class="line" id="L629">        <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L630">        crypto.random.bytes(&amp;salt);</span>
-<span class="line" id="L631"></span>
-<span class="line" id="L632">        <span class="tok-kw">const</span> hash = crypt_format.strHashInternal(password, salt, params);</span>
-<span class="line" id="L633">        mem.copy(<span class="tok-type">u8</span>, buf, &amp;hash);</span>
-<span class="line" id="L634"></span>
-<span class="line" id="L635">        <span class="tok-kw">return</span> buf[<span class="tok-number">0</span>..pwhash_str_length];</span>
-<span class="line" id="L636">    }</span>
-<span class="line" id="L637"></span>
-<span class="line" id="L638">    <span class="tok-comment">/// Verify a password against a string in modular crypt format</span></span>
-<span class="line" id="L639">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">verify</span>(</span>
-<span class="line" id="L640">        str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L641">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L642">    ) HasherError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L643">        <span class="tok-kw">if</span> (str.len != pwhash_str_length <span class="tok-kw">or</span> str[<span class="tok-number">3</span>] != <span class="tok-str">'$'</span> <span class="tok-kw">or</span> str[<span class="tok-number">6</span>] != <span class="tok-str">'$'</span>)</span>
+<span class="line" id="L612"><span class="tok-comment">/// Hash and verify passwords using the modular crypt format.</span></span>
+<span class="line" id="L613"><span class="tok-kw">const</span> CryptFormatHasher = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L614">    <span class="tok-comment">/// Length of a string returned by the create() function</span></span>
+<span class="line" id="L615">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> pwhash_str_length: <span class="tok-type">usize</span> = hash_length;</span>
+<span class="line" id="L616"></span>
+<span class="line" id="L617">    <span class="tok-comment">/// Return a non-deterministic hash of the password encoded into the modular crypt format</span></span>
+<span class="line" id="L618">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(</span>
+<span class="line" id="L619">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L620">        params: Params,</span>
+<span class="line" id="L621">        buf: []<span class="tok-type">u8</span>,</span>
+<span class="line" id="L622">    ) HasherError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L623">        <span class="tok-kw">if</span> (buf.len &lt; pwhash_str_length) <span class="tok-kw">return</span> HasherError.NoSpaceLeft;</span>
+<span class="line" id="L624"></span>
+<span class="line" id="L625">        <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L626">        crypto.random.bytes(&amp;salt);</span>
+<span class="line" id="L627"></span>
+<span class="line" id="L628">        <span class="tok-kw">const</span> hash = crypt_format.strHashInternal(password, salt, params);</span>
+<span class="line" id="L629">        mem.copy(<span class="tok-type">u8</span>, buf, &amp;hash);</span>
+<span class="line" id="L630"></span>
+<span class="line" id="L631">        <span class="tok-kw">return</span> buf[<span class="tok-number">0</span>..pwhash_str_length];</span>
+<span class="line" id="L632">    }</span>
+<span class="line" id="L633"></span>
+<span class="line" id="L634">    <span class="tok-comment">/// Verify a password against a string in modular crypt format</span></span>
+<span class="line" id="L635">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">verify</span>(</span>
+<span class="line" id="L636">        str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L637">        password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L638">    ) HasherError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L639">        <span class="tok-kw">if</span> (str.len != pwhash_str_length <span class="tok-kw">or</span> str[<span class="tok-number">3</span>] != <span class="tok-str">'$'</span> <span class="tok-kw">or</span> str[<span class="tok-number">6</span>] != <span class="tok-str">'$'</span>)</span>
+<span class="line" id="L640">            <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
+<span class="line" id="L641"></span>
+<span class="line" id="L642">        <span class="tok-kw">const</span> rounds_log_str = str[<span class="tok-number">4</span>..][<span class="tok-number">0</span>..<span class="tok-number">2</span>];</span>
+<span class="line" id="L643">        <span class="tok-kw">const</span> rounds_log = fmt.parseInt(<span class="tok-type">u6</span>, rounds_log_str[<span class="tok-number">0</span>..], <span class="tok-number">10</span>) <span class="tok-kw">catch</span></span>
 <span class="line" id="L644">            <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
 <span class="line" id="L645"></span>
-<span class="line" id="L646">        <span class="tok-kw">const</span> rounds_log_str = str[<span class="tok-number">4</span>..][<span class="tok-number">0</span>..<span class="tok-number">2</span>];</span>
-<span class="line" id="L647">        <span class="tok-kw">const</span> rounds_log = fmt.parseInt(<span class="tok-type">u6</span>, rounds_log_str[<span class="tok-number">0</span>..], <span class="tok-number">10</span>) <span class="tok-kw">catch</span></span>
-<span class="line" id="L648">            <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
+<span class="line" id="L646">        <span class="tok-kw">const</span> salt_str = str[<span class="tok-number">7</span>..][<span class="tok-number">0</span>..salt_str_length];</span>
+<span class="line" id="L647">        <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L648">        crypt_format.Codec.Decoder.decode(salt[<span class="tok-number">0</span>..], salt_str[<span class="tok-number">0</span>..]) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
 <span class="line" id="L649"></span>
-<span class="line" id="L650">        <span class="tok-kw">const</span> salt_str = str[<span class="tok-number">7</span>..][<span class="tok-number">0</span>..salt_str_length];</span>
-<span class="line" id="L651">        <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L652">        crypt_format.Codec.Decoder.decode(salt[<span class="tok-number">0</span>..], salt_str[<span class="tok-number">0</span>..]) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> HasherError.InvalidEncoding;</span>
-<span class="line" id="L653"></span>
-<span class="line" id="L654">        <span class="tok-kw">const</span> wanted_s = crypt_format.strHashInternal(password, salt, .{ .rounds_log = rounds_log });</span>
-<span class="line" id="L655">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, wanted_s[<span class="tok-number">0</span>..], str[<span class="tok-number">0</span>..])) <span class="tok-kw">return</span> HasherError.PasswordVerificationFailed;</span>
-<span class="line" id="L656">    }</span>
-<span class="line" id="L657">};</span>
-<span class="line" id="L658"></span>
-<span class="line" id="L659"><span class="tok-comment">/// Options for hashing a password.</span></span>
-<span class="line" id="L660"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> HashOptions = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L661">    allocator: ?mem.Allocator = <span class="tok-null">null</span>,</span>
-<span class="line" id="L662">    params: Params,</span>
-<span class="line" id="L663">    encoding: pwhash.Encoding,</span>
-<span class="line" id="L664">};</span>
-<span class="line" id="L665"></span>
-<span class="line" id="L666"><span class="tok-comment">/// Compute a hash of a password using 2^rounds_log rounds of the bcrypt key stretching function.</span></span>
-<span class="line" id="L667"><span class="tok-comment">/// bcrypt is a computationally expensive and cache-hard function, explicitly designed to slow down exhaustive searches.</span></span>
-<span class="line" id="L668"><span class="tok-comment">///</span></span>
-<span class="line" id="L669"><span class="tok-comment">/// The function returns a string that includes all the parameters required for verification.</span></span>
-<span class="line" id="L670"><span class="tok-comment">///</span></span>
-<span class="line" id="L671"><span class="tok-comment">/// IMPORTANT: by design, bcrypt silently truncates passwords to 72 bytes.</span></span>
-<span class="line" id="L672"><span class="tok-comment">/// If this is an issue for your application, hash the password first using a function such as SHA-512,</span></span>
-<span class="line" id="L673"><span class="tok-comment">/// and then use the resulting hash as the password parameter for bcrypt.</span></span>
-<span class="line" id="L674"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">strHash</span>(</span>
-<span class="line" id="L675">    password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L676">    options: HashOptions,</span>
-<span class="line" id="L677">    out: []<span class="tok-type">u8</span>,</span>
-<span class="line" id="L678">) Error![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L679">    <span class="tok-kw">switch</span> (options.encoding) {</span>
-<span class="line" id="L680">        .phc =&gt; <span class="tok-kw">return</span> PhcFormatHasher.create(password, options.params, out),</span>
-<span class="line" id="L681">        .crypt =&gt; <span class="tok-kw">return</span> CryptFormatHasher.create(password, options.params, out),</span>
-<span class="line" id="L682">    }</span>
-<span class="line" id="L683">}</span>
-<span class="line" id="L684"></span>
-<span class="line" id="L685"><span class="tok-comment">/// Options for hash verification.</span></span>
-<span class="line" id="L686"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> VerifyOptions = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L687">    allocator: ?mem.Allocator = <span class="tok-null">null</span>,</span>
-<span class="line" id="L688">};</span>
-<span class="line" id="L689"></span>
-<span class="line" id="L690"><span class="tok-comment">/// Verify that a previously computed hash is valid for a given password.</span></span>
-<span class="line" id="L691"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">strVerify</span>(</span>
-<span class="line" id="L692">    str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L693">    password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L694">    _: VerifyOptions,</span>
-<span class="line" id="L695">) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L696">    <span class="tok-kw">if</span> (mem.startsWith(<span class="tok-type">u8</span>, str, crypt_format.prefix)) {</span>
-<span class="line" id="L697">        <span class="tok-kw">return</span> CryptFormatHasher.verify(str, password);</span>
-<span class="line" id="L698">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L699">        <span class="tok-kw">return</span> PhcFormatHasher.verify(str, password);</span>
-<span class="line" id="L700">    }</span>
-<span class="line" id="L701">}</span>
-<span class="line" id="L702"></span>
-<span class="line" id="L703"><span class="tok-kw">test</span> <span class="tok-str">&quot;bcrypt codec&quot;</span> {</span>
-<span class="line" id="L704">    <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L705">    crypto.random.bytes(&amp;salt);</span>
-<span class="line" id="L706">    <span class="tok-kw">var</span> salt_str: [salt_str_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L707">    _ = crypt_format.Codec.Encoder.encode(salt_str[<span class="tok-number">0</span>..], salt[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L708">    <span class="tok-kw">var</span> salt2: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L709">    <span class="tok-kw">try</span> crypt_format.Codec.Decoder.decode(salt2[<span class="tok-number">0</span>..], salt_str[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L710">    <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, salt[<span class="tok-number">0</span>..], salt2[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L711">}</span>
-<span class="line" id="L712"></span>
-<span class="line" id="L713"><span class="tok-kw">test</span> <span class="tok-str">&quot;bcrypt crypt format&quot;</span> {</span>
-<span class="line" id="L714">    <span class="tok-kw">const</span> hash_options = HashOptions{</span>
-<span class="line" id="L715">        .params = .{ .rounds_log = <span class="tok-number">5</span> },</span>
-<span class="line" id="L716">        .encoding = .crypt,</span>
-<span class="line" id="L717">    };</span>
-<span class="line" id="L718">    <span class="tok-kw">const</span> verify_options = VerifyOptions{};</span>
-<span class="line" id="L719"></span>
-<span class="line" id="L720">    <span class="tok-kw">var</span> buf: [hash_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L721">    <span class="tok-kw">const</span> s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span>, hash_options, &amp;buf);</span>
-<span class="line" id="L722"></span>
-<span class="line" id="L723">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, s, crypt_format.prefix));</span>
-<span class="line" id="L724">    <span class="tok-kw">try</span> strVerify(s, <span class="tok-str">&quot;password&quot;</span>, verify_options);</span>
-<span class="line" id="L725">    <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L726">        <span class="tok-kw">error</span>.PasswordVerificationFailed,</span>
-<span class="line" id="L727">        strVerify(s, <span class="tok-str">&quot;invalid password&quot;</span>, verify_options),</span>
-<span class="line" id="L728">    );</span>
-<span class="line" id="L729"></span>
-<span class="line" id="L730">    <span class="tok-kw">var</span> long_buf: [hash_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L731">    <span class="tok-kw">const</span> long_s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, hash_options, &amp;long_buf);</span>
+<span class="line" id="L650">        <span class="tok-kw">const</span> wanted_s = crypt_format.strHashInternal(password, salt, .{ .rounds_log = rounds_log });</span>
+<span class="line" id="L651">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, wanted_s[<span class="tok-number">0</span>..], str[<span class="tok-number">0</span>..])) <span class="tok-kw">return</span> HasherError.PasswordVerificationFailed;</span>
+<span class="line" id="L652">    }</span>
+<span class="line" id="L653">};</span>
+<span class="line" id="L654"></span>
+<span class="line" id="L655"><span class="tok-comment">/// Options for hashing a password.</span></span>
+<span class="line" id="L656"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> HashOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L657">    allocator: ?mem.Allocator = <span class="tok-null">null</span>,</span>
+<span class="line" id="L658">    params: Params,</span>
+<span class="line" id="L659">    encoding: pwhash.Encoding,</span>
+<span class="line" id="L660">};</span>
+<span class="line" id="L661"></span>
+<span class="line" id="L662"><span class="tok-comment">/// Compute a hash of a password using 2^rounds_log rounds of the bcrypt key stretching function.</span></span>
+<span class="line" id="L663"><span class="tok-comment">/// bcrypt is a computationally expensive and cache-hard function, explicitly designed to slow down exhaustive searches.</span></span>
+<span class="line" id="L664"><span class="tok-comment">///</span></span>
+<span class="line" id="L665"><span class="tok-comment">/// The function returns a string that includes all the parameters required for verification.</span></span>
+<span class="line" id="L666"><span class="tok-comment">///</span></span>
+<span class="line" id="L667"><span class="tok-comment">/// IMPORTANT: by design, bcrypt silently truncates passwords to 72 bytes.</span></span>
+<span class="line" id="L668"><span class="tok-comment">/// If this is an issue for your application, hash the password first using a function such as SHA-512,</span></span>
+<span class="line" id="L669"><span class="tok-comment">/// and then use the resulting hash as the password parameter for bcrypt.</span></span>
+<span class="line" id="L670"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">strHash</span>(</span>
+<span class="line" id="L671">    password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L672">    options: HashOptions,</span>
+<span class="line" id="L673">    out: []<span class="tok-type">u8</span>,</span>
+<span class="line" id="L674">) Error![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L675">    <span class="tok-kw">switch</span> (options.encoding) {</span>
+<span class="line" id="L676">        .phc =&gt; <span class="tok-kw">return</span> PhcFormatHasher.create(password, options.params, out),</span>
+<span class="line" id="L677">        .crypt =&gt; <span class="tok-kw">return</span> CryptFormatHasher.create(password, options.params, out),</span>
+<span class="line" id="L678">    }</span>
+<span class="line" id="L679">}</span>
+<span class="line" id="L680"></span>
+<span class="line" id="L681"><span class="tok-comment">/// Options for hash verification.</span></span>
+<span class="line" id="L682"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> VerifyOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L683">    allocator: ?mem.Allocator = <span class="tok-null">null</span>,</span>
+<span class="line" id="L684">};</span>
+<span class="line" id="L685"></span>
+<span class="line" id="L686"><span class="tok-comment">/// Verify that a previously computed hash is valid for a given password.</span></span>
+<span class="line" id="L687"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">strVerify</span>(</span>
+<span class="line" id="L688">    str: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L689">    password: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L690">    _: VerifyOptions,</span>
+<span class="line" id="L691">) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L692">    <span class="tok-kw">if</span> (mem.startsWith(<span class="tok-type">u8</span>, str, crypt_format.prefix)) {</span>
+<span class="line" id="L693">        <span class="tok-kw">return</span> CryptFormatHasher.verify(str, password);</span>
+<span class="line" id="L694">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L695">        <span class="tok-kw">return</span> PhcFormatHasher.verify(str, password);</span>
+<span class="line" id="L696">    }</span>
+<span class="line" id="L697">}</span>
+<span class="line" id="L698"></span>
+<span class="line" id="L699"><span class="tok-kw">test</span> <span class="tok-str">&quot;bcrypt codec&quot;</span> {</span>
+<span class="line" id="L700">    <span class="tok-kw">var</span> salt: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L701">    crypto.random.bytes(&amp;salt);</span>
+<span class="line" id="L702">    <span class="tok-kw">var</span> salt_str: [salt_str_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L703">    _ = crypt_format.Codec.Encoder.encode(salt_str[<span class="tok-number">0</span>..], salt[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L704">    <span class="tok-kw">var</span> salt2: [salt_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L705">    <span class="tok-kw">try</span> crypt_format.Codec.Decoder.decode(salt2[<span class="tok-number">0</span>..], salt_str[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L706">    <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, salt[<span class="tok-number">0</span>..], salt2[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L707">}</span>
+<span class="line" id="L708"></span>
+<span class="line" id="L709"><span class="tok-kw">test</span> <span class="tok-str">&quot;bcrypt crypt format&quot;</span> {</span>
+<span class="line" id="L710">    <span class="tok-kw">const</span> hash_options = HashOptions{</span>
+<span class="line" id="L711">        .params = .{ .rounds_log = <span class="tok-number">5</span> },</span>
+<span class="line" id="L712">        .encoding = .crypt,</span>
+<span class="line" id="L713">    };</span>
+<span class="line" id="L714">    <span class="tok-kw">const</span> verify_options = VerifyOptions{};</span>
+<span class="line" id="L715"></span>
+<span class="line" id="L716">    <span class="tok-kw">var</span> buf: [hash_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L717">    <span class="tok-kw">const</span> s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span>, hash_options, &amp;buf);</span>
+<span class="line" id="L718"></span>
+<span class="line" id="L719">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, s, crypt_format.prefix));</span>
+<span class="line" id="L720">    <span class="tok-kw">try</span> strVerify(s, <span class="tok-str">&quot;password&quot;</span>, verify_options);</span>
+<span class="line" id="L721">    <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L722">        <span class="tok-kw">error</span>.PasswordVerificationFailed,</span>
+<span class="line" id="L723">        strVerify(s, <span class="tok-str">&quot;invalid password&quot;</span>, verify_options),</span>
+<span class="line" id="L724">    );</span>
+<span class="line" id="L725"></span>
+<span class="line" id="L726">    <span class="tok-kw">var</span> long_buf: [hash_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L727">    <span class="tok-kw">const</span> long_s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, hash_options, &amp;long_buf);</span>
+<span class="line" id="L728"></span>
+<span class="line" id="L729">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, long_s, crypt_format.prefix));</span>
+<span class="line" id="L730">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, verify_options);</span>
+<span class="line" id="L731">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">101</span>, verify_options);</span>
 <span class="line" id="L732"></span>
-<span class="line" id="L733">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, long_s, crypt_format.prefix));</span>
-<span class="line" id="L734">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, verify_options);</span>
-<span class="line" id="L735">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">101</span>, verify_options);</span>
-<span class="line" id="L736"></span>
-<span class="line" id="L737">    <span class="tok-kw">try</span> strVerify(</span>
-<span class="line" id="L738">        <span class="tok-str">&quot;$2b$08$WUQKyBCaKpziCwUXHiMVvu40dYVjkTxtWJlftl0PpjY2BxWSvFIEe&quot;</span>,</span>
-<span class="line" id="L739">        <span class="tok-str">&quot;The devil himself&quot;</span>,</span>
-<span class="line" id="L740">        verify_options,</span>
-<span class="line" id="L741">    );</span>
-<span class="line" id="L742">}</span>
-<span class="line" id="L743"></span>
-<span class="line" id="L744"><span class="tok-kw">test</span> <span class="tok-str">&quot;bcrypt phc format&quot;</span> {</span>
-<span class="line" id="L745">    <span class="tok-kw">const</span> hash_options = HashOptions{</span>
-<span class="line" id="L746">        .params = .{ .rounds_log = <span class="tok-number">5</span> },</span>
-<span class="line" id="L747">        .encoding = .phc,</span>
-<span class="line" id="L748">    };</span>
-<span class="line" id="L749">    <span class="tok-kw">const</span> verify_options = VerifyOptions{};</span>
-<span class="line" id="L750">    <span class="tok-kw">const</span> prefix = <span class="tok-str">&quot;$bcrypt$&quot;</span>;</span>
-<span class="line" id="L751"></span>
-<span class="line" id="L752">    <span class="tok-kw">var</span> buf: [hash_length * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L753">    <span class="tok-kw">const</span> s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span>, hash_options, &amp;buf);</span>
-<span class="line" id="L754"></span>
-<span class="line" id="L755">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, s, prefix));</span>
-<span class="line" id="L756">    <span class="tok-kw">try</span> strVerify(s, <span class="tok-str">&quot;password&quot;</span>, verify_options);</span>
-<span class="line" id="L757">    <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L758">        <span class="tok-kw">error</span>.PasswordVerificationFailed,</span>
-<span class="line" id="L759">        strVerify(s, <span class="tok-str">&quot;invalid password&quot;</span>, verify_options),</span>
-<span class="line" id="L760">    );</span>
-<span class="line" id="L761"></span>
-<span class="line" id="L762">    <span class="tok-kw">var</span> long_buf: [hash_length * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L763">    <span class="tok-kw">const</span> long_s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, hash_options, &amp;long_buf);</span>
+<span class="line" id="L733">    <span class="tok-kw">try</span> strVerify(</span>
+<span class="line" id="L734">        <span class="tok-str">&quot;$2b$08$WUQKyBCaKpziCwUXHiMVvu40dYVjkTxtWJlftl0PpjY2BxWSvFIEe&quot;</span>,</span>
+<span class="line" id="L735">        <span class="tok-str">&quot;The devil himself&quot;</span>,</span>
+<span class="line" id="L736">        verify_options,</span>
+<span class="line" id="L737">    );</span>
+<span class="line" id="L738">}</span>
+<span class="line" id="L739"></span>
+<span class="line" id="L740"><span class="tok-kw">test</span> <span class="tok-str">&quot;bcrypt phc format&quot;</span> {</span>
+<span class="line" id="L741">    <span class="tok-kw">const</span> hash_options = HashOptions{</span>
+<span class="line" id="L742">        .params = .{ .rounds_log = <span class="tok-number">5</span> },</span>
+<span class="line" id="L743">        .encoding = .phc,</span>
+<span class="line" id="L744">    };</span>
+<span class="line" id="L745">    <span class="tok-kw">const</span> verify_options = VerifyOptions{};</span>
+<span class="line" id="L746">    <span class="tok-kw">const</span> prefix = <span class="tok-str">&quot;$bcrypt$&quot;</span>;</span>
+<span class="line" id="L747"></span>
+<span class="line" id="L748">    <span class="tok-kw">var</span> buf: [hash_length * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L749">    <span class="tok-kw">const</span> s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span>, hash_options, &amp;buf);</span>
+<span class="line" id="L750"></span>
+<span class="line" id="L751">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, s, prefix));</span>
+<span class="line" id="L752">    <span class="tok-kw">try</span> strVerify(s, <span class="tok-str">&quot;password&quot;</span>, verify_options);</span>
+<span class="line" id="L753">    <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L754">        <span class="tok-kw">error</span>.PasswordVerificationFailed,</span>
+<span class="line" id="L755">        strVerify(s, <span class="tok-str">&quot;invalid password&quot;</span>, verify_options),</span>
+<span class="line" id="L756">    );</span>
+<span class="line" id="L757"></span>
+<span class="line" id="L758">    <span class="tok-kw">var</span> long_buf: [hash_length * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L759">    <span class="tok-kw">const</span> long_s = <span class="tok-kw">try</span> strHash(<span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, hash_options, &amp;long_buf);</span>
+<span class="line" id="L760"></span>
+<span class="line" id="L761">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, long_s, prefix));</span>
+<span class="line" id="L762">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, verify_options);</span>
+<span class="line" id="L763">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">101</span>, verify_options);</span>
 <span class="line" id="L764"></span>
-<span class="line" id="L765">    <span class="tok-kw">try</span> testing.expect(mem.startsWith(<span class="tok-type">u8</span>, long_s, prefix));</span>
-<span class="line" id="L766">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">100</span>, verify_options);</span>
-<span class="line" id="L767">    <span class="tok-kw">try</span> strVerify(long_s, <span class="tok-str">&quot;password&quot;</span> ** <span class="tok-number">101</span>, verify_options);</span>
-<span class="line" id="L768"></span>
-<span class="line" id="L769">    <span class="tok-kw">try</span> strVerify(</span>
-<span class="line" id="L770">        <span class="tok-str">&quot;$bcrypt$r=5$2NopntlgE2lX3cTwr4qz8A$r3T7iKYQNnY4hAhGjk9RmuyvgrYJZwc&quot;</span>,</span>
-<span class="line" id="L771">        <span class="tok-str">&quot;The devil himself&quot;</span>,</span>
-<span class="line" id="L772">        verify_options,</span>
-<span class="line" id="L773">    );</span>
-<span class="line" id="L774">}</span>
-<span class="line" id="L775"></span>
+<span class="line" id="L765">    <span class="tok-kw">try</span> strVerify(</span>
+<span class="line" id="L766">        <span class="tok-str">&quot;$bcrypt$r=5$2NopntlgE2lX3cTwr4qz8A$r3T7iKYQNnY4hAhGjk9RmuyvgrYJZwc&quot;</span>,</span>
+<span class="line" id="L767">        <span class="tok-str">&quot;The devil himself&quot;</span>,</span>
+<span class="line" id="L768">        verify_options,</span>
+<span class="line" id="L769">    );</span>
+<span class="line" id="L770">}</span>
+<span class="line" id="L771"></span>
 </code></pre></body>
 </html>
