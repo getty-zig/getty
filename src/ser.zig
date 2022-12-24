@@ -15,6 +15,7 @@ pub const default_st = .{
     ser.blocks.BufMap,
     ser.blocks.HashMap,
     ser.blocks.LinkedList,
+    ser.blocks.PackedInt,
     ser.blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////
@@ -83,6 +84,9 @@ pub const ser = struct {
 
         /// Serialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("ser/blocks/linked_list.zig");
+
+        /// Serialization block for `std.PackedIntArray` and `std.PackedIntSlice` values.
+        pub const PackedInt = @import("ser/blocks/packed_int.zig");
 
         /// Serialization block for `std.TailQueue`.
         pub const TailQueue = @import("ser/blocks/tail_queue.zig");
@@ -793,6 +797,64 @@ test "serialize - null" {
 test "serialize - optional" {
     try t(@as(?i32, null), &[_]Token{.{ .Null = {} }});
     try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
+}
+
+test "serialize - std.PackedIntArray" {
+    // Native endian
+    {
+        var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
+
+        try t(array, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // Custom endian
+    {
+        var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
+
+        try t(array, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+}
+
+test "serialize - std.PackedIntSlice" {
+    // Native endian
+    {
+        var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
+        const slice = array.slice(0, 3);
+
+        try t(slice, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // Custom endian
+    {
+        var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
+        const slice = array.slice(0, 3);
+
+        try t(slice, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
 }
 
 test "serialize - pointer" {
