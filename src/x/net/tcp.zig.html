@@ -487,79 +487,67 @@
 <span class="line" id="L374"><span class="tok-kw">test</span> <span class="tok-str">&quot;tcp/client: read and write multiple vectors&quot;</span> {</span>
 <span class="line" id="L375">    <span class="tok-kw">if</span> (native_os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L376"></span>
-<span class="line" id="L377">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L378">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/13893</span>
-</span>
-<span class="line" id="L379">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L380">    }</span>
-<span class="line" id="L381"></span>
-<span class="line" id="L382">    <span class="tok-kw">const</span> listener = <span class="tok-kw">try</span> tcp.Listener.init(.ip, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
-<span class="line" id="L383">    <span class="tok-kw">defer</span> listener.deinit();</span>
-<span class="line" id="L384"></span>
-<span class="line" id="L385">    <span class="tok-kw">try</span> listener.bind(ip.Address.initIPv4(IPv4.unspecified, <span class="tok-number">0</span>));</span>
-<span class="line" id="L386">    <span class="tok-kw">try</span> listener.listen(<span class="tok-number">128</span>);</span>
-<span class="line" id="L387"></span>
-<span class="line" id="L388">    <span class="tok-kw">var</span> binded_address = <span class="tok-kw">try</span> listener.getLocalAddress();</span>
-<span class="line" id="L389">    <span class="tok-kw">switch</span> (binded_address) {</span>
-<span class="line" id="L390">        .ipv4 =&gt; |*ipv4| ipv4.host = IPv4.localhost,</span>
-<span class="line" id="L391">        .ipv6 =&gt; |*ipv6| ipv6.host = IPv6.localhost,</span>
-<span class="line" id="L392">    }</span>
+<span class="line" id="L377">    <span class="tok-kw">const</span> listener = <span class="tok-kw">try</span> tcp.Listener.init(.ip, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
+<span class="line" id="L378">    <span class="tok-kw">defer</span> listener.deinit();</span>
+<span class="line" id="L379"></span>
+<span class="line" id="L380">    <span class="tok-kw">try</span> listener.bind(ip.Address.initIPv4(IPv4.unspecified, <span class="tok-number">0</span>));</span>
+<span class="line" id="L381">    <span class="tok-kw">try</span> listener.listen(<span class="tok-number">128</span>);</span>
+<span class="line" id="L382"></span>
+<span class="line" id="L383">    <span class="tok-kw">var</span> binded_address = <span class="tok-kw">try</span> listener.getLocalAddress();</span>
+<span class="line" id="L384">    <span class="tok-kw">switch</span> (binded_address) {</span>
+<span class="line" id="L385">        .ipv4 =&gt; |*ipv4| ipv4.host = IPv4.localhost,</span>
+<span class="line" id="L386">        .ipv6 =&gt; |*ipv6| ipv6.host = IPv6.localhost,</span>
+<span class="line" id="L387">    }</span>
+<span class="line" id="L388"></span>
+<span class="line" id="L389">    <span class="tok-kw">const</span> client = <span class="tok-kw">try</span> tcp.Client.init(.ip, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
+<span class="line" id="L390">    <span class="tok-kw">defer</span> client.deinit();</span>
+<span class="line" id="L391"></span>
+<span class="line" id="L392">    <span class="tok-kw">try</span> client.connect(binded_address);</span>
 <span class="line" id="L393"></span>
-<span class="line" id="L394">    <span class="tok-kw">const</span> client = <span class="tok-kw">try</span> tcp.Client.init(.ip, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
-<span class="line" id="L395">    <span class="tok-kw">defer</span> client.deinit();</span>
+<span class="line" id="L394">    <span class="tok-kw">const</span> conn = <span class="tok-kw">try</span> listener.accept(.{ .close_on_exec = <span class="tok-null">true</span> });</span>
+<span class="line" id="L395">    <span class="tok-kw">defer</span> conn.deinit();</span>
 <span class="line" id="L396"></span>
-<span class="line" id="L397">    <span class="tok-kw">try</span> client.connect(binded_address);</span>
-<span class="line" id="L398"></span>
-<span class="line" id="L399">    <span class="tok-kw">const</span> conn = <span class="tok-kw">try</span> listener.accept(.{ .close_on_exec = <span class="tok-null">true</span> });</span>
-<span class="line" id="L400">    <span class="tok-kw">defer</span> conn.deinit();</span>
-<span class="line" id="L401"></span>
-<span class="line" id="L402">    <span class="tok-kw">const</span> message = <span class="tok-str">&quot;hello world&quot;</span>;</span>
-<span class="line" id="L403">    _ = <span class="tok-kw">try</span> conn.client.writeMessage(Socket.Message.fromBuffers(&amp;[_]Buffer{</span>
-<span class="line" id="L404">        Buffer.from(message[<span class="tok-number">0</span> .. message.len / <span class="tok-number">2</span>]),</span>
-<span class="line" id="L405">        Buffer.from(message[message.len / <span class="tok-number">2</span> ..]),</span>
-<span class="line" id="L406">    }), <span class="tok-number">0</span>);</span>
-<span class="line" id="L407"></span>
-<span class="line" id="L408">    <span class="tok-kw">var</span> buf: [message.len + <span class="tok-number">1</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L409">    <span class="tok-kw">var</span> msg = Socket.Message.fromBuffers(&amp;[_]Buffer{</span>
-<span class="line" id="L410">        Buffer.from(buf[<span class="tok-number">0</span> .. message.len / <span class="tok-number">2</span>]),</span>
-<span class="line" id="L411">        Buffer.from(buf[message.len / <span class="tok-number">2</span> ..]),</span>
-<span class="line" id="L412">    });</span>
-<span class="line" id="L413">    _ = <span class="tok-kw">try</span> client.readMessage(&amp;msg, <span class="tok-number">0</span>);</span>
-<span class="line" id="L414"></span>
-<span class="line" id="L415">    <span class="tok-kw">try</span> testing.expectEqualStrings(message, buf[<span class="tok-number">0</span>..message.len]);</span>
-<span class="line" id="L416">}</span>
-<span class="line" id="L417"></span>
-<span class="line" id="L418"><span class="tok-kw">test</span> <span class="tok-str">&quot;tcp/listener: bind to unspecified ipv4 address&quot;</span> {</span>
-<span class="line" id="L419">    <span class="tok-kw">if</span> (native_os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L420"></span>
-<span class="line" id="L421">    <span class="tok-kw">const</span> listener = <span class="tok-kw">try</span> tcp.Listener.init(.ip, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
-<span class="line" id="L422">    <span class="tok-kw">defer</span> listener.deinit();</span>
-<span class="line" id="L423"></span>
-<span class="line" id="L424">    <span class="tok-kw">try</span> listener.bind(ip.Address.initIPv4(IPv4.unspecified, <span class="tok-number">0</span>));</span>
-<span class="line" id="L425">    <span class="tok-kw">try</span> listener.listen(<span class="tok-number">128</span>);</span>
-<span class="line" id="L426"></span>
-<span class="line" id="L427">    <span class="tok-kw">const</span> address = <span class="tok-kw">try</span> listener.getLocalAddress();</span>
-<span class="line" id="L428">    <span class="tok-kw">try</span> testing.expect(address == .ipv4);</span>
-<span class="line" id="L429">}</span>
-<span class="line" id="L430"></span>
-<span class="line" id="L431"><span class="tok-kw">test</span> <span class="tok-str">&quot;tcp/listener: bind to unspecified ipv6 address&quot;</span> {</span>
-<span class="line" id="L432">    <span class="tok-kw">if</span> (native_os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L433"></span>
-<span class="line" id="L434">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L435">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/13893</span>
-</span>
-<span class="line" id="L436">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L437">    }</span>
+<span class="line" id="L397">    <span class="tok-kw">const</span> message = <span class="tok-str">&quot;hello world&quot;</span>;</span>
+<span class="line" id="L398">    _ = <span class="tok-kw">try</span> conn.client.writeMessage(Socket.Message.fromBuffers(&amp;[_]Buffer{</span>
+<span class="line" id="L399">        Buffer.from(message[<span class="tok-number">0</span> .. message.len / <span class="tok-number">2</span>]),</span>
+<span class="line" id="L400">        Buffer.from(message[message.len / <span class="tok-number">2</span> ..]),</span>
+<span class="line" id="L401">    }), <span class="tok-number">0</span>);</span>
+<span class="line" id="L402"></span>
+<span class="line" id="L403">    <span class="tok-kw">var</span> buf: [message.len + <span class="tok-number">1</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L404">    <span class="tok-kw">var</span> msg = Socket.Message.fromBuffers(&amp;[_]Buffer{</span>
+<span class="line" id="L405">        Buffer.from(buf[<span class="tok-number">0</span> .. message.len / <span class="tok-number">2</span>]),</span>
+<span class="line" id="L406">        Buffer.from(buf[message.len / <span class="tok-number">2</span> ..]),</span>
+<span class="line" id="L407">    });</span>
+<span class="line" id="L408">    _ = <span class="tok-kw">try</span> client.readMessage(&amp;msg, <span class="tok-number">0</span>);</span>
+<span class="line" id="L409"></span>
+<span class="line" id="L410">    <span class="tok-kw">try</span> testing.expectEqualStrings(message, buf[<span class="tok-number">0</span>..message.len]);</span>
+<span class="line" id="L411">}</span>
+<span class="line" id="L412"></span>
+<span class="line" id="L413"><span class="tok-kw">test</span> <span class="tok-str">&quot;tcp/listener: bind to unspecified ipv4 address&quot;</span> {</span>
+<span class="line" id="L414">    <span class="tok-kw">if</span> (native_os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L415"></span>
+<span class="line" id="L416">    <span class="tok-kw">const</span> listener = <span class="tok-kw">try</span> tcp.Listener.init(.ip, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
+<span class="line" id="L417">    <span class="tok-kw">defer</span> listener.deinit();</span>
+<span class="line" id="L418"></span>
+<span class="line" id="L419">    <span class="tok-kw">try</span> listener.bind(ip.Address.initIPv4(IPv4.unspecified, <span class="tok-number">0</span>));</span>
+<span class="line" id="L420">    <span class="tok-kw">try</span> listener.listen(<span class="tok-number">128</span>);</span>
+<span class="line" id="L421"></span>
+<span class="line" id="L422">    <span class="tok-kw">const</span> address = <span class="tok-kw">try</span> listener.getLocalAddress();</span>
+<span class="line" id="L423">    <span class="tok-kw">try</span> testing.expect(address == .ipv4);</span>
+<span class="line" id="L424">}</span>
+<span class="line" id="L425"></span>
+<span class="line" id="L426"><span class="tok-kw">test</span> <span class="tok-str">&quot;tcp/listener: bind to unspecified ipv6 address&quot;</span> {</span>
+<span class="line" id="L427">    <span class="tok-kw">if</span> (native_os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L428"></span>
+<span class="line" id="L429">    <span class="tok-kw">const</span> listener = <span class="tok-kw">try</span> tcp.Listener.init(.ipv6, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
+<span class="line" id="L430">    <span class="tok-kw">defer</span> listener.deinit();</span>
+<span class="line" id="L431"></span>
+<span class="line" id="L432">    <span class="tok-kw">try</span> listener.bind(ip.Address.initIPv6(IPv6.unspecified, <span class="tok-number">0</span>));</span>
+<span class="line" id="L433">    <span class="tok-kw">try</span> listener.listen(<span class="tok-number">128</span>);</span>
+<span class="line" id="L434"></span>
+<span class="line" id="L435">    <span class="tok-kw">const</span> address = <span class="tok-kw">try</span> listener.getLocalAddress();</span>
+<span class="line" id="L436">    <span class="tok-kw">try</span> testing.expect(address == .ipv6);</span>
+<span class="line" id="L437">}</span>
 <span class="line" id="L438"></span>
-<span class="line" id="L439">    <span class="tok-kw">const</span> listener = <span class="tok-kw">try</span> tcp.Listener.init(.ipv6, .{ .close_on_exec = <span class="tok-null">true</span> });</span>
-<span class="line" id="L440">    <span class="tok-kw">defer</span> listener.deinit();</span>
-<span class="line" id="L441"></span>
-<span class="line" id="L442">    <span class="tok-kw">try</span> listener.bind(ip.Address.initIPv6(IPv6.unspecified, <span class="tok-number">0</span>));</span>
-<span class="line" id="L443">    <span class="tok-kw">try</span> listener.listen(<span class="tok-number">128</span>);</span>
-<span class="line" id="L444"></span>
-<span class="line" id="L445">    <span class="tok-kw">const</span> address = <span class="tok-kw">try</span> listener.getLocalAddress();</span>
-<span class="line" id="L446">    <span class="tok-kw">try</span> testing.expect(address == .ipv6);</span>
-<span class="line" id="L447">}</span>
-<span class="line" id="L448"></span>
 </code></pre></body>
 </html>
