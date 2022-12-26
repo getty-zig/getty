@@ -461,6 +461,7 @@ const TestDeserializer = struct {
             .deserializeEnum = deserializeAny,
             .deserializeFloat = deserializeAny,
             .deserializeInt = deserializeAny,
+            .deserializeIgnored = deserializeIgnored,
             .deserializeMap = deserializeAny,
             .deserializeOptional = deserializeAny,
             .deserializeSeq = deserializeAny,
@@ -537,6 +538,10 @@ const TestDeserializer = struct {
             // Panic! At The Disco
             else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         };
+    }
+
+    fn deserializeIgnored(_: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        return try visitor.visitVoid(allocator, De);
     }
 
     fn assertNextToken(self: *Self, expected: Token) !void {
