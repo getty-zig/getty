@@ -1,6 +1,7 @@
 const std = @import("std");
 
-const Ignored = @import("../impls/ignored.zig").Ignored;
+const Ignored = @import("../impls/seed/ignored.zig").Ignored;
+const IgnoredVisitor = @import("../impls/visitor/ignored.zig").Visitor;
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -31,7 +32,5 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    _ = T;
-
-    return Ignored;
+    return IgnoredVisitor(T);
 }
