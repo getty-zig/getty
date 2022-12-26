@@ -17,6 +17,12 @@ pub const default_dt = .{
     de.blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////
+    // User-Defined
+    ////////////////////////////////////////////////////////////////////////////
+
+    de.blocks.Ignored,
+
+    ////////////////////////////////////////////////////////////////////////////
     // Primitives
     ////////////////////////////////////////////////////////////////////////////
 
@@ -77,8 +83,7 @@ pub const de = struct {
 
     pub const Seed = @import("de/interfaces/seed.zig").Seed;
     pub const DefaultSeed = @import("de/impls/seed/default.zig").DefaultSeed;
-
-    pub const Ignored = @import("de/impls/ignored.zig").Ignored;
+    pub const Ignored = @import("de/impls/seed/ignored.zig").Ignored;
 
     /// Frees resources allocated during Getty deserialization.
     ///
@@ -195,6 +200,12 @@ pub const de = struct {
 
         /// Deserialization block for `std.TailQueue`.
         pub const TailQueue = @import("de/blocks/tail_queue.zig");
+
+        ////////////////////////////////////////////////////////////////////////
+        // User-Defined
+        ////////////////////////////////////////////////////////////////////////
+
+        pub const Ignored = @import("de/blocks/ignored.zig");
 
         ////////////////////////////////////////////////////////////////////////
         // Primitives
@@ -449,6 +460,7 @@ const TestDeserializer = struct {
             .deserializeEnum = deserializeAny,
             .deserializeFloat = deserializeAny,
             .deserializeInt = deserializeAny,
+            .deserializeIgnored = deserializeIgnored,
             .deserializeMap = deserializeAny,
             .deserializeOptional = deserializeAny,
             .deserializeSeq = deserializeAny,
@@ -525,6 +537,10 @@ const TestDeserializer = struct {
             // Panic! At The Disco
             else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
         };
+    }
+
+    fn deserializeIgnored(_: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        return try visitor.visitVoid(allocator, De);
     }
 
     fn assertNextToken(self: *Self, expected: Token) !void {

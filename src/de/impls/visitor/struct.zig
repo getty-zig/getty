@@ -108,7 +108,7 @@ pub fn Visitor(comptime Struct: type) type {
 
                 if (!found) {
                     switch (ignore_unknown_fields) {
-                        true => _ = try map.nextValueSeed(allocator, (de.Ignored{}).seed()),
+                        true => _ = try map.nextValue(allocator, de.Ignored),
                         false => return error.UnknownField,
                     }
                 }

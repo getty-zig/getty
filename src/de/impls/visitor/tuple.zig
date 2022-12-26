@@ -51,7 +51,7 @@ pub fn Visitor(comptime Tuple: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(allocator, void)) != null) {
+            if ((try seq.nextElement(allocator, de.Ignored)) != null) {
                 return error.InvalidLength;
             }
 
