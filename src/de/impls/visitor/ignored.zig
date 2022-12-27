@@ -14,9 +14,9 @@ pub fn Visitor(comptime Ignored: type) type {
                 .visitEnum = visitAny,
                 .visitFloat = visitAny,
                 .visitInt = visitAny,
-                .visitMap = visitAny,
+                .visitMap = visitMap,
                 .visitNull = visitNothing,
-                .visitSeq = visitAny,
+                .visitSeq = visitSeq,
                 .visitSome = visitSome,
                 .visitString = visitAny,
                 .visitUnion = visitUnion,
@@ -26,13 +26,30 @@ pub fn Visitor(comptime Ignored: type) type {
 
         const Value = Ignored;
 
+        fn visitAny(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+            return .{};
+        }
+
         fn visitBool(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!Value {
             return .{};
         }
 
-        fn visitAny(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!Value {
+        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            while ((try map.nextEntry(allocator, Ignored, Ignored)) != null) {
+                // Gobble
+            }
+
             return .{};
         }
+
+        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            while ((try seq.nextElement(allocator, Ignored)) != null) {
+                // Gobble
+            }
+
+            return .{};
+        }
+
         fn visitSome(_: Self, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             return .{};
         }
