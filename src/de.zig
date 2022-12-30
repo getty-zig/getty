@@ -14,6 +14,7 @@ pub const default_dt = .{
     de.blocks.BufMap,
     de.blocks.HashMap,
     de.blocks.LinkedList,
+    de.blocks.PackedIntArray,
     de.blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////
@@ -197,6 +198,9 @@ pub const de = struct {
 
         /// Deserialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("de/blocks/linked_list.zig");
+
+        /// Deserialization block for `std.PackedIntArray` values.
+        pub const PackedIntArray = @import("de/blocks/packed_int_array.zig");
 
         /// Deserialization block for `std.TailQueue`.
         pub const TailQueue = @import("de/blocks/tail_queue.zig");
@@ -974,6 +978,41 @@ test "deserialize - optional" {
     try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
 }
 
+test "deserialize - std.PackedIntArray" {
+    {
+        var expected = std.PackedIntArray(u32, 0).init([0]u32{});
+
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    {
+        var expected = std.PackedIntArray(u32, 3).init([3]u32{ 1, 1, 1 });
+
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 1 },
+            .{ .I32 = 1 },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    {
+        var expected = std.PackedIntArray(i32, 3).initAllTo(-1);
+
+        try t(expected, &[_]Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I32 = -1 },
+            .{ .I32 = -1 },
+            .{ .I32 = -1 },
+            .{ .SeqEnd = {} },
+        });
+    }
+}
+
 test "deserialize - string" {
     {
         var arr = [_]u8{ 'a', 'b', 'c' };
@@ -1259,6 +1298,12 @@ fn t(expected: anytype, tokens: []const Token) !void {
                     defer test_allocator.destroy(got_node.?);
 
                     try expectEqual(node.data, got_node.?.data);
+                }
+            } else if (comptime std.mem.startsWith(u8, @typeName(T), "packed_int_array.PackedIntArrayEndian")) {
+                try expectEqual(expected.len, v.len);
+
+                for (&expected.bytes) |byte, i| {
+                    try expectEqual(byte, v.bytes[i]);
                 }
             } else if (T == std.BufMap) {
                 try expectEqual(expected.count(), v.count());
