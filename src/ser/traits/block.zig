@@ -6,7 +6,10 @@ pub fn has_sb(
     comptime T: type,
 ) bool {
     comptime {
-        return std.meta.trait.isContainer(T) and @hasDecl(T, "getty.sb") and is_tsb(T.@"getty.sb");
+        const is_struct = @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;
+        const is_union = @typeInfo(T) == .Union;
+
+        return (is_struct or is_union) and @hasDecl(T, "getty.sb") and is_tsb(T.@"getty.sb");
     }
 }
 

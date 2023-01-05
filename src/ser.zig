@@ -240,7 +240,6 @@ pub fn serialize(
     if (comptime traits.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
             .Struct => return try ser.blocks.Struct.serialize(value, serializer),
-            .Enum => return try ser.blocks.Enum.serialize(value, serializer),
             .Union => return try ser.blocks.Union.serialize(value, serializer),
             else => @compileError("unexpected type cannot be serialized using attributes"),
         }
