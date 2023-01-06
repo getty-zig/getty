@@ -387,7 +387,6 @@ fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserial
     if (comptime traits.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
             .Struct => return try de.blocks.Struct.deserialize(allocator, T, deserializer, visitor),
-            .Enum => return try de.blocks.Enum.deserialize(allocator, T, deserializer, visitor),
             .Union => return try de.blocks.Union.deserialize(allocator, T, deserializer, visitor),
             else => @compileError("unexpected type cannot be deserialized using attributes"),
         }
