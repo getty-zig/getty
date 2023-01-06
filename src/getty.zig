@@ -7,8 +7,8 @@ const d = @import("de.zig");
 // Types
 ////////////////////////////////////////////////////////////////////////////////
 
-pub const Serializer = s.Serializer;
-pub const Deserializer = d.Deserializer;
+pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Namespaces
