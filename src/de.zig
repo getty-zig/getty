@@ -2,8 +2,7 @@
 
 const std = @import("std");
 
-/// Deserializer interface.
-pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
+const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 
 pub const default_dt = .{
     ////////////////////////////////////////////////////////////////////////////

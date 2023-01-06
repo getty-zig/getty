@@ -2,8 +2,7 @@
 
 const std = @import("std");
 
-/// Serializer interface.
-pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
 pub const default_st = .{
     ////////////////////////////////////////////////////////////////////////////
