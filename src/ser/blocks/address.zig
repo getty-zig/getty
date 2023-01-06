@@ -1,0 +1,42 @@
+const std = @import("std");
+
+// The maximum number of characters in an IPv6 address.
+//
+// Normally, IPv6 addresses can have up to 35 characters (8 groups of 4 hex
+// digits separated by colons). However, there is a caveat for IPv4-mapped IPv6
+// addresses, which can be up to 45 characters long. Furthermore, the format()
+// function in std.net.Ip6Address encloses IPv6 addresses in brackets, making
+// the maximum length of character for an IPv6 address 45 + 2 = 47 characters.
+//
+// In practice, std.net.Address doesn't actually seem to support IPv4-mapped
+// IPv6 addresses. But, we'll account for them anyways just in case it changes.
+const max_ipv6_chars = 47;
+
+// The maximum number of characters in a port number (plus one for a colon).
+//
+// The largest port number is 65535.
+const max_port_chars = 6;
+
+/// Specifies all types that can be serialized by this block.
+pub fn is(
+    /// The type of a value being serialized.
+    comptime T: type,
+) bool {
+    return T == std.net.Address;
+}
+
+/// Specifies the serialization process for values relevant to this block.
+pub fn serialize(
+    /// A value being serialized.
+    value: anytype,
+    /// A `getty.Serializer` interface value.
+    serializer: anytype,
+) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    var arr = [_]u8{0} ** (max_ipv6_chars + max_port_chars);
+
+    // UNREACHABLE: With the size values used in the array's declaration, there
+    // should always be enough space for an IPv4 or IPv6 address.
+    var buf = std.fmt.bufPrint(&arr, "{}", .{value}) catch unreachable;
+
+    return try serializer.serializeString(buf);
+}
