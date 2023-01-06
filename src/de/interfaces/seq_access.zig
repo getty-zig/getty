@@ -2,7 +2,7 @@ const std = @import("std");
 
 const de = @import("../../de.zig");
 
-/// Deserialization and access interface for Getty Maps.
+/// Deserialization and access interface for Getty Sequences.
 pub fn SeqAccess(
     /// The namespace that owns the method implementations provided in `methods`.
     comptime Context: type,
