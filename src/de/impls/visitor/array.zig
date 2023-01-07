@@ -54,9 +54,7 @@ pub fn Visitor(comptime Array: type) type {
             return array;
         }
 
-        fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            defer de.free(allocator.?, input);
-
+        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             if (Child == u8) {
                 var string: Value = undefined;
 
