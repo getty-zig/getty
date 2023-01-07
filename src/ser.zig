@@ -9,12 +9,12 @@ pub const default_st = .{
     // Standard Library
     ////////////////////////////////////////////////////////////////////////////
 
-    ser.blocks.Address,
     ser.blocks.ArrayList,
     ser.blocks.BoundedArray,
     ser.blocks.BufMap,
     ser.blocks.HashMap,
     ser.blocks.LinkedList,
+    ser.blocks.NetAddress,
     ser.blocks.PackedInt,
     ser.blocks.TailQueue,
 
@@ -70,9 +70,6 @@ pub const ser = struct {
         // Standard Library
         ////////////////////////////////////////////////////////////////////////
 
-        /// Serialization block for `std.net.Address` values.
-        pub const Address = @import("ser/blocks/address.zig");
-
         /// Serialization block for `std.ArrayList` values.
         pub const ArrayList = @import("ser/blocks/array_list.zig");
 
@@ -87,6 +84,9 @@ pub const ser = struct {
 
         /// Serialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("ser/blocks/linked_list.zig");
+
+        /// Serialization block for `std.net.Address` values.
+        pub const NetAddress = @import("ser/blocks/net_address.zig");
 
         /// Serialization block for `std.PackedIntArray` and `std.PackedIntSlice` values.
         pub const PackedInt = @import("ser/blocks/packed_int.zig");
