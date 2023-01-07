@@ -251,6 +251,7 @@ pub fn serialize(
     return try block.serialize(value, serializer);
 }
 
+const builtin = @import("builtin");
 const Token = @import("tests/common.zig").Token;
 
 const testing = std.testing;
@@ -790,6 +791,28 @@ test "serialize - linked list" {
         .{ .I32 = 3 },
         .{ .SeqEnd = {} },
     });
+}
+
+test "serialize - std.net.Address" {
+    if (builtin.os.tag != .windows) {
+        // IPv4
+        {
+            var addr = std.net.Address.resolveIp("127.0.0.1", 80) catch unreachable;
+            try t(addr, &[_]Token{.{ .String = "127.0.0.1:80" }});
+        }
+
+        // IPv6
+        {
+            var addr = std.net.Address.resolveIp("2001:db8:3333:4444:5555:6666:7777:8888", 80) catch unreachable;
+            try t(addr, &[_]Token{.{ .String = "[2001:db8:3333:4444:5555:6666:7777:8888]:80" }});
+        }
+
+        // IPv6 (shortened)
+        {
+            var addr = std.net.Address.resolveIp("2001:db8:3333::7777:8888", 80) catch unreachable;
+            try t(addr, &[_]Token{.{ .String = "[2001:db8:3333::7777:8888]:80" }});
+        }
+    }
 }
 
 test "serialize - null" {
