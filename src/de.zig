@@ -13,6 +13,7 @@ pub const default_dt = .{
     de.blocks.BufMap,
     de.blocks.HashMap,
     de.blocks.LinkedList,
+    de.blocks.NetAddress,
     de.blocks.PackedIntArray,
     de.blocks.TailQueue,
 
@@ -197,6 +198,9 @@ pub const de = struct {
 
         /// Deserialization block for `std.SinglyLinkedList` values.
         pub const LinkedList = @import("de/blocks/linked_list.zig");
+
+        /// Deserialization block for `std.net.Address` values.
+        pub const NetAddress = @import("de/blocks/net_address.zig");
 
         /// Deserialization block for `std.PackedIntArray` values.
         pub const PackedIntArray = @import("de/blocks/packed_int_array.zig");
@@ -394,6 +398,7 @@ fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserial
     return try db.deserialize(allocator, T, deserializer, visitor);
 }
 
+const builtin = @import("builtin");
 const Token = @import("tests/common.zig").Token;
 
 const testing = std.testing;
@@ -971,6 +976,26 @@ test "deserialize - linked list" {
     }
 }
 
+test "deserialize - std.net.Address" {
+    if (builtin.os.tag != .windows) {
+        const ipv4 = "127.0.0.1";
+        const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370";
+        const ipv6_wrapped = "[" ++ ipv6 ++ "]";
+
+        // IPv4
+        {
+            var addr = try std.net.Address.resolveIp(ipv4, 0);
+            try t(addr, &[_]Token{.{ .String = ipv4 ++ ":0" }});
+        }
+
+        // IPv6
+        {
+            var addr = try std.net.Address.resolveIp(ipv6, 80);
+            try t(addr, &[_]Token{.{ .String = ipv6_wrapped ++ ":80" }});
+        }
+    }
+}
+
 test "deserialize - optional" {
     try t(@as(?i32, null), &[_]Token{.{ .Null = {} }});
     try t(@as(?i32, 0), &[_]Token{ .{ .Some = {} }, .{ .I32 = 0 } });
@@ -1245,8 +1270,8 @@ test "deserialize - void" {
 
 /// This test function does not support:
 ///
-/// - Untagged unions
 /// - Recursive, user-defined containers (e.g., std.ArrayList(std.ArrayList(u8))).
+/// - Raw, untagged unions.
 fn t(expected: anytype, tokens: []const Token) !void {
     const T = @TypeOf(expected);
 
@@ -1323,11 +1348,15 @@ fn t(expected: anytype, tokens: []const Token) !void {
             }
         },
         .Union => |info| {
-            if (info.tag_type == null) {
-                @compileError("untagged unions are not supported by this function");
+            if (info.tag_type) |_| {
+                try expectEqual(expected, v);
+            } else {
+                if (T == std.net.Address) {
+                    try expect(std.net.Address.eql(expected, v));
+                } else {
+                    @compileError("untagged unions are not supported by this function");
+                }
             }
-
-            try expectEqual(expected, v);
         },
         else => unreachable,
     }
