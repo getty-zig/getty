@@ -338,49 +338,27 @@ pub fn deserialize(
     /// A `getty.Deserializer` interface value.
     deserializer: anytype,
 ) blk: {
-    const D = @TypeOf(deserializer);
-
-    concepts.@"getty.Deserializer"(D);
-
-    break :blk D.Error!T;
-} {
-    const db = comptime de.find_db(@TypeOf(deserializer), T);
-
-    var v = blk: {
-        if (comptime traits.has_attributes(T, db)) {
-            break :blk switch (@typeInfo(T)) {
-                .Struct => de.blocks.Struct.Visitor(T){},
-                .Union => de.blocks.Union.Visitor(T){},
-                else => @compileError("unexpected type cannot be deserialized using attributes"),
-            };
-        }
-
-        break :blk db.Visitor(T){};
-    };
-
-    return try deserializeInternal(allocator, T, deserializer, v.visitor());
-}
-
-fn deserializeInternal(allocator: ?std.mem.Allocator, comptime T: type, deserializer: anytype, visitor: anytype) blk: {
-    const D = @TypeOf(deserializer);
-    const V = @TypeOf(visitor);
-
-    concepts.@"getty.Deserializer"(D);
-    concepts.@"getty.de.Visitor"(V);
-
-    break :blk D.Error!V.Value;
+    concepts.@"getty.Deserializer"(@TypeOf(deserializer));
+    break :blk @TypeOf(deserializer).Error!T;
 } {
     const db = comptime de.find_db(@TypeOf(deserializer), T);
 
     if (comptime traits.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
-            .Struct => return try de.blocks.Struct.deserialize(allocator, T, deserializer, visitor),
-            .Union => return try de.blocks.Union.deserialize(allocator, T, deserializer, visitor),
+            .Struct => {
+                var v = de.blocks.Struct.Visitor(T){};
+                return try de.blocks.Struct.deserialize(allocator, T, deserializer, v.visitor());
+            },
+            .Union => {
+                var v = de.blocks.Union.Visitor(T){};
+                return try de.blocks.Union.deserialize(allocator, T, deserializer, v.visitor());
+            },
             else => @compileError("unexpected type cannot be deserialized using attributes"),
         }
     }
 
-    return try db.deserialize(allocator, T, deserializer, visitor);
+    var v = db.Visitor(T){};
+    return try db.deserialize(allocator, T, deserializer, v.visitor());
 }
 
 const builtin = @import("builtin");
