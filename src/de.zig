@@ -364,7 +364,6 @@ pub fn deserialize(
         if (comptime traits.has_attributes(T, db)) {
             break :blk switch (@typeInfo(T)) {
                 .Struct => de.blocks.Struct.Visitor(T){},
-                .Enum => de.blocks.Enum.Visitor(T){},
                 .Union => de.blocks.Union.Visitor(T){},
                 else => @compileError("unexpected type cannot be deserialized using attributes"),
             };
