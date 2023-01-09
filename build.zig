@@ -73,7 +73,8 @@ fn clean(b: *std.build.Builder) void {
         "-rf",
         "zig-cache",
         "docs",
-        "*.o",
+        "getty.o",
+        "getty.o.o",
         "gyro.lock",
         ".gyro",
     });
