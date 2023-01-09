@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../../../de.zig").de;
+const de = @import("../../de.zig").de;
 
 pub fn Visitor(comptime Pointer: type) type {
     if (@typeInfo(Pointer) != .Pointer or @typeInfo(Pointer).Pointer.size != .One) {
