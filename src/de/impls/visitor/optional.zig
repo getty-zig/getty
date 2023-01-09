@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../../../de.zig");
+const de = @import("../../de.zig");
 
 pub fn Visitor(comptime Optional: type) type {
     return struct {

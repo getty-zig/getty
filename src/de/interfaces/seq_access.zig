@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../../de.zig");
+const de = @import("../de.zig");
 
 /// Deserialization and access interface for Getty Sequences.
 pub fn SeqAccess(

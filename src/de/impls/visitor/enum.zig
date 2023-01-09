@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../../../de.zig").de;
+const de = @import("../../de.zig").de;
 
 pub fn Visitor(comptime Enum: type) type {
     return struct {

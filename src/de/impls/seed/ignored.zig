@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../../../de.zig").de;
+const de = @import("../../de.zig").de;
 
 /// A `getty.de.Seed` implementation that ignores values.
 pub const Ignored = struct {

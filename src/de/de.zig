@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
+const Deserializer = @import("interfaces/deserializer.zig").Deserializer;
 
 pub const default_dt = .{
     ////////////////////////////////////////////////////////////////////////////
@@ -42,35 +42,35 @@ pub const default_dt = .{
 };
 
 pub const concepts = struct {
-    pub usingnamespace @import("de/concepts/block.zig");
-    pub usingnamespace @import("de/concepts/deserializer.zig");
-    pub usingnamespace @import("de/concepts/map_access.zig");
-    pub usingnamespace @import("de/concepts/seed.zig");
-    pub usingnamespace @import("de/concepts/seq_access.zig");
-    pub usingnamespace @import("de/concepts/union_access.zig");
-    pub usingnamespace @import("de/concepts/variant_access.zig");
-    pub usingnamespace @import("de/concepts/visitor.zig");
+    pub usingnamespace @import("concepts/block.zig");
+    pub usingnamespace @import("concepts/deserializer.zig");
+    pub usingnamespace @import("concepts/map_access.zig");
+    pub usingnamespace @import("concepts/seed.zig");
+    pub usingnamespace @import("concepts/seq_access.zig");
+    pub usingnamespace @import("concepts/union_access.zig");
+    pub usingnamespace @import("concepts/variant_access.zig");
+    pub usingnamespace @import("concepts/visitor.zig");
 };
 
 pub const traits = struct {
-    pub usingnamespace @import("de/traits/block.zig");
-    pub usingnamespace @import("de/traits/attributes.zig");
+    pub usingnamespace @import("traits/block.zig");
+    pub usingnamespace @import("traits/attributes.zig");
 };
 
 /// Namespace for deserialization-specific types and functions.
 pub const de = struct {
-    pub const Error = @import("de/error.zig").Error;
+    pub const Error = @import("error.zig").Error;
 
-    pub const MapAccess = @import("de/interfaces/map_access.zig").MapAccess;
-    pub const SeqAccess = @import("de/interfaces/seq_access.zig").SeqAccess;
-    pub const UnionAccess = @import("de/interfaces/union_access.zig").UnionAccess;
-    pub const VariantAccess = @import("de/interfaces/variant_access.zig").VariantAccess;
+    pub const MapAccess = @import("interfaces/map_access.zig").MapAccess;
+    pub const SeqAccess = @import("interfaces/seq_access.zig").SeqAccess;
+    pub const UnionAccess = @import("interfaces/union_access.zig").UnionAccess;
+    pub const VariantAccess = @import("interfaces/variant_access.zig").VariantAccess;
 
-    pub const Visitor = @import("de/interfaces/visitor.zig").Visitor;
+    pub const Visitor = @import("interfaces/visitor.zig").Visitor;
 
-    pub const Seed = @import("de/interfaces/seed.zig").Seed;
-    pub const DefaultSeed = @import("de/impls/seed/default.zig").DefaultSeed;
-    pub const Ignored = @import("de/impls/seed/ignored.zig").Ignored;
+    pub const Seed = @import("interfaces/seed.zig").Seed;
+    pub const DefaultSeed = @import("impls/seed/default.zig").DefaultSeed;
+    pub const Ignored = @import("impls/seed/ignored.zig").Ignored;
 
     /// Frees resources allocated during Getty deserialization.
     ///
@@ -174,71 +174,71 @@ pub const de = struct {
         ////////////////////////////////////////////////////////////////////////
 
         /// Deserialization block for `std.ArrayList` values.
-        pub const ArrayList = @import("de/blocks/array_list.zig");
+        pub const ArrayList = @import("blocks/array_list.zig");
 
         /// Deserialization block for `std.BufMap` values.
-        pub const BufMap = @import("de/blocks/buf_map.zig");
+        pub const BufMap = @import("blocks/buf_map.zig");
 
         /// Deserialization block for `std.HashMap` values.
-        pub const HashMap = @import("de/blocks/hash_map.zig");
+        pub const HashMap = @import("blocks/hash_map.zig");
 
         /// Deserialization block for `std.SinglyLinkedList` values.
-        pub const LinkedList = @import("de/blocks/linked_list.zig");
+        pub const LinkedList = @import("blocks/linked_list.zig");
 
         /// Deserialization block for `std.net.Address` values.
-        pub const NetAddress = @import("de/blocks/net_address.zig");
+        pub const NetAddress = @import("blocks/net_address.zig");
 
         /// Deserialization block for `std.PackedIntArray` values.
-        pub const PackedIntArray = @import("de/blocks/packed_int_array.zig");
+        pub const PackedIntArray = @import("blocks/packed_int_array.zig");
 
         /// Deserialization block for `std.TailQueue`.
-        pub const TailQueue = @import("de/blocks/tail_queue.zig");
+        pub const TailQueue = @import("blocks/tail_queue.zig");
 
         ////////////////////////////////////////////////////////////////////////
         // User-Defined
         ////////////////////////////////////////////////////////////////////////
 
-        pub const Ignored = @import("de/blocks/ignored.zig");
+        pub const Ignored = @import("blocks/ignored.zig");
 
         ////////////////////////////////////////////////////////////////////////
         // Primitives
         ////////////////////////////////////////////////////////////////////////
 
         /// Deserializaton block for array values.
-        pub const Array = @import("de/blocks/array.zig");
+        pub const Array = @import("blocks/array.zig");
 
         /// Deserialization block for `bool` values.
-        pub const Bool = @import("de/blocks/bool.zig");
+        pub const Bool = @import("blocks/bool.zig");
 
         /// Deserialization block for `enum` values.
-        pub const Enum = @import("de/blocks/enum.zig");
+        pub const Enum = @import("blocks/enum.zig");
 
         /// Deserialization block for floating-point values.
-        pub const Float = @import("de/blocks/float.zig");
+        pub const Float = @import("blocks/float.zig");
 
         /// Deserialization block for integer values.
-        pub const Int = @import("de/blocks/int.zig");
+        pub const Int = @import("blocks/int.zig");
 
         /// Deserialization block for optional values.
-        pub const Optional = @import("de/blocks/optional.zig");
+        pub const Optional = @import("blocks/optional.zig");
 
         /// Deserialization block for pointer values.
-        pub const Pointer = @import("de/blocks/pointer.zig");
+        pub const Pointer = @import("blocks/pointer.zig");
 
         /// Deserialization block for slice values.
-        pub const Slice = @import("de/blocks/slice.zig");
+        pub const Slice = @import("blocks/slice.zig");
 
         /// Deserialization block for `struct` values.
-        pub const Struct = @import("de/blocks/struct.zig");
+        pub const Struct = @import("blocks/struct.zig");
 
         /// Deserialization block for tuple values.
-        pub const Tuple = @import("de/blocks/tuple.zig");
+        pub const Tuple = @import("blocks/tuple.zig");
 
         /// Deserialization block for `union` values.
-        pub const Union = @import("de/blocks/union.zig");
+        pub const Union = @import("blocks/union.zig");
 
         /// Deserialization block for `void` values.
-        pub const Void = @import("de/blocks/void.zig");
+        pub const Void = @import("blocks/void.zig");
     };
 
     /// Returns the attributes for a type. If none exists, `null` is returned.
@@ -362,7 +362,7 @@ pub fn deserialize(
 }
 
 const builtin = @import("builtin");
-const Token = @import("testing/token.zig").Token;
+const Token = @import("getty/testing").Token;
 
 const testing = std.testing;
 
