@@ -40,7 +40,7 @@ fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTar
     t_ser.addPackage(pkgs.getty);
     t_ser.addPackage(pkgs.getty_testing);
 
-    const t_de = b.addTest("src/de.zig");
+    const t_de = b.addTest("src/de/de.zig");
     t_de.setTarget(target);
     t_de.setBuildMode(mode);
     t_de.addPackage(pkgs.getty);

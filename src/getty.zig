@@ -1,7 +1,7 @@
 //! A (de)serialization framework for the Zig programming language.
 
 const s = @import("ser/ser.zig");
-const d = @import("de.zig");
+const d = @import("de/de.zig");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Types
