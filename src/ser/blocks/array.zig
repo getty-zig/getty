@@ -1,3 +1,5 @@
+const t = @import("getty/testing");
+
 /// Specifies all types that can be serialized by this block.
 pub fn is(
     /// The type of a value being serialized.
@@ -19,4 +21,29 @@ pub fn serialize(
         try seq.serializeElement(elem);
     }
     return try seq.end();
+}
+
+test "serialize - array" {
+    // empty
+    {
+        var arr = [_]i32{};
+
+        try t.ser.run(arr, &[_]t.Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // non-empty
+    {
+        var arr = [_]i32{ 1, 2, 3 };
+
+        try t.ser.run(arr, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .I32 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
 }

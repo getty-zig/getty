@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -30,4 +31,21 @@ pub fn serialize(
         }
     }
     return try map.end();
+}
+
+test "serialize - union" {
+    const Union = union(enum) { Int: i32, Bool: bool };
+
+    try t.ser.run(Union{ .Int = 0 }, &[_]t.Token{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Int" },
+        .{ .I32 = 0 },
+        .{ .MapEnd = {} },
+    });
+    try t.ser.run(Union{ .Bool = true }, &[_]t.Token{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Bool" },
+        .{ .Bool = true },
+        .{ .MapEnd = {} },
+    });
 }

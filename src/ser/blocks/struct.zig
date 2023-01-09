@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const ser = @import("../../ser.zig");
 
@@ -50,4 +51,19 @@ pub fn serialize(
     }
 
     return try st.end();
+}
+
+test "serialize - struct" {
+    const Struct = struct { a: i32, b: i32, c: i32 };
+
+    try t.ser.run(Struct{ .a = 1, .b = 2, .c = 3 }, &[_]t.Token{
+        .{ .Struct = .{ .name = @typeName(Struct), .len = 3 } },
+        .{ .String = "a" },
+        .{ .I32 = 1 },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .String = "c" },
+        .{ .I32 = 3 },
+        .{ .StructEnd = {} },
+    });
 }

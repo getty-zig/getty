@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -24,4 +25,66 @@ pub fn serialize(
         }
     }
     return try map.end();
+}
+
+test "serialize - hash map" {
+    // managed
+    {
+        var map = std.AutoHashMap(i32, i32).init(std.testing.allocator);
+        defer map.deinit();
+
+        try t.ser.run(map, &[_]t.Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+
+        try map.put(1, 2);
+
+        try t.ser.run(map, &[_]t.Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
+
+    // unmanaged
+    {
+        var map = std.AutoHashMapUnmanaged(i32, i32){};
+        defer map.deinit(std.testing.allocator);
+
+        try t.ser.run(map, &[_]t.Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+
+        try map.put(std.testing.allocator, 1, 2);
+
+        try t.ser.run(map, &[_]t.Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
+
+    // string
+    {
+        var map = std.StringHashMap(i32).init(std.testing.allocator);
+        defer map.deinit();
+
+        try t.ser.run(map, &[_]t.Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+
+        try map.put("1", 2);
+
+        try t.ser.run(map, &[_]t.Token{
+            .{ .Map = .{ .len = 1 } },
+            .{ .String = "1" },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
 }

@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -24,4 +25,29 @@ pub fn serialize(
         }
     }
     return try seq.end();
+}
+
+test "serialize - tail queue" {
+    var list = std.TailQueue(i32){};
+
+    try t.ser.run(list, &[_]t.Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
+
+    var one = @TypeOf(list).Node{ .data = 1 };
+    var two = @TypeOf(list).Node{ .data = 2 };
+    var three = @TypeOf(list).Node{ .data = 3 };
+
+    list.append(&one);
+    list.append(&two);
+    list.append(&three);
+
+    try t.ser.run(list, &[_]t.Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+    });
 }

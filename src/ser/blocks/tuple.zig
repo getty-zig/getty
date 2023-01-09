@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -23,4 +24,25 @@ pub fn serialize(
         try seq.serializeElement(@field(value, field.name));
     }
     return try seq.end();
+}
+
+test "serialize - tuple" {
+    try t.ser.run(.{}, &[_]t.Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
+
+    try t.ser.run(std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &[_]t.Token{
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .Bool = true },
+        .{ .SeqEnd = {} },
+    });
+
+    try t.ser.run(.{ @as(i32, 1), true }, &[_]t.Token{
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .Bool = true },
+        .{ .SeqEnd = {} },
+    });
 }

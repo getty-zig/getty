@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -21,4 +22,84 @@ pub fn serialize(
         try seq.serializeElement(elem);
     }
     return try seq.end();
+}
+
+test "serialize - array list" {
+    // managed
+    {
+        var list = std.ArrayList(std.ArrayList(u8)).init(std.testing.allocator);
+        defer list.deinit();
+
+        var a = std.ArrayList(u8).init(std.testing.allocator);
+        defer a.deinit();
+
+        var b = std.ArrayList(u8).init(std.testing.allocator);
+        defer b.deinit();
+
+        var c = std.ArrayList(u8).init(std.testing.allocator);
+        defer c.deinit();
+
+        try t.ser.run(list, &[_]t.Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+
+        try b.append(1);
+        try c.append(2);
+        try c.append(3);
+        try list.appendSlice(&[_]std.ArrayList(u8){ a, b, c });
+
+        try t.ser.run(list, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 1 } },
+            .{ .U8 = 1 },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 2 } },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // unmanaged
+    {
+        var list = std.ArrayListUnmanaged(std.ArrayListUnmanaged(u8)){};
+        defer list.deinit(std.testing.allocator);
+
+        var a = std.ArrayListUnmanaged(u8){};
+        defer a.deinit(std.testing.allocator);
+
+        var b = std.ArrayListUnmanaged(u8){};
+        defer b.deinit(std.testing.allocator);
+
+        var c = std.ArrayListUnmanaged(u8){};
+        defer c.deinit(std.testing.allocator);
+
+        try t.ser.run(list, &[_]t.Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+
+        try b.append(std.testing.allocator, 1);
+        try c.append(std.testing.allocator, 2);
+        try c.append(std.testing.allocator, 3);
+        try list.appendSlice(std.testing.allocator, &[_]std.ArrayListUnmanaged(u8){ a, b, c });
+
+        try t.ser.run(list, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 1 } },
+            .{ .U8 = 1 },
+            .{ .SeqEnd = {} },
+            .{ .Seq = .{ .len = 2 } },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+            .{ .SeqEnd = {} },
+        });
+    }
 }
