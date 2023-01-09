@@ -17,7 +17,7 @@ pub fn run(input: []const Token, expected: anytype) !void {
     const T = @TypeOf(expected);
 
     var d = Deserializer.init(input);
-    var v = getty.deserialize(test_allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+    var v = getty.deserialize(test_allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
     defer getty.de.free(test_allocator, v);
 
     switch (@typeInfo(T)) {

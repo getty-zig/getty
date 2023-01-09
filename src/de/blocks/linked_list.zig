@@ -103,7 +103,7 @@ test "deserialize - linked list" {
         // Test manually since the `t` function cannot recursively test
         // user-defined containers containers without ugly hacks.
         var d = t.de.Deserializer.init(tokens);
-        var v = getty.deserialize(std.testing.allocator, Parent, d.deserializer()) catch return error.TestUnexpectedError;
+        var v = getty.deserialize(std.testing.allocator, Parent, d.deserializer()) catch return error.UnexpectedTestError;
         defer getty.de.free(std.testing.allocator, v);
 
         try std.testing.expectEqual(expected.len(), v.len());
