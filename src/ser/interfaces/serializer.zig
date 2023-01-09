@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const ser = @import("../../ser.zig");
+const ser = @import("../ser.zig");
 
 /// Serializer interface.
 pub fn Serializer(
