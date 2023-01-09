@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const EnumVisitor = @import("../impls/visitor/enum.zig").Visitor;
 
@@ -32,4 +33,17 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return EnumVisitor(T);
+}
+
+test "deserialize - enum" {
+    const T = enum { zero, one, two, three, four };
+
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U8 = 0 } }, T.zero);
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U16 = 1 } }, T.one);
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U32 = 2 } }, T.two);
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U64 = 3 } }, T.three);
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U128 = 4 } }, T.four);
+
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .String = "zero" } }, T.zero);
+    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .String = "four" } }, T.four);
 }
