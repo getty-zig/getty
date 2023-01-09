@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;
 
@@ -32,4 +33,9 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return OptionalVisitor(T);
+}
+
+test "deserialize - optional" {
+    try t.de.run(&[_]t.Token{.{ .Null = {} }}, @as(?i32, null));
+    try t.de.run(&[_]t.Token{ .{ .Some = {} }, .{ .I32 = 0 } }, @as(?i32, 0));
 }

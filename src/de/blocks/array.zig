@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const ArrayVisitor = @import("../impls/visitor/array.zig").Visitor;
 
@@ -32,4 +33,36 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return ArrayVisitor(T);
+}
+
+test "deserialize - array" {
+    try t.de.run(&[_]t.Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    }, [_]i32{});
+
+    try t.de.run(&[_]t.Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+    }, [3]i32{ 1, 2, 3 });
+
+    try t.de.run(&[_]t.Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .SeqEnd = {} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 3 },
+        .{ .I32 = 4 },
+        .{ .SeqEnd = {} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 5 },
+        .{ .I32 = 6 },
+        .{ .SeqEnd = {} },
+        .{ .SeqEnd = {} },
+    }, [3][2]i32{ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } });
 }

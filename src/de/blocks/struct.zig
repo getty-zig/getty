@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;
 
@@ -32,4 +33,24 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return StructVisitor(T);
+}
+
+test "deserialize - struct" {
+    try t.de.run(&[_]t.Token{
+        .{ .Struct = .{ .name = "", .len = 0 } },
+        .{ .StructEnd = {} },
+    }, struct {}{});
+
+    const T = struct { a: i32, b: i32, c: i32 };
+
+    try t.de.run(&[_]t.Token{
+        .{ .Struct = .{ .name = "T", .len = 3 } },
+        .{ .String = "a" },
+        .{ .I32 = 1 },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .String = "c" },
+        .{ .I32 = 3 },
+        .{ .StructEnd = {} },
+    }, T{ .a = 1, .b = 2, .c = 3 });
 }

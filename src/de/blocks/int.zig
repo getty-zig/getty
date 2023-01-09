@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const IntVisitor = @import("../impls/visitor/int.zig").Visitor;
 
@@ -35,4 +36,22 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return IntVisitor(T);
+}
+
+test "deserialize - integer" {
+    // signed
+    try t.de.run(&[_]t.Token{.{ .I8 = 0 }}, @as(i8, 0));
+    try t.de.run(&[_]t.Token{.{ .I16 = 0 }}, @as(i16, 0));
+    try t.de.run(&[_]t.Token{.{ .I32 = 0 }}, @as(i32, 0));
+    try t.de.run(&[_]t.Token{.{ .I64 = 0 }}, @as(i64, 0));
+    try t.de.run(&[_]t.Token{.{ .I128 = 0 }}, @as(i128, 0));
+    try t.de.run(&[_]t.Token{.{ .I128 = 0 }}, @as(isize, 0));
+
+    // unsigned
+    try t.de.run(&[_]t.Token{.{ .U8 = 0 }}, @as(u8, 0));
+    try t.de.run(&[_]t.Token{.{ .U16 = 0 }}, @as(u16, 0));
+    try t.de.run(&[_]t.Token{.{ .U32 = 0 }}, @as(u32, 0));
+    try t.de.run(&[_]t.Token{.{ .U64 = 0 }}, @as(u64, 0));
+    try t.de.run(&[_]t.Token{.{ .U128 = 0 }}, @as(u128, 0));
+    try t.de.run(&[_]t.Token{.{ .U128 = 0 }}, @as(usize, 0));
 }
