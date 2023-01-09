@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const PackedIntArrayVisitor = @import("../impls/visitor/packed_int_array.zig").Visitor;
 
@@ -32,4 +33,39 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return PackedIntArrayVisitor(T);
+}
+
+test "deserialize - std.PackedIntArray" {
+    {
+        var expected = std.PackedIntArray(u32, 0).init([0]u32{});
+
+        try t.de.run(&[_]t.Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        }, expected);
+    }
+
+    {
+        var expected = std.PackedIntArray(u32, 3).init([3]u32{ 1, 1, 1 });
+
+        try t.de.run(&[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 1 },
+            .{ .I32 = 1 },
+            .{ .SeqEnd = {} },
+        }, expected);
+    }
+
+    {
+        var expected = std.PackedIntArray(i32, 3).initAllTo(-1);
+
+        try t.de.run(&[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .I32 = -1 },
+            .{ .I32 = -1 },
+            .{ .I32 = -1 },
+            .{ .SeqEnd = {} },
+        }, expected);
+    }
 }

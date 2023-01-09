@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const BoolVisitor = @import("../impls/visitor/bool.zig");
 
@@ -34,4 +35,9 @@ pub fn Visitor(
     _ = T;
 
     return BoolVisitor;
+}
+
+test "deserialize - bool" {
+    try t.de.run(&[_]t.Token{.{ .Bool = true }}, true);
+    try t.de.run(&[_]t.Token{.{ .Bool = false }}, false);
 }

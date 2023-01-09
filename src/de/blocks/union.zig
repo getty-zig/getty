@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const UnionVisitor = @import("../impls/visitor/union.zig").Visitor;
 
@@ -32,4 +33,61 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return UnionVisitor(T);
+}
+
+test "deserialize - union" {
+    // Tagged
+    {
+        const T = union(enum) {
+            foo: bool,
+            bar: void,
+        };
+
+        try t.de.run(&[_]t.Token{
+            .{ .Union = {} },
+            .{ .String = "foo" },
+            .{ .Bool = true },
+        }, T{ .foo = true });
+        try t.de.run(&[_]t.Token{
+            .{ .Union = {} },
+            .{ .String = "bar" },
+            .{ .Void = {} },
+        }, T{ .bar = {} });
+    }
+
+    // Untagged
+    {
+        const getty = @import("../../getty.zig");
+
+        const T = union {
+            foo: bool,
+            bar: void,
+        };
+
+        {
+            const tokens = &[_]t.Token{
+                .{ .Union = {} },
+                .{ .String = "foo" },
+                .{ .Bool = true },
+            };
+
+            var d = t.de.Deserializer.init(tokens);
+            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+
+            try std.testing.expectEqual(true, v.foo);
+        }
+
+        {
+            const tokens = &[_]t.Token{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Void = {} },
+            };
+
+            var d = t.de.Deserializer.init(tokens);
+            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+
+            try std.testing.expectEqual({}, v.bar);
+        }
+    }
 }

@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const BufMapVisitor = @import("../impls/visitor/buf_map.zig").Visitor;
 
@@ -32,4 +33,36 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return BufMapVisitor(T);
+}
+
+test "deserialize - buf map" {
+    {
+        var expected = std.BufMap.init(std.testing.allocator);
+        defer expected.deinit();
+
+        try t.de.run(&[_]t.Token{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        }, expected);
+    }
+
+    {
+        var expected = std.BufMap.init(std.testing.allocator);
+        defer expected.deinit();
+
+        try expected.put("one", "foo");
+        try expected.put("two", "bar");
+        try expected.put("three", "baz");
+
+        try t.de.run(&[_]t.Token{
+            .{ .Map = .{ .len = 3 } },
+            .{ .String = "one" },
+            .{ .String = "foo" },
+            .{ .String = "two" },
+            .{ .String = "bar" },
+            .{ .String = "three" },
+            .{ .String = "baz" },
+            .{ .MapEnd = {} },
+        }, expected);
+    }
 }
