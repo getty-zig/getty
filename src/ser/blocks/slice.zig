@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -21,4 +22,18 @@ pub fn serialize(
         try seq.serializeElement(elem);
     }
     return try seq.end();
+}
+
+test "serialize - slice" {
+    try t.ser.run(&[_]i32{}, &[_]t.Token{
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+    });
+    try t.ser.run(&[_]i32{ 1, 2, 3 }, &[_]t.Token{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+    });
 }

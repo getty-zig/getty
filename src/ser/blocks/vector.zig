@@ -1,3 +1,5 @@
+const t = @import("getty/testing");
+
 const ser = @import("../../ser.zig");
 
 /// Specifies all types that can be serialized by this block.
@@ -18,4 +20,13 @@ pub fn serialize(
     const info = @typeInfo(@TypeOf(value)).Vector;
 
     return try ser.serialize(@as([info.len]info.child, value), serializer);
+}
+
+test "serialize - vector" {
+    try t.ser.run(@splat(2, @as(i32, 1)), &[_]t.Token{
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 1 },
+        .{ .SeqEnd = {} },
+    });
 }

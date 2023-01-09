@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -29,4 +30,62 @@ pub fn serialize(
     }
 
     return try seq.end();
+}
+
+test "serialize - std.PackedIntArray" {
+    // Native endian
+    {
+        var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
+
+        try t.ser.run(array, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // Custom endian
+    {
+        var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
+
+        try t.ser.run(array, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+}
+
+test "serialize - std.PackedIntSlice" {
+    // Native endian
+    {
+        var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
+        const slice = array.slice(0, 3);
+
+        try t.ser.run(slice, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // Custom endian
+    {
+        var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
+        const slice = array.slice(0, 3);
+
+        try t.ser.run(slice, &[_]t.Token{
+            .{ .Seq = .{ .len = 3 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 2 },
+            .{ .U8 = 3 },
+            .{ .SeqEnd = {} },
+        });
+    }
 }

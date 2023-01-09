@@ -1,3 +1,5 @@
+const t = @import("getty/testing");
+
 /// Specifies all types that can be serialized by this block.
 pub fn is(
     /// The type of a value being serialized.
@@ -16,4 +18,8 @@ pub fn serialize(
     _ = value;
 
     return try serializer.serializeVoid();
+}
+
+test "serialize - void" {
+    try t.ser.run({}, &[_]t.Token{.{ .Void = {} }});
 }

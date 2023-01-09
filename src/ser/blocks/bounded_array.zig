@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -21,4 +22,31 @@ pub fn serialize(
         try seq.serializeElement(elem);
     }
     return try seq.end();
+}
+
+test "serialize - bounded array" {
+    // empty
+    {
+        var arr = try std.BoundedArray(u8, 10).fromSlice(&[_]u8{});
+
+        try t.ser.run(arr, &[_]t.Token{
+            .{ .Seq = .{ .len = 0 } },
+            .{ .SeqEnd = {} },
+        });
+    }
+
+    // non-empty
+    {
+        var arr = try std.BoundedArray(u8, 5).fromSlice(&[_]u8{1} ** 5);
+
+        try t.ser.run(arr, &[_]t.Token{
+            .{ .Seq = .{ .len = 5 } },
+            .{ .U8 = 1 },
+            .{ .U8 = 1 },
+            .{ .U8 = 1 },
+            .{ .U8 = 1 },
+            .{ .U8 = 1 },
+            .{ .SeqEnd = {} },
+        });
+    }
 }
