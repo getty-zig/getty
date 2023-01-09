@@ -1,7 +1,7 @@
 const std = @import("std");
 const t = @import("getty/testing");
 
-const ser = @import("../../ser.zig");
+const ser = @import("../ser.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
