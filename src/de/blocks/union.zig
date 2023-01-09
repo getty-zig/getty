@@ -72,7 +72,7 @@ test "deserialize - union" {
             };
 
             var d = t.de.Deserializer.init(tokens);
-            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
 
             try std.testing.expectEqual(true, v.foo);
         }
@@ -85,7 +85,7 @@ test "deserialize - union" {
             };
 
             var d = t.de.Deserializer.init(tokens);
-            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.TestUnexpectedError;
+            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
 
             try std.testing.expectEqual({}, v.bar);
         }

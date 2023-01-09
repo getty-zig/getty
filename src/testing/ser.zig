@@ -10,7 +10,7 @@ const Token = @import("token.zig").Token;
 pub fn run(input: anytype, expected: []const Token) !void {
     var s = Serializer.init(expected);
 
-    getty.serialize(input, s.serializer()) catch return error.TestUnexpectedError;
+    getty.serialize(input, s.serializer()) catch return error.UnexpectedTestError;
     try expect(s.remaining() == 0);
 }
 
