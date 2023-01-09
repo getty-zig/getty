@@ -362,7 +362,7 @@ pub fn deserialize(
 }
 
 const builtin = @import("builtin");
-const Token = @import("tests/common.zig").Token;
+const Token = @import("tests/token.zig").Token;
 
 const testing = std.testing;
 

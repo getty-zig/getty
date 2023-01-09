@@ -1,3 +1,5 @@
+const t = @import("getty/testing");
+
 const ser = @import("../../ser.zig");
 
 /// Specifies all types that can be serialized by this block.
@@ -16,4 +18,8 @@ pub fn serialize(
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try ser.serialize(@as([]const u8, @errorName(value)), serializer);
+}
+
+test "serialize - error" {
+    try t.ser.run(error.Foobar, &[_]t.Token{.{ .String = "Foobar" }});
 }

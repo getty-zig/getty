@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -16,4 +17,10 @@ pub fn serialize(
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     return try serializer.serializeString(value);
+}
+
+test "serialize - string" {
+    try t.ser.run("abc", &[_]t.Token{.{ .String = "abc" }});
+    try t.ser.run(&[_]u8{ 'a', 'b', 'c' }, &[_]t.Token{.{ .String = "abc" }});
+    try t.ser.run(&[_:0]u8{ 'a', 'b', 'c' }, &[_]t.Token{.{ .String = "abc" }});
 }
