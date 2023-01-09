@@ -23,7 +23,7 @@ pub fn Visitor(comptime Enum: type) type {
         }
 
         fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            return std.meta.intToEnum(Value, input) catch unreachable;
+            return std.meta.intToEnum(Value, input) catch error.InvalidValue;
         }
 
         fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
