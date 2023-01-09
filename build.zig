@@ -12,7 +12,7 @@ const pkgs = struct {
 
     const getty_testing = std.build.Pkg{
         .name = "getty/testing",
-        .source = .{ .path = "src/tests/testing.zig" },
+        .source = .{ .path = "src/testing/testing.zig" },
         .dependencies = &[_]std.build.Pkg{
             getty,
         },
