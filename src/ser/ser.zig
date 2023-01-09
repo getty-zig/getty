@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+const Serializer = @import("interfaces/serializer.zig").Serializer;
 
 pub const default_st = .{
     ////////////////////////////////////////////////////////////////////////////
@@ -41,28 +41,28 @@ pub const default_st = .{
 };
 
 pub const concepts = struct {
-    pub usingnamespace @import("ser/concepts/serializer.zig");
-    pub usingnamespace @import("ser/concepts/map.zig");
-    pub usingnamespace @import("ser/concepts/seq.zig");
-    pub usingnamespace @import("ser/concepts/structure.zig");
-    pub usingnamespace @import("ser/concepts/block.zig");
+    pub usingnamespace @import("concepts/serializer.zig");
+    pub usingnamespace @import("concepts/map.zig");
+    pub usingnamespace @import("concepts/seq.zig");
+    pub usingnamespace @import("concepts/structure.zig");
+    pub usingnamespace @import("concepts/block.zig");
 };
 
 pub const traits = struct {
-    pub usingnamespace @import("ser/traits/block.zig");
-    pub usingnamespace @import("ser/traits/attributes.zig");
+    pub usingnamespace @import("traits/block.zig");
+    pub usingnamespace @import("traits/attributes.zig");
 };
 
 /// A namespace for serialization-specific types and functions.
 pub const ser = struct {
     /// Serialization interface for Getty Maps.
-    pub const Map = @import("ser/interfaces/map.zig").Map;
+    pub const Map = @import("interfaces/map.zig").Map;
 
     /// Serialization interface for Getty Sequences.
-    pub const Seq = @import("ser/interfaces/seq.zig").Seq;
+    pub const Seq = @import("interfaces/seq.zig").Seq;
 
     /// Serialization interface for Getty Structures.
-    pub const Structure = @import("ser/interfaces/structure.zig").Structure;
+    pub const Structure = @import("interfaces/structure.zig").Structure;
 
     /// Serialization blocks provided by Getty.
     pub const blocks = struct {
@@ -71,80 +71,80 @@ pub const ser = struct {
         ////////////////////////////////////////////////////////////////////////
 
         /// Serialization block for `std.ArrayList` values.
-        pub const ArrayList = @import("ser/blocks/array_list.zig");
+        pub const ArrayList = @import("blocks/array_list.zig");
 
         /// Serialization block for `std.BoundedArray` values.
-        pub const BoundedArray = @import("ser/blocks/bounded_array.zig");
+        pub const BoundedArray = @import("blocks/bounded_array.zig");
 
         /// Serialization block for `std.BufMap` values.
-        pub const BufMap = @import("ser/blocks/buf_map.zig");
+        pub const BufMap = @import("blocks/buf_map.zig");
 
         /// Serialization block for `std.HashMap` values.
-        pub const HashMap = @import("ser/blocks/hash_map.zig");
+        pub const HashMap = @import("blocks/hash_map.zig");
 
         /// Serialization block for `std.SinglyLinkedList` values.
-        pub const LinkedList = @import("ser/blocks/linked_list.zig");
+        pub const LinkedList = @import("blocks/linked_list.zig");
 
         /// Serialization block for `std.net.Address` values.
-        pub const NetAddress = @import("ser/blocks/net_address.zig");
+        pub const NetAddress = @import("blocks/net_address.zig");
 
         /// Serialization block for `std.PackedIntArray` and `std.PackedIntSlice` values.
-        pub const PackedInt = @import("ser/blocks/packed_int.zig");
+        pub const PackedInt = @import("blocks/packed_int.zig");
 
         /// Serialization block for `std.TailQueue`.
-        pub const TailQueue = @import("ser/blocks/tail_queue.zig");
+        pub const TailQueue = @import("blocks/tail_queue.zig");
 
         ////////////////////////////////////////////////////////////////////////
         // Primitives
         ////////////////////////////////////////////////////////////////////////
 
         /// Serialization block for array values.
-        pub const Array = @import("ser/blocks/array.zig");
+        pub const Array = @import("blocks/array.zig");
 
         /// Serialization block for `bool` values.
-        pub const Bool = @import("ser/blocks/bool.zig");
+        pub const Bool = @import("blocks/bool.zig");
 
         /// Serialization block for `enum` values.
-        pub const Enum = @import("ser/blocks/enum.zig");
+        pub const Enum = @import("blocks/enum.zig");
 
         /// Serialization block for `error` values.
-        pub const Error = @import("ser/blocks/error.zig");
+        pub const Error = @import("blocks/error.zig");
 
         /// Serialization block for floating-point values.
-        pub const Float = @import("ser/blocks/float.zig");
+        pub const Float = @import("blocks/float.zig");
 
         /// Serialization block for integer values.
-        pub const Int = @import("ser/blocks/int.zig");
+        pub const Int = @import("blocks/int.zig");
 
         /// Serialization block for `null` values.
-        pub const Null = @import("ser/blocks/null.zig");
+        pub const Null = @import("blocks/null.zig");
 
         /// Serialization block for optional values.
-        pub const Optional = @import("ser/blocks/optional.zig");
+        pub const Optional = @import("blocks/optional.zig");
 
         /// Serialization block for pointer values.
-        pub const Pointer = @import("ser/blocks/pointer.zig");
+        pub const Pointer = @import("blocks/pointer.zig");
 
         /// Serialization block for slice values.
-        pub const Slice = @import("ser/blocks/slice.zig");
+        pub const Slice = @import("blocks/slice.zig");
 
         /// Serialization block for string values.
-        pub const String = @import("ser/blocks/string.zig");
+        pub const String = @import("blocks/string.zig");
 
         /// Serialization block for `struct` values.
-        pub const Struct = @import("ser/blocks/struct.zig");
+        pub const Struct = @import("blocks/struct.zig");
 
         /// Serialization block for tuple values.
-        pub const Tuple = @import("ser/blocks/tuple.zig");
+        pub const Tuple = @import("blocks/tuple.zig");
 
         /// Serialization block for `union` values.
-        pub const Union = @import("ser/blocks/union.zig");
+        pub const Union = @import("blocks/union.zig");
 
         /// Serialization block for vector values.
-        pub const Vector = @import("ser/blocks/vector.zig");
+        pub const Vector = @import("blocks/vector.zig");
 
         /// Serialization block for `void` values.
-        pub const Void = @import("ser/blocks/void.zig");
+        pub const Void = @import("blocks/void.zig");
     };
 
     /// Returns the attributes for a type. If none exists, `null` is returned.

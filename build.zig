@@ -34,7 +34,7 @@ fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTar
     const test_de_step = b.step("test-de", "Run deserialization tests");
 
     // Configure tests.
-    const t_ser = b.addTest("src/ser.zig");
+    const t_ser = b.addTest("src/ser/ser.zig");
     t_ser.setTarget(target);
     t_ser.setBuildMode(mode);
     t_ser.addPackage(pkgs.getty);
