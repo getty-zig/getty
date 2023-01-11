@@ -56,15 +56,13 @@ fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTar
 }
 
 fn docs(b: *std.build.Builder) void {
-    const cmd = b.addSystemCommand(&[_][]const u8{
-        "zig",
-        "build-obj",
-        "-femit-docs",
-        package_path,
-    });
+    const docs_obj = b.addObject("docs", package_path);
+    docs_obj.emit_docs = .emit;
+    docs_obj.addPackage(pkgs.getty);
+    docs_obj.addPackage(pkgs.getty_testing);
 
     const docs_step = b.step("docs", "Generate project documentation");
-    docs_step.dependOn(&cmd.step);
+    docs_step.dependOn(&docs_obj.step);
 }
 
 fn clean(b: *std.build.Builder) void {
