@@ -4,11 +4,11 @@ const de = @import("../de.zig");
 
 /// Deserialization and access interface for Getty Unions.
 pub fn UnionAccess(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
     /// The error set returned by the interface's methods upon failure.
     comptime E: type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `UnionAccess` can implement.
     comptime methods: struct {
         variantSeed: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {

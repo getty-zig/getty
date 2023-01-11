@@ -2,9 +2,9 @@ const std = @import("std");
 
 const de = @import("../de.zig");
 
-/// Deserializer interface.
+/// A `Deserializer` deserializes values from a data format into Getty's data model.
 pub fn Deserializer(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// The namespace that owns the method implementations provided to the `methods` parameter.
     comptime Context: type,
     /// The error set returned by the interface's methods upon failure.
     comptime E: type,
@@ -12,7 +12,7 @@ pub fn Deserializer(
     comptime user_dbt: anytype,
     /// An optional, deserializer-defined deserialization block or tuple.
     comptime deserializer_dbt: anytype,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Deserializer` can implement.
     comptime methods: struct {
         const T = ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {

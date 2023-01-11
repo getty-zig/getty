@@ -53,15 +53,10 @@ pub const traits = struct {
     pub usingnamespace @import("traits/attributes.zig");
 };
 
-/// A namespace for serialization-specific types and functions.
+/// A namespace containing serialization-specific types and functions.
 pub const ser = struct {
-    /// Serialization interface for Getty Maps.
     pub const Map = @import("interfaces/map.zig").Map;
-
-    /// Serialization interface for Getty Sequences.
     pub const Seq = @import("interfaces/seq.zig").Seq;
-
-    /// Serialization interface for Getty Structures.
     pub const Structure = @import("interfaces/structure.zig").Structure;
 
     /// Serialization blocks provided by Getty.
@@ -147,7 +142,7 @@ pub const ser = struct {
         pub const Void = @import("blocks/void.zig");
     };
 
-    /// Returns the attributes for a type. If none exists, `null` is returned.
+    /// Returns serialization attributes for `T`. If none exist, `null` is returned.
     pub fn getAttributes(
         /// The type for which attributes should be returned.
         comptime T: type,
@@ -194,7 +189,7 @@ pub const ser = struct {
     }
 };
 
-/// Serializes a value.
+/// Serializes a value into a `getty.Serializer`.
 pub fn serialize(
     /// A value to serialize.
     value: anytype,

@@ -2,13 +2,13 @@ const std = @import("std");
 
 const ser = @import("../ser.zig");
 
-/// Serializer interface.
+/// A `Serializer` serializes values from Getty's data model into a data format.
 pub fn Serializer(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
-    /// The successful return type of the interface's `end` method.
+    /// The successful return type of a `Serializer`'s `end` method.
     comptime O: type,
-    /// The error set returned by the interface's methods upon failure.
+    /// The error set returned by a `Serializer`'s methods upon failure.
     comptime E: type,
     /// An optional, user-defined serialization block or tuple.
     comptime user_sbt: anytype,
@@ -20,7 +20,7 @@ pub fn Serializer(
     comptime Seq: ?type,
     /// An optional type that implements `getty.ser.Structure`.
     comptime Structure: ?type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Serializer` can implement.
     comptime methods: struct {
         serializeBool: ?fn (Context, bool) E!O = null,
         serializeEnum: ?fn (Context, anytype) E!O = null,

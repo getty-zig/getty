@@ -14,7 +14,7 @@ const de = @import("../de.zig");
 /// returned. However, by using a `Seed`, you could instead provide Getty with
 /// a pre-allocated `std.ArrayList(T)` for it to deserialize into.
 pub fn Seed(
-    /// The namespace that owns the method implementations provided to the `methods` parameters.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
     /// The type produced by using this seed.
     comptime V: type,

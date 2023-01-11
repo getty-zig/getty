@@ -1,12 +1,12 @@
-/// Serialization interface for Getty Maps.
+/// A `Map` serializes the entries of and ends the serialization process for Getty Maps.
 pub fn Map(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
-    /// The successful return type of the interface's `end` method.
+    /// The successful return type of a `Map`'s `end` method.
     comptime O: type,
-    /// The error set returned by the interface's methods upon failure.
+    /// The error set returned by a `Map`'s methods upon failure.
     comptime E: type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Map` can implement.
     comptime methods: struct {
         serializeKey: ?fn (Context, anytype) E!void = null,
         serializeValue: ?fn (Context, anytype) E!void = null,
@@ -65,7 +65,7 @@ pub fn Map(
             }
         };
 
-        /// Returns an interface value.
+        /// Returns a `Map` interface value.
         pub fn map(self: Context) @"getty.ser.Map" {
             return .{ .context = self };
         }
