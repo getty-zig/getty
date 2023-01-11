@@ -2,13 +2,23 @@ const std = @import("std");
 
 const de = @import("../de.zig");
 
-/// Deserialization seed interface.
+/// A `Seed` facilitates stateful deserialization.
+///
+/// Generally speaking, deserialization tends to be a stateless operation.
+/// However, you may occasionally find yourself wanting to pass in data to the
+/// deserialization process. In such cases, you can use a `Seed` to do so.
+///
+/// To give you an example of stateful deserialization, suppose you wanted to
+/// deserialize a JSON array into a `std.ArrayList(T)`. Normally, what would
+/// happen is that a freshly allocated `std.ArrayList(T)` would be created and
+/// returned. However, by using a `Seed`, you could instead provide Getty with
+/// a pre-allocated `std.ArrayList(T)` for it to deserialize into.
 pub fn Seed(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// The namespace that owns the method implementations provided to the `methods` parameters.
     comptime Context: type,
-    /// The type to deserialize into.
+    /// The type produced by using this seed.
     comptime V: type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Seed` can implement.
     comptime methods: struct {
         deserialize: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
