@@ -57,7 +57,7 @@ pub const traits = struct {
     pub usingnamespace @import("traits/attributes.zig");
 };
 
-/// Namespace for deserialization-specific types and functions.
+/// A namespace containing deserialization-specific types and functions.
 pub const de = struct {
     pub const Error = @import("error.zig").Error;
 
@@ -147,7 +147,9 @@ pub const de = struct {
 
     /// Frees resources allocated during Getty deserialization.
     ///
-    /// Values that cannot be deallocated, such as `bool` values, are ignored.
+    /// `free` assumes that all pointers passed to it are heap-allocated and
+    /// will therefore attempt to free them. So be sure not to pass in any
+    /// pointers pointing to values on the stack.
     pub fn free(
         /// A memory allocator.
         allocator: std.mem.Allocator,
@@ -241,9 +243,9 @@ pub const de = struct {
         }
     }
 
-    /// Returns the attributes for a type. If none exists, `null` is returned.
+    /// Returns deserialization attributes for `T`. If none exist, `null` is returned.
     pub fn getAttributes(
-        /// A type with attributes.
+        /// The type for which attributes should be returned.
         comptime T: type,
         /// A `getty.Deserializer` interface type.
         comptime D: type,
@@ -329,11 +331,11 @@ pub const de = struct {
     }
 };
 
-/// Deserializes a value.
+/// Deserializes into a value of type `T` from a `getty.Deserializer`.
 pub fn deserialize(
     /// An optional memory allocator.
     allocator: ?std.mem.Allocator,
-    /// The type to deserialize into.
+    /// The type of the value to deserialize into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
     deserializer: anytype,

@@ -2,7 +2,10 @@ const std = @import("std");
 
 const de = @import("../../de.zig");
 
-/// Default `getty.de.Seed` implementation.
+/// The default implementation of `getty.de.Seed`.
+///
+/// `DefaultSeed` is the default seed used by Getty. All it does is call
+/// `getty.deserialize`.
 pub fn DefaultSeed(
     /// The type to deserialize into.
     comptime Value: type,

@@ -1,12 +1,12 @@
-/// Serialization interface for Getty Structures.
+/// A `Structure` serializes the fields of and ends the serialization process for Getty Structures.
 pub fn Structure(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
-    /// The successful return type of the interface's `end` method.
+    /// The successful return type of a `Structure`'s `end` method.
     comptime O: type,
-    /// The error set returned by the interface's methods upon failure.
+    /// The error set returned by a `Structure`'s methods upon failure.
     comptime E: type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Structure` can implement.
     comptime methods: struct {
         serializeField: ?fn (Context, comptime []const u8, anytype) E!void = null,
         end: ?fn (Context) E!O = null,
@@ -44,7 +44,7 @@ pub fn Structure(
             }
         };
 
-        /// Returns an interface value.
+        /// Returns a `Structure` interface value.
         pub fn structure(self: Context) @"getty.ser.Structure" {
             return .{ .context = self };
         }

@@ -23,8 +23,7 @@ pub const concepts = struct {
     pub usingnamespace d.concepts;
 };
 
-/// Functions for obtaining type information at compile-time for Getty data
-/// structures.
+/// Functions for obtaining type information for Getty data structures.
 pub const traits = struct {
     pub usingnamespace s.traits;
     pub usingnamespace d.traits;
@@ -34,20 +33,20 @@ pub const traits = struct {
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Serializes a value.
+/// Serializes a value into a `getty.Serializer`.
 pub const serialize = s.serialize;
 
-/// Deserializes a value.
+/// Deserializes into a value of type `T` from a `getty.Deserializer`.
 pub const deserialize = d.deserialize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Values
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Default serialization tuple.
+/// The default serialization tuple used by Getty.
 pub const default_st = s.default_st;
 
-/// Default deserialization tuple.
+/// The default deserialization tuple used by Getty.
 pub const default_dt = d.default_dt;
 
 ////////////////////////////////////////////////////////////////////////////////

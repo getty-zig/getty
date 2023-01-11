@@ -4,13 +4,13 @@ const de = @import("../de.zig");
 
 const assert = std.debug.assert;
 
-/// Deserialization visitor interface.
+/// A `Visitor` deserializes values from Getty's data model into Zig.
 pub fn Visitor(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
     /// The type of the value produced by the visitor.
     comptime V: type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Visitor` can implement.
     comptime methods: struct {
         visitBool: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: bool) Deserializer.Error!V {

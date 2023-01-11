@@ -1,12 +1,12 @@
-/// Serialization interface for Getty Sequences.
+/// A `Seq` serializes the elements of and ends the serialization process for Getty Sequences.
 pub fn Seq(
-    /// The namespace that owns the method implementations provided in `methods`.
+    /// A namespace that owns the method implementations passed to the `methods` parameter.
     comptime Context: type,
-    /// The successful return type of the interface's `end` method.
+    /// The successful return type of a `Seq`'s `end` method.
     comptime O: type,
-    /// The error set returned by the interface's methods upon failure.
+    /// The error set returned by a `Seq`'s methods upon failure.
     comptime E: type,
-    /// A namespace for the methods that implementations of the interface can implement.
+    /// A namespace containing the methods that implementations of `Seq` can implement.
     comptime methods: struct {
         serializeElement: ?fn (Context, anytype) E!void = null,
         end: ?fn (Context) E!O = null,
@@ -44,7 +44,7 @@ pub fn Seq(
             }
         };
 
-        /// Returns an interface value.
+        /// Returns a `Seq` interface value.
         pub fn seq(self: Context) @"getty.ser.Seq" {
             return .{ .context = self };
         }
