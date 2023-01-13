@@ -145,7 +145,7 @@ pub const de = struct {
         pub const Void = @import("blocks/void.zig");
     };
 
-    /// Frees resources allocated during Getty deserialization.
+    /// Frees resources allocated by Getty during deserialization.
     ///
     /// `free` assumes that all pointers passed to it are heap-allocated and
     /// will therefore attempt to free them. So be sure not to pass in any
