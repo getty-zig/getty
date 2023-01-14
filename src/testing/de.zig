@@ -51,7 +51,7 @@ pub fn run(comptime deserializeFn: DeserializeFn, comptime visitorFn: VisitorFn,
         .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
             true => try expectEqualStrings(expected, got),
             false => switch (info.size) {
-                //.One => ,
+                .One => try expectEqual(expected.*, got.*),
                 .Slice => try expectEqualSlices(info.child, expected, got),
                 else => unreachable,
             },

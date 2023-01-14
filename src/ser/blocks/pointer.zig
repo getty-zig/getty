@@ -29,7 +29,6 @@ pub fn serialize(
 }
 
 test "serialize - pointer" {
-
     // one level of indirection
     {
         var ptr = try std.testing.allocator.create(i32);
