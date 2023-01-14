@@ -261,21 +261,30 @@ pub fn serialize(
     return try block.serialize(value, serializer);
 }
 
+const expectEqual = std.testing.expectEqual;
+
 test "getAttributes - fail" {
     const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
 
     const expected: ?void = null;
 
-    try std.testing.expectEqual(expected, ser.getAttributes(bool, Ser));
-    try std.testing.expectEqual(expected, ser.getAttributes(i32, Ser));
-    try std.testing.expectEqual(expected, ser.getAttributes([5]i32, Ser));
-    try std.testing.expectEqual(expected, ser.getAttributes(struct {}, Ser));
-    try std.testing.expectEqual(expected, ser.getAttributes(union(enum) { foo, bar }, Ser));
-    try std.testing.expectEqual(expected, ser.getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), Ser));
+    try expectEqual(expected, ser.getAttributes(bool, Ser));
+    try expectEqual(expected, ser.getAttributes(i32, Ser));
+    try expectEqual(expected, ser.getAttributes([5]i32, Ser));
+    try expectEqual(expected, ser.getAttributes(struct {}, Ser));
+    try expectEqual(expected, ser.getAttributes(union(enum) { foo, bar }, Ser));
+    try expectEqual(expected, ser.getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), Ser));
+    try expectEqual(expected, ser.getAttributes(struct {
+        pub fn is(comptime _: bool) type {
+            return true;
+        }
+
+        pub const attributes = .{}; // empty attribute list
+    }, Ser));
 
     inline for (comptime std.meta.declarations(ser.blocks)) |decl| {
         const block = @field(ser.blocks, decl.name);
-        try std.testing.expectEqual(expected, ser.getAttributes(block, Ser));
+        try expectEqual(expected, ser.getAttributes(block, Ser));
     }
 }
 
@@ -303,7 +312,7 @@ test "getAttributes - success" {
         const S = t.ser.Serializer(block, null);
         const Ser = S.@"getty.Serializer";
 
-        try std.testing.expectEqual(expected, ser.getAttributes(Point, Ser));
+        try expectEqual(expected, ser.getAttributes(Point, Ser));
     }
 
     // Serializer SB
@@ -311,7 +320,7 @@ test "getAttributes - success" {
         const S = t.ser.Serializer(null, block);
         const Ser = S.@"getty.Serializer";
 
-        try std.testing.expectEqual(expected, ser.getAttributes(Point, Ser));
+        try expectEqual(expected, ser.getAttributes(Point, Ser));
     }
 
     // Type SB
@@ -327,7 +336,7 @@ test "getAttributes - success" {
             };
         };
 
-        try std.testing.expectEqual(expected, ser.getAttributes(PointWithAttrs, Ser));
+        try expectEqual(expected, ser.getAttributes(PointWithAttrs, Ser));
     }
 }
 
@@ -376,7 +385,7 @@ test "getAttributes - priority" {
         const S = t.ser.Serializer(user_block, null);
         const Ser = S.@"getty.Serializer";
 
-        try std.testing.expectEqual(expected, ser.getAttributes(InvalidPointAttrs, Ser));
+        try expectEqual(expected, ser.getAttributes(InvalidPointAttrs, Ser));
     }
 
     // User SB > Serializer SB
@@ -399,7 +408,7 @@ test "getAttributes - priority" {
         const S = t.ser.Serializer(user_block, serializer_block);
         const Ser = S.@"getty.Serializer";
 
-        try std.testing.expectEqual(expected, ser.getAttributes(Point, Ser));
+        try expectEqual(expected, ser.getAttributes(Point, Ser));
     }
 
     // Type SB > Serializer SB
@@ -415,7 +424,7 @@ test "getAttributes - priority" {
         const S = t.ser.Serializer(null, serializer_block);
         const Ser = S.@"getty.Serializer";
 
-        try std.testing.expectEqual(expected, ser.getAttributes(PointAttrs, Ser));
+        try expectEqual(expected, ser.getAttributes(PointAttrs, Ser));
     }
 }
 
