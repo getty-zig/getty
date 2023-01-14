@@ -165,6 +165,13 @@ pub const ser = struct {
             }
         }
 
+        // Process user SBs.
+        for (S.serializer_st) |sb| {
+            if (sb.is(T) and traits.has_attributes(T, sb)) {
+                break :blk ?@TypeOf(sb.attributes);
+            }
+        }
+
         break :blk ?void;
     } {
         comptime {
@@ -180,6 +187,13 @@ pub const ser = struct {
                 const sb = T.@"getty.sb";
 
                 if (traits.has_attributes(T, sb)) {
+                    return @as(?@TypeOf(sb.attributes), sb.attributes);
+                }
+            }
+
+            // Process serializer SBs.
+            for (S.serializer_st) |sb| {
+                if (sb.is(T) and traits.has_attributes(T, sb)) {
                     return @as(?@TypeOf(sb.attributes), sb.attributes);
                 }
             }
