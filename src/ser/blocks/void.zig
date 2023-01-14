@@ -21,5 +21,5 @@ pub fn serialize(
 }
 
 test "serialize - void" {
-    try t.ser.run(serialize, {}, &[_]t.Token{.{ .Void = {} }});
+    try t.ser.run(serialize, {}, &.{.{ .Void = {} }});
 }
