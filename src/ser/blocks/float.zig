@@ -23,11 +23,11 @@ pub fn serialize(
 
 test "serialize - float" {
     // comptime_float
-    try t.ser.run(serialize, 0.0, &[_]t.Token{.{ .ComptimeFloat = {} }});
+    try t.ser.run(serialize, 0.0, &.{.{ .ComptimeFloat = {} }});
 
     // float
-    try t.ser.run(serialize, @as(f16, 0), &[_]t.Token{.{ .F16 = 0 }});
-    try t.ser.run(serialize, @as(f32, 0), &[_]t.Token{.{ .F32 = 0 }});
-    try t.ser.run(serialize, @as(f64, 0), &[_]t.Token{.{ .F64 = 0 }});
-    try t.ser.run(serialize, @as(f128, 0), &[_]t.Token{.{ .F128 = 0 }});
+    try t.ser.run(serialize, @as(f16, 0), &.{.{ .F16 = 0 }});
+    try t.ser.run(serialize, @as(f32, 0), &.{.{ .F32 = 0 }});
+    try t.ser.run(serialize, @as(f64, 0), &.{.{ .F64 = 0 }});
+    try t.ser.run(serialize, @as(f128, 0), &.{.{ .F128 = 0 }});
 }

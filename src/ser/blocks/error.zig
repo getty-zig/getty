@@ -21,5 +21,5 @@ pub fn serialize(
 }
 
 test "serialize - error" {
-    try t.ser.run(serialize, error.Foobar, &[_]t.Token{.{ .String = "Foobar" }});
+    try t.ser.run(serialize, error.Foobar, &.{.{ .String = "Foobar" }});
 }

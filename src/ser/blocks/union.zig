@@ -36,13 +36,13 @@ pub fn serialize(
 test "serialize - union" {
     const Union = union(enum) { Int: i32, Bool: bool };
 
-    try t.ser.run(serialize, Union{ .Int = 0 }, &[_]t.Token{
+    try t.ser.run(serialize, Union{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
-    try t.ser.run(serialize, Union{ .Bool = true }, &[_]t.Token{
+    try t.ser.run(serialize, Union{ .Bool = true }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Bool" },
         .{ .Bool = true },
