@@ -28,7 +28,7 @@ test "serialize - array" {
     {
         var arr = [_]i32{};
 
-        try t.ser.run(arr, &[_]t.Token{
+        try t.ser.run(serialize, arr, &[_]t.Token{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         });
@@ -38,7 +38,7 @@ test "serialize - array" {
     {
         var arr = [_]i32{ 1, 2, 3 };
 
-        try t.ser.run(arr, &[_]t.Token{
+        try t.ser.run(serialize, arr, &[_]t.Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },

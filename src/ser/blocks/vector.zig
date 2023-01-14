@@ -23,7 +23,7 @@ pub fn serialize(
 }
 
 test "serialize - vector" {
-    try t.ser.run(@splat(2, @as(i32, 1)), &[_]t.Token{
+    try t.ser.run(serialize, @splat(2, @as(i32, 1)), &[_]t.Token{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .I32 = 1 },

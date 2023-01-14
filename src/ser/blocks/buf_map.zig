@@ -25,14 +25,14 @@ test "serialize - buf map" {
     var map = std.BufMap.init(std.testing.allocator);
     defer map.deinit();
 
-    try t.ser.run(map, &[_]t.Token{
+    try t.ser.run(serialize, map, &[_]t.Token{
         .{ .Map = .{ .len = 0 } },
         .{ .MapEnd = {} },
     });
 
     try map.put("1", "foobar");
 
-    try t.ser.run(map, &[_]t.Token{
+    try t.ser.run(serialize, map, &[_]t.Token{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "1" },
         .{ .String = "foobar" },

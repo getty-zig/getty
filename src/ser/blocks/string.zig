@@ -20,7 +20,7 @@ pub fn serialize(
 }
 
 test "serialize - string" {
-    try t.ser.run("abc", &[_]t.Token{.{ .String = "abc" }});
-    try t.ser.run(&[_]u8{ 'a', 'b', 'c' }, &[_]t.Token{.{ .String = "abc" }});
-    try t.ser.run(&[_:0]u8{ 'a', 'b', 'c' }, &[_]t.Token{.{ .String = "abc" }});
+    try t.ser.run(serialize, "abc", &[_]t.Token{.{ .String = "abc" }});
+    try t.ser.run(serialize, &[_]u8{ 'a', 'b', 'c' }, &[_]t.Token{.{ .String = "abc" }});
+    try t.ser.run(serialize, &[_:0]u8{ 'a', 'b', 'c' }, &[_]t.Token{.{ .String = "abc" }});
 }

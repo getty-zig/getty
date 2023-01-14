@@ -27,19 +27,19 @@ pub fn serialize(
 }
 
 test "serialize - tuple" {
-    try t.ser.run(.{}, &[_]t.Token{
+    try t.ser.run(serialize, .{}, &[_]t.Token{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
 
-    try t.ser.run(std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &[_]t.Token{
+    try t.ser.run(serialize, std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &[_]t.Token{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .Bool = true },
         .{ .SeqEnd = {} },
     });
 
-    try t.ser.run(.{ @as(i32, 1), true }, &[_]t.Token{
+    try t.ser.run(serialize, .{ @as(i32, 1), true }, &[_]t.Token{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .Bool = true },
