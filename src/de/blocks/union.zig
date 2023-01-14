@@ -71,7 +71,7 @@ test "deserialize - union" {
                 .{ .Bool = true },
             };
 
-            var d = t.de.Deserializer.init(tokens);
+            var d = t.de.DefaultDeserializer.init(tokens);
             const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
 
             try std.testing.expectEqual(true, v.foo);
@@ -84,7 +84,7 @@ test "deserialize - union" {
                 .{ .Void = {} },
             };
 
-            var d = t.de.Deserializer.init(tokens);
+            var d = t.de.DefaultDeserializer.init(tokens);
             const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
 
             try std.testing.expectEqual({}, v.bar);

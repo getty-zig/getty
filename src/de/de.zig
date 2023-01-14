@@ -1,6 +1,7 @@
 //! Deserialization framework.
 
 const std = @import("std");
+const t = @import("getty/testing");
 
 const Deserializer = @import("interfaces/deserializer.zig").Deserializer;
 

@@ -103,7 +103,7 @@ test "deserialize - array list" {
 
         // Test manually since the `t` function cannot recursively test
         // user-defined containers containers without ugly hacks.
-        var d = t.de.Deserializer.init(tokens);
+        var d = t.de.DefaultDeserializer.init(tokens);
         const v = getty.deserialize(std.testing.allocator, Parent, d.deserializer()) catch return error.UnexpectedTestError;
         defer getty.de.free(std.testing.allocator, v);
 
