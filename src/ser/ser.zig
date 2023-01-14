@@ -262,8 +262,7 @@ pub fn serialize(
 }
 
 test "getAttributes - fail" {
-    const S = t.ser.Serializer(null, null);
-    const Ser = S.@"getty.Serializer";
+    const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
 
     const expected: ?void = null;
 
@@ -324,8 +323,7 @@ test "getAttributes - success" {
 
     // Type SB
     {
-        const S = t.ser.Serializer(null, null);
-        const Ser = S.@"getty.Serializer";
+        const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
 
         const PointWithAttrs = struct {
             x: i32,
