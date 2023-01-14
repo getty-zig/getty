@@ -294,7 +294,7 @@ pub const de = struct {
             }
 
             // Process deserializer DBs.
-            for (D.user_dt) |db| {
+            for (D.deserializer_dt) |db| {
                 if (db.is(T) and traits.has_attributes(T, db)) {
                     return @as(?@TypeOf(db.attributes), db.attributes);
                 }
