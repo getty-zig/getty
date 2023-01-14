@@ -38,6 +38,39 @@ pub fn deserialize(
     return try db.deserialize(allocator, Child, deserializer, visitor);
 }
 
+test "deserialize - pointer" {
+    // one level of indirection
+    {
+        const int: i32 = 1;
+
+        try t.de.run(deserialize, Visitor, &.{.{ .I32 = 1 }}, &int);
+    }
+
+    // two level of indirection
+    {
+        const free = @import("../de.zig").de.free;
+
+        const Expected = **i32;
+        const expected: i32 = 1;
+
+        // Test manually since the `t` function cannot recursively test
+        // pointers without ugly hacks.
+        var v = Visitor(Expected){};
+        const visitor = v.visitor();
+
+        var d = t.de.DefaultDeserializer.init(&.{.{ .I32 = 1 }});
+        const deserializer = d.deserializer();
+
+        const got = deserialize(std.testing.allocator, Expected, deserializer, visitor) catch return error.UnexpectedTestError;
+        defer free(std.testing.allocator, got);
+
+        try std.testing.expectEqual(Expected, @TypeOf(got));
+        try std.testing.expectEqual(*i32, @TypeOf(got.*));
+        try std.testing.expectEqual(i32, @TypeOf(got.*.*));
+        try std.testing.expectEqual(expected, got.*.*);
+    }
+}
+
 test "deserialize - pointer, string" {
     // No sentinel
     {
