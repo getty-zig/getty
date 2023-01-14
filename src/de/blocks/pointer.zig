@@ -1,4 +1,5 @@
 const std = @import("std");
+const t = @import("getty/testing");
 
 const de = @import("../de.zig");
 
@@ -35,4 +36,68 @@ pub fn deserialize(
     const db = de.de.find_db(@TypeOf(deserializer), Child);
 
     return try db.deserialize(allocator, Child, deserializer, visitor);
+}
+
+test "deserialize - pointer, string" {
+    // No sentinel
+    {
+        // *[N]u8
+        {
+            var arr = [3]u8{ 'a', 'b', 'c' };
+
+            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.de.run(deserialize, Visitor, &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .U8 = 'a' },
+                .{ .U8 = 'b' },
+                .{ .U8 = 'c' },
+                .{ .SeqEnd = {} },
+            }, &arr);
+        }
+
+        // *const [N]u8
+        {
+            const arr = [3]u8{ 'a', 'b', 'c' };
+
+            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.de.run(deserialize, Visitor, &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .U8 = 'a' },
+                .{ .U8 = 'b' },
+                .{ .U8 = 'c' },
+                .{ .SeqEnd = {} },
+            }, &arr);
+        }
+    }
+
+    // Sentinel
+    {
+        // *[N:S]u8
+        {
+            var arr = [3:0]u8{ 'a', 'b', 'c' };
+
+            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.de.run(deserialize, Visitor, &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .U8 = 'a' },
+                .{ .U8 = 'b' },
+                .{ .U8 = 'c' },
+                .{ .SeqEnd = {} },
+            }, &arr);
+        }
+
+        // *const [N:S]u8
+        {
+            const arr = [3:0]u8{ 'a', 'b', 'c' };
+
+            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.de.run(deserialize, Visitor, &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .U8 = 'a' },
+                .{ .U8 = 'b' },
+                .{ .U8 = 'c' },
+                .{ .SeqEnd = {} },
+            }, &arr);
+        }
+    }
 }

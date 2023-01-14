@@ -38,6 +38,6 @@ pub fn Visitor(
 }
 
 test "deserialize - bool" {
-    try t.de.run(&[_]t.Token{.{ .Bool = true }}, true);
-    try t.de.run(&[_]t.Token{.{ .Bool = false }}, false);
+    try t.de.run(deserialize, Visitor, &.{.{ .Bool = true }}, true);
+    try t.de.run(deserialize, Visitor, &.{.{ .Bool = false }}, false);
 }

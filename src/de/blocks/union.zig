@@ -43,12 +43,12 @@ test "deserialize - union" {
             bar: void,
         };
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Union = {} },
             .{ .String = "foo" },
             .{ .Bool = true },
         }, T{ .foo = true });
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Union = {} },
             .{ .String = "bar" },
             .{ .Void = {} },
@@ -65,7 +65,7 @@ test "deserialize - union" {
         };
 
         {
-            const tokens = &[_]t.Token{
+            const tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "foo" },
                 .{ .Bool = true },
@@ -78,7 +78,7 @@ test "deserialize - union" {
         }
 
         {
-            const tokens = &[_]t.Token{
+            const tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "bar" },
                 .{ .Void = {} },
