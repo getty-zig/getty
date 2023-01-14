@@ -39,7 +39,7 @@ test "deserialize - std.PackedIntArray" {
     {
         var expected = std.PackedIntArray(u32, 0).init([0]u32{});
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -48,7 +48,7 @@ test "deserialize - std.PackedIntArray" {
     {
         var expected = std.PackedIntArray(u32, 3).init([3]u32{ 1, 1, 1 });
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 1 },
@@ -60,7 +60,7 @@ test "deserialize - std.PackedIntArray" {
     {
         var expected = std.PackedIntArray(i32, 3).initAllTo(-1);
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = -1 },
             .{ .I32 = -1 },

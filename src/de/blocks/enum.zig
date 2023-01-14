@@ -38,12 +38,12 @@ pub fn Visitor(
 test "deserialize - enum" {
     const T = enum { zero, one, two, three, four };
 
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U8 = 0 } }, T.zero);
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U16 = 1 } }, T.one);
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U32 = 2 } }, T.two);
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U64 = 3 } }, T.three);
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .U128 = 4 } }, T.four);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U8 = 0 } }, T.zero);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U16 = 1 } }, T.one);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U32 = 2 } }, T.two);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U64 = 3 } }, T.three);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U128 = 4 } }, T.four);
 
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .String = "zero" } }, T.zero);
-    try t.de.run(&[_]t.Token{ .{ .Enum = {} }, .{ .String = "four" } }, T.four);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "zero" } }, T.zero);
+    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "four" } }, T.four);
 }

@@ -36,14 +36,14 @@ pub fn Visitor(
 }
 
 test "deserialize - struct" {
-    try t.de.run(&[_]t.Token{
+    try t.de.run(deserialize, Visitor, &.{
         .{ .Struct = .{ .name = "", .len = 0 } },
         .{ .StructEnd = {} },
     }, struct {}{});
 
     const T = struct { a: i32, b: i32, c: i32 };
 
-    try t.de.run(&[_]t.Token{
+    try t.de.run(deserialize, Visitor, &.{
         .{ .Struct = .{ .name = "T", .len = 3 } },
         .{ .String = "a" },
         .{ .I32 = 1 },

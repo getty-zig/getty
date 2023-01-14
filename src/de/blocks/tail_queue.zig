@@ -39,7 +39,7 @@ test "deserialize - tail queue" {
     {
         var expected = std.TailQueue(i32){};
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -55,7 +55,7 @@ test "deserialize - tail queue" {
         expected.append(&two);
         expected.append(&three);
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -86,7 +86,7 @@ test "deserialize - tail queue" {
         expected.append(&Parent.Node{ .data = b });
         expected.append(&Parent.Node{ .data = c });
 
-        const tokens = &[_]t.Token{
+        const tokens = &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },

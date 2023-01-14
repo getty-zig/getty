@@ -40,7 +40,7 @@ test "deserialize - array list" {
         var expected = std.ArrayList(void).init(std.testing.allocator);
         defer expected.deinit();
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -54,7 +54,7 @@ test "deserialize - array list" {
         try expected.append(2);
         try expected.append(3);
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I8 = 1 },
             .{ .I32 = 2 },
@@ -87,7 +87,7 @@ test "deserialize - array list" {
         try expected.append(b);
         try expected.append(c);
 
-        const tokens = &[_]t.Token{
+        const tokens = &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
