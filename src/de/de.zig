@@ -378,6 +378,173 @@ pub fn deserialize(
     return try db.deserialize(allocator, T, deserializer, v.visitor());
 }
 
+const expectEqual = std.testing.expectEqual;
+
+test "getAttributes - fail" {
+    const De = t.de.DefaultDeserializer.@"getty.Deserializer";
+
+    const expected: ?void = null;
+
+    try expectEqual(expected, de.getAttributes(bool, De));
+    try expectEqual(expected, de.getAttributes(i32, De));
+    try expectEqual(expected, de.getAttributes([5]i32, De));
+    try expectEqual(expected, de.getAttributes(struct {}, De));
+    try expectEqual(expected, de.getAttributes(union(enum) { foo, bar }, De));
+    try expectEqual(expected, de.getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), De));
+    try expectEqual(expected, de.getAttributes(struct {
+        pub fn is(comptime _: bool) type {
+            return true;
+        }
+
+        pub const attributes = .{}; // empty attribute list
+    }, De));
+
+    inline for (comptime std.meta.declarations(de.blocks)) |decl| {
+        const block = @field(de.blocks, decl.name);
+        try expectEqual(expected, de.getAttributes(block, De));
+    }
+}
+
+test "getAttributes - success" {
+    const attrs = .{
+        .x = .{ .rename = "X" },
+        .y = .{ .skip = true },
+    };
+    const expected: ?@TypeOf(attrs) = attrs;
+
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const block = struct {
+        pub fn is(comptime T: type) bool {
+            return T == Point;
+        }
+
+        pub const attributes = attrs;
+    };
+
+    // User DB
+    {
+        const D = t.de.Deserializer(block, null);
+        const De = D.@"getty.Deserializer";
+
+        try expectEqual(expected, de.getAttributes(Point, De));
+    }
+
+    // Deserializer DB
+    {
+        const D = t.de.Deserializer(null, block);
+        const De = D.@"getty.Deserializer";
+
+        try expectEqual(expected, de.getAttributes(Point, De));
+    }
+
+    // Type DB
+    {
+        const De = t.de.DefaultDeserializer.@"getty.Deserializer";
+
+        const PointWithAttrs = struct {
+            x: i32,
+            y: i32,
+
+            pub const @"getty.db" = struct {
+                pub const attributes = attrs;
+            };
+        };
+
+        try expectEqual(expected, de.getAttributes(PointWithAttrs, De));
+    }
+}
+
+test "getAttributes - priority" {
+    const attrs = .{
+        .x = .{ .rename = "X" },
+        .y = .{ .skip = true },
+    };
+    const invalid_attrs = .{
+        .foo = .{ .bar = "TESTING" },
+    };
+
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const PointAttrs = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = attrs;
+        };
+    };
+    const InvalidPointAttrs = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = invalid_attrs;
+        };
+    };
+
+    const expected: ?@TypeOf(attrs) = attrs;
+
+    // User DB > Type DB
+    {
+        const user_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == InvalidPointAttrs;
+            }
+
+            pub const attributes = attrs;
+        };
+
+        const D = t.de.Deserializer(user_block, null);
+        const De = D.@"getty.Deserializer";
+
+        try expectEqual(expected, de.getAttributes(InvalidPointAttrs, De));
+    }
+
+    // User DB > Deserializer DB
+    {
+        const user_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == Point;
+            }
+
+            pub const attributes = attrs;
+        };
+        const serializer_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == Point;
+            }
+
+            pub const attributes = invalid_attrs;
+        };
+
+        const D = t.de.Deserializer(user_block, serializer_block);
+        const De = D.@"getty.Deserializer";
+
+        try expectEqual(expected, de.getAttributes(Point, De));
+    }
+
+    // Type DB > Deserializer DB
+    {
+        const serializer_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == PointAttrs;
+            }
+
+            pub const attributes = invalid_attrs;
+        };
+
+        const D = t.de.Deserializer(null, serializer_block);
+        const De = D.@"getty.Deserializer";
+
+        try expectEqual(expected, de.getAttributes(PointAttrs, De));
+    }
+}
+
 comptime {
     std.testing.refAllDecls(@This());
 }
