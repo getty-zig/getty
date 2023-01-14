@@ -57,8 +57,6 @@ test "deserialize - union" {
 
     // Untagged
     {
-        const getty = @import("../../getty.zig");
-
         const T = union {
             foo: bool,
             bar: void,
@@ -71,10 +69,14 @@ test "deserialize - union" {
                 .{ .Bool = true },
             };
 
-            var d = t.de.DefaultDeserializer.init(tokens);
-            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
+            var v = Visitor(T){};
+            const visitor = v.visitor();
 
-            try std.testing.expectEqual(true, v.foo);
+            var d = t.de.DefaultDeserializer.init(tokens);
+            const deserializer = d.deserializer();
+
+            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
+            try std.testing.expectEqual(true, got.foo);
         }
 
         {
@@ -84,10 +86,14 @@ test "deserialize - union" {
                 .{ .Void = {} },
             };
 
-            var d = t.de.DefaultDeserializer.init(tokens);
-            const v = getty.deserialize(std.testing.allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
+            var v = Visitor(T){};
+            const visitor = v.visitor();
 
-            try std.testing.expectEqual({}, v.bar);
+            var d = t.de.DefaultDeserializer.init(tokens);
+            const deserializer = d.deserializer();
+
+            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
+            try std.testing.expectEqual({}, got.bar);
         }
     }
 }
