@@ -9,16 +9,35 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 const getty = @import("getty");
 const Token = @import("token.zig").Token;
 
+// The type signature of a DB's `deserialize` function.
+const DeserializeFn = @TypeOf(struct {
+    fn f(
+        _: ?std.mem.Allocator,
+        comptime _: type,
+        deserializer: anytype,
+        visitor: anytype,
+    ) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+        unreachable;
+    }
+}.f);
+
+const VisitorFn = fn (type) type;
+
 /// This test function does not support:
 ///
 /// - Recursive, user-defined containers (e.g., std.ArrayList(std.ArrayList(u8))).
 /// - Raw, untagged unions.
-pub fn run(input: []const Token, expected: anytype) !void {
+pub fn run(comptime deserializeFn: DeserializeFn, comptime visitorFn: VisitorFn, input: []const Token, expected: anytype) !void {
     const T = @TypeOf(expected);
 
     var d = Deserializer.init(input);
-    var v = getty.deserialize(test_allocator, T, d.deserializer()) catch return error.UnexpectedTestError;
-    defer getty.de.free(test_allocator, v);
+    const deserializer = d.deserializer();
+
+    var v = visitorFn(T){};
+    const visitor = v.visitor();
+
+    var got = deserializeFn(test_allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
+    defer getty.de.free(test_allocator, got);
 
     switch (@typeInfo(T)) {
         .Bool,
@@ -27,54 +46,54 @@ pub fn run(input: []const Token, expected: anytype) !void {
         .Int,
         .Optional,
         .Void,
-        => try expectEqual(expected, v),
-        .Array => |info| try expectEqualSlices(info.child, &expected, &v),
+        => try expectEqual(expected, got),
+        .Array => |info| try expectEqualSlices(info.child, &expected, &got),
         .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
-            true => try expectEqualStrings(expected, v),
+            true => try expectEqualStrings(expected, got),
             false => switch (info.size) {
                 //.One => ,
-                .Slice => try expectEqualSlices(info.child, expected, v),
+                .Slice => try expectEqualSlices(info.child, expected, got),
                 else => unreachable,
             },
         },
         .Struct => |info| {
             if (comptime std.mem.startsWith(u8, @typeName(T), "array_list")) {
-                try expectEqual(expected.capacity, v.capacity);
-                try expectEqualSlices(std.meta.Child(T.Slice), expected.items, v.items);
+                try expectEqual(expected.capacity, got.capacity);
+                try expectEqualSlices(std.meta.Child(T.Slice), expected.items, got.items);
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "linked_list.SinglyLinkedList")) {
-                try expectEqual(expected.len(), v.len());
+                try expectEqual(expected.len(), got.len());
                 var iterator = expected.first;
 
                 while (iterator) |node| : (iterator = node.next) {
-                    var got_node = v.popFirst();
+                    var got_node = got.popFirst();
                     try expect(got_node != null);
                     defer test_allocator.destroy(got_node.?);
 
                     try expectEqual(node.data, got_node.?.data);
                 }
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "linked_list.TailQueue")) {
-                try expectEqual(expected.len, v.len);
+                try expectEqual(expected.len, got.len);
                 var iterator = expected.first;
 
                 while (iterator) |node| : (iterator = node.next) {
-                    var got_node = v.popFirst();
+                    var got_node = got.popFirst();
                     try expect(got_node != null);
                     defer test_allocator.destroy(got_node.?);
 
                     try expectEqual(node.data, got_node.?.data);
                 }
             } else if (comptime std.mem.startsWith(u8, @typeName(T), "packed_int_array.PackedIntArrayEndian")) {
-                try expectEqual(expected.len, v.len);
+                try expectEqual(expected.len, got.len);
 
                 for (&expected.bytes) |byte, i| {
-                    try expectEqual(byte, v.bytes[i]);
+                    try expectEqual(byte, got.bytes[i]);
                 }
             } else if (T == std.BufMap) {
-                try expectEqual(expected.count(), v.count());
+                try expectEqual(expected.count(), got.count());
 
                 var it = expected.iterator();
                 while (it.next()) |kv| {
-                    try expectEqualSlices(u8, expected.get(kv.key_ptr.*).?, v.get(kv.key_ptr.*).?);
+                    try expectEqualSlices(u8, expected.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
                 }
             } else switch (info.is_tuple) {
                 true => {
@@ -82,18 +101,18 @@ pub fn run(input: []const Token, expected: anytype) !void {
                     comptime var i: usize = 0;
 
                     inline while (i < length) : (i += 1) {
-                        try expectEqual(expected[i], v[i]);
+                        try expectEqual(expected[i], got[i]);
                     }
                 },
-                false => try expectEqual(expected, v),
+                false => try expectEqual(expected, got),
             }
         },
         .Union => |info| {
             if (info.tag_type) |_| {
-                try expectEqual(expected, v);
+                try expectEqual(expected, got);
             } else {
                 if (T == std.net.Address) {
-                    try expect(std.net.Address.eql(expected, v));
+                    try expect(std.net.Address.eql(expected, got));
                 } else {
                     @compileError("untagged unions are not supported by this function");
                 }
@@ -155,8 +174,8 @@ pub const Deserializer = struct {
     pub usingnamespace getty.Deserializer(
         *Self,
         Error,
-        getty.default_dt,
-        getty.default_dt,
+        null,
+        null,
         .{
             .deserializeAny = deserializeAny,
             .deserializeBool = deserializeAny,

@@ -36,6 +36,6 @@ pub fn Visitor(
 }
 
 test "deserialize - optional" {
-    try t.de.run(&[_]t.Token{.{ .Null = {} }}, @as(?i32, null));
-    try t.de.run(&[_]t.Token{ .{ .Some = {} }, .{ .I32 = 0 } }, @as(?i32, 0));
+    try t.de.run(deserialize, Visitor, &.{.{ .Null = {} }}, @as(?i32, null));
+    try t.de.run(deserialize, Visitor, &.{ .{ .Some = {} }, .{ .I32 = 0 } }, @as(?i32, 0));
 }

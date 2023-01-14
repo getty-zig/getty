@@ -36,36 +36,20 @@ pub fn Visitor(
     return SliceVisitor(T);
 }
 
-test "deserialize - string" {
+test "deserialize - slice, string" {
+    // No sentinel
     {
         var arr = [_]u8{ 'a', 'b', 'c' };
 
-        // No sentinel
-        try t.de.run(&[_]t.Token{
-            .{ .Seq = .{ .len = 3 } },
-            .{ .U8 = 'a' },
-            .{ .U8 = 'b' },
-            .{ .U8 = 'c' },
-            .{ .SeqEnd = {} },
-        }, "abc");
-
-        try t.de.run(&[_]t.Token{.{ .String = "abc" }}, @as([]u8, &arr));
-        try t.de.run(&[_]t.Token{.{ .String = "abc" }}, @as([]const u8, &arr));
+        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]u8, &arr));
+        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]const u8, &arr));
     }
 
+    // Sentinel
     {
         var arr = [_:0]u8{ 'a', 'b', 'c' };
 
-        // Sentinel
-        try t.de.run(&[_]t.Token{
-            .{ .Seq = .{ .len = 3 } },
-            .{ .U8 = 'a' },
-            .{ .U8 = 'b' },
-            .{ .U8 = 'c' },
-            .{ .SeqEnd = {} },
-        }, "abc");
-
-        try t.de.run(&[_]t.Token{.{ .String = "abc" }}, @as([:0]u8, &arr));
-        try t.de.run(&[_]t.Token{.{ .String = "abc" }}, @as([:0]const u8, &arr));
+        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]u8, &arr));
+        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]const u8, &arr));
     }
 }

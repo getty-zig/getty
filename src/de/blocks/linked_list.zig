@@ -39,7 +39,7 @@ test "deserialize - linked list" {
     {
         var expected = std.SinglyLinkedList(i32){};
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -55,7 +55,7 @@ test "deserialize - linked list" {
         one.insertAfter(&two);
         two.insertAfter(&three);
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -86,7 +86,7 @@ test "deserialize - linked list" {
         expected.prepend(&Parent.Node{ .data = b });
         expected.prepend(&Parent.Node{ .data = a });
 
-        const tokens = &[_]t.Token{
+        const tokens = &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },

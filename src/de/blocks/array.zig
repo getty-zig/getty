@@ -36,12 +36,12 @@ pub fn Visitor(
 }
 
 test "deserialize - array" {
-    try t.de.run(&[_]t.Token{
+    try t.de.run(deserialize, Visitor, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     }, [_]i32{});
 
-    try t.de.run(&[_]t.Token{
+    try t.de.run(deserialize, Visitor, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },
@@ -49,7 +49,7 @@ test "deserialize - array" {
         .{ .SeqEnd = {} },
     }, [3]i32{ 1, 2, 3 });
 
-    try t.de.run(&[_]t.Token{
+    try t.de.run(deserialize, Visitor, &.{
         .{ .Seq = .{ .len = 3 } },
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },

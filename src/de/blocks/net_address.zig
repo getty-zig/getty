@@ -46,13 +46,13 @@ test "deserialize - std.net.Address" {
         // IPv4
         {
             var addr = try std.net.Address.resolveIp(ipv4, 0);
-            try t.de.run(&[_]t.Token{.{ .String = ipv4 ++ ":0" }}, addr);
+            try t.de.run(deserialize, Visitor, &.{.{ .String = ipv4 ++ ":0" }}, addr);
         }
 
         // IPv6
         {
             var addr = try std.net.Address.resolveIp(ipv6, 80);
-            try t.de.run(&[_]t.Token{.{ .String = ipv6_wrapped ++ ":80" }}, addr);
+            try t.de.run(deserialize, Visitor, &.{.{ .String = ipv6_wrapped ++ ":80" }}, addr);
         }
     }
 }

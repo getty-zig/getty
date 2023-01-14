@@ -38,5 +38,5 @@ pub fn Visitor(
 }
 
 test "deserialize - void" {
-    try t.de.run(&[_]t.Token{.{ .Void = {} }}, {});
+    try t.de.run(deserialize, Visitor, &.{.{ .Void = {} }}, {});
 }

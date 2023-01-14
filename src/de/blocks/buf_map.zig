@@ -40,7 +40,7 @@ test "deserialize - buf map" {
         var expected = std.BufMap.init(std.testing.allocator);
         defer expected.deinit();
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         }, expected);
@@ -54,7 +54,7 @@ test "deserialize - buf map" {
         try expected.put("two", "bar");
         try expected.put("three", "baz");
 
-        try t.de.run(&[_]t.Token{
+        try t.de.run(deserialize, Visitor, &.{
             .{ .Map = .{ .len = 3 } },
             .{ .String = "one" },
             .{ .String = "foo" },

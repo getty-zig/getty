@@ -39,8 +39,8 @@ pub fn Visitor(
 }
 
 test "deserialize - float" {
-    try t.de.run(&[_]t.Token{.{ .F16 = 0 }}, @as(f16, 0));
-    try t.de.run(&[_]t.Token{.{ .F32 = 0 }}, @as(f32, 0));
-    try t.de.run(&[_]t.Token{.{ .F64 = 0 }}, @as(f64, 0));
-    try t.de.run(&[_]t.Token{.{ .F64 = 0 }}, @as(f128, 0));
+    try t.de.run(deserialize, Visitor, &.{.{ .F16 = 0 }}, @as(f16, 0));
+    try t.de.run(deserialize, Visitor, &.{.{ .F32 = 0 }}, @as(f32, 0));
+    try t.de.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f64, 0));
+    try t.de.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f128, 0));
 }
