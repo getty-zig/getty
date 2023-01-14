@@ -266,21 +266,35 @@ pub const de = struct {
             }
         }
 
+        // Process deserializer DBs.
+        for (D.deserializer_dt) |db| {
+            if (db.is(T) and traits.has_attributes(T, db)) {
+                break :blk ?@TypeOf(db.attributes);
+            }
+        }
+
         break :blk ?void;
     } {
         comptime {
-            // Process user DBTs.
+            // Process user DBs.
             for (D.user_dt) |db| {
                 if (db.is(T) and traits.has_attributes(T, db)) {
                     return @as(?@TypeOf(db.attributes), db.attributes);
                 }
             }
 
-            // Process type DBTs.
+            // Process type DBs.
             if (traits.has_db(T)) {
                 const db = T.@"getty.db";
 
                 if (traits.has_attributes(T, db)) {
+                    return @as(?@TypeOf(db.attributes), db.attributes);
+                }
+            }
+
+            // Process deserializer DBs.
+            for (D.user_dt) |db| {
+                if (db.is(T) and traits.has_attributes(T, db)) {
                     return @as(?@TypeOf(db.attributes), db.attributes);
                 }
             }
