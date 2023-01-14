@@ -30,7 +30,7 @@ pub fn serialize(
 test "serialize - linked list" {
     var list = std.SinglyLinkedList(i32){};
 
-    try t.ser.run(serialize, list, &[_]t.Token{
+    try t.ser.run(serialize, list, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
@@ -43,7 +43,7 @@ test "serialize - linked list" {
     one.insertAfter(&two);
     two.insertAfter(&three);
 
-    try t.ser.run(serialize, list, &[_]t.Token{
+    try t.ser.run(serialize, list, &.{
         .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },

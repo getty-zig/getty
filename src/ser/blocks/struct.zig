@@ -56,7 +56,7 @@ pub fn serialize(
 test "serialize - struct" {
     const Struct = struct { a: i32, b: i32, c: i32 };
 
-    try t.ser.run(serialize, Struct{ .a = 1, .b = 2, .c = 3 }, &[_]t.Token{
+    try t.ser.run(serialize, Struct{ .a = 1, .b = 2, .c = 3 }, &.{
         .{ .Struct = .{ .name = @typeName(Struct), .len = 3 } },
         .{ .String = "a" },
         .{ .I32 = 1 },
