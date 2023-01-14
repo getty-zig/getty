@@ -37,7 +37,7 @@ test "serialize - std.PackedIntArray" {
     {
         var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
 
-        try t.ser.run(array, &[_]t.Token{
+        try t.ser.run(serialize, array, &[_]t.Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .U8 = 1 },
             .{ .U8 = 2 },
@@ -50,7 +50,7 @@ test "serialize - std.PackedIntArray" {
     {
         var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
 
-        try t.ser.run(array, &[_]t.Token{
+        try t.ser.run(serialize, array, &[_]t.Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .U8 = 1 },
             .{ .U8 = 2 },
@@ -66,7 +66,7 @@ test "serialize - std.PackedIntSlice" {
         var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
         const slice = array.slice(0, 3);
 
-        try t.ser.run(slice, &[_]t.Token{
+        try t.ser.run(serialize, slice, &[_]t.Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .U8 = 1 },
             .{ .U8 = 2 },
@@ -80,7 +80,7 @@ test "serialize - std.PackedIntSlice" {
         var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
         const slice = array.slice(0, 3);
 
-        try t.ser.run(slice, &[_]t.Token{
+        try t.ser.run(serialize, slice, &[_]t.Token{
             .{ .Seq = .{ .len = 3 } },
             .{ .U8 = 1 },
             .{ .U8 = 2 },

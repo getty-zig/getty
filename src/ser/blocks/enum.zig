@@ -23,11 +23,11 @@ pub fn serialize(
 
 test "serialize - enum" {
     // literal
-    try t.ser.run(.foo, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "foo" } });
-    try t.ser.run(.bar, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "bar" } });
+    try t.ser.run(serialize, .foo, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.ser.run(serialize, .bar, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "bar" } });
 
     // non-literal
     const T = enum { foo, bar };
-    try t.ser.run(T.foo, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "foo" } });
-    try t.ser.run(T.bar, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "bar" } });
+    try t.ser.run(serialize, T.foo, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.ser.run(serialize, T.bar, &[_]t.Token{ .{ .Enum = {} }, .{ .String = "bar" } });
 }
