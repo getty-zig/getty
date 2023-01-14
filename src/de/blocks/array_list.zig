@@ -64,7 +64,7 @@ test "deserialize - array list" {
     }
 
     {
-        const getty = @import("../../getty.zig");
+        const free = @import("../de.zig").de.free;
 
         const Child = std.ArrayList(isize);
         const Parent = std.ArrayList(Child);
@@ -103,12 +103,17 @@ test "deserialize - array list" {
 
         // Test manually since the `t` function cannot recursively test
         // user-defined containers containers without ugly hacks.
-        var d = t.de.DefaultDeserializer.init(tokens);
-        const v = getty.deserialize(std.testing.allocator, Parent, d.deserializer()) catch return error.UnexpectedTestError;
-        defer getty.de.free(std.testing.allocator, v);
+        var v = Visitor(Parent){};
+        const visitor = v.visitor();
 
-        try std.testing.expectEqual(expected.capacity, v.capacity);
-        for (v.items) |l, i| {
+        var d = t.de.DefaultDeserializer.init(tokens);
+        const deserializer = d.deserializer();
+
+        const got = deserialize(std.testing.allocator, Parent, deserializer, visitor) catch return error.UnexpectedTestError;
+        defer free(std.testing.allocator, got);
+
+        try std.testing.expectEqual(expected.capacity, got.capacity);
+        for (got.items) |l, i| {
             try std.testing.expectEqual(expected.items[i].capacity, l.capacity);
             try std.testing.expectEqualSlices(isize, expected.items[i].items, l.items);
         }

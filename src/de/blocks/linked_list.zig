@@ -65,7 +65,7 @@ test "deserialize - linked list" {
     }
 
     {
-        const getty = @import("../../getty.zig");
+        const free = @import("../de.zig").de.free;
 
         const Child = std.SinglyLinkedList(i32);
         const Parent = std.SinglyLinkedList(Child);
@@ -102,14 +102,19 @@ test "deserialize - linked list" {
 
         // Test manually since the `t` function cannot recursively test
         // user-defined containers containers without ugly hacks.
-        var d = t.de.DefaultDeserializer.init(tokens);
-        var v = getty.deserialize(std.testing.allocator, Parent, d.deserializer()) catch return error.UnexpectedTestError;
-        defer getty.de.free(std.testing.allocator, v);
+        var v = Visitor(Parent){};
+        const visitor = v.visitor();
 
-        try std.testing.expectEqual(expected.len(), v.len());
+        var d = t.de.DefaultDeserializer.init(tokens);
+        const deserializer = d.deserializer();
+
+        var got = deserialize(std.testing.allocator, Parent, deserializer, visitor) catch return error.UnexpectedTestError;
+        defer free(std.testing.allocator, got);
+
+        try std.testing.expectEqual(expected.len(), got.len());
         var iterator = expected.first;
         while (iterator) |node| : (iterator = node.next) {
-            var got_node = v.popFirst();
+            var got_node = got.popFirst();
             try std.testing.expect(got_node != null);
             defer std.testing.allocator.destroy(got_node.?);
 
