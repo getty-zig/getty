@@ -7,10 +7,17 @@ const expectEqualSlices = std.testing.expectEqualSlices;
 const getty = @import("getty");
 const Token = @import("token.zig").Token;
 
-pub fn run(input: anytype, expected: []const Token) !void {
-    var s = Serializer(null, null).init(expected);
+// The type signature of an SB's `serialize` function.
+const SerializeFn = @TypeOf(struct {
+    fn f(_: anytype, s: anytype) @TypeOf(s).Error!@TypeOf(s).Ok {
+        unreachable;
+    }
+}.f);
 
-    getty.serialize(input, s.serializer()) catch return error.UnexpectedTestError;
+pub fn run(comptime f: SerializeFn, input: anytype, expected: []const Token) !void {
+    var s = DefaultSerializer.init(expected);
+
+    f(input, s.serializer()) catch return error.UnexpectedTestError;
     try expect(s.remaining() == 0);
 }
 
@@ -275,3 +282,5 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
         }
     };
 }
+
+pub const DefaultSerializer = Serializer(null, null);

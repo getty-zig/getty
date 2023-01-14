@@ -1,3 +1,4 @@
+const std = @import("std");
 const t = @import("getty/testing");
 
 /// Specifies all types that can be serialized by this block.
@@ -19,6 +20,6 @@ pub fn serialize(
 }
 
 test "serialize - bool" {
-    try t.ser.run(true, &[_]t.Token{.{ .Bool = true }});
-    try t.ser.run(false, &[_]t.Token{.{ .Bool = false }});
+    try t.ser.run(serialize, true, &[_]t.Token{.{ .Bool = true }});
+    try t.ser.run(serialize, false, &[_]t.Token{.{ .Bool = false }});
 }

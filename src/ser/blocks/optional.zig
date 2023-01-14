@@ -19,6 +19,6 @@ pub fn serialize(
 }
 
 test "serialize - optional" {
-    try t.ser.run(@as(?i32, null), &[_]t.Token{.{ .Null = {} }});
-    try t.ser.run(@as(?i32, 0), &[_]t.Token{ .{ .Some = {} }, .{ .I32 = 0 } });
+    try t.ser.run(serialize, @as(?i32, null), &[_]t.Token{.{ .Null = {} }});
+    try t.ser.run(serialize, @as(?i32, 0), &[_]t.Token{ .{ .Some = {} }, .{ .I32 = 0 } });
 }

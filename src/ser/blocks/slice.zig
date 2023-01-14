@@ -25,11 +25,11 @@ pub fn serialize(
 }
 
 test "serialize - slice" {
-    try t.ser.run(&[_]i32{}, &[_]t.Token{
+    try t.ser.run(serialize, &[_]i32{}, &[_]t.Token{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
-    try t.ser.run(&[_]i32{ 1, 2, 3 }, &[_]t.Token{
+    try t.ser.run(serialize, &[_]i32{ 1, 2, 3 }, &[_]t.Token{
         .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },
