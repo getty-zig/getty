@@ -1,8 +1,8 @@
 const std = @import("std");
 
-/// Checks to see if a type `T` contains a deserialization block or tuple.
+/// Checks whether `T` contains a deserialization block.
 pub fn has_db(
-    /// A type containing a deserialization block.
+    /// A type to check.
     comptime T: type,
 ) bool {
     comptime {
@@ -13,9 +13,9 @@ pub fn has_db(
     }
 }
 
-/// Validates a deserialization block or tuple.
+/// Checks if `dbt` is a deserialization block or tuple.
 pub fn is_dbt(
-    /// A deserialization block or tuple.
+    /// An optional type or value to check.
     comptime dbt: anytype,
 ) bool {
     comptime {
