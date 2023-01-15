@@ -288,7 +288,7 @@ test "getAttributes - success" {
     {
         const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
 
-        const PointWithAttrs = struct {
+        const PointCustom = struct {
             x: i32,
             y: i32,
 
@@ -297,7 +297,7 @@ test "getAttributes - success" {
             };
         };
 
-        try expectEqual(expected, ser.getAttributes(PointWithAttrs, Ser));
+        try expectEqual(expected, ser.getAttributes(PointCustom, Ser));
     }
 }
 
@@ -314,7 +314,7 @@ test "getAttributes - priority" {
         x: i32,
         y: i32,
     };
-    const PointAttrs = struct {
+    const PointCustom = struct {
         x: i32,
         y: i32,
 
@@ -322,7 +322,7 @@ test "getAttributes - priority" {
             pub const attributes = attrs;
         };
     };
-    const InvalidPointAttrs = struct {
+    const PointInvalidCustom = struct {
         x: i32,
         y: i32,
 
@@ -337,7 +337,7 @@ test "getAttributes - priority" {
     {
         const user_block = struct {
             pub fn is(comptime T: type) bool {
-                return T == InvalidPointAttrs;
+                return T == PointInvalidCustom;
             }
 
             pub const attributes = attrs;
@@ -346,7 +346,7 @@ test "getAttributes - priority" {
         const S = t.ser.Serializer(user_block, null);
         const Ser = S.@"getty.Serializer";
 
-        try expectEqual(expected, ser.getAttributes(InvalidPointAttrs, Ser));
+        try expectEqual(expected, ser.getAttributes(PointInvalidCustom, Ser));
     }
 
     // User SB > Serializer SB
@@ -376,7 +376,7 @@ test "getAttributes - priority" {
     {
         const serializer_block = struct {
             pub fn is(comptime T: type) bool {
-                return T == PointAttrs;
+                return T == PointCustom;
             }
 
             pub const attributes = invalid_attrs;
@@ -385,7 +385,277 @@ test "getAttributes - priority" {
         const S = t.ser.Serializer(null, serializer_block);
         const Ser = S.@"getty.Serializer";
 
-        try expectEqual(expected, ser.getAttributes(PointAttrs, Ser));
+        try expectEqual(expected, ser.getAttributes(PointCustom, Ser));
+    }
+}
+
+test "serialize - success, normal" {
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const PointCustom = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.sb" = struct {
+            pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+                var s = try serializer.serializeSeq(2);
+                const seq = s.seq();
+
+                try seq.serializeElement(value.x);
+                try seq.serializeElement(value.y);
+
+                return try seq.end();
+            }
+        };
+    };
+
+    const block = struct {
+        pub fn is(comptime T: type) bool {
+            return T == Point;
+        }
+
+        pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            var s = try serializer.serializeSeq(2);
+            const seq = s.seq();
+
+            try seq.serializeElement(value.x);
+            try seq.serializeElement(value.y);
+
+            return try seq.end();
+        }
+    };
+
+    const v = Point{ .x = 1, .y = 2 };
+    const v_attrs = PointCustom{ .x = 1, .y = 2 };
+    const expected: usize = 0;
+
+    // Default SB
+    {
+        var s = t.ser.DefaultSerializer.init(&.{
+            .{ .Struct = .{ .name = @typeName(Point), .len = 2 } },
+            .{ .String = "x" },
+            .{ .I32 = 1 },
+            .{ .String = "y" },
+            .{ .I32 = 2 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // User SB
+    {
+        var s = t.ser.Serializer(block, null).init(&.{
+            .{ .Seq = .{ .len = 2 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .SeqEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // Serializer SB
+    {
+        var s = t.ser.Serializer(null, block).init(&.{
+            .{ .Seq = .{ .len = 2 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .SeqEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // Type SB
+    {
+        var s = t.ser.Serializer(null, null).init(&.{
+            .{ .Seq = .{ .len = 2 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .SeqEnd = {} },
+        });
+
+        serialize(v_attrs, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+}
+
+test "serialize - success, attributes" {
+    const attrs = .{
+        .x = .{ .rename = "TESTING" },
+        .y = .{ .skip = true },
+    };
+
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const PointCustom = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = attrs;
+        };
+    };
+
+    const block = struct {
+        pub fn is(comptime T: type) bool {
+            return T == Point;
+        }
+
+        pub const attributes = attrs;
+    };
+
+    const v = Point{ .x = 1, .y = 2 };
+    const v_attrs = PointCustom{ .x = 1, .y = 2 };
+    const expected: usize = 0;
+
+    // User SB
+    {
+        var s = t.ser.Serializer(block, null).init(&.{
+            .{ .Struct = .{ .name = @typeName(Point), .len = 1 } },
+            .{ .String = "TESTING" },
+            .{ .I32 = 1 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // Serializer SB
+    {
+        var s = t.ser.Serializer(null, block).init(&.{
+            .{ .Struct = .{ .name = @typeName(Point), .len = 1 } },
+            .{ .String = "TESTING" },
+            .{ .I32 = 1 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // Type SB
+    {
+        var s = t.ser.Serializer(null, null).init(&.{
+            .{ .Struct = .{ .name = @typeName(PointCustom), .len = 1 } },
+            .{ .String = "TESTING" },
+            .{ .I32 = 1 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v_attrs, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+}
+
+test "serialize - priority" {
+    const attrs = .{
+        .x = .{ .rename = "TESTING" },
+        .y = .{ .skip = true },
+    };
+    const invalid_attrs = .{
+        .foo = .{ .bar = "TESTING" },
+    };
+
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const PointCustom = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = attrs;
+        };
+    };
+    const PointInvalidCustom = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = invalid_attrs;
+        };
+    };
+
+    const expected: usize = 0;
+
+    // Serializer SB > Default SB
+    {
+        var v = Point{ .x = 1, .y = 2 };
+
+        const serializer_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == Point;
+            }
+
+            pub const attributes = attrs;
+        };
+
+        var s = t.ser.Serializer(null, serializer_block).init(&.{
+            .{ .Struct = .{ .name = @typeName(Point), .len = 1 } },
+            .{ .String = "TESTING" },
+            .{ .I32 = 1 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // Type SB > Serializer SB
+    {
+        const v = PointCustom{ .x = 1, .y = 2 };
+
+        const serializer_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == PointCustom;
+            }
+
+            pub const attributes = invalid_attrs;
+        };
+
+        var s = t.ser.Serializer(null, serializer_block).init(&.{
+            .{ .Struct = .{ .name = @typeName(PointCustom), .len = 1 } },
+            .{ .String = "TESTING" },
+            .{ .I32 = 1 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
+    }
+
+    // User SB > Type SB
+    {
+        const v = PointInvalidCustom{ .x = 1, .y = 2 };
+
+        const user_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == PointInvalidCustom;
+            }
+
+            pub const attributes = attrs;
+        };
+
+        var s = t.ser.Serializer(user_block, null).init(&.{
+            .{ .Struct = .{ .name = @typeName(PointInvalidCustom), .len = 1 } },
+            .{ .String = "TESTING" },
+            .{ .I32 = 1 },
+            .{ .StructEnd = {} },
+        });
+
+        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        try expectEqual(expected, s.remaining());
     }
 }
 
