@@ -438,7 +438,7 @@ test "getAttributes - priority" {
         x: i32,
         y: i32,
     };
-    const PointAttrs = struct {
+    const PointCustom = struct {
         x: i32,
         y: i32,
 
@@ -446,7 +446,7 @@ test "getAttributes - priority" {
             pub const attributes = attrs;
         };
     };
-    const InvalidPointAttrs = struct {
+    const PointInvalidCustom = struct {
         x: i32,
         y: i32,
 
@@ -461,7 +461,7 @@ test "getAttributes - priority" {
     {
         const user_block = struct {
             pub fn is(comptime T: type) bool {
-                return T == InvalidPointAttrs;
+                return T == PointInvalidCustom;
             }
 
             pub const attributes = attrs;
@@ -470,7 +470,7 @@ test "getAttributes - priority" {
         const D = t.de.Deserializer(user_block, null);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, de.getAttributes(InvalidPointAttrs, De));
+        try expectEqual(expected, de.getAttributes(PointInvalidCustom, De));
     }
 
     // User DB > Deserializer DB
@@ -500,7 +500,7 @@ test "getAttributes - priority" {
     {
         const serializer_block = struct {
             pub fn is(comptime T: type) bool {
-                return T == PointAttrs;
+                return T == PointCustom;
             }
 
             pub const attributes = invalid_attrs;
@@ -509,7 +509,7 @@ test "getAttributes - priority" {
         const D = t.de.Deserializer(null, serializer_block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, de.getAttributes(PointAttrs, De));
+        try expectEqual(expected, de.getAttributes(PointCustom, De));
     }
 }
 
