@@ -244,68 +244,6 @@ pub const de = struct {
         }
     }
 
-    /// Returns deserialization attributes for `T`. If none exist, `null` is returned.
-    pub fn getAttributes(
-        /// The type for which attributes should be returned.
-        comptime T: type,
-        /// A `getty.Deserializer` interface type.
-        comptime D: type,
-    ) blk: {
-        concepts.@"getty.Deserializer"(D);
-
-        // Process user DBs.
-        for (D.user_dt) |db| {
-            if (db.is(T) and traits.has_attributes(T, db)) {
-                break :blk ?@TypeOf(db.attributes);
-            }
-        }
-
-        // Process type DBs.
-        if (traits.has_db(T)) {
-            const db = T.@"getty.db";
-
-            if (traits.has_attributes(T, db)) {
-                break :blk ?@TypeOf(db.attributes);
-            }
-        }
-
-        // Process deserializer DBs.
-        for (D.deserializer_dt) |db| {
-            if (db.is(T) and traits.has_attributes(T, db)) {
-                break :blk ?@TypeOf(db.attributes);
-            }
-        }
-
-        break :blk ?void;
-    } {
-        comptime {
-            // Process user DBs.
-            for (D.user_dt) |db| {
-                if (db.is(T) and traits.has_attributes(T, db)) {
-                    return @as(?@TypeOf(db.attributes), db.attributes);
-                }
-            }
-
-            // Process type DBs.
-            if (traits.has_db(T)) {
-                const db = T.@"getty.db";
-
-                if (traits.has_attributes(T, db)) {
-                    return @as(?@TypeOf(db.attributes), db.attributes);
-                }
-            }
-
-            // Process deserializer DBs.
-            for (D.deserializer_dt) |db| {
-                if (db.is(T) and traits.has_attributes(T, db)) {
-                    return @as(?@TypeOf(db.attributes), db.attributes);
-                }
-            }
-
-            return null;
-        }
-    }
-
     /// Returns the highest priority Deserialization Block for a type.
     pub fn find_db(
         /// The type being deserialized into.
@@ -345,6 +283,9 @@ pub const de = struct {
             @compileError("type is not supported: " ++ @typeName(T));
         }
     }
+
+    /// Returns deserialization attributes for `T`. If none exist, `null` is returned.
+    pub const getAttributes = @import("../attributes.zig").getDeAttributes;
 };
 
 /// Deserializes into a value of type `T` from a `getty.Deserializer`.

@@ -144,66 +144,7 @@ pub const ser = struct {
     };
 
     /// Returns serialization attributes for `T`. If none exist, `null` is returned.
-    pub fn getAttributes(
-        /// The type for which attributes should be returned.
-        comptime T: type,
-        /// A `getty.Serializer` interface type.
-        comptime S: type,
-    ) blk: {
-        concepts.@"getty.Serializer"(S);
-
-        // Process user SBs.
-        for (S.user_st) |sb| {
-            if (sb.is(T) and traits.has_attributes(T, sb)) {
-                break :blk ?@TypeOf(sb.attributes);
-            }
-        }
-
-        // Process type SBs.
-        if (traits.has_sb(T)) {
-            const sb = T.@"getty.sb";
-
-            if (traits.has_attributes(T, sb)) {
-                break :blk ?@TypeOf(sb.attributes);
-            }
-        }
-
-        // Process user SBs.
-        for (S.serializer_st) |sb| {
-            if (sb.is(T) and traits.has_attributes(T, sb)) {
-                break :blk ?@TypeOf(sb.attributes);
-            }
-        }
-
-        break :blk ?void;
-    } {
-        comptime {
-            // Process user SBs.
-            for (S.user_st) |sb| {
-                if (sb.is(T) and traits.has_attributes(T, sb)) {
-                    return @as(?@TypeOf(sb.attributes), sb.attributes);
-                }
-            }
-
-            // Process type SBs.
-            if (traits.has_sb(T)) {
-                const sb = T.@"getty.sb";
-
-                if (traits.has_attributes(T, sb)) {
-                    return @as(?@TypeOf(sb.attributes), sb.attributes);
-                }
-            }
-
-            // Process serializer SBs.
-            for (S.serializer_st) |sb| {
-                if (sb.is(T) and traits.has_attributes(T, sb)) {
-                    return @as(?@TypeOf(sb.attributes), sb.attributes);
-                }
-            }
-
-            return null;
-        }
-    }
+    pub const getAttributes = @import("../attributes.zig").getSerAttributes;
 };
 
 /// Serializes a value into a `getty.Serializer`.
