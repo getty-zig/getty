@@ -7,7 +7,10 @@ pub fn is(
     /// The type being deserialized into.
     comptime T: type,
 ) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "hash_map");
+    const is_hash_map = comptime std.mem.startsWith(u8, @typeName(T), "hash_map");
+    const is_array_hash_map = comptime std.mem.startsWith(u8, @typeName(T), "array_hash_map");
+
+    return is_hash_map or is_array_hash_map;
 }
 
 /// Specifies the deserialization process for types relevant to this block.

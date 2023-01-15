@@ -17,11 +17,7 @@ pub fn Visitor(comptime HashMap: type) type {
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
             const K = std.meta.fieldInfo(Value.KV, .key).type;
             const V = std.meta.fieldInfo(Value.KV, .value).type;
-            const unmanaged = comptime std.mem.startsWith(
-                u8,
-                @typeName(Value),
-                "hash_map.HashMapUnmanaged",
-            );
+            const unmanaged = is_hash_map_unamanaged or is_array_hash_map_unmanaged;
 
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(allocator.?);
             errdefer de.free(allocator.?, hash_map);
@@ -39,5 +35,8 @@ pub fn Visitor(comptime HashMap: type) type {
 
             return hash_map;
         }
+
+        const is_hash_map_unamanaged = std.mem.startsWith(u8, @typeName(Value), "hash_map.HashMapUnmanaged");
+        const is_array_hash_map_unmanaged = std.mem.startsWith(u8, @typeName(Value), "array_hash_map.HashMapUnmanaged");
     };
 }
