@@ -107,13 +107,13 @@ pub fn MapAccess(
             }
 
             fn KeyReturn(comptime Seed: type) type {
-                comptime de.concepts.@"getty.de.Seed"(Seed);
+                comptime de.de.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }
 
             fn ValueReturn(comptime Seed: type) type {
-                comptime de.concepts.@"getty.de.Seed"(Seed);
+                comptime de.de.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!Seed.Value;
             }

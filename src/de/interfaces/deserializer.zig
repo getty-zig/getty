@@ -36,8 +36,8 @@ pub fn Deserializer(
     },
 ) type {
     comptime {
-        de.concepts.@"getty.de.dbt"(user_dbt);
-        de.concepts.@"getty.de.dbt"(deserializer_dbt);
+        de.de.concepts.@"getty.de.dbt"(user_dbt);
+        de.de.concepts.@"getty.de.dbt"(deserializer_dbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -264,7 +264,7 @@ pub fn Deserializer(
             }
 
             fn Return(comptime Visitor: type) type {
-                comptime de.concepts.@"getty.de.Visitor"(Visitor);
+                comptime de.de.concepts.@"getty.de.Visitor"(Visitor);
 
                 return Error!Visitor.Value;
             }

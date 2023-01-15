@@ -66,8 +66,8 @@ pub fn Serializer(
     },
 ) type {
     comptime {
-        ser.concepts.@"getty.ser.sbt"(user_sbt);
-        ser.concepts.@"getty.ser.sbt"(serializer_sbt);
+        ser.ser.concepts.@"getty.ser.sbt"(user_sbt);
+        ser.ser.concepts.@"getty.ser.sbt"(serializer_sbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
