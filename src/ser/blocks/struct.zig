@@ -22,7 +22,26 @@ pub fn serialize(
     const fields = std.meta.fields(T);
     const attributes = comptime ser.ser.getAttributes(T, @TypeOf(serializer));
 
-    var s = try serializer.serializeStruct(@typeName(T), fields.len);
+    // Get number of fields that will actually be serialized.
+    const length: usize = comptime blk: {
+        if (attributes) |attrs| {
+            var len: usize = 0;
+
+            for (std.meta.fields(@TypeOf(attrs))) |attr_field| {
+                const attr = @field(attrs, attr_field.name);
+
+                if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
+                    len += 1;
+                }
+            }
+
+            break :blk len;
+        }
+
+        break :blk fields.len;
+    };
+
+    var s = try serializer.serializeStruct(@typeName(T), length);
     const st = s.structure();
 
     inline for (fields) |field| {
