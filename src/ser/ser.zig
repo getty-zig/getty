@@ -224,171 +224,6 @@ pub fn serialize(
     return try block.serialize(value, serializer);
 }
 
-test "getAttributes - fail" {
-    const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
-
-    const expected: ?void = null;
-
-    try expectEqual(expected, ser.getAttributes(bool, Ser));
-    try expectEqual(expected, ser.getAttributes(i32, Ser));
-    try expectEqual(expected, ser.getAttributes([5]i32, Ser));
-    try expectEqual(expected, ser.getAttributes(struct {}, Ser));
-    try expectEqual(expected, ser.getAttributes(union(enum) { foo, bar }, Ser));
-    try expectEqual(expected, ser.getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), Ser));
-    try expectEqual(expected, ser.getAttributes(struct {
-        pub fn is(comptime _: bool) type {
-            return true;
-        }
-
-        pub const attributes = .{}; // empty attribute list
-    }, Ser));
-
-    inline for (comptime std.meta.declarations(ser.blocks)) |decl| {
-        const block = @field(ser.blocks, decl.name);
-        try expectEqual(expected, ser.getAttributes(block, Ser));
-    }
-}
-
-test "getAttributes - success" {
-    const attrs = .{
-        .x = .{ .rename = "X" },
-        .y = .{ .skip = true },
-    };
-    const expected: ?@TypeOf(attrs) = attrs;
-
-    const Point = struct {
-        x: i32,
-        y: i32,
-    };
-    const block = struct {
-        pub fn is(comptime T: type) bool {
-            return T == Point;
-        }
-
-        pub const attributes = attrs;
-    };
-
-    // User SB
-    {
-        const S = t.ser.Serializer(block, null);
-        const Ser = S.@"getty.Serializer";
-
-        try expectEqual(expected, ser.getAttributes(Point, Ser));
-    }
-
-    // Serializer SB
-    {
-        const S = t.ser.Serializer(null, block);
-        const Ser = S.@"getty.Serializer";
-
-        try expectEqual(expected, ser.getAttributes(Point, Ser));
-    }
-
-    // Type SB
-    {
-        const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
-
-        const PointCustom = struct {
-            x: i32,
-            y: i32,
-
-            pub const @"getty.sb" = struct {
-                pub const attributes = attrs;
-            };
-        };
-
-        try expectEqual(expected, ser.getAttributes(PointCustom, Ser));
-    }
-}
-
-test "getAttributes - priority" {
-    const attrs = .{
-        .x = .{ .rename = "X" },
-        .y = .{ .skip = true },
-    };
-    const invalid_attrs = .{
-        .foo = .{ .bar = "TESTING" },
-    };
-
-    const Point = struct {
-        x: i32,
-        y: i32,
-    };
-    const PointCustom = struct {
-        x: i32,
-        y: i32,
-
-        pub const @"getty.sb" = struct {
-            pub const attributes = attrs;
-        };
-    };
-    const PointInvalidCustom = struct {
-        x: i32,
-        y: i32,
-
-        pub const @"getty.sb" = struct {
-            pub const attributes = invalid_attrs;
-        };
-    };
-
-    const expected: ?@TypeOf(attrs) = attrs;
-
-    // User SB > Type SB
-    {
-        const user_block = struct {
-            pub fn is(comptime T: type) bool {
-                return T == PointInvalidCustom;
-            }
-
-            pub const attributes = attrs;
-        };
-
-        const S = t.ser.Serializer(user_block, null);
-        const Ser = S.@"getty.Serializer";
-
-        try expectEqual(expected, ser.getAttributes(PointInvalidCustom, Ser));
-    }
-
-    // User SB > Serializer SB
-    {
-        const user_block = struct {
-            pub fn is(comptime T: type) bool {
-                return T == Point;
-            }
-
-            pub const attributes = attrs;
-        };
-        const serializer_block = struct {
-            pub fn is(comptime T: type) bool {
-                return T == Point;
-            }
-
-            pub const attributes = invalid_attrs;
-        };
-
-        const S = t.ser.Serializer(user_block, serializer_block);
-        const Ser = S.@"getty.Serializer";
-
-        try expectEqual(expected, ser.getAttributes(Point, Ser));
-    }
-
-    // Type SB > Serializer SB
-    {
-        const serializer_block = struct {
-            pub fn is(comptime T: type) bool {
-                return T == PointCustom;
-            }
-
-            pub const attributes = invalid_attrs;
-        };
-
-        const S = t.ser.Serializer(null, serializer_block);
-        const Ser = S.@"getty.Serializer";
-
-        try expectEqual(expected, ser.getAttributes(PointCustom, Ser));
-    }
-}
-
 test "serialize - success, normal" {
     const Point = struct {
         x: i32,
@@ -656,6 +491,171 @@ test "serialize - priority" {
 
         serialize(v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
+    }
+}
+
+test "getAttributes - fail" {
+    const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
+
+    const expected: ?void = null;
+
+    try expectEqual(expected, ser.getAttributes(bool, Ser));
+    try expectEqual(expected, ser.getAttributes(i32, Ser));
+    try expectEqual(expected, ser.getAttributes([5]i32, Ser));
+    try expectEqual(expected, ser.getAttributes(struct {}, Ser));
+    try expectEqual(expected, ser.getAttributes(union(enum) { foo, bar }, Ser));
+    try expectEqual(expected, ser.getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), Ser));
+    try expectEqual(expected, ser.getAttributes(struct {
+        pub fn is(comptime _: bool) type {
+            return true;
+        }
+
+        pub const attributes = .{}; // empty attribute list
+    }, Ser));
+
+    inline for (comptime std.meta.declarations(ser.blocks)) |decl| {
+        const block = @field(ser.blocks, decl.name);
+        try expectEqual(expected, ser.getAttributes(block, Ser));
+    }
+}
+
+test "getAttributes - success" {
+    const attrs = .{
+        .x = .{ .rename = "X" },
+        .y = .{ .skip = true },
+    };
+    const expected: ?@TypeOf(attrs) = attrs;
+
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const block = struct {
+        pub fn is(comptime T: type) bool {
+            return T == Point;
+        }
+
+        pub const attributes = attrs;
+    };
+
+    // User SB
+    {
+        const S = t.ser.Serializer(block, null);
+        const Ser = S.@"getty.Serializer";
+
+        try expectEqual(expected, ser.getAttributes(Point, Ser));
+    }
+
+    // Serializer SB
+    {
+        const S = t.ser.Serializer(null, block);
+        const Ser = S.@"getty.Serializer";
+
+        try expectEqual(expected, ser.getAttributes(Point, Ser));
+    }
+
+    // Type SB
+    {
+        const Ser = t.ser.DefaultSerializer.@"getty.Serializer";
+
+        const PointCustom = struct {
+            x: i32,
+            y: i32,
+
+            pub const @"getty.sb" = struct {
+                pub const attributes = attrs;
+            };
+        };
+
+        try expectEqual(expected, ser.getAttributes(PointCustom, Ser));
+    }
+}
+
+test "getAttributes - priority" {
+    const attrs = .{
+        .x = .{ .rename = "X" },
+        .y = .{ .skip = true },
+    };
+    const invalid_attrs = .{
+        .foo = .{ .bar = "TESTING" },
+    };
+
+    const Point = struct {
+        x: i32,
+        y: i32,
+    };
+    const PointCustom = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = attrs;
+        };
+    };
+    const PointInvalidCustom = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = invalid_attrs;
+        };
+    };
+
+    const expected: ?@TypeOf(attrs) = attrs;
+
+    // User SB > Type SB
+    {
+        const user_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == PointInvalidCustom;
+            }
+
+            pub const attributes = attrs;
+        };
+
+        const S = t.ser.Serializer(user_block, null);
+        const Ser = S.@"getty.Serializer";
+
+        try expectEqual(expected, ser.getAttributes(PointInvalidCustom, Ser));
+    }
+
+    // User SB > Serializer SB
+    {
+        const user_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == Point;
+            }
+
+            pub const attributes = attrs;
+        };
+        const serializer_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == Point;
+            }
+
+            pub const attributes = invalid_attrs;
+        };
+
+        const S = t.ser.Serializer(user_block, serializer_block);
+        const Ser = S.@"getty.Serializer";
+
+        try expectEqual(expected, ser.getAttributes(Point, Ser));
+    }
+
+    // Type SB > Serializer SB
+    {
+        const serializer_block = struct {
+            pub fn is(comptime T: type) bool {
+                return T == PointCustom;
+            }
+
+            pub const attributes = invalid_attrs;
+        };
+
+        const S = t.ser.Serializer(null, serializer_block);
+        const Ser = S.@"getty.Serializer";
+
+        try expectEqual(expected, ser.getAttributes(PointCustom, Ser));
     }
 }
 
