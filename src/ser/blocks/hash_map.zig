@@ -6,7 +6,10 @@ pub fn is(
     /// The type of a value being serialized.
     comptime T: type,
 ) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "hash_map");
+    const is_hash_map = comptime std.mem.startsWith(u8, @typeName(T), "hash_map");
+    const is_array_hash_map = comptime std.mem.startsWith(u8, @typeName(T), "array_hash_map");
+
+    return is_hash_map or is_array_hash_map;
 }
 
 /// Specifies the serialization process for values relevant to this block.
@@ -71,6 +74,68 @@ test "serialize - hash map" {
     // string
     {
         var map = std.StringHashMap(i32).init(std.testing.allocator);
+        defer map.deinit();
+
+        try t.ser.run(serialize, map, &.{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+
+        try map.put("1", 2);
+
+        try t.ser.run(serialize, map, &.{
+            .{ .Map = .{ .len = 1 } },
+            .{ .String = "1" },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
+}
+
+test "serialize - array hash map" {
+    // managed
+    {
+        var map = std.AutoArrayHashMap(i32, i32).init(std.testing.allocator);
+        defer map.deinit();
+
+        try t.ser.run(serialize, map, &.{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+
+        try map.put(1, 2);
+
+        try t.ser.run(serialize, map, &.{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
+
+    // unmanaged
+    {
+        var map = std.AutoArrayHashMapUnmanaged(i32, i32){};
+        defer map.deinit(std.testing.allocator);
+
+        try t.ser.run(serialize, map, &.{
+            .{ .Map = .{ .len = 0 } },
+            .{ .MapEnd = {} },
+        });
+
+        try map.put(std.testing.allocator, 1, 2);
+
+        try t.ser.run(serialize, map, &.{
+            .{ .Map = .{ .len = 1 } },
+            .{ .I32 = 1 },
+            .{ .I32 = 2 },
+            .{ .MapEnd = {} },
+        });
+    }
+
+    // string
+    {
+        var map = std.StringArrayHashMap(i32).init(std.testing.allocator);
         defer map.deinit();
 
         try t.ser.run(serialize, map, &.{
