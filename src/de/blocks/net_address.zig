@@ -38,6 +38,7 @@ pub fn Visitor(
 test "deserialize - std.net.Address" {
     const builtin = @import("builtin");
 
+    // TODO: https://github.com/getty-zig/getty/issues/90
     if (builtin.os.tag != .windows) {
         const ipv4 = "127.0.0.1";
         const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370";

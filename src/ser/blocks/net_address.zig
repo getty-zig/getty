@@ -44,6 +44,7 @@ pub fn serialize(
 }
 
 test "serialize - std.net.Address" {
+    // TODO: https://github.com/getty-zig/getty/issues/90
     if (builtin.os.tag != .windows) {
         // IPv4
         {
