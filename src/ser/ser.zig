@@ -150,6 +150,8 @@ pub const ser = struct {
         /// A `getty.Serializer` interface type.
         comptime S: type,
     ) blk: {
+        concepts.@"getty.Serializer"(S);
+
         // Process user SBs.
         for (S.user_st) |sb| {
             if (sb.is(T) and traits.has_attributes(T, sb)) {
@@ -212,9 +214,7 @@ pub fn serialize(
     serializer: anytype,
 ) blk: {
     const S = @TypeOf(serializer);
-
     concepts.@"getty.Serializer"(S);
-
     break :blk S.Error!S.Ok;
 } {
     const T = @TypeOf(value);

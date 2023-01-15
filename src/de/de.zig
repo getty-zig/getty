@@ -251,6 +251,8 @@ pub const de = struct {
         /// A `getty.Deserializer` interface type.
         comptime D: type,
     ) blk: {
+        concepts.@"getty.Deserializer"(D);
+
         // Process user DBs.
         for (D.user_dt) |db| {
             if (db.is(T) and traits.has_attributes(T, db)) {
