@@ -5,6 +5,8 @@ const t = @import("getty/testing");
 
 const Serializer = @import("interfaces/serializer.zig").Serializer;
 
+const expectEqual = std.testing.expectEqual;
+
 pub const default_st = .{
     ////////////////////////////////////////////////////////////////////////////
     // Standard Library
@@ -221,8 +223,6 @@ pub fn serialize(
 
     return try block.serialize(value, serializer);
 }
-
-const expectEqual = std.testing.expectEqual;
 
 test "getAttributes - fail" {
     const Ser = t.ser.DefaultSerializer.@"getty.Serializer";

@@ -5,6 +5,8 @@ const t = @import("getty/testing");
 
 const Deserializer = @import("interfaces/deserializer.zig").Deserializer;
 
+const expectEqual = std.testing.expectEqual;
+
 pub const default_dt = .{
     ////////////////////////////////////////////////////////////////////////////
     // Standard Library
@@ -345,8 +347,6 @@ pub fn deserialize(
     var v = db.Visitor(T){};
     return try db.deserialize(allocator, T, deserializer, v.visitor());
 }
-
-const expectEqual = std.testing.expectEqual;
 
 test "getAttributes - fail" {
     const De = t.de.DefaultDeserializer.@"getty.Deserializer";
