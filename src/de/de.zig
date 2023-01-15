@@ -306,19 +306,18 @@ pub const de = struct {
         }
     }
 
-    // TODO: Swap function parameters.
     /// Returns the highest priority Deserialization Block for a type.
     pub fn find_db(
-        /// A `getty.Deserializer` interface type.
-        comptime D: type,
         /// The type being deserialized into.
         comptime T: type,
+        /// A `getty.Deserializer` interface type.
+        comptime De: type,
     ) type {
         comptime {
-            concepts.@"getty.Deserializer"(D);
+            concepts.@"getty.Deserializer"(De);
 
             // Process user DBs.
-            for (D.user_dt) |db| {
+            for (De.user_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
@@ -330,7 +329,7 @@ pub const de = struct {
             }
 
             // Process deserializer DBs.
-            for (D.deserializer_dt) |db| {
+            for (De.deserializer_dt) |db| {
                 if (db.is(T)) {
                     return db;
                 }
@@ -360,7 +359,7 @@ pub fn deserialize(
     concepts.@"getty.Deserializer"(@TypeOf(deserializer));
     break :blk @TypeOf(deserializer).Error!T;
 } {
-    const db = comptime de.find_db(@TypeOf(deserializer), T);
+    const db = comptime de.find_db(T, @TypeOf(deserializer));
 
     if (comptime traits.has_attributes(T, db)) {
         switch (@typeInfo(T)) {

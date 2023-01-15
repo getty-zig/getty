@@ -33,7 +33,7 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     const Child = std.meta.Child(T);
-    const db = de.de.find_db(@TypeOf(deserializer), Child);
+    const db = de.de.find_db(Child, @TypeOf(deserializer));
 
     return try db.deserialize(allocator, Child, deserializer, visitor);
 }
