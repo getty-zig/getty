@@ -130,17 +130,37 @@ pub const ser = struct {
         pub const Void = @import("blocks/void.zig");
     };
 
+    /// Constraints that can be used to perform compile-time validation for a type.
     pub const concepts = struct {
-        pub usingnamespace @import("concepts/serializer.zig");
-        pub usingnamespace @import("concepts/map.zig");
-        pub usingnamespace @import("concepts/seq.zig");
-        pub usingnamespace @import("concepts/structure.zig");
-        pub usingnamespace @import("concepts/block.zig");
+        /// Specifies that a type is a `getty.Serializer` interface type.
+        pub const @"getty.Serializer" = @import("concepts/serializer.zig").@"getty.Serializer";
+
+        /// Specifies that a type is a `getty.ser.Map` interface type.
+        pub const @"getty.ser.Map" = @import("concepts/map.zig").@"getty.ser.Map";
+
+        /// Specifies that a type is a `getty.ser.Seq` interface type.
+        pub const @"getty.ser.Seq" = @import("concepts/seq.zig").@"getty.ser.Seq";
+
+        /// Specifies that a type is a `getty.ser.Structure` interface type.
+        pub const @"getty.ser.Structure" = @import("concepts/structure.zig").@"getty.ser.Structure";
+
+        /// Specifies that a type is a serialization block or tuple.
+        pub const @"getty.ser.sbt" = @import("concepts/block.zig").@"getty.ser.sbt";
     };
 
+    /// Functions that can be used to query, at compile-time, the properties of a type.
     pub const traits = struct {
-        pub usingnamespace @import("traits/block.zig");
-        pub usingnamespace @import("traits/attributes.zig");
+        /// Checks if a type or value is a serialization block or tuple.
+        pub const is_sbt = @import("traits/block.zig").is_sbt;
+
+        /// Checks if a value is a serialization attribute list.
+        pub const is_attributes = @import("traits/attributes.zig").is_attributes;
+
+        /// Checks if a type contains a serialization block.
+        pub const has_sb = @import("traits/block.zig").has_sb;
+
+        /// Checks if a type has associated serialization attributes.
+        pub const has_attributes = @import("traits/attributes.zig").has_attributes;
     };
 
     /// Returns serialization attributes for `T`. If none exist, `null` is returned.

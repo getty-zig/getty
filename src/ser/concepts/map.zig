@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concept = "getty.ser.Map";
 
-/// Compile-time type restraint for `getty.ser.Map`.
+/// Specifies that a type is a `getty.ser.Map` interface type.
 pub fn @"getty.ser.Map"(
-    /// A type that implements `getty.ser.Map`.
+    /// A type to check.
     comptime T: type,
 ) void {
     comptime {

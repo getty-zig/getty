@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concept = "getty.Serializer";
 
-/// Compile-time type restraint for `getty.Serializer`.
+/// Specifies that a type is a `getty.Serializer` interface type.
 pub fn @"getty.Serializer"(
-    /// A type that implements `getty.Serializer`.
+    /// A type to check.
     comptime T: type,
 ) void {
     comptime {

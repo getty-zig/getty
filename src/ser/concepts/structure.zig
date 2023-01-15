@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concept = "getty.ser.Structure";
 
-/// Compile-time type restraint for `getty.ser.Structure`.
+/// Specifies that a type is a `getty.ser.Structure` interface type.
 pub fn @"getty.ser.Structure"(
-    /// A type that implements `getty.ser.Structure`.
+    /// A type to check.
     comptime T: type,
 ) void {
     comptime {

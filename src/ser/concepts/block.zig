@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concept = "getty.ser.sbt";
 
-/// Compile-time type restraint for `getty.ser.sbt`.
+/// Specifies that a type is a serialization block or tuple.
 pub fn @"getty.ser.sbt"(
-    /// A serialization block or tuple.
+    /// An optional type or value to check.
     comptime sbt: anytype,
 ) void {
     comptime {

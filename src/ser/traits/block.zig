@@ -1,8 +1,8 @@
 const std = @import("std");
 
-/// Checks to see if a type `T` contains a type-defined serialization block.
+/// Checks whether `T` contains a serialization block.
 pub fn has_sb(
-    /// A type containing a serialization block.
+    /// A type to check.
     comptime T: type,
 ) bool {
     comptime {
@@ -13,9 +13,9 @@ pub fn has_sb(
     }
 }
 
-/// Validates a serialization block or tuple.
+/// Checks if `sbt` is a serialization block or tuple.
 pub fn is_sbt(
-    /// A serialization block or tuple.
+    /// An optional type or value to check.
     comptime sbt: anytype,
 ) bool {
     comptime {
