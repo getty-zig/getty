@@ -1,4 +1,5 @@
 const std = @import("std");
+const getty = @import("getty.zig");
 
 const Type = std.builtin.Type;
 
@@ -291,5 +292,129 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
                 .is_tuple = false,
             },
         });
+    }
+}
+
+/// Returns serialization attributes for `T`. If none exist, `null` is returned.
+pub fn getSerAttributes(
+    /// The type for which attributes should be returned.
+    comptime T: type,
+    /// A `getty.Serializer` interface type.
+    comptime S: type,
+) blk: {
+    getty.ser.concepts.@"getty.Serializer"(S);
+
+    // Process user SBs.
+    for (S.user_st) |sb| {
+        if (sb.is(T) and getty.ser.traits.has_attributes(T, sb)) {
+            break :blk ?@TypeOf(sb.attributes);
+        }
+    }
+
+    // Process type SBs.
+    if (getty.ser.traits.has_sb(T)) {
+        const sb = T.@"getty.sb";
+
+        if (getty.ser.traits.has_attributes(T, sb)) {
+            break :blk ?@TypeOf(sb.attributes);
+        }
+    }
+
+    // Process user SBs.
+    for (S.serializer_st) |sb| {
+        if (sb.is(T) and getty.ser.traits.has_attributes(T, sb)) {
+            break :blk ?@TypeOf(sb.attributes);
+        }
+    }
+
+    break :blk ?void;
+} {
+    comptime {
+        // Process user SBs.
+        for (S.user_st) |sb| {
+            if (sb.is(T) and getty.ser.traits.has_attributes(T, sb)) {
+                return @as(?@TypeOf(sb.attributes), sb.attributes);
+            }
+        }
+
+        // Process type SBs.
+        if (getty.ser.traits.has_sb(T)) {
+            const sb = T.@"getty.sb";
+
+            if (getty.ser.traits.has_attributes(T, sb)) {
+                return @as(?@TypeOf(sb.attributes), sb.attributes);
+            }
+        }
+
+        // Process serializer SBs.
+        for (S.serializer_st) |sb| {
+            if (sb.is(T) and getty.ser.traits.has_attributes(T, sb)) {
+                return @as(?@TypeOf(sb.attributes), sb.attributes);
+            }
+        }
+
+        return null;
+    }
+}
+
+/// Returns deserialization attributes for `T`. If none exist, `null` is returned.
+pub fn getDeAttributes(
+    /// The type for which attributes should be returned.
+    comptime T: type,
+    /// A `getty.Deserializer` interface type.
+    comptime D: type,
+) blk: {
+    getty.de.concepts.@"getty.Deserializer"(D);
+
+    // Process user DBs.
+    for (D.user_dt) |db| {
+        if (db.is(T) and getty.de.traits.has_attributes(T, db)) {
+            break :blk ?@TypeOf(db.attributes);
+        }
+    }
+
+    // Process type DBs.
+    if (getty.de.traits.has_db(T)) {
+        const db = T.@"getty.db";
+
+        if (getty.de.traits.has_attributes(T, db)) {
+            break :blk ?@TypeOf(db.attributes);
+        }
+    }
+
+    // Process deserializer DBs.
+    for (D.deserializer_dt) |db| {
+        if (db.is(T) and getty.de.traits.has_attributes(T, db)) {
+            break :blk ?@TypeOf(db.attributes);
+        }
+    }
+
+    break :blk ?void;
+} {
+    comptime {
+        // Process user DBs.
+        for (D.user_dt) |db| {
+            if (db.is(T) and getty.de.traits.has_attributes(T, db)) {
+                return @as(?@TypeOf(db.attributes), db.attributes);
+            }
+        }
+
+        // Process type DBs.
+        if (getty.de.traits.has_db(T)) {
+            const db = T.@"getty.db";
+
+            if (getty.de.traits.has_attributes(T, db)) {
+                return @as(?@TypeOf(db.attributes), db.attributes);
+            }
+        }
+
+        // Process deserializer DBs.
+        for (D.deserializer_dt) |db| {
+            if (db.is(T) and getty.de.traits.has_attributes(T, db)) {
+                return @as(?@TypeOf(db.attributes), db.attributes);
+            }
+        }
+
+        return null;
     }
 }
