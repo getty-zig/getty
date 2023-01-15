@@ -46,12 +46,12 @@ pub const default_dt = .{
 pub const de = struct {
     pub const Error = @import("error.zig").Error;
 
+    pub const Visitor = @import("interfaces/visitor.zig").Visitor;
+
     pub const MapAccess = @import("interfaces/map_access.zig").MapAccess;
     pub const SeqAccess = @import("interfaces/seq_access.zig").SeqAccess;
     pub const UnionAccess = @import("interfaces/union_access.zig").UnionAccess;
     pub const VariantAccess = @import("interfaces/variant_access.zig").VariantAccess;
-
-    pub const Visitor = @import("interfaces/visitor.zig").Visitor;
 
     pub const Seed = @import("interfaces/seed.zig").Seed;
     pub const DefaultSeed = @import("impls/seed/default.zig").DefaultSeed;
@@ -130,20 +130,46 @@ pub const de = struct {
         pub const Void = @import("blocks/void.zig");
     };
 
+    /// Constraints that can be used to perform compile-time validation for a type.
     pub const concepts = struct {
-        pub usingnamespace @import("concepts/block.zig");
-        pub usingnamespace @import("concepts/deserializer.zig");
-        pub usingnamespace @import("concepts/map_access.zig");
-        pub usingnamespace @import("concepts/seed.zig");
-        pub usingnamespace @import("concepts/seq_access.zig");
-        pub usingnamespace @import("concepts/union_access.zig");
-        pub usingnamespace @import("concepts/variant_access.zig");
-        pub usingnamespace @import("concepts/visitor.zig");
+        /// Specifies that a type is a `getty.Deserializer` interface type.
+        pub const @"getty.Deserializer" = @import("concepts/deserializer.zig").@"getty.Deserializer";
+
+        /// Specifies that a type is a `getty.de.Visitor` interface type.
+        pub const @"getty.de.Visitor" = @import("concepts/visitor.zig").@"getty.de.Visitor";
+
+        /// Specifies that a type is a `getty.de.MapAccess` interface type.
+        pub const @"getty.de.MapAccess" = @import("concepts/map_access.zig").@"getty.de.MapAccess";
+
+        /// Specifies that a type is a `getty.de.SeqAccess` interface type.
+        pub const @"getty.de.SeqAccess" = @import("concepts/seq_access.zig").@"getty.de.SeqAccess";
+
+        /// Specifies that a type is a `getty.de.UnionAccess` interface type.
+        pub const @"getty.de.UnionAccess" = @import("concepts/union_access.zig").@"getty.de.UnionAccess";
+
+        /// Specifies that a type is a `getty.de.VariantAccess` interface type.
+        pub const @"getty.de.VariantAccess" = @import("concepts/variant_access.zig").@"getty.de.VariantAccess";
+
+        /// Specifies that a type is a `getty.de.Seed` interface type.
+        pub const @"getty.de.Seed" = @import("concepts/seed.zig").@"getty.de.Seed";
+
+        /// Specifies that a type is a deserialization block or tuple.
+        pub const @"getty.de.dbt" = @import("concepts/block.zig").@"getty.de.dbt";
     };
 
+    /// Functions that can be used to query, at compile-time, the properties of a type.
     pub const traits = struct {
-        pub usingnamespace @import("traits/block.zig");
-        pub usingnamespace @import("traits/attributes.zig");
+        /// Checks if a type or value is a deserialization block or tuple.
+        pub const is_dbt = @import("traits/block.zig").is_dbt;
+
+        /// Checks if a value is a deserialization attribute list.
+        pub const is_attributes = @import("traits/attributes.zig").is_attributes;
+
+        /// Checks if a type contains a deserialization block.
+        pub const has_db = @import("traits/block.zig").has_db;
+
+        /// Checks if a type has associated deserialization attributes.
+        pub const has_attributes = @import("traits/attributes.zig").has_attributes;
     };
 
     /// Frees resources allocated by Getty during deserialization.

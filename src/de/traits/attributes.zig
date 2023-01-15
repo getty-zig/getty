@@ -4,9 +4,9 @@ const is_dbt = @import("block.zig").is_dbt;
 const is_tdb = @import("block.zig").is_tdb;
 const Attributes = @import("../../attributes.zig").Attributes;
 
-/// Checks to see if a type `T` has associated attributes.
+/// Checks whether `DB` defines deserialization attributes for `T`.
 pub fn has_attributes(
-    /// A type with attributes.
+    /// A type to check.
     comptime T: type,
     /// A deserialization block.
     comptime DB: type,
@@ -16,11 +16,11 @@ pub fn has_attributes(
     }
 }
 
-/// Validates a type's attributes.
+/// Checks whether `attributes` is a deserialization attribute list for `T`.
 pub fn is_attributes(
-    /// The type containing the attributes being checked.
+    /// A type that `attributes` applies to.
     comptime T: type,
-    /// The attributes to validate.
+    /// An attribute list to check.
     attributes: anytype,
 ) bool {
     comptime {
