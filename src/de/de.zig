@@ -42,22 +42,6 @@ pub const default_dt = .{
     de.blocks.Void,
 };
 
-pub const concepts = struct {
-    pub usingnamespace @import("concepts/block.zig");
-    pub usingnamespace @import("concepts/deserializer.zig");
-    pub usingnamespace @import("concepts/map_access.zig");
-    pub usingnamespace @import("concepts/seed.zig");
-    pub usingnamespace @import("concepts/seq_access.zig");
-    pub usingnamespace @import("concepts/union_access.zig");
-    pub usingnamespace @import("concepts/variant_access.zig");
-    pub usingnamespace @import("concepts/visitor.zig");
-};
-
-pub const traits = struct {
-    pub usingnamespace @import("traits/block.zig");
-    pub usingnamespace @import("traits/attributes.zig");
-};
-
 /// A namespace containing deserialization-specific types and functions.
 pub const de = struct {
     pub const Error = @import("error.zig").Error;
@@ -144,6 +128,22 @@ pub const de = struct {
 
         /// Deserialization block for `void` values.
         pub const Void = @import("blocks/void.zig");
+    };
+
+    pub const concepts = struct {
+        pub usingnamespace @import("concepts/block.zig");
+        pub usingnamespace @import("concepts/deserializer.zig");
+        pub usingnamespace @import("concepts/map_access.zig");
+        pub usingnamespace @import("concepts/seed.zig");
+        pub usingnamespace @import("concepts/seq_access.zig");
+        pub usingnamespace @import("concepts/union_access.zig");
+        pub usingnamespace @import("concepts/variant_access.zig");
+        pub usingnamespace @import("concepts/visitor.zig");
+    };
+
+    pub const traits = struct {
+        pub usingnamespace @import("traits/block.zig");
+        pub usingnamespace @import("traits/attributes.zig");
     };
 
     /// Frees resources allocated by Getty during deserialization.
@@ -356,12 +356,12 @@ pub fn deserialize(
     /// A `getty.Deserializer` interface value.
     deserializer: anytype,
 ) blk: {
-    concepts.@"getty.Deserializer"(@TypeOf(deserializer));
+    de.concepts.@"getty.Deserializer"(@TypeOf(deserializer));
     break :blk @TypeOf(deserializer).Error!T;
 } {
     const db = comptime de.find_db(T, @TypeOf(deserializer));
 
-    if (comptime traits.has_attributes(T, db)) {
+    if (comptime de.traits.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
             .Struct => {
                 var v = de.blocks.Struct.Visitor(T){};

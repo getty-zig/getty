@@ -41,19 +41,6 @@ pub const default_st = .{
     ser.blocks.Void,
 };
 
-pub const concepts = struct {
-    pub usingnamespace @import("concepts/serializer.zig");
-    pub usingnamespace @import("concepts/map.zig");
-    pub usingnamespace @import("concepts/seq.zig");
-    pub usingnamespace @import("concepts/structure.zig");
-    pub usingnamespace @import("concepts/block.zig");
-};
-
-pub const traits = struct {
-    pub usingnamespace @import("traits/block.zig");
-    pub usingnamespace @import("traits/attributes.zig");
-};
-
 /// A namespace containing serialization-specific types and functions.
 pub const ser = struct {
     pub const Map = @import("interfaces/map.zig").Map;
@@ -143,6 +130,19 @@ pub const ser = struct {
         pub const Void = @import("blocks/void.zig");
     };
 
+    pub const concepts = struct {
+        pub usingnamespace @import("concepts/serializer.zig");
+        pub usingnamespace @import("concepts/map.zig");
+        pub usingnamespace @import("concepts/seq.zig");
+        pub usingnamespace @import("concepts/structure.zig");
+        pub usingnamespace @import("concepts/block.zig");
+    };
+
+    pub const traits = struct {
+        pub usingnamespace @import("traits/block.zig");
+        pub usingnamespace @import("traits/attributes.zig");
+    };
+
     /// Returns serialization attributes for `T`. If none exist, `null` is returned.
     pub fn getAttributes(
         /// The type for which attributes should be returned.
@@ -214,7 +214,7 @@ pub fn serialize(
     serializer: anytype,
 ) blk: {
     const S = @TypeOf(serializer);
-    concepts.@"getty.Serializer"(S);
+    ser.concepts.@"getty.Serializer"(S);
     break :blk S.Error!S.Ok;
 } {
     const T = @TypeOf(value);
@@ -228,7 +228,7 @@ pub fn serialize(
         }
 
         // Process type SBs.
-        if (traits.has_sb(T)) {
+        if (ser.traits.has_sb(T)) {
             break :blk T.@"getty.sb";
         }
 
@@ -250,7 +250,7 @@ pub fn serialize(
     };
 
     // Process attributes, if any exist.
-    if (comptime traits.has_attributes(T, block)) {
+    if (comptime ser.traits.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
             .Struct => return try ser.blocks.Struct.serialize(value, serializer),
             .Union => return try ser.blocks.Union.serialize(value, serializer),

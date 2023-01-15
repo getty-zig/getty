@@ -17,18 +17,6 @@ pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 pub const ser = s.ser;
 pub const de = d.de;
 
-/// Compile-time type restraints for Getty data structures.
-pub const concepts = struct {
-    pub usingnamespace s.concepts;
-    pub usingnamespace d.concepts;
-};
-
-/// Functions for obtaining type information for Getty data structures.
-pub const traits = struct {
-    pub usingnamespace s.traits;
-    pub usingnamespace d.traits;
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////////////////////////

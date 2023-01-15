@@ -51,7 +51,7 @@ pub fn Seed(
         }
 
         fn Return(comptime Deserializer: type) type {
-            comptime de.concepts.@"getty.Deserializer"(Deserializer);
+            comptime de.de.concepts.@"getty.Deserializer"(Deserializer);
 
             return Deserializer.Error!V;
         }

@@ -53,7 +53,7 @@ pub fn SeqAccess(
             }
 
             fn Return(comptime Seed: type) type {
-                comptime de.concepts.@"getty.de.Seed"(Seed);
+                comptime de.de.concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }

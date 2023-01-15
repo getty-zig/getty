@@ -61,7 +61,7 @@ pub fn VariantAccess(
 }
 
 fn Return(comptime Error: type, comptime Seed: type) type {
-    comptime de.concepts.@"getty.de.Seed"(Seed);
+    comptime de.de.concepts.@"getty.de.Seed"(Seed);
 
     return Error!Seed.Value;
 }
