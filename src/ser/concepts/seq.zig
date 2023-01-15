@@ -2,9 +2,9 @@ const std = @import("std");
 
 const concept = "getty.ser.Seq";
 
-/// Compile-time type restraint for `getty.ser.Seq`.
+/// Specifies that a type is a `getty.ser.Seq` interface type.
 pub fn @"getty.ser.Seq"(
-    /// A type that implements `getty.ser.Seq`.
+    /// A type to check.
     comptime T: type,
 ) void {
     comptime {
