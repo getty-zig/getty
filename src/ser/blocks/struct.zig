@@ -46,7 +46,7 @@ pub fn serialize(
 
     inline for (fields) |field| {
         if (field.type != void) {
-            // The name of the field to be deserialized.
+            // The name of the field to be serialized.
             comptime var name: []const u8 = field.name;
 
             // Process attributes.

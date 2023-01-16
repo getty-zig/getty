@@ -1,6 +1,8 @@
 const std = @import("std");
 const t = @import("getty/testing");
 
+const ser = @import("../ser.zig");
+
 /// Specifies all types that can be serialized by this block.
 pub fn is(
     /// The type of a value being serialized.
@@ -18,19 +20,55 @@ pub fn serialize(
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
     const info = @typeInfo(T).Union;
+    const attributes = comptime ser.ser.getAttributes(T, @TypeOf(serializer));
 
     if (info.tag_type == null) {
-        @compileError(std.fmt.comptimePrint("type `{s} is not supported", .{@typeName(T)}));
+        @compileError(std.fmt.comptimePrint("untagged unions cannot be serialized: {s}", .{@typeName(T)}));
     }
 
-    var m = try serializer.serializeMap(1);
-    const map = m.map();
+    // We cannot use @tagName to set the comptime name variable, which is
+    // required for @field-ing into the active union variant. So, we have this
+    // for loop here so that we can use the field name provided by @typeInfo
+    // instead.
     inline for (info.fields) |field| {
         if (std.mem.eql(u8, field.name, @tagName(value))) {
-            try map.serializeEntry(field.name, @field(value, field.name));
+            // Process "skip" attribute.
+            if (attributes) |attrs| {
+                if (@hasField(@TypeOf(attrs), field.name)) {
+                    const attr = @field(attrs, field.name);
+
+                    if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
+                        return error.UnknownVariant;
+                    }
+                }
+            }
+
+            var m = try serializer.serializeMap(1);
+            const map = m.map();
+
+            comptime var name = field.name;
+
+            // Process "rename" attribute.
+            if (attributes) |attrs| {
+                if (@hasField(@TypeOf(attrs), field.name)) {
+                    const attr = @field(attrs, field.name);
+
+                    if (@hasField(@TypeOf(attr), "rename")) {
+                        name = attr.rename;
+                    }
+                }
+            }
+
+            try map.serializeEntry(name, @field(value, field.name));
+
+            return try map.end();
         }
     }
-    return try map.end();
+
+    // UNREACHABLE: We've already checked that the union has a tag, meaning
+    // that the above for loop will always enter its top-level if block, which
+    // always returns from this function.
+    unreachable;
 }
 
 test "serialize - union" {

@@ -71,7 +71,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
         );
 
         const Ok = void;
-        const Error = std.mem.Allocator.Error || error{TestExpectedEqual};
+        const Error = getty.ser.Error || std.mem.Allocator.Error || error{TestExpectedEqual};
 
         fn serializeBool(self: *Self, v: bool) Error!Ok {
             try assertNextToken(self, Token{ .Bool = v });

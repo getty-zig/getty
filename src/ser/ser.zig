@@ -45,6 +45,8 @@ pub const default_st = .{
 
 /// A namespace containing serialization-specific types and functions.
 pub const ser = struct {
+    pub const Error = @import("error.zig").Error;
+
     pub const Map = @import("interfaces/map.zig").Map;
     pub const Seq = @import("interfaces/seq.zig").Seq;
     pub const Structure = @import("interfaces/structure.zig").Structure;
