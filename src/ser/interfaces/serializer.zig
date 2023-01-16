@@ -83,7 +83,13 @@ pub fn Serializer(
             pub const Ok = O;
 
             /// Error set used upon failure.
-            pub const Error = E;
+            pub const Error = blk: {
+                if (E != E || ser.ser.Error) {
+                    @compileError("error set must include `getty.ser.Error`");
+                }
+
+                break :blk E;
+            };
 
             /// User-defined Serialization Tuple.
             pub const user_st = blk: {
