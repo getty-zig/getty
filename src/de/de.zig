@@ -13,6 +13,7 @@ pub const default_dt = .{
     ////////////////////////////////////////////////////////////////////////////
 
     de.blocks.ArrayList,
+    de.blocks.BoundedArray,
     de.blocks.BufMap,
     de.blocks.HashMap,
     de.blocks.LinkedList,
@@ -66,6 +67,9 @@ pub const de = struct {
 
         /// Deserialization block for `std.ArrayList` values.
         pub const ArrayList = @import("blocks/array_list.zig");
+
+        /// Deserialization block for `std.BoundedArray` values.
+        pub const BoundedArray = @import("blocks/bounded_array.zig");
 
         /// Deserialization block for `std.BufMap` values.
         pub const BufMap = @import("blocks/buf_map.zig");
