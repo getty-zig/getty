@@ -24,21 +24,19 @@ pub fn serialize(
 
     // Get number of fields that will actually be serialized.
     const length: usize = comptime blk: {
-        if (attributes) |attrs| {
-            var len: usize = 0;
+        var len: usize = fields.len;
 
+        if (attributes) |attrs| {
             for (std.meta.fields(@TypeOf(attrs))) |attr_field| {
                 const attr = @field(attrs, attr_field.name);
 
                 if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                    len += 1;
+                    len -= 1;
                 }
             }
-
-            break :blk len;
         }
 
-        break :blk fields.len;
+        break :blk len;
     };
 
     var s = try serializer.serializeStruct(@typeName(T), length);
