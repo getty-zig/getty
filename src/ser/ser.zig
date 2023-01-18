@@ -12,6 +12,7 @@ pub const default_st = .{
     // Standard Library
     ////////////////////////////////////////////////////////////////////////////
 
+    ser.blocks.Allocator,
     ser.blocks.ArrayList,
     ser.blocks.BoundedArray,
     ser.blocks.BufMap,
@@ -20,6 +21,14 @@ pub const default_st = .{
     ser.blocks.NetAddress,
     ser.blocks.PackedInt,
     ser.blocks.TailQueue,
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Struct
+    //
+    // IMPORTANT: All user-defined types must be listed BEFORE this section.
+    ////////////////////////////////////////////////////////////////////////////
+
+    ser.blocks.Struct,
 
     ////////////////////////////////////////////////////////////////////////////
     // Primitives
@@ -36,7 +45,6 @@ pub const default_st = .{
     ser.blocks.Pointer,
     ser.blocks.Slice,
     ser.blocks.String,
-    ser.blocks.Struct,
     ser.blocks.Tuple,
     ser.blocks.Union,
     ser.blocks.Vector,
@@ -56,6 +64,9 @@ pub const ser = struct {
         ////////////////////////////////////////////////////////////////////////
         // Standard Library
         ////////////////////////////////////////////////////////////////////////
+
+        /// Serialization block for `std.mem.Allocator` values.
+        pub const Allocator = @import("blocks/allocator.zig");
 
         /// Serialization block for `std.ArrayList` values.
         pub const ArrayList = @import("blocks/array_list.zig");
@@ -80,6 +91,15 @@ pub const ser = struct {
 
         /// Serialization block for `std.TailQueue`.
         pub const TailQueue = @import("blocks/tail_queue.zig");
+
+        ////////////////////////////////////////////////////////////////////////////
+        // Struct
+        //
+        // IMPORTANT: All user-defined types must be listed BEFORE this section.
+        ////////////////////////////////////////////////////////////////////////////
+
+        /// Serialization block for `struct` values.
+        pub const Struct = @import("blocks/struct.zig");
 
         ////////////////////////////////////////////////////////////////////////
         // Primitives
@@ -117,9 +137,6 @@ pub const ser = struct {
 
         /// Serialization block for string values.
         pub const String = @import("blocks/string.zig");
-
-        /// Serialization block for `struct` values.
-        pub const Struct = @import("blocks/struct.zig");
 
         /// Serialization block for tuple values.
         pub const Tuple = @import("blocks/tuple.zig");
