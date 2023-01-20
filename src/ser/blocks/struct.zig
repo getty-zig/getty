@@ -71,16 +71,78 @@ pub fn serialize(
 }
 
 test "serialize - struct" {
-    const Struct = struct { a: i32, b: i32, c: i32 };
+    const T = struct { a: i32, b: i32, c: i32, d: i32 };
+    const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.ser.run(serialize, Struct{ .a = 1, .b = 2, .c = 3 }, &.{
-        .{ .Struct = .{ .name = @typeName(Struct), .len = 3 } },
+    try t.ser.run(serialize, v, &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
         .{ .String = "a" },
         .{ .I32 = 1 },
         .{ .String = "b" },
         .{ .I32 = 2 },
         .{ .String = "c" },
         .{ .I32 = 3 },
+        .{ .String = "d" },
+        .{ .I32 = 4 },
+        .{ .StructEnd = {} },
+    });
+}
+
+test "serialize - struct, attributes (rename)" {
+    const T = struct {
+        a: i32,
+        b: i32,
+        c: i32,
+        d: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .a = .{ .rename = "d" },
+                .b = .{ .rename = "c" },
+                .c = .{ .rename = "b" },
+                .d = .{ .rename = "a" },
+            };
+        };
+    };
+    const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
+
+    try t.ser.run(serialize, v, &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
+        .{ .String = "d" },
+        .{ .I32 = 1 },
+        .{ .String = "c" },
+        .{ .I32 = 2 },
+        .{ .String = "b" },
+        .{ .I32 = 3 },
+        .{ .String = "a" },
+        .{ .I32 = 4 },
+        .{ .StructEnd = {} },
+    });
+}
+
+test "serialize - struct, attributes (skip)" {
+    const T = struct {
+        a: i32,
+        b: i32,
+        c: i32,
+        d: i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .b = .{ .skip = true },
+                .c = .{ .skip = true },
+            };
+        };
+    };
+
+    const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
+
+    try t.ser.run(serialize, v, &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 2 } },
+        .{ .String = "a" },
+        .{ .I32 = 1 },
+        .{ .String = "d" },
+        .{ .I32 = 4 },
         .{ .StructEnd = {} },
     });
 }
