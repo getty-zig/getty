@@ -12,6 +12,7 @@ pub const default_dt = .{
     // Standard Library
     ////////////////////////////////////////////////////////////////////////////
 
+    de.blocks.Allocator,
     de.blocks.ArrayList,
     de.blocks.BoundedArray,
     de.blocks.BufMap,
@@ -28,6 +29,14 @@ pub const default_dt = .{
     de.blocks.Ignored,
 
     ////////////////////////////////////////////////////////////////////////////
+    // Struct
+    //
+    // IMPORTANT: All user-defined types must be listed BEFORE this section.
+    ////////////////////////////////////////////////////////////////////////////
+
+    de.blocks.Struct,
+
+    ////////////////////////////////////////////////////////////////////////////
     // Primitives
     ////////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +48,6 @@ pub const default_dt = .{
     de.blocks.Optional,
     de.blocks.Pointer,
     de.blocks.Slice,
-    de.blocks.Struct,
     de.blocks.Tuple,
     de.blocks.Union,
     de.blocks.Void,
@@ -64,6 +72,9 @@ pub const de = struct {
         ////////////////////////////////////////////////////////////////////////
         // Standard Library
         ////////////////////////////////////////////////////////////////////////
+
+        /// Deserialization block for `std.mem.Allocator` values.
+        pub const Allocator = @import("blocks/allocator.zig");
 
         /// Deserialization block for `std.ArrayList` values.
         pub const ArrayList = @import("blocks/array_list.zig");
@@ -95,6 +106,15 @@ pub const de = struct {
 
         pub const Ignored = @import("blocks/ignored.zig");
 
+        ////////////////////////////////////////////////////////////////////////////
+        // Struct
+        //
+        // IMPORTANT: All user-defined types must be listed BEFORE this section.
+        ////////////////////////////////////////////////////////////////////////////
+
+        /// Deserialization block for `struct` values.
+        pub const Struct = @import("blocks/struct.zig");
+
         ////////////////////////////////////////////////////////////////////////
         // Primitives
         ////////////////////////////////////////////////////////////////////////
@@ -122,9 +142,6 @@ pub const de = struct {
 
         /// Deserialization block for slice values.
         pub const Slice = @import("blocks/slice.zig");
-
-        /// Deserialization block for `struct` values.
-        pub const Struct = @import("blocks/struct.zig");
 
         /// Deserialization block for tuple values.
         pub const Tuple = @import("blocks/tuple.zig");
