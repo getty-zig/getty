@@ -16,9 +16,15 @@ const SerializeFn = @TypeOf(struct {
 
 pub fn run(comptime f: SerializeFn, input: anytype, expected: []const Token) !void {
     var s = DefaultSerializer.init(expected);
-
     f(input, s.serializer()) catch return error.UnexpectedTestError;
     try expect(s.remaining() == 0);
+}
+
+pub fn runErr(comptime f: SerializeFn, err: anytype, input: anytype, expected: []const Token) !void {
+    comptime std.debug.assert(@typeInfo(@TypeOf(err)) == .ErrorSet);
+
+    var s = DefaultSerializer.init(expected);
+    try std.testing.expectError(err, f(input, s.serializer()));
 }
 
 pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) type {
