@@ -72,18 +72,68 @@ pub fn serialize(
 }
 
 test "serialize - union" {
-    const Union = union(enum) { Int: i32, Bool: bool };
+    const T = union(enum) {
+        Int: i32,
+        Bool: bool,
+    };
 
-    try t.ser.run(serialize, Union{ .Int = 0 }, &.{
+    try t.ser.run(serialize, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
-    try t.ser.run(serialize, Union{ .Bool = true }, &.{
+    try t.ser.run(serialize, T{ .Bool = true }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Bool" },
         .{ .Bool = true },
+        .{ .MapEnd = {} },
+    });
+}
+
+test "serialize - union, attributes (rename)" {
+    const T = union(enum) {
+        Int: i32,
+        Bool: bool,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .Int = .{ .rename = "Bool" },
+                .Bool = .{ .rename = "Int" },
+            };
+        };
+    };
+
+    try t.ser.run(serialize, T{ .Int = 0 }, &.{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Bool" },
+        .{ .I32 = 0 },
+        .{ .MapEnd = {} },
+    });
+    try t.ser.run(serialize, T{ .Bool = true }, &.{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Int" },
+        .{ .Bool = true },
+        .{ .MapEnd = {} },
+    });
+}
+
+test "serialize - union, attributes (skip)" {
+    const T = union(enum) {
+        Int: i32,
+        Bool: bool,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .Int = .{ .skip = true },
+            };
+        };
+    };
+
+    try t.ser.runErr(serialize, error.UnknownVariant, T{ .Int = 0 }, &.{
+        .{ .Map = .{ .len = 1 } },
+        .{ .String = "Int" },
+        .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
 }
