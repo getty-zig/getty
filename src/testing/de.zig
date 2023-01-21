@@ -262,7 +262,8 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             };
         }
 
-        fn deserializeIgnored(_: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeIgnored(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            _ = self.nextTokenOpt();
             return try visitor.visitVoid(allocator, De);
         }
 
