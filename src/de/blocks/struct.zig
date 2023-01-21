@@ -36,21 +36,117 @@ pub fn Visitor(
 }
 
 test "deserialize - struct" {
-    try t.de.run(deserialize, Visitor, &.{
-        .{ .Struct = .{ .name = "", .len = 0 } },
-        .{ .StructEnd = {} },
-    }, struct {}{});
+    {
+        const T = struct {};
+        const tokens = &.{
+            .{ .Struct = .{ .name = @typeName(T), .len = 0 } },
+            .{ .StructEnd = {} },
+        };
+        const expected = T{};
 
-    const T = struct { a: i32, b: i32, c: i32 };
+        try t.de.run(deserialize, Visitor, tokens, expected);
+    }
 
-    try t.de.run(deserialize, Visitor, &.{
-        .{ .Struct = .{ .name = "T", .len = 3 } },
+    {
+        const T = struct {
+            a: i32,
+            b: i32,
+            c: i32,
+        };
+        const tokens = &.{
+            .{ .Struct = .{ .name = @typeName(T), .len = 3 } },
+            .{ .String = "a" },
+            .{ .I32 = 1 },
+            .{ .String = "b" },
+            .{ .I32 = 2 },
+            .{ .String = "c" },
+            .{ .I32 = 3 },
+            .{ .StructEnd = {} },
+        };
+        const expected = T{ .a = 1, .b = 2, .c = 3 };
+
+        try t.de.run(deserialize, Visitor, tokens, expected);
+    }
+}
+
+test "deserialize - struct, attributes (ignore_unknown_fields)" {
+    const T = struct {
+        a: i32,
+        b: i32,
+        c: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .Container = .{ .ignore_unknown_fields = true },
+            };
+        };
+    };
+    const tokens = &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
         .{ .String = "a" },
         .{ .I32 = 1 },
         .{ .String = "b" },
         .{ .I32 = 2 },
         .{ .String = "c" },
         .{ .I32 = 3 },
+        .{ .String = "TESTING" },
+        .{ .I32 = 4 },
         .{ .StructEnd = {} },
-    }, T{ .a = 1, .b = 2, .c = 3 });
+    };
+    const expected = T{ .a = 1, .b = 2, .c = 3 };
+
+    try t.de.run(deserialize, Visitor, tokens, expected);
+}
+
+test "deserialize - struct, attributes (rename)" {
+    const T = struct {
+        a: i32,
+        b: i32,
+        c: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .a = .{ .rename = "A" },
+                .b = .{ .rename = "B" },
+                .c = .{ .rename = "C" },
+            };
+        };
+    };
+    const tokens = &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 3 } },
+        .{ .String = "A" },
+        .{ .I32 = 1 },
+        .{ .String = "B" },
+        .{ .I32 = 2 },
+        .{ .String = "C" },
+        .{ .I32 = 3 },
+        .{ .StructEnd = {} },
+    };
+    const expected = T{ .a = 1, .b = 2, .c = 3 };
+
+    try t.de.run(deserialize, Visitor, tokens, expected);
+}
+
+test "deserialize - struct, attributes (skip)" {
+    const T = struct {
+        a: i32 = 1,
+        b: i32,
+        c: i32 = 3,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .a = .{ .skip = true },
+                .c = .{ .skip = true },
+            };
+        };
+    };
+    const tokens = &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 1 } },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .StructEnd = {} },
+    };
+    const expected = T{ .a = 1, .b = 2, .c = 3 };
+
+    try t.de.run(deserialize, Visitor, tokens, expected);
 }
