@@ -97,3 +97,160 @@ test "deserialize - union" {
         }
     }
 }
+
+test "deserialize - union, attributes (rename)" {
+    // Tagged
+    {
+        const T = union(enum) {
+            foo: bool,
+            bar: void,
+
+            pub const @"getty.db" = struct {
+                pub const attributes = .{
+                    .foo = .{ .rename = "FOO" },
+                };
+            };
+        };
+        const tokens = &.{
+            .{ .Union = {} },
+            .{ .String = "FOO" },
+            .{ .Bool = true },
+        };
+        const expected = T{ .foo = true };
+
+        try t.de.run(deserialize, Visitor, tokens, expected);
+    }
+
+    // Untagged
+    {
+        const T = union {
+            foo: bool,
+            bar: void,
+
+            pub const @"getty.db" = struct {
+                pub const attributes = .{
+                    .foo = .{ .rename = "FOO" },
+                    .bar = .{ .rename = "BAR" },
+                };
+            };
+        };
+
+        {
+            const tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "FOO" },
+                .{ .Bool = true },
+            };
+            const expected = true;
+
+            var v = Visitor(T){};
+            const visitor = v.visitor();
+
+            var d = t.de.DefaultDeserializer.init(tokens);
+            const deserializer = d.deserializer();
+
+            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
+            try std.testing.expectEqual(expected, got.foo);
+        }
+
+        {
+            const tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "BAR" },
+                .{ .Void = {} },
+            };
+            const expected = {};
+
+            var v = Visitor(T){};
+            const visitor = v.visitor();
+
+            var d = t.de.DefaultDeserializer.init(tokens);
+            const deserializer = d.deserializer();
+
+            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
+            try std.testing.expectEqual(expected, got.bar);
+        }
+    }
+}
+
+test "deserialize - union, attributes (skip)" {
+    // Tagged
+    {
+        const T = union(enum) {
+            foo: bool,
+            bar: void,
+
+            pub const @"getty.db" = struct {
+                pub const attributes = .{
+                    .foo = .{ .skip = true },
+                };
+            };
+        };
+        const tokens = &.{
+            .{ .Union = {} },
+            .{ .String = "foo" },
+            .{ .Bool = true },
+        };
+
+        var v = Visitor(T){};
+        const visitor = v.visitor();
+
+        var d = t.de.DefaultDeserializer.init(tokens);
+        const deserializer = d.deserializer();
+
+        try std.testing.expectError(
+            error.UnknownVariant,
+            deserialize(std.testing.allocator, T, deserializer, visitor),
+        );
+    }
+
+    // Untagged
+    {
+        const T = union {
+            foo: bool,
+            bar: void,
+
+            pub const @"getty.db" = struct {
+                pub const attributes = .{
+                    .foo = .{ .skip = true },
+                    .bar = .{ .skip = true },
+                };
+            };
+        };
+
+        var v = Visitor(T){};
+        const visitor = v.visitor();
+
+        {
+            const tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "foo" },
+                .{ .Bool = true },
+            };
+
+            var d = t.de.DefaultDeserializer.init(tokens);
+            const deserializer = d.deserializer();
+
+            try std.testing.expectError(
+                error.UnknownVariant,
+                deserialize(std.testing.allocator, T, deserializer, visitor),
+            );
+        }
+
+        {
+            const tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Void = {} },
+            };
+
+            var d = t.de.DefaultDeserializer.init(tokens);
+            const deserializer = d.deserializer();
+
+            try std.testing.expectError(
+                error.UnknownVariant,
+                deserialize(std.testing.allocator, T, deserializer, visitor),
+            );
+        }
+    }
+}
