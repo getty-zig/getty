@@ -113,7 +113,7 @@
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> de = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../de.zig&quot;</span>).de;</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> de = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../../de.zig&quot;</span>).de;</span>
 <span class="line" id="L4"></span>
 <span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Slice: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L6">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
@@ -138,34 +138,29 @@
 <span class="line" id="L25">                <span class="tok-kw">try</span> list.append(elem);</span>
 <span class="line" id="L26">            }</span>
 <span class="line" id="L27"></span>
-<span class="line" id="L28">            <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Value).Pointer.sentinel) |s| {</span>
-<span class="line" id="L29">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> Child, s).*;</span>
-<span class="line" id="L30">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> list.toOwnedSliceSentinel(sentinel_char);</span>
-<span class="line" id="L31">            }</span>
-<span class="line" id="L32"></span>
-<span class="line" id="L33">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> list.toOwnedSlice();</span>
-<span class="line" id="L34">        }</span>
+<span class="line" id="L28">            <span class="tok-kw">return</span> list.toOwnedSlice();</span>
+<span class="line" id="L29">        }</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(_: Self, allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Error!Value {</span>
+<span class="line" id="L32">            <span class="tok-kw">if</span> (Child != <span class="tok-type">u8</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
+<span class="line" id="L33"></span>
+<span class="line" id="L34">            <span class="tok-kw">const</span> sentinel = <span class="tok-builtin">@typeInfo</span>(Value).Pointer.sentinel;</span>
 <span class="line" id="L35"></span>
-<span class="line" id="L36">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(_: Self, allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Error!Value {</span>
-<span class="line" id="L37">            <span class="tok-kw">if</span> (Child != <span class="tok-type">u8</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
+<span class="line" id="L36">            <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> allocator.?.alloc(<span class="tok-type">u8</span>, input.len + <span class="tok-builtin">@boolToInt</span>(sentinel != <span class="tok-null">null</span>));</span>
+<span class="line" id="L37">            std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
 <span class="line" id="L38"></span>
-<span class="line" id="L39">            <span class="tok-kw">const</span> sentinel = <span class="tok-builtin">@typeInfo</span>(Value).Pointer.sentinel;</span>
-<span class="line" id="L40"></span>
-<span class="line" id="L41">            <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> allocator.?.alloc(<span class="tok-type">u8</span>, input.len + <span class="tok-builtin">@boolToInt</span>(sentinel != <span class="tok-null">null</span>));</span>
-<span class="line" id="L42">            std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
-<span class="line" id="L43"></span>
-<span class="line" id="L44">            <span class="tok-kw">if</span> (sentinel) |s| {</span>
-<span class="line" id="L45">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> <span class="tok-type">u8</span>, s).*;</span>
-<span class="line" id="L46">                output[input.len] = sentinel_char;</span>
-<span class="line" id="L47">                <span class="tok-kw">return</span> output[<span class="tok-number">0</span>..input.len :sentinel_char];</span>
-<span class="line" id="L48">            }</span>
-<span class="line" id="L49"></span>
-<span class="line" id="L50">            <span class="tok-kw">return</span> output;</span>
-<span class="line" id="L51">        }</span>
-<span class="line" id="L52"></span>
-<span class="line" id="L53">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
-<span class="line" id="L54">    };</span>
-<span class="line" id="L55">}</span>
-<span class="line" id="L56"></span>
+<span class="line" id="L39">            <span class="tok-kw">if</span> (sentinel) |s| {</span>
+<span class="line" id="L40">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> <span class="tok-type">u8</span>, s).*;</span>
+<span class="line" id="L41">                output[input.len] = sentinel_char;</span>
+<span class="line" id="L42">                <span class="tok-kw">return</span> output[<span class="tok-number">0</span>..input.len :sentinel_char];</span>
+<span class="line" id="L43">            }</span>
+<span class="line" id="L44"></span>
+<span class="line" id="L45">            <span class="tok-kw">return</span> output;</span>
+<span class="line" id="L46">        }</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
+<span class="line" id="L49">    };</span>
+<span class="line" id="L50">}</span>
+<span class="line" id="L51"></span>
 </code></pre></body>
 </html>
