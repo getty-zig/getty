@@ -62,7 +62,7 @@ fn docs(b: *std.build.Builder) void {
     clean_step.dependOn(&cmd.step);
 
     // Build docs.
-    const docs_obj = b.addObject("docs", package_path);
+    const docs_obj = b.addObject("docs", libPath(b, "/" ++ package_path));
     docs_obj.emit_docs = .emit;
 
     const docs_step = b.step("docs", "Generate project documentation");
