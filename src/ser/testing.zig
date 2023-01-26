@@ -5,7 +5,7 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 
 const err = @import("error.zig");
-const serialize = @import("ser.zig").serialize;
+const serialize = @import("serialize.zig").serialize;
 const MapInterface = @import("interfaces/map.zig").Map;
 const SerializerInterface = @import("interfaces/serializer.zig").Serializer;
 const SeqInterface = @import("interfaces/seq.zig").Seq;
