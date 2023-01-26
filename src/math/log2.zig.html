@@ -112,61 +112,66 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> math = std.math;</span>
-<span class="line" id="L3"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
-<span class="line" id="L4"></span>
-<span class="line" id="L5"><span class="tok-comment">/// Returns the base-2 logarithm of x.</span></span>
-<span class="line" id="L6"><span class="tok-comment">///</span></span>
-<span class="line" id="L7"><span class="tok-comment">/// Special Cases:</span></span>
-<span class="line" id="L8"><span class="tok-comment">///  - log2(+inf)  = +inf</span></span>
-<span class="line" id="L9"><span class="tok-comment">///  - log2(0)     = -inf</span></span>
-<span class="line" id="L10"><span class="tok-comment">///  - log2(x)     = nan if x &lt; 0</span></span>
-<span class="line" id="L11"><span class="tok-comment">///  - log2(nan)   = nan</span></span>
-<span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">log2</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(x) {</span>
-<span class="line" id="L13">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(x);</span>
-<span class="line" id="L14">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L15">        .ComptimeFloat =&gt; {</span>
-<span class="line" id="L16">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">comptime_float</span>, <span class="tok-builtin">@log2</span>(x));</span>
-<span class="line" id="L17">        },</span>
-<span class="line" id="L18">        .Float =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@log2</span>(x),</span>
-<span class="line" id="L19">        .ComptimeInt =&gt; <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L20">            <span class="tok-kw">var</span> x_shifted = x;</span>
-<span class="line" id="L21">            <span class="tok-comment">// First, calculate floorPowerOfTwo(x)</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> math = std.math;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
+<span class="line" id="L5"></span>
+<span class="line" id="L6"><span class="tok-comment">/// Returns the base-2 logarithm of x.</span></span>
+<span class="line" id="L7"><span class="tok-comment">///</span></span>
+<span class="line" id="L8"><span class="tok-comment">/// Special Cases:</span></span>
+<span class="line" id="L9"><span class="tok-comment">///  - log2(+inf)  = +inf</span></span>
+<span class="line" id="L10"><span class="tok-comment">///  - log2(0)     = -inf</span></span>
+<span class="line" id="L11"><span class="tok-comment">///  - log2(x)     = nan if x &lt; 0</span></span>
+<span class="line" id="L12"><span class="tok-comment">///  - log2(nan)   = nan</span></span>
+<span class="line" id="L13"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">log2</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(x) {</span>
+<span class="line" id="L14">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(x);</span>
+<span class="line" id="L15">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L16">        .ComptimeFloat =&gt; {</span>
+<span class="line" id="L17">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">comptime_float</span>, <span class="tok-builtin">@log2</span>(x));</span>
+<span class="line" id="L18">        },</span>
+<span class="line" id="L19">        .Float =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@log2</span>(x),</span>
+<span class="line" id="L20">        .ComptimeInt =&gt; <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L21">            <span class="tok-kw">var</span> x_shifted = x;</span>
+<span class="line" id="L22">            <span class="tok-comment">// First, calculate floorPowerOfTwo(x)</span>
 </span>
-<span class="line" id="L22">            <span class="tok-kw">var</span> shift_amt = <span class="tok-number">1</span>;</span>
-<span class="line" id="L23">            <span class="tok-kw">while</span> (x_shifted &gt;&gt; (shift_amt &lt;&lt; <span class="tok-number">1</span>) != <span class="tok-number">0</span>) shift_amt &lt;&lt;= <span class="tok-number">1</span>;</span>
-<span class="line" id="L24"></span>
-<span class="line" id="L25">            <span class="tok-comment">// Answer is in the range [shift_amt, 2 * shift_amt - 1]</span>
+<span class="line" id="L23">            <span class="tok-kw">var</span> shift_amt = <span class="tok-number">1</span>;</span>
+<span class="line" id="L24">            <span class="tok-kw">while</span> (x_shifted &gt;&gt; (shift_amt &lt;&lt; <span class="tok-number">1</span>) != <span class="tok-number">0</span>) shift_amt &lt;&lt;= <span class="tok-number">1</span>;</span>
+<span class="line" id="L25"></span>
+<span class="line" id="L26">            <span class="tok-comment">// Answer is in the range [shift_amt, 2 * shift_amt - 1]</span>
 </span>
-<span class="line" id="L26">            <span class="tok-comment">// We can find it in O(log(N)) using binary search.</span>
+<span class="line" id="L27">            <span class="tok-comment">// We can find it in O(log(N)) using binary search.</span>
 </span>
-<span class="line" id="L27">            <span class="tok-kw">var</span> result = <span class="tok-number">0</span>;</span>
-<span class="line" id="L28">            <span class="tok-kw">while</span> (shift_amt != <span class="tok-number">0</span>) : (shift_amt &gt;&gt;= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L29">                <span class="tok-kw">if</span> (x_shifted &gt;&gt; shift_amt != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L30">                    x_shifted &gt;&gt;= shift_amt;</span>
-<span class="line" id="L31">                    result += shift_amt;</span>
-<span class="line" id="L32">                }</span>
-<span class="line" id="L33">            }</span>
-<span class="line" id="L34">            <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L35">        },</span>
-<span class="line" id="L36">        .Int =&gt; |IntType| <span class="tok-kw">switch</span> (IntType.signedness) {</span>
-<span class="line" id="L37">            .signed =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;log2 not implemented for signed integers&quot;</span>),</span>
-<span class="line" id="L38">            .unsigned =&gt; <span class="tok-kw">return</span> math.log2_int(T, x),</span>
-<span class="line" id="L39">        },</span>
-<span class="line" id="L40">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;log2 not implemented for &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L41">    }</span>
-<span class="line" id="L42">}</span>
-<span class="line" id="L43"></span>
-<span class="line" id="L44"><span class="tok-kw">test</span> <span class="tok-str">&quot;log2&quot;</span> {</span>
-<span class="line" id="L45">    <span class="tok-kw">try</span> expect(log2(<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-number">0.2</span>)) == <span class="tok-builtin">@log2</span>(<span class="tok-number">0.2</span>));</span>
-<span class="line" id="L46">    <span class="tok-kw">try</span> expect(log2(<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-number">0.2</span>)) == <span class="tok-builtin">@log2</span>(<span class="tok-number">0.2</span>));</span>
-<span class="line" id="L47">    <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L48">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">1</span>) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L49">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">15</span>) == <span class="tok-number">3</span>);</span>
-<span class="line" id="L50">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">16</span>) == <span class="tok-number">4</span>);</span>
-<span class="line" id="L51">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">1</span> &lt;&lt; <span class="tok-number">4073</span>) == <span class="tok-number">4073</span>);</span>
-<span class="line" id="L52">    }</span>
-<span class="line" id="L53">}</span>
-<span class="line" id="L54"></span>
+<span class="line" id="L28">            <span class="tok-kw">var</span> result = <span class="tok-number">0</span>;</span>
+<span class="line" id="L29">            <span class="tok-kw">while</span> (shift_amt != <span class="tok-number">0</span>) : (shift_amt &gt;&gt;= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L30">                <span class="tok-kw">if</span> (x_shifted &gt;&gt; shift_amt != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L31">                    x_shifted &gt;&gt;= shift_amt;</span>
+<span class="line" id="L32">                    result += shift_amt;</span>
+<span class="line" id="L33">                }</span>
+<span class="line" id="L34">            }</span>
+<span class="line" id="L35">            <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L36">        },</span>
+<span class="line" id="L37">        .Int =&gt; |IntType| <span class="tok-kw">switch</span> (IntType.signedness) {</span>
+<span class="line" id="L38">            .signed =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;log2 not implemented for signed integers&quot;</span>),</span>
+<span class="line" id="L39">            .unsigned =&gt; <span class="tok-kw">return</span> math.log2_int(T, x),</span>
+<span class="line" id="L40">        },</span>
+<span class="line" id="L41">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;log2 not implemented for &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L42">    }</span>
+<span class="line" id="L43">}</span>
+<span class="line" id="L44"></span>
+<span class="line" id="L45"><span class="tok-kw">test</span> <span class="tok-str">&quot;log2&quot;</span> {</span>
+<span class="line" id="L46">    <span class="tok-comment">// https://github.com/ziglang/zig/issues/13703</span>
+</span>
+<span class="line" id="L47">    <span class="tok-kw">if</span> (builtin.cpu.arch == .aarch64 <span class="tok-kw">and</span> builtin.os.tag == .windows) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L48"></span>
+<span class="line" id="L49">    <span class="tok-kw">try</span> expect(log2(<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-number">0.2</span>)) == <span class="tok-builtin">@log2</span>(<span class="tok-number">0.2</span>));</span>
+<span class="line" id="L50">    <span class="tok-kw">try</span> expect(log2(<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-number">0.2</span>)) == <span class="tok-builtin">@log2</span>(<span class="tok-number">0.2</span>));</span>
+<span class="line" id="L51">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L52">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">1</span>) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L53">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">15</span>) == <span class="tok-number">3</span>);</span>
+<span class="line" id="L54">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">16</span>) == <span class="tok-number">4</span>);</span>
+<span class="line" id="L55">        <span class="tok-kw">try</span> expect(log2(<span class="tok-number">1</span> &lt;&lt; <span class="tok-number">4073</span>) == <span class="tok-number">4073</span>);</span>
+<span class="line" id="L56">    }</span>
+<span class="line" id="L57">}</span>
+<span class="line" id="L58"></span>
 </code></pre></body>
 </html>

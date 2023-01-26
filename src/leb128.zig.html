@@ -128,11 +128,11 @@
 <span class="line" id="L15"></span>
 <span class="line" id="L16">    <span class="tok-kw">while</span> (group &lt; max_group) : (group += <span class="tok-number">1</span>) {</span>
 <span class="line" id="L17">        <span class="tok-kw">const</span> byte = <span class="tok-kw">try</span> reader.readByte();</span>
-<span class="line" id="L18">        <span class="tok-kw">var</span> temp = <span class="tok-builtin">@as</span>(U, byte &amp; <span class="tok-number">0x7f</span>);</span>
-<span class="line" id="L19"></span>
-<span class="line" id="L20">        <span class="tok-kw">if</span> (<span class="tok-builtin">@shlWithOverflow</span>(U, temp, group * <span class="tok-number">7</span>, &amp;temp)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
+<span class="line" id="L18"></span>
+<span class="line" id="L19">        <span class="tok-kw">const</span> ov = <span class="tok-builtin">@shlWithOverflow</span>(<span class="tok-builtin">@as</span>(U, byte &amp; <span class="tok-number">0x7f</span>), group * <span class="tok-number">7</span>);</span>
+<span class="line" id="L20">        <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
 <span class="line" id="L21"></span>
-<span class="line" id="L22">        value |= temp;</span>
+<span class="line" id="L22">        value |= ov[<span class="tok-number">0</span>];</span>
 <span class="line" id="L23">        <span class="tok-kw">if</span> (byte &amp; <span class="tok-number">0x80</span> == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
 <span class="line" id="L24">    } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L25">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
@@ -179,14 +179,14 @@
 <span class="line" id="L65"></span>
 <span class="line" id="L66">    <span class="tok-kw">while</span> (group &lt; max_group) : (group += <span class="tok-number">1</span>) {</span>
 <span class="line" id="L67">        <span class="tok-kw">const</span> byte = <span class="tok-kw">try</span> reader.readByte();</span>
-<span class="line" id="L68">        <span class="tok-kw">var</span> temp = <span class="tok-builtin">@as</span>(U, byte &amp; <span class="tok-number">0x7f</span>);</span>
-<span class="line" id="L69"></span>
-<span class="line" id="L70">        <span class="tok-kw">const</span> shift = group * <span class="tok-number">7</span>;</span>
-<span class="line" id="L71">        <span class="tok-kw">if</span> (<span class="tok-builtin">@shlWithOverflow</span>(U, temp, shift, &amp;temp)) {</span>
+<span class="line" id="L68"></span>
+<span class="line" id="L69">        <span class="tok-kw">const</span> shift = group * <span class="tok-number">7</span>;</span>
+<span class="line" id="L70">        <span class="tok-kw">const</span> ov = <span class="tok-builtin">@shlWithOverflow</span>(<span class="tok-builtin">@as</span>(U, byte &amp; <span class="tok-number">0x7f</span>), shift);</span>
+<span class="line" id="L71">        <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) {</span>
 <span class="line" id="L72">            <span class="tok-comment">// Overflow is ok so long as the sign bit is set and this is the last byte</span>
 </span>
 <span class="line" id="L73">            <span class="tok-kw">if</span> (byte &amp; <span class="tok-number">0x80</span> != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
-<span class="line" id="L74">            <span class="tok-kw">if</span> (<span class="tok-builtin">@bitCast</span>(S, temp) &gt;= <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
+<span class="line" id="L74">            <span class="tok-kw">if</span> (<span class="tok-builtin">@bitCast</span>(S, ov[<span class="tok-number">0</span>]) &gt;= <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
 <span class="line" id="L75"></span>
 <span class="line" id="L76">            <span class="tok-comment">// and all the overflowed bits are 1</span>
 </span>
@@ -198,14 +198,14 @@
 </span>
 <span class="line" id="L82">            <span class="tok-comment">// is negative, check that the remaining bits are 1</span>
 </span>
-<span class="line" id="L83">            <span class="tok-kw">if</span> ((byte &amp; <span class="tok-number">0x80</span> == <span class="tok-number">0</span>) <span class="tok-kw">and</span> (<span class="tok-builtin">@bitCast</span>(S, temp) &lt; <span class="tok-number">0</span>)) {</span>
+<span class="line" id="L83">            <span class="tok-kw">if</span> ((byte &amp; <span class="tok-number">0x80</span> == <span class="tok-number">0</span>) <span class="tok-kw">and</span> (<span class="tok-builtin">@bitCast</span>(S, ov[<span class="tok-number">0</span>]) &lt; <span class="tok-number">0</span>)) {</span>
 <span class="line" id="L84">                <span class="tok-kw">const</span> remaining_shift = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u3</span>, <span class="tok-builtin">@typeInfo</span>(U).Int.bits - <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, shift));</span>
 <span class="line" id="L85">                <span class="tok-kw">const</span> remaining_bits = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">i8</span>, byte | <span class="tok-number">0x80</span>) &gt;&gt; remaining_shift;</span>
 <span class="line" id="L86">                <span class="tok-kw">if</span> (remaining_bits != -<span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Overflow;</span>
 <span class="line" id="L87">            }</span>
 <span class="line" id="L88">        }</span>
 <span class="line" id="L89"></span>
-<span class="line" id="L90">        value |= temp;</span>
+<span class="line" id="L90">        value |= ov[<span class="tok-number">0</span>];</span>
 <span class="line" id="L91">        <span class="tok-kw">if</span> (byte &amp; <span class="tok-number">0x80</span> == <span class="tok-number">0</span>) {</span>
 <span class="line" id="L92">            <span class="tok-kw">const</span> needs_sign_ext = group + <span class="tok-number">1</span> &lt; max_group;</span>
 <span class="line" id="L93">            <span class="tok-kw">if</span> (byte &amp; <span class="tok-number">0x40</span> != <span class="tok-number">0</span> <span class="tok-kw">and</span> needs_sign_ext) {</span>
@@ -482,54 +482,38 @@
 <span class="line" id="L347">}</span>
 <span class="line" id="L348"></span>
 <span class="line" id="L349"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize unsigned LEB128&quot;</span> {</span>
-<span class="line" id="L350">    <span class="tok-kw">if</span> ((builtin.zig_backend == .stage1 <span class="tok-kw">or</span> builtin.zig_backend == .stage2_llvm) <span class="tok-kw">and</span></span>
-<span class="line" id="L351">        builtin.cpu.arch == .riscv64)</span>
-<span class="line" id="L352">    {</span>
-<span class="line" id="L353">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/12031</span>
-</span>
-<span class="line" id="L354">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L355">    }</span>
-<span class="line" id="L356"></span>
-<span class="line" id="L357">    <span class="tok-kw">const</span> max_bits = <span class="tok-number">18</span>;</span>
+<span class="line" id="L350">    <span class="tok-kw">const</span> max_bits = <span class="tok-number">18</span>;</span>
+<span class="line" id="L351"></span>
+<span class="line" id="L352">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> t = <span class="tok-number">0</span>;</span>
+<span class="line" id="L353">    <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (t &lt;= max_bits) : (t += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L354">        <span class="tok-kw">const</span> T = std.meta.Int(.unsigned, t);</span>
+<span class="line" id="L355">        <span class="tok-kw">const</span> min = std.math.minInt(T);</span>
+<span class="line" id="L356">        <span class="tok-kw">const</span> max = std.math.maxInt(T);</span>
+<span class="line" id="L357">        <span class="tok-kw">var</span> i = <span class="tok-builtin">@as</span>(std.meta.Int(.unsigned, <span class="tok-builtin">@typeInfo</span>(T).Int.bits + <span class="tok-number">1</span>), min);</span>
 <span class="line" id="L358"></span>
-<span class="line" id="L359">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> t = <span class="tok-number">0</span>;</span>
-<span class="line" id="L360">    <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (t &lt;= max_bits) : (t += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L361">        <span class="tok-kw">const</span> T = std.meta.Int(.unsigned, t);</span>
-<span class="line" id="L362">        <span class="tok-kw">const</span> min = std.math.minInt(T);</span>
-<span class="line" id="L363">        <span class="tok-kw">const</span> max = std.math.maxInt(T);</span>
-<span class="line" id="L364">        <span class="tok-kw">var</span> i = <span class="tok-builtin">@as</span>(std.meta.Int(.unsigned, <span class="tok-builtin">@typeInfo</span>(T).Int.bits + <span class="tok-number">1</span>), min);</span>
-<span class="line" id="L365"></span>
-<span class="line" id="L366">        <span class="tok-kw">while</span> (i &lt;= max) : (i += <span class="tok-number">1</span>) <span class="tok-kw">try</span> test_write_leb128(<span class="tok-builtin">@intCast</span>(T, i));</span>
-<span class="line" id="L367">    }</span>
-<span class="line" id="L368">}</span>
+<span class="line" id="L359">        <span class="tok-kw">while</span> (i &lt;= max) : (i += <span class="tok-number">1</span>) <span class="tok-kw">try</span> test_write_leb128(<span class="tok-builtin">@intCast</span>(T, i));</span>
+<span class="line" id="L360">    }</span>
+<span class="line" id="L361">}</span>
+<span class="line" id="L362"></span>
+<span class="line" id="L363"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize signed LEB128&quot;</span> {</span>
+<span class="line" id="L364">    <span class="tok-comment">// explicitly test i0 because starting `t` at 0</span>
+</span>
+<span class="line" id="L365">    <span class="tok-comment">// will break the while loop</span>
+</span>
+<span class="line" id="L366">    <span class="tok-kw">try</span> test_write_leb128(<span class="tok-builtin">@as</span>(<span class="tok-type">i0</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L367"></span>
+<span class="line" id="L368">    <span class="tok-kw">const</span> max_bits = <span class="tok-number">18</span>;</span>
 <span class="line" id="L369"></span>
-<span class="line" id="L370"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize signed LEB128&quot;</span> {</span>
-<span class="line" id="L371">    <span class="tok-kw">if</span> ((builtin.zig_backend == .stage1 <span class="tok-kw">or</span> builtin.zig_backend == .stage2_llvm) <span class="tok-kw">and</span></span>
-<span class="line" id="L372">        builtin.cpu.arch == .riscv64)</span>
-<span class="line" id="L373">    {</span>
-<span class="line" id="L374">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/12031</span>
-</span>
-<span class="line" id="L375">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L376">    }</span>
-<span class="line" id="L377"></span>
-<span class="line" id="L378">    <span class="tok-comment">// explicitly test i0 because starting `t` at 0</span>
-</span>
-<span class="line" id="L379">    <span class="tok-comment">// will break the while loop</span>
-</span>
-<span class="line" id="L380">    <span class="tok-kw">try</span> test_write_leb128(<span class="tok-builtin">@as</span>(<span class="tok-type">i0</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L381"></span>
-<span class="line" id="L382">    <span class="tok-kw">const</span> max_bits = <span class="tok-number">18</span>;</span>
-<span class="line" id="L383"></span>
-<span class="line" id="L384">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> t = <span class="tok-number">1</span>;</span>
-<span class="line" id="L385">    <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (t &lt;= max_bits) : (t += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L386">        <span class="tok-kw">const</span> T = std.meta.Int(.signed, t);</span>
-<span class="line" id="L387">        <span class="tok-kw">const</span> min = std.math.minInt(T);</span>
-<span class="line" id="L388">        <span class="tok-kw">const</span> max = std.math.maxInt(T);</span>
-<span class="line" id="L389">        <span class="tok-kw">var</span> i = <span class="tok-builtin">@as</span>(std.meta.Int(.signed, <span class="tok-builtin">@typeInfo</span>(T).Int.bits + <span class="tok-number">1</span>), min);</span>
-<span class="line" id="L390"></span>
-<span class="line" id="L391">        <span class="tok-kw">while</span> (i &lt;= max) : (i += <span class="tok-number">1</span>) <span class="tok-kw">try</span> test_write_leb128(<span class="tok-builtin">@intCast</span>(T, i));</span>
-<span class="line" id="L392">    }</span>
-<span class="line" id="L393">}</span>
-<span class="line" id="L394"></span>
+<span class="line" id="L370">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> t = <span class="tok-number">1</span>;</span>
+<span class="line" id="L371">    <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (t &lt;= max_bits) : (t += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L372">        <span class="tok-kw">const</span> T = std.meta.Int(.signed, t);</span>
+<span class="line" id="L373">        <span class="tok-kw">const</span> min = std.math.minInt(T);</span>
+<span class="line" id="L374">        <span class="tok-kw">const</span> max = std.math.maxInt(T);</span>
+<span class="line" id="L375">        <span class="tok-kw">var</span> i = <span class="tok-builtin">@as</span>(std.meta.Int(.signed, <span class="tok-builtin">@typeInfo</span>(T).Int.bits + <span class="tok-number">1</span>), min);</span>
+<span class="line" id="L376"></span>
+<span class="line" id="L377">        <span class="tok-kw">while</span> (i &lt;= max) : (i += <span class="tok-number">1</span>) <span class="tok-kw">try</span> test_write_leb128(<span class="tok-builtin">@intCast</span>(T, i));</span>
+<span class="line" id="L378">    }</span>
+<span class="line" id="L379">}</span>
+<span class="line" id="L380"></span>
 </code></pre></body>
 </html>

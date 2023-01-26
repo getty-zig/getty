@@ -113,384 +113,392 @@
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> ser = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../ser.zig&quot;</span>);</span>
-<span class="line" id="L4"></span>
-<span class="line" id="L5"><span class="tok-comment">/// Serializer interface.</span></span>
-<span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Serializer</span>(</span>
-<span class="line" id="L7">    <span class="tok-comment">/// The namespace that owns the method implementations provided in `methods`.</span></span>
-<span class="line" id="L8">    <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>,</span>
-<span class="line" id="L9">    <span class="tok-comment">/// The successful return type of the interface's `end` method.</span></span>
-<span class="line" id="L10">    <span class="tok-kw">comptime</span> O: <span class="tok-type">type</span>,</span>
-<span class="line" id="L11">    <span class="tok-comment">/// The error set returned by the interface's methods upon failure.</span></span>
-<span class="line" id="L12">    <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>,</span>
-<span class="line" id="L13">    <span class="tok-comment">/// An optional, user-defined serialization block or tuple.</span></span>
-<span class="line" id="L14">    <span class="tok-kw">comptime</span> user_sbt: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L15">    <span class="tok-comment">/// An optional, serializer-defined serialization block or tuple.</span></span>
-<span class="line" id="L16">    <span class="tok-kw">comptime</span> serializer_sbt: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L17">    <span class="tok-comment">/// An optional type that implements `getty.ser.Map`.</span></span>
-<span class="line" id="L18">    <span class="tok-kw">comptime</span> Map: ?<span class="tok-type">type</span>,</span>
-<span class="line" id="L19">    <span class="tok-comment">/// An optional type that implements `getty.ser.Seq`.</span></span>
-<span class="line" id="L20">    <span class="tok-kw">comptime</span> Seq: ?<span class="tok-type">type</span>,</span>
-<span class="line" id="L21">    <span class="tok-comment">/// An optional type that implements `getty.ser.Structure`.</span></span>
-<span class="line" id="L22">    <span class="tok-kw">comptime</span> Structure: ?<span class="tok-type">type</span>,</span>
-<span class="line" id="L23">    <span class="tok-comment">/// A namespace for the methods that implementations of the interface can implement.</span></span>
-<span class="line" id="L24">    <span class="tok-kw">comptime</span> methods: <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L25">        serializeBool: ?<span class="tok-kw">fn</span> (Context, <span class="tok-type">bool</span>) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L26">        serializeEnum: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L27">        serializeFloat: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L28">        serializeInt: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L29">        serializeMap: blk: {</span>
-<span class="line" id="L30">            <span class="tok-kw">if</span> (Map) |T| {</span>
-<span class="line" id="L31">                <span class="tok-kw">break</span> :blk ?<span class="tok-kw">fn</span> (Context, ?<span class="tok-type">usize</span>) E!T;</span>
-<span class="line" id="L32">            }</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">            <span class="tok-comment">// If Map is null, serializeMap will raise a compile error. The</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> err = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../error.zig&quot;</span>);</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> concepts = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../concepts.zig&quot;</span>);</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> tuples = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../tuples.zig&quot;</span>);</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-comment">/// A `Serializer` serializes values from Getty's data model into a data format.</span></span>
+<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Serializer</span>(</span>
+<span class="line" id="L9">    <span class="tok-comment">/// A namespace that owns the method implementations passed to the `methods` parameter.</span></span>
+<span class="line" id="L10">    <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>,</span>
+<span class="line" id="L11">    <span class="tok-comment">/// The successful return type of a `Serializer`'s `end` method.</span></span>
+<span class="line" id="L12">    <span class="tok-kw">comptime</span> O: <span class="tok-type">type</span>,</span>
+<span class="line" id="L13">    <span class="tok-comment">/// The error set returned by a `Serializer`'s methods upon failure.</span></span>
+<span class="line" id="L14">    <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>,</span>
+<span class="line" id="L15">    <span class="tok-comment">/// An optional, user-defined serialization block or tuple.</span></span>
+<span class="line" id="L16">    <span class="tok-kw">comptime</span> user_sbt: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L17">    <span class="tok-comment">/// An optional, serializer-defined serialization block or tuple.</span></span>
+<span class="line" id="L18">    <span class="tok-kw">comptime</span> serializer_sbt: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L19">    <span class="tok-comment">/// An optional type that implements `getty.ser.Map`.</span></span>
+<span class="line" id="L20">    <span class="tok-kw">comptime</span> Map: ?<span class="tok-type">type</span>,</span>
+<span class="line" id="L21">    <span class="tok-comment">/// An optional type that implements `getty.ser.Seq`.</span></span>
+<span class="line" id="L22">    <span class="tok-kw">comptime</span> Seq: ?<span class="tok-type">type</span>,</span>
+<span class="line" id="L23">    <span class="tok-comment">/// An optional type that implements `getty.ser.Structure`.</span></span>
+<span class="line" id="L24">    <span class="tok-kw">comptime</span> Structure: ?<span class="tok-type">type</span>,</span>
+<span class="line" id="L25">    <span class="tok-comment">/// A namespace containing the methods that implementations of `Serializer` can implement.</span></span>
+<span class="line" id="L26">    <span class="tok-kw">comptime</span> methods: <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L27">        serializeBool: ?<span class="tok-kw">fn</span> (Context, <span class="tok-type">bool</span>) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L28">        serializeEnum: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L29">        serializeFloat: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L30">        serializeInt: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L31">        serializeMap: blk: {</span>
+<span class="line" id="L32">            <span class="tok-kw">if</span> (Map) |T| {</span>
+<span class="line" id="L33">                <span class="tok-kw">break</span> :blk ?<span class="tok-kw">fn</span> (Context, ?<span class="tok-type">usize</span>) E!T;</span>
+<span class="line" id="L34">            }</span>
+<span class="line" id="L35"></span>
+<span class="line" id="L36">            <span class="tok-comment">// If Map is null, serializeMap will raise a compile error. The</span>
 </span>
-<span class="line" id="L35">            <span class="tok-comment">// following type is a sort of catch-all type that can store any</span>
+<span class="line" id="L37">            <span class="tok-comment">// following type is a sort of catch-all type that can store any</span>
 </span>
-<span class="line" id="L36">            <span class="tok-comment">// value. It doesn't matter what the value is though since the</span>
+<span class="line" id="L38">            <span class="tok-comment">// value. It doesn't matter what the value is though since the</span>
 </span>
-<span class="line" id="L37">            <span class="tok-comment">// compiler will error out as I've mentioned.</span>
+<span class="line" id="L39">            <span class="tok-comment">// compiler will error out as I've mentioned.</span>
 </span>
-<span class="line" id="L38">            <span class="tok-kw">break</span> :blk E!?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span>;</span>
-<span class="line" id="L39">        } = <span class="tok-null">null</span>,</span>
-<span class="line" id="L40">        serializeNull: ?<span class="tok-kw">fn</span> (Context) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L41">        serializeSeq: blk: {</span>
-<span class="line" id="L42">            <span class="tok-kw">if</span> (Seq) |T| {</span>
-<span class="line" id="L43">                <span class="tok-kw">break</span> :blk ?<span class="tok-kw">fn</span> (Context, ?<span class="tok-type">usize</span>) E!T;</span>
-<span class="line" id="L44">            }</span>
-<span class="line" id="L45"></span>
-<span class="line" id="L46">            <span class="tok-comment">// If Seq is null, serializeSeq will raise a compile error. The</span>
+<span class="line" id="L40">            <span class="tok-kw">break</span> :blk E!?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span>;</span>
+<span class="line" id="L41">        } = <span class="tok-null">null</span>,</span>
+<span class="line" id="L42">        serializeNull: ?<span class="tok-kw">fn</span> (Context) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L43">        serializeSeq: blk: {</span>
+<span class="line" id="L44">            <span class="tok-kw">if</span> (Seq) |T| {</span>
+<span class="line" id="L45">                <span class="tok-kw">break</span> :blk ?<span class="tok-kw">fn</span> (Context, ?<span class="tok-type">usize</span>) E!T;</span>
+<span class="line" id="L46">            }</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">            <span class="tok-comment">// If Seq is null, serializeSeq will raise a compile error. The</span>
 </span>
-<span class="line" id="L47">            <span class="tok-comment">// following type is a sort of catch-all type that can store any</span>
+<span class="line" id="L49">            <span class="tok-comment">// following type is a sort of catch-all type that can store any</span>
 </span>
-<span class="line" id="L48">            <span class="tok-comment">// value. It doesn't matter what the value is though since the</span>
+<span class="line" id="L50">            <span class="tok-comment">// value. It doesn't matter what the value is though since the</span>
 </span>
-<span class="line" id="L49">            <span class="tok-comment">// compiler will error out as I've mentioned.</span>
+<span class="line" id="L51">            <span class="tok-comment">// compiler will error out as I've mentioned.</span>
 </span>
-<span class="line" id="L50">            <span class="tok-kw">break</span> :blk E!?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span>;</span>
-<span class="line" id="L51">        } = <span class="tok-null">null</span>,</span>
-<span class="line" id="L52">        serializeSome: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L53">        serializeString: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L54">        serializeStruct: blk: {</span>
-<span class="line" id="L55">            <span class="tok-kw">if</span> (Structure) |T| {</span>
-<span class="line" id="L56">                <span class="tok-kw">break</span> :blk ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">comptime</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-type">usize</span>) E!T;</span>
-<span class="line" id="L57">            }</span>
-<span class="line" id="L58"></span>
-<span class="line" id="L59">            <span class="tok-comment">// If Structure is null, serializeStruct will raise a compile</span>
+<span class="line" id="L52">            <span class="tok-kw">break</span> :blk E!?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span>;</span>
+<span class="line" id="L53">        } = <span class="tok-null">null</span>,</span>
+<span class="line" id="L54">        serializeSome: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L55">        serializeString: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">anytype</span>) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L56">        serializeStruct: blk: {</span>
+<span class="line" id="L57">            <span class="tok-kw">if</span> (Structure) |T| {</span>
+<span class="line" id="L58">                <span class="tok-kw">break</span> :blk ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">comptime</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-type">usize</span>) E!T;</span>
+<span class="line" id="L59">            }</span>
+<span class="line" id="L60"></span>
+<span class="line" id="L61">            <span class="tok-comment">// If Structure is null, serializeStruct will raise a compile</span>
 </span>
-<span class="line" id="L60">            <span class="tok-comment">// error. The following type is a sort of catch-all type that can</span>
+<span class="line" id="L62">            <span class="tok-comment">// error. The following type is a sort of catch-all type that can</span>
 </span>
-<span class="line" id="L61">            <span class="tok-comment">// store any value. It doesn't matter what the value is though</span>
+<span class="line" id="L63">            <span class="tok-comment">// store any value. It doesn't matter what the value is though</span>
 </span>
-<span class="line" id="L62">            <span class="tok-comment">// since the compiler will error out as I've mentioned.</span>
+<span class="line" id="L64">            <span class="tok-comment">// since the compiler will error out as I've mentioned.</span>
 </span>
-<span class="line" id="L63">            <span class="tok-kw">break</span> :blk E!?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span>;</span>
-<span class="line" id="L64">        } = <span class="tok-null">null</span>,</span>
-<span class="line" id="L65">        serializeVoid: ?<span class="tok-kw">fn</span> (Context) E!O = <span class="tok-null">null</span>,</span>
-<span class="line" id="L66">    },</span>
-<span class="line" id="L67">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L68">    <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L69">        ser.concepts.@&quot;getty.ser.sbt&quot;(user_sbt);</span>
-<span class="line" id="L70">        ser.concepts.@&quot;getty.ser.sbt&quot;(serializer_sbt);</span>
-<span class="line" id="L71"></span>
-<span class="line" id="L72">        <span class="tok-comment">//TODO: Add concept for Error (blocked by concepts library).</span>
+<span class="line" id="L65">            <span class="tok-kw">break</span> :blk E!?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span>;</span>
+<span class="line" id="L66">        } = <span class="tok-null">null</span>,</span>
+<span class="line" id="L67">        serializeVoid: ?<span class="tok-kw">fn</span> (Context) E!O = <span class="tok-null">null</span>,</span>
+<span class="line" id="L68">    },</span>
+<span class="line" id="L69">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L70">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L71">        concepts.@&quot;getty.ser.sbt&quot;(user_sbt);</span>
+<span class="line" id="L72">        concepts.@&quot;getty.ser.sbt&quot;(serializer_sbt);</span>
+<span class="line" id="L73"></span>
+<span class="line" id="L74">        <span class="tok-comment">//TODO: Add concept for Error (blocked by concepts library).</span>
 </span>
-<span class="line" id="L73">    }</span>
-<span class="line" id="L74"></span>
-<span class="line" id="L75">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L76">        <span class="tok-comment">/// An interface type.</span></span>
-<span class="line" id="L77">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.Serializer&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L78">            context: Context,</span>
-<span class="line" id="L79"></span>
-<span class="line" id="L80">            <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L75">    }</span>
+<span class="line" id="L76"></span>
+<span class="line" id="L77">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L78">        <span class="tok-comment">/// An interface type.</span></span>
+<span class="line" id="L79">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.Serializer&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L80">            context: Context,</span>
 <span class="line" id="L81"></span>
-<span class="line" id="L82">            <span class="tok-comment">/// Successful return type.</span></span>
-<span class="line" id="L83">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Ok = O;</span>
-<span class="line" id="L84"></span>
-<span class="line" id="L85">            <span class="tok-comment">/// Error set used upon failure.</span></span>
-<span class="line" id="L86">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Error = E;</span>
-<span class="line" id="L87"></span>
-<span class="line" id="L88">            <span class="tok-comment">/// User-defined Serialization Tuple.</span></span>
-<span class="line" id="L89">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> user_st = blk: {</span>
-<span class="line" id="L90">                <span class="tok-comment">// Process null.</span>
+<span class="line" id="L82">            <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L83"></span>
+<span class="line" id="L84">            <span class="tok-comment">/// Successful return type.</span></span>
+<span class="line" id="L85">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Ok = O;</span>
+<span class="line" id="L86"></span>
+<span class="line" id="L87">            <span class="tok-comment">/// Error set used upon failure.</span></span>
+<span class="line" id="L88">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Error = blk: {</span>
+<span class="line" id="L89">                <span class="tok-kw">if</span> (E != E || err.Error) {</span>
+<span class="line" id="L90">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;error set must include `getty.ser.Error`&quot;</span>);</span>
+<span class="line" id="L91">                }</span>
+<span class="line" id="L92"></span>
+<span class="line" id="L93">                <span class="tok-kw">break</span> :blk E;</span>
+<span class="line" id="L94">            };</span>
+<span class="line" id="L95"></span>
+<span class="line" id="L96">            <span class="tok-comment">/// User-defined Serialization Tuple.</span></span>
+<span class="line" id="L97">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> user_st = blk: {</span>
+<span class="line" id="L98">                <span class="tok-comment">// Process null.</span>
 </span>
-<span class="line" id="L91">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(user_sbt) == <span class="tok-builtin">@TypeOf</span>(<span class="tok-null">null</span>)) {</span>
-<span class="line" id="L92">                    <span class="tok-kw">break</span> :blk .{};</span>
-<span class="line" id="L93">                }</span>
-<span class="line" id="L94"></span>
-<span class="line" id="L95">                <span class="tok-comment">// Process SB.</span>
+<span class="line" id="L99">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(user_sbt) == <span class="tok-builtin">@TypeOf</span>(<span class="tok-null">null</span>)) {</span>
+<span class="line" id="L100">                    <span class="tok-kw">break</span> :blk .{};</span>
+<span class="line" id="L101">                }</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">                <span class="tok-comment">// Process SB.</span>
 </span>
-<span class="line" id="L96">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(user_sbt) == <span class="tok-type">type</span>) {</span>
-<span class="line" id="L97">                    <span class="tok-comment">// If an attribute map exists, but no attributes are</span>
+<span class="line" id="L104">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(user_sbt) == <span class="tok-type">type</span>) {</span>
+<span class="line" id="L105">                    <span class="tok-comment">// If an attribute map exists, but no attributes are</span>
 </span>
-<span class="line" id="L98">                    <span class="tok-comment">// specified, ignore the SB.</span>
+<span class="line" id="L106">                    <span class="tok-comment">// specified, ignore the SB.</span>
 </span>
-<span class="line" id="L99">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(user_sbt, <span class="tok-str">&quot;attributes&quot;</span>)) {</span>
-<span class="line" id="L100">                        <span class="tok-kw">if</span> (std.meta.fields(<span class="tok-builtin">@TypeOf</span>(user_sbt.attributes)).len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L101">                            <span class="tok-kw">break</span> :blk .{};</span>
-<span class="line" id="L102">                        }</span>
-<span class="line" id="L103">                    }</span>
-<span class="line" id="L104"></span>
-<span class="line" id="L105">                    <span class="tok-kw">break</span> :blk .{user_sbt};</span>
-<span class="line" id="L106">                }</span>
-<span class="line" id="L107"></span>
-<span class="line" id="L108">                <span class="tok-comment">// Process ST.</span>
-</span>
-<span class="line" id="L109">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(user_sbt) == <span class="tok-builtin">@TypeOf</span>(ser.default_st)) {</span>
-<span class="line" id="L110">                    <span class="tok-kw">break</span> :blk .{};</span>
-<span class="line" id="L111">                }</span>
+<span class="line" id="L107">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(user_sbt, <span class="tok-str">&quot;attributes&quot;</span>)) {</span>
+<span class="line" id="L108">                        <span class="tok-kw">if</span> (std.meta.fields(<span class="tok-builtin">@TypeOf</span>(user_sbt.attributes)).len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L109">                            <span class="tok-kw">break</span> :blk .{};</span>
+<span class="line" id="L110">                        }</span>
+<span class="line" id="L111">                    }</span>
 <span class="line" id="L112"></span>
-<span class="line" id="L113">                <span class="tok-kw">break</span> :blk user_sbt;</span>
-<span class="line" id="L114">            };</span>
+<span class="line" id="L113">                    <span class="tok-kw">break</span> :blk .{user_sbt};</span>
+<span class="line" id="L114">                }</span>
 <span class="line" id="L115"></span>
-<span class="line" id="L116">            <span class="tok-comment">/// Serializer-defined Serialization Tuple.</span></span>
-<span class="line" id="L117">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> serializer_st = blk: {</span>
-<span class="line" id="L118">                <span class="tok-comment">// Process null.</span>
+<span class="line" id="L116">                <span class="tok-comment">// Process ST.</span>
 </span>
-<span class="line" id="L119">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(serializer_sbt) == <span class="tok-builtin">@TypeOf</span>(<span class="tok-null">null</span>)) {</span>
-<span class="line" id="L120">                    <span class="tok-kw">break</span> :blk .{};</span>
-<span class="line" id="L121">                }</span>
-<span class="line" id="L122"></span>
-<span class="line" id="L123">                <span class="tok-comment">// Process SB.</span>
+<span class="line" id="L117">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(user_sbt) == <span class="tok-builtin">@TypeOf</span>(tuples.default)) {</span>
+<span class="line" id="L118">                    <span class="tok-kw">break</span> :blk .{};</span>
+<span class="line" id="L119">                }</span>
+<span class="line" id="L120"></span>
+<span class="line" id="L121">                <span class="tok-kw">break</span> :blk user_sbt;</span>
+<span class="line" id="L122">            };</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124">            <span class="tok-comment">/// Serializer-defined Serialization Tuple.</span></span>
+<span class="line" id="L125">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> serializer_st = blk: {</span>
+<span class="line" id="L126">                <span class="tok-comment">// Process null.</span>
 </span>
-<span class="line" id="L124">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(serializer_sbt) == <span class="tok-type">type</span>) {</span>
-<span class="line" id="L125">                    <span class="tok-comment">// If an attribute map exists, but no attributes are</span>
+<span class="line" id="L127">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(serializer_sbt) == <span class="tok-builtin">@TypeOf</span>(<span class="tok-null">null</span>)) {</span>
+<span class="line" id="L128">                    <span class="tok-kw">break</span> :blk .{};</span>
+<span class="line" id="L129">                }</span>
+<span class="line" id="L130"></span>
+<span class="line" id="L131">                <span class="tok-comment">// Process SB.</span>
 </span>
-<span class="line" id="L126">                    <span class="tok-comment">// specified, ignore the SB.</span>
+<span class="line" id="L132">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(serializer_sbt) == <span class="tok-type">type</span>) {</span>
+<span class="line" id="L133">                    <span class="tok-comment">// If an attribute map exists, but no attributes are</span>
 </span>
-<span class="line" id="L127">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(serializer_sbt, <span class="tok-str">&quot;attributes&quot;</span>)) {</span>
-<span class="line" id="L128">                        <span class="tok-kw">if</span> (std.meta.fields(<span class="tok-builtin">@TypeOf</span>(serializer_sbt.attributes)).len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L129">                            <span class="tok-kw">break</span> :blk .{};</span>
-<span class="line" id="L130">                        }</span>
-<span class="line" id="L131">                    }</span>
-<span class="line" id="L132"></span>
-<span class="line" id="L133">                    <span class="tok-kw">break</span> :blk .{serializer_sbt};</span>
-<span class="line" id="L134">                }</span>
-<span class="line" id="L135"></span>
-<span class="line" id="L136">                <span class="tok-comment">// Process ST.</span>
+<span class="line" id="L134">                    <span class="tok-comment">// specified, ignore the SB.</span>
 </span>
-<span class="line" id="L137">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(serializer_sbt) == <span class="tok-builtin">@TypeOf</span>(ser.default_st)) {</span>
-<span class="line" id="L138">                    <span class="tok-kw">break</span> :blk .{};</span>
-<span class="line" id="L139">                }</span>
+<span class="line" id="L135">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(serializer_sbt, <span class="tok-str">&quot;attributes&quot;</span>)) {</span>
+<span class="line" id="L136">                        <span class="tok-kw">if</span> (std.meta.fields(<span class="tok-builtin">@TypeOf</span>(serializer_sbt.attributes)).len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L137">                            <span class="tok-kw">break</span> :blk .{};</span>
+<span class="line" id="L138">                        }</span>
+<span class="line" id="L139">                    }</span>
 <span class="line" id="L140"></span>
-<span class="line" id="L141">                <span class="tok-kw">break</span> :blk serializer_sbt;</span>
-<span class="line" id="L142">            };</span>
+<span class="line" id="L141">                    <span class="tok-kw">break</span> :blk .{serializer_sbt};</span>
+<span class="line" id="L142">                }</span>
 <span class="line" id="L143"></span>
-<span class="line" id="L144">            <span class="tok-comment">/// Aggregate Serialization Tuple.</span></span>
-<span class="line" id="L145">            <span class="tok-comment">///</span></span>
-<span class="line" id="L146">            <span class="tok-comment">/// The Aggregate ST combines the user-, serializer-, and Getty's</span></span>
-<span class="line" id="L147">            <span class="tok-comment">/// default Serialization Tuples into one.</span></span>
-<span class="line" id="L148">            <span class="tok-comment">///</span></span>
-<span class="line" id="L149">            <span class="tok-comment">/// The priority of each ST is shown below (from highest to lowest):</span></span>
-<span class="line" id="L150">            <span class="tok-comment">///</span></span>
-<span class="line" id="L151">            <span class="tok-comment">///   1. User-defined ST.</span></span>
-<span class="line" id="L152">            <span class="tok-comment">///   2. Serializer-defined ST.</span></span>
-<span class="line" id="L153">            <span class="tok-comment">///   3. Getty's default ST.</span></span>
-<span class="line" id="L154">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> st = blk: {</span>
-<span class="line" id="L155">                <span class="tok-kw">const</span> U = <span class="tok-builtin">@TypeOf</span>(user_st);</span>
-<span class="line" id="L156">                <span class="tok-kw">const</span> S = <span class="tok-builtin">@TypeOf</span>(serializer_st);</span>
-<span class="line" id="L157">                <span class="tok-kw">const</span> Empty = <span class="tok-builtin">@TypeOf</span>(.{});</span>
-<span class="line" id="L158"></span>
-<span class="line" id="L159">                <span class="tok-kw">if</span> (U == Empty <span class="tok-kw">and</span> S == Empty) {</span>
-<span class="line" id="L160">                    <span class="tok-comment">// Both tuples are empty or the default ST.</span>
+<span class="line" id="L144">                <span class="tok-comment">// Process ST.</span>
 </span>
-<span class="line" id="L161">                    <span class="tok-kw">break</span> :blk ser.default_st;</span>
-<span class="line" id="L162">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (U != Empty <span class="tok-kw">and</span> S == Empty) {</span>
-<span class="line" id="L163">                    <span class="tok-comment">// User tuple is custom but serializer tuple is empty or the default ST.</span>
+<span class="line" id="L145">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(serializer_sbt) == <span class="tok-builtin">@TypeOf</span>(tuples.default)) {</span>
+<span class="line" id="L146">                    <span class="tok-kw">break</span> :blk .{};</span>
+<span class="line" id="L147">                }</span>
+<span class="line" id="L148"></span>
+<span class="line" id="L149">                <span class="tok-kw">break</span> :blk serializer_sbt;</span>
+<span class="line" id="L150">            };</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">            <span class="tok-comment">/// Aggregate Serialization Tuple.</span></span>
+<span class="line" id="L153">            <span class="tok-comment">///</span></span>
+<span class="line" id="L154">            <span class="tok-comment">/// The Aggregate ST combines the user-, serializer-, and Getty's</span></span>
+<span class="line" id="L155">            <span class="tok-comment">/// default Serialization Tuples into one.</span></span>
+<span class="line" id="L156">            <span class="tok-comment">///</span></span>
+<span class="line" id="L157">            <span class="tok-comment">/// The priority of each ST is shown below (from highest to lowest):</span></span>
+<span class="line" id="L158">            <span class="tok-comment">///</span></span>
+<span class="line" id="L159">            <span class="tok-comment">///   1. User-defined ST.</span></span>
+<span class="line" id="L160">            <span class="tok-comment">///   2. Serializer-defined ST.</span></span>
+<span class="line" id="L161">            <span class="tok-comment">///   3. Getty's default ST.</span></span>
+<span class="line" id="L162">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> st = blk: {</span>
+<span class="line" id="L163">                <span class="tok-kw">const</span> U = <span class="tok-builtin">@TypeOf</span>(user_st);</span>
+<span class="line" id="L164">                <span class="tok-kw">const</span> S = <span class="tok-builtin">@TypeOf</span>(serializer_st);</span>
+<span class="line" id="L165">                <span class="tok-kw">const</span> Empty = <span class="tok-builtin">@TypeOf</span>(.{});</span>
+<span class="line" id="L166"></span>
+<span class="line" id="L167">                <span class="tok-kw">if</span> (U == Empty <span class="tok-kw">and</span> S == Empty) {</span>
+<span class="line" id="L168">                    <span class="tok-comment">// Both tuples are empty or the default ST.</span>
 </span>
-<span class="line" id="L164">                    <span class="tok-kw">break</span> :blk user_st ++ ser.default_st;</span>
-<span class="line" id="L165">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (S != Empty <span class="tok-kw">and</span> U == Empty) {</span>
-<span class="line" id="L166">                    <span class="tok-comment">// Serializer tuple is custom but user tuple is empty or the default ST.</span>
+<span class="line" id="L169">                    <span class="tok-kw">break</span> :blk tuples.default;</span>
+<span class="line" id="L170">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (U != Empty <span class="tok-kw">and</span> S == Empty) {</span>
+<span class="line" id="L171">                    <span class="tok-comment">// User tuple is custom but serializer tuple is empty or the default ST.</span>
 </span>
-<span class="line" id="L167">                    <span class="tok-kw">break</span> :blk serializer_st ++ ser.default_st;</span>
-<span class="line" id="L168">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L169">                    <span class="tok-comment">// Both tuples are custom.</span>
+<span class="line" id="L172">                    <span class="tok-kw">break</span> :blk user_st ++ tuples.default;</span>
+<span class="line" id="L173">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (S != Empty <span class="tok-kw">and</span> U == Empty) {</span>
+<span class="line" id="L174">                    <span class="tok-comment">// Serializer tuple is custom but user tuple is empty or the default ST.</span>
 </span>
-<span class="line" id="L170">                    <span class="tok-kw">break</span> :blk user_st ++ serializer_st ++ ser.default_st;</span>
-<span class="line" id="L171">                }</span>
-<span class="line" id="L172">            };</span>
-<span class="line" id="L173"></span>
-<span class="line" id="L174">            <span class="tok-comment">/// Serializes a Getty Boolean value.</span></span>
-<span class="line" id="L175">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeBool</span>(self: Self, value: <span class="tok-type">bool</span>) Error!Ok {</span>
-<span class="line" id="L176">                <span class="tok-kw">if</span> (methods.serializeBool) |f| {</span>
-<span class="line" id="L177">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value);</span>
-<span class="line" id="L178">                }</span>
-<span class="line" id="L179"></span>
-<span class="line" id="L180">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeBool is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L181">            }</span>
-<span class="line" id="L182"></span>
-<span class="line" id="L183">            <span class="tok-comment">// Serializes a Getty Enum value.</span>
+<span class="line" id="L175">                    <span class="tok-kw">break</span> :blk serializer_st ++ tuples.default;</span>
+<span class="line" id="L176">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L177">                    <span class="tok-comment">// Both tuples are custom.</span>
 </span>
-<span class="line" id="L184">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeEnum</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
-<span class="line" id="L185">                <span class="tok-kw">if</span> (methods.serializeEnum) |f| {</span>
-<span class="line" id="L186">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
-<span class="line" id="L187">                        .Enum, .EnumLiteral =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value),</span>
-<span class="line" id="L188">                        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected enum, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value))),</span>
-<span class="line" id="L189">                    }</span>
-<span class="line" id="L190">                }</span>
-<span class="line" id="L191"></span>
-<span class="line" id="L192">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeEnum is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L193">            }</span>
-<span class="line" id="L194"></span>
-<span class="line" id="L195">            <span class="tok-comment">/// Serializes a Getty Float value.</span></span>
-<span class="line" id="L196">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeFloat</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
-<span class="line" id="L197">                <span class="tok-kw">if</span> (methods.serializeFloat) |f| {</span>
-<span class="line" id="L198">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
-<span class="line" id="L199">                        .Float, .ComptimeFloat =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value),</span>
-<span class="line" id="L200">                        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected float, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value))),</span>
-<span class="line" id="L201">                    }</span>
-<span class="line" id="L202">                }</span>
-<span class="line" id="L203"></span>
-<span class="line" id="L204">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeFloat is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L205">            }</span>
-<span class="line" id="L206"></span>
-<span class="line" id="L207">            <span class="tok-comment">/// Serializes a Getty Integer value.</span></span>
-<span class="line" id="L208">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeInt</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
-<span class="line" id="L209">                <span class="tok-kw">if</span> (methods.serializeInt) |f| {</span>
-<span class="line" id="L210">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
-<span class="line" id="L211">                        .Int, .ComptimeInt =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value),</span>
-<span class="line" id="L212">                        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected integer, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value))),</span>
-<span class="line" id="L213">                    }</span>
-<span class="line" id="L214">                }</span>
-<span class="line" id="L215"></span>
-<span class="line" id="L216">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeInt is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L217">            }</span>
-<span class="line" id="L218"></span>
-<span class="line" id="L219">            <span class="tok-comment">/// Begins the serialization process for a Getty Map value.</span></span>
-<span class="line" id="L220">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeMap</span>(self: Self, length: ?<span class="tok-type">usize</span>) blk: {</span>
-<span class="line" id="L221">                <span class="tok-kw">if</span> (Map) |T| {</span>
-<span class="line" id="L222">                    <span class="tok-kw">break</span> :blk Error!T;</span>
-<span class="line" id="L223">                }</span>
-<span class="line" id="L224"></span>
-<span class="line" id="L225">                <span class="tok-comment">// If Map is null, then this function will raise a compile</span>
+<span class="line" id="L178">                    <span class="tok-kw">break</span> :blk user_st ++ serializer_st ++ tuples.default;</span>
+<span class="line" id="L179">                }</span>
+<span class="line" id="L180">            };</span>
+<span class="line" id="L181"></span>
+<span class="line" id="L182">            <span class="tok-comment">/// Serializes a Getty Boolean value.</span></span>
+<span class="line" id="L183">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeBool</span>(self: Self, value: <span class="tok-type">bool</span>) Error!Ok {</span>
+<span class="line" id="L184">                <span class="tok-kw">if</span> (methods.serializeBool) |f| {</span>
+<span class="line" id="L185">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value);</span>
+<span class="line" id="L186">                }</span>
+<span class="line" id="L187"></span>
+<span class="line" id="L188">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeBool is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L189">            }</span>
+<span class="line" id="L190"></span>
+<span class="line" id="L191">            <span class="tok-comment">// Serializes a Getty Enum value.</span>
 </span>
-<span class="line" id="L226">                <span class="tok-comment">// error, so it doesn't really matter what the return type will</span>
+<span class="line" id="L192">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeEnum</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
+<span class="line" id="L193">                <span class="tok-kw">if</span> (methods.serializeEnum) |f| {</span>
+<span class="line" id="L194">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
+<span class="line" id="L195">                        .Enum, .EnumLiteral =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value),</span>
+<span class="line" id="L196">                        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected enum, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value))),</span>
+<span class="line" id="L197">                    }</span>
+<span class="line" id="L198">                }</span>
+<span class="line" id="L199"></span>
+<span class="line" id="L200">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeEnum is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L201">            }</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">            <span class="tok-comment">/// Serializes a Getty Float value.</span></span>
+<span class="line" id="L204">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeFloat</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
+<span class="line" id="L205">                <span class="tok-kw">if</span> (methods.serializeFloat) |f| {</span>
+<span class="line" id="L206">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
+<span class="line" id="L207">                        .Float, .ComptimeFloat =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value),</span>
+<span class="line" id="L208">                        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected float, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value))),</span>
+<span class="line" id="L209">                    }</span>
+<span class="line" id="L210">                }</span>
+<span class="line" id="L211"></span>
+<span class="line" id="L212">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeFloat is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L213">            }</span>
+<span class="line" id="L214"></span>
+<span class="line" id="L215">            <span class="tok-comment">/// Serializes a Getty Integer value.</span></span>
+<span class="line" id="L216">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeInt</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
+<span class="line" id="L217">                <span class="tok-kw">if</span> (methods.serializeInt) |f| {</span>
+<span class="line" id="L218">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
+<span class="line" id="L219">                        .Int, .ComptimeInt =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value),</span>
+<span class="line" id="L220">                        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected integer, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value))),</span>
+<span class="line" id="L221">                    }</span>
+<span class="line" id="L222">                }</span>
+<span class="line" id="L223"></span>
+<span class="line" id="L224">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeInt is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L225">            }</span>
+<span class="line" id="L226"></span>
+<span class="line" id="L227">            <span class="tok-comment">/// Begins the serialization process for a Getty Map value.</span></span>
+<span class="line" id="L228">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeMap</span>(self: Self, length: ?<span class="tok-type">usize</span>) blk: {</span>
+<span class="line" id="L229">                <span class="tok-kw">if</span> (Map) |T| {</span>
+<span class="line" id="L230">                    <span class="tok-kw">break</span> :blk Error!T;</span>
+<span class="line" id="L231">                }</span>
+<span class="line" id="L232"></span>
+<span class="line" id="L233">                <span class="tok-comment">// If Map is null, then this function will raise a compile</span>
 </span>
-<span class="line" id="L227">                <span class="tok-comment">// be. However, we use Error!Context specifically for its clean</span>
+<span class="line" id="L234">                <span class="tok-comment">// error, so it doesn't really matter what the return type will</span>
 </span>
-<span class="line" id="L228">                <span class="tok-comment">// error messages. It'll result in errors such as &quot;no field or</span>
+<span class="line" id="L235">                <span class="tok-comment">// be. However, we use Error!Context specifically for its clean</span>
 </span>
-<span class="line" id="L229">                <span class="tok-comment">// member function named 'map' in 'ser.TestSerializer'</span>
+<span class="line" id="L236">                <span class="tok-comment">// error messages. It'll result in errors such as &quot;no field or</span>
 </span>
-<span class="line" id="L230">                <span class="tok-kw">break</span> :blk Error!Context;</span>
-<span class="line" id="L231">            } {</span>
-<span class="line" id="L232">                <span class="tok-kw">if</span> (Map == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L233">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeMap requires getty.ser.Map to be non-null&quot;</span>);</span>
-<span class="line" id="L234">                }</span>
-<span class="line" id="L235"></span>
-<span class="line" id="L236">                <span class="tok-kw">if</span> (methods.serializeMap) |f| {</span>
-<span class="line" id="L237">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, length);</span>
-<span class="line" id="L238">                }</span>
-<span class="line" id="L239"></span>
-<span class="line" id="L240">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeMap is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L241">            }</span>
-<span class="line" id="L242"></span>
-<span class="line" id="L243">            <span class="tok-comment">/// Serializes a Getty Null value.</span></span>
-<span class="line" id="L244">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeNull</span>(self: Self) Error!Ok {</span>
-<span class="line" id="L245">                <span class="tok-kw">if</span> (methods.serializeNull) |f| {</span>
-<span class="line" id="L246">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context);</span>
-<span class="line" id="L247">                }</span>
-<span class="line" id="L248"></span>
-<span class="line" id="L249">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeNull is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L250">            }</span>
-<span class="line" id="L251"></span>
-<span class="line" id="L252">            <span class="tok-comment">/// Begins the serialization process for a Getty Sequence value.</span></span>
-<span class="line" id="L253">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeSeq</span>(self: Self, length: ?<span class="tok-type">usize</span>) blk: {</span>
-<span class="line" id="L254">                <span class="tok-kw">if</span> (Seq) |T| {</span>
-<span class="line" id="L255">                    <span class="tok-kw">break</span> :blk Error!T;</span>
-<span class="line" id="L256">                }</span>
-<span class="line" id="L257"></span>
-<span class="line" id="L258">                <span class="tok-comment">// If Seq is null, then this function will raise a compile</span>
+<span class="line" id="L237">                <span class="tok-comment">// member function named 'map' in 'ser.TestSerializer'</span>
 </span>
-<span class="line" id="L259">                <span class="tok-comment">// error, so it doesn't really matter what the return type will</span>
+<span class="line" id="L238">                <span class="tok-kw">break</span> :blk Error!Context;</span>
+<span class="line" id="L239">            } {</span>
+<span class="line" id="L240">                <span class="tok-kw">if</span> (Map == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L241">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeMap requires getty.ser.Map to be non-null&quot;</span>);</span>
+<span class="line" id="L242">                }</span>
+<span class="line" id="L243"></span>
+<span class="line" id="L244">                <span class="tok-kw">if</span> (methods.serializeMap) |f| {</span>
+<span class="line" id="L245">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, length);</span>
+<span class="line" id="L246">                }</span>
+<span class="line" id="L247"></span>
+<span class="line" id="L248">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeMap is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L249">            }</span>
+<span class="line" id="L250"></span>
+<span class="line" id="L251">            <span class="tok-comment">/// Serializes a Getty Null value.</span></span>
+<span class="line" id="L252">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeNull</span>(self: Self) Error!Ok {</span>
+<span class="line" id="L253">                <span class="tok-kw">if</span> (methods.serializeNull) |f| {</span>
+<span class="line" id="L254">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context);</span>
+<span class="line" id="L255">                }</span>
+<span class="line" id="L256"></span>
+<span class="line" id="L257">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeNull is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L258">            }</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260">            <span class="tok-comment">/// Begins the serialization process for a Getty Sequence value.</span></span>
+<span class="line" id="L261">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeSeq</span>(self: Self, length: ?<span class="tok-type">usize</span>) blk: {</span>
+<span class="line" id="L262">                <span class="tok-kw">if</span> (Seq) |T| {</span>
+<span class="line" id="L263">                    <span class="tok-kw">break</span> :blk Error!T;</span>
+<span class="line" id="L264">                }</span>
+<span class="line" id="L265"></span>
+<span class="line" id="L266">                <span class="tok-comment">// If Seq is null, then this function will raise a compile</span>
 </span>
-<span class="line" id="L260">                <span class="tok-comment">// be. However, we use Error!Context specifically for its clean</span>
+<span class="line" id="L267">                <span class="tok-comment">// error, so it doesn't really matter what the return type will</span>
 </span>
-<span class="line" id="L261">                <span class="tok-comment">// error messages. It'll result in errors such as &quot;no field or</span>
+<span class="line" id="L268">                <span class="tok-comment">// be. However, we use Error!Context specifically for its clean</span>
 </span>
-<span class="line" id="L262">                <span class="tok-comment">// member function named 'seq' in 'ser.TestSerializer'</span>
+<span class="line" id="L269">                <span class="tok-comment">// error messages. It'll result in errors such as &quot;no field or</span>
 </span>
-<span class="line" id="L263">                <span class="tok-kw">break</span> :blk Error!Context;</span>
-<span class="line" id="L264">            } {</span>
-<span class="line" id="L265">                <span class="tok-kw">if</span> (Seq == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L266">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeSeq requires getty.ser.Seq to be non-null&quot;</span>);</span>
-<span class="line" id="L267">                }</span>
-<span class="line" id="L268"></span>
-<span class="line" id="L269">                <span class="tok-kw">if</span> (methods.serializeSeq) |f| {</span>
-<span class="line" id="L270">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, length);</span>
-<span class="line" id="L271">                }</span>
-<span class="line" id="L272"></span>
-<span class="line" id="L273">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeSeq is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L274">            }</span>
-<span class="line" id="L275"></span>
-<span class="line" id="L276">            <span class="tok-comment">/// Serializes a Getty Optional value.</span></span>
-<span class="line" id="L277">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeSome</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
-<span class="line" id="L278">                <span class="tok-kw">if</span> (methods.serializeSome) |f| {</span>
-<span class="line" id="L279">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value);</span>
-<span class="line" id="L280">                }</span>
-<span class="line" id="L281"></span>
-<span class="line" id="L282">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeSome is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L283">            }</span>
-<span class="line" id="L284"></span>
-<span class="line" id="L285">            <span class="tok-comment">/// Serializes a Getty String value.</span></span>
-<span class="line" id="L286">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeString</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
-<span class="line" id="L287">                <span class="tok-kw">if</span> (methods.serializeString) |f| {</span>
-<span class="line" id="L288">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> !std.meta.trait.isZigString(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
-<span class="line" id="L289">                        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected string, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value)));</span>
-<span class="line" id="L290">                    }</span>
-<span class="line" id="L291"></span>
-<span class="line" id="L292">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value);</span>
-<span class="line" id="L293">                }</span>
-<span class="line" id="L294"></span>
-<span class="line" id="L295">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeString is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L296">            }</span>
-<span class="line" id="L297"></span>
-<span class="line" id="L298">            <span class="tok-comment">/// Begins the serialization process for a Getty Struct value.</span></span>
-<span class="line" id="L299">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeStruct</span>(self: Self, <span class="tok-kw">comptime</span> name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, length: <span class="tok-type">usize</span>) blk: {</span>
-<span class="line" id="L300">                <span class="tok-kw">if</span> (Structure) |T| {</span>
-<span class="line" id="L301">                    <span class="tok-kw">break</span> :blk Error!T;</span>
-<span class="line" id="L302">                }</span>
-<span class="line" id="L303"></span>
-<span class="line" id="L304">                <span class="tok-comment">// If Structure is null, then this function will raise a</span>
+<span class="line" id="L270">                <span class="tok-comment">// member function named 'seq' in 'ser.TestSerializer'</span>
 </span>
-<span class="line" id="L305">                <span class="tok-comment">// compile error, so it doesn't really matter what the return</span>
+<span class="line" id="L271">                <span class="tok-kw">break</span> :blk Error!Context;</span>
+<span class="line" id="L272">            } {</span>
+<span class="line" id="L273">                <span class="tok-kw">if</span> (Seq == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L274">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeSeq requires getty.ser.Seq to be non-null&quot;</span>);</span>
+<span class="line" id="L275">                }</span>
+<span class="line" id="L276"></span>
+<span class="line" id="L277">                <span class="tok-kw">if</span> (methods.serializeSeq) |f| {</span>
+<span class="line" id="L278">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, length);</span>
+<span class="line" id="L279">                }</span>
+<span class="line" id="L280"></span>
+<span class="line" id="L281">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeSeq is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L282">            }</span>
+<span class="line" id="L283"></span>
+<span class="line" id="L284">            <span class="tok-comment">/// Serializes a Getty Optional value.</span></span>
+<span class="line" id="L285">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeSome</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
+<span class="line" id="L286">                <span class="tok-kw">if</span> (methods.serializeSome) |f| {</span>
+<span class="line" id="L287">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value);</span>
+<span class="line" id="L288">                }</span>
+<span class="line" id="L289"></span>
+<span class="line" id="L290">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeSome is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L291">            }</span>
+<span class="line" id="L292"></span>
+<span class="line" id="L293">            <span class="tok-comment">/// Serializes a Getty String value.</span></span>
+<span class="line" id="L294">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeString</span>(self: Self, value: <span class="tok-kw">anytype</span>) Error!Ok {</span>
+<span class="line" id="L295">                <span class="tok-kw">if</span> (methods.serializeString) |f| {</span>
+<span class="line" id="L296">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> !std.meta.trait.isZigString(<span class="tok-builtin">@TypeOf</span>(value))) {</span>
+<span class="line" id="L297">                        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected string, found: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(value)));</span>
+<span class="line" id="L298">                    }</span>
+<span class="line" id="L299"></span>
+<span class="line" id="L300">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, value);</span>
+<span class="line" id="L301">                }</span>
+<span class="line" id="L302"></span>
+<span class="line" id="L303">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeString is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L304">            }</span>
+<span class="line" id="L305"></span>
+<span class="line" id="L306">            <span class="tok-comment">/// Begins the serialization process for a Getty Struct value.</span></span>
+<span class="line" id="L307">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeStruct</span>(self: Self, <span class="tok-kw">comptime</span> name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, length: <span class="tok-type">usize</span>) blk: {</span>
+<span class="line" id="L308">                <span class="tok-kw">if</span> (Structure) |T| {</span>
+<span class="line" id="L309">                    <span class="tok-kw">break</span> :blk Error!T;</span>
+<span class="line" id="L310">                }</span>
+<span class="line" id="L311"></span>
+<span class="line" id="L312">                <span class="tok-comment">// If Structure is null, then this function will raise a</span>
 </span>
-<span class="line" id="L306">                <span class="tok-comment">// type will be. However, we use Error!Context specifically for</span>
+<span class="line" id="L313">                <span class="tok-comment">// compile error, so it doesn't really matter what the return</span>
 </span>
-<span class="line" id="L307">                <span class="tok-comment">// its clean error messages. It'll result in errors such as</span>
+<span class="line" id="L314">                <span class="tok-comment">// type will be. However, we use Error!Context specifically for</span>
 </span>
-<span class="line" id="L308">                <span class="tok-comment">// &quot;no field or member function named 'structure' in 'ser.TestSerializer'</span>
+<span class="line" id="L315">                <span class="tok-comment">// its clean error messages. It'll result in errors such as</span>
 </span>
-<span class="line" id="L309">                <span class="tok-kw">break</span> :blk Error!Context;</span>
-<span class="line" id="L310">            } {</span>
-<span class="line" id="L311">                <span class="tok-kw">if</span> (Structure == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L312">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeStruct requires getty.ser.Structure to be non-null&quot;</span>);</span>
-<span class="line" id="L313">                }</span>
-<span class="line" id="L314"></span>
-<span class="line" id="L315">                <span class="tok-kw">if</span> (methods.serializeStruct) |f| {</span>
-<span class="line" id="L316">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, name, length);</span>
-<span class="line" id="L317">                }</span>
-<span class="line" id="L318"></span>
-<span class="line" id="L319">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeStruct is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L320">            }</span>
-<span class="line" id="L321"></span>
-<span class="line" id="L322">            <span class="tok-comment">/// Serializes a Getty Void value.</span></span>
-<span class="line" id="L323">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeVoid</span>(self: Self) Error!Ok {</span>
-<span class="line" id="L324">                <span class="tok-kw">if</span> (methods.serializeVoid) |f| {</span>
-<span class="line" id="L325">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context);</span>
-<span class="line" id="L326">                }</span>
-<span class="line" id="L327"></span>
-<span class="line" id="L328">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeVoid is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
-<span class="line" id="L329">            }</span>
-<span class="line" id="L330">        };</span>
-<span class="line" id="L331"></span>
-<span class="line" id="L332">        <span class="tok-comment">/// Returns an interface value.</span></span>
-<span class="line" id="L333">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializer</span>(self: Context) @&quot;getty.Serializer&quot; {</span>
-<span class="line" id="L334">            <span class="tok-kw">return</span> .{ .context = self };</span>
-<span class="line" id="L335">        }</span>
-<span class="line" id="L336">    };</span>
-<span class="line" id="L337">}</span>
-<span class="line" id="L338"></span>
+<span class="line" id="L316">                <span class="tok-comment">// &quot;no field or member function named 'structure' in 'ser.TestSerializer'</span>
+</span>
+<span class="line" id="L317">                <span class="tok-kw">break</span> :blk Error!Context;</span>
+<span class="line" id="L318">            } {</span>
+<span class="line" id="L319">                <span class="tok-kw">if</span> (Structure == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L320">                    <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeStruct requires getty.ser.Structure to be non-null&quot;</span>);</span>
+<span class="line" id="L321">                }</span>
+<span class="line" id="L322"></span>
+<span class="line" id="L323">                <span class="tok-kw">if</span> (methods.serializeStruct) |f| {</span>
+<span class="line" id="L324">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, name, length);</span>
+<span class="line" id="L325">                }</span>
+<span class="line" id="L326"></span>
+<span class="line" id="L327">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeStruct is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L328">            }</span>
+<span class="line" id="L329"></span>
+<span class="line" id="L330">            <span class="tok-comment">/// Serializes a Getty Void value.</span></span>
+<span class="line" id="L331">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeVoid</span>(self: Self) Error!Ok {</span>
+<span class="line" id="L332">                <span class="tok-kw">if</span> (methods.serializeVoid) |f| {</span>
+<span class="line" id="L333">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context);</span>
+<span class="line" id="L334">                }</span>
+<span class="line" id="L335"></span>
+<span class="line" id="L336">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;serializeVoid is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L337">            }</span>
+<span class="line" id="L338">        };</span>
+<span class="line" id="L339"></span>
+<span class="line" id="L340">        <span class="tok-comment">/// Returns an interface value.</span></span>
+<span class="line" id="L341">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializer</span>(self: Context) @&quot;getty.Serializer&quot; {</span>
+<span class="line" id="L342">            <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L343">        }</span>
+<span class="line" id="L344">    };</span>
+<span class="line" id="L345">}</span>
+<span class="line" id="L346"></span>
 </code></pre></body>
 </html>

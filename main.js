@@ -2,10 +2,21 @@
 
 var zigAnalysis;
 
+const NAV_MODES = {
+  API: "#A;",
+  API_INTERNAL: "#a;",
+  GUIDES: "#G;",
+};
+
 (function () {
   const domStatus = document.getElementById("status");
   const domSectNav = document.getElementById("sectNav");
   const domListNav = document.getElementById("listNav");
+  const domApiSwitch = document.getElementById("ApiSwitch");
+  const domGuideSwitch = document.getElementById("guideSwitch");
+  const domGuidesMenu = document.getElementById("guidesMenu");
+  const domApiMenu = document.getElementById("apiMenu");
+  const domGuidesList = document.getElementById("guidesList");
   const domSectMainPkg = document.getElementById("sectMainPkg");
   const domSectPkgs = document.getElementById("sectPkgs");
   const domListPkgs = document.getElementById("listPkgs");
@@ -29,6 +40,7 @@ var zigAnalysis;
   const domListValues = document.getElementById("listValues");
   const domFnProto = document.getElementById("fnProto");
   const domFnProtoCode = document.getElementById("fnProtoCode");
+  const domFnSourceLink = document.getElementById("fnSourceLink");
   const domSectParams = document.getElementById("sectParams");
   const domListParams = document.getElementById("listParams");
   const domTldDocs = document.getElementById("tldDocs");
@@ -44,6 +56,7 @@ var zigAnalysis;
   const domSectSearchResults = document.getElementById("sectSearchResults");
   const domSectSearchAllResultsLink = document.getElementById("sectSearchAllResultsLink");
   const domDocs = document.getElementById("docs");
+  const domGuides = document.getElementById("guides");
   const domListSearchResults = document.getElementById("listSearchResults");
   const domSectSearchNoResults = document.getElementById("sectSearchNoResults");
   const domSectInfo = document.getElementById("sectInfo");
@@ -82,7 +95,8 @@ var zigAnalysis;
   let canonTypeDecls = null; // lazy; use getCanonTypeDecl
 
   let curNav = {
-    showPrivDecls: false,
+    mode: NAV_MODES.API,
+    activeGuide: "",
     // each element is a package name, e.g. @import("a") then within there @import("b")
     // starting implicitly from root package
     pkgNames: [],
@@ -92,8 +106,7 @@ var zigAnalysis;
     // empty array means refers to the package itself
     declNames: [],
     // these will be all types, except the last one may be a type or a decl
-    declObjs: [],
-
+    declObjs: [],    
     // (a, b, c, d) comptime call; result is the value the docs refer to
     callName: null,
   };
@@ -152,7 +165,7 @@ var zigAnalysis;
   );
 
   if (location.hash == "") {
-    location.hash = "#root";
+    location.hash = "#A;";
   }
 
   // make the modal disappear if you click outside it
@@ -173,17 +186,21 @@ var zigAnalysis;
   domLangRefLink.href = `https://ziglang.org/documentation/${langRefVersion}/`;
 
   function renderTitle() {
-    let list = curNav.pkgNames.concat(curNav.declNames);
     let suffix = " - Zig";
-    if (list.length === 0) {
-      if (rootIsStd) {
-        document.title = "std" + suffix;
-      } else {
-        document.title = zigAnalysis.params.rootName + suffix;
-      }
-    } else {
-      document.title = list.join(".") + suffix;
-    }
+    switch (curNav.mode) {
+      case NAV_MODES.API:
+      case NAV_MODES.API_INTERNAL:
+        let list = curNav.pkgNames.concat(curNav.declNames);
+        if (list.length === 0) {
+          document.title = zigAnalysis.packages[zigAnalysis.rootPkg].name + suffix;
+        } else {
+          document.title = list.join(".") + suffix;
+        }
+        return;
+      case NAV_MODES.GUIDES:
+        document.title = "[G] " + curNav.activeGuide + suffix;
+        return;
+    }    
   }
 
   function isDecl(x) {
@@ -377,8 +394,80 @@ var zigAnalysis;
   //        console.assert(false);
   //        return ({});
   //    }
+  function renderGuides() {
+    renderTitle();
 
-  function render() {
+    // set guide mode
+    domGuideSwitch.classList.add("active");
+    domApiSwitch.classList.remove("active");
+    domDocs.classList.add("hidden");
+    domGuides.classList.remove("hidden");    
+    domApiMenu.classList.add("hidden");
+
+    // sidebar guides list
+    const list = Object.keys(zigAnalysis.guides);
+    resizeDomList(domGuidesList, list.length, '<li><a href="#"></a></li>');
+    for (let i = 0; i < list.length; i += 1) {
+      let liDom = domGuidesList.children[i];
+      let aDom = liDom.children[0];
+      aDom.textContent = list[i];
+      aDom.setAttribute("href", NAV_MODES.GUIDES + list[i]);
+      if (list[i] === curNav.activeGuide) {
+        aDom.classList.add("active");
+      } else {
+        aDom.classList.remove("active");
+      }
+    }
+
+    if (list.length > 0) {
+      domGuidesMenu.classList.remove("hidden");
+    }
+    
+    // main content
+    const activeGuide = zigAnalysis.guides[curNav.activeGuide];
+    if (activeGuide == undefined) {
+      const root_file_idx = zigAnalysis.packages[zigAnalysis.rootPkg].file;
+      const root_file_name = zigAnalysis.files[root_file_idx];
+      domGuides.innerHTML = markdown(`
+          # Zig Guides
+          These autodocs don't contain any guide.
+
+          While the API section is a reference guide autogenerated from Zig source code,
+          guides are meant to be handwritten explanations that provide for example:
+
+          - how-to explanations for common use-cases 
+          - technical documentation 
+          - information about advanced usage patterns
+          
+          You can add guides by specifying which markdown files to include
+          in the top level doc comment of your root file, like so:
+
+          (At the top of \`${root_file_name}\`)
+          \`\`\`
+          //!zig-autodoc-guide: intro.md
+          //!zig-autodoc-guide: quickstart.md
+          //!zig-autodoc-guide: ../advanced-docs/advanced-stuff.md
+          \`\`\`
+        
+          **Note that this feature is still under heavy development so expect bugs**
+          **and missing features!**
+
+          Happy writing!
+        `);
+    } else {      
+      domGuides.innerHTML = markdown(activeGuide);
+    }
+  }
+
+  function renderApi() {
+    // set Api mode
+    domApiSwitch.classList.add("active");
+    domGuideSwitch.classList.remove("active");
+    domGuides.classList.add("hidden");
+    domDocs.classList.remove("hidden");
+    domApiMenu.classList.remove("hidden");
+    domGuidesMenu.classList.add("hidden");
+    
     domStatus.classList.add("hidden");
     domFnProto.classList.add("hidden");
     domSectParams.classList.add("hidden");
@@ -411,17 +500,16 @@ var zigAnalysis;
     renderInfo();
     renderPkgList();
 
-    domPrivDeclsBox.checked = curNav.showPrivDecls;
+    domPrivDeclsBox.checked = curNav.mode == NAV_MODES.API_INTERNAL;
 
     if (curNavSearch !== "") {
       return renderSearch();
     }
 
-
     let rootPkg = zigAnalysis.packages[zigAnalysis.rootPkg];
     let pkg = rootPkg;
     curNav.pkgObjs = [pkg];
-    for (let i = 0; i < curNav.pkgNames.length; i += 1) {
+    for (let i = 1; i < curNav.pkgNames.length; i += 1) {
       let childPkg = zigAnalysis.packages[pkg.table[curNav.pkgNames[i]]];
       if (childPkg == null) {
         return render404();
@@ -449,6 +537,8 @@ var zigAnalysis;
       currentType = childDecl;
       curNav.declObjs.push(currentType);
     }
+    
+    
     
     window.x = currentType;
 
@@ -492,6 +582,19 @@ var zigAnalysis;
 
   }
 
+  function render() {
+    switch (curNav.mode) {
+      case NAV_MODES.API:
+      case NAV_MODES.API_INTERNAL:
+          return renderApi();
+      case NAV_MODES.GUIDES:
+          return renderGuides();
+      default:
+          throw "?";
+    }  
+  }
+
+  
   function renderDocTest(decl) {
     if (!decl.decltest) return;
     const astNode = getAstNode(decl.decltest);
@@ -548,6 +651,8 @@ var zigAnalysis;
       wantLink: true,
       fnDecl,
     });
+    
+    domFnSourceLink.innerHTML = "[<a target=\"_blank\" href=\"" + sourceFileLink(fnDecl) + "\">src</a>]";
 
     let docsSource = null;
     let srcNode = getAstNode(fnDecl.src);
@@ -701,7 +806,6 @@ var zigAnalysis;
     for (let i = 0; i < curNav.pkgNames.length; i += 1) {
       hrefPkgNames.push(curNav.pkgNames[i]);
       let name = curNav.pkgNames[i];
-      if (name == "root") name = zigAnalysis.rootPkgName;
       list.push({
         name: name,
         link: navLink(hrefPkgNames, hrefDeclNames),
@@ -743,12 +847,12 @@ var zigAnalysis;
   }
 
   function renderPkgList() {
-    let rootPkg = zigAnalysis.packages[zigAnalysis.rootPkg];
+    const rootPkg = zigAnalysis.packages[zigAnalysis.rootPkg];
     let list = [];
     for (let key in rootPkg.table) {
       let pkgIndex = rootPkg.table[key];
       if (zigAnalysis.packages[pkgIndex] == null) continue;
-      if (key == zigAnalysis.params.rootName) continue;
+      if (key == rootPkg.name) continue;
       list.push({
         name: key,
         pkg: pkgIndex,
@@ -757,9 +861,9 @@ var zigAnalysis;
 
     {
       let aDom = domSectMainPkg.children[1].children[0].children[0];
-      aDom.textContent = zigAnalysis.rootPkgName;
+      aDom.textContent = rootPkg.name;
       aDom.setAttribute("href", navLinkPkg(zigAnalysis.rootPkg));
-      if (zigAnalysis.params.rootName === curNav.pkgNames[0]) {
+      if (rootPkg.name === curNav.pkgNames[0]) {
         aDom.classList.add("active");
       } else {
         aDom.classList.remove("active");
@@ -790,20 +894,17 @@ var zigAnalysis;
   }
 
   function navLink(pkgNames, declNames, callName) {
-    let base = "#";
-    if (curNav.showPrivDecls) {
-      base += "*";
-    }
-
+    let base = curNav.mode;
+    
     if (pkgNames.length === 0 && declNames.length === 0) {
       return base;
     } else if (declNames.length === 0 && callName == null) {
       return base + pkgNames.join(".");
     } else if (callName == null) {
-      return base + pkgNames.join(".") + ";" + declNames.join(".");
+      return base + pkgNames.join(".") + ":" + declNames.join(".");
     } else {
       return (
-        base + pkgNames.join(".") + ";" + declNames.join(".") + ";" + callName
+        base + pkgNames.join(".") + ":" + declNames.join(".") + ";" + callName
       );
     }
   }
@@ -814,6 +915,27 @@ var zigAnalysis;
 
   function navLinkDecl(childName) {
     return navLink(curNav.pkgNames, curNav.declNames.concat([childName]));
+  }
+
+  function findDeclNavLink(declName) {
+    if (curNav.declObjs.length == 0) return null;
+    const curFile = getAstNode(curNav.declObjs[curNav.declObjs.length-1].src).file;
+    
+    for (let i = curNav.declObjs.length -1; i >= 0; i--) {
+      const curDecl = curNav.declObjs[i];
+      const curDeclName = curNav.declNames[i-1];
+      if (curDeclName == declName) {
+        const declPath = curNav.declNames.slice(0,i);
+        return navLink(curNav.pkgNames, declPath);
+      } 
+
+      if (findSubDecl(curDecl, declName) != null) { 
+        const declPath = curNav.declNames.slice(0,i).concat([declName]);
+        return navLink(curNav.pkgNames, declPath);
+      }
+    }
+
+    //throw("could not resolve links for '" + declName + "'");
   }
 
   //
@@ -876,7 +998,7 @@ var zigAnalysis;
         return "false";
       }
       case "&": {
-        return "&" + exprName(zigAnalysis.exprs[expr["&"]]);
+        return "&" + exprName(zigAnalysis.exprs[expr["&"]], opts);
       }
       case "compileError": {
         let compileError = expr.compileError;
@@ -893,18 +1015,18 @@ var zigAnalysis;
         let payloadHtml = "";
         const lhsExpr = zigAnalysis.exprs[expr.slice.lhs];
         const startExpr = zigAnalysis.exprs[expr.slice.start];
-        let decl = exprName(lhsExpr);
-        let start = exprName(startExpr);
+        let decl = exprName(lhsExpr, opts);
+        let start = exprName(startExpr, opts);
         let end = "";
         let sentinel = "";
         if (expr.slice["end"]) {
           const endExpr = zigAnalysis.exprs[expr.slice.end];
-          let end_ = exprName(endExpr);
+          let end_ = exprName(endExpr, opts);
           end += end_;
         }
         if (expr.slice["sentinel"]) {
           const sentinelExpr = zigAnalysis.exprs[expr.slice.sentinel];
-          let sentinel_ = exprName(sentinelExpr);
+          let sentinel_ = exprName(sentinelExpr, opts);
           sentinel += " :" + sentinel_;
         }
         payloadHtml += decl + "[" + start + ".." + end + sentinel + "]";
@@ -912,7 +1034,7 @@ var zigAnalysis;
       }
       case "sliceIndex": {
         const sliceIndex = zigAnalysis.exprs[expr.sliceIndex];
-        return exprName(sliceIndex, opts);
+        return exprName(sliceIndex, opts, opts);
       }
       case "cmpxchg": {
         const typeIndex = zigAnalysis.exprs[expr.cmpxchg.type];
@@ -1015,19 +1137,6 @@ var zigAnalysis;
       case "switchIndex": {
         const switchIndex = zigAnalysis.exprs[expr.switchIndex];
         return exprName(switchIndex, opts);
-      }
-      case "refPath": {
-        let name = exprName(expr.refPath[0]);
-        for (let i = 1; i < expr.refPath.length; i++) {
-          let component = undefined;
-          if ("string" in expr.refPath[i]) {
-            component = expr.refPath[i].string;
-          } else {
-            component = exprName(expr.refPath[i]);
-          }
-          name += "." + component;
-        }
-        return name;
       }
       case "fieldRef": {
         const enumObj = exprName({ type: expr.fieldRef.type }, opts);
@@ -1532,7 +1641,11 @@ var zigAnalysis;
         return payloadHtml;
       }
       case "null": {
-        return "null";
+        if (opts.wantHtml) {
+          return '<span class="tok-null">null</span>';
+        } else {
+          return "null";
+        }
       }
       case "array": {
         let payloadHtml = ".{";
@@ -1578,10 +1691,46 @@ var zigAnalysis;
         return exprName(exprArg, opts);
       }
       case "declRef": {
-        return getDecl(expr.declRef).name;
+        const name = getDecl(expr.declRef).name;
+      
+        if (opts.wantHtml) {
+          let payloadHtml = "";
+          if (opts.wantLink) {
+            payloadHtml += '<a href="'+ findDeclNavLink(name) +'">';          
+          }
+          payloadHtml +=
+            '<span class="tok-kw" style="color:lightblue;">' +
+              name +
+            "</span>";
+          if (opts.wantLink) payloadHtml += "</a>";
+          return payloadHtml;
+        } else {
+          return name;
+        }
       }
       case "refPath": {
-        return expr.refPath.map((x) => exprName(x, opts)).join(".");
+        let firstComponent = expr.refPath[0];
+        let name = exprName(firstComponent, opts);
+        let url = undefined;
+        if (opts.wantLink && "declRef" in firstComponent) {
+          url = findDeclNavLink(getDecl(firstComponent.declRef).name);
+        }
+        for (let i = 1; i < expr.refPath.length; i++) {
+          let component = undefined;
+          if ("string" in expr.refPath[i]) {
+            component = expr.refPath[i].string;
+          } else {
+            component = exprName(expr.refPath[i], {...opts, wantLink: false});
+            if (opts.wantLink && "declRef" in expr.refPath[i]) {
+              url += "." + getDecl(expr.refPath[i].declRef).name;
+              component = '<a href="'+ url +'">' +
+                component +
+              "</a>";            
+            }
+          }
+          name += "." + component;
+        }
+        return name;
       }
       case "int": {
         return "" + expr.int;
@@ -1621,11 +1770,173 @@ var zigAnalysis;
             throw "TODO";
           case typeKinds.Struct: {
             let structObj = typeObj;
-            return structObj;
+            let name = "";
+            if (opts.wantHtml) {
+              if (structObj.is_tuple) {
+                name = "<span class='tok-kw'>tuple</span> { ";
+              } else {
+                name = "<span class='tok-kw'>struct</span> { ";
+              }
+            } else {
+              if (structObj.is_tuple) {
+                name = "tuple { ";
+              } else {
+                name = "struct { ";
+              }
+            }
+            if (structObj.fields.length > 1 && opts.wantHtml) {name += "</br>";}
+            let indent = "";
+            if (structObj.fields.length > 1 && opts.wantHtml) {
+              indent = "&nbsp;&nbsp;&nbsp;&nbsp;"
+            }
+            if (opts.indent) {
+              indent = opts.indent + indent;
+            }
+            let structNode = getAstNode(structObj.src);
+            let field_end = ",";
+            if (structObj.fields.length > 1 && opts.wantHtml) {
+              field_end += "</br>";
+            } else {
+              field_end += " ";
+            }
+
+            for(let i = 0; i < structObj.fields.length; i += 1) {
+              let fieldNode = getAstNode(structNode.fields[i]);
+              let fieldName = fieldNode.name;
+              let html = indent;
+              if (!structObj.is_tuple) {
+                html += escapeHtml(fieldName);
+              }
+
+              let fieldTypeExpr = structObj.fields[i];
+              if(!structObj.is_tuple) {
+                html += ": ";
+              }
+
+              html += exprName(fieldTypeExpr, {...opts, indent: indent});
+
+              html += field_end;
+
+              name += html;
+            }
+            if (opts.indent) {
+              name += opts.indent;
+            }
+            name += "}";
+            return name;
           }
           case typeKinds.Enum: {
             let enumObj = typeObj;
-            return enumObj;
+            let name = "";
+            if (opts.wantHtml) {
+              name = "<span class='tok-kw'>enum</span>";
+            } else {
+              name = "enum";
+            }
+            if (enumObj.tag) {
+              name += " (" + exprName(enumObj.tag, opts) + ")";
+            }
+            name += " { ";
+            let enumNode = getAstNode(enumObj.src);
+            let fields_len = enumNode.fields.length;
+            if (enumObj.nonexhaustive) {
+              fields_len += 1;
+            }
+            if (fields_len > 1 && opts.wantHtml) {name += "</br>";}
+            let indent = "";
+            if (fields_len > 1) {
+              if (opts.wantHtml) {
+                indent = "&nbsp;&nbsp;&nbsp;&nbsp;";
+              } else {
+                indent = "    ";
+              }
+            }
+            if (opts.indent) {
+              indent = opts.indent + indent;
+            }
+            let field_end = ",";
+            if (fields_len > 1 && opts.wantHtml) {
+              field_end += "</br>";
+            } else {
+              field_end += " ";
+            }
+            for(let i = 0; i < enumNode.fields.length; i += 1) {
+              let fieldNode = getAstNode(enumNode.fields[i]);
+              let fieldName = fieldNode.name;
+              let html =  indent + escapeHtml(fieldName);
+
+              html += field_end;
+
+              name += html;
+            }
+            if (enumObj.nonexhaustive) {
+              name += indent + "_" + field_end;
+            }
+            if (opts.indent) {
+              name += opts.indent;
+            }
+            name += "}";
+            return name;
+          }
+          case typeKinds.Union: {
+            let unionObj = typeObj;
+            let name = "";
+            if (opts.wantHtml) {
+              name = "<span class='tok-kw'>union</span>";
+            } else {
+              name = "union";
+            }
+            if (unionObj.auto_tag) {
+                if (opts.wantHtml) {
+                  name += " (<span class='tok-kw'>enum</span>";
+                } else {
+                  name += " (enum";
+                }
+                if (unionObj.tag) {
+                    name += "(" + exprName(unionObj.tag, opts) + "))";
+                } else {
+                  name += ")";
+                }
+            } else if (unionObj.tag) {
+              name += " (" + exprName(unionObj.tag, opts) + ")";
+            }
+            name += " { ";
+            if (unionObj.fields.length > 1 && opts.wantHtml) {
+              name += "</br>";
+            }
+            let indent = "";
+            if (unionObj.fields.length > 1 && opts.wantHtml) {
+              indent = "&nbsp;&nbsp;&nbsp;&nbsp;"
+            }
+            if (opts.indent) {
+              indent = opts.indent + indent;
+            }
+            let unionNode = getAstNode(unionObj.src);
+            let field_end = ",";
+            if (unionObj.fields.length > 1 && opts.wantHtml) {
+              field_end += "</br>";
+            } else {
+              field_end += " ";
+            }
+            for(let i = 0; i < unionObj.fields.length; i += 1) {
+              let fieldNode = getAstNode(unionNode.fields[i]);
+              let fieldName = fieldNode.name;
+              let html = indent + escapeHtml(fieldName);
+
+              let fieldTypeExpr = unionObj.fields[i];
+              html += ": ";
+
+              html += exprName(fieldTypeExpr, {...opts, indent: indent});
+
+              html += field_end;
+
+              name += html;
+            }
+            if (opts.indent) {
+              name += opts.indent;
+            }
+            name += "}";
+            return name;
           }
           case typeKinds.Opaque: {
             let opaqueObj = typeObj;
@@ -1839,7 +2150,14 @@ var zigAnalysis;
           }
           case typeKinds.Fn: {
             let fnObj = typeObj;
+            let fnDecl = opts.fnDecl;
+            let linkFnNameDecl = opts.linkFnNameDecl;
+            opts.fnDecl = null;
+            opts.linkFnNameDecl = null;
             let payloadHtml = "";
+            if (opts.addParensIfFnSignature && fnObj.src == 0){
+              payloadHtml += "(";
+            }
             if (opts.wantHtml) {
               if (fnObj.is_extern) {
                 payloadHtml += "pub extern ";
@@ -1847,21 +2165,16 @@ var zigAnalysis;
               if (fnObj.has_lib_name) {
                 payloadHtml += '"' + fnObj.lib_name + '" ';
               }
-              payloadHtml += '<span class="tok-kw">fn</span>';
-              if (opts.fnDecl) {
-                payloadHtml += ' <span class="tok-fn">';
-                if (opts.linkFnNameDecl) {
+              payloadHtml += '<span class="tok-kw">fn </span>';
+              if (fnDecl) {
+                payloadHtml += '<span class="tok-fn">';
+                if (linkFnNameDecl) {
                   payloadHtml +=
-                    '<a href="' +
-                    opts.linkFnNameDecl +
-                    '">' +
-                    escapeHtml(opts.fnDecl.name) +
+                    '<a href="' + linkFnNameDecl + '">' +
+                      escapeHtml(fnDecl.name) +
                     "</a>";
                 } else {
-                  payloadHtml += escapeHtml(opts.fnDecl.name);
-                  payloadHtml = "<a target=\"_blank\" href=\"" +
-                    sourceFileLink(opts.fnDecl) + "\">" +
-                    escapeHtml(opts.fnDecl.name) + "</a>";
+                  payloadHtml += escapeHtml(fnDecl.name);
                 }
                 payloadHtml += "</span>";
               }
@@ -1872,17 +2185,21 @@ var zigAnalysis;
             if (fnObj.params) {
               let fields = null;
               let isVarArgs = false;
-              let fnNode = getAstNode(fnObj.src);
-              fields = fnNode.fields;
-              isVarArgs = fnNode.varArgs;
-
+              if (fnObj.src != 0) {
+                let fnNode = getAstNode(fnObj.src);
+                fields = fnNode.fields;
+                isVarArgs = fnNode.varArgs;
+              }
+          
               for (let i = 0; i < fnObj.params.length; i += 1) {
                 if (i != 0) {
                   payloadHtml += ", ";
                 }
 
-                payloadHtml +=
-                  "<span class='argBreaker'><br>&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+                if (opts.wantHtml) {
+                  payloadHtml +=
+                    "<span class='argBreaker'><br>&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+                }
                 let value = fnObj.params[i];
                 let paramValue = resolveValue({ expr: value });
 
@@ -1922,79 +2239,20 @@ var zigAnalysis;
                 if (isVarArgs && i === fnObj.params.length - 1) {
                   payloadHtml += "...";
                 } else if ("alignOf" in value) {
-                  if (opts.wantHtml) {
-                    payloadHtml += '<a href="">';
-                    payloadHtml +=
-                      '<span class="tok-kw" style="color:lightblue;">' +
-                      exprName(value, opts) +
-                      "</span>";
-                    payloadHtml += "</a>";
-                  } else {
-                    payloadHtml += exprName(value, opts);
-                  }
+                  payloadHtml += exprName(value, opts);
                 } else if ("typeOf" in value) {
-                  if (opts.wantHtml) {
-                    payloadHtml += '<a href="">';
-                    payloadHtml +=
-                      '<span class="tok-kw" style="color:lightblue;">' +
-                      exprName(value, opts) +
-                      "</span>";
-                    payloadHtml += "</a>";
-                  } else {
-                    payloadHtml += exprName(value, opts);
-                  }
+                  payloadHtml += exprName(value, opts);
                 } else if ("typeOf_peer" in value) {
-                  if (opts.wantHtml) {
-                    payloadHtml += '<a href="">';
-                    payloadHtml +=
-                      '<span class="tok-kw" style="color:lightblue;">' +
-                      exprName(value, opts) +
-                      "</span>";
-                    payloadHtml += "</a>";
-                  } else {
                     payloadHtml += exprName(value, opts);
-                  }
                 } else if ("declRef" in value) {
-                  if (opts.wantHtml) {
-                    payloadHtml += '<a href="">';
-                    payloadHtml +=
-                      '<span class="tok-kw" style="color:lightblue;">' +
-                      exprName(value, opts) +
-                      "</span>";
-                    payloadHtml += "</a>";
-                  } else {
                     payloadHtml += exprName(value, opts);
-                  }
                 } else if ("call" in value) {
-                  if (opts.wantHtml) {
-                    payloadHtml += '<a href="">';
-                    payloadHtml +=
-                      '<span class="tok-kw" style="color:lightblue;">' +
-                      exprName(value, opts) +
-                      "</span>";
-                    payloadHtml += "</a>";
-                  } else {
                     payloadHtml += exprName(value, opts);
-                  }
                 } else if ("refPath" in value) {
-                  if (opts.wantHtml) {
-                    payloadHtml += '<a href="">';
-                    payloadHtml +=
-                      '<span class="tok-kw" style="color:lightblue;">' +
-                      exprName(value, opts) +
-                      "</span>";
-                    payloadHtml += "</a>";
-                  } else {
                     payloadHtml += exprName(value, opts);
-                  }
                 } else if ("type" in value) {
-                  let name = exprName(value, {
-                    wantHtml: false,
-                    wantLink: false,
-                    fnDecl: opts.fnDecl,
-                    linkFnNameDecl: opts.linkFnNameDecl,
-                  });
-                  payloadHtml += '<span class="tok-kw">' + name + "</span>";
+                  payloadHtml += exprName(value, opts);
+                  //payloadHtml += '<span class="tok-kw">' + name + "</span>";
                 } else if ("binOpIndex" in value) {
                   payloadHtml += exprName(value, opts);
                 } else if ("comptimeExpr" in value) {
@@ -2014,7 +2272,9 @@ var zigAnalysis;
               }
             }
 
-            payloadHtml += "<span class='argBreaker'>,<br></span>";
+            if (opts.wantHtml) {
+              payloadHtml += "<span class='argBreaker'>,<br></span>";
+            }
             payloadHtml += ") ";
 
             if (fnObj.has_align) {
@@ -2032,11 +2292,18 @@ var zigAnalysis;
               payloadHtml += "!";
             }
             if (fnObj.ret != null) {
-              payloadHtml += exprName(fnObj.ret, opts);
+              payloadHtml += exprName(fnObj.ret, {
+                ...opts, 
+                addParensIfFnSignature: true,
+              });
             } else if (opts.wantHtml) {
               payloadHtml += '<span class="tok-kw">anytype</span>';
             } else {
               payloadHtml += "anytype";
+            }
+
+            if (opts.addParensIfFnSignature && fnObj.src == 0){
+              payloadHtml += ")";
             }
             return payloadHtml;
           }
@@ -2078,7 +2345,7 @@ var zigAnalysis;
     ) {
       name = "std";
     } else {
-      name = exprName({ type: typeObj }, false, false);
+      name = exprName({ type: typeObj }, {wantHtml: false, wantLink: false});
     }
     if (name != null && name != "") {
       domHdrName.innerText =
@@ -2246,12 +2513,49 @@ var zigAnalysis;
   }
 
   function renderVar(decl) {
-    let declTypeRef = typeOfDecl(decl);
-    domFnProtoCode.innerHTML =
-      '<span class="tok-kw">var</span> ' +
-      escapeHtml(decl.name) +
-      ": " +
-      typeValueName(declTypeRef, true, true);
+    let resolvedVar = resolveValue(decl.value);
+
+    if (resolvedVar.expr.fieldRef) {
+      const declRef = decl.value.expr.refPath[0].declRef;
+      const type = getDecl(declRef);
+      domFnProtoCode.innerHTML =
+        '<span class="tok-kw">var</span> ' +
+        escapeHtml(decl.name) +
+        ": " +
+        type.name +
+        " = " +
+        exprName(decl.value.expr, { wantHtml: true, wantLink: true }) +
+        ";";
+    } else if (
+      resolvedVar.expr.string !== undefined ||
+      resolvedVar.expr.call !== undefined ||
+      resolvedVar.expr.comptimeExpr
+    ) {
+      domFnProtoCode.innerHTML =
+        '<span class="tok-kw">var</span> ' +
+        escapeHtml(decl.name) +
+        ": " +
+        exprName(resolvedVar.expr, { wantHtml: true, wantLink: true }) +
+        " = " +
+        exprName(decl.value.expr, { wantHtml: true, wantLink: true }) +
+        ";";
+    } else if (resolvedVar.expr.compileError) {
+      domFnProtoCode.innerHTML =
+        '<span class="tok-kw">var</span> ' +
+        escapeHtml(decl.name) +
+        " = " +
+        exprName(decl.value.expr, { wantHtml: true, wantLink: true }) +
+        ";";
+    } else {
+      domFnProtoCode.innerHTML =
+        '<span class="tok-kw">var</span> ' +
+        escapeHtml(decl.name) +
+        ": " +
+        exprName(resolvedVar.typeRef, { wantHtml: true, wantLink: true }) +
+        " = " +
+        exprName(decl.value.expr, { wantHtml: true, wantLink: true }) +
+        ";";
+    }
 
     let docs = getAstNode(decl.src).docs;
     if (docs != null) {
@@ -2392,11 +2696,10 @@ var zigAnalysis;
     }
 
     if (typesList.length !== 0) {
-      window.x = typesList;
       resizeDomList(
         domListTypes,
         typesList.length,
-        '<li><a href="#"></a></li>'
+        '<li><a href=""></a></li>'
       );
       for (let i = 0; i < typesList.length; i += 1) {
         let liDom = domListTypes.children[i];
@@ -2467,9 +2770,19 @@ var zigAnalysis;
 
         let docs = getAstNode(decl.src).docs;
         if (docs != null) {
-          tdDesc.innerHTML = shortDescMarkdown(docs);
+          docs = docs.trim();
+          var short = shortDesc(docs);
+          if (short != docs) {
+            short = markdown(short);
+            var long = markdown(docs);
+            tdDesc.innerHTML = 
+            "<div class=\"expand\" ><span class=\"button\" onclick=\"toggleExpand(event)\"></span><div class=\"sum-less\">" + short + "</div>" + "<div class=\"sum-more\">" + long + "</div></details>";
+          }
+          else {
+            tdDesc.innerHTML = markdown(short);
+          }
         } else {
-          tdDesc.textContent = "";
+          tdDesc.innerHTML = "<p><i>No documentation provided.</i><p>";
         }
       }
       domSectFns.classList.remove("hidden");
@@ -2497,9 +2810,10 @@ var zigAnalysis;
           html += ' = <span class="tok-number">' + fieldName + "</span>";
         } else {
           let fieldTypeExpr = container.fields[i];
-          html += ": ";
-          let name = exprName(fieldTypeExpr, false, false);
-          html += '<span class="tok-kw">' + name + "</span>";
+          if(container.kind ==! typeKinds.Struct || !container.is_tuple) {
+            html += ": ";
+          }
+          html += exprName(fieldTypeExpr, {wantHtml:true, wantLink:true});
           let tsn = typeShorthandName(fieldTypeExpr);
           if (tsn) {
             html += "<span> (" + tsn + ")</span>";
@@ -2534,7 +2848,10 @@ var zigAnalysis;
         tdNameA.setAttribute("href", navLinkDecl(decl.name));
         tdNameA.textContent = decl.name;
 
-        tdType.innerHTML = typeValueName(typeOfDecl(decl), true, true);
+        tdType.innerHTML = exprName(walkResultTypeRef(decl.value), {
+          wantHtml: true,
+          wantLink: true,
+        });
 
         let docs = getAstNode(decl.src).docs;
         if (docs != null) {
@@ -2660,7 +2977,6 @@ var zigAnalysis;
       "Enum",
       "Union",
       "Fn",
-      "BoundFn",
       "Opaque",
       "Frame",
       "AnyFrame",
@@ -2683,9 +2999,10 @@ var zigAnalysis;
     throw new Error("No type 'type' found");
   }
 
-  function updateCurNav() {
+  
+  function updateCurNav() {  
     curNav = {
-      showPrivDecls: false,
+      mode: NAV_MODES.API,
       pkgNames: [],
       pkgObjs: [],
       declNames: [],
@@ -2694,30 +3011,54 @@ var zigAnalysis;
     };
     curNavSearch = "";
 
-    if (location.hash[0] === "#" && location.hash.length > 1) {
-      let query = location.hash.substring(1);
-      if (query[0] === "*") {
-        curNav.showPrivDecls = true;
-        query = query.substring(1);
-      }
+    const mode = location.hash.substring(0, 3);
+    let query = location.hash.substring(3);
+    
+    const DEFAULT_HASH = NAV_MODES.API + zigAnalysis.packages[zigAnalysis.rootPkg].name;
+    switch (mode) {
+      case NAV_MODES.API:
+      case NAV_MODES.API_INTERNAL:
+        // #A;PACKAGE:decl.decl.decl?search-term
+        curNav.mode = mode;
 
-      let qpos = query.indexOf("?");
-      let nonSearchPart;
-      if (qpos === -1) {
-        nonSearchPart = query;
-      } else {
-        nonSearchPart = query.substring(0, qpos);
-        curNavSearch = decodeURIComponent(query.substring(qpos + 1));
-      }
+        let qpos = query.indexOf("?");
+        let nonSearchPart;
+        if (qpos === -1) {
+          nonSearchPart = query;
+        } else {
+          nonSearchPart = query.substring(0, qpos);
+          curNavSearch = decodeURIComponent(query.substring(qpos + 1));
+        }
+    
+        let parts = nonSearchPart.split(":");
+        if (parts[0] == "") {
+          location.hash = DEFAULT_HASH;
+        } else {
+          curNav.pkgNames = decodeURIComponent(parts[0]).split(".");
+        }
 
-      let parts = nonSearchPart.split(";");
-      curNav.pkgNames = decodeURIComponent(parts[0]).split(".");
-      if (parts[1] != null) {
-        curNav.declNames = decodeURIComponent(parts[1]).split(".");
-      }
+        if (parts[1] != null) {
+          curNav.declNames = decodeURIComponent(parts[1]).split(".");
+        }
+
+        return;
+      case NAV_MODES.GUIDES:
+        const guides = Object.keys(zigAnalysis.guides);
+        if (guides.length != 0 && query == "") {
+          location.hash = NAV_MODES.GUIDES + guides[0];
+          return;
+        }
+
+        curNav.mode = mode;
+        curNav.activeGuide = query;
+    
+        return;
+      default:
+        location.hash = DEFAULT_HASH;
+        return;
     }
-  }
-
+ }
+  
   function onHashChange() {
     updateCurNav();
     if (domSearch.value !== curNavSearch) {
@@ -2734,17 +3075,29 @@ var zigAnalysis;
     }
   }
 
-  function findSubDecl(parentType, childName) {
+  function findSubDecl(parentTypeOrDecl, childName) {
+    let parentType = parentTypeOrDecl;
     {
-      // Generic functions
+      // Generic functions / resorlving decls
       if ("value" in parentType) {
         const rv = resolveValue(parentType.value);
         if ("type" in rv.expr) {
           const t = getType(rv.expr.type);
+          parentType = t;
           if (t.kind == typeKinds.Fn && t.generic_ret != null) {
-            const rgr = resolveValue({ expr: t.generic_ret });
-            if ("type" in rgr.expr) {
-              parentType = getType(rgr.expr.type);
+            let resolvedGenericRet = resolveValue({ expr: t.generic_ret });
+
+            if ("call" in resolvedGenericRet.expr) {
+              let call = zigAnalysis.calls[resolvedGenericRet.expr.call];
+              let resolvedFunc = resolveValue({ expr: call.func });
+              if (!("type" in resolvedFunc.expr)) return null;
+              let callee = getType(resolvedFunc.expr.type);
+              if (!callee.generic_ret) return null;
+              resolvedGenericRet = resolveValue({ expr: callee.generic_ret });
+            }
+            
+            if ("type" in resolvedGenericRet.expr) {
+              parentType = getType(resolvedGenericRet.expr.type);
             }
           }
         }
@@ -2888,7 +3241,7 @@ var zigAnalysis;
     });
   }
 
-  function shortDescMarkdown(docs) {
+  function shortDesc(docs){
     const trimmed_docs = docs.trim();
     let index = trimmed_docs.indexOf("\n\n");
     let cut = false;
@@ -2904,7 +3257,11 @@ var zigAnalysis;
 
     let slice = trimmed_docs.slice(0, index);
     if (cut) slice += "...";
-    return markdown(slice);
+    return slice;
+  }
+
+  function shortDescMarkdown(docs) {
+    return markdown(shortDesc(docs));
   }
 
   function markdown(input) {
@@ -3100,6 +3457,13 @@ var zigAnalysis;
         }
       }
       flushRun();
+
+      if (in_code) {
+        in_code = false;
+        parsing_code = false;
+        innerHTML += "</code>";
+        codetag = "";
+      }
 
       while (stack.length > 0) {
         const fmt = stack.pop();
@@ -3596,8 +3960,9 @@ var zigAnalysis;
           privDecls: ty[3],
           pubDecls: ty[4],
           fields: ty[5],
-          line_number: ty[6],
-          outer_decl: ty[7],
+          is_tuple: ty[6],
+          line_number: ty[7],
+          outer_decl: ty[8],
         };
       case 10: // ComptimeExpr
       case 11: // ComptimeFloat
@@ -3635,6 +4000,8 @@ var zigAnalysis;
           src: ty[2],
           privDecls: ty[3],
           pubDecls: ty[4],
+          tag: ty[5],
+          nonexhaustive: ty[6],
         };
       case 20: // Union
         return {
@@ -3644,6 +4011,8 @@ var zigAnalysis;
           privDecls: ty[3],
           pubDecls: ty[4],
           fields: ty[5],
+          tag: ty[6],
+          auto_tag: ty[7],
         };
       case 21: // Fn
         return {
@@ -3684,5 +4053,11 @@ var zigAnalysis;
 
 })();
 
+function toggleExpand(event) {
+  const parent = event.target.parentElement;
+  parent.toggleAttribute("open");
 
-
+  if (!parent.open && parent.getBoundingClientRect().top < 0) {
+    parent.parentElement.parentElement.scrollIntoView(true);
+  }
+}

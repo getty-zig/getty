@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>attributes.zig - source view</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <style>
+      body{
+        font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      pre > code {
+        display: block;
+        overflow: auto;
+        line-height: normal;
+        margin: 0em;
+      }
+      .tok-kw {
+          color: #333;
+          font-weight: bold;
+      }
+      .tok-str {
+          color: #d14;
+      }
+      .tok-builtin {
+          color: #005C7A;
+      }
+      .tok-comment {
+          color: #545454;
+          font-style: italic;
+      }
+      .tok-fn {
+          color: #900;
+          font-weight: bold;
+      }
+      .tok-null {
+          color: #005C5C;
+      }
+      .tok-number {
+          color: #005C5C;
+      }
+      .tok-type {
+          color: #458;
+          font-weight: bold;
+      }
+      pre {
+        counter-reset: line;
+      }
+      pre .line:before {
+        counter-increment: line;
+        content: counter(line);
+        display: inline-block;
+        padding-right: 1em;
+        width: 2em;
+        text-align: right;
+        color: #999;
+      }
+      
+      .line {
+        width: 100%;
+        display: inline-block;
+      }
+      .line:target {
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        background: #fafafa;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body{
+            background:#222;
+            color: #ccc;
+        }
+        pre > code {
+            color: #ccc;
+            background: #222;
+            border: unset;
+        }
+        .line:target {
+            border-top: 1px solid #444;
+            border-bottom: 1px solid #444;
+            background: #333;
+        }
+        .tok-kw {
+            color: #eee;
+        }
+        .tok-str {
+            color: #2e5;
+        }
+        .tok-builtin {
+            color: #ff894c;
+        }
+        .tok-comment {
+            color: #aa7;
+        }
+        .tok-fn {
+            color: #B1A0F8;
+        }
+        .tok-null {
+            color: #ff8080;
+        }
+        .tok-number {
+            color: #ff8080;
+        }
+        .tok-type {
+            color: #68f;
+        }
+      }
+    </style>
+</head>
+<body>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
+<span class="line" id="L2"></span>
+<span class="line" id="L3"><span class="tok-kw">const</span> Type = std.builtin.Type;</span>
+<span class="line" id="L4"></span>
+<span class="line" id="L5"><span class="tok-kw">const</span> ContainerAttributes = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L6">    <span class="tok-comment">//content: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8">    <span class="tok-comment">// When deserializing, any missing fields should be filled in from the</span>
+</span>
+<span class="line" id="L9">    <span class="tok-comment">// field's default value.</span>
+</span>
+<span class="line" id="L10">    <span class="tok-comment">//default: bool = false,</span>
+</span>
+<span class="line" id="L11"></span>
+<span class="line" id="L12">    <span class="tok-comment">// When deserializing, any missing fields should be filled in from the</span>
+</span>
+<span class="line" id="L13">    <span class="tok-comment">// object returned by the given function.</span>
+</span>
+<span class="line" id="L14">    <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L15">    <span class="tok-comment">// Overrides `default`.</span>
+</span>
+<span class="line" id="L16">    <span class="tok-comment">//default_path: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L17"></span>
+<span class="line" id="L18">    <span class="tok-comment">// Always error during deserialization when encountering unknown fields.</span>
+</span>
+<span class="line" id="L19">    <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L20">    <span class="tok-comment">// This attribute isn't compatible with `flatten`.</span>
+</span>
+<span class="line" id="L21">    ignore_unknown_fields: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L22"></span>
+<span class="line" id="L23">    <span class="tok-comment">// Deserialize this type by deserializing into the given type, then</span>
+</span>
+<span class="line" id="L24">    <span class="tok-comment">// converting.</span>
+</span>
+<span class="line" id="L25">    <span class="tok-comment">//from: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L26"></span>
+<span class="line" id="L27">    <span class="tok-comment">// Serialize this type by converting it into the specified type and</span>
+</span>
+<span class="line" id="L28">    <span class="tok-comment">// serializing that.</span>
+</span>
+<span class="line" id="L29">    <span class="tok-comment">//into: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31">    <span class="tok-comment">// Serialize and deserialize this struct with the given name instead of</span>
+</span>
+<span class="line" id="L32">    <span class="tok-comment">// its type name.</span>
+</span>
+<span class="line" id="L33">    <span class="tok-comment">//rename: []const u8 = @typeName(T),</span>
+</span>
+<span class="line" id="L34">    rename: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L35"></span>
+<span class="line" id="L36">    <span class="tok-comment">// Rename all the fields of this struct according to the given case</span>
+</span>
+<span class="line" id="L37">    <span class="tok-comment">// convention.</span>
+</span>
+<span class="line" id="L38">    <span class="tok-comment">//rename_all: ?Case = null,</span>
+</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40">    <span class="tok-comment">// Use the internally tagged enum representation for this enum, with</span>
+</span>
+<span class="line" id="L41">    <span class="tok-comment">// the given tag.</span>
+</span>
+<span class="line" id="L42">    <span class="tok-comment">//tag: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44">    <span class="tok-comment">// Deserialize this type by deserializing into the given type, then</span>
+</span>
+<span class="line" id="L45">    <span class="tok-comment">// converting fallibly.</span>
+</span>
+<span class="line" id="L46">    <span class="tok-comment">//try_from: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">    <span class="tok-comment">// Use the untagged enum representation for this enum.</span>
+</span>
+<span class="line" id="L49">    <span class="tok-comment">//untagged: bool = false,</span>
+</span>
+<span class="line" id="L50">};</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52"><span class="tok-kw">const</span> FieldAttributes = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L53">    <span class="tok-comment">// Deserialize this field from the given names *or* its type</span>
+</span>
+<span class="line" id="L54">    <span class="tok-comment">// name.</span>
+</span>
+<span class="line" id="L55">    <span class="tok-comment">//alias: ?[][]const u8 = null,</span>
+</span>
+<span class="line" id="L56"></span>
+<span class="line" id="L57">    <span class="tok-comment">// If the value is not present when deserializing, use the</span>
+</span>
+<span class="line" id="L58">    <span class="tok-comment">// field's default value.</span>
+</span>
+<span class="line" id="L59">    <span class="tok-comment">//default: bool = false,</span>
+</span>
+<span class="line" id="L60"></span>
+<span class="line" id="L61">    <span class="tok-comment">// If the value is not present when deserializing, call a</span>
+</span>
+<span class="line" id="L62">    <span class="tok-comment">// function to get a default value.</span>
+</span>
+<span class="line" id="L63">    <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L64">    <span class="tok-comment">// Overrides `default`.</span>
+</span>
+<span class="line" id="L65">    <span class="tok-comment">//default_path: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67">    <span class="tok-comment">// Deserialize this field using a function that is different</span>
+</span>
+<span class="line" id="L68">    <span class="tok-comment">// from the normal deserialization implementation.</span>
+</span>
+<span class="line" id="L69">    <span class="tok-comment">//deserialize_with: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L70"></span>
+<span class="line" id="L71">    <span class="tok-comment">// Flatten the contents of this field into the container it is</span>
+</span>
+<span class="line" id="L72">    <span class="tok-comment">// defined in.</span>
+</span>
+<span class="line" id="L73">    <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L74">    <span class="tok-comment">// This attribute is not compatible with the ignore_unknown_fields</span>
+</span>
+<span class="line" id="L75">    <span class="tok-comment">// attribute.</span>
+</span>
+<span class="line" id="L76">    <span class="tok-comment">//flatten: bool = false,</span>
+</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78">    <span class="tok-comment">// Serialize and deserialize this field with the given name</span>
+</span>
+<span class="line" id="L79">    <span class="tok-comment">// instead of its type name.</span>
+</span>
+<span class="line" id="L80">    rename: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L81"></span>
+<span class="line" id="L82">    <span class="tok-comment">// Skip this field during serialization and deserialziation.</span>
+</span>
+<span class="line" id="L83">    <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L84">    <span class="tok-comment">// During deserialization, the field's default value will be</span>
+</span>
+<span class="line" id="L85">    <span class="tok-comment">// used.</span>
+</span>
+<span class="line" id="L86">    skip: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L87"></span>
+<span class="line" id="L88">    <span class="tok-comment">// Call a function to determine whether to skip serializing</span>
+</span>
+<span class="line" id="L89">    <span class="tok-comment">// this field.</span>
+</span>
+<span class="line" id="L90">    <span class="tok-comment">//skip_ser_if: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L91"></span>
+<span class="line" id="L92">    <span class="tok-comment">// Serialize this field using a function that is different from</span>
+</span>
+<span class="line" id="L93">    <span class="tok-comment">// the normal serialization implementation.</span>
+</span>
+<span class="line" id="L94">    <span class="tok-comment">//serialize_with: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L95"></span>
+<span class="line" id="L96">    <span class="tok-comment">// Combination of serialize_with and deserialize_with.</span>
+</span>
+<span class="line" id="L97">    <span class="tok-comment">//with: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L98">};</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100"><span class="tok-kw">const</span> VariantAttributes = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L101">    <span class="tok-comment">// Deserialize this variant from the given names *or* its type</span>
+</span>
+<span class="line" id="L102">    <span class="tok-comment">// name.</span>
+</span>
+<span class="line" id="L103">    <span class="tok-comment">//alias: ?[][]const u8 = null,</span>
+</span>
+<span class="line" id="L104"></span>
+<span class="line" id="L105">    <span class="tok-comment">// Deserialize this variant using a function that is different</span>
+</span>
+<span class="line" id="L106">    <span class="tok-comment">// from the normal deserialization implementation.</span>
+</span>
+<span class="line" id="L107">    <span class="tok-comment">//deserialize_with: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109">    <span class="tok-comment">// Serialize and deserialize this variant with the given name</span>
+</span>
+<span class="line" id="L110">    <span class="tok-comment">// instead of its type name.</span>
+</span>
+<span class="line" id="L111">    rename: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L112"></span>
+<span class="line" id="L113">    <span class="tok-comment">// Never serialize or deserialize this variant.</span>
+</span>
+<span class="line" id="L114">    skip: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L115"></span>
+<span class="line" id="L116">    <span class="tok-comment">// Serialize this variant using a function that is different from</span>
+</span>
+<span class="line" id="L117">    <span class="tok-comment">// the normal serialization implementation.</span>
+</span>
+<span class="line" id="L118">    <span class="tok-comment">//serialize_with: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L119"></span>
+<span class="line" id="L120">    <span class="tok-comment">// Combination of serialize_with and deserialize_with.</span>
+</span>
+<span class="line" id="L121">    <span class="tok-comment">//with: ?[]const u8 = null,</span>
+</span>
+<span class="line" id="L122">};</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Case = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L125">    <span class="tok-comment">// foobar</span>
+</span>
+<span class="line" id="L126">    lower,</span>
+<span class="line" id="L127"></span>
+<span class="line" id="L128">    <span class="tok-comment">// FOOBAR</span>
+</span>
+<span class="line" id="L129">    upper,</span>
+<span class="line" id="L130"></span>
+<span class="line" id="L131">    <span class="tok-comment">// foo_bar</span>
+</span>
+<span class="line" id="L132">    snake,</span>
+<span class="line" id="L133"></span>
+<span class="line" id="L134">    <span class="tok-comment">// fooBar</span>
+</span>
+<span class="line" id="L135">    camel,</span>
+<span class="line" id="L136"></span>
+<span class="line" id="L137">    <span class="tok-comment">// Foobar</span>
+</span>
+<span class="line" id="L138">    pascal,</span>
+<span class="line" id="L139"></span>
+<span class="line" id="L140">    <span class="tok-comment">// foo-bar</span>
+</span>
+<span class="line" id="L141">    kebab,</span>
+<span class="line" id="L142"></span>
+<span class="line" id="L143">    <span class="tok-comment">// FOO_BAR</span>
+</span>
+<span class="line" id="L144">    screaming_snake,</span>
+<span class="line" id="L145"></span>
+<span class="line" id="L146">    <span class="tok-comment">// FOO-BAR</span>
+</span>
+<span class="line" id="L147">    screaming_kebab,</span>
+<span class="line" id="L148">};</span>
+<span class="line" id="L149"></span>
+<span class="line" id="L150"><span class="tok-comment">/// Returns an attribute map type.</span></span>
+<span class="line" id="L151"><span class="tok-comment">///</span></span>
+<span class="line" id="L152"><span class="tok-comment">/// Generally, users won't actually call this function. It's mostly designed to</span></span>
+<span class="line" id="L153"><span class="tok-comment">/// be used by Getty to validate anonymous struct literals, which users are</span></span>
+<span class="line" id="L154"><span class="tok-comment">/// encouraged to use instead.</span></span>
+<span class="line" id="L155"><span class="tok-comment">///</span></span>
+<span class="line" id="L156"><span class="tok-comment">/// ## Parameters</span></span>
+<span class="line" id="L157"><span class="tok-comment">///</span></span>
+<span class="line" id="L158"><span class="tok-comment">/// - T is the type of the value being serialized.</span></span>
+<span class="line" id="L159"><span class="tok-comment">///</span></span>
+<span class="line" id="L160"><span class="tok-comment">/// - attributes is a struct value, whose field names must match either the</span></span>
+<span class="line" id="L161"><span class="tok-comment">///   word &quot;Container&quot; or a field/variant name in the value being serialized.</span></span>
+<span class="line" id="L162"><span class="tok-comment">///   The value of each field in attributes must be a struct. Specifically, the</span></span>
+<span class="line" id="L163"><span class="tok-comment">///   value for any field named &quot;Container&quot; must be coercable to</span></span>
+<span class="line" id="L164"><span class="tok-comment">///   ContainerAttributes type, while the value for all other fields must be</span></span>
+<span class="line" id="L165"><span class="tok-comment">///   coercable to either the FieldAttributes or VariantAttributes type,</span></span>
+<span class="line" id="L166"><span class="tok-comment">///   depending on whether or not the value being serialized is a struct, enum,</span></span>
+<span class="line" id="L167"><span class="tok-comment">///   or union.</span></span>
+<span class="line" id="L168"><span class="tok-comment">///</span></span>
+<span class="line" id="L169"><span class="tok-comment">///   For example, the following code defines container and field attributes</span></span>
+<span class="line" id="L170"><span class="tok-comment">///   for a Point type:</span></span>
+<span class="line" id="L171"><span class="tok-comment">///</span></span>
+<span class="line" id="L172"><span class="tok-comment">///     ```</span></span>
+<span class="line" id="L173"><span class="tok-comment">///     const Point = struct {</span></span>
+<span class="line" id="L174"><span class="tok-comment">///         x: i32,</span></span>
+<span class="line" id="L175"><span class="tok-comment">///         y: i32,</span></span>
+<span class="line" id="L176"><span class="tok-comment">///     };</span></span>
+<span class="line" id="L177"><span class="tok-comment">///</span></span>
+<span class="line" id="L178"><span class="tok-comment">///     const attributes = .{</span></span>
+<span class="line" id="L179"><span class="tok-comment">///       .Container = .{ .rename = &quot;Coordinate&quot; },</span></span>
+<span class="line" id="L180"><span class="tok-comment">///       .x = .{ .rename = &quot;X&quot; },</span></span>
+<span class="line" id="L181"><span class="tok-comment">///       .y = .{ .skip = true },</span></span>
+<span class="line" id="L182"><span class="tok-comment">///     };</span></span>
+<span class="line" id="L183"><span class="tok-comment">///     ```</span></span>
+<span class="line" id="L184"><span class="tok-comment">///</span></span>
+<span class="line" id="L185"><span class="tok-comment">/// ## Return Value</span></span>
+<span class="line" id="L186"><span class="tok-comment">///</span></span>
+<span class="line" id="L187"><span class="tok-comment">/// The return value is a type. Specifically, a struct type with fields that</span></span>
+<span class="line" id="L188"><span class="tok-comment">/// correspond to either:</span></span>
+<span class="line" id="L189"><span class="tok-comment">///</span></span>
+<span class="line" id="L190"><span class="tok-comment">///   1. Fields/variants in the struct/enum/union for which attributes are</span></span>
+<span class="line" id="L191"><span class="tok-comment">///      being specified (in the previous example, these would be &quot;x&quot; and &quot;y&quot;).</span></span>
+<span class="line" id="L192"><span class="tok-comment">///</span></span>
+<span class="line" id="L193"><span class="tok-comment">///   2) The struct/enum/union itself (in the previous example, this would be</span></span>
+<span class="line" id="L194"><span class="tok-comment">///      &quot;Container&quot;).</span></span>
+<span class="line" id="L195"><span class="tok-comment">///</span></span>
+<span class="line" id="L196"><span class="tok-comment">/// The returned type will only contain fields that exist in the attribute map</span></span>
+<span class="line" id="L197"><span class="tok-comment">/// passed in to the function.</span></span>
+<span class="line" id="L198"><span class="tok-comment">///</span></span>
+<span class="line" id="L199"><span class="tok-comment">/// ## Examples</span></span>
+<span class="line" id="L200"><span class="tok-comment">///</span></span>
+<span class="line" id="L201"><span class="tok-comment">/// Consider the following code:</span></span>
+<span class="line" id="L202"><span class="tok-comment">///</span></span>
+<span class="line" id="L203"><span class="tok-comment">///   ```</span></span>
+<span class="line" id="L204"><span class="tok-comment">///   const Point = struct {</span></span>
+<span class="line" id="L205"><span class="tok-comment">///       x: i32,</span></span>
+<span class="line" id="L206"><span class="tok-comment">///       y: i32,</span></span>
+<span class="line" id="L207"><span class="tok-comment">///   };</span></span>
+<span class="line" id="L208"><span class="tok-comment">///</span></span>
+<span class="line" id="L209"><span class="tok-comment">///   const attributes = .{</span></span>
+<span class="line" id="L210"><span class="tok-comment">///     .Container = .{ .rename = &quot;Coordinate&quot; },</span></span>
+<span class="line" id="L211"><span class="tok-comment">///     .x = .{ .rename = &quot;X&quot; },</span></span>
+<span class="line" id="L212"><span class="tok-comment">///     .y = .{ .skip = true },</span></span>
+<span class="line" id="L213"><span class="tok-comment">///   };</span></span>
+<span class="line" id="L214"><span class="tok-comment">///</span></span>
+<span class="line" id="L215"><span class="tok-comment">///   const T = getty.Attributes(Point, attributes);</span></span>
+<span class="line" id="L216"><span class="tok-comment">///   ```</span></span>
+<span class="line" id="L217"><span class="tok-comment">///</span></span>
+<span class="line" id="L218"><span class="tok-comment">/// Here, T would resolve to the following type:</span></span>
+<span class="line" id="L219"><span class="tok-comment">///</span></span>
+<span class="line" id="L220"><span class="tok-comment">///   ```</span></span>
+<span class="line" id="L221"><span class="tok-comment">///   struct {</span></span>
+<span class="line" id="L222"><span class="tok-comment">///       Container: struct {</span></span>
+<span class="line" id="L223"><span class="tok-comment">///           rename: ?[]const u8 = null,</span></span>
+<span class="line" id="L224"><span class="tok-comment">///           // (...) other container attributes</span></span>
+<span class="line" id="L225"><span class="tok-comment">///       },</span></span>
+<span class="line" id="L226"><span class="tok-comment">///       x: struct {</span></span>
+<span class="line" id="L227"><span class="tok-comment">///           rename: ?[]const u8 = null,</span></span>
+<span class="line" id="L228"><span class="tok-comment">///           // (...) other field attributes</span></span>
+<span class="line" id="L229"><span class="tok-comment">///       },</span></span>
+<span class="line" id="L230"><span class="tok-comment">///       y: struct {</span></span>
+<span class="line" id="L231"><span class="tok-comment">///           skip: bool = false,</span></span>
+<span class="line" id="L232"><span class="tok-comment">///           // (...) other field attributes</span></span>
+<span class="line" id="L233"><span class="tok-comment">///       },</span></span>
+<span class="line" id="L234"><span class="tok-comment">///   }</span></span>
+<span class="line" id="L235"><span class="tok-comment">///   ```</span></span>
+<span class="line" id="L236"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Attributes</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> attributes: <span class="tok-kw">anytype</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L237">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L238">        <span class="tok-kw">const</span> type_name = <span class="tok-builtin">@typeName</span>(T);</span>
+<span class="line" id="L239">        <span class="tok-kw">const</span> A = <span class="tok-builtin">@TypeOf</span>(attributes);</span>
+<span class="line" id="L240">        <span class="tok-kw">const</span> attributes_info = <span class="tok-builtin">@typeInfo</span>(A);</span>
+<span class="line" id="L241"></span>
+<span class="line" id="L242">        <span class="tok-kw">if</span> (attributes_info != .Struct) {</span>
+<span class="line" id="L243">            <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;expected attributes to be a struct, found `{s}`&quot;</span>, .{<span class="tok-builtin">@typeName</span>(A)}));</span>
+<span class="line" id="L244">        }</span>
+<span class="line" id="L245"></span>
+<span class="line" id="L246">        <span class="tok-kw">if</span> (attributes_info.Struct.fields.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L247">            <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {};</span>
+<span class="line" id="L248">        }</span>
+<span class="line" id="L249"></span>
+<span class="line" id="L250">        <span class="tok-kw">const</span> InnerAttributes = <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L251">            .Struct =&gt; FieldAttributes,</span>
+<span class="line" id="L252">            .Enum, .Union =&gt; VariantAttributes,</span>
+<span class="line" id="L253">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;expected attributes to be defined in a struct or union, found `{s}`&quot;</span>, .{type_name})),</span>
+<span class="line" id="L254">        };</span>
+<span class="line" id="L255">        <span class="tok-kw">const</span> container = &amp;ContainerAttributes{};</span>
+<span class="line" id="L256">        <span class="tok-kw">const</span> inner = &amp;InnerAttributes{};</span>
+<span class="line" id="L257"></span>
+<span class="line" id="L258">        <span class="tok-kw">var</span> fields: [attributes_info.Struct.fields.len]Type.StructField = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (attributes_info.Struct.fields) |field, i| {</span>
+<span class="line" id="L261">            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(T, field.name)) {</span>
+<span class="line" id="L262">                <span class="tok-comment">// If a field in the passed-in attribute map matches a field in the</span>
+</span>
+<span class="line" id="L263">                <span class="tok-comment">// passed-in value, add the inner attribute to the fields array.</span>
+</span>
+<span class="line" id="L264">                fields[i] = .{</span>
+<span class="line" id="L265">                    .name = field.name,</span>
+<span class="line" id="L266">                    .<span class="tok-type">type</span> = InnerAttributes,</span>
+<span class="line" id="L267">                    .default_value = inner,</span>
+<span class="line" id="L268">                    .is_comptime = <span class="tok-null">false</span>,</span>
+<span class="line" id="L269">                    .alignment = <span class="tok-number">4</span>,</span>
+<span class="line" id="L270">                };</span>
+<span class="line" id="L271">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, field.name, <span class="tok-str">&quot;Container&quot;</span>)) {</span>
+<span class="line" id="L272">                <span class="tok-comment">// If a field in the passed-in attribute map matches the word</span>
+</span>
+<span class="line" id="L273">                <span class="tok-comment">// &quot;Container&quot;, add the container attribute to the fields array.</span>
+</span>
+<span class="line" id="L274">                fields[i] = .{</span>
+<span class="line" id="L275">                    .name = <span class="tok-str">&quot;Container&quot;</span>,</span>
+<span class="line" id="L276">                    .<span class="tok-type">type</span> = ContainerAttributes,</span>
+<span class="line" id="L277">                    .default_value = container,</span>
+<span class="line" id="L278">                    .is_comptime = <span class="tok-null">false</span>,</span>
+<span class="line" id="L279">                    .alignment = <span class="tok-number">4</span>,</span>
+<span class="line" id="L280">                };</span>
+<span class="line" id="L281">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L282">                <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;nonexistent field/variant `{s}` in type `{s}`&quot;</span>, .{ field.name, type_name }));</span>
+<span class="line" id="L283">            }</span>
+<span class="line" id="L284">        }</span>
+<span class="line" id="L285"></span>
+<span class="line" id="L286">        <span class="tok-kw">return</span> <span class="tok-builtin">@Type</span>(Type{</span>
+<span class="line" id="L287">            .Struct = .{</span>
+<span class="line" id="L288">                .layout = .Auto,</span>
+<span class="line" id="L289">                .fields = &amp;fields,</span>
+<span class="line" id="L290">                .decls = &amp;[_]Type.Declaration{},</span>
+<span class="line" id="L291">                .is_tuple = <span class="tok-null">false</span>,</span>
+<span class="line" id="L292">            },</span>
+<span class="line" id="L293">        });</span>
+<span class="line" id="L294">    }</span>
+<span class="line" id="L295">}</span>
+<span class="line" id="L296"></span>
+</code></pre></body>
+</html>

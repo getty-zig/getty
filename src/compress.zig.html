@@ -116,12 +116,44 @@
 <span class="line" id="L3"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> deflate = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;compress/deflate.zig&quot;</span>);</span>
 <span class="line" id="L4"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> gzip = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;compress/gzip.zig&quot;</span>);</span>
 <span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> zlib = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;compress/zlib.zig&quot;</span>);</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L8">    _ = deflate;</span>
-<span class="line" id="L9">    _ = gzip;</span>
-<span class="line" id="L10">    _ = zlib;</span>
-<span class="line" id="L11">}</span>
-<span class="line" id="L12"></span>
+<span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> xz = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;compress/xz.zig&quot;</span>);</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">HashedReader</span>(</span>
+<span class="line" id="L9">    <span class="tok-kw">comptime</span> ReaderType: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L10">    <span class="tok-kw">comptime</span> HasherType: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L11">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L12">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L13">        child_reader: ReaderType,</span>
+<span class="line" id="L14">        hasher: HasherType,</span>
+<span class="line" id="L15"></span>
+<span class="line" id="L16">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Error = ReaderType.Error;</span>
+<span class="line" id="L17">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = std.io.Reader(*<span class="tok-builtin">@This</span>(), Error, read);</span>
+<span class="line" id="L18"></span>
+<span class="line" id="L19">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(self: *<span class="tok-builtin">@This</span>(), buf: []<span class="tok-type">u8</span>) Error!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L20">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> self.child_reader.read(buf);</span>
+<span class="line" id="L21">            self.hasher.update(buf);</span>
+<span class="line" id="L22">            <span class="tok-kw">return</span> amt;</span>
+<span class="line" id="L23">        }</span>
+<span class="line" id="L24"></span>
+<span class="line" id="L25">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(self: *<span class="tok-builtin">@This</span>()) Reader {</span>
+<span class="line" id="L26">            <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L27">        }</span>
+<span class="line" id="L28">    };</span>
+<span class="line" id="L29">}</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hashedReader</span>(</span>
+<span class="line" id="L32">    reader: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L33">    hasher: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L34">) HashedReader(<span class="tok-builtin">@TypeOf</span>(reader), <span class="tok-builtin">@TypeOf</span>(hasher)) {</span>
+<span class="line" id="L35">    <span class="tok-kw">return</span> .{ .child_reader = reader, .hasher = hasher };</span>
+<span class="line" id="L36">}</span>
+<span class="line" id="L37"></span>
+<span class="line" id="L38"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L39">    _ = deflate;</span>
+<span class="line" id="L40">    _ = gzip;</span>
+<span class="line" id="L41">    _ = zlib;</span>
+<span class="line" id="L42">    _ = xz;</span>
+<span class="line" id="L43">}</span>
+<span class="line" id="L44"></span>
 </code></pre></body>
 </html>

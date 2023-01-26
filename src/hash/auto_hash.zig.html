@@ -181,7 +181,7 @@
 <span class="line" id="L66">    <span class="tok-kw">const</span> Key = <span class="tok-builtin">@TypeOf</span>(key);</span>
 <span class="line" id="L67"></span>
 <span class="line" id="L68">    <span class="tok-kw">if</span> (strat == .Shallow <span class="tok-kw">and</span> <span class="tok-kw">comptime</span> meta.trait.hasUniqueRepresentation(Key)) {</span>
-<span class="line" id="L69">        <span class="tok-builtin">@call</span>(.{ .modifier = .always_inline }, hasher.update, .{mem.asBytes(&amp;key)});</span>
+<span class="line" id="L69">        <span class="tok-builtin">@call</span>(.always_inline, hasher.update, .{mem.asBytes(&amp;key)});</span>
 <span class="line" id="L70">        <span class="tok-kw">return</span>;</span>
 <span class="line" id="L71">    }</span>
 <span class="line" id="L72"></span>
@@ -206,23 +206,23 @@
 </span>
 <span class="line" id="L90">        .Int =&gt; {</span>
 <span class="line" id="L91">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> meta.trait.hasUniqueRepresentation(Key)) {</span>
-<span class="line" id="L92">                <span class="tok-builtin">@call</span>(.{ .modifier = .always_inline }, hasher.update, .{std.mem.asBytes(&amp;key)});</span>
+<span class="line" id="L92">                <span class="tok-builtin">@call</span>(.always_inline, hasher.update, .{std.mem.asBytes(&amp;key)});</span>
 <span class="line" id="L93">            } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L94">                <span class="tok-comment">// Take only the part containing the key value, the remaining</span>
 </span>
 <span class="line" id="L95">                <span class="tok-comment">// bytes are undefined and must not be hashed!</span>
 </span>
 <span class="line" id="L96">                <span class="tok-kw">const</span> byte_size = <span class="tok-kw">comptime</span> std.math.divCeil(<span class="tok-type">comptime_int</span>, <span class="tok-builtin">@bitSizeOf</span>(Key), <span class="tok-number">8</span>) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L97">                <span class="tok-builtin">@call</span>(.{ .modifier = .always_inline }, hasher.update, .{std.mem.asBytes(&amp;key)[<span class="tok-number">0</span>..byte_size]});</span>
+<span class="line" id="L97">                <span class="tok-builtin">@call</span>(.always_inline, hasher.update, .{std.mem.asBytes(&amp;key)[<span class="tok-number">0</span>..byte_size]});</span>
 <span class="line" id="L98">            }</span>
 <span class="line" id="L99">        },</span>
 <span class="line" id="L100"></span>
 <span class="line" id="L101">        .Bool =&gt; hash(hasher, <span class="tok-builtin">@boolToInt</span>(key), strat),</span>
 <span class="line" id="L102">        .Enum =&gt; hash(hasher, <span class="tok-builtin">@enumToInt</span>(key), strat),</span>
 <span class="line" id="L103">        .ErrorSet =&gt; hash(hasher, <span class="tok-builtin">@errorToInt</span>(key), strat),</span>
-<span class="line" id="L104">        .AnyFrame, .BoundFn, .Fn =&gt; hash(hasher, <span class="tok-builtin">@ptrToInt</span>(key), strat),</span>
+<span class="line" id="L104">        .AnyFrame, .Fn =&gt; hash(hasher, <span class="tok-builtin">@ptrToInt</span>(key), strat),</span>
 <span class="line" id="L105"></span>
-<span class="line" id="L106">        .Pointer =&gt; <span class="tok-builtin">@call</span>(.{ .modifier = .always_inline }, hashPointer, .{ hasher, key, strat }),</span>
+<span class="line" id="L106">        .Pointer =&gt; <span class="tok-builtin">@call</span>(.always_inline, hashPointer, .{ hasher, key, strat }),</span>
 <span class="line" id="L107"></span>
 <span class="line" id="L108">        .Optional =&gt; <span class="tok-kw">if</span> (key) |k| hash(hasher, k, strat),</span>
 <span class="line" id="L109"></span>
@@ -255,7 +255,7 @@
 <span class="line" id="L134">                hash(hasher, tag, strat);</span>
 <span class="line" id="L135">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |field| {</span>
 <span class="line" id="L136">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@field</span>(tag_type, field.name) == tag) {</span>
-<span class="line" id="L137">                        <span class="tok-kw">if</span> (field.field_type != <span class="tok-type">void</span>) {</span>
+<span class="line" id="L137">                        <span class="tok-kw">if</span> (field.<span class="tok-type">type</span> != <span class="tok-type">void</span>) {</span>
 <span class="line" id="L138">                            hash(hasher, <span class="tok-builtin">@field</span>(key, field.name), strat);</span>
 <span class="line" id="L139">                        }</span>
 <span class="line" id="L140">                        <span class="tok-comment">// TODO use a labelled break when it does not crash the compiler. cf #2908</span>
@@ -286,14 +286,14 @@
 <span class="line" id="L163">        }</span>
 <span class="line" id="L164">        <span class="tok-kw">if</span> (meta.trait.is(.Struct)(K)) {</span>
 <span class="line" id="L165">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-builtin">@typeInfo</span>(K).Struct.fields) |field| {</span>
-<span class="line" id="L166">                <span class="tok-kw">if</span> (typeContainsSlice(field.field_type)) {</span>
+<span class="line" id="L166">                <span class="tok-kw">if</span> (typeContainsSlice(field.<span class="tok-type">type</span>)) {</span>
 <span class="line" id="L167">                    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
 <span class="line" id="L168">                }</span>
 <span class="line" id="L169">            }</span>
 <span class="line" id="L170">        }</span>
 <span class="line" id="L171">        <span class="tok-kw">if</span> (meta.trait.is(.Union)(K)) {</span>
 <span class="line" id="L172">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-builtin">@typeInfo</span>(K).Union.fields) |field| {</span>
-<span class="line" id="L173">                <span class="tok-kw">if</span> (typeContainsSlice(field.field_type)) {</span>
+<span class="line" id="L173">                <span class="tok-kw">if</span> (typeContainsSlice(field.<span class="tok-type">type</span>)) {</span>
 <span class="line" id="L174">                    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
 <span class="line" id="L175">                }</span>
 <span class="line" id="L176">            }</span>
