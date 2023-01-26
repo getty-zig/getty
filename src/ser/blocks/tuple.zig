@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -27,19 +27,19 @@ pub fn serialize(
 }
 
 test "serialize - tuple" {
-    try t.ser.run(serialize, .{}, &.{
+    try t.run(serialize, .{}, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
 
-    try t.ser.run(serialize, std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &.{
+    try t.run(serialize, std.meta.Tuple(&[_]type{ i32, bool }){ 1, true }, &.{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .Bool = true },
         .{ .SeqEnd = {} },
     });
 
-    try t.ser.run(serialize, .{ @as(i32, 1), true }, &.{
+    try t.run(serialize, .{ @as(i32, 1), true }, &.{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .Bool = true },

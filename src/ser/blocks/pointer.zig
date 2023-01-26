@@ -1,7 +1,7 @@
 const std = @import("std");
-const t = @import("getty/testing");
 
-const ser = @import("../ser.zig");
+const getty_serialize = @import("../serialize.zig").serialize;
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -22,10 +22,10 @@ pub fn serialize(
 
     // Serialize array pointers as slices so that strings are handled properly.
     if (@typeInfo(info.child) == .Array) {
-        return try ser.serialize(@as([]const std.meta.Elem(info.child), value), serializer);
+        return try getty_serialize(@as([]const std.meta.Elem(info.child), value), serializer);
     }
 
-    return try ser.serialize(value.*, serializer);
+    return try getty_serialize(value.*, serializer);
 }
 
 test "serialize - pointer" {
@@ -35,7 +35,7 @@ test "serialize - pointer" {
         defer std.testing.allocator.destroy(ptr);
         ptr.* = @as(i32, 1);
 
-        try t.ser.run(serialize, ptr, &.{.{ .I32 = 1 }});
+        try t.run(serialize, ptr, &.{.{ .I32 = 1 }});
     }
 
     // two levels of indirection
@@ -48,7 +48,7 @@ test "serialize - pointer" {
         defer std.testing.allocator.destroy(ptr);
         ptr.* = tmp;
 
-        try t.ser.run(serialize, ptr, &.{.{ .I32 = 2 }});
+        try t.run(serialize, ptr, &.{.{ .I32 = 2 }});
     }
 
     // pointer to slice
@@ -57,6 +57,6 @@ test "serialize - pointer" {
         defer std.testing.allocator.destroy(ptr);
         ptr.* = "3";
 
-        try t.ser.run(serialize, ptr, &.{.{ .String = "3" }});
+        try t.run(serialize, ptr, &.{.{ .String = "3" }});
     }
 }

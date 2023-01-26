@@ -4,15 +4,13 @@ const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 
-const err = @import("../ser/error.zig");
-const serialize = @import("../ser.zig").serialize;
-const MapInterface = @import("../ser/interfaces/map.zig").Map;
-const SerializerInterface = @import("../ser/interfaces/serializer.zig").Serializer;
-const SeqInterface = @import("../ser/interfaces/seq.zig").Seq;
-const StructureInterface = @import("../ser/interfaces/structure.zig").Structure;
-
-//const getty = @import("getty");
-const Token = @import("token.zig").Token;
+const err = @import("error.zig");
+const serialize = @import("ser.zig").serialize;
+const MapInterface = @import("interfaces/map.zig").Map;
+const SerializerInterface = @import("interfaces/serializer.zig").Serializer;
+const SeqInterface = @import("interfaces/seq.zig").Seq;
+const StructureInterface = @import("interfaces/structure.zig").Structure;
+const Token = @import("../testing.zig").Token;
 
 // The type signature of an SB's `serialize` function.
 const SerializeFn = @TypeOf(struct {
@@ -31,7 +29,7 @@ pub fn runErr(comptime f: SerializeFn, e: anytype, input: anytype, expected: []c
     comptime std.debug.assert(@typeInfo(@TypeOf(e)) == .ErrorSet);
 
     var s = DefaultSerializer.init(expected);
-    try std.testing.expectError(err, f(input, s.serializer()));
+    try std.testing.expectError(e, f(input, s.serializer()));
 }
 
 pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) type {

@@ -7,29 +7,9 @@ var cached_pkg: ?std.build.Pkg = null;
 
 pub fn pkg(b: *std.build.Builder) std.build.Pkg {
     if (cached_pkg == null) {
-        const pkgs = struct {
-            const getty = std.build.Pkg{
-                .name = package_name,
-                .source = .{ .path = package_path },
-                .dependencies = &[_]std.build.Pkg{},
-            };
-
-            const testing = std.build.Pkg{
-                .name = "getty/testing",
-                .source = .{ .path = "src/testing/testing.zig" },
-                .dependencies = &[_]std.build.Pkg{
-                    getty,
-                },
-            };
-        };
-
-        const dependencies = b.allocator.create([2]std.build.Pkg) catch unreachable;
-        dependencies.* = .{ pkgs.getty, pkgs.testing };
-
         cached_pkg = .{
             .name = package_name,
-            .source = .{ .path = "src/getty.zig" },
-            .dependencies = dependencies,
+            .source = .{ .path = libPath(b, "/" ++ package_path) },
         };
     }
 
@@ -54,12 +34,12 @@ fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTar
     const t_ser = b.addTest("src/ser/ser.zig");
     t_ser.setTarget(target);
     t_ser.setBuildMode(mode);
-    for (pkg(b).dependencies.?) |d| t_ser.addPackage(d);
+    t_ser.setMainPkgPath(libPath(b, "/"));
 
     const t_de = b.addTest("src/de/de.zig");
     t_de.setTarget(target);
     t_de.setBuildMode(mode);
-    for (pkg(b).dependencies.?) |d| t_de.addPackage(d);
+    t_de.setMainPkgPath(libPath(b, "/"));
 
     // Configure module-level test steps.
     test_ser_step.dependOn(&t_ser.step);
@@ -84,7 +64,6 @@ fn docs(b: *std.build.Builder) void {
     // Build docs.
     const docs_obj = b.addObject("docs", package_path);
     docs_obj.emit_docs = .emit;
-    for (pkg(b).dependencies.?) |d| docs_obj.addPackage(d);
 
     const docs_step = b.step("docs", "Generate project documentation");
     docs_step.dependOn(clean_step);
@@ -105,4 +84,52 @@ fn clean(b: *std.build.Builder) void {
 
     const clean_step = b.step("clean", "Remove project artifacts");
     clean_step.dependOn(&cmd.step);
+}
+
+const unresolved_dir = (struct {
+    inline fn unresolvedDir() []const u8 {
+        return comptime std.fs.path.dirname(@src().file) orelse ".";
+    }
+}).unresolvedDir();
+
+fn thisDir(allocator: std.mem.Allocator) []const u8 {
+    if (comptime unresolved_dir[0] == '/') {
+        return unresolved_dir;
+    }
+
+    const cached_dir = &(struct {
+        var cached_dir: ?[]const u8 = null;
+    }).cached_dir;
+
+    if (cached_dir.* == null) {
+        cached_dir.* = std.fs.cwd().realpathAlloc(allocator, unresolved_dir) catch unreachable;
+    }
+
+    return cached_dir.*.?;
+}
+
+inline fn libPath(b: *std.build.Builder, comptime suffix: []const u8) []const u8 {
+    return libPathAllocator(b.allocator, suffix);
+}
+
+inline fn libPathAllocator(allocator: std.mem.Allocator, comptime suffix: []const u8) []const u8 {
+    return libPathInternal(allocator, suffix.len, suffix[0..suffix.len].*);
+}
+
+fn libPathInternal(allocator: std.mem.Allocator, comptime len: usize, comptime suffix: [len]u8) []const u8 {
+    if (suffix[0] != '/') @compileError("suffix must be an absolute path");
+
+    if (comptime unresolved_dir[0] == '/') {
+        return unresolved_dir ++ @as([]const u8, &suffix);
+    }
+
+    const cached_dir = &(struct {
+        var cached_dir: ?[]const u8 = null;
+    }).cached_dir;
+
+    if (cached_dir.* == null) {
+        cached_dir.* = std.fs.path.resolve(allocator, &.{ thisDir(allocator), suffix[1..] }) catch unreachable;
+    }
+
+    return cached_dir.*.?;
 }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -30,7 +30,7 @@ pub fn serialize(
 test "serialize - tail queue" {
     var list = std.TailQueue(i32){};
 
-    try t.ser.run(serialize, list, &.{
+    try t.run(serialize, list, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
@@ -43,7 +43,7 @@ test "serialize - tail queue" {
     list.append(&two);
     list.append(&three);
 
-    try t.ser.run(serialize, list, &.{
+    try t.run(serialize, list, &.{
         .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },

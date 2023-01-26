@@ -1,7 +1,7 @@
 const std = @import("std");
-const t = @import("getty/testing");
 
-const ser = @import("../ser.zig");
+const getAttributes = @import("../attributes.zig").getAttributes;
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -20,7 +20,7 @@ pub fn serialize(
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
     const info = @typeInfo(T).Union;
-    const attributes = comptime ser.ser.getAttributes(T, @TypeOf(serializer));
+    const attributes = comptime getAttributes(T, @TypeOf(serializer));
 
     if (info.tag_type == null) {
         @compileError(std.fmt.comptimePrint("untagged unions cannot be serialized: {s}", .{@typeName(T)}));
@@ -77,13 +77,13 @@ test "serialize - union" {
         Bool: bool,
     };
 
-    try t.ser.run(serialize, T{ .Int = 0 }, &.{
+    try t.run(serialize, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
-    try t.ser.run(serialize, T{ .Bool = true }, &.{
+    try t.run(serialize, T{ .Bool = true }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Bool" },
         .{ .Bool = true },
@@ -104,13 +104,13 @@ test "serialize - union, attributes (rename)" {
         };
     };
 
-    try t.ser.run(serialize, T{ .Int = 0 }, &.{
+    try t.run(serialize, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Bool" },
         .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
-    try t.ser.run(serialize, T{ .Bool = true }, &.{
+    try t.run(serialize, T{ .Bool = true }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .Bool = true },
@@ -130,7 +130,7 @@ test "serialize - union, attributes (skip)" {
         };
     };
 
-    try t.ser.runErr(serialize, error.UnknownVariant, T{ .Int = 0 }, &.{
+    try t.runErr(serialize, error.UnknownVariant, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .I32 = 0 },

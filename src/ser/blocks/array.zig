@@ -1,4 +1,4 @@
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -28,7 +28,7 @@ test "serialize - array" {
     {
         var arr = [_]i32{};
 
-        try t.ser.run(serialize, arr, &.{
+        try t.run(serialize, arr, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         });
@@ -38,7 +38,7 @@ test "serialize - array" {
     {
         var arr = [_]i32{ 1, 2, 3 };
 
-        try t.ser.run(serialize, arr, &.{
+        try t.run(serialize, arr, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },

@@ -1,6 +1,8 @@
 const std = @import("std");
 
-const ser = @import("../ser.zig");
+const err = @import("../error.zig");
+const concepts = @import("../concepts.zig");
+const tuples = @import("../tuples.zig");
 
 /// A `Serializer` serializes values from Getty's data model into a data format.
 pub fn Serializer(
@@ -66,8 +68,8 @@ pub fn Serializer(
     },
 ) type {
     comptime {
-        ser.ser.concepts.@"getty.ser.sbt"(user_sbt);
-        ser.ser.concepts.@"getty.ser.sbt"(serializer_sbt);
+        concepts.@"getty.ser.sbt"(user_sbt);
+        concepts.@"getty.ser.sbt"(serializer_sbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -84,7 +86,7 @@ pub fn Serializer(
 
             /// Error set used upon failure.
             pub const Error = blk: {
-                if (E != E || ser.ser.Error) {
+                if (E != E || err.Error) {
                     @compileError("error set must include `getty.ser.Error`");
                 }
 
@@ -112,7 +114,7 @@ pub fn Serializer(
                 }
 
                 // Process ST.
-                if (@TypeOf(user_sbt) == @TypeOf(ser.default_st)) {
+                if (@TypeOf(user_sbt) == @TypeOf(tuples.default)) {
                     break :blk .{};
                 }
 
@@ -140,7 +142,7 @@ pub fn Serializer(
                 }
 
                 // Process ST.
-                if (@TypeOf(serializer_sbt) == @TypeOf(ser.default_st)) {
+                if (@TypeOf(serializer_sbt) == @TypeOf(tuples.default)) {
                     break :blk .{};
                 }
 
@@ -164,16 +166,16 @@ pub fn Serializer(
 
                 if (U == Empty and S == Empty) {
                     // Both tuples are empty or the default ST.
-                    break :blk ser.default_st;
+                    break :blk tuples.default;
                 } else if (U != Empty and S == Empty) {
                     // User tuple is custom but serializer tuple is empty or the default ST.
-                    break :blk user_st ++ ser.default_st;
+                    break :blk user_st ++ tuples.default;
                 } else if (S != Empty and U == Empty) {
                     // Serializer tuple is custom but user tuple is empty or the default ST.
-                    break :blk serializer_st ++ ser.default_st;
+                    break :blk serializer_st ++ tuples.default;
                 } else {
                     // Both tuples are custom.
-                    break :blk user_st ++ serializer_st ++ ser.default_st;
+                    break :blk user_st ++ serializer_st ++ tuples.default;
                 }
             };
 

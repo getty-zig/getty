@@ -1,7 +1,7 @@
 const std = @import("std");
-const t = @import("getty/testing");
 
-const ser = @import("../ser.zig");
+const getty_serialize = @import("../serialize.zig").serialize;
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -18,21 +18,21 @@ pub fn serialize(
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try ser.serialize(value.hash_map, serializer);
+    return try getty_serialize(value.hash_map, serializer);
 }
 
 test "serialize - buf map" {
     var map = std.BufMap.init(std.testing.allocator);
     defer map.deinit();
 
-    try t.ser.run(serialize, map, &.{
+    try t.run(serialize, map, &.{
         .{ .Map = .{ .len = 0 } },
         .{ .MapEnd = {} },
     });
 
     try map.put("1", "foobar");
 
-    try t.ser.run(serialize, map, &.{
+    try t.run(serialize, map, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "1" },
         .{ .String = "foobar" },

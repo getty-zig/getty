@@ -1,7 +1,7 @@
 const std = @import("std");
-const t = @import("getty/testing");
 
-const ser = @import("../ser.zig");
+const getAttributes = @import("../attributes.zig").getAttributes;
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -20,7 +20,7 @@ pub fn serialize(
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
     const fields = std.meta.fields(T);
-    const attributes = comptime ser.ser.getAttributes(T, @TypeOf(serializer));
+    const attributes = comptime getAttributes(T, @TypeOf(serializer));
 
     // Get number of fields that will actually be serialized.
     const length: usize = comptime blk: {
@@ -74,7 +74,7 @@ test "serialize - struct" {
     const T = struct { a: i32, b: i32, c: i32, d: i32 };
     const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.ser.run(serialize, v, &.{
+    try t.run(serialize, v, &.{
         .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
         .{ .String = "a" },
         .{ .I32 = 1 },
@@ -106,7 +106,7 @@ test "serialize - struct, attributes (rename)" {
     };
     const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.ser.run(serialize, v, &.{
+    try t.run(serialize, v, &.{
         .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
         .{ .String = "d" },
         .{ .I32 = 1 },
@@ -137,7 +137,7 @@ test "serialize - struct, attributes (skip)" {
 
     const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.ser.run(serialize, v, &.{
+    try t.run(serialize, v, &.{
         .{ .Struct = .{ .name = @typeName(T), .len = 2 } },
         .{ .String = "a" },
         .{ .I32 = 1 },

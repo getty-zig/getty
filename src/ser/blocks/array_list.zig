@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -39,7 +39,7 @@ test "serialize - array list" {
         var c = std.ArrayList(u8).init(std.testing.allocator);
         defer c.deinit();
 
-        try t.ser.run(serialize, list, &.{
+        try t.run(serialize, list, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         });
@@ -49,7 +49,7 @@ test "serialize - array list" {
         try c.append(3);
         try list.appendSlice(&[_]std.ArrayList(u8){ a, b, c });
 
-        try t.ser.run(serialize, list, &.{
+        try t.run(serialize, list, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
@@ -78,7 +78,7 @@ test "serialize - array list" {
         var c = std.ArrayListUnmanaged(u8){};
         defer c.deinit(std.testing.allocator);
 
-        try t.ser.run(serialize, list, &.{
+        try t.run(serialize, list, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         });
@@ -88,7 +88,7 @@ test "serialize - array list" {
         try c.append(std.testing.allocator, 3);
         try list.appendSlice(std.testing.allocator, &[_]std.ArrayListUnmanaged(u8){ a, b, c });
 
-        try t.ser.run(serialize, list, &.{
+        try t.run(serialize, list, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },

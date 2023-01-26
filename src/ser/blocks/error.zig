@@ -1,6 +1,5 @@
-const t = @import("getty/testing");
-
-const ser = @import("../ser.zig");
+const getty_serialize = @import("../serialize.zig").serialize;
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -17,9 +16,9 @@ pub fn serialize(
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try ser.serialize(@as([]const u8, @errorName(value)), serializer);
+    return try getty_serialize(@as([]const u8, @errorName(value)), serializer);
 }
 
 test "serialize - error" {
-    try t.ser.run(serialize, error.Foobar, &.{.{ .String = "Foobar" }});
+    try t.run(serialize, error.Foobar, &.{.{ .String = "Foobar" }});
 }

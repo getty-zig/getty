@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -25,11 +25,11 @@ pub fn serialize(
 }
 
 test "serialize - slice" {
-    try t.ser.run(serialize, &[_]i32{}, &.{
+    try t.run(serialize, &[_]i32{}, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
-    try t.ser.run(serialize, &[_]i32{ 1, 2, 3 }, &.{
+    try t.run(serialize, &[_]i32{ 1, 2, 3 }, &.{
         .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },

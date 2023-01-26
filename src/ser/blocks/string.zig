@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -20,7 +20,7 @@ pub fn serialize(
 }
 
 test "serialize - string" {
-    try t.ser.run(serialize, "abc", &.{.{ .String = "abc" }});
-    try t.ser.run(serialize, &[_]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
-    try t.ser.run(serialize, &[_:0]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
+    try t.run(serialize, "abc", &.{.{ .String = "abc" }});
+    try t.run(serialize, &[_]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
+    try t.run(serialize, &[_:0]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
 }

@@ -1,4 +1,4 @@
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -23,11 +23,11 @@ pub fn serialize(
 
 test "serialize - enum" {
     // literal
-    try t.ser.run(serialize, .foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
-    try t.ser.run(serialize, .bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
+    try t.run(serialize, .foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.run(serialize, .bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
 
     // non-literal
     const T = enum { foo, bar };
-    try t.ser.run(serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
-    try t.ser.run(serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
+    try t.run(serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.run(serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
 }

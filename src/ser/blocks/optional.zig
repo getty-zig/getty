@@ -1,4 +1,4 @@
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -19,6 +19,6 @@ pub fn serialize(
 }
 
 test "serialize - optional" {
-    try t.ser.run(serialize, @as(?i32, null), &.{.{ .Null = {} }});
-    try t.ser.run(serialize, @as(?i32, 0), &.{ .{ .Some = {} }, .{ .I32 = 0 } });
+    try t.run(serialize, @as(?i32, null), &.{.{ .Null = {} }});
+    try t.run(serialize, @as(?i32, 0), &.{ .{ .Some = {} }, .{ .I32 = 0 } });
 }

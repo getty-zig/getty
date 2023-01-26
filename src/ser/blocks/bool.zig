@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -20,6 +20,6 @@ pub fn serialize(
 }
 
 test "serialize - bool" {
-    try t.ser.run(serialize, true, &.{.{ .Bool = true }});
-    try t.ser.run(serialize, false, &.{.{ .Bool = false }});
+    try t.run(serialize, true, &.{.{ .Bool = true }});
+    try t.run(serialize, false, &.{.{ .Bool = false }});
 }

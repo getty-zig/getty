@@ -1,4 +1,4 @@
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
@@ -21,5 +21,5 @@ pub fn serialize(
 }
 
 test "serialize - void" {
-    try t.ser.run(serialize, {}, &.{.{ .Void = {} }});
+    try t.run(serialize, {}, &.{.{ .Void = {} }});
 }
