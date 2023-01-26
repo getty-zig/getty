@@ -1,8 +1,7 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
-const de = @import("../de.zig");
-
+const find_db = @import("../find.zig").find_db;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 
 /// Specifies all types that can be deserialized by this block.
@@ -33,7 +32,7 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     const Child = std.meta.Child(T);
-    const db = de.de.find_db(Child, @TypeOf(deserializer));
+    const db = find_db(Child, @TypeOf(deserializer));
 
     return try db.deserialize(allocator, Child, deserializer, visitor);
 }
@@ -43,12 +42,12 @@ test "deserialize - pointer" {
     {
         const int: i32 = 1;
 
-        try t.de.run(deserialize, Visitor, &.{.{ .I32 = 1 }}, &int);
+        try t.run(deserialize, Visitor, &.{.{ .I32 = 1 }}, &int);
     }
 
     // two level of indirection
     {
-        const free = @import("../de.zig").de.free;
+        const free = @import("../free.zig").free;
 
         const Expected = **i32;
         const expected: i32 = 1;
@@ -58,7 +57,7 @@ test "deserialize - pointer" {
         var v = Visitor(Expected){};
         const visitor = v.visitor();
 
-        var d = t.de.DefaultDeserializer.init(&.{.{ .I32 = 1 }});
+        var d = t.DefaultDeserializer.init(&.{.{ .I32 = 1 }});
         const deserializer = d.deserializer();
 
         const got = deserialize(std.testing.allocator, Expected, deserializer, visitor) catch return error.UnexpectedTestError;
@@ -78,8 +77,8 @@ test "deserialize - pointer, string" {
         {
             var arr = [3]u8{ 'a', 'b', 'c' };
 
-            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.de.run(deserialize, Visitor, &.{
+            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.run(deserialize, Visitor, &.{
                 .{ .Seq = .{ .len = 3 } },
                 .{ .U8 = 'a' },
                 .{ .U8 = 'b' },
@@ -92,8 +91,8 @@ test "deserialize - pointer, string" {
         {
             const arr = [3]u8{ 'a', 'b', 'c' };
 
-            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.de.run(deserialize, Visitor, &.{
+            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.run(deserialize, Visitor, &.{
                 .{ .Seq = .{ .len = 3 } },
                 .{ .U8 = 'a' },
                 .{ .U8 = 'b' },
@@ -109,8 +108,8 @@ test "deserialize - pointer, string" {
         {
             var arr = [3:0]u8{ 'a', 'b', 'c' };
 
-            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.de.run(deserialize, Visitor, &.{
+            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.run(deserialize, Visitor, &.{
                 .{ .Seq = .{ .len = 3 } },
                 .{ .U8 = 'a' },
                 .{ .U8 = 'b' },
@@ -123,8 +122,8 @@ test "deserialize - pointer, string" {
         {
             const arr = [3:0]u8{ 'a', 'b', 'c' };
 
-            try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.de.run(deserialize, Visitor, &.{
+            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
+            try t.run(deserialize, Visitor, &.{
                 .{ .Seq = .{ .len = 3 } },
                 .{ .U8 = 'a' },
                 .{ .U8 = 'b' },

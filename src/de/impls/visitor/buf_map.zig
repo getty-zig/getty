@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const free = @import("../../free.zig").free;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime BufMap: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{ .visitMap = visitMap },
@@ -16,15 +17,15 @@ pub fn Visitor(comptime BufMap: type) type {
 
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
             var m = BufMap.init(allocator.?);
-            errdefer de.free(allocator.?, m);
+            errdefer free(allocator.?, m);
 
             while (try map.nextKey(allocator, []const u8)) |k| {
                 defer if (map.isKeyAllocated(@TypeOf(k))) {
-                    de.free(allocator.?, k);
+                    free(allocator.?, k);
                 };
 
                 const v = try map.nextValue(allocator, []const u8);
-                defer de.free(allocator.?, v);
+                defer free(allocator.?, v);
 
                 try m.put(k, v);
             }

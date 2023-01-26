@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const NetAddressVisitor = @import("../impls/visitor/net_address.zig").Visitor;
 
@@ -47,13 +47,13 @@ test "deserialize - std.net.Address" {
         // IPv4
         {
             var addr = try std.net.Address.resolveIp(ipv4, 0);
-            try t.de.run(deserialize, Visitor, &.{.{ .String = ipv4 ++ ":0" }}, addr);
+            try t.run(deserialize, Visitor, &.{.{ .String = ipv4 ++ ":0" }}, addr);
         }
 
         // IPv6
         {
             var addr = try std.net.Address.resolveIp(ipv6, 80);
-            try t.de.run(deserialize, Visitor, &.{.{ .String = ipv6_wrapped ++ ":80" }}, addr);
+            try t.run(deserialize, Visitor, &.{.{ .String = ipv6_wrapped ++ ":80" }}, addr);
         }
     }
 }

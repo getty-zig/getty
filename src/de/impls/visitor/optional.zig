@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const de = @import("../../de.zig");
+const getty_deserialize = @import("../../deserialize.zig").deserialize;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Optional: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{
@@ -22,7 +23,7 @@ pub fn Visitor(comptime Optional: type) type {
         }
 
         fn visitSome(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try de.deserialize(allocator, std.meta.Child(Value), deserializer);
+            return try getty_deserialize(allocator, std.meta.Child(Value), deserializer);
         }
     };
 }

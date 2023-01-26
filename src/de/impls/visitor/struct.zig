@@ -1,12 +1,15 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const free = @import("../../free.zig").free;
+const getAttributes = @import("../../attributes.zig").getAttributes;
+const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Struct: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{ .visitMap = visitMap },
@@ -16,7 +19,7 @@ pub fn Visitor(comptime Struct: type) type {
 
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
             const fields = comptime std.meta.fields(Value);
-            const attributes = comptime de.getAttributes(Value, Deserializer);
+            const attributes = comptime getAttributes(Value, Deserializer);
 
             var structure: Value = undefined;
             var seen = [_]bool{false} ** fields.len;
@@ -25,7 +28,7 @@ pub fn Visitor(comptime Struct: type) type {
                 if (allocator) |alloc| {
                     inline for (fields) |field, i| {
                         if (!field.is_comptime and seen[i]) {
-                            de.free(alloc, @field(structure, field.name));
+                            free(alloc, @field(structure, field.name));
                         }
                     }
                 }
@@ -47,7 +50,7 @@ pub fn Visitor(comptime Struct: type) type {
 
             key_loop: while (try map.nextKey(allocator, []const u8)) |key| {
                 defer if (map.isKeyAllocated(@TypeOf(key))) {
-                    de.free(allocator.?, key);
+                    free(allocator.?, key);
                 };
 
                 var found = false;
@@ -108,7 +111,7 @@ pub fn Visitor(comptime Struct: type) type {
 
                 if (!found) {
                     switch (ignore_unknown_fields) {
-                        true => _ = try map.nextValue(allocator, de.Ignored),
+                        true => _ = try map.nextValue(allocator, Ignored),
                         false => return error.UnknownField,
                     }
                 }

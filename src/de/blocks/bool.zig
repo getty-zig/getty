@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const BoolVisitor = @import("../impls/visitor/bool.zig");
 
@@ -38,6 +38,6 @@ pub fn Visitor(
 }
 
 test "deserialize - bool" {
-    try t.de.run(deserialize, Visitor, &.{.{ .Bool = true }}, true);
-    try t.de.run(deserialize, Visitor, &.{.{ .Bool = false }}, false);
+    try t.run(deserialize, Visitor, &.{.{ .Bool = true }}, true);
+    try t.run(deserialize, Visitor, &.{.{ .Bool = false }}, false);
 }

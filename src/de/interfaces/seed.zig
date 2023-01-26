@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../de.zig");
+const concepts = @import("../concepts.zig");
 
 /// A `Seed` facilitates stateful deserialization.
 ///
@@ -51,7 +51,7 @@ pub fn Seed(
         }
 
         fn Return(comptime Deserializer: type) type {
-            comptime de.de.concepts.@"getty.Deserializer"(Deserializer);
+            comptime concepts.@"getty.Deserializer"(Deserializer);
 
             return Deserializer.Error!V;
         }

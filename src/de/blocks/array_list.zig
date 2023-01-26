@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list.zig").Visitor;
 
@@ -40,7 +40,7 @@ test "deserialize - array list" {
         var expected = std.ArrayList(void).init(std.testing.allocator);
         defer expected.deinit();
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -54,7 +54,7 @@ test "deserialize - array list" {
         try expected.append(2);
         try expected.append(3);
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I8 = 1 },
             .{ .I32 = 2 },
@@ -64,7 +64,7 @@ test "deserialize - array list" {
     }
 
     {
-        const free = @import("../de.zig").de.free;
+        const free = @import("../free.zig").free;
 
         const Child = std.ArrayList(isize);
         const Parent = std.ArrayList(Child);
@@ -106,7 +106,7 @@ test "deserialize - array list" {
         var v = Visitor(Parent){};
         const visitor = v.visitor();
 
-        var d = t.de.DefaultDeserializer.init(tokens);
+        var d = t.DefaultDeserializer.init(tokens);
         const deserializer = d.deserializer();
 
         const got = deserialize(std.testing.allocator, Parent, deserializer, visitor) catch return error.UnexpectedTestError;

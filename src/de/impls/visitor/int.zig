@@ -1,12 +1,12 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Int: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{ .visitInt = visitInt },

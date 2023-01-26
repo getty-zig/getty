@@ -6,8 +6,14 @@ const expectEqual = std.testing.expectEqual;
 const expectEqualSlices = std.testing.expectEqualSlices;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
-const getty = @import("getty");
-const Token = @import("token.zig").Token;
+const DeserializerInterface = @import("interfaces/deserializer.zig").Deserializer;
+const err = @import("error.zig");
+const free = @import("free.zig").free;
+const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
+const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;
+const Token = @import("../testing.zig").Token;
+const UnionAccessInterface = @import("interfaces/union_access.zig").UnionAccess;
+const VariantAccessInterface = @import("interfaces/variant_access.zig").VariantAccess;
 
 // The type signature of a DB's `deserialize` function.
 const DeserializeFn = @TypeOf(struct {
@@ -37,7 +43,7 @@ pub fn run(comptime deserializeFn: DeserializeFn, comptime visitorFn: VisitorFn,
     const visitor = v.visitor();
 
     var got = deserializeFn(test_allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
-    defer getty.de.free(test_allocator, got);
+    defer free(test_allocator, got);
 
     switch (@typeInfo(T)) {
         .Bool,
@@ -172,7 +178,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             }
         }
 
-        pub usingnamespace getty.Deserializer(
+        pub usingnamespace DeserializerInterface(
             *Self,
             Error,
             user_dbt,
@@ -194,7 +200,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             },
         );
 
-        const Error = getty.de.Error || error{TestExpectedEqual};
+        const Error = err.Error || error{TestExpectedEqual};
 
         const De = Self.@"getty.Deserializer";
 
@@ -292,7 +298,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             len: ?usize,
             end: Token,
 
-            pub usingnamespace getty.de.SeqAccess(
+            pub usingnamespace SeqAccessInterface(
                 *Seq,
                 Error,
                 .{ .nextElementSeed = nextElementSeed },
@@ -314,7 +320,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             len: ?usize,
             end: Token,
 
-            pub usingnamespace getty.de.MapAccess(
+            pub usingnamespace MapAccessInterface(
                 *Map,
                 Error,
                 .{
@@ -345,7 +351,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             len: ?usize,
             end: Token,
 
-            pub usingnamespace getty.de.MapAccess(
+            pub usingnamespace MapAccessInterface(
                 *Struct,
                 Error,
                 .{
@@ -387,13 +393,13 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
         const Union = struct {
             de: *Self,
 
-            pub usingnamespace getty.de.UnionAccess(
+            pub usingnamespace UnionAccessInterface(
                 *Union,
                 Error,
                 .{ .variantSeed = variantSeed },
             );
 
-            pub usingnamespace getty.de.VariantAccess(
+            pub usingnamespace VariantAccessInterface(
                 *Union,
                 Error,
                 .{ .payloadSeed = payloadSeed },

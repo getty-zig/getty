@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const EnumVisitor = @import("../impls/visitor/enum.zig").Visitor;
 
@@ -38,12 +38,12 @@ pub fn Visitor(
 test "deserialize - enum" {
     const T = enum { zero, one, two, three, four };
 
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U8 = 0 } }, T.zero);
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U16 = 1 } }, T.one);
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U32 = 2 } }, T.two);
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U64 = 3 } }, T.three);
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U128 = 4 } }, T.four);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U8 = 0 } }, T.zero);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U16 = 1 } }, T.one);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U32 = 2 } }, T.two);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U64 = 3 } }, T.three);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U128 = 4 } }, T.four);
 
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "zero" } }, T.zero);
-    try t.de.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "four" } }, T.four);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "zero" } }, T.zero);
+    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "four" } }, T.four);
 }

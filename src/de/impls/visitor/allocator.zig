@@ -6,9 +6,9 @@
 
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
-pub usingnamespace de.Visitor(
+pub usingnamespace VisitorInterface(
     @This(),
     std.mem.Allocator,
     .{},

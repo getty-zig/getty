@@ -1,6 +1,8 @@
 const std = @import("std");
 
-const de = @import("../de.zig");
+const default_dt = @import("../tuples.zig").default;
+const err = @import("../error.zig");
+const concepts = @import("../concepts.zig");
 
 /// A `Deserializer` deserializes values from a data format into Getty's data model.
 pub fn Deserializer(
@@ -36,8 +38,8 @@ pub fn Deserializer(
     },
 ) type {
     comptime {
-        de.de.concepts.@"getty.de.dbt"(user_dbt);
-        de.de.concepts.@"getty.de.dbt"(deserializer_dbt);
+        concepts.@"getty.de.dbt"(user_dbt);
+        concepts.@"getty.de.dbt"(deserializer_dbt);
 
         //TODO: Add concept for Error (blocked by concepts library).
     }
@@ -51,7 +53,7 @@ pub fn Deserializer(
 
             /// Error set used upon failure.
             pub const Error = blk: {
-                if (E != E || de.de.Error) {
+                if (E != E || err.Error) {
                     @compileError("error set must include `getty.de.Error`");
                 }
 
@@ -79,7 +81,7 @@ pub fn Deserializer(
                 }
 
                 // Process ST.
-                if (@TypeOf(user_dbt) == @TypeOf(de.default_dt)) {
+                if (@TypeOf(user_dbt) == @TypeOf(default_dt)) {
                     break :blk .{};
                 }
 
@@ -107,7 +109,7 @@ pub fn Deserializer(
                 }
 
                 // Process ST.
-                if (@TypeOf(deserializer_dbt) == @TypeOf(de.default_dt)) {
+                if (@TypeOf(deserializer_dbt) == @TypeOf(default_dt)) {
                     break :blk .{};
                 }
 
@@ -131,16 +133,16 @@ pub fn Deserializer(
 
                 if (U == Empty and D == Empty) {
                     // Both tuples are empty or the default DT.
-                    break :blk de.default_dt;
+                    break :blk default_dt;
                 } else if (U != Empty and D == Empty) {
                     // User tuple is custom but deserializer tuple is empty or the default DT.
-                    break :blk user_dt ++ de.default_dt;
+                    break :blk user_dt ++ default_dt;
                 } else if (D != Empty and U == Empty) {
                     // Deserializer tuple is custom but user tuple is empty or the default DT.
-                    break :blk deserializer_dt ++ de.default_dt;
+                    break :blk deserializer_dt ++ default_dt;
                 } else {
                     // Both tuples are custom.
-                    break :blk user_dt ++ deserializer_dt ++ de.default_dt;
+                    break :blk user_dt ++ deserializer_dt ++ default_dt;
                 }
             };
 
@@ -264,7 +266,7 @@ pub fn Deserializer(
             }
 
             fn Return(comptime Visitor: type) type {
-                comptime de.de.concepts.@"getty.de.Visitor"(Visitor);
+                comptime concepts.@"getty.de.Visitor"(Visitor);
 
                 return Error!Visitor.Value;
             }

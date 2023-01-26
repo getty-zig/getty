@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const getAttributes = @import("../../attributes.zig").getAttributes;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Union: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{ .visitUnion = visitUnion },
@@ -15,7 +16,7 @@ pub fn Visitor(comptime Union: type) type {
         const Value = Union;
 
         fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
-            const attributes = comptime de.getAttributes(Value, Deserializer);
+            const attributes = comptime getAttributes(Value, Deserializer);
 
             var variant = try ua.variant(allocator, []const u8);
 

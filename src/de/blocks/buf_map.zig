@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const BufMapVisitor = @import("../impls/visitor/buf_map.zig").Visitor;
 
@@ -40,7 +40,7 @@ test "deserialize - buf map" {
         var expected = std.BufMap.init(std.testing.allocator);
         defer expected.deinit();
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         }, expected);
@@ -54,7 +54,7 @@ test "deserialize - buf map" {
         try expected.put("two", "bar");
         try expected.put("three", "baz");
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Map = .{ .len = 3 } },
             .{ .String = "one" },
             .{ .String = "foo" },

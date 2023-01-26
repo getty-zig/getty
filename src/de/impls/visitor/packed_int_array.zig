@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime PackedIntArray: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{
@@ -34,7 +35,7 @@ pub fn Visitor(comptime PackedIntArray: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(allocator, de.Ignored)) != null) {
+            if ((try seq.nextElement(allocator, Ignored)) != null) {
                 return error.InvalidLength;
             }
 

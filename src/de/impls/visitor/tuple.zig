@@ -1,12 +1,14 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const free = @import("../../free.zig").free;
+const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Tuple: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{ .visitSeq = visitSeq },
@@ -26,7 +28,7 @@ pub fn Visitor(comptime Tuple: type) type {
                     if (len > 0) {
                         inline for (tuple) |v, i| {
                             if (i < seen) {
-                                de.free(alloc, v);
+                                free(alloc, v);
                             }
                         }
                     }
@@ -51,7 +53,7 @@ pub fn Visitor(comptime Tuple: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(allocator, de.Ignored)) != null) {
+            if ((try seq.nextElement(allocator, Ignored)) != null) {
                 return error.InvalidLength;
             }
 

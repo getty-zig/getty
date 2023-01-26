@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const SeedInterface = @import("../../interfaces/seed.zig").Seed;
 
 /// An implementation of `getty.de.Seed` that ignores values.
 ///
@@ -9,7 +9,7 @@ const de = @import("../../de.zig").de;
 pub const Ignored = struct {
     const Value = Ignored;
 
-    pub usingnamespace de.Seed(
+    pub usingnamespace SeedInterface(
         Ignored,
         Value,
         .{ .deserialize = deserialize },

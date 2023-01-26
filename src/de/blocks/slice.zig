@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
 
@@ -41,15 +41,15 @@ test "deserialize - slice, string" {
     {
         var arr = [_]u8{ 'a', 'b', 'c' };
 
-        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]u8, &arr));
-        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]const u8, &arr));
+        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]u8, &arr));
+        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]const u8, &arr));
     }
 
     // Sentinel
     {
         var arr = [_:0]u8{ 'a', 'b', 'c' };
 
-        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]u8, &arr));
-        try t.de.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]const u8, &arr));
+        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]u8, &arr));
+        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]const u8, &arr));
     }
 }

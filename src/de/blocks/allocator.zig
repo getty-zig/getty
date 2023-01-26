@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const AllocatorVisitor = @import("../impls/visitor/allocator.zig");
 

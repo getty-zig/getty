@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;
 
@@ -44,7 +44,7 @@ test "deserialize - struct" {
         };
         const expected = T{};
 
-        try t.de.run(deserialize, Visitor, tokens, expected);
+        try t.run(deserialize, Visitor, tokens, expected);
     }
 
     {
@@ -65,7 +65,7 @@ test "deserialize - struct" {
         };
         const expected = T{ .a = 1, .b = 2, .c = 3 };
 
-        try t.de.run(deserialize, Visitor, tokens, expected);
+        try t.run(deserialize, Visitor, tokens, expected);
     }
 }
 
@@ -95,7 +95,7 @@ test "deserialize - struct, attributes (ignore_unknown_fields)" {
     };
     const expected = T{ .a = 1, .b = 2, .c = 3 };
 
-    try t.de.run(deserialize, Visitor, tokens, expected);
+    try t.run(deserialize, Visitor, tokens, expected);
 }
 
 test "deserialize - struct, attributes (rename)" {
@@ -124,7 +124,7 @@ test "deserialize - struct, attributes (rename)" {
     };
     const expected = T{ .a = 1, .b = 2, .c = 3 };
 
-    try t.de.run(deserialize, Visitor, tokens, expected);
+    try t.run(deserialize, Visitor, tokens, expected);
 }
 
 test "deserialize - struct, attributes (skip)" {
@@ -148,5 +148,5 @@ test "deserialize - struct, attributes (skip)" {
     };
     const expected = T{ .a = 1, .b = 2, .c = 3 };
 
-    try t.de.run(deserialize, Visitor, tokens, expected);
+    try t.run(deserialize, Visitor, tokens, expected);
 }

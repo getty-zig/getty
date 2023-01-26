@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const FloatVisitor = @import("../impls/visitor/float.zig").Visitor;
 
@@ -39,8 +39,8 @@ pub fn Visitor(
 }
 
 test "deserialize - float" {
-    try t.de.run(deserialize, Visitor, &.{.{ .F16 = 0 }}, @as(f16, 0));
-    try t.de.run(deserialize, Visitor, &.{.{ .F32 = 0 }}, @as(f32, 0));
-    try t.de.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f64, 0));
-    try t.de.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f128, 0));
+    try t.run(deserialize, Visitor, &.{.{ .F16 = 0 }}, @as(f16, 0));
+    try t.run(deserialize, Visitor, &.{.{ .F32 = 0 }}, @as(f32, 0));
+    try t.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f64, 0));
+    try t.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f128, 0));
 }

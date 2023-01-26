@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const UnionVisitor = @import("../impls/visitor/union.zig").Visitor;
 
@@ -43,12 +43,12 @@ test "deserialize - union" {
             bar: void,
         };
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Union = {} },
             .{ .String = "foo" },
             .{ .Bool = true },
         }, T{ .foo = true });
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Union = {} },
             .{ .String = "bar" },
             .{ .Void = {} },
@@ -72,7 +72,7 @@ test "deserialize - union" {
             var v = Visitor(T){};
             const visitor = v.visitor();
 
-            var d = t.de.DefaultDeserializer.init(tokens);
+            var d = t.DefaultDeserializer.init(tokens);
             const deserializer = d.deserializer();
 
             const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
@@ -89,7 +89,7 @@ test "deserialize - union" {
             var v = Visitor(T){};
             const visitor = v.visitor();
 
-            var d = t.de.DefaultDeserializer.init(tokens);
+            var d = t.DefaultDeserializer.init(tokens);
             const deserializer = d.deserializer();
 
             const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
@@ -118,7 +118,7 @@ test "deserialize - union, attributes (rename)" {
         };
         const expected = T{ .foo = true };
 
-        try t.de.run(deserialize, Visitor, tokens, expected);
+        try t.run(deserialize, Visitor, tokens, expected);
     }
 
     // Untagged
@@ -146,7 +146,7 @@ test "deserialize - union, attributes (rename)" {
             var v = Visitor(T){};
             const visitor = v.visitor();
 
-            var d = t.de.DefaultDeserializer.init(tokens);
+            var d = t.DefaultDeserializer.init(tokens);
             const deserializer = d.deserializer();
 
             const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
@@ -164,7 +164,7 @@ test "deserialize - union, attributes (rename)" {
             var v = Visitor(T){};
             const visitor = v.visitor();
 
-            var d = t.de.DefaultDeserializer.init(tokens);
+            var d = t.DefaultDeserializer.init(tokens);
             const deserializer = d.deserializer();
 
             const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
@@ -195,7 +195,7 @@ test "deserialize - union, attributes (skip)" {
         var v = Visitor(T){};
         const visitor = v.visitor();
 
-        var d = t.de.DefaultDeserializer.init(tokens);
+        var d = t.DefaultDeserializer.init(tokens);
         const deserializer = d.deserializer();
 
         try std.testing.expectError(
@@ -228,7 +228,7 @@ test "deserialize - union, attributes (skip)" {
                 .{ .Bool = true },
             };
 
-            var d = t.de.DefaultDeserializer.init(tokens);
+            var d = t.DefaultDeserializer.init(tokens);
             const deserializer = d.deserializer();
 
             try std.testing.expectError(
@@ -244,7 +244,7 @@ test "deserialize - union, attributes (skip)" {
                 .{ .Void = {} },
             };
 
-            var d = t.de.DefaultDeserializer.init(tokens);
+            var d = t.DefaultDeserializer.init(tokens);
             const deserializer = d.deserializer();
 
             try std.testing.expectError(

@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const TailQueueVisitor = @import("../impls/visitor/tail_queue.zig").Visitor;
 
@@ -39,7 +39,7 @@ test "deserialize - tail queue" {
     {
         var expected = std.TailQueue(i32){};
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -55,7 +55,7 @@ test "deserialize - tail queue" {
         expected.append(&two);
         expected.append(&three);
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -65,7 +65,7 @@ test "deserialize - tail queue" {
     }
 
     {
-        const free = @import("../de.zig").de.free;
+        const free = @import("../free.zig").free;
 
         const Child = std.TailQueue(i32);
         const Parent = std.TailQueue(Child);
@@ -105,7 +105,7 @@ test "deserialize - tail queue" {
         var v = Visitor(Parent){};
         const visitor = v.visitor();
 
-        var d = t.de.DefaultDeserializer.init(tokens);
+        var d = t.DefaultDeserializer.init(tokens);
         const deserializer = d.deserializer();
 
         var got = deserialize(std.testing.allocator, Parent, deserializer, visitor) catch return error.UnexpectedTestError;

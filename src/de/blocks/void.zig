@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const VoidVisitor = @import("../impls/visitor/void.zig");
 
@@ -38,5 +38,5 @@ pub fn Visitor(
 }
 
 test "deserialize - void" {
-    try t.de.run(deserialize, Visitor, &.{.{ .Void = {} }}, {});
+    try t.run(deserialize, Visitor, &.{.{ .Void = {} }}, {});
 }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const TupleVisitor = @import("../impls/visitor/tuple.zig").Visitor;
 
@@ -36,14 +36,14 @@ pub fn Visitor(
 }
 
 test "deserialize - tuple" {
-    try t.de.run(deserialize, Visitor, &.{
+    try t.run(deserialize, Visitor, &.{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .U32 = 2 },
         .{ .SeqEnd = {} },
     }, std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 });
 
-    //try t.de.run(deserialize, Visitor, &.{
+    //try t.run(deserialize, Visitor, &.{
     //.{ .Seq = .{ .len = 3 } },
     //.{ .Seq = .{ .len = 2 } },
     //.{ .I32 = 1 },

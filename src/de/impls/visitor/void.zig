@@ -1,10 +1,10 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 const Visitor = @This();
 
-pub usingnamespace de.Visitor(
+pub usingnamespace VisitorInterface(
     Visitor,
     Value,
     .{ .visitVoid = visitVoid },

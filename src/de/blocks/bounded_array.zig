@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const BoundedArrayVisitor = @import("../impls/visitor/bounded_array.zig").Visitor;
 
@@ -39,7 +39,7 @@ test "deserialize - bounded array" {
     {
         var expected = try std.BoundedArray(i32, 0).init(0);
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         }, expected);
@@ -52,7 +52,7 @@ test "deserialize - bounded array" {
         try expected.append(2);
         try expected.append(3);
 
-        try t.de.run(deserialize, Visitor, &.{
+        try t.run(deserialize, Visitor, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -96,7 +96,7 @@ test "deserialize - bounded array" {
         var v = Visitor(Parent){};
         const visitor = v.visitor();
 
-        var d = t.de.DefaultDeserializer.init(tokens);
+        var d = t.DefaultDeserializer.init(tokens);
         const deserializer = d.deserializer();
 
         const got = deserialize(std.testing.allocator, Parent, deserializer, visitor) catch return error.UnexpectedTestError;

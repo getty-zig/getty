@@ -1,6 +1,7 @@
 const std = @import("std");
 
-const de = @import("../de.zig");
+const concepts = @import("../concepts.zig");
+const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 
 /// Deserialization and access interface for variants of Getty Unions.
 pub fn VariantAccess(
@@ -45,7 +46,7 @@ pub fn VariantAccess(
                 if (methods.payload) |f| {
                     return try f(self.context, allocator, T);
                 } else {
-                    var ds = de.de.DefaultSeed(T){};
+                    var ds = DefaultSeed(T){};
                     const seed = ds.seed();
 
                     return try self.payloadSeed(allocator, seed);
@@ -61,7 +62,7 @@ pub fn VariantAccess(
 }
 
 fn Return(comptime Error: type, comptime Seed: type) type {
-    comptime de.de.concepts.@"getty.de.Seed"(Seed);
+    comptime concepts.@"getty.de.Seed"(Seed);
 
     return Error!Seed.Value;
 }

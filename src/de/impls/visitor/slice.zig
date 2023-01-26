@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const free = @import("../../free.zig").free;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Slice: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{
@@ -19,7 +20,7 @@ pub fn Visitor(comptime Slice: type) type {
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var list = std.ArrayList(Child).init(allocator.?);
-            errdefer de.free(allocator.?, list);
+            errdefer free(allocator.?, list);
 
             while (try seq.nextElement(allocator, Child)) |elem| {
                 try list.append(elem);

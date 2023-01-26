@@ -1,12 +1,13 @@
 const std = @import("std");
 
-const de = @import("../../de.zig").de;
+const free = @import("../../free.zig").free;
+const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Array: type) type {
     return struct {
         const Self = @This();
 
-        pub usingnamespace de.Visitor(
+        pub usingnamespace VisitorInterface(
             Self,
             Value,
             .{
@@ -27,7 +28,7 @@ pub fn Visitor(comptime Array: type) type {
                         var i: usize = 0;
 
                         while (i < seen) : (i += 1) {
-                            de.free(alloc, array[i]);
+                            free(alloc, array[i]);
                         }
                     }
                 }

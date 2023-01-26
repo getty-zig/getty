@@ -1,6 +1,7 @@
 const std = @import("std");
 
-const de = @import("../de.zig");
+const concepts = @import("../concepts.zig");
+const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 
 /// Deserialization and access interface for Getty Sequences.
 pub fn SeqAccess(
@@ -45,7 +46,7 @@ pub fn SeqAccess(
                 if (methods.nextElement) |f| {
                     return try f(self.context, allocator, Value);
                 } else {
-                    var seed = de.de.DefaultSeed(Value){};
+                    var seed = DefaultSeed(Value){};
                     const ds = seed.seed();
 
                     return try self.nextElementSeed(allocator, ds);
@@ -53,7 +54,7 @@ pub fn SeqAccess(
             }
 
             fn Return(comptime Seed: type) type {
-                comptime de.de.concepts.@"getty.de.Seed"(Seed);
+                comptime concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }

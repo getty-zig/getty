@@ -1,6 +1,7 @@
 const std = @import("std");
 
-const de = @import("../de.zig");
+const concepts = @import("../concepts.zig");
+const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 
 /// Deserialization and access interface for Getty Maps.
 pub fn MapAccess(
@@ -76,7 +77,7 @@ pub fn MapAccess(
                 if (methods.nextKey) |f| {
                     return try f(self.context, allocator, K);
                 } else {
-                    var seed = de.de.DefaultSeed(K){};
+                    var seed = DefaultSeed(K){};
                     const ds = seed.seed();
 
                     return try self.nextKeySeed(allocator, ds);
@@ -87,7 +88,7 @@ pub fn MapAccess(
                 if (methods.nextValue) |f| {
                     return try f(self.context, allocator, V);
                 } else {
-                    var seed = de.de.DefaultSeed(V){};
+                    var seed = DefaultSeed(V){};
                     const ds = seed.seed();
 
                     return try self.nextValueSeed(allocator, ds);
@@ -107,13 +108,13 @@ pub fn MapAccess(
             }
 
             fn KeyReturn(comptime Seed: type) type {
-                comptime de.de.concepts.@"getty.de.Seed"(Seed);
+                comptime concepts.@"getty.de.Seed"(Seed);
 
                 return Error!?Seed.Value;
             }
 
             fn ValueReturn(comptime Seed: type) type {
-                comptime de.de.concepts.@"getty.de.Seed"(Seed);
+                comptime concepts.@"getty.de.Seed"(Seed);
 
                 return Error!Seed.Value;
             }

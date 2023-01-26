@@ -1,5 +1,5 @@
 const std = @import("std");
-const t = @import("getty/testing");
+const t = @import("../testing.zig");
 
 const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;
 
@@ -36,6 +36,6 @@ pub fn Visitor(
 }
 
 test "deserialize - optional" {
-    try t.de.run(deserialize, Visitor, &.{.{ .Null = {} }}, @as(?i32, null));
-    try t.de.run(deserialize, Visitor, &.{ .{ .Some = {} }, .{ .I32 = 0 } }, @as(?i32, 0));
+    try t.run(deserialize, Visitor, &.{.{ .Null = {} }}, @as(?i32, null));
+    try t.run(deserialize, Visitor, &.{ .{ .Some = {} }, .{ .I32 = 0 } }, @as(?i32, 0));
 }
