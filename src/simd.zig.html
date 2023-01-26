@@ -213,120 +213,120 @@
 <span class="line" id="L86"></span>
 <span class="line" id="L87"><span class="tok-comment">/// Returns a vector containing the first `len` integers in order from 0 to `len`-1.</span></span>
 <span class="line" id="L88"><span class="tok-comment">/// For example, `iota(i32, 8)` will return a vector containing `.{0, 1, 2, 3, 4, 5, 6, 7}`.</span></span>
-<span class="line" id="L89"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">iota</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>) <span class="tok-builtin">@Vector</span>(len, T) {</span>
-<span class="line" id="L90">    <span class="tok-kw">var</span> out: [len]T = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L91">    <span class="tok-kw">for</span> (out) |*element, i| {</span>
-<span class="line" id="L92">        element.* = <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L93">            .Int =&gt; <span class="tok-builtin">@intCast</span>(T, i),</span>
-<span class="line" id="L94">            .Float =&gt; <span class="tok-builtin">@intToFloat</span>(T, i),</span>
-<span class="line" id="L95">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Can't use type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot; in iota.&quot;</span>),</span>
-<span class="line" id="L96">        };</span>
-<span class="line" id="L97">    }</span>
-<span class="line" id="L98">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-builtin">@Vector</span>(len, T), out);</span>
-<span class="line" id="L99">}</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101"><span class="tok-comment">/// Returns a vector containing the same elements as the input, but repeated until the desired length is reached.</span></span>
-<span class="line" id="L102"><span class="tok-comment">/// For example, `repeat(8, [_]u32{1, 2, 3})` will return a vector containing `.{1, 2, 3, 1, 2, 3, 1, 2}`.</span></span>
-<span class="line" id="L103"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">repeat</span>(<span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>, vec: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@Vector</span>(len, std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec))) {</span>
-<span class="line" id="L104">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec));</span>
-<span class="line" id="L105"></span>
-<span class="line" id="L106">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, vec, <span class="tok-null">undefined</span>, iota(<span class="tok-type">i32</span>, len) % <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, vectorLength(<span class="tok-builtin">@TypeOf</span>(vec)))));</span>
-<span class="line" id="L107">}</span>
-<span class="line" id="L108"></span>
-<span class="line" id="L109"><span class="tok-comment">/// Returns a vector containing all elements of the first vector at the lower indices followed by all elements of the second vector</span></span>
-<span class="line" id="L110"><span class="tok-comment">/// at the higher indices.</span></span>
-<span class="line" id="L111"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">join</span>(a: <span class="tok-kw">anytype</span>, b: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@Vector</span>(vectorLength(<span class="tok-builtin">@TypeOf</span>(a)) + vectorLength(<span class="tok-builtin">@TypeOf</span>(b)), std.meta.Child(<span class="tok-builtin">@TypeOf</span>(a))) {</span>
-<span class="line" id="L112">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(a));</span>
-<span class="line" id="L113">    <span class="tok-kw">const</span> a_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(a));</span>
-<span class="line" id="L114">    <span class="tok-kw">const</span> b_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(b));</span>
-<span class="line" id="L115"></span>
-<span class="line" id="L116">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, a, b, <span class="tok-builtin">@as</span>([a_len]<span class="tok-type">i32</span>, iota(<span class="tok-type">i32</span>, a_len)) ++ <span class="tok-builtin">@as</span>([b_len]<span class="tok-type">i32</span>, ~iota(<span class="tok-type">i32</span>, b_len)));</span>
-<span class="line" id="L117">}</span>
-<span class="line" id="L118"></span>
-<span class="line" id="L119"><span class="tok-comment">/// Returns a vector whose elements alternates between those of each input vector.</span></span>
-<span class="line" id="L120"><span class="tok-comment">/// For example, `interlace(.{[4]u32{11, 12, 13, 14}, [4]u32{21, 22, 23, 24}})` returns a vector containing `.{11, 21, 12, 22, 13, 23, 14, 24}`.</span></span>
-<span class="line" id="L121"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">interlace</span>(vecs: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@Vector</span>(vectorLength(<span class="tok-builtin">@TypeOf</span>(vecs[<span class="tok-number">0</span>])) * vecs.len, std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vecs[<span class="tok-number">0</span>]))) {</span>
-<span class="line" id="L122">    <span class="tok-comment">// interlace doesn't work on MIPS, for some reason.</span>
+<span class="line" id="L89"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">iota</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>) <span class="tok-builtin">@Vector</span>(len, T) {</span>
+<span class="line" id="L90">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L91">        <span class="tok-kw">var</span> out: [len]T = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L92">        <span class="tok-kw">for</span> (out) |*element, i| {</span>
+<span class="line" id="L93">            element.* = <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L94">                .Int =&gt; <span class="tok-builtin">@intCast</span>(T, i),</span>
+<span class="line" id="L95">                .Float =&gt; <span class="tok-builtin">@intToFloat</span>(T, i),</span>
+<span class="line" id="L96">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Can't use type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot; in iota.&quot;</span>),</span>
+<span class="line" id="L97">            };</span>
+<span class="line" id="L98">        }</span>
+<span class="line" id="L99">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-builtin">@Vector</span>(len, T), out);</span>
+<span class="line" id="L100">    }</span>
+<span class="line" id="L101">}</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103"><span class="tok-comment">/// Returns a vector containing the same elements as the input, but repeated until the desired length is reached.</span></span>
+<span class="line" id="L104"><span class="tok-comment">/// For example, `repeat(8, [_]u32{1, 2, 3})` will return a vector containing `.{1, 2, 3, 1, 2, 3, 1, 2}`.</span></span>
+<span class="line" id="L105"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">repeat</span>(<span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>, vec: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@Vector</span>(len, std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec))) {</span>
+<span class="line" id="L106">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec));</span>
+<span class="line" id="L107"></span>
+<span class="line" id="L108">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, vec, <span class="tok-null">undefined</span>, iota(<span class="tok-type">i32</span>, len) % <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, vectorLength(<span class="tok-builtin">@TypeOf</span>(vec)))));</span>
+<span class="line" id="L109">}</span>
+<span class="line" id="L110"></span>
+<span class="line" id="L111"><span class="tok-comment">/// Returns a vector containing all elements of the first vector at the lower indices followed by all elements of the second vector</span></span>
+<span class="line" id="L112"><span class="tok-comment">/// at the higher indices.</span></span>
+<span class="line" id="L113"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">join</span>(a: <span class="tok-kw">anytype</span>, b: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@Vector</span>(vectorLength(<span class="tok-builtin">@TypeOf</span>(a)) + vectorLength(<span class="tok-builtin">@TypeOf</span>(b)), std.meta.Child(<span class="tok-builtin">@TypeOf</span>(a))) {</span>
+<span class="line" id="L114">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(a));</span>
+<span class="line" id="L115">    <span class="tok-kw">const</span> a_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(a));</span>
+<span class="line" id="L116">    <span class="tok-kw">const</span> b_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(b));</span>
+<span class="line" id="L117"></span>
+<span class="line" id="L118">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, a, b, <span class="tok-builtin">@as</span>([a_len]<span class="tok-type">i32</span>, iota(<span class="tok-type">i32</span>, a_len)) ++ <span class="tok-builtin">@as</span>([b_len]<span class="tok-type">i32</span>, ~iota(<span class="tok-type">i32</span>, b_len)));</span>
+<span class="line" id="L119">}</span>
+<span class="line" id="L120"></span>
+<span class="line" id="L121"><span class="tok-comment">/// Returns a vector whose elements alternates between those of each input vector.</span></span>
+<span class="line" id="L122"><span class="tok-comment">/// For example, `interlace(.{[4]u32{11, 12, 13, 14}, [4]u32{21, 22, 23, 24}})` returns a vector containing `.{11, 21, 12, 22, 13, 23, 14, 24}`.</span></span>
+<span class="line" id="L123"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">interlace</span>(vecs: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@Vector</span>(vectorLength(<span class="tok-builtin">@TypeOf</span>(vecs[<span class="tok-number">0</span>])) * vecs.len, std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vecs[<span class="tok-number">0</span>]))) {</span>
+<span class="line" id="L124">    <span class="tok-comment">// interlace doesn't work on MIPS, for some reason.</span>
 </span>
-<span class="line" id="L123">    <span class="tok-comment">// Notes from earlier debug attempt:</span>
+<span class="line" id="L125">    <span class="tok-comment">// Notes from earlier debug attempt:</span>
 </span>
-<span class="line" id="L124">    <span class="tok-comment">//  The indices are correct. The problem seems to be with the @shuffle builtin.</span>
+<span class="line" id="L126">    <span class="tok-comment">//  The indices are correct. The problem seems to be with the @shuffle builtin.</span>
 </span>
-<span class="line" id="L125">    <span class="tok-comment">//  On MIPS, the test that interlaces small_base gives { 0, 2, 0, 0, 64, 255, 248, 200, 0, 0 }.</span>
+<span class="line" id="L127">    <span class="tok-comment">//  On MIPS, the test that interlaces small_base gives { 0, 2, 0, 0, 64, 255, 248, 200, 0, 0 }.</span>
 </span>
-<span class="line" id="L126">    <span class="tok-comment">//  Calling this with two inputs seems to work fine, but I'll let the compile error trigger for all inputs, just to be safe.</span>
+<span class="line" id="L128">    <span class="tok-comment">//  Calling this with two inputs seems to work fine, but I'll let the compile error trigger for all inputs, just to be safe.</span>
 </span>
-<span class="line" id="L127">    <span class="tok-kw">comptime</span> <span class="tok-kw">if</span> (builtin.cpu.arch.isMIPS()) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: Find out why interlace() doesn't work on MIPS&quot;</span>);</span>
-<span class="line" id="L128"></span>
-<span class="line" id="L129">    <span class="tok-kw">const</span> VecType = <span class="tok-builtin">@TypeOf</span>(vecs[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L130">    <span class="tok-kw">const</span> vecs_arr = <span class="tok-builtin">@as</span>([vecs.len]VecType, vecs);</span>
-<span class="line" id="L131">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vecs_arr[<span class="tok-number">0</span>]));</span>
-<span class="line" id="L132"></span>
-<span class="line" id="L133">    <span class="tok-kw">if</span> (vecs_arr.len == <span class="tok-number">1</span>) <span class="tok-kw">return</span> vecs_arr[<span class="tok-number">0</span>];</span>
+<span class="line" id="L129">    <span class="tok-kw">comptime</span> <span class="tok-kw">if</span> (builtin.cpu.arch.isMIPS()) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: Find out why interlace() doesn't work on MIPS&quot;</span>);</span>
+<span class="line" id="L130"></span>
+<span class="line" id="L131">    <span class="tok-kw">const</span> VecType = <span class="tok-builtin">@TypeOf</span>(vecs[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L132">    <span class="tok-kw">const</span> vecs_arr = <span class="tok-builtin">@as</span>([vecs.len]VecType, vecs);</span>
+<span class="line" id="L133">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vecs_arr[<span class="tok-number">0</span>]));</span>
 <span class="line" id="L134"></span>
-<span class="line" id="L135">    <span class="tok-kw">const</span> a_vec_count = (<span class="tok-number">1</span> + vecs_arr.len) &gt;&gt; <span class="tok-number">1</span>;</span>
-<span class="line" id="L136">    <span class="tok-kw">const</span> b_vec_count = vecs_arr.len &gt;&gt; <span class="tok-number">1</span>;</span>
-<span class="line" id="L137"></span>
-<span class="line" id="L138">    <span class="tok-kw">const</span> a = interlace(<span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> [a_vec_count]VecType, vecs_arr[<span class="tok-number">0</span>..a_vec_count]).*);</span>
-<span class="line" id="L139">    <span class="tok-kw">const</span> b = interlace(<span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> [b_vec_count]VecType, vecs_arr[a_vec_count..]).*);</span>
-<span class="line" id="L140"></span>
-<span class="line" id="L141">    <span class="tok-kw">const</span> a_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(a));</span>
-<span class="line" id="L142">    <span class="tok-kw">const</span> b_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(b));</span>
-<span class="line" id="L143">    <span class="tok-kw">const</span> len = a_len + b_len;</span>
-<span class="line" id="L144"></span>
-<span class="line" id="L145">    <span class="tok-kw">const</span> indices = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L146">        <span class="tok-kw">const</span> count_up = iota(<span class="tok-type">i32</span>, len);</span>
-<span class="line" id="L147">        <span class="tok-kw">const</span> cycle = <span class="tok-builtin">@divFloor</span>(count_up, <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, vecs_arr.len)));</span>
-<span class="line" id="L148">        <span class="tok-kw">const</span> select_mask = repeat(len, join(<span class="tok-builtin">@splat</span>(a_vec_count, <span class="tok-null">true</span>), <span class="tok-builtin">@splat</span>(b_vec_count, <span class="tok-null">false</span>)));</span>
-<span class="line" id="L149">        <span class="tok-kw">const</span> a_indices = count_up - cycle * <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, b_vec_count));</span>
-<span class="line" id="L150">        <span class="tok-kw">const</span> b_indices = shiftElementsRight(count_up - cycle * <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, a_vec_count)), a_vec_count, <span class="tok-number">0</span>);</span>
-<span class="line" id="L151">        <span class="tok-kw">break</span> :blk <span class="tok-builtin">@select</span>(<span class="tok-type">i32</span>, select_mask, a_indices, ~b_indices);</span>
-<span class="line" id="L152">    };</span>
-<span class="line" id="L153"></span>
-<span class="line" id="L154">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, a, b, indices);</span>
-<span class="line" id="L155">}</span>
-<span class="line" id="L156"></span>
-<span class="line" id="L157"><span class="tok-comment">/// The contents of `interlaced` is evenly split between vec_count vectors that are returned as an array. They &quot;take turns&quot;,</span></span>
-<span class="line" id="L158"><span class="tok-comment">/// recieving one element from `interlaced` at a time.</span></span>
-<span class="line" id="L159"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinterlace</span>(</span>
-<span class="line" id="L160">    <span class="tok-kw">comptime</span> vec_count: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L161">    interlaced: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L162">) [vec_count]<span class="tok-builtin">@Vector</span>(</span>
-<span class="line" id="L163">    vectorLength(<span class="tok-builtin">@TypeOf</span>(interlaced)) / vec_count,</span>
-<span class="line" id="L164">    std.meta.Child(<span class="tok-builtin">@TypeOf</span>(interlaced)),</span>
-<span class="line" id="L165">) {</span>
-<span class="line" id="L166">    <span class="tok-kw">const</span> vec_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(interlaced)) / vec_count;</span>
-<span class="line" id="L167">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(interlaced));</span>
-<span class="line" id="L168"></span>
-<span class="line" id="L169">    <span class="tok-kw">var</span> out: [vec_count]<span class="tok-builtin">@Vector</span>(vec_len, Child) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L135">    <span class="tok-kw">if</span> (vecs_arr.len == <span class="tok-number">1</span>) <span class="tok-kw">return</span> vecs_arr[<span class="tok-number">0</span>];</span>
+<span class="line" id="L136"></span>
+<span class="line" id="L137">    <span class="tok-kw">const</span> a_vec_count = (<span class="tok-number">1</span> + vecs_arr.len) &gt;&gt; <span class="tok-number">1</span>;</span>
+<span class="line" id="L138">    <span class="tok-kw">const</span> b_vec_count = vecs_arr.len &gt;&gt; <span class="tok-number">1</span>;</span>
+<span class="line" id="L139"></span>
+<span class="line" id="L140">    <span class="tok-kw">const</span> a = interlace(<span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> [a_vec_count]VecType, vecs_arr[<span class="tok-number">0</span>..a_vec_count]).*);</span>
+<span class="line" id="L141">    <span class="tok-kw">const</span> b = interlace(<span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> [b_vec_count]VecType, vecs_arr[a_vec_count..]).*);</span>
+<span class="line" id="L142"></span>
+<span class="line" id="L143">    <span class="tok-kw">const</span> a_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(a));</span>
+<span class="line" id="L144">    <span class="tok-kw">const</span> b_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(b));</span>
+<span class="line" id="L145">    <span class="tok-kw">const</span> len = a_len + b_len;</span>
+<span class="line" id="L146"></span>
+<span class="line" id="L147">    <span class="tok-kw">const</span> indices = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L148">        <span class="tok-kw">const</span> count_up = iota(<span class="tok-type">i32</span>, len);</span>
+<span class="line" id="L149">        <span class="tok-kw">const</span> cycle = <span class="tok-builtin">@divFloor</span>(count_up, <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, vecs_arr.len)));</span>
+<span class="line" id="L150">        <span class="tok-kw">const</span> select_mask = repeat(len, join(<span class="tok-builtin">@splat</span>(a_vec_count, <span class="tok-null">true</span>), <span class="tok-builtin">@splat</span>(b_vec_count, <span class="tok-null">false</span>)));</span>
+<span class="line" id="L151">        <span class="tok-kw">const</span> a_indices = count_up - cycle * <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, b_vec_count));</span>
+<span class="line" id="L152">        <span class="tok-kw">const</span> b_indices = shiftElementsRight(count_up - cycle * <span class="tok-builtin">@splat</span>(len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, a_vec_count)), a_vec_count, <span class="tok-number">0</span>);</span>
+<span class="line" id="L153">        <span class="tok-kw">break</span> :blk <span class="tok-builtin">@select</span>(<span class="tok-type">i32</span>, select_mask, a_indices, ~b_indices);</span>
+<span class="line" id="L154">    };</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, a, b, indices);</span>
+<span class="line" id="L157">}</span>
+<span class="line" id="L158"></span>
+<span class="line" id="L159"><span class="tok-comment">/// The contents of `interlaced` is evenly split between vec_count vectors that are returned as an array. They &quot;take turns&quot;,</span></span>
+<span class="line" id="L160"><span class="tok-comment">/// recieving one element from `interlaced` at a time.</span></span>
+<span class="line" id="L161"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinterlace</span>(</span>
+<span class="line" id="L162">    <span class="tok-kw">comptime</span> vec_count: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L163">    interlaced: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L164">) [vec_count]<span class="tok-builtin">@Vector</span>(</span>
+<span class="line" id="L165">    vectorLength(<span class="tok-builtin">@TypeOf</span>(interlaced)) / vec_count,</span>
+<span class="line" id="L166">    std.meta.Child(<span class="tok-builtin">@TypeOf</span>(interlaced)),</span>
+<span class="line" id="L167">) {</span>
+<span class="line" id="L168">    <span class="tok-kw">const</span> vec_len = vectorLength(<span class="tok-builtin">@TypeOf</span>(interlaced)) / vec_count;</span>
+<span class="line" id="L169">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(interlaced));</span>
 <span class="line" id="L170"></span>
-<span class="line" id="L171">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>; <span class="tok-comment">// for-loops don't work for this, apparently.</span>
+<span class="line" id="L171">    <span class="tok-kw">var</span> out: [vec_count]<span class="tok-builtin">@Vector</span>(vec_len, Child) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L172"></span>
+<span class="line" id="L173">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>; <span class="tok-comment">// for-loops don't work for this, apparently.</span>
 </span>
-<span class="line" id="L172">    <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (i &lt; out.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L173">        <span class="tok-kw">const</span> indices = <span class="tok-kw">comptime</span> iota(<span class="tok-type">i32</span>, vec_len) * <span class="tok-builtin">@splat</span>(vec_len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, vec_count)) + <span class="tok-builtin">@splat</span>(vec_len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, i));</span>
-<span class="line" id="L174">        out[i] = <span class="tok-builtin">@shuffle</span>(Child, interlaced, <span class="tok-null">undefined</span>, indices);</span>
-<span class="line" id="L175">    }</span>
-<span class="line" id="L176"></span>
-<span class="line" id="L177">    <span class="tok-kw">return</span> out;</span>
-<span class="line" id="L178">}</span>
-<span class="line" id="L179"></span>
-<span class="line" id="L180"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">extract</span>(</span>
-<span class="line" id="L181">    vec: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L182">    <span class="tok-kw">comptime</span> first: VectorIndex(<span class="tok-builtin">@TypeOf</span>(vec)),</span>
-<span class="line" id="L183">    <span class="tok-kw">comptime</span> count: VectorCount(<span class="tok-builtin">@TypeOf</span>(vec)),</span>
-<span class="line" id="L184">) <span class="tok-builtin">@Vector</span>(count, std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec))) {</span>
-<span class="line" id="L185">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec));</span>
-<span class="line" id="L186">    <span class="tok-kw">const</span> len = vectorLength(<span class="tok-builtin">@TypeOf</span>(vec));</span>
-<span class="line" id="L187"></span>
-<span class="line" id="L188">    std.debug.assert(<span class="tok-builtin">@intCast</span>(<span class="tok-type">comptime_int</span>, first) + <span class="tok-builtin">@intCast</span>(<span class="tok-type">comptime_int</span>, count) &lt;= len);</span>
+<span class="line" id="L174">    <span class="tok-kw">inline</span> <span class="tok-kw">while</span> (i &lt; out.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L175">        <span class="tok-kw">const</span> indices = <span class="tok-kw">comptime</span> iota(<span class="tok-type">i32</span>, vec_len) * <span class="tok-builtin">@splat</span>(vec_len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, vec_count)) + <span class="tok-builtin">@splat</span>(vec_len, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, i));</span>
+<span class="line" id="L176">        out[i] = <span class="tok-builtin">@shuffle</span>(Child, interlaced, <span class="tok-null">undefined</span>, indices);</span>
+<span class="line" id="L177">    }</span>
+<span class="line" id="L178"></span>
+<span class="line" id="L179">    <span class="tok-kw">return</span> out;</span>
+<span class="line" id="L180">}</span>
+<span class="line" id="L181"></span>
+<span class="line" id="L182"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">extract</span>(</span>
+<span class="line" id="L183">    vec: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L184">    <span class="tok-kw">comptime</span> first: VectorIndex(<span class="tok-builtin">@TypeOf</span>(vec)),</span>
+<span class="line" id="L185">    <span class="tok-kw">comptime</span> count: VectorCount(<span class="tok-builtin">@TypeOf</span>(vec)),</span>
+<span class="line" id="L186">) <span class="tok-builtin">@Vector</span>(count, std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec))) {</span>
+<span class="line" id="L187">    <span class="tok-kw">const</span> Child = std.meta.Child(<span class="tok-builtin">@TypeOf</span>(vec));</span>
+<span class="line" id="L188">    <span class="tok-kw">const</span> len = vectorLength(<span class="tok-builtin">@TypeOf</span>(vec));</span>
 <span class="line" id="L189"></span>
-<span class="line" id="L190">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, vec, <span class="tok-null">undefined</span>, iota(<span class="tok-type">i32</span>, count) + <span class="tok-builtin">@splat</span>(count, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, first)));</span>
-<span class="line" id="L191">}</span>
-<span class="line" id="L192"></span>
-<span class="line" id="L193"><span class="tok-kw">test</span> <span class="tok-str">&quot;vector patterns&quot;</span> {</span>
-<span class="line" id="L194">    <span class="tok-kw">if</span> ((builtin.zig_backend == .stage1 <span class="tok-kw">or</span> builtin.zig_backend == .stage2_llvm) <span class="tok-kw">and</span></span>
-<span class="line" id="L195">        builtin.cpu.arch == .aarch64)</span>
-<span class="line" id="L196">    {</span>
+<span class="line" id="L190">    std.debug.assert(<span class="tok-builtin">@intCast</span>(<span class="tok-type">comptime_int</span>, first) + <span class="tok-builtin">@intCast</span>(<span class="tok-type">comptime_int</span>, count) &lt;= len);</span>
+<span class="line" id="L191"></span>
+<span class="line" id="L192">    <span class="tok-kw">return</span> <span class="tok-builtin">@shuffle</span>(Child, vec, <span class="tok-null">undefined</span>, iota(<span class="tok-type">i32</span>, count) + <span class="tok-builtin">@splat</span>(count, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, first)));</span>
+<span class="line" id="L193">}</span>
+<span class="line" id="L194"></span>
+<span class="line" id="L195"><span class="tok-kw">test</span> <span class="tok-str">&quot;vector patterns&quot;</span> {</span>
+<span class="line" id="L196">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_llvm <span class="tok-kw">and</span> builtin.cpu.arch == .aarch64) {</span>
 <span class="line" id="L197">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/12012</span>
 </span>
 <span class="line" id="L198">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
@@ -557,7 +557,7 @@
 <span class="line" id="L419">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L420">    }</span>
 <span class="line" id="L421"></span>
-<span class="line" id="L422">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage1 <span class="tok-kw">or</span> builtin.zig_backend == .stage2_llvm) {</span>
+<span class="line" id="L422">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_llvm) {</span>
 <span class="line" id="L423">        <span class="tok-comment">// Regressed in LLVM 14:</span>
 </span>
 <span class="line" id="L424">        <span class="tok-comment">// https://github.com/llvm/llvm-project/issues/55522</span>

@@ -180,64 +180,66 @@
 <span class="line" id="L63">    <span class="tok-comment">// files, then two WriteFileSteps executing in parallel might clobber each other.</span>
 </span>
 <span class="line" id="L64"></span>
-<span class="line" id="L65">    <span class="tok-comment">// TODO port the cache system from stage1 to zig std lib. Until then we use blake2b</span>
+<span class="line" id="L65">    <span class="tok-comment">// TODO port the cache system from the compiler to zig std lib. Until then</span>
 </span>
-<span class="line" id="L66">    <span class="tok-comment">// directly and construct the path, and no &quot;cache hit&quot; detection happens; the files</span>
+<span class="line" id="L66">    <span class="tok-comment">// we directly construct the path, and no &quot;cache hit&quot; detection happens;</span>
 </span>
-<span class="line" id="L67">    <span class="tok-comment">// are always written.</span>
+<span class="line" id="L67">    <span class="tok-comment">// the files are always written.</span>
 </span>
-<span class="line" id="L68">    <span class="tok-kw">var</span> hash = std.crypto.hash.blake2.Blake2b384.init(.{});</span>
-<span class="line" id="L69"></span>
+<span class="line" id="L68">    <span class="tok-comment">// Note there is similar code over in ConfigHeaderStep.</span>
+</span>
+<span class="line" id="L69">    <span class="tok-kw">const</span> Hasher = std.crypto.auth.siphash.SipHash128(<span class="tok-number">1</span>, <span class="tok-number">3</span>);</span>
 <span class="line" id="L70">    <span class="tok-comment">// Random bytes to make WriteFileStep unique. Refresh this with</span>
 </span>
 <span class="line" id="L71">    <span class="tok-comment">// new random bytes when WriteFileStep implementation is modified</span>
 </span>
 <span class="line" id="L72">    <span class="tok-comment">// in a non-backwards-compatible way.</span>
 </span>
-<span class="line" id="L73">    hash.update(<span class="tok-str">&quot;eagVR1dYXoE7ARDP&quot;</span>);</span>
-<span class="line" id="L74">    {</span>
-<span class="line" id="L75">        <span class="tok-kw">var</span> it = self.files.first;</span>
-<span class="line" id="L76">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L77">            hash.update(node.data.basename);</span>
-<span class="line" id="L78">            hash.update(node.data.bytes);</span>
-<span class="line" id="L79">            hash.update(<span class="tok-str">&quot;|&quot;</span>);</span>
-<span class="line" id="L80">        }</span>
-<span class="line" id="L81">    }</span>
-<span class="line" id="L82">    <span class="tok-kw">var</span> digest: [<span class="tok-number">48</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L83">    hash.final(&amp;digest);</span>
-<span class="line" id="L84">    <span class="tok-kw">var</span> hash_basename: [<span class="tok-number">64</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L85">    _ = fs.base64_encoder.encode(&amp;hash_basename, &amp;digest);</span>
-<span class="line" id="L86">    self.output_dir = <span class="tok-kw">try</span> fs.path.join(self.builder.allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
-<span class="line" id="L87">        self.builder.cache_root,</span>
-<span class="line" id="L88">        <span class="tok-str">&quot;o&quot;</span>,</span>
-<span class="line" id="L89">        &amp;hash_basename,</span>
-<span class="line" id="L90">    });</span>
-<span class="line" id="L91">    <span class="tok-comment">// TODO replace with something like fs.makePathAndOpenDir</span>
-</span>
-<span class="line" id="L92">    fs.cwd().makePath(self.output_dir) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L93">        std.debug.print(<span class="tok-str">&quot;unable to make path {s}: {s}\n&quot;</span>, .{ self.output_dir, <span class="tok-builtin">@errorName</span>(err) });</span>
-<span class="line" id="L94">        <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L95">    };</span>
-<span class="line" id="L96">    <span class="tok-kw">var</span> dir = <span class="tok-kw">try</span> fs.cwd().openDir(self.output_dir, .{});</span>
-<span class="line" id="L97">    <span class="tok-kw">defer</span> dir.close();</span>
-<span class="line" id="L98">    {</span>
-<span class="line" id="L99">        <span class="tok-kw">var</span> it = self.files.first;</span>
-<span class="line" id="L100">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L101">            dir.writeFile(node.data.basename, node.data.bytes) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L102">                std.debug.print(<span class="tok-str">&quot;unable to write {s} into {s}: {s}\n&quot;</span>, .{</span>
-<span class="line" id="L103">                    node.data.basename,</span>
-<span class="line" id="L104">                    self.output_dir,</span>
-<span class="line" id="L105">                    <span class="tok-builtin">@errorName</span>(err),</span>
-<span class="line" id="L106">                });</span>
-<span class="line" id="L107">                <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L108">            };</span>
-<span class="line" id="L109">            node.data.source.path = fs.path.join(</span>
-<span class="line" id="L110">                self.builder.allocator,</span>
-<span class="line" id="L111">                &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.output_dir, node.data.basename },</span>
-<span class="line" id="L112">            ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L113">        }</span>
-<span class="line" id="L114">    }</span>
-<span class="line" id="L115">}</span>
-<span class="line" id="L116"></span>
+<span class="line" id="L73">    <span class="tok-kw">var</span> hash = Hasher.init(<span class="tok-str">&quot;eagVR1dYXoE7ARDP&quot;</span>);</span>
+<span class="line" id="L74"></span>
+<span class="line" id="L75">    {</span>
+<span class="line" id="L76">        <span class="tok-kw">var</span> it = self.files.first;</span>
+<span class="line" id="L77">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L78">            hash.update(node.data.basename);</span>
+<span class="line" id="L79">            hash.update(node.data.bytes);</span>
+<span class="line" id="L80">            hash.update(<span class="tok-str">&quot;|&quot;</span>);</span>
+<span class="line" id="L81">        }</span>
+<span class="line" id="L82">    }</span>
+<span class="line" id="L83">    <span class="tok-kw">var</span> digest: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L84">    hash.final(&amp;digest);</span>
+<span class="line" id="L85">    <span class="tok-kw">var</span> hash_basename: [digest.len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L86">    _ = std.fmt.bufPrint(</span>
+<span class="line" id="L87">        &amp;hash_basename,</span>
+<span class="line" id="L88">        <span class="tok-str">&quot;{s}&quot;</span>,</span>
+<span class="line" id="L89">        .{std.fmt.fmtSliceHexLower(&amp;digest)},</span>
+<span class="line" id="L90">    ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L91"></span>
+<span class="line" id="L92">    self.output_dir = <span class="tok-kw">try</span> fs.path.join(self.builder.allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
+<span class="line" id="L93">        self.builder.cache_root, <span class="tok-str">&quot;o&quot;</span>, &amp;hash_basename,</span>
+<span class="line" id="L94">    });</span>
+<span class="line" id="L95">    <span class="tok-kw">var</span> dir = fs.cwd().makeOpenPath(self.output_dir, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L96">        std.debug.print(<span class="tok-str">&quot;unable to make path {s}: {s}\n&quot;</span>, .{ self.output_dir, <span class="tok-builtin">@errorName</span>(err) });</span>
+<span class="line" id="L97">        <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L98">    };</span>
+<span class="line" id="L99">    <span class="tok-kw">defer</span> dir.close();</span>
+<span class="line" id="L100">    {</span>
+<span class="line" id="L101">        <span class="tok-kw">var</span> it = self.files.first;</span>
+<span class="line" id="L102">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L103">            dir.writeFile(node.data.basename, node.data.bytes) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L104">                std.debug.print(<span class="tok-str">&quot;unable to write {s} into {s}: {s}\n&quot;</span>, .{</span>
+<span class="line" id="L105">                    node.data.basename,</span>
+<span class="line" id="L106">                    self.output_dir,</span>
+<span class="line" id="L107">                    <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L108">                });</span>
+<span class="line" id="L109">                <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L110">            };</span>
+<span class="line" id="L111">            node.data.source.path = fs.path.join(</span>
+<span class="line" id="L112">                self.builder.allocator,</span>
+<span class="line" id="L113">                &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.output_dir, node.data.basename },</span>
+<span class="line" id="L114">            ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L115">        }</span>
+<span class="line" id="L116">    }</span>
+<span class="line" id="L117">}</span>
+<span class="line" id="L118"></span>
 </code></pre></body>
 </html>

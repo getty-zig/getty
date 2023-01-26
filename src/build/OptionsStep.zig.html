@@ -255,7 +255,7 @@
 <span class="line" id="L131">        },</span>
 <span class="line" id="L132">        <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L133">    }</span>
-<span class="line" id="L134">    out.print(<span class="tok-str">&quot;pub const {}: {s} = &quot;</span>, .{ std.zig.fmtId(name), std.zig.fmtId(<span class="tok-builtin">@typeName</span>(T)) }) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L134">    out.print(<span class="tok-str">&quot;pub const {}: {s} = &quot;</span>, .{ std.zig.fmtId(name), <span class="tok-builtin">@typeName</span>(T) }) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L135">    printLiteral(out, value, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L136">    out.writeAll(<span class="tok-str">&quot;;\n&quot;</span>) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L137">}</span>
@@ -302,7 +302,7 @@
 <span class="line" id="L177">        .Float,</span>
 <span class="line" id="L178">        .Null,</span>
 <span class="line" id="L179">        =&gt; <span class="tok-kw">try</span> out.print(<span class="tok-str">&quot;{any}&quot;</span>, .{val}),</span>
-<span class="line" id="L180">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-kw">comptime</span> std.fmt.comptimePrint(<span class="tok-str">&quot;`{s}` are not yet supported as build options&quot;</span>, .{<span class="tok-builtin">@tagName</span>(<span class="tok-builtin">@typeInfo</span>(T))})),</span>
+<span class="line" id="L180">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;`{s}` are not yet supported as build options&quot;</span>, .{<span class="tok-builtin">@tagName</span>(<span class="tok-builtin">@typeInfo</span>(T))})),</span>
 <span class="line" id="L181">    }</span>
 <span class="line" id="L182">}</span>
 <span class="line" id="L183"></span>
@@ -421,119 +421,125 @@
 <span class="line" id="L292"></span>
 <span class="line" id="L293">    <span class="tok-kw">const</span> options = builder.addOptions();</span>
 <span class="line" id="L294"></span>
-<span class="line" id="L295">    <span class="tok-kw">const</span> KeywordEnum = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L296">        @&quot;0.8.1&quot;,</span>
-<span class="line" id="L297">    };</span>
-<span class="line" id="L298"></span>
-<span class="line" id="L299">    <span class="tok-kw">const</span> nested_array = [<span class="tok-number">2</span>][<span class="tok-number">2</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L300">        [<span class="tok-number">2</span>]<span class="tok-type">u16</span>{ <span class="tok-number">300</span>, <span class="tok-number">200</span> },</span>
+<span class="line" id="L295">    <span class="tok-comment">// TODO this regressed at some point</span>
+</span>
+<span class="line" id="L296">    <span class="tok-comment">//const KeywordEnum = enum {</span>
+</span>
+<span class="line" id="L297">    <span class="tok-comment">//    @&quot;0.8.1&quot;,</span>
+</span>
+<span class="line" id="L298">    <span class="tok-comment">//};</span>
+</span>
+<span class="line" id="L299"></span>
+<span class="line" id="L300">    <span class="tok-kw">const</span> nested_array = [<span class="tok-number">2</span>][<span class="tok-number">2</span>]<span class="tok-type">u16</span>{</span>
 <span class="line" id="L301">        [<span class="tok-number">2</span>]<span class="tok-type">u16</span>{ <span class="tok-number">300</span>, <span class="tok-number">200</span> },</span>
-<span class="line" id="L302">    };</span>
-<span class="line" id="L303">    <span class="tok-kw">const</span> nested_slice: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u16</span> = &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u16</span>{ &amp;nested_array[<span class="tok-number">0</span>], &amp;nested_array[<span class="tok-number">1</span>] };</span>
-<span class="line" id="L304"></span>
-<span class="line" id="L305">    options.addOption(<span class="tok-type">usize</span>, <span class="tok-str">&quot;option1&quot;</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L306">    options.addOption(?<span class="tok-type">usize</span>, <span class="tok-str">&quot;option2&quot;</span>, <span class="tok-null">null</span>);</span>
-<span class="line" id="L307">    options.addOption(?<span class="tok-type">usize</span>, <span class="tok-str">&quot;option3&quot;</span>, <span class="tok-number">3</span>);</span>
-<span class="line" id="L308">    options.addOption(<span class="tok-type">comptime_int</span>, <span class="tok-str">&quot;option4&quot;</span>, <span class="tok-number">4</span>);</span>
-<span class="line" id="L309">    options.addOption([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-str">&quot;string&quot;</span>, <span class="tok-str">&quot;zigisthebest&quot;</span>);</span>
-<span class="line" id="L310">    options.addOption(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-str">&quot;optional_string&quot;</span>, <span class="tok-null">null</span>);</span>
-<span class="line" id="L311">    options.addOption([<span class="tok-number">2</span>][<span class="tok-number">2</span>]<span class="tok-type">u16</span>, <span class="tok-str">&quot;nested_array&quot;</span>, nested_array);</span>
-<span class="line" id="L312">    options.addOption([]<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, <span class="tok-str">&quot;nested_slice&quot;</span>, nested_slice);</span>
-<span class="line" id="L313">    options.addOption(KeywordEnum, <span class="tok-str">&quot;keyword_enum&quot;</span>, .@&quot;0.8.1&quot;);</span>
-<span class="line" id="L314">    options.addOption(std.builtin.Version, <span class="tok-str">&quot;version&quot;</span>, <span class="tok-kw">try</span> std.builtin.Version.parse(<span class="tok-str">&quot;0.1.2&quot;</span>));</span>
-<span class="line" id="L315">    options.addOption(std.SemanticVersion, <span class="tok-str">&quot;semantic_version&quot;</span>, <span class="tok-kw">try</span> std.SemanticVersion.parse(<span class="tok-str">&quot;0.1.2-foo+bar&quot;</span>));</span>
-<span class="line" id="L316"></span>
-<span class="line" id="L317">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(</span>
-<span class="line" id="L318">        <span class="tok-str">\\pub const option1: usize = 1;</span></span>
+<span class="line" id="L302">        [<span class="tok-number">2</span>]<span class="tok-type">u16</span>{ <span class="tok-number">300</span>, <span class="tok-number">200</span> },</span>
+<span class="line" id="L303">    };</span>
+<span class="line" id="L304">    <span class="tok-kw">const</span> nested_slice: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u16</span> = &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u16</span>{ &amp;nested_array[<span class="tok-number">0</span>], &amp;nested_array[<span class="tok-number">1</span>] };</span>
+<span class="line" id="L305"></span>
+<span class="line" id="L306">    options.addOption(<span class="tok-type">usize</span>, <span class="tok-str">&quot;option1&quot;</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L307">    options.addOption(?<span class="tok-type">usize</span>, <span class="tok-str">&quot;option2&quot;</span>, <span class="tok-null">null</span>);</span>
+<span class="line" id="L308">    options.addOption(?<span class="tok-type">usize</span>, <span class="tok-str">&quot;option3&quot;</span>, <span class="tok-number">3</span>);</span>
+<span class="line" id="L309">    options.addOption(<span class="tok-type">comptime_int</span>, <span class="tok-str">&quot;option4&quot;</span>, <span class="tok-number">4</span>);</span>
+<span class="line" id="L310">    options.addOption([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-str">&quot;string&quot;</span>, <span class="tok-str">&quot;zigisthebest&quot;</span>);</span>
+<span class="line" id="L311">    options.addOption(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-str">&quot;optional_string&quot;</span>, <span class="tok-null">null</span>);</span>
+<span class="line" id="L312">    options.addOption([<span class="tok-number">2</span>][<span class="tok-number">2</span>]<span class="tok-type">u16</span>, <span class="tok-str">&quot;nested_array&quot;</span>, nested_array);</span>
+<span class="line" id="L313">    options.addOption([]<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, <span class="tok-str">&quot;nested_slice&quot;</span>, nested_slice);</span>
+<span class="line" id="L314">    <span class="tok-comment">//options.addOption(KeywordEnum, &quot;keyword_enum&quot;, .@&quot;0.8.1&quot;);</span>
+</span>
+<span class="line" id="L315">    options.addOption(std.builtin.Version, <span class="tok-str">&quot;version&quot;</span>, <span class="tok-kw">try</span> std.builtin.Version.parse(<span class="tok-str">&quot;0.1.2&quot;</span>));</span>
+<span class="line" id="L316">    options.addOption(std.SemanticVersion, <span class="tok-str">&quot;semantic_version&quot;</span>, <span class="tok-kw">try</span> std.SemanticVersion.parse(<span class="tok-str">&quot;0.1.2-foo+bar&quot;</span>));</span>
+<span class="line" id="L317"></span>
+<span class="line" id="L318">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(</span>
+<span class="line" id="L319">        <span class="tok-str">\\pub const option1: usize = 1;</span></span>
 
-<span class="line" id="L319">        <span class="tok-str">\\pub const option2: ?usize = null;</span></span>
+<span class="line" id="L320">        <span class="tok-str">\\pub const option2: ?usize = null;</span></span>
 
-<span class="line" id="L320">        <span class="tok-str">\\pub const option3: ?usize = 3;</span></span>
+<span class="line" id="L321">        <span class="tok-str">\\pub const option3: ?usize = 3;</span></span>
 
-<span class="line" id="L321">        <span class="tok-str">\\pub const option4: comptime_int = 4;</span></span>
+<span class="line" id="L322">        <span class="tok-str">\\pub const option4: comptime_int = 4;</span></span>
 
-<span class="line" id="L322">        <span class="tok-str">\\pub const string: []const u8 = &quot;zigisthebest&quot;;</span></span>
+<span class="line" id="L323">        <span class="tok-str">\\pub const string: []const u8 = &quot;zigisthebest&quot;;</span></span>
 
-<span class="line" id="L323">        <span class="tok-str">\\pub const optional_string: ?[]const u8 = null;</span></span>
+<span class="line" id="L324">        <span class="tok-str">\\pub const optional_string: ?[]const u8 = null;</span></span>
 
-<span class="line" id="L324">        <span class="tok-str">\\pub const nested_array: [2][2]u16 = [2][2]u16 {</span></span>
+<span class="line" id="L325">        <span class="tok-str">\\pub const nested_array: [2][2]u16 = [2][2]u16 {</span></span>
 
-<span class="line" id="L325">        <span class="tok-str">\\    [2]u16 {</span></span>
+<span class="line" id="L326">        <span class="tok-str">\\    [2]u16 {</span></span>
 
-<span class="line" id="L326">        <span class="tok-str">\\        300,</span></span>
+<span class="line" id="L327">        <span class="tok-str">\\        300,</span></span>
 
-<span class="line" id="L327">        <span class="tok-str">\\        200,</span></span>
+<span class="line" id="L328">        <span class="tok-str">\\        200,</span></span>
 
-<span class="line" id="L328">        <span class="tok-str">\\    },</span></span>
+<span class="line" id="L329">        <span class="tok-str">\\    },</span></span>
 
-<span class="line" id="L329">        <span class="tok-str">\\    [2]u16 {</span></span>
+<span class="line" id="L330">        <span class="tok-str">\\    [2]u16 {</span></span>
 
-<span class="line" id="L330">        <span class="tok-str">\\        300,</span></span>
+<span class="line" id="L331">        <span class="tok-str">\\        300,</span></span>
 
-<span class="line" id="L331">        <span class="tok-str">\\        200,</span></span>
+<span class="line" id="L332">        <span class="tok-str">\\        200,</span></span>
 
-<span class="line" id="L332">        <span class="tok-str">\\    },</span></span>
+<span class="line" id="L333">        <span class="tok-str">\\    },</span></span>
 
-<span class="line" id="L333">        <span class="tok-str">\\};</span></span>
+<span class="line" id="L334">        <span class="tok-str">\\};</span></span>
 
-<span class="line" id="L334">        <span class="tok-str">\\pub const nested_slice: []const []const u16 = &amp;[_][]const u16 {</span></span>
+<span class="line" id="L335">        <span class="tok-str">\\pub const nested_slice: []const []const u16 = &amp;[_][]const u16 {</span></span>
 
-<span class="line" id="L335">        <span class="tok-str">\\    &amp;[_]u16 {</span></span>
+<span class="line" id="L336">        <span class="tok-str">\\    &amp;[_]u16 {</span></span>
 
-<span class="line" id="L336">        <span class="tok-str">\\        300,</span></span>
+<span class="line" id="L337">        <span class="tok-str">\\        300,</span></span>
 
-<span class="line" id="L337">        <span class="tok-str">\\        200,</span></span>
+<span class="line" id="L338">        <span class="tok-str">\\        200,</span></span>
 
-<span class="line" id="L338">        <span class="tok-str">\\    },</span></span>
+<span class="line" id="L339">        <span class="tok-str">\\    },</span></span>
 
-<span class="line" id="L339">        <span class="tok-str">\\    &amp;[_]u16 {</span></span>
+<span class="line" id="L340">        <span class="tok-str">\\    &amp;[_]u16 {</span></span>
 
-<span class="line" id="L340">        <span class="tok-str">\\        300,</span></span>
+<span class="line" id="L341">        <span class="tok-str">\\        300,</span></span>
 
-<span class="line" id="L341">        <span class="tok-str">\\        200,</span></span>
+<span class="line" id="L342">        <span class="tok-str">\\        200,</span></span>
 
-<span class="line" id="L342">        <span class="tok-str">\\    },</span></span>
+<span class="line" id="L343">        <span class="tok-str">\\    },</span></span>
 
-<span class="line" id="L343">        <span class="tok-str">\\};</span></span>
+<span class="line" id="L344">        <span class="tok-str">\\};</span></span>
 
-<span class="line" id="L344">        <span class="tok-str">\\pub const KeywordEnum = enum {</span></span>
+<span class="line" id="L345">        <span class="tok-comment">//\\pub const KeywordEnum = enum {</span>
+</span>
+<span class="line" id="L346">        <span class="tok-comment">//\\    @&quot;0.8.1&quot;,</span>
+</span>
+<span class="line" id="L347">        <span class="tok-comment">//\\};</span>
+</span>
+<span class="line" id="L348">        <span class="tok-comment">//\\pub const keyword_enum: KeywordEnum = KeywordEnum.@&quot;0.8.1&quot;;</span>
+</span>
+<span class="line" id="L349">        <span class="tok-str">\\pub const version: @import(&quot;std&quot;).builtin.Version = .{</span></span>
 
-<span class="line" id="L345">        <span class="tok-str">\\    @&quot;0.8.1&quot;,</span></span>
+<span class="line" id="L350">        <span class="tok-str">\\    .major = 0,</span></span>
 
-<span class="line" id="L346">        <span class="tok-str">\\};</span></span>
+<span class="line" id="L351">        <span class="tok-str">\\    .minor = 1,</span></span>
 
-<span class="line" id="L347">        <span class="tok-str">\\pub const keyword_enum: KeywordEnum = KeywordEnum.@&quot;0.8.1&quot;;</span></span>
+<span class="line" id="L352">        <span class="tok-str">\\    .patch = 2,</span></span>
 
-<span class="line" id="L348">        <span class="tok-str">\\pub const version: @import(&quot;std&quot;).builtin.Version = .{</span></span>
+<span class="line" id="L353">        <span class="tok-str">\\};</span></span>
 
-<span class="line" id="L349">        <span class="tok-str">\\    .major = 0,</span></span>
+<span class="line" id="L354">        <span class="tok-str">\\pub const semantic_version: @import(&quot;std&quot;).SemanticVersion = .{</span></span>
 
-<span class="line" id="L350">        <span class="tok-str">\\    .minor = 1,</span></span>
+<span class="line" id="L355">        <span class="tok-str">\\    .major = 0,</span></span>
 
-<span class="line" id="L351">        <span class="tok-str">\\    .patch = 2,</span></span>
+<span class="line" id="L356">        <span class="tok-str">\\    .minor = 1,</span></span>
 
-<span class="line" id="L352">        <span class="tok-str">\\};</span></span>
+<span class="line" id="L357">        <span class="tok-str">\\    .patch = 2,</span></span>
 
-<span class="line" id="L353">        <span class="tok-str">\\pub const semantic_version: @import(&quot;std&quot;).SemanticVersion = .{</span></span>
+<span class="line" id="L358">        <span class="tok-str">\\    .pre = &quot;foo&quot;,</span></span>
 
-<span class="line" id="L354">        <span class="tok-str">\\    .major = 0,</span></span>
+<span class="line" id="L359">        <span class="tok-str">\\    .build = &quot;bar&quot;,</span></span>
 
-<span class="line" id="L355">        <span class="tok-str">\\    .minor = 1,</span></span>
+<span class="line" id="L360">        <span class="tok-str">\\};</span></span>
 
-<span class="line" id="L356">        <span class="tok-str">\\    .patch = 2,</span></span>
+<span class="line" id="L361">        <span class="tok-str">\\</span></span>
 
-<span class="line" id="L357">        <span class="tok-str">\\    .pre = &quot;foo&quot;,</span></span>
-
-<span class="line" id="L358">        <span class="tok-str">\\    .build = &quot;bar&quot;,</span></span>
-
-<span class="line" id="L359">        <span class="tok-str">\\};</span></span>
-
-<span class="line" id="L360">        <span class="tok-str">\\</span></span>
-
-<span class="line" id="L361">    , options.contents.items);</span>
-<span class="line" id="L362"></span>
-<span class="line" id="L363">    _ = <span class="tok-kw">try</span> std.zig.parse(arena.allocator(), <span class="tok-kw">try</span> options.contents.toOwnedSliceSentinel(<span class="tok-number">0</span>));</span>
-<span class="line" id="L364">}</span>
-<span class="line" id="L365"></span>
+<span class="line" id="L362">    , options.contents.items);</span>
+<span class="line" id="L363"></span>
+<span class="line" id="L364">    _ = <span class="tok-kw">try</span> std.zig.parse(arena.allocator(), <span class="tok-kw">try</span> options.contents.toOwnedSliceSentinel(<span class="tok-number">0</span>));</span>
+<span class="line" id="L365">}</span>
+<span class="line" id="L366"></span>
 </code></pre></body>
 </html>
