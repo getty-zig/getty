@@ -17,7 +17,7 @@ const Serializer = struct {
     );
 
     const Ok = void;
-    const Error = error{};
+    const Error = getty.ser.Error;
 
     fn serializeBool(_: Serializer, value: bool) Error!Ok {
         std.debug.print("{}\n", .{value});
