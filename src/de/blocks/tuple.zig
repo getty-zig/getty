@@ -43,24 +43,24 @@ test "deserialize - tuple" {
         .{ .SeqEnd = {} },
     }, std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 });
 
-    //try t.run(deserialize, Visitor, &.{
-    //.{ .Seq = .{ .len = 3 } },
-    //.{ .Seq = .{ .len = 2 } },
-    //.{ .I32 = 1 },
-    //.{ .I32 = 2 },
-    //.{ .SeqEnd = {} },
-    //.{ .Seq = .{ .len = 2 } },
-    //.{ .I32 = 3 },
-    //.{ .I32 = 4 },
-    //.{ .SeqEnd = {} },
-    //.{ .Seq = .{ .len = 2 } },
-    //.{ .I32 = 5 },
-    //.{ .I32 = 6 },
-    //.{ .SeqEnd = {} },
-    //.{ .SeqEnd = {} },
-    //}, std.meta.Tuple(&[_]type{
-    //std.meta.Tuple(&[_]type{ i32, i32 }),
-    //std.meta.Tuple(&[_]type{ i32, i32 }),
-    //std.meta.Tuple(&[_]type{ i32, i32 }),
-    //}){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } });
+    try t.run(deserialize, Visitor, &.{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 1 },
+        .{ .I32 = 2 },
+        .{ .SeqEnd = {} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 3 },
+        .{ .I32 = 4 },
+        .{ .SeqEnd = {} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 5 },
+        .{ .I32 = 6 },
+        .{ .SeqEnd = {} },
+        .{ .SeqEnd = {} },
+    }, std.meta.Tuple(&[_]type{
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+    }){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } });
 }
