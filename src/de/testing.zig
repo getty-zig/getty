@@ -238,6 +238,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
                     var value = try visitor.visitMap(allocator, De, m.mapAccess());
 
+                    try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.MapEnd);
 
                     break :blk value;
@@ -246,6 +247,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
                     var value = try visitor.visitSeq(allocator, De, s.seqAccess());
 
+                    try expectEqual(@as(usize, 0), s.len.?);
                     try self.assertNextToken(.SeqEnd);
 
                     break :blk value;
@@ -254,6 +256,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     var s = Struct{ .de = self, .len = v.len, .end = .StructEnd };
                     var value = try visitor.visitMap(allocator, De, s.mapAccess());
 
+                    try expectEqual(@as(usize, 0), s.len.?);
                     try self.assertNextToken(.StructEnd);
 
                     break :blk value;
@@ -305,11 +308,16 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             );
 
             fn nextElementSeed(self: *Seq, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+                // All elements have been deserialized.
+                if (self.len.? == 0) {
+                    return null;
+                }
+
                 if (self.de.peekTokenOpt()) |token| {
                     if (std.meta.eql(token, self.end)) return null;
                 }
 
-                self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+                self.len.? -= @as(usize, 1);
 
                 return try seed.deserialize(allocator, self.de.deserializer());
             }
@@ -330,13 +338,18 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             );
 
             fn nextKeySeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+                // All entries have been deserialized.
+                if (self.len.? == 0) {
+                    return null;
+                }
+
                 if (self.de.peekTokenOpt()) |token| {
                     if (std.meta.eql(token, self.end)) return null;
                 } else {
                     return null;
                 }
 
-                self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+                self.len.? -= @as(usize, 1);
 
                 return try seed.deserialize(allocator, self.de.deserializer());
             }
@@ -362,6 +375,11 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             );
 
             fn nextKeySeed(self: *Struct, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+                // All fields have been deserialized.
+                if (self.len.? == 0) {
+                    return null;
+                }
+
                 if (self.de.peekTokenOpt()) |token| {
                     if (std.meta.eql(token, self.end)) return null;
                 } else {
@@ -369,7 +387,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 }
 
                 if (self.de.nextTokenOpt()) |token| {
-                    self.len.? -= @as(usize, if (self.len.? > 0) 1 else 0);
+                    self.len.? -= @as(usize, 1);
 
                     if (token != .String) {
                         return error.InvalidType;

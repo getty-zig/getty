@@ -42,7 +42,7 @@ test "deserialize - array" {
     }, [_]i32{});
 
     try t.run(deserialize, Visitor, &.{
-        .{ .Seq = .{ .len = 0 } },
+        .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },
         .{ .I32 = 3 },
