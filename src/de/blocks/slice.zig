@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -37,19 +39,37 @@ pub fn Visitor(
 }
 
 test "deserialize - slice, string" {
-    // No sentinel
-    {
-        var arr = [_]u8{ 'a', 'b', 'c' };
+    var no_sentinel = [_]u8{ 'a', 'b', 'c' };
+    var sentinel = [_:0]u8{ 'a', 'b', 'c' };
 
-        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]u8, &arr));
-        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([]const u8, &arr));
-    }
+    const tests = .{
+        .{
+            .name = "no sentinel",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = @as([]u8, &no_sentinel),
+        },
+        .{
+            .name = "no sentinel, const",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = @as([]const u8, &no_sentinel),
+        },
+        .{
+            .name = "sentinel",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = @as([:0]u8, &sentinel),
+        },
+        .{
+            .name = "sentinel, const",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = @as([:0]const u8, &sentinel),
+        },
+    };
 
-    // Sentinel
-    {
-        var arr = [_:0]u8{ 'a', 'b', 'c' };
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        defer std.testing.allocator.free(got);
 
-        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]u8, &arr));
-        try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, @as([:0]const u8, &arr));
+        try testing.expectEqualStrings(t.name, t.want, got);
     }
 }

@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const BoolVisitor = @import("../impls/visitor/bool.zig");
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -38,6 +40,22 @@ pub fn Visitor(
 }
 
 test "deserialize - bool" {
-    try t.run(deserialize, Visitor, &.{.{ .Bool = true }}, true);
-    try t.run(deserialize, Visitor, &.{.{ .Bool = false }}, false);
+    const tests = .{
+        .{
+            .name = "false",
+            .tokens = &.{.{ .Bool = false }},
+            .want = false,
+        },
+        .{
+            .name = "true",
+            .tokens = &.{.{ .Bool = true }},
+            .want = true,
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
 }

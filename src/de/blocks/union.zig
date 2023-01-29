@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const UnionVisitor = @import("../impls/visitor/union.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -36,221 +38,270 @@ pub fn Visitor(
 }
 
 test "deserialize - union" {
-    // Tagged
-    {
-        const T = union(enum) {
-            foo: bool,
-            bar: void,
-        };
+    const Tagged = union(enum) {
+        foo: void,
+        bar: bool,
+    };
 
-        try t.run(deserialize, Visitor, &.{
-            .{ .Union = {} },
-            .{ .String = "foo" },
-            .{ .Bool = true },
-        }, T{ .foo = true });
-        try t.run(deserialize, Visitor, &.{
-            .{ .Union = {} },
-            .{ .String = "bar" },
-            .{ .Void = {} },
-        }, T{ .bar = {} });
-    }
+    const Untagged = union {
+        foo: void,
+        bar: bool,
+    };
 
-    // Untagged
-    {
-        const T = union {
-            foo: bool,
-            bar: void,
-        };
-
-        {
-            const tokens = &.{
+    const tests = .{
+        .{
+            .name = "tagged, void variant",
+            .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "foo" },
-                .{ .Bool = true },
-            };
-
-            var v = Visitor(T){};
-            const visitor = v.visitor();
-
-            var d = t.DefaultDeserializer.init(tokens);
-            const deserializer = d.deserializer();
-
-            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
-            try std.testing.expectEqual(true, got.foo);
-        }
-
-        {
-            const tokens = &.{
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want = Tagged{ .foo = {} },
+        },
+        .{
+            .name = "tagged, non-void variant",
+            .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "bar" },
+                .{ .Bool = true },
+            },
+            .tagged = true,
+            .want = Tagged{ .bar = true },
+        },
+        .{
+            .name = "untagged, void variant",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "foo" },
                 .{ .Void = {} },
-            };
+            },
+            .tagged = false,
+            .tag = "foo",
+            .want = {},
+        },
+        .{
+            .name = "untagged, non-void variant",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Bool = true },
+            },
+            .tagged = false,
+            .tag = "bar",
+            .want = true,
+        },
+    };
 
-            var v = Visitor(T){};
-            const visitor = v.visitor();
-
-            var d = t.DefaultDeserializer.init(tokens);
-            const deserializer = d.deserializer();
-
-            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
-            try std.testing.expectEqual({}, got.bar);
-        }
+    inline for (tests) |t| {
+        try runTest(t, if (t.tagged) Tagged else Untagged);
     }
 }
 
 test "deserialize - union, attributes (rename)" {
-    // Tagged
-    {
-        const T = union(enum) {
-            foo: bool,
-            bar: void,
+    const Tagged = union(enum) {
+        foo: void,
+        bar: bool,
 
-            pub const @"getty.db" = struct {
-                pub const attributes = .{
-                    .foo = .{ .rename = "FOO" },
-                };
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .rename = "FOO" },
+                .bar = .{ .rename = "BAR" },
             };
         };
-        const tokens = &.{
-            .{ .Union = {} },
-            .{ .String = "FOO" },
-            .{ .Bool = true },
-        };
-        const expected = T{ .foo = true };
+    };
 
-        try t.run(deserialize, Visitor, tokens, expected);
-    }
+    const Untagged = union {
+        foo: void,
+        bar: bool,
 
-    // Untagged
-    {
-        const T = union {
-            foo: bool,
-            bar: void,
-
-            pub const @"getty.db" = struct {
-                pub const attributes = .{
-                    .foo = .{ .rename = "FOO" },
-                    .bar = .{ .rename = "BAR" },
-                };
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .rename = "FOO" },
+                .bar = .{ .rename = "BAR" },
             };
         };
+    };
 
-        {
-            const tokens = &.{
+    const tests = .{
+        .{
+            .name = "tagged, void variant (success)",
+            .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "FOO" },
-                .{ .Bool = true },
-            };
-            const expected = true;
-
-            var v = Visitor(T){};
-            const visitor = v.visitor();
-
-            var d = t.DefaultDeserializer.init(tokens);
-            const deserializer = d.deserializer();
-
-            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
-            try std.testing.expectEqual(expected, got.foo);
-        }
-
-        {
-            const tokens = &.{
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want = Tagged{ .foo = {} },
+        },
+        .{
+            .name = "tagged, void variant (fail)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "foo" },
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "tagged, non-void variant (success)",
+            .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "BAR" },
+                .{ .Bool = true },
+            },
+            .tagged = true,
+            .want = Tagged{ .bar = true },
+        },
+        .{
+            .name = "tagged, non-void variant (fail)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Bool = true },
+            },
+            .tagged = true,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "untagged, void variant (success)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "FOO" },
                 .{ .Void = {} },
-            };
-            const expected = {};
+            },
+            .tagged = false,
+            .tag = "foo",
+            .want = {},
+        },
+        .{
+            .name = "untagged, void variant (fail)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "foo" },
+                .{ .Void = {} },
+            },
+            .tagged = false,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "untagged, non-void variant (success)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "BAR" },
+                .{ .Bool = true },
+            },
+            .tagged = false,
+            .tag = "bar",
+            .want = true,
+        },
+        .{
+            .name = "untagged, non-void variant (fail)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Bool = true },
+            },
+            .tagged = false,
+            .want_err = error.UnknownVariant,
+        },
+    };
 
-            var v = Visitor(T){};
-            const visitor = v.visitor();
-
-            var d = t.DefaultDeserializer.init(tokens);
-            const deserializer = d.deserializer();
-
-            const got = deserialize(std.testing.allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
-            try std.testing.expectEqual(expected, got.bar);
-        }
+    inline for (tests) |t| {
+        try runTest(t, if (t.tagged) Tagged else Untagged);
     }
 }
 
 test "deserialize - union, attributes (skip)" {
-    // Tagged
-    {
-        const T = union(enum) {
-            foo: bool,
-            bar: void,
+    const Tagged = union(enum) {
+        foo: void,
+        bar: bool,
 
-            pub const @"getty.db" = struct {
-                pub const attributes = .{
-                    .foo = .{ .skip = true },
-                };
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .skip = true },
+                .bar = .{ .skip = true },
             };
         };
-        const tokens = &.{
-            .{ .Union = {} },
-            .{ .String = "foo" },
-            .{ .Bool = true },
-        };
+    };
 
-        var v = Visitor(T){};
-        const visitor = v.visitor();
+    const Untagged = union {
+        foo: void,
+        bar: bool,
 
-        var d = t.DefaultDeserializer.init(tokens);
-        const deserializer = d.deserializer();
-
-        try std.testing.expectError(
-            error.UnknownVariant,
-            deserialize(std.testing.allocator, T, deserializer, visitor),
-        );
-    }
-
-    // Untagged
-    {
-        const T = union {
-            foo: bool,
-            bar: void,
-
-            pub const @"getty.db" = struct {
-                pub const attributes = .{
-                    .foo = .{ .skip = true },
-                    .bar = .{ .skip = true },
-                };
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .skip = true },
+                .bar = .{ .skip = true },
             };
         };
+    };
 
-        var v = Visitor(T){};
-        const visitor = v.visitor();
-
-        {
-            const tokens = &.{
+    const tests = .{
+        .{
+            .name = "tagged, void variant (fail)",
+            .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "foo" },
-                .{ .Bool = true },
-            };
-
-            var d = t.DefaultDeserializer.init(tokens);
-            const deserializer = d.deserializer();
-
-            try std.testing.expectError(
-                error.UnknownVariant,
-                deserialize(std.testing.allocator, T, deserializer, visitor),
-            );
-        }
-
-        {
-            const tokens = &.{
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "tagged, non-void variant (fail)",
+            .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "bar" },
+                .{ .Bool = true },
+            },
+            .tagged = true,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "untagged, void variant (fail)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "foo" },
                 .{ .Void = {} },
-            };
+            },
+            .tagged = false,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "untagged, non-void variant (fail)",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "bar" },
+                .{ .Bool = true },
+            },
+            .tagged = false,
+            .want_err = error.UnknownVariant,
+        },
+    };
 
-            var d = t.DefaultDeserializer.init(tokens);
-            const deserializer = d.deserializer();
+    inline for (tests) |t| {
+        try runTest(t, if (t.tagged) Tagged else Untagged);
+    }
+}
 
-            try std.testing.expectError(
-                error.UnknownVariant,
-                deserialize(std.testing.allocator, T, deserializer, visitor),
-            );
+fn runTest(t: anytype, comptime Want: type) !void {
+    const Test = @TypeOf(t);
+
+    if (@hasField(Test, "want_err")) {
+        try testing.expectError(
+            t.name,
+            t.want_err,
+            testing.deserializeErr(null, Self, Want, t.tokens),
+        );
+    } else {
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+
+        if (t.tagged) {
+            try testing.expectEqual(t.name, t.want, got);
+        } else {
+            try testing.expectEqual(t.name, t.want, @field(got, t.tag));
         }
     }
 }

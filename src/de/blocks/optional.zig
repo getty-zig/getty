@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -36,6 +38,22 @@ pub fn Visitor(
 }
 
 test "deserialize - optional" {
-    try t.run(deserialize, Visitor, &.{.{ .Null = {} }}, @as(?i32, null));
-    try t.run(deserialize, Visitor, &.{ .{ .Some = {} }, .{ .I32 = 0 } }, @as(?i32, 0));
+    const tests = .{
+        .{
+            .name = "null",
+            .tokens = &.{.{ .Null = {} }},
+            .want = @as(?i32, null),
+        },
+        .{
+            .name = "non-null",
+            .tokens = &.{ .{ .Some = {} }, .{ .I32 = 0 } },
+            .want = @as(?i32, 0),
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
 }

@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const EnumVisitor = @import("../impls/visitor/enum.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -38,12 +40,47 @@ pub fn Visitor(
 test "deserialize - enum" {
     const T = enum { zero, one, two, three, four };
 
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U8 = 0 } }, T.zero);
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U16 = 1 } }, T.one);
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U32 = 2 } }, T.two);
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U64 = 3 } }, T.three);
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .U128 = 4 } }, T.four);
+    const tests = .{
+        .{
+            .name = "from integer, u8",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U8 = 0 } },
+            .want = T.zero,
+        },
+        .{
+            .name = "from integer, u16",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U16 = 1 } },
+            .want = T.one,
+        },
+        .{
+            .name = "from integer, u32",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U32 = 2 } },
+            .want = T.two,
+        },
+        .{
+            .name = "from integer, u64",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U64 = 3 } },
+            .want = T.three,
+        },
+        .{
+            .name = "from integer, u128",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U128 = 4 } },
+            .want = T.four,
+        },
+        .{
+            .name = "from string (I)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "zero" } },
+            .want = T.zero,
+        },
+        .{
+            .name = "from string (II)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "four" } },
+            .want = T.four,
+        },
+    };
 
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "zero" } }, T.zero);
-    try t.run(deserialize, Visitor, &.{ .{ .Enum = {} }, .{ .String = "four" } }, T.four);
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
 }

@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const IntVisitor = @import("../impls/visitor/int.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -39,19 +41,72 @@ pub fn Visitor(
 }
 
 test "deserialize - integer" {
-    // signed
-    try t.run(deserialize, Visitor, &.{.{ .I8 = 0 }}, @as(i8, 0));
-    try t.run(deserialize, Visitor, &.{.{ .I16 = 0 }}, @as(i16, 0));
-    try t.run(deserialize, Visitor, &.{.{ .I32 = 0 }}, @as(i32, 0));
-    try t.run(deserialize, Visitor, &.{.{ .I64 = 0 }}, @as(i64, 0));
-    try t.run(deserialize, Visitor, &.{.{ .I128 = 0 }}, @as(i128, 0));
-    try t.run(deserialize, Visitor, &.{.{ .I128 = 0 }}, @as(isize, 0));
+    const tests = .{
+        .{
+            .name = "i8",
+            .tokens = &.{.{ .I8 = 0 }},
+            .want = @as(i8, 0),
+        },
+        .{
+            .name = "i16",
+            .tokens = &.{.{ .I16 = 0 }},
+            .want = @as(i16, 0),
+        },
+        .{
+            .name = "i32",
+            .tokens = &.{.{ .I32 = 0 }},
+            .want = @as(i32, 0),
+        },
+        .{
+            .name = "i64",
+            .tokens = &.{.{ .I64 = 0 }},
+            .want = @as(i64, 0),
+        },
+        .{
+            .name = "i128",
+            .tokens = &.{.{ .I128 = 0 }},
+            .want = @as(i128, 0),
+        },
+        .{
+            .name = "isize",
+            .tokens = &.{.{ .I128 = 0 }},
+            .want = @as(isize, 0),
+        },
+        .{
+            .name = "u8",
+            .tokens = &.{.{ .U8 = 0 }},
+            .want = @as(u8, 0),
+        },
+        .{
+            .name = "u16",
+            .tokens = &.{.{ .U16 = 0 }},
+            .want = @as(u16, 0),
+        },
+        .{
+            .name = "u32",
+            .tokens = &.{.{ .U32 = 0 }},
+            .want = @as(u32, 0),
+        },
+        .{
+            .name = "u64",
+            .tokens = &.{.{ .U64 = 0 }},
+            .want = @as(u64, 0),
+        },
+        .{
+            .name = "u128",
+            .tokens = &.{.{ .U128 = 0 }},
+            .want = @as(u128, 0),
+        },
+        .{
+            .name = "usize",
+            .tokens = &.{.{ .U128 = 0 }},
+            .want = @as(usize, 0),
+        },
+    };
 
-    // unsigned
-    try t.run(deserialize, Visitor, &.{.{ .U8 = 0 }}, @as(u8, 0));
-    try t.run(deserialize, Visitor, &.{.{ .U16 = 0 }}, @as(u16, 0));
-    try t.run(deserialize, Visitor, &.{.{ .U32 = 0 }}, @as(u32, 0));
-    try t.run(deserialize, Visitor, &.{.{ .U64 = 0 }}, @as(u64, 0));
-    try t.run(deserialize, Visitor, &.{.{ .U128 = 0 }}, @as(u128, 0));
-    try t.run(deserialize, Visitor, &.{.{ .U128 = 0 }}, @as(usize, 0));
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
 }

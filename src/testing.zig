@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub const Token = union(enum) {
     Bool: bool,
 
@@ -40,3 +42,28 @@ pub const Token = union(enum) {
     Enum,
     Union,
 };
+
+pub fn expect(comptime name: []const u8, ok: bool) !void {
+    return std.testing.expect(ok) catch |e| logErr(name, e);
+}
+
+pub fn expectError(comptime name: []const u8, expected: anyerror, actual: anytype) !void {
+    return std.testing.expectError(expected, actual) catch |e| logErr(name, e);
+}
+
+pub fn expectEqual(comptime name: []const u8, expected: anytype, actual: @TypeOf(expected)) !void {
+    return std.testing.expectEqual(expected, actual) catch |e| logErr(name, e);
+}
+
+pub fn expectEqualSlices(comptime name: []const u8, comptime T: type, expected: []const T, actual: []const T) !void {
+    return std.testing.expectEqualSlices(T, expected, actual) catch |e| logErr(name, e);
+}
+
+pub fn expectEqualStrings(comptime name: []const u8, expected: []const u8, actual: []const u8) !void {
+    return std.testing.expectEqualStrings(expected, actual) catch |e| logErr(name, e);
+}
+
+pub fn logErr(comptime name: []const u8, err: anyerror) anyerror {
+    std.log.err("test case \"{s}\" failed", .{name});
+    return err;
+}
