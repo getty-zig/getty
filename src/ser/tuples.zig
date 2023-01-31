@@ -30,6 +30,7 @@ pub const default = .{
     blocks.BufMap,
     blocks.HashMap,
     blocks.LinkedList,
+    blocks.MultiArrayList,
     blocks.NetAddress,
     blocks.PackedInt,
     blocks.TailQueue,

@@ -66,6 +66,9 @@ pub const HashMap = @import("blocks/hash_map.zig");
 /// Serialization block for `std.SinglyLinkedList` values.
 pub const LinkedList = @import("blocks/linked_list.zig");
 
+/// Serialization block for `std.MultiArrayList` values.
+pub const MultiArrayList = @import("blocks/multi_array_list.zig");
+
 /// Serialization block for `std.net.Address` values.
 pub const NetAddress = @import("blocks/net_address.zig");
 
