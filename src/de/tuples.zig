@@ -2,6 +2,21 @@ const blocks = @import("blocks.zig");
 
 pub const default = .{
     ////////////////////////////////////////////////////////////////////////////
+    // Primitives
+    ////////////////////////////////////////////////////////////////////////////
+
+    blocks.Array,
+    blocks.Bool,
+    blocks.Enum,
+    blocks.Float,
+    blocks.Int,
+    blocks.Optional,
+    blocks.Pointer,
+    blocks.Slice,
+    blocks.Tuple,
+    blocks.Void,
+
+    ////////////////////////////////////////////////////////////////////////////
     // Standard Library
     ////////////////////////////////////////////////////////////////////////////
 
@@ -22,26 +37,13 @@ pub const default = .{
     blocks.Ignored,
 
     ////////////////////////////////////////////////////////////////////////////
-    // Struct
+    // Aggregates
     //
     // IMPORTANT: All user-defined types must be listed BEFORE this section.
+    //            Each type in this section has user-defined aliases that are
+    //            supported by Getty (e.g., std.ArrayList is a struct).
     ////////////////////////////////////////////////////////////////////////////
 
     blocks.Struct,
-
-    ////////////////////////////////////////////////////////////////////////////
-    // Primitives
-    ////////////////////////////////////////////////////////////////////////////
-
-    blocks.Array,
-    blocks.Bool,
-    blocks.Enum,
-    blocks.Float,
-    blocks.Int,
-    blocks.Optional,
-    blocks.Pointer,
-    blocks.Slice,
-    blocks.Tuple,
     blocks.Union,
-    blocks.Void,
 };

@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const NetAddressVisitor = @import("../impls/visitor/net_address.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -36,24 +38,40 @@ pub fn Visitor(
 }
 
 test "deserialize - std.net.Address" {
-    const builtin = @import("builtin");
+    const Want = std.net.Address;
+
+    const ipv4 = "127.0.0.1";
+    const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370";
+    const ipv6_wrapped = "[" ++ ipv6 ++ "]";
 
     // TODO: https://github.com/getty-zig/getty/issues/90
-    if (builtin.os.tag != .windows) {
-        const ipv4 = "127.0.0.1";
-        const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370";
-        const ipv6_wrapped = "[" ++ ipv6 ++ "]";
+    if (@import("builtin").os.tag != .windows) {
+        const tests = .{
+            .{
+                .name = "IPv4 (any port)",
+                .tokens = &.{.{ .String = ipv4 ++ ":0" }},
+                .want = std.net.Address.resolveIp(ipv4, 0) catch return error.UnexpectedTestError,
+            },
+            .{
+                .name = "IPv4 (specific port)",
+                .tokens = &.{.{ .String = ipv4 ++ ":80" }},
+                .want = std.net.Address.resolveIp(ipv4, 80) catch return error.UnexpectedTestError,
+            },
+            .{
+                .name = "IPv6 (any port)",
+                .tokens = &.{.{ .String = ipv6_wrapped ++ ":0" }},
+                .want = std.net.Address.resolveIp(ipv6, 0) catch return error.UnexpectedTestError,
+            },
+            .{
+                .name = "IPv6 (specific port)",
+                .tokens = &.{.{ .String = ipv6_wrapped ++ ":80" }},
+                .want = std.net.Address.resolveIp(ipv6, 80) catch return error.UnexpectedTestError,
+            },
+        };
 
-        // IPv4
-        {
-            var addr = try std.net.Address.resolveIp(ipv4, 0);
-            try t.run(deserialize, Visitor, &.{.{ .String = ipv4 ++ ":0" }}, addr);
-        }
-
-        // IPv6
-        {
-            var addr = try std.net.Address.resolveIp(ipv6, 80);
-            try t.run(deserialize, Visitor, &.{.{ .String = ipv6_wrapped ++ ":80" }}, addr);
+        inline for (tests) |t| {
+            const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+            try testing.expect(t.name, std.net.Address.eql(t.want, got));
         }
     }
 }

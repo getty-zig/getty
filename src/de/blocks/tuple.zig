@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
+const testing = @import("../testing.zig");
 const TupleVisitor = @import("../impls/visitor/tuple.zig").Visitor;
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -36,31 +38,55 @@ pub fn Visitor(
 }
 
 test "deserialize - tuple" {
-    try t.run(deserialize, Visitor, &.{
-        .{ .Seq = .{ .len = 2 } },
-        .{ .I32 = 1 },
-        .{ .U32 = 2 },
-        .{ .SeqEnd = {} },
-    }, std.meta.Tuple(&[_]type{ i32, u32 }){ 1, 2 });
+    const NonRecursive = std.meta.Tuple(&[_]type{ i32, u32 });
+    const Recursive = std.meta.Tuple(&[_]type{
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+        std.meta.Tuple(&[_]type{ i32, i32 }),
+    });
 
-    try t.run(deserialize, Visitor, &.{
-        .{ .Seq = .{ .len = 3 } },
-        .{ .Seq = .{ .len = 2 } },
-        .{ .I32 = 1 },
-        .{ .I32 = 2 },
-        .{ .SeqEnd = {} },
-        .{ .Seq = .{ .len = 2 } },
-        .{ .I32 = 3 },
-        .{ .I32 = 4 },
-        .{ .SeqEnd = {} },
-        .{ .Seq = .{ .len = 2 } },
-        .{ .I32 = 5 },
-        .{ .I32 = 6 },
-        .{ .SeqEnd = {} },
-        .{ .SeqEnd = {} },
-    }, std.meta.Tuple(&[_]type{
-        std.meta.Tuple(&[_]type{ i32, i32 }),
-        std.meta.Tuple(&[_]type{ i32, i32 }),
-        std.meta.Tuple(&[_]type{ i32, i32 }),
-    }){ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } });
+    const tests = .{
+        .{
+            .name = "non-recursive",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 2 } },
+                .{ .I32 = 1 },
+                .{ .U32 = 2 },
+                .{ .SeqEnd = {} },
+            },
+            .want = NonRecursive{ 1, 2 },
+        },
+        .{
+            .name = "recursive",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .Seq = .{ .len = 2 } },
+                .{ .I32 = 1 },
+                .{ .I32 = 2 },
+                .{ .SeqEnd = {} },
+                .{ .Seq = .{ .len = 2 } },
+                .{ .I32 = 3 },
+                .{ .I32 = 4 },
+                .{ .SeqEnd = {} },
+                .{ .Seq = .{ .len = 2 } },
+                .{ .I32 = 5 },
+                .{ .I32 = 6 },
+                .{ .SeqEnd = {} },
+                .{ .SeqEnd = {} },
+            },
+            .want = Recursive{ .{ 1, 2 }, .{ 3, 4 }, .{ 5, 6 } },
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+
+        const length = std.meta.fields(Want).len;
+        comptime var i: usize = 0;
+
+        inline while (i < length) : (i += 1) {
+            try testing.expectEqual(t.name, t.want[i], got[i]);
+        }
+    }
 }

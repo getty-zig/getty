@@ -1,8 +1,11 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const find_db = @import("../find.zig").find_db;
+const free = @import("../free.zig").free;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -38,98 +41,117 @@ pub fn deserialize(
 }
 
 test "deserialize - pointer" {
-    // one level of indirection
-    {
-        const int: i32 = 1;
+    var want: i32 = 1;
 
-        try t.run(deserialize, Visitor, &.{.{ .I32 = 1 }}, &int);
-    }
+    const tests = .{
+        .{
+            .name = "one level of indirection",
+            .tokens = &.{.{ .I32 = 1 }},
+            .want = @as(*i32, &want),
+        },
+    };
 
-    // two level of indirection
-    {
-        const free = @import("../free.zig").free;
-
-        const Expected = **i32;
-        const expected: i32 = 1;
-
-        // Test manually since the `t` function cannot recursively test
-        // pointers without ugly hacks.
-        var v = Visitor(Expected){};
-        const visitor = v.visitor();
-
-        var d = t.DefaultDeserializer.init(&.{.{ .I32 = 1 }});
-        const deserializer = d.deserializer();
-
-        const got = deserialize(std.testing.allocator, Expected, deserializer, visitor) catch return error.UnexpectedTestError;
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, &.{.{ .I32 = 1 }});
         defer free(std.testing.allocator, got);
 
-        try std.testing.expectEqual(Expected, @TypeOf(got));
-        try std.testing.expectEqual(*i32, @TypeOf(got.*));
-        try std.testing.expectEqual(i32, @TypeOf(got.*.*));
-        try std.testing.expectEqual(expected, got.*.*);
+        try testing.expectEqual(t.name, t.want.*, got.*);
     }
 }
 
 test "deserialize - pointer, string" {
-    // No sentinel
-    {
-        // *[N]u8
-        {
-            var arr = [3]u8{ 'a', 'b', 'c' };
+    var no_sentinel = [3]u8{ 'a', 'b', 'c' };
+    const no_sentinel_const = [3]u8{ 'a', 'b', 'c' };
 
-            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.run(deserialize, Visitor, &.{
+    var sentinel = [3:0]u8{ 'a', 'b', 'c' };
+    const sentinel_const = [3:0]u8{ 'a', 'b', 'c' };
+
+    const tests = .{
+        .{
+            .name = "no sentinel (string)",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = &no_sentinel,
+        },
+        .{
+            .name = "no sentinel (sequence)",
+            .tokens = &.{
                 .{ .Seq = .{ .len = 3 } },
                 .{ .U8 = 'a' },
                 .{ .U8 = 'b' },
                 .{ .U8 = 'c' },
                 .{ .SeqEnd = {} },
-            }, &arr);
-        }
-
-        // *const [N]u8
-        {
-            const arr = [3]u8{ 'a', 'b', 'c' };
-
-            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.run(deserialize, Visitor, &.{
+            },
+            .want = &no_sentinel,
+        },
+        .{
+            .name = "no sentinel, const (string)",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = &no_sentinel_const,
+        },
+        .{
+            .name = "no sentinel, const (sequence)",
+            .tokens = &.{
                 .{ .Seq = .{ .len = 3 } },
                 .{ .U8 = 'a' },
                 .{ .U8 = 'b' },
                 .{ .U8 = 'c' },
                 .{ .SeqEnd = {} },
-            }, &arr);
-        }
+            },
+            .want = &no_sentinel_const,
+        },
+        .{
+            .name = "sentinel (string)",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = &sentinel,
+        },
+        .{
+            .name = "sentinel (sequence)",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .U8 = 'a' },
+                .{ .U8 = 'b' },
+                .{ .U8 = 'c' },
+                .{ .SeqEnd = {} },
+            },
+            .want = &sentinel,
+        },
+        .{
+            .name = "sentinel, const (string)",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = &sentinel_const,
+        },
+        .{
+            .name = "sentinel, const (sequence)",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .U8 = 'a' },
+                .{ .U8 = 'b' },
+                .{ .U8 = 'c' },
+                .{ .SeqEnd = {} },
+            },
+            .want = &sentinel_const,
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        defer free(std.testing.allocator, got);
+
+        try testing.expectEqualStrings(t.name, t.want, got);
     }
+}
 
-    // Sentinel
-    {
-        // *[N:S]u8
-        {
-            var arr = [3:0]u8{ 'a', 'b', 'c' };
+test "deserialize - pointer (recursive)" {
+    const Want = **i32;
+    const want: i32 = 1;
 
-            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.run(deserialize, Visitor, &.{
-                .{ .Seq = .{ .len = 3 } },
-                .{ .U8 = 'a' },
-                .{ .U8 = 'b' },
-                .{ .U8 = 'c' },
-                .{ .SeqEnd = {} },
-            }, &arr);
-        }
+    const got = try testing.deserialize(std.testing.allocator, null, Self, Want, &.{.{ .I32 = 1 }});
+    defer free(std.testing.allocator, got);
 
-        // *const [N:S]u8
-        {
-            const arr = [3:0]u8{ 'a', 'b', 'c' };
-
-            try t.run(deserialize, Visitor, &.{.{ .String = "abc" }}, &arr);
-            try t.run(deserialize, Visitor, &.{
-                .{ .Seq = .{ .len = 3 } },
-                .{ .U8 = 'a' },
-                .{ .U8 = 'b' },
-                .{ .U8 = 'c' },
-                .{ .SeqEnd = {} },
-            }, &arr);
-        }
-    }
+    try std.testing.expectEqual(Want, @TypeOf(got));
+    try std.testing.expectEqual(*i32, @TypeOf(got.*));
+    try std.testing.expectEqual(i32, @TypeOf(got.*.*));
+    try std.testing.expectEqual(want, got.*.*);
 }

@@ -61,21 +61,21 @@ pub fn Visitor(comptime Struct: type) type {
                 // error will be returned immediately after this loop.
                 inline for (fields) |field, i| {
                     // The name of the field to be deserialized.
-                    var name = key;
+                    var name = field.name;
 
                     // Process 'rename' attribute.
                     if (attributes) |attrs| {
                         if (@hasField(@TypeOf(attrs), field.name)) {
                             const attr = @field(attrs, field.name);
 
-                            if (@hasField(@TypeOf(attr), "rename") and std.mem.eql(u8, attr.rename, key)) {
-                                name = field.name;
+                            if (@hasField(@TypeOf(attr), "rename")) {
+                                name = attr.rename;
                             }
                         }
                     }
 
                     // Deserialize field.
-                    if (std.mem.eql(u8, field.name, name)) {
+                    if (std.mem.eql(u8, name, key)) {
                         // Return an error for duplicate fields.
                         if (seen[i]) {
                             return error.DuplicateField;

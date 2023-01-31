@@ -2,28 +2,6 @@ const blocks = @import("blocks.zig");
 
 pub const default = .{
     ////////////////////////////////////////////////////////////////////////////
-    // Standard Library
-    ////////////////////////////////////////////////////////////////////////////
-
-    blocks.Allocator,
-    blocks.ArrayList,
-    blocks.BoundedArray,
-    blocks.BufMap,
-    blocks.HashMap,
-    blocks.LinkedList,
-    blocks.NetAddress,
-    blocks.PackedInt,
-    blocks.TailQueue,
-
-    ////////////////////////////////////////////////////////////////////////////
-    // Struct
-    //
-    // IMPORTANT: All user-defined types must be listed BEFORE this section.
-    ////////////////////////////////////////////////////////////////////////////
-
-    blocks.Struct,
-
-    ////////////////////////////////////////////////////////////////////////////
     // Primitives
     ////////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +17,31 @@ pub const default = .{
     blocks.Slice,
     blocks.String,
     blocks.Tuple,
-    blocks.Union,
     blocks.Vector,
     blocks.Void,
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Standard Library
+    ////////////////////////////////////////////////////////////////////////////
+
+    blocks.Allocator,
+    blocks.ArrayList,
+    blocks.BoundedArray,
+    blocks.BufMap,
+    blocks.HashMap,
+    blocks.LinkedList,
+    blocks.NetAddress,
+    blocks.PackedInt,
+    blocks.TailQueue,
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Aggregates
+    //
+    // IMPORTANT: All user-defined types must be listed BEFORE this section.
+    //            Each type in this section has user-defined aliases that are
+    //            supported by Getty (e.g., std.ArrayList is a struct).
+    ////////////////////////////////////////////////////////////////////////////
+
+    blocks.Struct,
+    blocks.Union,
 };

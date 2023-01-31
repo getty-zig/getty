@@ -1,133 +1,57 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const test_allocator = std.testing.allocator;
-const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
-const expectEqualSlices = std.testing.expectEqualSlices;
-const expectEqualStrings = std.testing.expectEqualStrings;
 
 const DeserializerInterface = @import("interfaces/deserializer.zig").Deserializer;
 const err = @import("error.zig");
 const free = @import("free.zig").free;
 const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
 const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;
-const Token = @import("../testing.zig").Token;
+const testing = @import("../testing.zig");
+const Token = testing.Token;
 const UnionAccessInterface = @import("interfaces/union_access.zig").UnionAccess;
 const VariantAccessInterface = @import("interfaces/variant_access.zig").VariantAccess;
 
-// The type signature of a DB's `deserialize` function.
-const DeserializeFn = @TypeOf(struct {
-    fn f(
-        _: ?std.mem.Allocator,
-        comptime _: type,
-        deserializer: anytype,
-        visitor: anytype,
-    ) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
-        unreachable;
+pub usingnamespace testing;
+
+pub fn deserialize(
+    allocator: ?std.mem.Allocator,
+    comptime test_case: ?[]const u8,
+    comptime block: type,
+    comptime Want: type,
+    input: []const Token,
+) !Want {
+    return deserializeErr(allocator, block, Want, input) catch |e| {
+        if (test_case) |t| {
+            return testing.logErr(t, e);
+        }
+
+        return e;
+    };
+}
+
+pub fn deserializeErr(
+    allocator: ?std.mem.Allocator,
+    comptime block: type,
+    comptime Want: type,
+    input: []const Token,
+) !Want {
+    comptime {
+        std.debug.assert(@typeInfo(block) == .Struct);
+        std.debug.assert(std.meta.trait.hasFunctions(block, .{ "deserialize", "Visitor" }));
     }
-}.f);
-
-const VisitorFn = fn (type) type;
-
-/// This test function does not support:
-///
-/// - Recursive, user-defined containers (e.g., std.ArrayList(std.ArrayList(u8))).
-/// - Raw, untagged unions.
-pub fn run(comptime deserializeFn: DeserializeFn, comptime visitorFn: VisitorFn, input: []const Token, expected: anytype) !void {
-    const T = @TypeOf(expected);
 
     var d = DefaultDeserializer.init(input);
     const deserializer = d.deserializer();
 
-    var v = visitorFn(T){};
+    var v = block.Visitor(Want){};
     const visitor = v.visitor();
 
-    var got = deserializeFn(test_allocator, T, deserializer, visitor) catch return error.UnexpectedTestError;
-    defer free(test_allocator, got);
+    const got = try block.deserialize(allocator, Want, deserializer, visitor);
 
-    switch (@typeInfo(T)) {
-        .Bool,
-        .Enum,
-        .Float,
-        .Int,
-        .Optional,
-        .Void,
-        => try expectEqual(expected, got),
-        .Array => |info| try expectEqualSlices(info.child, &expected, &got),
-        .Pointer => |info| switch (comptime std.meta.trait.isZigString(T)) {
-            true => try expectEqualStrings(expected, got),
-            false => switch (info.size) {
-                .One => try expectEqual(expected.*, got.*),
-                .Slice => try expectEqualSlices(info.child, expected, got),
-                else => unreachable,
-            },
-        },
-        .Struct => |info| {
-            if (comptime std.mem.startsWith(u8, @typeName(T), "array_list")) {
-                try expectEqual(expected.capacity, got.capacity);
-                try expectEqualSlices(std.meta.Child(T.Slice), expected.items, got.items);
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "linked_list.SinglyLinkedList")) {
-                try expectEqual(expected.len(), got.len());
-                var iterator = expected.first;
+    try std.testing.expect(d.remaining() == 0);
 
-                while (iterator) |node| : (iterator = node.next) {
-                    var got_node = got.popFirst();
-                    try expect(got_node != null);
-                    defer test_allocator.destroy(got_node.?);
-
-                    try expectEqual(node.data, got_node.?.data);
-                }
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "linked_list.TailQueue")) {
-                try expectEqual(expected.len, got.len);
-                var iterator = expected.first;
-
-                while (iterator) |node| : (iterator = node.next) {
-                    var got_node = got.popFirst();
-                    try expect(got_node != null);
-                    defer test_allocator.destroy(got_node.?);
-
-                    try expectEqual(node.data, got_node.?.data);
-                }
-            } else if (comptime std.mem.startsWith(u8, @typeName(T), "packed_int_array.PackedIntArrayEndian")) {
-                try expectEqual(expected.len, got.len);
-
-                for (&expected.bytes) |byte, i| {
-                    try expectEqual(byte, got.bytes[i]);
-                }
-            } else if (T == std.BufMap) {
-                try expectEqual(expected.count(), got.count());
-
-                var it = expected.iterator();
-                while (it.next()) |kv| {
-                    try expectEqualSlices(u8, expected.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
-                }
-            } else switch (info.is_tuple) {
-                true => {
-                    const length = std.meta.fields(T).len;
-                    comptime var i: usize = 0;
-
-                    inline while (i < length) : (i += 1) {
-                        try expectEqual(expected[i], got[i]);
-                    }
-                },
-                false => try expectEqual(expected, got),
-            }
-        },
-        .Union => |info| {
-            if (info.tag_type) |_| {
-                try expectEqual(expected, got);
-            } else {
-                if (T == std.net.Address) {
-                    try expect(std.net.Address.eql(expected, got));
-                } else {
-                    @compileError("untagged unions are not supported by this function");
-                }
-            }
-        },
-        else => unreachable,
-    }
-
-    try expect(d.remaining() == 0);
+    return got;
 }
 
 pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anytype) type {

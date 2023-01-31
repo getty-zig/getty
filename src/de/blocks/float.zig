@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const FloatVisitor = @import("../impls/visitor/float.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -39,8 +41,32 @@ pub fn Visitor(
 }
 
 test "deserialize - float" {
-    try t.run(deserialize, Visitor, &.{.{ .F16 = 0 }}, @as(f16, 0));
-    try t.run(deserialize, Visitor, &.{.{ .F32 = 0 }}, @as(f32, 0));
-    try t.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f64, 0));
-    try t.run(deserialize, Visitor, &.{.{ .F64 = 0 }}, @as(f128, 0));
+    const tests = .{
+        .{
+            .name = "f16",
+            .tokens = &.{.{ .F16 = 0 }},
+            .want = @as(f16, 0),
+        },
+        .{
+            .name = "f32",
+            .tokens = &.{.{ .F32 = 0 }},
+            .want = @as(f32, 0),
+        },
+        .{
+            .name = "f64",
+            .tokens = &.{.{ .F64 = 0 }},
+            .want = @as(f64, 0),
+        },
+        .{
+            .name = "f128",
+            .tokens = &.{.{ .F128 = 0 }},
+            .want = @as(f128, 0),
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
 }

@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const VoidVisitor = @import("../impls/visitor/void.zig");
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -38,5 +40,6 @@ pub fn Visitor(
 }
 
 test "deserialize - void" {
-    try t.run(deserialize, Visitor, &.{.{ .Void = {} }}, {});
+    const got = try testing.deserialize(null, null, Self, void, &.{.{ .Void = {} }});
+    try std.testing.expectEqual({}, got);
 }

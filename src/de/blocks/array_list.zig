@@ -1,7 +1,9 @@
 const std = @import("std");
-const t = @import("../testing.zig");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list.zig").Visitor;
+const testing = @import("../testing.zig");
+
+const Self = @This();
 
 /// Specifies all types that can be deserialized by this block.
 pub fn is(
@@ -36,86 +38,92 @@ pub fn Visitor(
 }
 
 test "deserialize - array list" {
-    {
-        var expected = std.ArrayList(void).init(std.testing.allocator);
-        defer expected.deinit();
+    const tests = .{
+        .{
+            .name = "empty",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 0 } },
+                .{ .SeqEnd = {} },
+            },
+            .want = std.ArrayList(void).init(std.testing.allocator),
+        },
+        .{
+            .name = "non-empty",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 3 } },
+                .{ .I8 = 1 },
+                .{ .I32 = 2 },
+                .{ .I64 = 3 },
+                .{ .SeqEnd = {} },
+            },
+            .want = blk: {
+                var want = std.ArrayList(isize).init(std.testing.allocator);
+                want.append(1) catch return error.UnexpectedTestError;
+                want.append(2) catch return error.UnexpectedTestError;
+                want.append(3) catch return error.UnexpectedTestError;
+                break :blk want;
+            },
+        },
+    };
 
-        try t.run(deserialize, Visitor, &.{
-            .{ .Seq = .{ .len = 0 } },
-            .{ .SeqEnd = {} },
-        }, expected);
+    inline for (tests) |t| {
+        defer t.want.deinit();
+
+        const Want = @TypeOf(t.want);
+        const Child = std.meta.Child(Want.Slice);
+
+        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        defer got.deinit();
+
+        try testing.expectEqual(t.name, t.want.capacity, got.capacity);
+        try testing.expectEqualSlices(t.name, Child, t.want.items, got.items);
+    }
+}
+
+test "deserialize - array list (recursive)" {
+    const free = @import("../free.zig").free;
+
+    const Child = std.ArrayList(isize);
+    const Parent = std.ArrayList(Child);
+
+    var want = Parent.init(std.testing.allocator);
+    var a = Child.init(std.testing.allocator);
+    var b = Child.init(std.testing.allocator);
+    var c = Child.init(std.testing.allocator);
+    defer {
+        want.deinit();
+        a.deinit();
+        b.deinit();
+        c.deinit();
     }
 
-    {
-        var expected = std.ArrayList(isize).init(std.testing.allocator);
-        defer expected.deinit();
+    try b.append(1);
+    try c.append(2);
+    try c.append(3);
+    try want.append(a);
+    try want.append(b);
+    try want.append(c);
 
-        try expected.append(1);
-        try expected.append(2);
-        try expected.append(3);
+    const tokens = &.{
+        .{ .Seq = .{ .len = 3 } },
+        .{ .Seq = .{ .len = 0 } },
+        .{ .SeqEnd = {} },
+        .{ .Seq = .{ .len = 1 } },
+        .{ .I32 = 1 },
+        .{ .SeqEnd = {} },
+        .{ .Seq = .{ .len = 2 } },
+        .{ .I32 = 2 },
+        .{ .I32 = 3 },
+        .{ .SeqEnd = {} },
+        .{ .SeqEnd = {} },
+    };
 
-        try t.run(deserialize, Visitor, &.{
-            .{ .Seq = .{ .len = 3 } },
-            .{ .I8 = 1 },
-            .{ .I32 = 2 },
-            .{ .I64 = 3 },
-            .{ .SeqEnd = {} },
-        }, expected);
-    }
+    const got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
+    defer free(std.testing.allocator, got);
 
-    {
-        const free = @import("../free.zig").free;
-
-        const Child = std.ArrayList(isize);
-        const Parent = std.ArrayList(Child);
-
-        var expected = Parent.init(std.testing.allocator);
-        var a = Child.init(std.testing.allocator);
-        var b = Child.init(std.testing.allocator);
-        var c = Child.init(std.testing.allocator);
-        defer {
-            expected.deinit();
-            a.deinit();
-            b.deinit();
-            c.deinit();
-        }
-
-        try b.append(1);
-        try c.append(2);
-        try c.append(3);
-        try expected.append(a);
-        try expected.append(b);
-        try expected.append(c);
-
-        const tokens = &.{
-            .{ .Seq = .{ .len = 3 } },
-            .{ .Seq = .{ .len = 0 } },
-            .{ .SeqEnd = {} },
-            .{ .Seq = .{ .len = 1 } },
-            .{ .I32 = 1 },
-            .{ .SeqEnd = {} },
-            .{ .Seq = .{ .len = 2 } },
-            .{ .I32 = 2 },
-            .{ .I32 = 3 },
-            .{ .SeqEnd = {} },
-            .{ .SeqEnd = {} },
-        };
-
-        // Test manually since the `t` function cannot recursively test
-        // user-defined containers containers without ugly hacks.
-        var v = Visitor(Parent){};
-        const visitor = v.visitor();
-
-        var d = t.DefaultDeserializer.init(tokens);
-        const deserializer = d.deserializer();
-
-        const got = deserialize(std.testing.allocator, Parent, deserializer, visitor) catch return error.UnexpectedTestError;
-        defer free(std.testing.allocator, got);
-
-        try std.testing.expectEqual(expected.capacity, got.capacity);
-        for (got.items) |l, i| {
-            try std.testing.expectEqual(expected.items[i].capacity, l.capacity);
-            try std.testing.expectEqualSlices(isize, expected.items[i].items, l.items);
-        }
+    try std.testing.expectEqual(want.capacity, got.capacity);
+    for (got.items) |l, i| {
+        try std.testing.expectEqual(want.items[i].capacity, l.capacity);
+        try std.testing.expectEqualSlices(isize, want.items[i].items, l.items);
     }
 }
