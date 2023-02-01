@@ -75,6 +75,9 @@ pub const NetAddress = @import("blocks/net_address.zig");
 /// Serialization block for `std.PackedIntArray` and `std.PackedIntSlice` values.
 pub const PackedInt = @import("blocks/packed_int.zig");
 
+/// Serialization block for `std.SemanticVersion`.
+pub const SemanticVersion = @import("blocks/semantic_version.zig");
+
 /// Serialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
 

@@ -33,6 +33,7 @@ pub const default = .{
     blocks.MultiArrayList,
     blocks.NetAddress,
     blocks.PackedInt,
+    blocks.SemanticVersion,
     blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////
