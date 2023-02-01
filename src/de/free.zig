@@ -81,6 +81,16 @@ pub fn free(
                 }
                 var mut = value;
                 mut.deinit();
+            } else if (comptime std.mem.startsWith(u8, name, "multi_array_list")) {
+                defer {
+                    var mut = value;
+                    mut.deinit(allocator);
+                }
+
+                var i: usize = 0;
+                while (i < value.len) : (i += 1) {
+                    free(allocator, value.get(i));
+                }
             } else if (comptime std.mem.startsWith(u8, name, "linked_list")) {
                 var iterator = value.first;
                 while (iterator) |node| {

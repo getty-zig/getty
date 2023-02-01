@@ -51,6 +51,9 @@ pub const BufMap = @import("blocks/buf_map.zig");
 /// Deserialization block for `std.HashMap` values.
 pub const HashMap = @import("blocks/hash_map.zig");
 
+/// Deserialization block for `std.MultiArrayList` values.
+pub const MultiArrayList = @import("blocks/multi_array_list.zig");
+
 /// Deserialization block for `std.SinglyLinkedList` values.
 pub const LinkedList = @import("blocks/linked_list.zig");
 

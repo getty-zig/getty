@@ -25,6 +25,7 @@ pub const default = .{
     blocks.BoundedArray,
     blocks.BufMap,
     blocks.HashMap,
+    blocks.MultiArrayList,
     blocks.LinkedList,
     blocks.NetAddress,
     blocks.PackedIntArray,
