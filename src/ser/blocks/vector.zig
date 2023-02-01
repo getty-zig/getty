@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const getty_serialize = @import("../serialize.zig").serialize;
 const t = @import("../testing.zig");
 
@@ -11,6 +13,8 @@ pub fn is(
 
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
+    /// An optional memory allocator.
+    allocator: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
@@ -18,7 +22,8 @@ pub fn serialize(
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const info = @typeInfo(@TypeOf(value)).Vector;
 
-    return try getty_serialize(@as([info.len]info.child, value), serializer);
+    const Array = [info.len]info.child;
+    return try getty_serialize(allocator, @as(Array, value), serializer);
 }
 
 test "serialize - vector" {

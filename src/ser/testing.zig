@@ -14,14 +14,14 @@ const Token = @import("../testing.zig").Token;
 
 // The type signature of an SB's `serialize` function.
 const SerializeFn = @TypeOf(struct {
-    fn f(_: anytype, s: anytype) @TypeOf(s).Error!@TypeOf(s).Ok {
+    fn f(_: ?std.mem.Allocator, _: anytype, s: anytype) @TypeOf(s).Error!@TypeOf(s).Ok {
         unreachable;
     }
 }.f);
 
 pub fn run(comptime f: SerializeFn, input: anytype, expected: []const Token) !void {
     var s = DefaultSerializer.init(expected);
-    f(input, s.serializer()) catch return error.UnexpectedTestError;
+    f(null, input, s.serializer()) catch return error.UnexpectedTestError;
     try expect(s.remaining() == 0);
 }
 
@@ -29,7 +29,7 @@ pub fn runErr(comptime f: SerializeFn, e: anytype, input: anytype, expected: []c
     comptime std.debug.assert(@typeInfo(@TypeOf(e)) == .ErrorSet);
 
     var s = DefaultSerializer.init(expected);
-    try std.testing.expectError(e, f(input, s.serializer()));
+    try std.testing.expectError(e, f(null, input, s.serializer()));
 }
 
 pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) type {
@@ -153,7 +153,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
 
         fn serializeSome(self: *Self, v: anytype) Error!Ok {
             try assertNextToken(self, Token{ .Some = {} });
-            try serialize(v, self.serializer());
+            try serialize(null, v, self.serializer());
         }
 
         fn serializeString(self: *Self, v: anytype) Error!Ok {
@@ -184,11 +184,11 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
             );
 
             fn serializeKey(self: *Map, key: anytype) Error!void {
-                try serialize(key, self.ser.serializer());
+                try serialize(null, key, self.ser.serializer());
             }
 
             fn serializeValue(self: *Map, value: anytype) Error!void {
-                try serialize(value, self.ser.serializer());
+                try serialize(null, value, self.ser.serializer());
             }
 
             fn end(self: *Map) Error!Ok {
@@ -210,7 +210,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
             );
 
             fn serializeElement(self: *Seq, value: anytype) Error!void {
-                try serialize(value, self.ser.serializer());
+                try serialize(null, value, self.ser.serializer());
             }
 
             fn end(self: *Seq) Error!Ok {
@@ -233,7 +233,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
 
             fn serializeField(self: *Structure, comptime key: []const u8, value: anytype) Error!void {
                 try assertNextToken(self.ser, Token{ .String = key });
-                try serialize(value, self.ser.serializer());
+                try serialize(null, value, self.ser.serializer());
             }
 
             fn end(self: *Structure) Error!Ok {

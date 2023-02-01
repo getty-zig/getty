@@ -9,6 +9,8 @@ const traits = @import("traits.zig");
 
 /// Serializes a value into a `getty.Serializer`.
 pub fn serialize(
+    /// An optional memory allocator.
+    allocator: ?std.mem.Allocator,
     /// A value to serialize.
     value: anytype,
     /// A `getty.Serializer` interface value.
@@ -53,13 +55,13 @@ pub fn serialize(
     // Process attributes, if any exist.
     if (comptime traits.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
-            .Struct => return try blocks.Struct.serialize(value, serializer),
-            .Union => return try blocks.Union.serialize(value, serializer),
+            .Struct => return try blocks.Struct.serialize(allocator, value, serializer),
+            .Union => return try blocks.Union.serialize(allocator, value, serializer),
             else => @compileError("unexpected type cannot be serialized using attributes"),
         }
     }
 
-    return try block.serialize(value, serializer);
+    return try block.serialize(allocator, value, serializer);
 }
 
 test "serialize - success, normal" {
@@ -72,7 +74,7 @@ test "serialize - success, normal" {
         y: i32,
 
         pub const @"getty.sb" = struct {
-            pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            pub fn serialize(_: ?std.mem.Allocator, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
                 var s = try serializer.serializeSeq(2);
                 const seq = s.seq();
 
@@ -89,7 +91,7 @@ test "serialize - success, normal" {
             return T == Point;
         }
 
-        pub fn serialize(value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+        pub fn serialize(_: ?std.mem.Allocator, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
             var s = try serializer.serializeSeq(2);
             const seq = s.seq();
 
@@ -115,7 +117,7 @@ test "serialize - success, normal" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -128,7 +130,7 @@ test "serialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -141,7 +143,7 @@ test "serialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -154,7 +156,7 @@ test "serialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        serialize(v_attrs, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v_attrs, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 }
@@ -199,7 +201,7 @@ test "serialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -212,7 +214,7 @@ test "serialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -225,7 +227,7 @@ test "serialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v_attrs, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v_attrs, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 }
@@ -281,7 +283,7 @@ test "serialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -304,7 +306,7 @@ test "serialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 
@@ -327,7 +329,7 @@ test "serialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        serialize(v, s.serializer()) catch return error.UnexpectedTestError;
+        serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
         try expectEqual(expected, s.remaining());
     }
 }
