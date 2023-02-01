@@ -1,5 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
+
 const t = @import("../testing.zig");
 
 // The maximum number of characters in an IPv6 address.
@@ -29,11 +30,15 @@ pub fn is(
 
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
+    /// An optional memory allocator.
+    allocator: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+    _ = allocator;
+
     var arr = [_]u8{0} ** (max_ipv6_chars + max_port_chars);
 
     // UNREACHABLE: With the size values used in the array's declaration, there

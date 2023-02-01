@@ -13,12 +13,14 @@ pub fn is(
 
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
+    /// An optional memory allocator.
+    allocator: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try getty_serialize(value.hash_map, serializer);
+    return try getty_serialize(allocator, value.hash_map, serializer);
 }
 
 test "serialize - buf map" {
