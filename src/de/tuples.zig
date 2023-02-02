@@ -29,6 +29,7 @@ pub const default = .{
     blocks.LinkedList,
     blocks.NetAddress,
     blocks.PackedIntArray,
+    blocks.SemanticVersion,
     blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////

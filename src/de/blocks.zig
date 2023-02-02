@@ -63,6 +63,9 @@ pub const NetAddress = @import("blocks/net_address.zig");
 /// Deserialization block for `std.PackedIntArray` values.
 pub const PackedIntArray = @import("blocks/packed_int_array.zig");
 
+/// Deserialization block for `std.SemanticVersion`.
+pub const SemanticVersion = @import("blocks/semantic_version.zig");
+
 /// Deserialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
 
