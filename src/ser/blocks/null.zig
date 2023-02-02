@@ -26,5 +26,5 @@ pub fn serialize(
 }
 
 test "serialize - null" {
-    try t.run(serialize, null, &.{.{ .Null = {} }});
+    try t.run(null, serialize, null, &.{.{ .Null = {} }});
 }

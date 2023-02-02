@@ -25,7 +25,7 @@ pub fn serialize(
 }
 
 test "serialize - string" {
-    try t.run(serialize, "abc", &.{.{ .String = "abc" }});
-    try t.run(serialize, &[_]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
-    try t.run(serialize, &[_:0]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
+    try t.run(null, serialize, "abc", &.{.{ .String = "abc" }});
+    try t.run(null, serialize, &[_]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
+    try t.run(null, serialize, &[_:0]u8{ 'a', 'b', 'c' }, &.{.{ .String = "abc" }});
 }

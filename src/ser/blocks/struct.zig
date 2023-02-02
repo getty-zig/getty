@@ -78,7 +78,7 @@ test "serialize - struct" {
     const T = struct { a: i32, b: i32, c: i32, d: i32 };
     const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.run(serialize, v, &.{
+    try t.run(null, serialize, v, &.{
         .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
         .{ .String = "a" },
         .{ .I32 = 1 },
@@ -110,7 +110,7 @@ test "serialize - struct, attributes (rename)" {
     };
     const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.run(serialize, v, &.{
+    try t.run(null, serialize, v, &.{
         .{ .Struct = .{ .name = @typeName(T), .len = 4 } },
         .{ .String = "d" },
         .{ .I32 = 1 },
@@ -141,7 +141,7 @@ test "serialize - struct, attributes (skip)" {
 
     const v = T{ .a = 1, .b = 2, .c = 3, .d = 4 };
 
-    try t.run(serialize, v, &.{
+    try t.run(null, serialize, v, &.{
         .{ .Struct = .{ .name = @typeName(T), .len = 2 } },
         .{ .String = "a" },
         .{ .I32 = 1 },

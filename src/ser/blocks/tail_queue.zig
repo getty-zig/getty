@@ -35,7 +35,7 @@ pub fn serialize(
 test "serialize - tail queue" {
     var list = std.TailQueue(i32){};
 
-    try t.run(serialize, list, &.{
+    try t.run(null, serialize, list, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
@@ -48,7 +48,7 @@ test "serialize - tail queue" {
     list.append(&two);
     list.append(&three);
 
-    try t.run(serialize, list, &.{
+    try t.run(null, serialize, list, &.{
         .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },

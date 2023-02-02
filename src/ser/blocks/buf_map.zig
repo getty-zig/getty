@@ -27,14 +27,14 @@ test "serialize - buf map" {
     var map = std.BufMap.init(std.testing.allocator);
     defer map.deinit();
 
-    try t.run(serialize, map, &.{
+    try t.run(null, serialize, map, &.{
         .{ .Map = .{ .len = 0 } },
         .{ .MapEnd = {} },
     });
 
     try map.put("1", "foobar");
 
-    try t.run(serialize, map, &.{
+    try t.run(null, serialize, map, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "1" },
         .{ .String = "foobar" },

@@ -38,7 +38,7 @@ test "serialize - pointer" {
         defer std.testing.allocator.destroy(ptr);
         ptr.* = @as(i32, 1);
 
-        try t.run(serialize, ptr, &.{.{ .I32 = 1 }});
+        try t.run(null, serialize, ptr, &.{.{ .I32 = 1 }});
     }
 
     // two levels of indirection
@@ -51,7 +51,7 @@ test "serialize - pointer" {
         defer std.testing.allocator.destroy(ptr);
         ptr.* = tmp;
 
-        try t.run(serialize, ptr, &.{.{ .I32 = 2 }});
+        try t.run(null, serialize, ptr, &.{.{ .I32 = 2 }});
     }
 
     // pointer to slice
@@ -60,6 +60,6 @@ test "serialize - pointer" {
         defer std.testing.allocator.destroy(ptr);
         ptr.* = "3";
 
-        try t.run(serialize, ptr, &.{.{ .String = "3" }});
+        try t.run(null, serialize, ptr, &.{.{ .String = "3" }});
     }
 }

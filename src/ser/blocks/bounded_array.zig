@@ -34,7 +34,7 @@ test "serialize - bounded array" {
     {
         var arr = try std.BoundedArray(u8, 10).fromSlice(&[_]u8{});
 
-        try t.run(serialize, arr, &.{
+        try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         });
@@ -44,7 +44,7 @@ test "serialize - bounded array" {
     {
         var arr = try std.BoundedArray(u8, 5).fromSlice(&[_]u8{1} ** 5);
 
-        try t.run(serialize, arr, &.{
+        try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 5 } },
             .{ .U8 = 1 },
             .{ .U8 = 1 },

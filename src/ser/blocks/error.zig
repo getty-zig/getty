@@ -25,5 +25,5 @@ pub fn serialize(
 }
 
 test "serialize - error" {
-    try t.run(serialize, error.Foobar, &.{.{ .String = "Foobar" }});
+    try t.run(null, serialize, error.Foobar, &.{.{ .String = "Foobar" }});
 }

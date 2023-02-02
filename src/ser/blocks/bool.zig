@@ -25,6 +25,6 @@ pub fn serialize(
 }
 
 test "serialize - bool" {
-    try t.run(serialize, true, &.{.{ .Bool = true }});
-    try t.run(serialize, false, &.{.{ .Bool = false }});
+    try t.run(null, serialize, true, &.{.{ .Bool = true }});
+    try t.run(null, serialize, false, &.{.{ .Bool = false }});
 }

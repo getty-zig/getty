@@ -81,13 +81,13 @@ test "serialize - union" {
         Bool: bool,
     };
 
-    try t.run(serialize, T{ .Int = 0 }, &.{
+    try t.run(null, serialize, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
-    try t.run(serialize, T{ .Bool = true }, &.{
+    try t.run(null, serialize, T{ .Bool = true }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Bool" },
         .{ .Bool = true },
@@ -108,13 +108,13 @@ test "serialize - union, attributes (rename)" {
         };
     };
 
-    try t.run(serialize, T{ .Int = 0 }, &.{
+    try t.run(null, serialize, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Bool" },
         .{ .I32 = 0 },
         .{ .MapEnd = {} },
     });
-    try t.run(serialize, T{ .Bool = true }, &.{
+    try t.run(null, serialize, T{ .Bool = true }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .Bool = true },
@@ -134,7 +134,7 @@ test "serialize - union, attributes (skip)" {
         };
     };
 
-    try t.runErr(serialize, error.UnknownVariant, T{ .Int = 0 }, &.{
+    try t.runErr(null, serialize, error.UnknownVariant, T{ .Int = 0 }, &.{
         .{ .Map = .{ .len = 1 } },
         .{ .String = "Int" },
         .{ .I32 = 0 },

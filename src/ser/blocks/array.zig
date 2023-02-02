@@ -34,7 +34,7 @@ test "serialize - array" {
     {
         var arr = [_]i32{};
 
-        try t.run(serialize, arr, &.{
+        try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 0 } },
             .{ .SeqEnd = {} },
         });
@@ -44,7 +44,7 @@ test "serialize - array" {
     {
         var arr = [_]i32{ 1, 2, 3 };
 
-        try t.run(serialize, arr, &.{
+        try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 3 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },

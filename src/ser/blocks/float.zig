@@ -29,11 +29,11 @@ pub fn serialize(
 
 test "serialize - float" {
     // comptime_float
-    try t.run(serialize, 0.0, &.{.{ .ComptimeFloat = {} }});
+    try t.run(null, serialize, 0.0, &.{.{ .ComptimeFloat = {} }});
 
     // float
-    try t.run(serialize, @as(f16, 0), &.{.{ .F16 = 0 }});
-    try t.run(serialize, @as(f32, 0), &.{.{ .F32 = 0 }});
-    try t.run(serialize, @as(f64, 0), &.{.{ .F64 = 0 }});
-    try t.run(serialize, @as(f128, 0), &.{.{ .F128 = 0 }});
+    try t.run(null, serialize, @as(f16, 0), &.{.{ .F16 = 0 }});
+    try t.run(null, serialize, @as(f32, 0), &.{.{ .F32 = 0 }});
+    try t.run(null, serialize, @as(f64, 0), &.{.{ .F64 = 0 }});
+    try t.run(null, serialize, @as(f128, 0), &.{.{ .F128 = 0 }});
 }

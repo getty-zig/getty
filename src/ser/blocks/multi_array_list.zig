@@ -42,7 +42,7 @@ test "serialize - array list" {
     var list = List{};
     defer list.deinit(std.testing.allocator);
 
-    try t.run(serialize, list, &.{
+    try t.run(null, serialize, list, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
@@ -60,7 +60,7 @@ test "serialize - array list" {
         .y = 6,
     });
 
-    try t.run(serialize, list, &.{
+    try t.run(null, serialize, list, &.{
         .{ .Seq = .{ .len = 3 } },
         // 1st element
         .{ .Struct = .{ .name = @typeName(Element), .len = 2 } },

@@ -27,7 +27,7 @@ pub fn serialize(
 }
 
 test "serialize - vector" {
-    try t.run(serialize, @splat(2, @as(i32, 1)), &.{
+    try t.run(null, serialize, @splat(2, @as(i32, 1)), &.{
         .{ .Seq = .{ .len = 2 } },
         .{ .I32 = 1 },
         .{ .I32 = 1 },

@@ -29,11 +29,11 @@ pub fn serialize(
 
 test "serialize - enum" {
     // literal
-    try t.run(serialize, .foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
-    try t.run(serialize, .bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
+    try t.run(null, serialize, .foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.run(null, serialize, .bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
 
     // non-literal
     const T = enum { foo, bar };
-    try t.run(serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
-    try t.run(serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
+    try t.run(null, serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.run(null, serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
 }

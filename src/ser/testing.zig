@@ -19,17 +19,17 @@ const SerializeFn = @TypeOf(struct {
     }
 }.f);
 
-pub fn run(comptime f: SerializeFn, input: anytype, expected: []const Token) !void {
+pub fn run(allocator: ?std.mem.Allocator, comptime f: SerializeFn, input: anytype, expected: []const Token) !void {
     var s = DefaultSerializer.init(expected);
-    f(null, input, s.serializer()) catch return error.UnexpectedTestError;
+    f(allocator, input, s.serializer()) catch return error.UnexpectedTestError;
     try expect(s.remaining() == 0);
 }
 
-pub fn runErr(comptime f: SerializeFn, e: anytype, input: anytype, expected: []const Token) !void {
+pub fn runErr(allocator: ?std.mem.Allocator, comptime f: SerializeFn, e: anytype, input: anytype, expected: []const Token) !void {
     comptime std.debug.assert(@typeInfo(@TypeOf(e)) == .ErrorSet);
 
     var s = DefaultSerializer.init(expected);
-    try std.testing.expectError(e, f(null, input, s.serializer()));
+    try std.testing.expectError(e, f(allocator, input, s.serializer()));
 }
 
 pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) type {

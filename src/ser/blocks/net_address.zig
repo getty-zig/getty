@@ -54,19 +54,19 @@ test "serialize - std.net.Address" {
         // IPv4
         {
             var addr = std.net.Address.resolveIp("127.0.0.1", 80) catch return error.UnexpectedTestError;
-            try t.run(serialize, addr, &.{.{ .String = "127.0.0.1:80" }});
+            try t.run(null, serialize, addr, &.{.{ .String = "127.0.0.1:80" }});
         }
 
         // IPv6
         {
             var addr = std.net.Address.resolveIp("2001:db8:3333:4444:5555:6666:7777:8888", 80) catch return error.UnexpectedTestError;
-            try t.run(serialize, addr, &.{.{ .String = "[2001:db8:3333:4444:5555:6666:7777:8888]:80" }});
+            try t.run(null, serialize, addr, &.{.{ .String = "[2001:db8:3333:4444:5555:6666:7777:8888]:80" }});
         }
 
         // IPv6 (shortened)
         {
             var addr = std.net.Address.resolveIp("2001:db8:3333::7777:8888", 80) catch return error.UnexpectedTestError;
-            try t.run(serialize, addr, &.{.{ .String = "[2001:db8:3333::7777:8888]:80" }});
+            try t.run(null, serialize, addr, &.{.{ .String = "[2001:db8:3333::7777:8888]:80" }});
         }
     }
 }

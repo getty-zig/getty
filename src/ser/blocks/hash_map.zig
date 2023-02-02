@@ -41,14 +41,14 @@ test "serialize - hash map" {
         var map = std.AutoHashMap(i32, i32).init(std.testing.allocator);
         defer map.deinit();
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         });
 
         try map.put(1, 2);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 1 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -61,14 +61,14 @@ test "serialize - hash map" {
         var map = std.AutoHashMapUnmanaged(i32, i32){};
         defer map.deinit(std.testing.allocator);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         });
 
         try map.put(std.testing.allocator, 1, 2);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 1 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -81,14 +81,14 @@ test "serialize - hash map" {
         var map = std.StringHashMap(i32).init(std.testing.allocator);
         defer map.deinit();
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         });
 
         try map.put("1", 2);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 1 } },
             .{ .String = "1" },
             .{ .I32 = 2 },
@@ -103,14 +103,14 @@ test "serialize - array hash map" {
         var map = std.AutoArrayHashMap(i32, i32).init(std.testing.allocator);
         defer map.deinit();
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         });
 
         try map.put(1, 2);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 1 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -123,14 +123,14 @@ test "serialize - array hash map" {
         var map = std.AutoArrayHashMapUnmanaged(i32, i32){};
         defer map.deinit(std.testing.allocator);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         });
 
         try map.put(std.testing.allocator, 1, 2);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 1 } },
             .{ .I32 = 1 },
             .{ .I32 = 2 },
@@ -143,14 +143,14 @@ test "serialize - array hash map" {
         var map = std.StringArrayHashMap(i32).init(std.testing.allocator);
         defer map.deinit();
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
             .{ .MapEnd = {} },
         });
 
         try map.put("1", 2);
 
-        try t.run(serialize, map, &.{
+        try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 1 } },
             .{ .String = "1" },
             .{ .I32 = 2 },

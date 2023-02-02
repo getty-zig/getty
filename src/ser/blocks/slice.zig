@@ -30,11 +30,11 @@ pub fn serialize(
 }
 
 test "serialize - slice" {
-    try t.run(serialize, &[_]i32{}, &.{
+    try t.run(null, serialize, &[_]i32{}, &.{
         .{ .Seq = .{ .len = 0 } },
         .{ .SeqEnd = {} },
     });
-    try t.run(serialize, &[_]i32{ 1, 2, 3 }, &.{
+    try t.run(null, serialize, &[_]i32{ 1, 2, 3 }, &.{
         .{ .Seq = .{ .len = 3 } },
         .{ .I32 = 1 },
         .{ .I32 = 2 },

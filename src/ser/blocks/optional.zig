@@ -25,6 +25,6 @@ pub fn serialize(
 }
 
 test "serialize - optional" {
-    try t.run(serialize, @as(?i32, null), &.{.{ .Null = {} }});
-    try t.run(serialize, @as(?i32, 0), &.{ .{ .Some = {} }, .{ .I32 = 0 } });
+    try t.run(null, serialize, @as(?i32, null), &.{.{ .Null = {} }});
+    try t.run(null, serialize, @as(?i32, 0), &.{ .{ .Some = {} }, .{ .I32 = 0 } });
 }
