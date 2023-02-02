@@ -28,3 +28,53 @@ pub fn serialize(
 
     return error.MissingAllocator;
 }
+
+test "serialize - std.SemanticVersion" {
+    // Normal
+    {
+        const version = std.SemanticVersion{
+            .major = 1,
+            .minor = 2,
+            .patch = 3,
+        };
+
+        t.run(std.testing.allocator, serialize, version, &.{.{ .String = "1.2.3" }}) catch return error.UnexpectedTestError;
+    }
+
+    // Pre
+    {
+        const version = std.SemanticVersion{
+            .major = 1,
+            .minor = 2,
+            .patch = 3,
+            .pre = "alpha",
+        };
+
+        t.run(std.testing.allocator, serialize, version, &.{.{ .String = "1.2.3-alpha" }}) catch return error.UnexpectedTestError;
+    }
+
+    // Build
+    {
+        const version = std.SemanticVersion{
+            .major = 1,
+            .minor = 2,
+            .patch = 3,
+            .build = "build.1",
+        };
+
+        t.run(std.testing.allocator, serialize, version, &.{.{ .String = "1.2.3+build.1" }}) catch return error.UnexpectedTestError;
+    }
+
+    // Pre & Build
+    {
+        const version = std.SemanticVersion{
+            .major = 1,
+            .minor = 2,
+            .patch = 3,
+            .pre = "alpha",
+            .build = "build.1",
+        };
+
+        t.run(std.testing.allocator, serialize, version, &.{.{ .String = "1.2.3-alpha+build.1" }}) catch return error.UnexpectedTestError;
+    }
+}
