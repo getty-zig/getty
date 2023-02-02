@@ -49,7 +49,14 @@ pub fn Visitor(comptime Struct: type) type {
             };
 
             key_loop: while (try map.nextKey(allocator, []const u8)) |key| {
-                defer if (map.isKeyAllocated(@TypeOf(key))) {
+                const key_is_allocated = map.isKeyAllocated(@TypeOf(key));
+
+                if (key_is_allocated and allocator == null) {
+                    return error.MissingAllocator;
+                }
+
+                defer if (key_is_allocated) {
+                    std.debug.assert(allocator != null);
                     free(allocator.?, key);
                 };
 

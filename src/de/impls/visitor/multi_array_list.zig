@@ -16,12 +16,18 @@ pub fn Visitor(comptime MultiArrayList: type) type {
         const Value = MultiArrayList;
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-            var list = Value{};
-            errdefer free(allocator.?, list);
+            if (allocator == null) {
+                return error.MissingAllocator;
+            }
 
-            while (try seq.nextElement(allocator, Value.Elem)) |elem| {
-                errdefer free(allocator.?, elem);
-                try list.append(allocator.?, elem);
+            const a = allocator.?;
+
+            var list = Value{};
+            errdefer free(a, list);
+
+            while (try seq.nextElement(a, Value.Elem)) |elem| {
+                errdefer free(a, elem);
+                try list.append(a, elem);
             }
 
             return list;

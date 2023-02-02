@@ -16,22 +16,28 @@ pub fn Visitor(comptime HashMap: type) type {
         const Value = HashMap;
 
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            if (allocator == null) {
+                return error.MissingAllocator;
+            }
+
+            const a = allocator.?;
+
             const K = std.meta.fieldInfo(Value.KV, .key).type;
             const V = std.meta.fieldInfo(Value.KV, .value).type;
             const unmanaged = is_hash_map_unamanaged or is_array_hash_map_unmanaged;
 
-            var hash_map = if (unmanaged) HashMap{} else HashMap.init(allocator.?);
-            errdefer free(allocator.?, hash_map);
+            var hash_map = if (unmanaged) HashMap{} else HashMap.init(a);
+            errdefer free(a, hash_map);
 
-            while (try map.nextKey(allocator, K)) |key| {
+            while (try map.nextKey(a, K)) |key| {
                 errdefer if (map.isKeyAllocated(@TypeOf(key))) {
-                    free(allocator.?, key);
+                    free(a, key);
                 };
 
-                const value = try map.nextValue(allocator, V);
-                errdefer free(allocator.?, value);
+                const value = try map.nextValue(a, V);
+                errdefer free(a, value);
 
-                try if (unmanaged) hash_map.put(allocator.?, key, value) else hash_map.put(key, value);
+                try if (unmanaged) hash_map.put(a, key, value) else hash_map.put(key, value);
             }
 
             return hash_map;

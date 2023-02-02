@@ -16,23 +16,26 @@ pub fn Visitor(comptime LinkedList: type) type {
         const Value = LinkedList;
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            if (allocator == null) {
+                return error.MissingAllocator;
+            }
+
+            const a = allocator.?;
+
             var list = Value{};
-            errdefer free(allocator.?, list);
+            errdefer free(a, list);
 
-            {
-                var current: ?*Value.Node = null;
+            var current: ?*Value.Node = null;
+            while (try seq.nextElement(a, Value.Node.Data)) |value| {
+                var node = try a.create(Value.Node);
+                node.* = .{ .data = value };
 
-                while (try seq.nextElement(allocator, Value.Node.Data)) |value| {
-                    var node = try allocator.?.create(Value.Node);
-                    node.* = .{ .data = value };
-
-                    if (current) |c| {
-                        c.*.insertAfter(node);
-                        current = c.next;
-                    } else {
-                        list.prepend(node);
-                        current = list.first;
-                    }
+                if (current) |c| {
+                    c.*.insertAfter(node);
+                    current = c.next;
+                } else {
+                    list.prepend(node);
+                    current = list.first;
                 }
             }
 
