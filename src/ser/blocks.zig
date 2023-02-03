@@ -93,6 +93,9 @@ pub const HashMap = _HashMap;
 /// Serialization block for `std.HashMapUnmanaged` values.
 pub const HashMapUnmanaged = _HashMap;
 
+/// Serialization block for `std.IntegerBitSet` values.
+pub const IntegerBitSet = @import("blocks/integer_bit_set.zig");
+
 /// Serialization block for `std.MultiArrayList` values.
 pub const MultiArrayList = @import("blocks/multi_array_list.zig");
 
