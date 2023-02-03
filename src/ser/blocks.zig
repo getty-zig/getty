@@ -51,8 +51,9 @@ pub const Void = @import("blocks/void.zig");
 /// Serialization block for `std.mem.Allocator` values.
 pub const Allocator = @import("blocks/allocator.zig");
 
-/// Serialization block for `std.ArrayList` values.
-pub const ArrayList = @import("blocks/array_list.zig");
+/// Serialization block for `std.ArrayListAligned` and
+/// `std.ArrayListAlignedUnmanaged` values.
+pub const ArrayListAligned = @import("blocks/array_list_aligned.zig");
 
 /// Serialization block for `std.BoundedArray` values.
 pub const BoundedArray = @import("blocks/bounded_array.zig");
@@ -60,7 +61,8 @@ pub const BoundedArray = @import("blocks/bounded_array.zig");
 /// Serialization block for `std.BufMap` values.
 pub const BufMap = @import("blocks/buf_map.zig");
 
-/// Serialization block for `std.HashMap` values.
+/// Serialization block for `std.HashMap`, `std.HashMapUnmanaged`,
+/// `std.ArrayHashMap`, and `std.ArrayHashMapUnmanaged` values.
 pub const HashMap = @import("blocks/hash_map.zig");
 
 /// Serialization block for `std.SinglyLinkedList` values.
@@ -72,8 +74,9 @@ pub const MultiArrayList = @import("blocks/multi_array_list.zig");
 /// Serialization block for `std.net.Address` values.
 pub const NetAddress = @import("blocks/net_address.zig");
 
-/// Serialization block for `std.PackedIntArray` and `std.PackedIntSlice` values.
-pub const PackedInt = @import("blocks/packed_int.zig");
+/// Serialization block for `std.PackedIntArrayEndian` and
+/// `std.PackedIntSliceEndian` values.
+pub const PackedInt = @import("blocks/packed_int_endian.zig");
 
 /// Serialization block for `std.SemanticVersion`.
 pub const SemanticVersion = @import("blocks/semantic_version.zig");

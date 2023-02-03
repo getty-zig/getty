@@ -21,14 +21,14 @@ pub const default = .{
     ////////////////////////////////////////////////////////////////////////////
 
     blocks.Allocator,
-    blocks.ArrayList,
+    blocks.ArrayListAligned,
     blocks.BoundedArray,
     blocks.BufMap,
     blocks.HashMap,
     blocks.MultiArrayList,
     blocks.LinkedList,
     blocks.NetAddress,
-    blocks.PackedIntArray,
+    blocks.PackedInt,
     blocks.SemanticVersion,
     blocks.TailQueue,
 

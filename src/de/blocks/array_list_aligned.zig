@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const ArrayListVisitor = @import("../impls/visitor/array_list.zig").Visitor;
+const ArrayListVisitor = @import("../impls/visitor/array_list_aligned.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();

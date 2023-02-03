@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const PackedIntArrayVisitor = @import("../impls/visitor/packed_int_array.zig").Visitor;
+const PackedIntEndianVisitor = @import("../impls/visitor/packed_int_endian.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -34,7 +34,7 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return PackedIntArrayVisitor(T);
+    return PackedIntEndianVisitor(T);
 }
 
 test "deserialize - std.PackedIntArray" {
