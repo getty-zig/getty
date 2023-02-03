@@ -32,7 +32,7 @@ pub fn serialize(
     return try seq.end();
 }
 
-test "serialize - linked list" {
+test "serialize - std.SinglyLinkedList" {
     var list = std.SinglyLinkedList(i32){};
 
     try t.run(null, serialize, list, &.{

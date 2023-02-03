@@ -3,7 +3,7 @@ const std = @import("std");
 const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
-pub fn Visitor(comptime LinkedList: type) type {
+pub fn Visitor(comptime SinglyLinkedList: type) type {
     return struct {
         const Self = @This();
 
@@ -13,7 +13,7 @@ pub fn Visitor(comptime LinkedList: type) type {
             .{ .visitSeq = visitSeq },
         );
 
-        const Value = LinkedList;
+        const Value = SinglyLinkedList;
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             if (allocator == null) {

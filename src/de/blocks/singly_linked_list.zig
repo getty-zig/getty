@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const free = @import("../free.zig").free;
-const LinkedListVisitor = @import("../impls/visitor/linked_list.zig").Visitor;
+const SinglyLinkedListVisitor = @import("../impls/visitor/singly_linked_list.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -35,10 +35,10 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return LinkedListVisitor(T);
+    return SinglyLinkedListVisitor(T);
 }
 
-test "deserialize - linked list" {
+test "deserialize - std.SinglyLinkedList" {
     const List = std.SinglyLinkedList(i32);
 
     var one = List.Node{ .data = 1 };

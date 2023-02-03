@@ -21,14 +21,46 @@ pub const default = .{
     ////////////////////////////////////////////////////////////////////////////
 
     blocks.Allocator,
-    blocks.ArrayListAligned,
+
+    // Covers the following types:
+    //
+    //   - std.ArrayList
+    //   - std.ArrayListUnmanaged
+    //   - std.ArrayListAligned
+    //   - std.ArrayListAlignedUnmanaged
+    blocks.ArrayList,
+
     blocks.BoundedArray,
     blocks.BufMap,
+
+    // Covers the following types:
+    //
+    //   - std.HashMap
+    //   - std.HashMapUnmanaged
+    //   - std.AutoHashMap
+    //   - std.AutoHashMapUnmanaged
+    //   - std.StringHashMap
+    //   - std.StringHashMapUnmanaged
+    //   - std.ArrayHashMap
+    //   - std.ArrayHashMapUnmanaged
+    //   - std.AutoArrayHashMap
+    //   - std.AutoArrayHashMapUnmanaged
+    //   - std.StringArrayHashMap
+    //   - std.StringArrayHashMapUnmanaged
     blocks.HashMap,
+
     blocks.MultiArrayList,
-    blocks.LinkedList,
+    blocks.SinglyLinkedList,
     blocks.NetAddress,
-    blocks.PackedInt,
+
+    // Covers the following types:
+    //
+    //   - std.PackedIntArray
+    //   - std.PackedIntArrayEndian
+    //   - std.PackedIntSlice
+    //   - std.PackedIntSliceEndian
+    blocks.PackedIntArray,
+
     blocks.SemanticVersion,
     blocks.TailQueue,
 
