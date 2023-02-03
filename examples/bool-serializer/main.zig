@@ -27,6 +27,6 @@ const Serializer = struct {
 pub fn main() anyerror!void {
     const s = (Serializer{}).serializer();
 
-    try getty.serialize(true, s);
-    try getty.serialize(false, s);
+    try getty.serialize(null, true, s);
+    try getty.serialize(null, false, s);
 }

@@ -50,7 +50,7 @@ const Serializer = struct {
                 false => std.debug.print(", ", .{}),
             }
 
-            try getty.serialize(value, (Serializer{}).serializer());
+            try getty.serialize(null, value, (Serializer{}).serializer());
         }
 
         fn end(_: *Seq) Error!Ok {
@@ -63,18 +63,18 @@ pub fn main() anyerror!void {
     const s = (Serializer{}).serializer();
 
     // Primitives
-    try getty.serialize(.{ true, false }, s);
-    try getty.serialize([_]bool{ true, false }, s);
-    try getty.serialize(&&&[_]bool{ true, false }, s);
-    try getty.serialize(@Vector(2, bool){ true, false }, s);
+    try getty.serialize(null, .{ true, false }, s);
+    try getty.serialize(null, [_]bool{ true, false }, s);
+    try getty.serialize(null, &&&[_]bool{ true, false }, s);
+    try getty.serialize(null, @Vector(2, bool){ true, false }, s);
 
     // std.ArrayList
     var list = std.ArrayList(bool).init(allocator);
     defer list.deinit();
     try list.appendSlice(&.{ true, false });
-    try getty.serialize(list, s);
+    try getty.serialize(null, list, s);
 
     // std.BoundedArray
     var arr = try std.BoundedArray(bool, 2).fromSlice(&.{ true, false });
-    try getty.serialize(arr, s);
+    try getty.serialize(null, arr, s);
 }
