@@ -17,28 +17,34 @@ pub fn pkg(b: *std.build.Builder) std.build.Pkg {
 }
 
 pub fn build(b: *std.build.Builder) void {
-    const mode = b.standardReleaseOptions();
     const target = b.standardTargetOptions(.{});
+    const mode = b.standardOptimizeOption(.{});
 
-    tests(b, mode, target);
-    docs(b);
+    tests(b, target, mode);
+    docs(b, target, mode);
     clean(b);
 }
 
-fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTarget) void {
+fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
     const test_all_step = b.step("test", "Run tests");
     const test_ser_step = b.step("test-ser", "Run serialization tests");
     const test_de_step = b.step("test-de", "Run deserialization tests");
 
     // Configure tests.
-    const t_ser = b.addTest("src/ser/ser.zig");
-    t_ser.setTarget(target);
-    t_ser.setBuildMode(mode);
+    const t_ser = b.addTest(.{
+        .name = "serialization test",
+        .root_source_file = .{ .path = "src/ser/ser.zig" },
+        .target = target,
+        .optimize = mode,
+    });
     t_ser.setMainPkgPath(libPath(b, "/"));
 
-    const t_de = b.addTest("src/de/de.zig");
-    t_de.setTarget(target);
-    t_de.setBuildMode(mode);
+    const t_de = b.addTest(.{
+        .name = "deserialization test",
+        .root_source_file = .{ .path = "src/de/de.zig" },
+        .target = target,
+        .optimize = mode,
+    });
     t_de.setMainPkgPath(libPath(b, "/"));
 
     // Configure module-level test steps.
@@ -50,7 +56,7 @@ fn tests(b: *std.build.Builder, mode: std.builtin.Mode, target: std.zig.CrossTar
     test_all_step.dependOn(test_de_step);
 }
 
-fn docs(b: *std.build.Builder) void {
+fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
     // Remove cache.
     const cmd = b.addSystemCommand(&[_][]const u8{
         "rm",
@@ -62,7 +68,12 @@ fn docs(b: *std.build.Builder) void {
     clean_step.dependOn(&cmd.step);
 
     // Build docs.
-    const docs_obj = b.addObject("docs", libPath(b, "/" ++ package_path));
+    const docs_obj = b.addObject(.{
+        .name = "docs",
+        .root_source_file = .{ .path = libPath(b, "/" ++ package_path) },
+        .target = target,
+        .optimize = mode,
+    });
     docs_obj.emit_docs = .emit;
 
     const docs_step = b.step("docs", "Generate project documentation");
