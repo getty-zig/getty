@@ -3,22 +3,14 @@ const std = @import("std");
 const package_name = "getty";
 const package_path = "src/getty.zig";
 
-var cached_pkg: ?std.build.Pkg = null;
-
-pub fn pkg(b: *std.build.Builder) std.build.Pkg {
-    if (cached_pkg == null) {
-        cached_pkg = .{
-            .name = package_name,
-            .source = .{ .path = libPath(b, "/" ++ package_path) },
-        };
-    }
-
-    return cached_pkg.?;
-}
-
 pub fn build(b: *std.build.Builder) void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
+
+    _ = b.addModule(.{
+        .name = "getty",
+        .source_file = .{ .path = "src/getty.zig" },
+    });
 
     tests(b, target, mode);
     docs(b, target, mode);
