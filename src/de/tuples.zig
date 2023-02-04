@@ -49,6 +49,7 @@ pub const default = .{
     //   - std.StringArrayHashMapUnmanaged
     blocks.HashMap,
 
+    blocks.IntegerBitSet,
     blocks.MultiArrayList,
     blocks.SinglyLinkedList,
     blocks.NetAddress,
