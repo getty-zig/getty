@@ -42,3 +42,7 @@ pub const default_dt = d.default_dt;
 ////////////////////////////////////////////////////////////////////////////////
 
 pub usingnamespace @import("attributes.zig");
+
+comptime {
+    @import("std").testing.refAllDecls(@This());
+}

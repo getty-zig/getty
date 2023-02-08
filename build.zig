@@ -7,9 +7,9 @@ pub fn build(b: *std.build.Builder) void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
 
-    _ = b.addModule(.{
-        .name = "getty",
-        .source_file = .{ .path = "src/getty.zig" },
+    b.addModule(.{
+        .name = package_name,
+        .source_file = .{ .path = package_path },
     });
 
     tests(b, target, mode);
@@ -18,7 +18,37 @@ pub fn build(b: *std.build.Builder) void {
 }
 
 fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
-    const test_all_step = b.step("test", "Run tests");
+    const test_step = b.step("test", "Run tests");
+
+    // Allow a test filter to be specified.
+    //
+    // ## Example
+    //
+    // ```
+    // $ zig build test -- "serialize - array"
+    // ```
+    if (b.args) |args| {
+        switch (args.len) {
+            0 => unreachable, // UNREACHABLE: b.args is null if no arguments are given.
+            1 => {
+                const cmd = b.addSystemCommand(&[_][]const u8{
+                    "zig",
+                    "test",
+                    "--main-pkg-path",
+                    "src/",
+                    package_path,
+                    "--test-filter",
+                    args[0],
+                });
+
+                test_step.dependOn(&cmd.step);
+
+                return;
+            },
+            else => |len| std.debug.panic("expected 1 argument, found {}", .{len}),
+        }
+    }
+
     const test_ser_step = b.step("test-ser", "Run serialization tests");
     const test_de_step = b.step("test-de", "Run deserialization tests");
 
@@ -29,7 +59,7 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.M
         .target = target,
         .optimize = mode,
     });
-    t_ser.setMainPkgPath(libPath(b, "/"));
+    t_ser.setMainPkgPath("src/");
 
     const t_de = b.addTest(.{
         .name = "deserialization test",
@@ -37,15 +67,15 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.M
         .target = target,
         .optimize = mode,
     });
-    t_de.setMainPkgPath(libPath(b, "/"));
+    t_de.setMainPkgPath("src/");
 
     // Configure module-level test steps.
     test_ser_step.dependOn(&t_ser.step);
     test_de_step.dependOn(&t_de.step);
 
     // Configure top-level test step.
-    test_all_step.dependOn(test_ser_step);
-    test_all_step.dependOn(test_de_step);
+    test_step.dependOn(test_ser_step);
+    test_step.dependOn(test_de_step);
 }
 
 fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
@@ -62,7 +92,7 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mo
     // Build docs.
     const docs_obj = b.addObject(.{
         .name = "docs",
-        .root_source_file = .{ .path = libPath(b, "/" ++ package_path) },
+        .root_source_file = .{ .path = package_path },
         .target = target,
         .optimize = mode,
     });
@@ -87,52 +117,4 @@ fn clean(b: *std.build.Builder) void {
 
     const clean_step = b.step("clean", "Remove project artifacts");
     clean_step.dependOn(&cmd.step);
-}
-
-const unresolved_dir = (struct {
-    inline fn unresolvedDir() []const u8 {
-        return comptime std.fs.path.dirname(@src().file) orelse ".";
-    }
-}).unresolvedDir();
-
-fn thisDir(allocator: std.mem.Allocator) []const u8 {
-    if (comptime unresolved_dir[0] == '/') {
-        return unresolved_dir;
-    }
-
-    const cached_dir = &(struct {
-        var cached_dir: ?[]const u8 = null;
-    }).cached_dir;
-
-    if (cached_dir.* == null) {
-        cached_dir.* = std.fs.cwd().realpathAlloc(allocator, unresolved_dir) catch unreachable;
-    }
-
-    return cached_dir.*.?;
-}
-
-inline fn libPath(b: *std.build.Builder, comptime suffix: []const u8) []const u8 {
-    return libPathAllocator(b.allocator, suffix);
-}
-
-inline fn libPathAllocator(allocator: std.mem.Allocator, comptime suffix: []const u8) []const u8 {
-    return libPathInternal(allocator, suffix.len, suffix[0..suffix.len].*);
-}
-
-fn libPathInternal(allocator: std.mem.Allocator, comptime len: usize, comptime suffix: [len]u8) []const u8 {
-    if (suffix[0] != '/') @compileError("suffix must be an absolute path");
-
-    if (comptime unresolved_dir[0] == '/') {
-        return unresolved_dir ++ @as([]const u8, &suffix);
-    }
-
-    const cached_dir = &(struct {
-        var cached_dir: ?[]const u8 = null;
-    }).cached_dir;
-
-    if (cached_dir.* == null) {
-        cached_dir.* = std.fs.path.resolve(allocator, &.{ thisDir(allocator), suffix[1..] }) catch unreachable;
-    }
-
-    return cached_dir.*.?;
 }
