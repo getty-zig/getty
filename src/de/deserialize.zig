@@ -33,7 +33,7 @@ pub fn deserialize(
                 var v = blocks.Union.Visitor(T){};
                 return try blocks.Union.deserialize(allocator, T, deserializer, v.visitor());
             },
-            else => @compileError("unexpected type cannot be deserialized using attributes"),
+            else => unreachable, // UNREACHABLE: has_attributes guarantees that T is a struct or union.
         }
     }
 

@@ -1,7 +1,9 @@
 const std = @import("std");
 
+const blocks = @import("../../blocks.zig");
 const find_db = @import("../../find.zig").find_db;
 const free = @import("../../free.zig").free;
+const has_attributes = @import("../../traits.zig").has_attributes;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Pointer: type) type {
@@ -31,14 +33,15 @@ pub fn Visitor(comptime Pointer: type) type {
         );
 
         const Value = Pointer;
+        const Child = std.meta.Child(Value);
 
         fn visitBool(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitBool(a, Deserializer, input);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitBool(a, Deserializer, input);
 
                 return value;
             }
@@ -51,8 +54,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitEnum(a, Deserializer, input);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitEnum(a, Deserializer, input);
 
                 return value;
             }
@@ -65,8 +68,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitFloat(a, Deserializer, input);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitFloat(a, Deserializer, input);
 
                 return value;
             }
@@ -79,8 +82,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitInt(a, Deserializer, input);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitInt(a, Deserializer, input);
 
                 return value;
             }
@@ -93,8 +96,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitMap(a, Deserializer, map);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitMap(a, Deserializer, map);
 
                 return value;
             }
@@ -107,8 +110,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitNull(a, Deserializer);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitNull(a, Deserializer);
 
                 return value;
             }
@@ -121,8 +124,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitSeq(a, Deserializer, seq);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitSeq(a, Deserializer, seq);
 
                 return value;
             }
@@ -135,8 +138,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, @TypeOf(deserializer)).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitSome(a, deserializer);
+                var cv = ChildVisitor(@TypeOf(deserializer)){};
+                value.* = try cv.visitor().visitSome(a, deserializer);
 
                 return value;
             }
@@ -149,8 +152,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitString(a, Deserializer, input);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitString(a, Deserializer, input);
 
                 return value;
             }
@@ -163,8 +166,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitUnion(a, Deserializer, ua, va);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitUnion(a, Deserializer, ua, va);
 
                 return value;
             }
@@ -177,8 +180,8 @@ pub fn Visitor(comptime Pointer: type) type {
                 const value = try a.create(Child);
                 errdefer free(a, value);
 
-                var child_visitor = find_db(Child, Deserializer).Visitor(Child){};
-                value.* = try child_visitor.visitor().visitVoid(a, Deserializer);
+                var cv = ChildVisitor(Deserializer){};
+                value.* = try cv.visitor().visitVoid(a, Deserializer);
 
                 return value;
             }
@@ -186,6 +189,18 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        const Child = std.meta.Child(Pointer);
+        fn ChildVisitor(comptime Deserializer: type) type {
+            const child_db = comptime find_db(Child, Deserializer);
+
+            if (comptime has_attributes(Child, child_db)) {
+                return switch (@typeInfo(Child)) {
+                    .Struct => blocks.Struct.Visitor(Child),
+                    .Union => blocks.Union.Visitor(Child),
+                    else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is a struct or union.
+                };
+            }
+
+            return child_db.Visitor(Child);
+        }
     };
 }

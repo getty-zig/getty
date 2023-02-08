@@ -1,9 +1,14 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 
+const blocks = @import("../blocks.zig");
 const find_db = @import("../find.zig").find_db;
 const free = @import("../free.zig").free;
+const has_attributes = @import("../traits.zig").has_attributes;
+const Ignored = @import("../impls/seed/ignored.zig").Ignored;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 const testing = @import("../testing.zig");
+const VisitorInterface = @import("../interfaces/visitor.zig").Visitor;
 
 const Self = @This();
 
@@ -26,7 +31,7 @@ pub fn Visitor(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    allocator: ?Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -35,25 +40,77 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     const Child = std.meta.Child(T);
-    const db = find_db(Child, @TypeOf(deserializer));
+    const db = comptime find_db(Child, @TypeOf(deserializer));
+
+    if (comptime has_attributes(Child, db)) {
+        switch (@typeInfo(Child)) {
+            .Struct => return try blocks.Struct.deserialize(allocator, Child, deserializer, visitor),
+            .Union => return try blocks.Union.deserialize(allocator, Child, deserializer, visitor),
+            else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is a struct or union.
+        }
+    }
 
     return try db.deserialize(allocator, Child, deserializer, visitor);
 }
 
 test "deserialize - pointer" {
-    var want: i32 = 1;
+    const StructAB = struct {
+        x: i32,
+        y: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .x = .{ .rename = "X" },
+                .y = .{ .rename = "Y" },
+            };
+        };
+    };
+    const UnionAB = union(enum) {
+        foo: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .rename = "FOO" },
+            };
+        };
+    };
+
+    var int: i32 = 1;
+    var sab = StructAB{ .x = 1, .y = 2 };
+    var uab = UnionAB{ .foo = 1 };
 
     const tests = .{
         .{
             .name = "one level of indirection",
             .tokens = &.{.{ .I32 = 1 }},
-            .want = @as(*i32, &want),
+            .want = @as(*i32, &int),
+        },
+        .{
+            .name = "struct with AB",
+            .tokens = &.{
+                .{ .Struct = .{ .name = @typeName(StructAB), .len = 2 } },
+                .{ .String = "X" },
+                .{ .I32 = 1 },
+                .{ .String = "Y" },
+                .{ .I32 = 2 },
+                .{ .StructEnd = {} },
+            },
+            .want = @as(*StructAB, &sab),
+        },
+        .{
+            .name = "union with AB",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "FOO" },
+                .{ .I32 = 1 },
+            },
+            .want = @as(*UnionAB, &uab),
         },
     };
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, &.{.{ .I32 = 1 }});
+        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, got);
 
         try testing.expectEqual(t.name, t.want.*, got.*);
