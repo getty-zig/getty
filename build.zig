@@ -17,7 +17,7 @@ pub fn build(b: *std.build.Builder) void {
     clean(b);
 }
 
-fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
+fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.OptimizeMode) void {
     const test_step = b.step("test", "Run tests");
 
     // Allow a test filter to be specified.
@@ -78,7 +78,7 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.M
     test_step.dependOn(test_de_step);
 }
 
-fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Mode) void {
+fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.OptimizeMode) void {
     // Remove cache.
     const cmd = b.addSystemCommand(&[_][]const u8{
         "rm",
