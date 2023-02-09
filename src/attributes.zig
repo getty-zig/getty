@@ -249,7 +249,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
 
         const InnerAttributes = switch (@typeInfo(T)) {
             .Struct => FieldAttributes,
-            .Enum, .Union => VariantAttributes,
+            .Union => VariantAttributes,
             else => @compileError(std.fmt.comptimePrint("expected attributes to be defined in a struct or union, found `{s}`", .{type_name})),
         };
         const container = &ContainerAttributes{};
