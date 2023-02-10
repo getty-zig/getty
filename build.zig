@@ -107,12 +107,10 @@ fn clean(b: *std.build.Builder) void {
     const cmd = b.addSystemCommand(&[_][]const u8{
         "rm",
         "-rf",
-        "zig-cache",
         "docs",
         "getty.o",
         "getty.o.o",
-        "gyro.lock",
-        ".gyro",
+        "zig-cache",
     });
 
     const clean_step = b.step("clean", "Remove project artifacts");
