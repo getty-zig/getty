@@ -124,19 +124,36 @@ pub fn Visitor(comptime Struct: type) type {
                 }
             }
 
-            // Set any remaining fields with default values that haven't been
-            // assigned to yet.
+            // Set remaining, unassigned fields that have default values.
             inline for (fields) |field, i| {
-                if (!seen[i]) {
+                if (!seen[i]) blk: {
+                    // Process "default" attribute.
+                    if (attributes) |attrs| {
+                        if (@hasField(@TypeOf(attrs), field.name)) {
+                            const attr = @field(attrs, field.name);
+
+                            if (@hasField(@TypeOf(attr), "default")) {
+                                if (!field.is_comptime) {
+                                    @field(structure, field.name) = attr.default;
+
+                                    break :blk;
+                                }
+                            }
+                        }
+                    }
+
+                    // Process default values.
                     if (field.default_value) |default_ptr| {
                         if (!field.is_comptime) {
                             const aligned_default_ptr = @alignCast(@alignOf(field.type), default_ptr);
                             const default_value = @ptrCast(*const field.type, aligned_default_ptr).*;
                             @field(structure, field.name) = default_value;
+
+                            break :blk;
                         }
-                    } else {
-                        return error.MissingField;
                     }
+
+                    return error.MissingField;
                 }
             }
 

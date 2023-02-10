@@ -77,7 +77,7 @@ test "deserialize - struct" {
     }
 }
 
-test "deserialize - struct, attributes (ignore_unknown_fields)" {
+test "deserialize - struct, attributes" {
     const IgnoreUnknownFields = struct {
         a: i32,
         b: i32,
@@ -113,6 +113,19 @@ test "deserialize - struct, attributes (ignore_unknown_fields)" {
             pub const attributes = .{
                 .a = .{ .skip = true },
                 .c = .{ .skip = true },
+            };
+        };
+    };
+
+    const Default = struct {
+        a: i32,
+        b: i32 = 2,
+        c: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .b = .{ .default = 20 },
+                .c = .{ .default = 3 },
             };
         };
     };
@@ -174,7 +187,7 @@ test "deserialize - struct, attributes (ignore_unknown_fields)" {
             .want = Skip{ .a = 1, .b = 2, .c = 3 },
         },
         .{
-            .name = "skip (succes, zero fields omitted)",
+            .name = "skip (success, zero fields omitted)",
             .tokens = &.{
                 .{ .Struct = .{ .name = @typeName(Skip), .len = 3 } },
                 .{ .String = "a" },
@@ -186,6 +199,28 @@ test "deserialize - struct, attributes (ignore_unknown_fields)" {
                 .{ .StructEnd = {} },
             },
             .want = Skip{ .a = 1, .b = 2, .c = 3 },
+        },
+        .{
+            .name = "default (success)",
+            .tokens = &.{
+                .{ .Struct = .{ .name = @typeName(Default), .len = 1 } },
+                .{ .String = "a" },
+                .{ .I32 = 1 },
+                .{ .StructEnd = {} },
+            },
+            .want = Default{ .a = 1, .b = 20, .c = 3 },
+        },
+        .{
+            .name = "default (ignored)",
+            .tokens = &.{
+                .{ .Struct = .{ .name = @typeName(Default), .len = 2 } },
+                .{ .String = "a" },
+                .{ .I32 = 1 },
+                .{ .String = "c" },
+                .{ .I32 = 30 },
+                .{ .StructEnd = {} },
+            },
+            .want = Default{ .a = 1, .b = 20, .c = 30 },
         },
     };
 
