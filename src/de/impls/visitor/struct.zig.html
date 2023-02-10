@@ -249,28 +249,46 @@
 <span class="line" id="L124">                }</span>
 <span class="line" id="L125">            }</span>
 <span class="line" id="L126"></span>
-<span class="line" id="L127">            <span class="tok-comment">// Set any remaining fields with default values that haven't been</span>
+<span class="line" id="L127">            <span class="tok-comment">// Set remaining, unassigned fields that have default values.</span>
 </span>
-<span class="line" id="L128">            <span class="tok-comment">// assigned to yet.</span>
+<span class="line" id="L128">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field, i| {</span>
+<span class="line" id="L129">                <span class="tok-kw">if</span> (!seen[i]) blk: {</span>
+<span class="line" id="L130">                    <span class="tok-comment">// Process &quot;default&quot; attribute.</span>
 </span>
-<span class="line" id="L129">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field, i| {</span>
-<span class="line" id="L130">                <span class="tok-kw">if</span> (!seen[i]) {</span>
-<span class="line" id="L131">                    <span class="tok-kw">if</span> (field.default_value) |default_ptr| {</span>
-<span class="line" id="L132">                        <span class="tok-kw">if</span> (!field.is_comptime) {</span>
-<span class="line" id="L133">                            <span class="tok-kw">const</span> aligned_default_ptr = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), default_ptr);</span>
-<span class="line" id="L134">                            <span class="tok-kw">const</span> default_value = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> field.<span class="tok-type">type</span>, aligned_default_ptr).*;</span>
-<span class="line" id="L135">                            <span class="tok-builtin">@field</span>(structure, field.name) = default_value;</span>
-<span class="line" id="L136">                        }</span>
-<span class="line" id="L137">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L138">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingField;</span>
-<span class="line" id="L139">                    }</span>
-<span class="line" id="L140">                }</span>
-<span class="line" id="L141">            }</span>
-<span class="line" id="L142"></span>
-<span class="line" id="L143">            <span class="tok-kw">return</span> structure;</span>
-<span class="line" id="L144">        }</span>
-<span class="line" id="L145">    };</span>
-<span class="line" id="L146">}</span>
-<span class="line" id="L147"></span>
+<span class="line" id="L131">                    <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L132">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
+<span class="line" id="L133">                            <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L134"></span>
+<span class="line" id="L135">                            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;default&quot;</span>)) {</span>
+<span class="line" id="L136">                                <span class="tok-kw">if</span> (!field.is_comptime) {</span>
+<span class="line" id="L137">                                    <span class="tok-builtin">@field</span>(structure, field.name) = attr.default;</span>
+<span class="line" id="L138"></span>
+<span class="line" id="L139">                                    <span class="tok-kw">break</span> :blk;</span>
+<span class="line" id="L140">                                }</span>
+<span class="line" id="L141">                            }</span>
+<span class="line" id="L142">                        }</span>
+<span class="line" id="L143">                    }</span>
+<span class="line" id="L144"></span>
+<span class="line" id="L145">                    <span class="tok-comment">// Process default values.</span>
+</span>
+<span class="line" id="L146">                    <span class="tok-kw">if</span> (field.default_value) |default_ptr| {</span>
+<span class="line" id="L147">                        <span class="tok-kw">if</span> (!field.is_comptime) {</span>
+<span class="line" id="L148">                            <span class="tok-kw">const</span> aligned_default_ptr = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), default_ptr);</span>
+<span class="line" id="L149">                            <span class="tok-kw">const</span> default_value = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> field.<span class="tok-type">type</span>, aligned_default_ptr).*;</span>
+<span class="line" id="L150">                            <span class="tok-builtin">@field</span>(structure, field.name) = default_value;</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">                            <span class="tok-kw">break</span> :blk;</span>
+<span class="line" id="L153">                        }</span>
+<span class="line" id="L154">                    }</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingField;</span>
+<span class="line" id="L157">                }</span>
+<span class="line" id="L158">            }</span>
+<span class="line" id="L159"></span>
+<span class="line" id="L160">            <span class="tok-kw">return</span> structure;</span>
+<span class="line" id="L161">        }</span>
+<span class="line" id="L162">    };</span>
+<span class="line" id="L163">}</span>
+<span class="line" id="L164"></span>
 </code></pre></body>
 </html>
