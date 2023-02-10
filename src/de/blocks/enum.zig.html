@@ -112,54 +112,91 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> t = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L3"></span>
-<span class="line" id="L4"><span class="tok-kw">const</span> EnumVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/enum.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L2"></span>
+<span class="line" id="L3"><span class="tok-kw">const</span> EnumVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/enum.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
 <span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L8">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L9">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L10">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L11">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Enum;</span>
-<span class="line" id="L12">}</span>
-<span class="line" id="L13"></span>
-<span class="line" id="L14"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L15"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L16">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L17">    allocator: ?std.mem.Allocator,</span>
-<span class="line" id="L18">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L19">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L20">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L21">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L22">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L23">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L24">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L25">    _ = T;</span>
-<span class="line" id="L26"></span>
-<span class="line" id="L27">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeEnum(allocator, visitor);</span>
-<span class="line" id="L28">}</span>
-<span class="line" id="L29"></span>
-<span class="line" id="L30"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L31"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L32">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L33">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L34">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L35">    <span class="tok-kw">return</span> EnumVisitor(T);</span>
-<span class="line" id="L36">}</span>
-<span class="line" id="L37"></span>
-<span class="line" id="L38"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum&quot;</span> {</span>
-<span class="line" id="L39">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> { zero, one, two, three, four };</span>
-<span class="line" id="L40"></span>
-<span class="line" id="L41">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .U8 = <span class="tok-number">0</span> } }, T.zero);</span>
-<span class="line" id="L42">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .U16 = <span class="tok-number">1</span> } }, T.one);</span>
-<span class="line" id="L43">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .U32 = <span class="tok-number">2</span> } }, T.two);</span>
-<span class="line" id="L44">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .U64 = <span class="tok-number">3</span> } }, T.three);</span>
-<span class="line" id="L45">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .U128 = <span class="tok-number">4</span> } }, T.four);</span>
-<span class="line" id="L46"></span>
-<span class="line" id="L47">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;zero&quot;</span> } }, T.zero);</span>
-<span class="line" id="L48">    <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;four&quot;</span> } }, T.four);</span>
-<span class="line" id="L49">}</span>
-<span class="line" id="L50"></span>
+<span class="line" id="L6"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L10">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L11">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L12">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Enum;</span>
+<span class="line" id="L14">}</span>
+<span class="line" id="L15"></span>
+<span class="line" id="L16"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L18">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L19">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L20">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L21">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L22">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L23">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L24">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L25">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L26">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L27">    _ = T;</span>
+<span class="line" id="L28"></span>
+<span class="line" id="L29">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeEnum(allocator, visitor);</span>
+<span class="line" id="L30">}</span>
+<span class="line" id="L31"></span>
+<span class="line" id="L32"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L33"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L34">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L35">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L36">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L37">    <span class="tok-kw">return</span> EnumVisitor(T);</span>
+<span class="line" id="L38">}</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum&quot;</span> {</span>
+<span class="line" id="L41">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> { zero, one, two, three, four };</span>
+<span class="line" id="L42"></span>
+<span class="line" id="L43">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L44">        .{</span>
+<span class="line" id="L45">            .name = <span class="tok-str">&quot;from integer, u8&quot;</span>,</span>
+<span class="line" id="L46">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U8 = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L47">            .want = T.zero,</span>
+<span class="line" id="L48">        },</span>
+<span class="line" id="L49">        .{</span>
+<span class="line" id="L50">            .name = <span class="tok-str">&quot;from integer, u16&quot;</span>,</span>
+<span class="line" id="L51">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U16 = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L52">            .want = T.one,</span>
+<span class="line" id="L53">        },</span>
+<span class="line" id="L54">        .{</span>
+<span class="line" id="L55">            .name = <span class="tok-str">&quot;from integer, u32&quot;</span>,</span>
+<span class="line" id="L56">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U32 = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L57">            .want = T.two,</span>
+<span class="line" id="L58">        },</span>
+<span class="line" id="L59">        .{</span>
+<span class="line" id="L60">            .name = <span class="tok-str">&quot;from integer, u64&quot;</span>,</span>
+<span class="line" id="L61">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U64 = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L62">            .want = T.three,</span>
+<span class="line" id="L63">        },</span>
+<span class="line" id="L64">        .{</span>
+<span class="line" id="L65">            .name = <span class="tok-str">&quot;from integer, u128&quot;</span>,</span>
+<span class="line" id="L66">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U128 = <span class="tok-number">4</span> } },</span>
+<span class="line" id="L67">            .want = T.four,</span>
+<span class="line" id="L68">        },</span>
+<span class="line" id="L69">        .{</span>
+<span class="line" id="L70">            .name = <span class="tok-str">&quot;from string (I)&quot;</span>,</span>
+<span class="line" id="L71">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;zero&quot;</span> } },</span>
+<span class="line" id="L72">            .want = T.zero,</span>
+<span class="line" id="L73">        },</span>
+<span class="line" id="L74">        .{</span>
+<span class="line" id="L75">            .name = <span class="tok-str">&quot;from string (II)&quot;</span>,</span>
+<span class="line" id="L76">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;four&quot;</span> } },</span>
+<span class="line" id="L77">            .want = T.four,</span>
+<span class="line" id="L78">        },</span>
+<span class="line" id="L79">    };</span>
+<span class="line" id="L80"></span>
+<span class="line" id="L81">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L82">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L83">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L84">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
+<span class="line" id="L85">    }</span>
+<span class="line" id="L86">}</span>
+<span class="line" id="L87"></span>
 </code></pre></body>
 </html>

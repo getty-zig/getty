@@ -2280,116 +2280,122 @@
 <span class="line" id="L2060"><span class="tok-kw">test</span> <span class="tok-str">&quot;manage resources correctly&quot;</span> {</span>
 <span class="line" id="L2061">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L2062"></span>
-<span class="line" id="L2063">    <span class="tok-kw">const</span> writer = std.io.null_writer;</span>
-<span class="line" id="L2064">    <span class="tok-kw">var</span> di = <span class="tok-kw">try</span> openSelfDebugInfo(testing.allocator);</span>
-<span class="line" id="L2065">    <span class="tok-kw">defer</span> di.deinit();</span>
-<span class="line" id="L2066">    <span class="tok-kw">try</span> printSourceAtAddress(&amp;di, writer, showMyTrace(), detectTTYConfig(std.io.getStdErr()));</span>
-<span class="line" id="L2067">}</span>
-<span class="line" id="L2068"></span>
-<span class="line" id="L2069"><span class="tok-kw">noinline</span> <span class="tok-kw">fn</span> <span class="tok-fn">showMyTrace</span>() <span class="tok-type">usize</span> {</span>
-<span class="line" id="L2070">    <span class="tok-kw">return</span> <span class="tok-builtin">@returnAddress</span>();</span>
-<span class="line" id="L2071">}</span>
-<span class="line" id="L2072"></span>
-<span class="line" id="L2073"><span class="tok-comment">/// This API helps you track where a value originated and where it was mutated,</span></span>
-<span class="line" id="L2074"><span class="tok-comment">/// or any other points of interest.</span></span>
-<span class="line" id="L2075"><span class="tok-comment">/// In debug mode, it adds a small size penalty (104 bytes on 64-bit architectures)</span></span>
-<span class="line" id="L2076"><span class="tok-comment">/// to the aggregate that you add it to.</span></span>
-<span class="line" id="L2077"><span class="tok-comment">/// In release mode, it is size 0 and all methods are no-ops.</span></span>
-<span class="line" id="L2078"><span class="tok-comment">/// This is a pre-made type with default settings.</span></span>
-<span class="line" id="L2079"><span class="tok-comment">/// For more advanced usage, see `ConfigurableTrace`.</span></span>
-<span class="line" id="L2080"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Trace = ConfigurableTrace(<span class="tok-number">2</span>, <span class="tok-number">4</span>, builtin.mode == .Debug);</span>
-<span class="line" id="L2081"></span>
-<span class="line" id="L2082"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ConfigurableTrace</span>(<span class="tok-kw">comptime</span> size: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> stack_frame_count: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> is_enabled: <span class="tok-type">bool</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L2083">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2084">        addrs: [actual_size][stack_frame_count]<span class="tok-type">usize</span> = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L2085">        notes: [actual_size][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L2086">        index: Index = <span class="tok-number">0</span>,</span>
-<span class="line" id="L2087"></span>
-<span class="line" id="L2088">        <span class="tok-kw">const</span> actual_size = <span class="tok-kw">if</span> (enabled) size <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L2089">        <span class="tok-kw">const</span> Index = <span class="tok-kw">if</span> (enabled) <span class="tok-type">usize</span> <span class="tok-kw">else</span> <span class="tok-type">u0</span>;</span>
-<span class="line" id="L2090"></span>
-<span class="line" id="L2091">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> enabled = is_enabled;</span>
+<span class="line" id="L2063">    <span class="tok-kw">if</span> (builtin.os.tag == .windows <span class="tok-kw">and</span> builtin.cpu.arch == .x86_64) {</span>
+<span class="line" id="L2064">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/13963</span>
+</span>
+<span class="line" id="L2065">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L2066">    }</span>
+<span class="line" id="L2067"></span>
+<span class="line" id="L2068">    <span class="tok-kw">const</span> writer = std.io.null_writer;</span>
+<span class="line" id="L2069">    <span class="tok-kw">var</span> di = <span class="tok-kw">try</span> openSelfDebugInfo(testing.allocator);</span>
+<span class="line" id="L2070">    <span class="tok-kw">defer</span> di.deinit();</span>
+<span class="line" id="L2071">    <span class="tok-kw">try</span> printSourceAtAddress(&amp;di, writer, showMyTrace(), detectTTYConfig(std.io.getStdErr()));</span>
+<span class="line" id="L2072">}</span>
+<span class="line" id="L2073"></span>
+<span class="line" id="L2074"><span class="tok-kw">noinline</span> <span class="tok-kw">fn</span> <span class="tok-fn">showMyTrace</span>() <span class="tok-type">usize</span> {</span>
+<span class="line" id="L2075">    <span class="tok-kw">return</span> <span class="tok-builtin">@returnAddress</span>();</span>
+<span class="line" id="L2076">}</span>
+<span class="line" id="L2077"></span>
+<span class="line" id="L2078"><span class="tok-comment">/// This API helps you track where a value originated and where it was mutated,</span></span>
+<span class="line" id="L2079"><span class="tok-comment">/// or any other points of interest.</span></span>
+<span class="line" id="L2080"><span class="tok-comment">/// In debug mode, it adds a small size penalty (104 bytes on 64-bit architectures)</span></span>
+<span class="line" id="L2081"><span class="tok-comment">/// to the aggregate that you add it to.</span></span>
+<span class="line" id="L2082"><span class="tok-comment">/// In release mode, it is size 0 and all methods are no-ops.</span></span>
+<span class="line" id="L2083"><span class="tok-comment">/// This is a pre-made type with default settings.</span></span>
+<span class="line" id="L2084"><span class="tok-comment">/// For more advanced usage, see `ConfigurableTrace`.</span></span>
+<span class="line" id="L2085"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Trace = ConfigurableTrace(<span class="tok-number">2</span>, <span class="tok-number">4</span>, builtin.mode == .Debug);</span>
+<span class="line" id="L2086"></span>
+<span class="line" id="L2087"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ConfigurableTrace</span>(<span class="tok-kw">comptime</span> size: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> stack_frame_count: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> is_enabled: <span class="tok-type">bool</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L2088">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2089">        addrs: [actual_size][stack_frame_count]<span class="tok-type">usize</span> = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L2090">        notes: [actual_size][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L2091">        index: Index = <span class="tok-number">0</span>,</span>
 <span class="line" id="L2092"></span>
-<span class="line" id="L2093">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> add = <span class="tok-kw">if</span> (enabled) addNoInline <span class="tok-kw">else</span> addNoOp;</span>
-<span class="line" id="L2094"></span>
-<span class="line" id="L2095">        <span class="tok-kw">pub</span> <span class="tok-kw">noinline</span> <span class="tok-kw">fn</span> <span class="tok-fn">addNoInline</span>(t: *<span class="tok-builtin">@This</span>(), note: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L2096">            <span class="tok-kw">comptime</span> assert(enabled);</span>
-<span class="line" id="L2097">            <span class="tok-kw">return</span> addAddr(t, <span class="tok-builtin">@returnAddress</span>(), note);</span>
-<span class="line" id="L2098">        }</span>
+<span class="line" id="L2093">        <span class="tok-kw">const</span> actual_size = <span class="tok-kw">if</span> (enabled) size <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L2094">        <span class="tok-kw">const</span> Index = <span class="tok-kw">if</span> (enabled) <span class="tok-type">usize</span> <span class="tok-kw">else</span> <span class="tok-type">u0</span>;</span>
+<span class="line" id="L2095"></span>
+<span class="line" id="L2096">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> enabled = is_enabled;</span>
+<span class="line" id="L2097"></span>
+<span class="line" id="L2098">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> add = <span class="tok-kw">if</span> (enabled) addNoInline <span class="tok-kw">else</span> addNoOp;</span>
 <span class="line" id="L2099"></span>
-<span class="line" id="L2100">        <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">addNoOp</span>(t: *<span class="tok-builtin">@This</span>(), note: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L2101">            _ = t;</span>
-<span class="line" id="L2102">            _ = note;</span>
-<span class="line" id="L2103">            <span class="tok-kw">comptime</span> assert(!enabled);</span>
-<span class="line" id="L2104">        }</span>
-<span class="line" id="L2105"></span>
-<span class="line" id="L2106">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addAddr</span>(t: *<span class="tok-builtin">@This</span>(), addr: <span class="tok-type">usize</span>, note: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L2107">            <span class="tok-kw">if</span> (!enabled) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L2108"></span>
-<span class="line" id="L2109">            <span class="tok-kw">if</span> (t.index &lt; size) {</span>
-<span class="line" id="L2110">                t.notes[t.index] = note;</span>
-<span class="line" id="L2111">                t.addrs[t.index] = [<span class="tok-number">1</span>]<span class="tok-type">usize</span>{<span class="tok-number">0</span>} ** stack_frame_count;</span>
-<span class="line" id="L2112">                <span class="tok-kw">var</span> stack_trace: std.builtin.StackTrace = .{</span>
-<span class="line" id="L2113">                    .index = <span class="tok-number">0</span>,</span>
-<span class="line" id="L2114">                    .instruction_addresses = &amp;t.addrs[t.index],</span>
-<span class="line" id="L2115">                };</span>
-<span class="line" id="L2116">                captureStackTrace(addr, &amp;stack_trace);</span>
-<span class="line" id="L2117">            }</span>
-<span class="line" id="L2118">            <span class="tok-comment">// Keep counting even if the end is reached so that the</span>
+<span class="line" id="L2100">        <span class="tok-kw">pub</span> <span class="tok-kw">noinline</span> <span class="tok-kw">fn</span> <span class="tok-fn">addNoInline</span>(t: *<span class="tok-builtin">@This</span>(), note: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L2101">            <span class="tok-kw">comptime</span> assert(enabled);</span>
+<span class="line" id="L2102">            <span class="tok-kw">return</span> addAddr(t, <span class="tok-builtin">@returnAddress</span>(), note);</span>
+<span class="line" id="L2103">        }</span>
+<span class="line" id="L2104"></span>
+<span class="line" id="L2105">        <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">addNoOp</span>(t: *<span class="tok-builtin">@This</span>(), note: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L2106">            _ = t;</span>
+<span class="line" id="L2107">            _ = note;</span>
+<span class="line" id="L2108">            <span class="tok-kw">comptime</span> assert(!enabled);</span>
+<span class="line" id="L2109">        }</span>
+<span class="line" id="L2110"></span>
+<span class="line" id="L2111">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addAddr</span>(t: *<span class="tok-builtin">@This</span>(), addr: <span class="tok-type">usize</span>, note: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L2112">            <span class="tok-kw">if</span> (!enabled) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2113"></span>
+<span class="line" id="L2114">            <span class="tok-kw">if</span> (t.index &lt; size) {</span>
+<span class="line" id="L2115">                t.notes[t.index] = note;</span>
+<span class="line" id="L2116">                t.addrs[t.index] = [<span class="tok-number">1</span>]<span class="tok-type">usize</span>{<span class="tok-number">0</span>} ** stack_frame_count;</span>
+<span class="line" id="L2117">                <span class="tok-kw">var</span> stack_trace: std.builtin.StackTrace = .{</span>
+<span class="line" id="L2118">                    .index = <span class="tok-number">0</span>,</span>
+<span class="line" id="L2119">                    .instruction_addresses = &amp;t.addrs[t.index],</span>
+<span class="line" id="L2120">                };</span>
+<span class="line" id="L2121">                captureStackTrace(addr, &amp;stack_trace);</span>
+<span class="line" id="L2122">            }</span>
+<span class="line" id="L2123">            <span class="tok-comment">// Keep counting even if the end is reached so that the</span>
 </span>
-<span class="line" id="L2119">            <span class="tok-comment">// user can find out how much more size they need.</span>
+<span class="line" id="L2124">            <span class="tok-comment">// user can find out how much more size they need.</span>
 </span>
-<span class="line" id="L2120">            t.index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L2121">        }</span>
-<span class="line" id="L2122"></span>
-<span class="line" id="L2123">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dump</span>(t: <span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L2124">            <span class="tok-kw">if</span> (!enabled) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L2125"></span>
-<span class="line" id="L2126">            <span class="tok-kw">const</span> tty_config = detectTTYConfig(std.io.getStdErr());</span>
-<span class="line" id="L2127">            <span class="tok-kw">const</span> stderr = io.getStdErr().writer();</span>
-<span class="line" id="L2128">            <span class="tok-kw">const</span> end = <span class="tok-builtin">@min</span>(t.index, size);</span>
-<span class="line" id="L2129">            <span class="tok-kw">const</span> debug_info = getSelfDebugInfo() <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L2130">                stderr.print(</span>
-<span class="line" id="L2131">                    <span class="tok-str">&quot;Unable to dump stack trace: Unable to open debug info: {s}\n&quot;</span>,</span>
-<span class="line" id="L2132">                    .{<span class="tok-builtin">@errorName</span>(err)},</span>
-<span class="line" id="L2133">                ) <span class="tok-kw">catch</span> <span class="tok-kw">return</span>;</span>
-<span class="line" id="L2134">                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L2135">            };</span>
-<span class="line" id="L2136">            <span class="tok-kw">for</span> (t.addrs[<span class="tok-number">0</span>..end]) |frames_array, i| {</span>
-<span class="line" id="L2137">                stderr.print(<span class="tok-str">&quot;{s}:\n&quot;</span>, .{t.notes[i]}) <span class="tok-kw">catch</span> <span class="tok-kw">return</span>;</span>
-<span class="line" id="L2138">                <span class="tok-kw">var</span> frames_array_mutable = frames_array;</span>
-<span class="line" id="L2139">                <span class="tok-kw">const</span> frames = mem.sliceTo(frames_array_mutable[<span class="tok-number">0</span>..], <span class="tok-number">0</span>);</span>
-<span class="line" id="L2140">                <span class="tok-kw">const</span> stack_trace: std.builtin.StackTrace = .{</span>
-<span class="line" id="L2141">                    .index = frames.len,</span>
-<span class="line" id="L2142">                    .instruction_addresses = frames,</span>
-<span class="line" id="L2143">                };</span>
-<span class="line" id="L2144">                writeStackTrace(stack_trace, stderr, getDebugInfoAllocator(), debug_info, tty_config) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L2145">            }</span>
-<span class="line" id="L2146">            <span class="tok-kw">if</span> (t.index &gt; end) {</span>
-<span class="line" id="L2147">                stderr.print(<span class="tok-str">&quot;{d} more traces not shown; consider increasing trace size\n&quot;</span>, .{</span>
-<span class="line" id="L2148">                    t.index - end,</span>
-<span class="line" id="L2149">                }) <span class="tok-kw">catch</span> <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2125">            t.index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L2126">        }</span>
+<span class="line" id="L2127"></span>
+<span class="line" id="L2128">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dump</span>(t: <span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L2129">            <span class="tok-kw">if</span> (!enabled) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2130"></span>
+<span class="line" id="L2131">            <span class="tok-kw">const</span> tty_config = detectTTYConfig(std.io.getStdErr());</span>
+<span class="line" id="L2132">            <span class="tok-kw">const</span> stderr = io.getStdErr().writer();</span>
+<span class="line" id="L2133">            <span class="tok-kw">const</span> end = <span class="tok-builtin">@min</span>(t.index, size);</span>
+<span class="line" id="L2134">            <span class="tok-kw">const</span> debug_info = getSelfDebugInfo() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L2135">                stderr.print(</span>
+<span class="line" id="L2136">                    <span class="tok-str">&quot;Unable to dump stack trace: Unable to open debug info: {s}\n&quot;</span>,</span>
+<span class="line" id="L2137">                    .{<span class="tok-builtin">@errorName</span>(err)},</span>
+<span class="line" id="L2138">                ) <span class="tok-kw">catch</span> <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2139">                <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2140">            };</span>
+<span class="line" id="L2141">            <span class="tok-kw">for</span> (t.addrs[<span class="tok-number">0</span>..end]) |frames_array, i| {</span>
+<span class="line" id="L2142">                stderr.print(<span class="tok-str">&quot;{s}:\n&quot;</span>, .{t.notes[i]}) <span class="tok-kw">catch</span> <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2143">                <span class="tok-kw">var</span> frames_array_mutable = frames_array;</span>
+<span class="line" id="L2144">                <span class="tok-kw">const</span> frames = mem.sliceTo(frames_array_mutable[<span class="tok-number">0</span>..], <span class="tok-number">0</span>);</span>
+<span class="line" id="L2145">                <span class="tok-kw">const</span> stack_trace: std.builtin.StackTrace = .{</span>
+<span class="line" id="L2146">                    .index = frames.len,</span>
+<span class="line" id="L2147">                    .instruction_addresses = frames,</span>
+<span class="line" id="L2148">                };</span>
+<span class="line" id="L2149">                writeStackTrace(stack_trace, stderr, getDebugInfoAllocator(), debug_info, tty_config) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L2150">            }</span>
-<span class="line" id="L2151">        }</span>
-<span class="line" id="L2152"></span>
-<span class="line" id="L2153">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">format</span>(</span>
-<span class="line" id="L2154">            t: Trace,</span>
-<span class="line" id="L2155">            <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L2156">            options: std.fmt.FormatOptions,</span>
-<span class="line" id="L2157">            writer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L2158">        ) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L2159">            <span class="tok-kw">if</span> (fmt.len != <span class="tok-number">0</span>) std.fmt.invalidFmtError(fmt, t);</span>
-<span class="line" id="L2160">            _ = options;</span>
-<span class="line" id="L2161">            <span class="tok-kw">if</span> (enabled) {</span>
-<span class="line" id="L2162">                <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L2163">                t.dump();</span>
-<span class="line" id="L2164">                <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L2165">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L2166">                <span class="tok-kw">return</span> writer.writeAll(<span class="tok-str">&quot;(value tracing disabled)&quot;</span>);</span>
-<span class="line" id="L2167">            }</span>
-<span class="line" id="L2168">        }</span>
-<span class="line" id="L2169">    };</span>
-<span class="line" id="L2170">}</span>
-<span class="line" id="L2171"></span>
+<span class="line" id="L2151">            <span class="tok-kw">if</span> (t.index &gt; end) {</span>
+<span class="line" id="L2152">                stderr.print(<span class="tok-str">&quot;{d} more traces not shown; consider increasing trace size\n&quot;</span>, .{</span>
+<span class="line" id="L2153">                    t.index - end,</span>
+<span class="line" id="L2154">                }) <span class="tok-kw">catch</span> <span class="tok-kw">return</span>;</span>
+<span class="line" id="L2155">            }</span>
+<span class="line" id="L2156">        }</span>
+<span class="line" id="L2157"></span>
+<span class="line" id="L2158">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">format</span>(</span>
+<span class="line" id="L2159">            t: Trace,</span>
+<span class="line" id="L2160">            <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L2161">            options: std.fmt.FormatOptions,</span>
+<span class="line" id="L2162">            writer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L2163">        ) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L2164">            <span class="tok-kw">if</span> (fmt.len != <span class="tok-number">0</span>) std.fmt.invalidFmtError(fmt, t);</span>
+<span class="line" id="L2165">            _ = options;</span>
+<span class="line" id="L2166">            <span class="tok-kw">if</span> (enabled) {</span>
+<span class="line" id="L2167">                <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L2168">                t.dump();</span>
+<span class="line" id="L2169">                <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L2170">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L2171">                <span class="tok-kw">return</span> writer.writeAll(<span class="tok-str">&quot;(value tracing disabled)&quot;</span>);</span>
+<span class="line" id="L2172">            }</span>
+<span class="line" id="L2173">        }</span>
+<span class="line" id="L2174">    };</span>
+<span class="line" id="L2175">}</span>
+<span class="line" id="L2176"></span>
 </code></pre></body>
 </html>

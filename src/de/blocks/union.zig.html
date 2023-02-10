@@ -112,267 +112,312 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> t = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L3"></span>
-<span class="line" id="L4"><span class="tok-kw">const</span> UnionVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/union.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L2"></span>
+<span class="line" id="L3"><span class="tok-kw">const</span> UnionVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/union.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
 <span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L8">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L9">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L10">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L11">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Union;</span>
-<span class="line" id="L12">}</span>
-<span class="line" id="L13"></span>
-<span class="line" id="L14"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L15"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L16">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L17">    allocator: ?std.mem.Allocator,</span>
-<span class="line" id="L18">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L19">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L20">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L21">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L22">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L23">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L24">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L25">    _ = T;</span>
-<span class="line" id="L26"></span>
-<span class="line" id="L27">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeUnion(allocator, visitor);</span>
-<span class="line" id="L28">}</span>
-<span class="line" id="L29"></span>
-<span class="line" id="L30"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L31"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L32">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L33">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L34">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L35">    <span class="tok-kw">return</span> UnionVisitor(T);</span>
-<span class="line" id="L36">}</span>
-<span class="line" id="L37"></span>
-<span class="line" id="L38"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union&quot;</span> {</span>
-<span class="line" id="L39">    <span class="tok-comment">// Tagged</span>
-</span>
-<span class="line" id="L40">    {</span>
-<span class="line" id="L41">        <span class="tok-kw">const</span> T = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L42">            foo: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L43">            bar: <span class="tok-type">void</span>,</span>
-<span class="line" id="L44">        };</span>
+<span class="line" id="L6"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L10">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L11">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L12">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Union;</span>
+<span class="line" id="L14">}</span>
+<span class="line" id="L15"></span>
+<span class="line" id="L16"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L18">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L19">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L20">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L21">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L22">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L23">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L24">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L25">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L26">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L27">    _ = T;</span>
+<span class="line" id="L28"></span>
+<span class="line" id="L29">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeUnion(allocator, visitor);</span>
+<span class="line" id="L30">}</span>
+<span class="line" id="L31"></span>
+<span class="line" id="L32"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L33"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L34">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L35">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L36">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L37">    <span class="tok-kw">return</span> UnionVisitor(T);</span>
+<span class="line" id="L38">}</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union&quot;</span> {</span>
+<span class="line" id="L41">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L42">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L43">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L44">    };</span>
 <span class="line" id="L45"></span>
-<span class="line" id="L46">        <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{</span>
-<span class="line" id="L47">            .{ .Union = {} },</span>
-<span class="line" id="L48">            .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L49">            .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L50">        }, T{ .foo = <span class="tok-null">true</span> });</span>
-<span class="line" id="L51">        <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{</span>
-<span class="line" id="L52">            .{ .Union = {} },</span>
-<span class="line" id="L53">            .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L54">            .{ .Void = {} },</span>
-<span class="line" id="L55">        }, T{ .bar = {} });</span>
-<span class="line" id="L56">    }</span>
-<span class="line" id="L57"></span>
-<span class="line" id="L58">    <span class="tok-comment">// Untagged</span>
-</span>
-<span class="line" id="L59">    {</span>
-<span class="line" id="L60">        <span class="tok-kw">const</span> T = <span class="tok-kw">union</span> {</span>
-<span class="line" id="L61">            foo: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L62">            bar: <span class="tok-type">void</span>,</span>
-<span class="line" id="L63">        };</span>
-<span class="line" id="L64"></span>
-<span class="line" id="L65">        {</span>
-<span class="line" id="L66">            <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L67">                .{ .Union = {} },</span>
-<span class="line" id="L68">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L69">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L70">            };</span>
-<span class="line" id="L71"></span>
-<span class="line" id="L72">            <span class="tok-kw">var</span> v = Visitor(T){};</span>
-<span class="line" id="L73">            <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L74"></span>
-<span class="line" id="L75">            <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L76">            <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L77"></span>
-<span class="line" id="L78">            <span class="tok-kw">const</span> got = deserialize(std.testing.allocator, T, deserializer, visitor) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L79">            <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-null">true</span>, got.foo);</span>
-<span class="line" id="L80">        }</span>
-<span class="line" id="L81"></span>
-<span class="line" id="L82">        {</span>
-<span class="line" id="L83">            <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L84">                .{ .Union = {} },</span>
-<span class="line" id="L85">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L86">                .{ .Void = {} },</span>
-<span class="line" id="L87">            };</span>
-<span class="line" id="L88"></span>
-<span class="line" id="L89">            <span class="tok-kw">var</span> v = Visitor(T){};</span>
-<span class="line" id="L90">            <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L91"></span>
-<span class="line" id="L92">            <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L93">            <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L94"></span>
-<span class="line" id="L95">            <span class="tok-kw">const</span> got = deserialize(std.testing.allocator, T, deserializer, visitor) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L96">            <span class="tok-kw">try</span> std.testing.expectEqual({}, got.bar);</span>
-<span class="line" id="L97">        }</span>
+<span class="line" id="L46">    <span class="tok-kw">const</span> Untagged = <span class="tok-kw">union</span> {</span>
+<span class="line" id="L47">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L48">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L49">    };</span>
+<span class="line" id="L50"></span>
+<span class="line" id="L51">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L52">        .{</span>
+<span class="line" id="L53">            .name = <span class="tok-str">&quot;tagged, void variant&quot;</span>,</span>
+<span class="line" id="L54">            .tokens = &amp;.{</span>
+<span class="line" id="L55">                .{ .Union = {} },</span>
+<span class="line" id="L56">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L57">                .{ .Void = {} },</span>
+<span class="line" id="L58">            },</span>
+<span class="line" id="L59">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L60">            .want = Tagged{ .foo = {} },</span>
+<span class="line" id="L61">        },</span>
+<span class="line" id="L62">        .{</span>
+<span class="line" id="L63">            .name = <span class="tok-str">&quot;tagged, non-void variant&quot;</span>,</span>
+<span class="line" id="L64">            .tokens = &amp;.{</span>
+<span class="line" id="L65">                .{ .Union = {} },</span>
+<span class="line" id="L66">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L67">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L68">            },</span>
+<span class="line" id="L69">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L70">            .want = Tagged{ .bar = <span class="tok-null">true</span> },</span>
+<span class="line" id="L71">        },</span>
+<span class="line" id="L72">        .{</span>
+<span class="line" id="L73">            .name = <span class="tok-str">&quot;untagged, void variant&quot;</span>,</span>
+<span class="line" id="L74">            .tokens = &amp;.{</span>
+<span class="line" id="L75">                .{ .Union = {} },</span>
+<span class="line" id="L76">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L77">                .{ .Void = {} },</span>
+<span class="line" id="L78">            },</span>
+<span class="line" id="L79">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L80">            .tag = <span class="tok-str">&quot;foo&quot;</span>,</span>
+<span class="line" id="L81">            .want = {},</span>
+<span class="line" id="L82">        },</span>
+<span class="line" id="L83">        .{</span>
+<span class="line" id="L84">            .name = <span class="tok-str">&quot;untagged, non-void variant&quot;</span>,</span>
+<span class="line" id="L85">            .tokens = &amp;.{</span>
+<span class="line" id="L86">                .{ .Union = {} },</span>
+<span class="line" id="L87">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L88">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L89">            },</span>
+<span class="line" id="L90">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L91">            .tag = <span class="tok-str">&quot;bar&quot;</span>,</span>
+<span class="line" id="L92">            .want = <span class="tok-null">true</span>,</span>
+<span class="line" id="L93">        },</span>
+<span class="line" id="L94">    };</span>
+<span class="line" id="L95"></span>
+<span class="line" id="L96">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L97">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Untagged);</span>
 <span class="line" id="L98">    }</span>
 <span class="line" id="L99">}</span>
 <span class="line" id="L100"></span>
 <span class="line" id="L101"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (rename)&quot;</span> {</span>
-<span class="line" id="L102">    <span class="tok-comment">// Tagged</span>
-</span>
-<span class="line" id="L103">    {</span>
-<span class="line" id="L104">        <span class="tok-kw">const</span> T = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L105">            foo: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L106">            bar: <span class="tok-type">void</span>,</span>
-<span class="line" id="L107"></span>
-<span class="line" id="L108">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L109">                <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L110">                    .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L111">                };</span>
-<span class="line" id="L112">            };</span>
-<span class="line" id="L113">        };</span>
-<span class="line" id="L114">        <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L115">            .{ .Union = {} },</span>
-<span class="line" id="L116">            .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L117">            .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L118">        };</span>
-<span class="line" id="L119">        <span class="tok-kw">const</span> expected = T{ .foo = <span class="tok-null">true</span> };</span>
-<span class="line" id="L120"></span>
-<span class="line" id="L121">        <span class="tok-kw">try</span> t.run(deserialize, Visitor, tokens, expected);</span>
-<span class="line" id="L122">    }</span>
-<span class="line" id="L123"></span>
-<span class="line" id="L124">    <span class="tok-comment">// Untagged</span>
-</span>
-<span class="line" id="L125">    {</span>
-<span class="line" id="L126">        <span class="tok-kw">const</span> T = <span class="tok-kw">union</span> {</span>
-<span class="line" id="L127">            foo: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L128">            bar: <span class="tok-type">void</span>,</span>
-<span class="line" id="L129"></span>
-<span class="line" id="L130">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L131">                <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L132">                    .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L133">                    .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
-<span class="line" id="L134">                };</span>
-<span class="line" id="L135">            };</span>
-<span class="line" id="L136">        };</span>
-<span class="line" id="L137"></span>
-<span class="line" id="L138">        {</span>
-<span class="line" id="L139">            <span class="tok-kw">const</span> tokens = &amp;.{</span>
+<span class="line" id="L102">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L103">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L104">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L105"></span>
+<span class="line" id="L106">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L107">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L108">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L109">                .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L110">            };</span>
+<span class="line" id="L111">        };</span>
+<span class="line" id="L112">    };</span>
+<span class="line" id="L113"></span>
+<span class="line" id="L114">    <span class="tok-kw">const</span> Untagged = <span class="tok-kw">union</span> {</span>
+<span class="line" id="L115">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L116">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L117"></span>
+<span class="line" id="L118">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L119">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L120">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L121">                .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L122">            };</span>
+<span class="line" id="L123">        };</span>
+<span class="line" id="L124">    };</span>
+<span class="line" id="L125"></span>
+<span class="line" id="L126">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L127">        .{</span>
+<span class="line" id="L128">            .name = <span class="tok-str">&quot;tagged, void variant (success)&quot;</span>,</span>
+<span class="line" id="L129">            .tokens = &amp;.{</span>
+<span class="line" id="L130">                .{ .Union = {} },</span>
+<span class="line" id="L131">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L132">                .{ .Void = {} },</span>
+<span class="line" id="L133">            },</span>
+<span class="line" id="L134">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L135">            .want = Tagged{ .foo = {} },</span>
+<span class="line" id="L136">        },</span>
+<span class="line" id="L137">        .{</span>
+<span class="line" id="L138">            .name = <span class="tok-str">&quot;tagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L139">            .tokens = &amp;.{</span>
 <span class="line" id="L140">                .{ .Union = {} },</span>
-<span class="line" id="L141">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L142">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L143">            };</span>
-<span class="line" id="L144">            <span class="tok-kw">const</span> expected = <span class="tok-null">true</span>;</span>
-<span class="line" id="L145"></span>
-<span class="line" id="L146">            <span class="tok-kw">var</span> v = Visitor(T){};</span>
-<span class="line" id="L147">            <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149">            <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L150">            <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L151"></span>
-<span class="line" id="L152">            <span class="tok-kw">const</span> got = deserialize(std.testing.allocator, T, deserializer, visitor) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L153">            <span class="tok-kw">try</span> std.testing.expectEqual(expected, got.foo);</span>
-<span class="line" id="L154">        }</span>
-<span class="line" id="L155"></span>
-<span class="line" id="L156">        {</span>
-<span class="line" id="L157">            <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L158">                .{ .Union = {} },</span>
-<span class="line" id="L159">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
-<span class="line" id="L160">                .{ .Void = {} },</span>
-<span class="line" id="L161">            };</span>
-<span class="line" id="L162">            <span class="tok-kw">const</span> expected = {};</span>
-<span class="line" id="L163"></span>
-<span class="line" id="L164">            <span class="tok-kw">var</span> v = Visitor(T){};</span>
-<span class="line" id="L165">            <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L166"></span>
-<span class="line" id="L167">            <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L168">            <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L169"></span>
-<span class="line" id="L170">            <span class="tok-kw">const</span> got = deserialize(std.testing.allocator, T, deserializer, visitor) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L171">            <span class="tok-kw">try</span> std.testing.expectEqual(expected, got.bar);</span>
-<span class="line" id="L172">        }</span>
-<span class="line" id="L173">    }</span>
-<span class="line" id="L174">}</span>
-<span class="line" id="L175"></span>
-<span class="line" id="L176"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (skip)&quot;</span> {</span>
-<span class="line" id="L177">    <span class="tok-comment">// Tagged</span>
-</span>
-<span class="line" id="L178">    {</span>
-<span class="line" id="L179">        <span class="tok-kw">const</span> T = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L180">            foo: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L181">            bar: <span class="tok-type">void</span>,</span>
-<span class="line" id="L182"></span>
-<span class="line" id="L183">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L184">                <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L185">                    .foo = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L186">                };</span>
-<span class="line" id="L187">            };</span>
-<span class="line" id="L188">        };</span>
-<span class="line" id="L189">        <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L190">            .{ .Union = {} },</span>
-<span class="line" id="L191">            .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L192">            .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L193">        };</span>
-<span class="line" id="L194"></span>
-<span class="line" id="L195">        <span class="tok-kw">var</span> v = Visitor(T){};</span>
-<span class="line" id="L196">        <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L197"></span>
-<span class="line" id="L198">        <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L199">        <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L200"></span>
-<span class="line" id="L201">        <span class="tok-kw">try</span> std.testing.expectError(</span>
-<span class="line" id="L202">            <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L203">            deserialize(std.testing.allocator, T, deserializer, visitor),</span>
-<span class="line" id="L204">        );</span>
-<span class="line" id="L205">    }</span>
-<span class="line" id="L206"></span>
-<span class="line" id="L207">    <span class="tok-comment">// Untagged</span>
-</span>
-<span class="line" id="L208">    {</span>
-<span class="line" id="L209">        <span class="tok-kw">const</span> T = <span class="tok-kw">union</span> {</span>
-<span class="line" id="L210">            foo: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L211">            bar: <span class="tok-type">void</span>,</span>
-<span class="line" id="L212"></span>
-<span class="line" id="L213">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L214">                <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L215">                    .foo = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L216">                    .bar = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L217">                };</span>
-<span class="line" id="L218">            };</span>
-<span class="line" id="L219">        };</span>
+<span class="line" id="L141">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L142">                .{ .Void = {} },</span>
+<span class="line" id="L143">            },</span>
+<span class="line" id="L144">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L145">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L146">        },</span>
+<span class="line" id="L147">        .{</span>
+<span class="line" id="L148">            .name = <span class="tok-str">&quot;tagged, non-void variant (success)&quot;</span>,</span>
+<span class="line" id="L149">            .tokens = &amp;.{</span>
+<span class="line" id="L150">                .{ .Union = {} },</span>
+<span class="line" id="L151">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L152">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L153">            },</span>
+<span class="line" id="L154">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L155">            .want = Tagged{ .bar = <span class="tok-null">true</span> },</span>
+<span class="line" id="L156">        },</span>
+<span class="line" id="L157">        .{</span>
+<span class="line" id="L158">            .name = <span class="tok-str">&quot;tagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L159">            .tokens = &amp;.{</span>
+<span class="line" id="L160">                .{ .Union = {} },</span>
+<span class="line" id="L161">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L162">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L163">            },</span>
+<span class="line" id="L164">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L165">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L166">        },</span>
+<span class="line" id="L167">        .{</span>
+<span class="line" id="L168">            .name = <span class="tok-str">&quot;untagged, void variant (success)&quot;</span>,</span>
+<span class="line" id="L169">            .tokens = &amp;.{</span>
+<span class="line" id="L170">                .{ .Union = {} },</span>
+<span class="line" id="L171">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L172">                .{ .Void = {} },</span>
+<span class="line" id="L173">            },</span>
+<span class="line" id="L174">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L175">            .tag = <span class="tok-str">&quot;foo&quot;</span>,</span>
+<span class="line" id="L176">            .want = {},</span>
+<span class="line" id="L177">        },</span>
+<span class="line" id="L178">        .{</span>
+<span class="line" id="L179">            .name = <span class="tok-str">&quot;untagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L180">            .tokens = &amp;.{</span>
+<span class="line" id="L181">                .{ .Union = {} },</span>
+<span class="line" id="L182">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L183">                .{ .Void = {} },</span>
+<span class="line" id="L184">            },</span>
+<span class="line" id="L185">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L186">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L187">        },</span>
+<span class="line" id="L188">        .{</span>
+<span class="line" id="L189">            .name = <span class="tok-str">&quot;untagged, non-void variant (success)&quot;</span>,</span>
+<span class="line" id="L190">            .tokens = &amp;.{</span>
+<span class="line" id="L191">                .{ .Union = {} },</span>
+<span class="line" id="L192">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L193">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L194">            },</span>
+<span class="line" id="L195">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L196">            .tag = <span class="tok-str">&quot;bar&quot;</span>,</span>
+<span class="line" id="L197">            .want = <span class="tok-null">true</span>,</span>
+<span class="line" id="L198">        },</span>
+<span class="line" id="L199">        .{</span>
+<span class="line" id="L200">            .name = <span class="tok-str">&quot;untagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L201">            .tokens = &amp;.{</span>
+<span class="line" id="L202">                .{ .Union = {} },</span>
+<span class="line" id="L203">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L204">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L205">            },</span>
+<span class="line" id="L206">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L207">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L208">        },</span>
+<span class="line" id="L209">    };</span>
+<span class="line" id="L210"></span>
+<span class="line" id="L211">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L212">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Untagged);</span>
+<span class="line" id="L213">    }</span>
+<span class="line" id="L214">}</span>
+<span class="line" id="L215"></span>
+<span class="line" id="L216"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (skip)&quot;</span> {</span>
+<span class="line" id="L217">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L218">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L219">        bar: <span class="tok-type">bool</span>,</span>
 <span class="line" id="L220"></span>
-<span class="line" id="L221">        <span class="tok-kw">var</span> v = Visitor(T){};</span>
-<span class="line" id="L222">        <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L223"></span>
-<span class="line" id="L224">        {</span>
-<span class="line" id="L225">            <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L226">                .{ .Union = {} },</span>
-<span class="line" id="L227">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L228">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L229">            };</span>
-<span class="line" id="L230"></span>
-<span class="line" id="L231">            <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L232">            <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L233"></span>
-<span class="line" id="L234">            <span class="tok-kw">try</span> std.testing.expectError(</span>
-<span class="line" id="L235">                <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L236">                deserialize(std.testing.allocator, T, deserializer, visitor),</span>
-<span class="line" id="L237">            );</span>
-<span class="line" id="L238">        }</span>
-<span class="line" id="L239"></span>
-<span class="line" id="L240">        {</span>
-<span class="line" id="L241">            <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L242">                .{ .Union = {} },</span>
-<span class="line" id="L243">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L244">                .{ .Void = {} },</span>
-<span class="line" id="L245">            };</span>
-<span class="line" id="L246"></span>
-<span class="line" id="L247">            <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(tokens);</span>
-<span class="line" id="L248">            <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L249"></span>
-<span class="line" id="L250">            <span class="tok-kw">try</span> std.testing.expectError(</span>
-<span class="line" id="L251">                <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L252">                deserialize(std.testing.allocator, T, deserializer, visitor),</span>
-<span class="line" id="L253">            );</span>
-<span class="line" id="L254">        }</span>
-<span class="line" id="L255">    }</span>
-<span class="line" id="L256">}</span>
-<span class="line" id="L257"></span>
+<span class="line" id="L221">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L222">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L223">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L224">                .bar = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L225">            };</span>
+<span class="line" id="L226">        };</span>
+<span class="line" id="L227">    };</span>
+<span class="line" id="L228"></span>
+<span class="line" id="L229">    <span class="tok-kw">const</span> Untagged = <span class="tok-kw">union</span> {</span>
+<span class="line" id="L230">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L231">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L232"></span>
+<span class="line" id="L233">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L234">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L235">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L236">                .bar = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L237">            };</span>
+<span class="line" id="L238">        };</span>
+<span class="line" id="L239">    };</span>
+<span class="line" id="L240"></span>
+<span class="line" id="L241">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L242">        .{</span>
+<span class="line" id="L243">            .name = <span class="tok-str">&quot;tagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L244">            .tokens = &amp;.{</span>
+<span class="line" id="L245">                .{ .Union = {} },</span>
+<span class="line" id="L246">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L247">                .{ .Void = {} },</span>
+<span class="line" id="L248">            },</span>
+<span class="line" id="L249">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L250">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L251">        },</span>
+<span class="line" id="L252">        .{</span>
+<span class="line" id="L253">            .name = <span class="tok-str">&quot;tagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L254">            .tokens = &amp;.{</span>
+<span class="line" id="L255">                .{ .Union = {} },</span>
+<span class="line" id="L256">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L257">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L258">            },</span>
+<span class="line" id="L259">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L260">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L261">        },</span>
+<span class="line" id="L262">        .{</span>
+<span class="line" id="L263">            .name = <span class="tok-str">&quot;untagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L264">            .tokens = &amp;.{</span>
+<span class="line" id="L265">                .{ .Union = {} },</span>
+<span class="line" id="L266">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L267">                .{ .Void = {} },</span>
+<span class="line" id="L268">            },</span>
+<span class="line" id="L269">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L270">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L271">        },</span>
+<span class="line" id="L272">        .{</span>
+<span class="line" id="L273">            .name = <span class="tok-str">&quot;untagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L274">            .tokens = &amp;.{</span>
+<span class="line" id="L275">                .{ .Union = {} },</span>
+<span class="line" id="L276">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L277">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L278">            },</span>
+<span class="line" id="L279">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L280">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L281">        },</span>
+<span class="line" id="L282">    };</span>
+<span class="line" id="L283"></span>
+<span class="line" id="L284">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L285">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Untagged);</span>
+<span class="line" id="L286">    }</span>
+<span class="line" id="L287">}</span>
+<span class="line" id="L288"></span>
+<span class="line" id="L289"><span class="tok-kw">fn</span> <span class="tok-fn">runTest</span>(t: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L290">    <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L291"></span>
+<span class="line" id="L292">    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L293">        <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L294">            t.name,</span>
+<span class="line" id="L295">            t.want_err,</span>
+<span class="line" id="L296">            testing.deserializeErr(<span class="tok-null">null</span>, Self, Want, t.tokens),</span>
+<span class="line" id="L297">        );</span>
+<span class="line" id="L298">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L299">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L300"></span>
+<span class="line" id="L301">        <span class="tok-kw">if</span> (t.tagged) {</span>
+<span class="line" id="L302">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
+<span class="line" id="L303">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L304">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, <span class="tok-builtin">@field</span>(got, t.tag));</span>
+<span class="line" id="L305">        }</span>
+<span class="line" id="L306">    }</span>
+<span class="line" id="L307">}</span>
+<span class="line" id="L308"></span>
 </code></pre></body>
 </html>

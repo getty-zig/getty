@@ -126,57 +126,60 @@
 <span class="line" id="L13"></span>
 <span class="line" id="L14"><span class="tok-comment">/// Specifies the serialization process for values relevant to this block.</span></span>
 <span class="line" id="L15"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(</span>
-<span class="line" id="L16">    <span class="tok-comment">/// A value being serialized.</span></span>
-<span class="line" id="L17">    value: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L18">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
-<span class="line" id="L19">    serializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L20">) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
-<span class="line" id="L21">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value)).Pointer;</span>
-<span class="line" id="L22"></span>
-<span class="line" id="L23">    <span class="tok-comment">// Serialize array pointers as slices so that strings are handled properly.</span>
+<span class="line" id="L16">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L17">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L18">    <span class="tok-comment">/// A value being serialized.</span></span>
+<span class="line" id="L19">    value: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L20">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
+<span class="line" id="L21">    serializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L22">) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L23">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value)).Pointer;</span>
+<span class="line" id="L24"></span>
+<span class="line" id="L25">    <span class="tok-comment">// Serialize array pointers as slices so that strings are handled properly.</span>
 </span>
-<span class="line" id="L24">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(info.child) == .Array) {</span>
-<span class="line" id="L25">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> getty_serialize(<span class="tok-builtin">@as</span>([]<span class="tok-kw">const</span> std.meta.Elem(info.child), value), serializer);</span>
-<span class="line" id="L26">    }</span>
-<span class="line" id="L27"></span>
-<span class="line" id="L28">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> getty_serialize(value.*, serializer);</span>
-<span class="line" id="L29">}</span>
+<span class="line" id="L26">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(info.child) == .Array) {</span>
+<span class="line" id="L27">        <span class="tok-kw">const</span> Slice = []<span class="tok-kw">const</span> std.meta.Elem(info.child);</span>
+<span class="line" id="L28">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> getty_serialize(allocator, <span class="tok-builtin">@as</span>(Slice, value), serializer);</span>
+<span class="line" id="L29">    }</span>
 <span class="line" id="L30"></span>
-<span class="line" id="L31"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - pointer&quot;</span> {</span>
-<span class="line" id="L32">    <span class="tok-comment">// one level of indirection</span>
+<span class="line" id="L31">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> getty_serialize(allocator, value.*, serializer);</span>
+<span class="line" id="L32">}</span>
+<span class="line" id="L33"></span>
+<span class="line" id="L34"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - pointer&quot;</span> {</span>
+<span class="line" id="L35">    <span class="tok-comment">// one level of indirection</span>
 </span>
-<span class="line" id="L33">    {</span>
-<span class="line" id="L34">        <span class="tok-kw">var</span> ptr = <span class="tok-kw">try</span> std.testing.allocator.create(<span class="tok-type">i32</span>);</span>
-<span class="line" id="L35">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(ptr);</span>
-<span class="line" id="L36">        ptr.* = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L37"></span>
-<span class="line" id="L38">        <span class="tok-kw">try</span> t.run(serialize, ptr, &amp;.{.{ .I32 = <span class="tok-number">1</span> }});</span>
-<span class="line" id="L39">    }</span>
+<span class="line" id="L36">    {</span>
+<span class="line" id="L37">        <span class="tok-kw">var</span> ptr = <span class="tok-kw">try</span> std.testing.allocator.create(<span class="tok-type">i32</span>);</span>
+<span class="line" id="L38">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(ptr);</span>
+<span class="line" id="L39">        ptr.* = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-number">1</span>);</span>
 <span class="line" id="L40"></span>
-<span class="line" id="L41">    <span class="tok-comment">// two levels of indirection</span>
+<span class="line" id="L41">        <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, ptr, &amp;.{.{ .I32 = <span class="tok-number">1</span> }});</span>
+<span class="line" id="L42">    }</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44">    <span class="tok-comment">// two levels of indirection</span>
 </span>
-<span class="line" id="L42">    {</span>
-<span class="line" id="L43">        <span class="tok-kw">var</span> tmp = <span class="tok-kw">try</span> std.testing.allocator.create(<span class="tok-type">i32</span>);</span>
-<span class="line" id="L44">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(tmp);</span>
-<span class="line" id="L45">        tmp.* = <span class="tok-number">2</span>;</span>
-<span class="line" id="L46"></span>
-<span class="line" id="L47">        <span class="tok-kw">var</span> ptr = <span class="tok-kw">try</span> std.testing.allocator.create(*<span class="tok-type">i32</span>);</span>
-<span class="line" id="L48">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(ptr);</span>
-<span class="line" id="L49">        ptr.* = tmp;</span>
-<span class="line" id="L50"></span>
-<span class="line" id="L51">        <span class="tok-kw">try</span> t.run(serialize, ptr, &amp;.{.{ .I32 = <span class="tok-number">2</span> }});</span>
-<span class="line" id="L52">    }</span>
+<span class="line" id="L45">    {</span>
+<span class="line" id="L46">        <span class="tok-kw">var</span> tmp = <span class="tok-kw">try</span> std.testing.allocator.create(<span class="tok-type">i32</span>);</span>
+<span class="line" id="L47">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(tmp);</span>
+<span class="line" id="L48">        tmp.* = <span class="tok-number">2</span>;</span>
+<span class="line" id="L49"></span>
+<span class="line" id="L50">        <span class="tok-kw">var</span> ptr = <span class="tok-kw">try</span> std.testing.allocator.create(*<span class="tok-type">i32</span>);</span>
+<span class="line" id="L51">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(ptr);</span>
+<span class="line" id="L52">        ptr.* = tmp;</span>
 <span class="line" id="L53"></span>
-<span class="line" id="L54">    <span class="tok-comment">// pointer to slice</span>
+<span class="line" id="L54">        <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, ptr, &amp;.{.{ .I32 = <span class="tok-number">2</span> }});</span>
+<span class="line" id="L55">    }</span>
+<span class="line" id="L56"></span>
+<span class="line" id="L57">    <span class="tok-comment">// pointer to slice</span>
 </span>
-<span class="line" id="L55">    {</span>
-<span class="line" id="L56">        <span class="tok-kw">var</span> ptr = <span class="tok-kw">try</span> std.testing.allocator.create([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>);</span>
-<span class="line" id="L57">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(ptr);</span>
-<span class="line" id="L58">        ptr.* = <span class="tok-str">&quot;3&quot;</span>;</span>
-<span class="line" id="L59"></span>
-<span class="line" id="L60">        <span class="tok-kw">try</span> t.run(serialize, ptr, &amp;.{.{ .String = <span class="tok-str">&quot;3&quot;</span> }});</span>
-<span class="line" id="L61">    }</span>
-<span class="line" id="L62">}</span>
-<span class="line" id="L63"></span>
+<span class="line" id="L58">    {</span>
+<span class="line" id="L59">        <span class="tok-kw">var</span> ptr = <span class="tok-kw">try</span> std.testing.allocator.create([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>);</span>
+<span class="line" id="L60">        <span class="tok-kw">defer</span> std.testing.allocator.destroy(ptr);</span>
+<span class="line" id="L61">        ptr.* = <span class="tok-str">&quot;3&quot;</span>;</span>
+<span class="line" id="L62"></span>
+<span class="line" id="L63">        <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, ptr, &amp;.{.{ .String = <span class="tok-str">&quot;3&quot;</span> }});</span>
+<span class="line" id="L64">    }</span>
+<span class="line" id="L65">}</span>
+<span class="line" id="L66"></span>
 </code></pre></body>
 </html>

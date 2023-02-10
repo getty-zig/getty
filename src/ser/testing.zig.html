@@ -128,22 +128,22 @@
 <span class="line" id="L15"><span class="tok-comment">// The type signature of an SB's `serialize` function.</span>
 </span>
 <span class="line" id="L16"><span class="tok-kw">const</span> SerializeFn = <span class="tok-builtin">@TypeOf</span>(<span class="tok-kw">struct</span> {</span>
-<span class="line" id="L17">    <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: <span class="tok-kw">anytype</span>, s: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(s).Error!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
+<span class="line" id="L17">    <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: ?std.mem.Allocator, _: <span class="tok-kw">anytype</span>, s: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(s).Error!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
 <span class="line" id="L18">        <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L19">    }</span>
 <span class="line" id="L20">}.f);</span>
 <span class="line" id="L21"></span>
-<span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(<span class="tok-kw">comptime</span> f: SerializeFn, input: <span class="tok-kw">anytype</span>, expected: []<span class="tok-kw">const</span> Token) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> f: SerializeFn, input: <span class="tok-kw">anytype</span>, expected: []<span class="tok-kw">const</span> Token) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L23">    <span class="tok-kw">var</span> s = DefaultSerializer.init(expected);</span>
-<span class="line" id="L24">    f(input, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L24">    f(allocator, input, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
 <span class="line" id="L25">    <span class="tok-kw">try</span> expect(s.remaining() == <span class="tok-number">0</span>);</span>
 <span class="line" id="L26">}</span>
 <span class="line" id="L27"></span>
-<span class="line" id="L28"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runErr</span>(<span class="tok-kw">comptime</span> f: SerializeFn, e: <span class="tok-kw">anytype</span>, input: <span class="tok-kw">anytype</span>, expected: []<span class="tok-kw">const</span> Token) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L28"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runErr</span>(allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> f: SerializeFn, e: <span class="tok-kw">anytype</span>, input: <span class="tok-kw">anytype</span>, expected: []<span class="tok-kw">const</span> Token) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L29">    <span class="tok-kw">comptime</span> std.debug.assert(<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(e)) == .ErrorSet);</span>
 <span class="line" id="L30"></span>
 <span class="line" id="L31">    <span class="tok-kw">var</span> s = DefaultSerializer.init(expected);</span>
-<span class="line" id="L32">    <span class="tok-kw">try</span> std.testing.expectError(e, f(input, s.serializer()));</span>
+<span class="line" id="L32">    <span class="tok-kw">try</span> std.testing.expectError(e, f(allocator, input, s.serializer()));</span>
 <span class="line" id="L33">}</span>
 <span class="line" id="L34"></span>
 <span class="line" id="L35"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Serializer</span>(<span class="tok-kw">comptime</span> user_sbt: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> serializer_sbt: <span class="tok-kw">anytype</span>) <span class="tok-type">type</span> {</span>
@@ -267,7 +267,7 @@
 <span class="line" id="L153"></span>
 <span class="line" id="L154">        <span class="tok-kw">fn</span> <span class="tok-fn">serializeSome</span>(self: *Self, v: <span class="tok-kw">anytype</span>) Error!Ok {</span>
 <span class="line" id="L155">            <span class="tok-kw">try</span> assertNextToken(self, Token{ .Some = {} });</span>
-<span class="line" id="L156">            <span class="tok-kw">try</span> serialize(v, self.serializer());</span>
+<span class="line" id="L156">            <span class="tok-kw">try</span> serialize(<span class="tok-null">null</span>, v, self.serializer());</span>
 <span class="line" id="L157">        }</span>
 <span class="line" id="L158"></span>
 <span class="line" id="L159">        <span class="tok-kw">fn</span> <span class="tok-fn">serializeString</span>(self: *Self, v: <span class="tok-kw">anytype</span>) Error!Ok {</span>
@@ -298,11 +298,11 @@
 <span class="line" id="L184">            );</span>
 <span class="line" id="L185"></span>
 <span class="line" id="L186">            <span class="tok-kw">fn</span> <span class="tok-fn">serializeKey</span>(self: *Map, key: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L187">                <span class="tok-kw">try</span> serialize(key, self.ser.serializer());</span>
+<span class="line" id="L187">                <span class="tok-kw">try</span> serialize(<span class="tok-null">null</span>, key, self.ser.serializer());</span>
 <span class="line" id="L188">            }</span>
 <span class="line" id="L189"></span>
 <span class="line" id="L190">            <span class="tok-kw">fn</span> <span class="tok-fn">serializeValue</span>(self: *Map, value: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L191">                <span class="tok-kw">try</span> serialize(value, self.ser.serializer());</span>
+<span class="line" id="L191">                <span class="tok-kw">try</span> serialize(<span class="tok-null">null</span>, value, self.ser.serializer());</span>
 <span class="line" id="L192">            }</span>
 <span class="line" id="L193"></span>
 <span class="line" id="L194">            <span class="tok-kw">fn</span> <span class="tok-fn">end</span>(self: *Map) Error!Ok {</span>
@@ -324,7 +324,7 @@
 <span class="line" id="L210">            );</span>
 <span class="line" id="L211"></span>
 <span class="line" id="L212">            <span class="tok-kw">fn</span> <span class="tok-fn">serializeElement</span>(self: *Seq, value: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L213">                <span class="tok-kw">try</span> serialize(value, self.ser.serializer());</span>
+<span class="line" id="L213">                <span class="tok-kw">try</span> serialize(<span class="tok-null">null</span>, value, self.ser.serializer());</span>
 <span class="line" id="L214">            }</span>
 <span class="line" id="L215"></span>
 <span class="line" id="L216">            <span class="tok-kw">fn</span> <span class="tok-fn">end</span>(self: *Seq) Error!Ok {</span>
@@ -347,7 +347,7 @@
 <span class="line" id="L233"></span>
 <span class="line" id="L234">            <span class="tok-kw">fn</span> <span class="tok-fn">serializeField</span>(self: *Structure, <span class="tok-kw">comptime</span> key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
 <span class="line" id="L235">                <span class="tok-kw">try</span> assertNextToken(self.ser, Token{ .String = key });</span>
-<span class="line" id="L236">                <span class="tok-kw">try</span> serialize(value, self.ser.serializer());</span>
+<span class="line" id="L236">                <span class="tok-kw">try</span> serialize(<span class="tok-null">null</span>, value, self.ser.serializer());</span>
 <span class="line" id="L237">            }</span>
 <span class="line" id="L238"></span>
 <span class="line" id="L239">            <span class="tok-kw">fn</span> <span class="tok-fn">end</span>(self: *Structure) Error!Ok {</span>

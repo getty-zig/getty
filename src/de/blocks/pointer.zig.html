@@ -112,150 +112,220 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> t = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
 <span class="line" id="L3"></span>
-<span class="line" id="L4"><span class="tok-kw">const</span> find_db = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../find.zig&quot;</span>).find_db;</span>
-<span class="line" id="L5"><span class="tok-kw">const</span> PointerVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/pointer.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L9">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L10">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L11">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L12">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Pointer <span class="tok-kw">and</span> <span class="tok-builtin">@typeInfo</span>(T).Pointer.size == .One;</span>
-<span class="line" id="L13">}</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> blocks = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../blocks.zig&quot;</span>);</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> find_db = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../find.zig&quot;</span>).find_db;</span>
+<span class="line" id="L6"><span class="tok-kw">const</span> free = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../free.zig&quot;</span>).free;</span>
+<span class="line" id="L7"><span class="tok-kw">const</span> has_attributes = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../traits.zig&quot;</span>).has_attributes;</span>
+<span class="line" id="L8"><span class="tok-kw">const</span> Ignored = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/seed/ignored.zig&quot;</span>).Ignored;</span>
+<span class="line" id="L9"><span class="tok-kw">const</span> PointerVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/pointer.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L10"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L11"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../interfaces/visitor.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L12"></span>
+<span class="line" id="L13"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
 <span class="line" id="L14"></span>
-<span class="line" id="L15"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L16"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L15"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L16"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
 <span class="line" id="L17">    <span class="tok-comment">/// The type being deserialized into.</span></span>
 <span class="line" id="L18">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L19">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L20">    <span class="tok-kw">return</span> PointerVisitor(T);</span>
+<span class="line" id="L19">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L20">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Pointer <span class="tok-kw">and</span> <span class="tok-builtin">@typeInfo</span>(T).Pointer.size == .One;</span>
 <span class="line" id="L21">}</span>
 <span class="line" id="L22"></span>
-<span class="line" id="L23"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L24"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L25">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L26">    allocator: ?std.mem.Allocator,</span>
-<span class="line" id="L27">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L28">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L29">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L30">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L31">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L32">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L33">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L34">    <span class="tok-kw">const</span> Child = std.meta.Child(T);</span>
-<span class="line" id="L35">    <span class="tok-kw">const</span> db = find_db(Child, <span class="tok-builtin">@TypeOf</span>(deserializer));</span>
-<span class="line" id="L36"></span>
-<span class="line" id="L37">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> db.deserialize(allocator, Child, deserializer, visitor);</span>
-<span class="line" id="L38">}</span>
-<span class="line" id="L39"></span>
-<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - pointer&quot;</span> {</span>
-<span class="line" id="L41">    <span class="tok-comment">// one level of indirection</span>
-</span>
-<span class="line" id="L42">    {</span>
-<span class="line" id="L43">        <span class="tok-kw">const</span> int: <span class="tok-type">i32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L23"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L24"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L25">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L26">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L27">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L28">    <span class="tok-kw">return</span> PointerVisitor(T);</span>
+<span class="line" id="L29">}</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L32"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L33">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L34">    allocator: ?Allocator,</span>
+<span class="line" id="L35">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L36">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L37">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L38">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L39">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L40">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L41">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L42">    <span class="tok-kw">const</span> Child = std.meta.Child(T);</span>
+<span class="line" id="L43">    <span class="tok-kw">const</span> db = <span class="tok-kw">comptime</span> find_db(Child, <span class="tok-builtin">@TypeOf</span>(deserializer));</span>
 <span class="line" id="L44"></span>
-<span class="line" id="L45">        <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{.{ .I32 = <span class="tok-number">1</span> }}, &amp;int);</span>
-<span class="line" id="L46">    }</span>
-<span class="line" id="L47"></span>
-<span class="line" id="L48">    <span class="tok-comment">// two level of indirection</span>
+<span class="line" id="L45">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> has_attributes(Child, db)) {</span>
+<span class="line" id="L46">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(Child)) {</span>
+<span class="line" id="L47">            .Struct =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.deserialize(allocator, Child, deserializer, visitor),</span>
+<span class="line" id="L48">            .Union =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.deserialize(allocator, Child, deserializer, visitor),</span>
+<span class="line" id="L49">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that Child is a struct or union.</span>
 </span>
-<span class="line" id="L49">    {</span>
-<span class="line" id="L50">        <span class="tok-kw">const</span> free = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../free.zig&quot;</span>).free;</span>
-<span class="line" id="L51"></span>
-<span class="line" id="L52">        <span class="tok-kw">const</span> Expected = **<span class="tok-type">i32</span>;</span>
-<span class="line" id="L53">        <span class="tok-kw">const</span> expected: <span class="tok-type">i32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L54"></span>
-<span class="line" id="L55">        <span class="tok-comment">// Test manually since the `t` function cannot recursively test</span>
-</span>
-<span class="line" id="L56">        <span class="tok-comment">// pointers without ugly hacks.</span>
-</span>
-<span class="line" id="L57">        <span class="tok-kw">var</span> v = Visitor(Expected){};</span>
-<span class="line" id="L58">        <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L59"></span>
-<span class="line" id="L60">        <span class="tok-kw">var</span> d = t.DefaultDeserializer.init(&amp;.{.{ .I32 = <span class="tok-number">1</span> }});</span>
-<span class="line" id="L61">        <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63">        <span class="tok-kw">const</span> got = deserialize(std.testing.allocator, Expected, deserializer, visitor) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L64">        <span class="tok-kw">defer</span> free(std.testing.allocator, got);</span>
-<span class="line" id="L65"></span>
-<span class="line" id="L66">        <span class="tok-kw">try</span> std.testing.expectEqual(Expected, <span class="tok-builtin">@TypeOf</span>(got));</span>
-<span class="line" id="L67">        <span class="tok-kw">try</span> std.testing.expectEqual(*<span class="tok-type">i32</span>, <span class="tok-builtin">@TypeOf</span>(got.*));</span>
-<span class="line" id="L68">        <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-type">i32</span>, <span class="tok-builtin">@TypeOf</span>(got.*.*));</span>
-<span class="line" id="L69">        <span class="tok-kw">try</span> std.testing.expectEqual(expected, got.*.*);</span>
-<span class="line" id="L70">    }</span>
-<span class="line" id="L71">}</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - pointer, string&quot;</span> {</span>
-<span class="line" id="L74">    <span class="tok-comment">// No sentinel</span>
-</span>
-<span class="line" id="L75">    {</span>
-<span class="line" id="L76">        <span class="tok-comment">// *[N]u8</span>
-</span>
-<span class="line" id="L77">        {</span>
-<span class="line" id="L78">            <span class="tok-kw">var</span> arr = [<span class="tok-number">3</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
-<span class="line" id="L79"></span>
-<span class="line" id="L80">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }}, &amp;arr);</span>
-<span class="line" id="L81">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{</span>
-<span class="line" id="L82">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L83">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
-<span class="line" id="L84">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
-<span class="line" id="L85">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
-<span class="line" id="L86">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L87">            }, &amp;arr);</span>
-<span class="line" id="L88">        }</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">        <span class="tok-comment">// *const [N]u8</span>
-</span>
-<span class="line" id="L91">        {</span>
-<span class="line" id="L92">            <span class="tok-kw">const</span> arr = [<span class="tok-number">3</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
-<span class="line" id="L93"></span>
-<span class="line" id="L94">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }}, &amp;arr);</span>
-<span class="line" id="L95">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{</span>
-<span class="line" id="L96">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L97">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
-<span class="line" id="L98">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
-<span class="line" id="L99">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
-<span class="line" id="L100">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L101">            }, &amp;arr);</span>
-<span class="line" id="L102">        }</span>
-<span class="line" id="L103">    }</span>
-<span class="line" id="L104"></span>
-<span class="line" id="L105">    <span class="tok-comment">// Sentinel</span>
-</span>
-<span class="line" id="L106">    {</span>
-<span class="line" id="L107">        <span class="tok-comment">// *[N:S]u8</span>
-</span>
-<span class="line" id="L108">        {</span>
-<span class="line" id="L109">            <span class="tok-kw">var</span> arr = [<span class="tok-number">3</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
+<span class="line" id="L50">        }</span>
+<span class="line" id="L51">    }</span>
+<span class="line" id="L52"></span>
+<span class="line" id="L53">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> db.deserialize(allocator, Child, deserializer, visitor);</span>
+<span class="line" id="L54">}</span>
+<span class="line" id="L55"></span>
+<span class="line" id="L56"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - pointer&quot;</span> {</span>
+<span class="line" id="L57">    <span class="tok-kw">const</span> StructAB = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L58">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L59">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L60"></span>
+<span class="line" id="L61">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L62">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L63">                .x = .{ .rename = <span class="tok-str">&quot;X&quot;</span> },</span>
+<span class="line" id="L64">                .y = .{ .rename = <span class="tok-str">&quot;Y&quot;</span> },</span>
+<span class="line" id="L65">            };</span>
+<span class="line" id="L66">        };</span>
+<span class="line" id="L67">    };</span>
+<span class="line" id="L68">    <span class="tok-kw">const</span> UnionAB = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L69">        foo: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L70"></span>
+<span class="line" id="L71">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L72">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L73">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L74">            };</span>
+<span class="line" id="L75">        };</span>
+<span class="line" id="L76">    };</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78">    <span class="tok-kw">var</span> int: <span class="tok-type">i32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L79">    <span class="tok-kw">var</span> sab = StructAB{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L80">    <span class="tok-kw">var</span> uab = UnionAB{ .foo = <span class="tok-number">1</span> };</span>
+<span class="line" id="L81"></span>
+<span class="line" id="L82">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L83">        .{</span>
+<span class="line" id="L84">            .name = <span class="tok-str">&quot;one level of indirection&quot;</span>,</span>
+<span class="line" id="L85">            .tokens = &amp;.{.{ .I32 = <span class="tok-number">1</span> }},</span>
+<span class="line" id="L86">            .want = <span class="tok-builtin">@as</span>(*<span class="tok-type">i32</span>, &amp;int),</span>
+<span class="line" id="L87">        },</span>
+<span class="line" id="L88">        .{</span>
+<span class="line" id="L89">            .name = <span class="tok-str">&quot;struct with AB&quot;</span>,</span>
+<span class="line" id="L90">            .tokens = &amp;.{</span>
+<span class="line" id="L91">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(StructAB), .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L92">                .{ .String = <span class="tok-str">&quot;X&quot;</span> },</span>
+<span class="line" id="L93">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L94">                .{ .String = <span class="tok-str">&quot;Y&quot;</span> },</span>
+<span class="line" id="L95">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L96">                .{ .StructEnd = {} },</span>
+<span class="line" id="L97">            },</span>
+<span class="line" id="L98">            .want = <span class="tok-builtin">@as</span>(*StructAB, &amp;sab),</span>
+<span class="line" id="L99">        },</span>
+<span class="line" id="L100">        .{</span>
+<span class="line" id="L101">            .name = <span class="tok-str">&quot;union with AB&quot;</span>,</span>
+<span class="line" id="L102">            .tokens = &amp;.{</span>
+<span class="line" id="L103">                .{ .Union = {} },</span>
+<span class="line" id="L104">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L105">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L106">            },</span>
+<span class="line" id="L107">            .want = <span class="tok-builtin">@as</span>(*UnionAB, &amp;uab),</span>
+<span class="line" id="L108">        },</span>
+<span class="line" id="L109">    };</span>
 <span class="line" id="L110"></span>
-<span class="line" id="L111">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }}, &amp;arr);</span>
-<span class="line" id="L112">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{</span>
-<span class="line" id="L113">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L114">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
-<span class="line" id="L115">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
-<span class="line" id="L116">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
-<span class="line" id="L117">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L118">            }, &amp;arr);</span>
-<span class="line" id="L119">        }</span>
-<span class="line" id="L120"></span>
-<span class="line" id="L121">        <span class="tok-comment">// *const [N:S]u8</span>
-</span>
-<span class="line" id="L122">        {</span>
-<span class="line" id="L123">            <span class="tok-kw">const</span> arr = [<span class="tok-number">3</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
-<span class="line" id="L124"></span>
-<span class="line" id="L125">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }}, &amp;arr);</span>
-<span class="line" id="L126">            <span class="tok-kw">try</span> t.run(deserialize, Visitor, &amp;.{</span>
-<span class="line" id="L127">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L128">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
-<span class="line" id="L129">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
-<span class="line" id="L130">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
-<span class="line" id="L131">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L132">            }, &amp;arr);</span>
-<span class="line" id="L133">        }</span>
-<span class="line" id="L134">    }</span>
-<span class="line" id="L135">}</span>
-<span class="line" id="L136"></span>
+<span class="line" id="L111">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L112">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L113">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L114">        <span class="tok-kw">defer</span> free(std.testing.allocator, got);</span>
+<span class="line" id="L115"></span>
+<span class="line" id="L116">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want.*, got.*);</span>
+<span class="line" id="L117">    }</span>
+<span class="line" id="L118">}</span>
+<span class="line" id="L119"></span>
+<span class="line" id="L120"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - pointer, string&quot;</span> {</span>
+<span class="line" id="L121">    <span class="tok-kw">var</span> no_sentinel = [<span class="tok-number">3</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
+<span class="line" id="L122">    <span class="tok-kw">const</span> no_sentinel_const = [<span class="tok-number">3</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124">    <span class="tok-kw">var</span> sentinel = [<span class="tok-number">3</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
+<span class="line" id="L125">    <span class="tok-kw">const</span> sentinel_const = [<span class="tok-number">3</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> };</span>
+<span class="line" id="L126"></span>
+<span class="line" id="L127">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L128">        .{</span>
+<span class="line" id="L129">            .name = <span class="tok-str">&quot;no sentinel (string)&quot;</span>,</span>
+<span class="line" id="L130">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }},</span>
+<span class="line" id="L131">            .want = &amp;no_sentinel,</span>
+<span class="line" id="L132">        },</span>
+<span class="line" id="L133">        .{</span>
+<span class="line" id="L134">            .name = <span class="tok-str">&quot;no sentinel (sequence)&quot;</span>,</span>
+<span class="line" id="L135">            .tokens = &amp;.{</span>
+<span class="line" id="L136">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L137">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
+<span class="line" id="L138">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
+<span class="line" id="L139">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
+<span class="line" id="L140">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L141">            },</span>
+<span class="line" id="L142">            .want = &amp;no_sentinel,</span>
+<span class="line" id="L143">        },</span>
+<span class="line" id="L144">        .{</span>
+<span class="line" id="L145">            .name = <span class="tok-str">&quot;no sentinel, const (string)&quot;</span>,</span>
+<span class="line" id="L146">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }},</span>
+<span class="line" id="L147">            .want = &amp;no_sentinel_const,</span>
+<span class="line" id="L148">        },</span>
+<span class="line" id="L149">        .{</span>
+<span class="line" id="L150">            .name = <span class="tok-str">&quot;no sentinel, const (sequence)&quot;</span>,</span>
+<span class="line" id="L151">            .tokens = &amp;.{</span>
+<span class="line" id="L152">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L153">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
+<span class="line" id="L154">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
+<span class="line" id="L155">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
+<span class="line" id="L156">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L157">            },</span>
+<span class="line" id="L158">            .want = &amp;no_sentinel_const,</span>
+<span class="line" id="L159">        },</span>
+<span class="line" id="L160">        .{</span>
+<span class="line" id="L161">            .name = <span class="tok-str">&quot;sentinel (string)&quot;</span>,</span>
+<span class="line" id="L162">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }},</span>
+<span class="line" id="L163">            .want = &amp;sentinel,</span>
+<span class="line" id="L164">        },</span>
+<span class="line" id="L165">        .{</span>
+<span class="line" id="L166">            .name = <span class="tok-str">&quot;sentinel (sequence)&quot;</span>,</span>
+<span class="line" id="L167">            .tokens = &amp;.{</span>
+<span class="line" id="L168">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L169">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
+<span class="line" id="L170">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
+<span class="line" id="L171">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
+<span class="line" id="L172">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L173">            },</span>
+<span class="line" id="L174">            .want = &amp;sentinel,</span>
+<span class="line" id="L175">        },</span>
+<span class="line" id="L176">        .{</span>
+<span class="line" id="L177">            .name = <span class="tok-str">&quot;sentinel, const (string)&quot;</span>,</span>
+<span class="line" id="L178">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }},</span>
+<span class="line" id="L179">            .want = &amp;sentinel_const,</span>
+<span class="line" id="L180">        },</span>
+<span class="line" id="L181">        .{</span>
+<span class="line" id="L182">            .name = <span class="tok-str">&quot;sentinel, const (sequence)&quot;</span>,</span>
+<span class="line" id="L183">            .tokens = &amp;.{</span>
+<span class="line" id="L184">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L185">                .{ .U8 = <span class="tok-str">'a'</span> },</span>
+<span class="line" id="L186">                .{ .U8 = <span class="tok-str">'b'</span> },</span>
+<span class="line" id="L187">                .{ .U8 = <span class="tok-str">'c'</span> },</span>
+<span class="line" id="L188">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L189">            },</span>
+<span class="line" id="L190">            .want = &amp;sentinel_const,</span>
+<span class="line" id="L191">        },</span>
+<span class="line" id="L192">    };</span>
+<span class="line" id="L193"></span>
+<span class="line" id="L194">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L195">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L196">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L197">        <span class="tok-kw">defer</span> free(std.testing.allocator, got);</span>
+<span class="line" id="L198"></span>
+<span class="line" id="L199">        <span class="tok-kw">try</span> testing.expectEqualStrings(t.name, t.want, got);</span>
+<span class="line" id="L200">    }</span>
+<span class="line" id="L201">}</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - pointer (recursive)&quot;</span> {</span>
+<span class="line" id="L204">    <span class="tok-kw">const</span> Want = **<span class="tok-type">i32</span>;</span>
+<span class="line" id="L205">    <span class="tok-kw">const</span> want: <span class="tok-type">i32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L206"></span>
+<span class="line" id="L207">    <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, <span class="tok-null">null</span>, Self, Want, &amp;.{.{ .I32 = <span class="tok-number">1</span> }});</span>
+<span class="line" id="L208">    <span class="tok-kw">defer</span> free(std.testing.allocator, got);</span>
+<span class="line" id="L209"></span>
+<span class="line" id="L210">    <span class="tok-kw">try</span> std.testing.expectEqual(Want, <span class="tok-builtin">@TypeOf</span>(got));</span>
+<span class="line" id="L211">    <span class="tok-kw">try</span> std.testing.expectEqual(*<span class="tok-type">i32</span>, <span class="tok-builtin">@TypeOf</span>(got.*));</span>
+<span class="line" id="L212">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-type">i32</span>, <span class="tok-builtin">@TypeOf</span>(got.*.*));</span>
+<span class="line" id="L213">    <span class="tok-kw">try</span> std.testing.expectEqual(want, got.*.*);</span>
+<span class="line" id="L214">}</span>
+<span class="line" id="L215"></span>
 </code></pre></body>
 </html>

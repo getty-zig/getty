@@ -1,0 +1,1911 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Build.zig - source view</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <style>
+      body{
+        font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      pre > code {
+        display: block;
+        overflow: auto;
+        line-height: normal;
+        margin: 0em;
+      }
+      .tok-kw {
+          color: #333;
+          font-weight: bold;
+      }
+      .tok-str {
+          color: #d14;
+      }
+      .tok-builtin {
+          color: #005C7A;
+      }
+      .tok-comment {
+          color: #545454;
+          font-style: italic;
+      }
+      .tok-fn {
+          color: #900;
+          font-weight: bold;
+      }
+      .tok-null {
+          color: #005C5C;
+      }
+      .tok-number {
+          color: #005C5C;
+      }
+      .tok-type {
+          color: #458;
+          font-weight: bold;
+      }
+      pre {
+        counter-reset: line;
+      }
+      pre .line:before {
+        counter-increment: line;
+        content: counter(line);
+        display: inline-block;
+        padding-right: 1em;
+        width: 2em;
+        text-align: right;
+        color: #999;
+      }
+      
+      .line {
+        width: 100%;
+        display: inline-block;
+      }
+      .line:target {
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        background: #fafafa;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body{
+            background:#222;
+            color: #ccc;
+        }
+        pre > code {
+            color: #ccc;
+            background: #222;
+            border: unset;
+        }
+        .line:target {
+            border-top: 1px solid #444;
+            border-bottom: 1px solid #444;
+            background: #333;
+        }
+        .tok-kw {
+            color: #eee;
+        }
+        .tok-str {
+            color: #2e5;
+        }
+        .tok-builtin {
+            color: #ff894c;
+        }
+        .tok-comment {
+            color: #aa7;
+        }
+        .tok-fn {
+            color: #B1A0F8;
+        }
+        .tok-null {
+            color: #ff8080;
+        }
+        .tok-number {
+            color: #ff8080;
+        }
+        .tok-type {
+            color: #68f;
+        }
+      }
+    </style>
+</head>
+<body>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std.zig&quot;</span>);</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> io = std.io;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> fs = std.fs;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> mem = std.mem;</span>
+<span class="line" id="L6"><span class="tok-kw">const</span> debug = std.debug;</span>
+<span class="line" id="L7"><span class="tok-kw">const</span> panic = std.debug.panic;</span>
+<span class="line" id="L8"><span class="tok-kw">const</span> assert = debug.assert;</span>
+<span class="line" id="L9"><span class="tok-kw">const</span> log = std.log;</span>
+<span class="line" id="L10"><span class="tok-kw">const</span> ArrayList = std.ArrayList;</span>
+<span class="line" id="L11"><span class="tok-kw">const</span> StringHashMap = std.StringHashMap;</span>
+<span class="line" id="L12"><span class="tok-kw">const</span> Allocator = mem.Allocator;</span>
+<span class="line" id="L13"><span class="tok-kw">const</span> process = std.process;</span>
+<span class="line" id="L14"><span class="tok-kw">const</span> EnvMap = std.process.EnvMap;</span>
+<span class="line" id="L15"><span class="tok-kw">const</span> fmt_lib = std.fmt;</span>
+<span class="line" id="L16"><span class="tok-kw">const</span> File = std.fs.File;</span>
+<span class="line" id="L17"><span class="tok-kw">const</span> CrossTarget = std.zig.CrossTarget;</span>
+<span class="line" id="L18"><span class="tok-kw">const</span> NativeTargetInfo = std.zig.system.NativeTargetInfo;</span>
+<span class="line" id="L19"><span class="tok-kw">const</span> Sha256 = std.crypto.hash.sha2.Sha256;</span>
+<span class="line" id="L20"><span class="tok-kw">const</span> Build = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22"><span class="tok-comment">/// deprecated: use `CompileStep`.</span></span>
+<span class="line" id="L23"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> LibExeObjStep = CompileStep;</span>
+<span class="line" id="L24"><span class="tok-comment">/// deprecated: use `Build`.</span></span>
+<span class="line" id="L25"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Builder = Build;</span>
+<span class="line" id="L26"><span class="tok-comment">/// deprecated: use `InstallDirStep.Options`</span></span>
+<span class="line" id="L27"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstallDirectoryOptions = InstallDirStep.Options;</span>
+<span class="line" id="L28"></span>
+<span class="line" id="L29"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Step = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/Step.zig&quot;</span>);</span>
+<span class="line" id="L30"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CheckFileStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/CheckFileStep.zig&quot;</span>);</span>
+<span class="line" id="L31"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CheckObjectStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/CheckObjectStep.zig&quot;</span>);</span>
+<span class="line" id="L32"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ConfigHeaderStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/ConfigHeaderStep.zig&quot;</span>);</span>
+<span class="line" id="L33"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> EmulatableRunStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/EmulatableRunStep.zig&quot;</span>);</span>
+<span class="line" id="L34"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> FmtStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/FmtStep.zig&quot;</span>);</span>
+<span class="line" id="L35"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstallArtifactStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/InstallArtifactStep.zig&quot;</span>);</span>
+<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstallDirStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/InstallDirStep.zig&quot;</span>);</span>
+<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstallFileStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/InstallFileStep.zig&quot;</span>);</span>
+<span class="line" id="L38"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstallRawStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/InstallRawStep.zig&quot;</span>);</span>
+<span class="line" id="L39"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CompileStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/CompileStep.zig&quot;</span>);</span>
+<span class="line" id="L40"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> LogStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/LogStep.zig&quot;</span>);</span>
+<span class="line" id="L41"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> OptionsStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/OptionsStep.zig&quot;</span>);</span>
+<span class="line" id="L42"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> RemoveDirStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/RemoveDirStep.zig&quot;</span>);</span>
+<span class="line" id="L43"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> RunStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/RunStep.zig&quot;</span>);</span>
+<span class="line" id="L44"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> TranslateCStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/TranslateCStep.zig&quot;</span>);</span>
+<span class="line" id="L45"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteFileStep = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Build/WriteFileStep.zig&quot;</span>);</span>
+<span class="line" id="L46"></span>
+<span class="line" id="L47">install_tls: TopLevelStep,</span>
+<span class="line" id="L48">uninstall_tls: TopLevelStep,</span>
+<span class="line" id="L49">allocator: Allocator,</span>
+<span class="line" id="L50">user_input_options: UserInputOptionsMap,</span>
+<span class="line" id="L51">available_options_map: AvailableOptionsMap,</span>
+<span class="line" id="L52">available_options_list: ArrayList(AvailableOption),</span>
+<span class="line" id="L53">verbose: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L54">verbose_link: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L55">verbose_cc: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L56">verbose_air: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L57">verbose_llvm_ir: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L58">verbose_cimport: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L59">verbose_llvm_cpu_features: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L60"><span class="tok-comment">/// The purpose of executing the command is for a human to read compile errors from the terminal</span></span>
+<span class="line" id="L61">prominent_compile_errors: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L62">color: <span class="tok-kw">enum</span> { auto, on, off } = .auto,</span>
+<span class="line" id="L63">reference_trace: ?<span class="tok-type">u32</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L64">invalid_user_input: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L65">zig_exe: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L66">default_step: *Step,</span>
+<span class="line" id="L67">env_map: *EnvMap,</span>
+<span class="line" id="L68">top_level_steps: ArrayList(*TopLevelStep),</span>
+<span class="line" id="L69">install_prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L70">dest_dir: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L71">lib_dir: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L72">exe_dir: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L73">h_dir: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L74">install_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L75">sysroot: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L76">search_prefixes: ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
+<span class="line" id="L77">libc_file: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L78">installed_files: ArrayList(InstalledFile),</span>
+<span class="line" id="L79"><span class="tok-comment">/// Path to the directory containing build.zig.</span></span>
+<span class="line" id="L80">build_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L81">cache_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L82">global_cache_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L83"><span class="tok-comment">/// zig lib dir</span></span>
+<span class="line" id="L84">override_lib_dir: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L85">vcpkg_root: VcpkgRoot = .unattempted,</span>
+<span class="line" id="L86">pkg_config_pkg_list: ?(PkgConfigError![]<span class="tok-kw">const</span> PkgConfigPkg) = <span class="tok-null">null</span>,</span>
+<span class="line" id="L87">args: ?[][]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L88">debug_log_scopes: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{},</span>
+<span class="line" id="L89">debug_compile_errors: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L90"></span>
+<span class="line" id="L91"><span class="tok-comment">/// Experimental. Use system Darling installation to run cross compiled macOS build artifacts.</span></span>
+<span class="line" id="L92">enable_darling: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L93"><span class="tok-comment">/// Use system QEMU installation to run cross compiled foreign architecture build artifacts.</span></span>
+<span class="line" id="L94">enable_qemu: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L95"><span class="tok-comment">/// Darwin. Use Rosetta to run x86_64 macOS build artifacts on arm64 macOS.</span></span>
+<span class="line" id="L96">enable_rosetta: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L97"><span class="tok-comment">/// Use system Wasmtime installation to run cross compiled wasm/wasi build artifacts.</span></span>
+<span class="line" id="L98">enable_wasmtime: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L99"><span class="tok-comment">/// Use system Wine installation to run cross compiled Windows build artifacts.</span></span>
+<span class="line" id="L100">enable_wine: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L101"><span class="tok-comment">/// After following the steps in https://github.com/ziglang/zig/wiki/Updating-libc#glibc,</span></span>
+<span class="line" id="L102"><span class="tok-comment">/// this will be the directory $glibc-build-dir/install/glibcs</span></span>
+<span class="line" id="L103"><span class="tok-comment">/// Given the example of the aarch64 target, this is the directory</span></span>
+<span class="line" id="L104"><span class="tok-comment">/// that contains the path `aarch64-linux-gnu/lib/ld-linux-aarch64.so.1`.</span></span>
+<span class="line" id="L105">glibc_runtimes_dir: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L106"></span>
+<span class="line" id="L107"><span class="tok-comment">/// Information about the native target. Computed before build() is invoked.</span></span>
+<span class="line" id="L108">host: NativeTargetInfo,</span>
+<span class="line" id="L109"></span>
+<span class="line" id="L110">dep_prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;&quot;</span>,</span>
+<span class="line" id="L111"></span>
+<span class="line" id="L112">modules: std.StringArrayHashMap(*Module),</span>
+<span class="line" id="L113"></span>
+<span class="line" id="L114"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ExecError = <span class="tok-kw">error</span>{</span>
+<span class="line" id="L115">    ReadFailure,</span>
+<span class="line" id="L116">    ExitCodeFailure,</span>
+<span class="line" id="L117">    ProcessTerminated,</span>
+<span class="line" id="L118">    ExecNotSupported,</span>
+<span class="line" id="L119">} || std.ChildProcess.SpawnError;</span>
+<span class="line" id="L120"></span>
+<span class="line" id="L121"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> PkgConfigError = <span class="tok-kw">error</span>{</span>
+<span class="line" id="L122">    PkgConfigCrashed,</span>
+<span class="line" id="L123">    PkgConfigFailed,</span>
+<span class="line" id="L124">    PkgConfigNotInstalled,</span>
+<span class="line" id="L125">    PkgConfigInvalidOutput,</span>
+<span class="line" id="L126">};</span>
+<span class="line" id="L127"></span>
+<span class="line" id="L128"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> PkgConfigPkg = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L129">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L130">    desc: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L131">};</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CStd = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L134">    C89,</span>
+<span class="line" id="L135">    C99,</span>
+<span class="line" id="L136">    C11,</span>
+<span class="line" id="L137">};</span>
+<span class="line" id="L138"></span>
+<span class="line" id="L139"><span class="tok-kw">const</span> UserInputOptionsMap = StringHashMap(UserInputOption);</span>
+<span class="line" id="L140"><span class="tok-kw">const</span> AvailableOptionsMap = StringHashMap(AvailableOption);</span>
+<span class="line" id="L141"></span>
+<span class="line" id="L142"><span class="tok-kw">const</span> AvailableOption = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L143">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L144">    type_id: TypeId,</span>
+<span class="line" id="L145">    description: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L146">    <span class="tok-comment">/// If the `type_id` is `enum` this provides the list of enum options</span></span>
+<span class="line" id="L147">    enum_options: ?[]<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L148">};</span>
+<span class="line" id="L149"></span>
+<span class="line" id="L150"><span class="tok-kw">const</span> UserInputOption = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L151">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L152">    value: UserValue,</span>
+<span class="line" id="L153">    used: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L154">};</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156"><span class="tok-kw">const</span> UserValue = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L157">    flag: <span class="tok-type">void</span>,</span>
+<span class="line" id="L158">    scalar: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L159">    list: ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
+<span class="line" id="L160">    map: StringHashMap(*<span class="tok-kw">const</span> UserValue),</span>
+<span class="line" id="L161">};</span>
+<span class="line" id="L162"></span>
+<span class="line" id="L163"><span class="tok-kw">const</span> TypeId = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L164">    <span class="tok-type">bool</span>,</span>
+<span class="line" id="L165">    int,</span>
+<span class="line" id="L166">    float,</span>
+<span class="line" id="L167">    @&quot;enum&quot;,</span>
+<span class="line" id="L168">    string,</span>
+<span class="line" id="L169">    list,</span>
+<span class="line" id="L170">};</span>
+<span class="line" id="L171"></span>
+<span class="line" id="L172"><span class="tok-kw">const</span> TopLevelStep = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L173">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .top_level;</span>
+<span class="line" id="L174"></span>
+<span class="line" id="L175">    step: Step,</span>
+<span class="line" id="L176">    description: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L177">};</span>
+<span class="line" id="L178"></span>
+<span class="line" id="L179"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DirList = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L180">    lib_dir: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L181">    exe_dir: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L182">    include_dir: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L183">};</span>
+<span class="line" id="L184"></span>
+<span class="line" id="L185"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(</span>
+<span class="line" id="L186">    allocator: Allocator,</span>
+<span class="line" id="L187">    zig_exe: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L188">    build_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L189">    cache_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L190">    global_cache_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L191">    host: NativeTargetInfo,</span>
+<span class="line" id="L192">) !*Build {</span>
+<span class="line" id="L193">    <span class="tok-kw">const</span> env_map = <span class="tok-kw">try</span> allocator.create(EnvMap);</span>
+<span class="line" id="L194">    env_map.* = <span class="tok-kw">try</span> process.getEnvMap(allocator);</span>
+<span class="line" id="L195"></span>
+<span class="line" id="L196">    <span class="tok-kw">const</span> self = <span class="tok-kw">try</span> allocator.create(Build);</span>
+<span class="line" id="L197">    self.* = Build{</span>
+<span class="line" id="L198">        .zig_exe = zig_exe,</span>
+<span class="line" id="L199">        .build_root = build_root,</span>
+<span class="line" id="L200">        .cache_root = <span class="tok-kw">try</span> fs.path.relative(allocator, build_root, cache_root),</span>
+<span class="line" id="L201">        .global_cache_root = global_cache_root,</span>
+<span class="line" id="L202">        .verbose = <span class="tok-null">false</span>,</span>
+<span class="line" id="L203">        .verbose_link = <span class="tok-null">false</span>,</span>
+<span class="line" id="L204">        .verbose_cc = <span class="tok-null">false</span>,</span>
+<span class="line" id="L205">        .verbose_air = <span class="tok-null">false</span>,</span>
+<span class="line" id="L206">        .verbose_llvm_ir = <span class="tok-null">false</span>,</span>
+<span class="line" id="L207">        .verbose_cimport = <span class="tok-null">false</span>,</span>
+<span class="line" id="L208">        .verbose_llvm_cpu_features = <span class="tok-null">false</span>,</span>
+<span class="line" id="L209">        .prominent_compile_errors = <span class="tok-null">false</span>,</span>
+<span class="line" id="L210">        .invalid_user_input = <span class="tok-null">false</span>,</span>
+<span class="line" id="L211">        .allocator = allocator,</span>
+<span class="line" id="L212">        .user_input_options = UserInputOptionsMap.init(allocator),</span>
+<span class="line" id="L213">        .available_options_map = AvailableOptionsMap.init(allocator),</span>
+<span class="line" id="L214">        .available_options_list = ArrayList(AvailableOption).init(allocator),</span>
+<span class="line" id="L215">        .top_level_steps = ArrayList(*TopLevelStep).init(allocator),</span>
+<span class="line" id="L216">        .default_step = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L217">        .env_map = env_map,</span>
+<span class="line" id="L218">        .search_prefixes = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(allocator),</span>
+<span class="line" id="L219">        .install_prefix = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L220">        .lib_dir = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L221">        .exe_dir = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L222">        .h_dir = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L223">        .dest_dir = env_map.get(<span class="tok-str">&quot;DESTDIR&quot;</span>),</span>
+<span class="line" id="L224">        .installed_files = ArrayList(InstalledFile).init(allocator),</span>
+<span class="line" id="L225">        .install_tls = TopLevelStep{</span>
+<span class="line" id="L226">            .step = Step.initNoOp(.top_level, <span class="tok-str">&quot;install&quot;</span>, allocator),</span>
+<span class="line" id="L227">            .description = <span class="tok-str">&quot;Copy build artifacts to prefix path&quot;</span>,</span>
+<span class="line" id="L228">        },</span>
+<span class="line" id="L229">        .uninstall_tls = TopLevelStep{</span>
+<span class="line" id="L230">            .step = Step.init(.top_level, <span class="tok-str">&quot;uninstall&quot;</span>, allocator, makeUninstall),</span>
+<span class="line" id="L231">            .description = <span class="tok-str">&quot;Remove build artifacts from prefix path&quot;</span>,</span>
+<span class="line" id="L232">        },</span>
+<span class="line" id="L233">        .override_lib_dir = <span class="tok-null">null</span>,</span>
+<span class="line" id="L234">        .install_path = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L235">        .args = <span class="tok-null">null</span>,</span>
+<span class="line" id="L236">        .host = host,</span>
+<span class="line" id="L237">        .modules = std.StringArrayHashMap(*Module).init(allocator),</span>
+<span class="line" id="L238">    };</span>
+<span class="line" id="L239">    <span class="tok-kw">try</span> self.top_level_steps.append(&amp;self.install_tls);</span>
+<span class="line" id="L240">    <span class="tok-kw">try</span> self.top_level_steps.append(&amp;self.uninstall_tls);</span>
+<span class="line" id="L241">    self.default_step = &amp;self.install_tls.step;</span>
+<span class="line" id="L242">    <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L243">}</span>
+<span class="line" id="L244"></span>
+<span class="line" id="L245"><span class="tok-kw">fn</span> <span class="tok-fn">createChild</span>(</span>
+<span class="line" id="L246">    parent: *Build,</span>
+<span class="line" id="L247">    dep_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L248">    build_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L249">    args: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L250">) !*Build {</span>
+<span class="line" id="L251">    <span class="tok-kw">const</span> child = <span class="tok-kw">try</span> createChildOnly(parent, dep_name, build_root);</span>
+<span class="line" id="L252">    <span class="tok-kw">try</span> applyArgs(child, args);</span>
+<span class="line" id="L253">    <span class="tok-kw">return</span> child;</span>
+<span class="line" id="L254">}</span>
+<span class="line" id="L255"></span>
+<span class="line" id="L256"><span class="tok-kw">fn</span> <span class="tok-fn">createChildOnly</span>(parent: *Build, dep_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, build_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !*Build {</span>
+<span class="line" id="L257">    <span class="tok-kw">const</span> allocator = parent.allocator;</span>
+<span class="line" id="L258">    <span class="tok-kw">const</span> child = <span class="tok-kw">try</span> allocator.create(Build);</span>
+<span class="line" id="L259">    child.* = .{</span>
+<span class="line" id="L260">        .allocator = allocator,</span>
+<span class="line" id="L261">        .install_tls = .{</span>
+<span class="line" id="L262">            .step = Step.initNoOp(.top_level, <span class="tok-str">&quot;install&quot;</span>, allocator),</span>
+<span class="line" id="L263">            .description = <span class="tok-str">&quot;Copy build artifacts to prefix path&quot;</span>,</span>
+<span class="line" id="L264">        },</span>
+<span class="line" id="L265">        .uninstall_tls = .{</span>
+<span class="line" id="L266">            .step = Step.init(.top_level, <span class="tok-str">&quot;uninstall&quot;</span>, allocator, makeUninstall),</span>
+<span class="line" id="L267">            .description = <span class="tok-str">&quot;Remove build artifacts from prefix path&quot;</span>,</span>
+<span class="line" id="L268">        },</span>
+<span class="line" id="L269">        .user_input_options = UserInputOptionsMap.init(allocator),</span>
+<span class="line" id="L270">        .available_options_map = AvailableOptionsMap.init(allocator),</span>
+<span class="line" id="L271">        .available_options_list = ArrayList(AvailableOption).init(allocator),</span>
+<span class="line" id="L272">        .verbose = parent.verbose,</span>
+<span class="line" id="L273">        .verbose_link = parent.verbose_link,</span>
+<span class="line" id="L274">        .verbose_cc = parent.verbose_cc,</span>
+<span class="line" id="L275">        .verbose_air = parent.verbose_air,</span>
+<span class="line" id="L276">        .verbose_llvm_ir = parent.verbose_llvm_ir,</span>
+<span class="line" id="L277">        .verbose_cimport = parent.verbose_cimport,</span>
+<span class="line" id="L278">        .verbose_llvm_cpu_features = parent.verbose_llvm_cpu_features,</span>
+<span class="line" id="L279">        .prominent_compile_errors = parent.prominent_compile_errors,</span>
+<span class="line" id="L280">        .color = parent.color,</span>
+<span class="line" id="L281">        .reference_trace = parent.reference_trace,</span>
+<span class="line" id="L282">        .invalid_user_input = <span class="tok-null">false</span>,</span>
+<span class="line" id="L283">        .zig_exe = parent.zig_exe,</span>
+<span class="line" id="L284">        .default_step = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L285">        .env_map = parent.env_map,</span>
+<span class="line" id="L286">        .top_level_steps = ArrayList(*TopLevelStep).init(allocator),</span>
+<span class="line" id="L287">        .install_prefix = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L288">        .dest_dir = parent.dest_dir,</span>
+<span class="line" id="L289">        .lib_dir = parent.lib_dir,</span>
+<span class="line" id="L290">        .exe_dir = parent.exe_dir,</span>
+<span class="line" id="L291">        .h_dir = parent.h_dir,</span>
+<span class="line" id="L292">        .install_path = parent.install_path,</span>
+<span class="line" id="L293">        .sysroot = parent.sysroot,</span>
+<span class="line" id="L294">        .search_prefixes = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(allocator),</span>
+<span class="line" id="L295">        .libc_file = parent.libc_file,</span>
+<span class="line" id="L296">        .installed_files = ArrayList(InstalledFile).init(allocator),</span>
+<span class="line" id="L297">        .build_root = build_root,</span>
+<span class="line" id="L298">        .cache_root = parent.cache_root,</span>
+<span class="line" id="L299">        .global_cache_root = parent.global_cache_root,</span>
+<span class="line" id="L300">        .override_lib_dir = parent.override_lib_dir,</span>
+<span class="line" id="L301">        .debug_log_scopes = parent.debug_log_scopes,</span>
+<span class="line" id="L302">        .debug_compile_errors = parent.debug_compile_errors,</span>
+<span class="line" id="L303">        .enable_darling = parent.enable_darling,</span>
+<span class="line" id="L304">        .enable_qemu = parent.enable_qemu,</span>
+<span class="line" id="L305">        .enable_rosetta = parent.enable_rosetta,</span>
+<span class="line" id="L306">        .enable_wasmtime = parent.enable_wasmtime,</span>
+<span class="line" id="L307">        .enable_wine = parent.enable_wine,</span>
+<span class="line" id="L308">        .glibc_runtimes_dir = parent.glibc_runtimes_dir,</span>
+<span class="line" id="L309">        .host = parent.host,</span>
+<span class="line" id="L310">        .dep_prefix = parent.fmt(<span class="tok-str">&quot;{s}{s}.&quot;</span>, .{ parent.dep_prefix, dep_name }),</span>
+<span class="line" id="L311">        .modules = std.StringArrayHashMap(*Module).init(allocator),</span>
+<span class="line" id="L312">    };</span>
+<span class="line" id="L313">    <span class="tok-kw">try</span> child.top_level_steps.append(&amp;child.install_tls);</span>
+<span class="line" id="L314">    <span class="tok-kw">try</span> child.top_level_steps.append(&amp;child.uninstall_tls);</span>
+<span class="line" id="L315">    child.default_step = &amp;child.install_tls.step;</span>
+<span class="line" id="L316">    <span class="tok-kw">return</span> child;</span>
+<span class="line" id="L317">}</span>
+<span class="line" id="L318"></span>
+<span class="line" id="L319"><span class="tok-kw">fn</span> <span class="tok-fn">applyArgs</span>(b: *Build, args: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L320">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(args)).Struct.fields) |field| {</span>
+<span class="line" id="L321">        <span class="tok-kw">const</span> v = <span class="tok-builtin">@field</span>(args, field.name);</span>
+<span class="line" id="L322">        <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(v);</span>
+<span class="line" id="L323">        <span class="tok-kw">switch</span> (T) {</span>
+<span class="line" id="L324">            CrossTarget =&gt; {</span>
+<span class="line" id="L325">                <span class="tok-kw">try</span> b.user_input_options.put(field.name, .{</span>
+<span class="line" id="L326">                    .name = field.name,</span>
+<span class="line" id="L327">                    .value = .{ .scalar = <span class="tok-kw">try</span> v.zigTriple(b.allocator) },</span>
+<span class="line" id="L328">                    .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L329">                });</span>
+<span class="line" id="L330">                <span class="tok-kw">try</span> b.user_input_options.put(<span class="tok-str">&quot;cpu&quot;</span>, .{</span>
+<span class="line" id="L331">                    .name = <span class="tok-str">&quot;cpu&quot;</span>,</span>
+<span class="line" id="L332">                    .value = .{ .scalar = <span class="tok-kw">try</span> serializeCpu(b.allocator, v.getCpu()) },</span>
+<span class="line" id="L333">                    .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L334">                });</span>
+<span class="line" id="L335">            },</span>
+<span class="line" id="L336">            []<span class="tok-kw">const</span> <span class="tok-type">u8</span> =&gt; {</span>
+<span class="line" id="L337">                <span class="tok-kw">try</span> b.user_input_options.put(field.name, .{</span>
+<span class="line" id="L338">                    .name = field.name,</span>
+<span class="line" id="L339">                    .value = .{ .scalar = v },</span>
+<span class="line" id="L340">                    .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L341">                });</span>
+<span class="line" id="L342">            },</span>
+<span class="line" id="L343">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L344">                .Bool =&gt; {</span>
+<span class="line" id="L345">                    <span class="tok-kw">try</span> b.user_input_options.put(field.name, .{</span>
+<span class="line" id="L346">                        .name = field.name,</span>
+<span class="line" id="L347">                        .value = .{ .scalar = <span class="tok-kw">if</span> (v) <span class="tok-str">&quot;true&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;false&quot;</span> },</span>
+<span class="line" id="L348">                        .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L349">                    });</span>
+<span class="line" id="L350">                },</span>
+<span class="line" id="L351">                .Enum =&gt; {</span>
+<span class="line" id="L352">                    <span class="tok-kw">try</span> b.user_input_options.put(field.name, .{</span>
+<span class="line" id="L353">                        .name = field.name,</span>
+<span class="line" id="L354">                        .value = .{ .scalar = <span class="tok-builtin">@tagName</span>(v) },</span>
+<span class="line" id="L355">                        .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L356">                    });</span>
+<span class="line" id="L357">                },</span>
+<span class="line" id="L358">                .Int =&gt; {</span>
+<span class="line" id="L359">                    <span class="tok-kw">try</span> b.user_input_options.put(field.name, .{</span>
+<span class="line" id="L360">                        .name = field.name,</span>
+<span class="line" id="L361">                        .value = .{ .scalar = <span class="tok-kw">try</span> std.fmt.allocPrint(b.allocator, <span class="tok-str">&quot;{d}&quot;</span>, .{v}) },</span>
+<span class="line" id="L362">                        .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L363">                    });</span>
+<span class="line" id="L364">                },</span>
+<span class="line" id="L365">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;option '&quot;</span> ++ field.name ++ <span class="tok-str">&quot;' has unsupported type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L366">            },</span>
+<span class="line" id="L367">        }</span>
+<span class="line" id="L368">    }</span>
+<span class="line" id="L369">    <span class="tok-kw">const</span> Hasher = std.crypto.auth.siphash.SipHash128(<span class="tok-number">1</span>, <span class="tok-number">3</span>);</span>
+<span class="line" id="L370">    <span class="tok-comment">// Random bytes to make unique. Refresh this with new random bytes when</span>
+</span>
+<span class="line" id="L371">    <span class="tok-comment">// implementation is modified in a non-backwards-compatible way.</span>
+</span>
+<span class="line" id="L372">    <span class="tok-kw">var</span> hash = Hasher.init(<span class="tok-str">&quot;ZaEsvQ5ClaA2IdH9&quot;</span>);</span>
+<span class="line" id="L373">    hash.update(b.dep_prefix);</span>
+<span class="line" id="L374">    <span class="tok-comment">// TODO additionally update the hash with `args`.</span>
+</span>
+<span class="line" id="L375"></span>
+<span class="line" id="L376">    <span class="tok-kw">var</span> digest: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L377">    hash.final(&amp;digest);</span>
+<span class="line" id="L378">    <span class="tok-kw">var</span> hash_basename: [digest.len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L379">    _ = std.fmt.bufPrint(&amp;hash_basename, <span class="tok-str">&quot;{s}&quot;</span>, .{std.fmt.fmtSliceHexLower(&amp;digest)}) <span class="tok-kw">catch</span></span>
+<span class="line" id="L380">        <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L381"></span>
+<span class="line" id="L382">    <span class="tok-kw">const</span> install_prefix = b.pathJoin(&amp;.{ b.cache_root, <span class="tok-str">&quot;i&quot;</span>, &amp;hash_basename });</span>
+<span class="line" id="L383">    b.resolveInstallPrefix(install_prefix, .{});</span>
+<span class="line" id="L384">}</span>
+<span class="line" id="L385"></span>
+<span class="line" id="L386"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">destroy</span>(self: *Build) <span class="tok-type">void</span> {</span>
+<span class="line" id="L387">    self.env_map.deinit();</span>
+<span class="line" id="L388">    self.top_level_steps.deinit();</span>
+<span class="line" id="L389">    self.allocator.destroy(self);</span>
+<span class="line" id="L390">}</span>
+<span class="line" id="L391"></span>
+<span class="line" id="L392"><span class="tok-comment">/// This function is intended to be called by lib/build_runner.zig, not a build.zig file.</span></span>
+<span class="line" id="L393"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">resolveInstallPrefix</span>(self: *Build, install_prefix: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, dir_list: DirList) <span class="tok-type">void</span> {</span>
+<span class="line" id="L394">    <span class="tok-kw">if</span> (self.dest_dir) |dest_dir| {</span>
+<span class="line" id="L395">        self.install_prefix = install_prefix <span class="tok-kw">orelse</span> <span class="tok-str">&quot;/usr&quot;</span>;</span>
+<span class="line" id="L396">        self.install_path = self.pathJoin(&amp;.{ dest_dir, self.install_prefix });</span>
+<span class="line" id="L397">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L398">        self.install_prefix = install_prefix <span class="tok-kw">orelse</span></span>
+<span class="line" id="L399">            (self.pathJoin(&amp;.{ self.build_root, <span class="tok-str">&quot;zig-out&quot;</span> }));</span>
+<span class="line" id="L400">        self.install_path = self.install_prefix;</span>
+<span class="line" id="L401">    }</span>
+<span class="line" id="L402"></span>
+<span class="line" id="L403">    <span class="tok-kw">var</span> lib_list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.install_path, <span class="tok-str">&quot;lib&quot;</span> };</span>
+<span class="line" id="L404">    <span class="tok-kw">var</span> exe_list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.install_path, <span class="tok-str">&quot;bin&quot;</span> };</span>
+<span class="line" id="L405">    <span class="tok-kw">var</span> h_list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.install_path, <span class="tok-str">&quot;include&quot;</span> };</span>
+<span class="line" id="L406"></span>
+<span class="line" id="L407">    <span class="tok-kw">if</span> (dir_list.lib_dir) |dir| {</span>
+<span class="line" id="L408">        <span class="tok-kw">if</span> (std.fs.path.isAbsolute(dir)) lib_list[<span class="tok-number">0</span>] = self.dest_dir <span class="tok-kw">orelse</span> <span class="tok-str">&quot;&quot;</span>;</span>
+<span class="line" id="L409">        lib_list[<span class="tok-number">1</span>] = dir;</span>
+<span class="line" id="L410">    }</span>
+<span class="line" id="L411"></span>
+<span class="line" id="L412">    <span class="tok-kw">if</span> (dir_list.exe_dir) |dir| {</span>
+<span class="line" id="L413">        <span class="tok-kw">if</span> (std.fs.path.isAbsolute(dir)) exe_list[<span class="tok-number">0</span>] = self.dest_dir <span class="tok-kw">orelse</span> <span class="tok-str">&quot;&quot;</span>;</span>
+<span class="line" id="L414">        exe_list[<span class="tok-number">1</span>] = dir;</span>
+<span class="line" id="L415">    }</span>
+<span class="line" id="L416"></span>
+<span class="line" id="L417">    <span class="tok-kw">if</span> (dir_list.include_dir) |dir| {</span>
+<span class="line" id="L418">        <span class="tok-kw">if</span> (std.fs.path.isAbsolute(dir)) h_list[<span class="tok-number">0</span>] = self.dest_dir <span class="tok-kw">orelse</span> <span class="tok-str">&quot;&quot;</span>;</span>
+<span class="line" id="L419">        h_list[<span class="tok-number">1</span>] = dir;</span>
+<span class="line" id="L420">    }</span>
+<span class="line" id="L421"></span>
+<span class="line" id="L422">    self.lib_dir = self.pathJoin(&amp;lib_list);</span>
+<span class="line" id="L423">    self.exe_dir = self.pathJoin(&amp;exe_list);</span>
+<span class="line" id="L424">    self.h_dir = self.pathJoin(&amp;h_list);</span>
+<span class="line" id="L425">}</span>
+<span class="line" id="L426"></span>
+<span class="line" id="L427"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addOptions</span>(self: *Build) *OptionsStep {</span>
+<span class="line" id="L428">    <span class="tok-kw">return</span> OptionsStep.create(self);</span>
+<span class="line" id="L429">}</span>
+<span class="line" id="L430"></span>
+<span class="line" id="L431"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ExecutableOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L432">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L433">    root_source_file: ?FileSource = <span class="tok-null">null</span>,</span>
+<span class="line" id="L434">    version: ?std.builtin.Version = <span class="tok-null">null</span>,</span>
+<span class="line" id="L435">    target: CrossTarget = .{},</span>
+<span class="line" id="L436">    optimize: std.builtin.Mode = .Debug,</span>
+<span class="line" id="L437">    linkage: ?CompileStep.Linkage = <span class="tok-null">null</span>,</span>
+<span class="line" id="L438">};</span>
+<span class="line" id="L439"></span>
+<span class="line" id="L440"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addExecutable</span>(b: *Build, options: ExecutableOptions) *CompileStep {</span>
+<span class="line" id="L441">    <span class="tok-kw">return</span> CompileStep.create(b, .{</span>
+<span class="line" id="L442">        .name = options.name,</span>
+<span class="line" id="L443">        .root_source_file = options.root_source_file,</span>
+<span class="line" id="L444">        .version = options.version,</span>
+<span class="line" id="L445">        .target = options.target,</span>
+<span class="line" id="L446">        .optimize = options.optimize,</span>
+<span class="line" id="L447">        .kind = .exe,</span>
+<span class="line" id="L448">        .linkage = options.linkage,</span>
+<span class="line" id="L449">    });</span>
+<span class="line" id="L450">}</span>
+<span class="line" id="L451"></span>
+<span class="line" id="L452"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ObjectOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L453">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L454">    root_source_file: ?FileSource = <span class="tok-null">null</span>,</span>
+<span class="line" id="L455">    target: CrossTarget,</span>
+<span class="line" id="L456">    optimize: std.builtin.Mode,</span>
+<span class="line" id="L457">};</span>
+<span class="line" id="L458"></span>
+<span class="line" id="L459"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addObject</span>(b: *Build, options: ObjectOptions) *CompileStep {</span>
+<span class="line" id="L460">    <span class="tok-kw">return</span> CompileStep.create(b, .{</span>
+<span class="line" id="L461">        .name = options.name,</span>
+<span class="line" id="L462">        .root_source_file = options.root_source_file,</span>
+<span class="line" id="L463">        .target = options.target,</span>
+<span class="line" id="L464">        .optimize = options.optimize,</span>
+<span class="line" id="L465">        .kind = .obj,</span>
+<span class="line" id="L466">    });</span>
+<span class="line" id="L467">}</span>
+<span class="line" id="L468"></span>
+<span class="line" id="L469"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SharedLibraryOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L470">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L471">    root_source_file: ?FileSource = <span class="tok-null">null</span>,</span>
+<span class="line" id="L472">    version: ?std.builtin.Version = <span class="tok-null">null</span>,</span>
+<span class="line" id="L473">    target: CrossTarget,</span>
+<span class="line" id="L474">    optimize: std.builtin.Mode,</span>
+<span class="line" id="L475">};</span>
+<span class="line" id="L476"></span>
+<span class="line" id="L477"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addSharedLibrary</span>(b: *Build, options: SharedLibraryOptions) *CompileStep {</span>
+<span class="line" id="L478">    <span class="tok-kw">return</span> CompileStep.create(b, .{</span>
+<span class="line" id="L479">        .name = options.name,</span>
+<span class="line" id="L480">        .root_source_file = options.root_source_file,</span>
+<span class="line" id="L481">        .kind = .lib,</span>
+<span class="line" id="L482">        .linkage = .dynamic,</span>
+<span class="line" id="L483">        .version = options.version,</span>
+<span class="line" id="L484">        .target = options.target,</span>
+<span class="line" id="L485">        .optimize = options.optimize,</span>
+<span class="line" id="L486">    });</span>
+<span class="line" id="L487">}</span>
+<span class="line" id="L488"></span>
+<span class="line" id="L489"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StaticLibraryOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L490">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L491">    root_source_file: ?FileSource = <span class="tok-null">null</span>,</span>
+<span class="line" id="L492">    target: CrossTarget,</span>
+<span class="line" id="L493">    optimize: std.builtin.Mode,</span>
+<span class="line" id="L494">    version: ?std.builtin.Version = <span class="tok-null">null</span>,</span>
+<span class="line" id="L495">};</span>
+<span class="line" id="L496"></span>
+<span class="line" id="L497"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addStaticLibrary</span>(b: *Build, options: StaticLibraryOptions) *CompileStep {</span>
+<span class="line" id="L498">    <span class="tok-kw">return</span> CompileStep.create(b, .{</span>
+<span class="line" id="L499">        .name = options.name,</span>
+<span class="line" id="L500">        .root_source_file = options.root_source_file,</span>
+<span class="line" id="L501">        .kind = .lib,</span>
+<span class="line" id="L502">        .linkage = .static,</span>
+<span class="line" id="L503">        .version = options.version,</span>
+<span class="line" id="L504">        .target = options.target,</span>
+<span class="line" id="L505">        .optimize = options.optimize,</span>
+<span class="line" id="L506">    });</span>
+<span class="line" id="L507">}</span>
+<span class="line" id="L508"></span>
+<span class="line" id="L509"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> TestOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L510">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;test&quot;</span>,</span>
+<span class="line" id="L511">    kind: CompileStep.Kind = .@&quot;test&quot;,</span>
+<span class="line" id="L512">    root_source_file: FileSource,</span>
+<span class="line" id="L513">    target: CrossTarget = .{},</span>
+<span class="line" id="L514">    optimize: std.builtin.Mode = .Debug,</span>
+<span class="line" id="L515">    version: ?std.builtin.Version = <span class="tok-null">null</span>,</span>
+<span class="line" id="L516">};</span>
+<span class="line" id="L517"></span>
+<span class="line" id="L518"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addTest</span>(b: *Build, options: TestOptions) *CompileStep {</span>
+<span class="line" id="L519">    <span class="tok-kw">return</span> CompileStep.create(b, .{</span>
+<span class="line" id="L520">        .name = options.name,</span>
+<span class="line" id="L521">        .kind = options.kind,</span>
+<span class="line" id="L522">        .root_source_file = options.root_source_file,</span>
+<span class="line" id="L523">        .target = options.target,</span>
+<span class="line" id="L524">        .optimize = options.optimize,</span>
+<span class="line" id="L525">    });</span>
+<span class="line" id="L526">}</span>
+<span class="line" id="L527"></span>
+<span class="line" id="L528"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> AssemblyOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L529">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L530">    source_file: FileSource,</span>
+<span class="line" id="L531">    target: CrossTarget,</span>
+<span class="line" id="L532">    optimize: std.builtin.Mode,</span>
+<span class="line" id="L533">};</span>
+<span class="line" id="L534"></span>
+<span class="line" id="L535"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addAssembly</span>(b: *Build, options: AssemblyOptions) *CompileStep {</span>
+<span class="line" id="L536">    <span class="tok-kw">const</span> obj_step = CompileStep.create(b, .{</span>
+<span class="line" id="L537">        .name = options.name,</span>
+<span class="line" id="L538">        .root_source_file = <span class="tok-null">null</span>,</span>
+<span class="line" id="L539">        .target = options.target,</span>
+<span class="line" id="L540">        .optimize = options.optimize,</span>
+<span class="line" id="L541">    });</span>
+<span class="line" id="L542">    obj_step.addAssemblyFileSource(options.source_file.dupe(b));</span>
+<span class="line" id="L543">    <span class="tok-kw">return</span> obj_step;</span>
+<span class="line" id="L544">}</span>
+<span class="line" id="L545"></span>
+<span class="line" id="L546"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> AddModuleOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L547">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L548">    source_file: FileSource,</span>
+<span class="line" id="L549">    dependencies: []<span class="tok-kw">const</span> ModuleDependency = &amp;.{},</span>
+<span class="line" id="L550">};</span>
+<span class="line" id="L551"></span>
+<span class="line" id="L552"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addModule</span>(b: *Build, options: AddModuleOptions) <span class="tok-type">void</span> {</span>
+<span class="line" id="L553">    b.modules.put(b.dupe(options.name), b.createModule(.{</span>
+<span class="line" id="L554">        .source_file = options.source_file,</span>
+<span class="line" id="L555">        .dependencies = options.dependencies,</span>
+<span class="line" id="L556">    })) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L557">}</span>
+<span class="line" id="L558"></span>
+<span class="line" id="L559"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ModuleDependency = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L560">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L561">    module: *Module,</span>
+<span class="line" id="L562">};</span>
+<span class="line" id="L563"></span>
+<span class="line" id="L564"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CreateModuleOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L565">    source_file: FileSource,</span>
+<span class="line" id="L566">    dependencies: []<span class="tok-kw">const</span> ModuleDependency = &amp;.{},</span>
+<span class="line" id="L567">};</span>
+<span class="line" id="L568"></span>
+<span class="line" id="L569"><span class="tok-comment">/// Prefer to use `addModule` which will make the module available to other</span></span>
+<span class="line" id="L570"><span class="tok-comment">/// packages which depend on this package.</span></span>
+<span class="line" id="L571"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createModule</span>(b: *Build, options: CreateModuleOptions) *Module {</span>
+<span class="line" id="L572">    <span class="tok-kw">const</span> module = b.allocator.create(Module) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L573">    module.* = .{</span>
+<span class="line" id="L574">        .builder = b,</span>
+<span class="line" id="L575">        .source_file = options.source_file,</span>
+<span class="line" id="L576">        .dependencies = moduleDependenciesToArrayHashMap(b.allocator, options.dependencies),</span>
+<span class="line" id="L577">    };</span>
+<span class="line" id="L578">    <span class="tok-kw">return</span> module;</span>
+<span class="line" id="L579">}</span>
+<span class="line" id="L580"></span>
+<span class="line" id="L581"><span class="tok-kw">fn</span> <span class="tok-fn">moduleDependenciesToArrayHashMap</span>(arena: Allocator, deps: []<span class="tok-kw">const</span> ModuleDependency) std.StringArrayHashMap(*Module) {</span>
+<span class="line" id="L582">    <span class="tok-kw">var</span> result = std.StringArrayHashMap(*Module).init(arena);</span>
+<span class="line" id="L583">    <span class="tok-kw">for</span> (deps) |dep| {</span>
+<span class="line" id="L584">        result.put(dep.name, dep.module) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L585">    }</span>
+<span class="line" id="L586">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L587">}</span>
+<span class="line" id="L588"></span>
+<span class="line" id="L589"><span class="tok-comment">/// Initializes a RunStep with argv, which must at least have the path to the</span></span>
+<span class="line" id="L590"><span class="tok-comment">/// executable. More command line arguments can be added with `addArg`,</span></span>
+<span class="line" id="L591"><span class="tok-comment">/// `addArgs`, and `addArtifactArg`.</span></span>
+<span class="line" id="L592"><span class="tok-comment">/// Be careful using this function, as it introduces a system dependency.</span></span>
+<span class="line" id="L593"><span class="tok-comment">/// To run an executable built with zig build, see `CompileStep.run`.</span></span>
+<span class="line" id="L594"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addSystemCommand</span>(self: *Build, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *RunStep {</span>
+<span class="line" id="L595">    assert(argv.len &gt;= <span class="tok-number">1</span>);</span>
+<span class="line" id="L596">    <span class="tok-kw">const</span> run_step = RunStep.create(self, self.fmt(<span class="tok-str">&quot;run {s}&quot;</span>, .{argv[<span class="tok-number">0</span>]}));</span>
+<span class="line" id="L597">    run_step.addArgs(argv);</span>
+<span class="line" id="L598">    <span class="tok-kw">return</span> run_step;</span>
+<span class="line" id="L599">}</span>
+<span class="line" id="L600"></span>
+<span class="line" id="L601"><span class="tok-comment">/// Using the `values` provided, produces a C header file, possibly based on a</span></span>
+<span class="line" id="L602"><span class="tok-comment">/// template input file (e.g. config.h.in).</span></span>
+<span class="line" id="L603"><span class="tok-comment">/// When an input template file is provided, this function will fail the build</span></span>
+<span class="line" id="L604"><span class="tok-comment">/// when an option not found in the input file is provided in `values`, and</span></span>
+<span class="line" id="L605"><span class="tok-comment">/// when an option found in the input file is missing from `values`.</span></span>
+<span class="line" id="L606"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addConfigHeader</span>(</span>
+<span class="line" id="L607">    b: *Build,</span>
+<span class="line" id="L608">    options: ConfigHeaderStep.Options,</span>
+<span class="line" id="L609">    values: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L610">) *ConfigHeaderStep {</span>
+<span class="line" id="L611">    <span class="tok-kw">const</span> config_header_step = ConfigHeaderStep.create(b, options);</span>
+<span class="line" id="L612">    config_header_step.addValues(values);</span>
+<span class="line" id="L613">    <span class="tok-kw">return</span> config_header_step;</span>
+<span class="line" id="L614">}</span>
+<span class="line" id="L615"></span>
+<span class="line" id="L616"><span class="tok-comment">/// Allocator.dupe without the need to handle out of memory.</span></span>
+<span class="line" id="L617"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dupe</span>(self: *Build, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L618">    <span class="tok-kw">return</span> self.allocator.dupe(<span class="tok-type">u8</span>, bytes) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L619">}</span>
+<span class="line" id="L620"></span>
+<span class="line" id="L621"><span class="tok-comment">/// Duplicates an array of strings without the need to handle out of memory.</span></span>
+<span class="line" id="L622"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dupeStrings</span>(self: *Build, strings: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) [][]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L623">    <span class="tok-kw">const</span> array = self.allocator.alloc([]<span class="tok-type">u8</span>, strings.len) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L624">    <span class="tok-kw">for</span> (strings) |s, i| {</span>
+<span class="line" id="L625">        array[i] = self.dupe(s);</span>
+<span class="line" id="L626">    }</span>
+<span class="line" id="L627">    <span class="tok-kw">return</span> array;</span>
+<span class="line" id="L628">}</span>
+<span class="line" id="L629"></span>
+<span class="line" id="L630"><span class="tok-comment">/// Duplicates a path and converts all slashes to the OS's canonical path separator.</span></span>
+<span class="line" id="L631"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dupePath</span>(self: *Build, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L632">    <span class="tok-kw">const</span> the_copy = self.dupe(bytes);</span>
+<span class="line" id="L633">    <span class="tok-kw">for</span> (the_copy) |*byte| {</span>
+<span class="line" id="L634">        <span class="tok-kw">switch</span> (byte.*) {</span>
+<span class="line" id="L635">            <span class="tok-str">'/'</span>, <span class="tok-str">'\\'</span> =&gt; byte.* = fs.path.sep,</span>
+<span class="line" id="L636">            <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L637">        }</span>
+<span class="line" id="L638">    }</span>
+<span class="line" id="L639">    <span class="tok-kw">return</span> the_copy;</span>
+<span class="line" id="L640">}</span>
+<span class="line" id="L641"></span>
+<span class="line" id="L642"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addWriteFile</span>(self: *Build, file_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *WriteFileStep {</span>
+<span class="line" id="L643">    <span class="tok-kw">const</span> write_file_step = self.addWriteFiles();</span>
+<span class="line" id="L644">    write_file_step.add(file_path, data);</span>
+<span class="line" id="L645">    <span class="tok-kw">return</span> write_file_step;</span>
+<span class="line" id="L646">}</span>
+<span class="line" id="L647"></span>
+<span class="line" id="L648"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addWriteFiles</span>(self: *Build) *WriteFileStep {</span>
+<span class="line" id="L649">    <span class="tok-kw">const</span> write_file_step = self.allocator.create(WriteFileStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L650">    write_file_step.* = WriteFileStep.init(self);</span>
+<span class="line" id="L651">    <span class="tok-kw">return</span> write_file_step;</span>
+<span class="line" id="L652">}</span>
+<span class="line" id="L653"></span>
+<span class="line" id="L654"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addLog</span>(self: *Build, <span class="tok-kw">comptime</span> format: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args: <span class="tok-kw">anytype</span>) *LogStep {</span>
+<span class="line" id="L655">    <span class="tok-kw">const</span> data = self.fmt(format, args);</span>
+<span class="line" id="L656">    <span class="tok-kw">const</span> log_step = self.allocator.create(LogStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L657">    log_step.* = LogStep.init(self, data);</span>
+<span class="line" id="L658">    <span class="tok-kw">return</span> log_step;</span>
+<span class="line" id="L659">}</span>
+<span class="line" id="L660"></span>
+<span class="line" id="L661"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addRemoveDirTree</span>(self: *Build, dir_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *RemoveDirStep {</span>
+<span class="line" id="L662">    <span class="tok-kw">const</span> remove_dir_step = self.allocator.create(RemoveDirStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L663">    remove_dir_step.* = RemoveDirStep.init(self, dir_path);</span>
+<span class="line" id="L664">    <span class="tok-kw">return</span> remove_dir_step;</span>
+<span class="line" id="L665">}</span>
+<span class="line" id="L666"></span>
+<span class="line" id="L667"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addFmt</span>(self: *Build, paths: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *FmtStep {</span>
+<span class="line" id="L668">    <span class="tok-kw">return</span> FmtStep.create(self, paths);</span>
+<span class="line" id="L669">}</span>
+<span class="line" id="L670"></span>
+<span class="line" id="L671"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addTranslateC</span>(self: *Build, options: TranslateCStep.Options) *TranslateCStep {</span>
+<span class="line" id="L672">    <span class="tok-kw">return</span> TranslateCStep.create(self, options);</span>
+<span class="line" id="L673">}</span>
+<span class="line" id="L674"></span>
+<span class="line" id="L675"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">make</span>(self: *Build, step_names: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L676">    <span class="tok-kw">try</span> self.makePath(self.cache_root);</span>
+<span class="line" id="L677"></span>
+<span class="line" id="L678">    <span class="tok-kw">var</span> wanted_steps = ArrayList(*Step).init(self.allocator);</span>
+<span class="line" id="L679">    <span class="tok-kw">defer</span> wanted_steps.deinit();</span>
+<span class="line" id="L680"></span>
+<span class="line" id="L681">    <span class="tok-kw">if</span> (step_names.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L682">        <span class="tok-kw">try</span> wanted_steps.append(self.default_step);</span>
+<span class="line" id="L683">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L684">        <span class="tok-kw">for</span> (step_names) |step_name| {</span>
+<span class="line" id="L685">            <span class="tok-kw">const</span> s = <span class="tok-kw">try</span> self.getTopLevelStepByName(step_name);</span>
+<span class="line" id="L686">            <span class="tok-kw">try</span> wanted_steps.append(s);</span>
+<span class="line" id="L687">        }</span>
+<span class="line" id="L688">    }</span>
+<span class="line" id="L689"></span>
+<span class="line" id="L690">    <span class="tok-kw">for</span> (wanted_steps.items) |s| {</span>
+<span class="line" id="L691">        <span class="tok-kw">try</span> self.makeOneStep(s);</span>
+<span class="line" id="L692">    }</span>
+<span class="line" id="L693">}</span>
+<span class="line" id="L694"></span>
+<span class="line" id="L695"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getInstallStep</span>(self: *Build) *Step {</span>
+<span class="line" id="L696">    <span class="tok-kw">return</span> &amp;self.install_tls.step;</span>
+<span class="line" id="L697">}</span>
+<span class="line" id="L698"></span>
+<span class="line" id="L699"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getUninstallStep</span>(self: *Build) *Step {</span>
+<span class="line" id="L700">    <span class="tok-kw">return</span> &amp;self.uninstall_tls.step;</span>
+<span class="line" id="L701">}</span>
+<span class="line" id="L702"></span>
+<span class="line" id="L703"><span class="tok-kw">fn</span> <span class="tok-fn">makeUninstall</span>(uninstall_step: *Step) <span class="tok-type">anyerror</span>!<span class="tok-type">void</span> {</span>
+<span class="line" id="L704">    <span class="tok-kw">const</span> uninstall_tls = <span class="tok-builtin">@fieldParentPtr</span>(TopLevelStep, <span class="tok-str">&quot;step&quot;</span>, uninstall_step);</span>
+<span class="line" id="L705">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(Build, <span class="tok-str">&quot;uninstall_tls&quot;</span>, uninstall_tls);</span>
+<span class="line" id="L706"></span>
+<span class="line" id="L707">    <span class="tok-kw">for</span> (self.installed_files.items) |installed_file| {</span>
+<span class="line" id="L708">        <span class="tok-kw">const</span> full_path = self.getInstallPath(installed_file.dir, installed_file.path);</span>
+<span class="line" id="L709">        <span class="tok-kw">if</span> (self.verbose) {</span>
+<span class="line" id="L710">            log.info(<span class="tok-str">&quot;rm {s}&quot;</span>, .{full_path});</span>
+<span class="line" id="L711">        }</span>
+<span class="line" id="L712">        fs.cwd().deleteTree(full_path) <span class="tok-kw">catch</span> {};</span>
+<span class="line" id="L713">    }</span>
+<span class="line" id="L714"></span>
+<span class="line" id="L715">    <span class="tok-comment">// TODO remove empty directories</span>
+</span>
+<span class="line" id="L716">}</span>
+<span class="line" id="L717"></span>
+<span class="line" id="L718"><span class="tok-kw">fn</span> <span class="tok-fn">makeOneStep</span>(self: *Build, s: *Step) <span class="tok-type">anyerror</span>!<span class="tok-type">void</span> {</span>
+<span class="line" id="L719">    <span class="tok-kw">if</span> (s.loop_flag) {</span>
+<span class="line" id="L720">        log.err(<span class="tok-str">&quot;Dependency loop detected:\n  {s}&quot;</span>, .{s.name});</span>
+<span class="line" id="L721">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.DependencyLoopDetected;</span>
+<span class="line" id="L722">    }</span>
+<span class="line" id="L723">    s.loop_flag = <span class="tok-null">true</span>;</span>
+<span class="line" id="L724"></span>
+<span class="line" id="L725">    <span class="tok-kw">for</span> (s.dependencies.items) |dep| {</span>
+<span class="line" id="L726">        self.makeOneStep(dep) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L727">            <span class="tok-kw">if</span> (err == <span class="tok-kw">error</span>.DependencyLoopDetected) {</span>
+<span class="line" id="L728">                log.err(<span class="tok-str">&quot;  {s}&quot;</span>, .{s.name});</span>
+<span class="line" id="L729">            }</span>
+<span class="line" id="L730">            <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L731">        };</span>
+<span class="line" id="L732">    }</span>
+<span class="line" id="L733"></span>
+<span class="line" id="L734">    s.loop_flag = <span class="tok-null">false</span>;</span>
+<span class="line" id="L735"></span>
+<span class="line" id="L736">    <span class="tok-kw">try</span> s.make();</span>
+<span class="line" id="L737">}</span>
+<span class="line" id="L738"></span>
+<span class="line" id="L739"><span class="tok-kw">fn</span> <span class="tok-fn">getTopLevelStepByName</span>(self: *Build, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !*Step {</span>
+<span class="line" id="L740">    <span class="tok-kw">for</span> (self.top_level_steps.items) |top_level_step| {</span>
+<span class="line" id="L741">        <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, top_level_step.step.name, name)) {</span>
+<span class="line" id="L742">            <span class="tok-kw">return</span> &amp;top_level_step.step;</span>
+<span class="line" id="L743">        }</span>
+<span class="line" id="L744">    }</span>
+<span class="line" id="L745">    log.err(<span class="tok-str">&quot;Cannot run step '{s}' because it does not exist&quot;</span>, .{name});</span>
+<span class="line" id="L746">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidStepName;</span>
+<span class="line" id="L747">}</span>
+<span class="line" id="L748"></span>
+<span class="line" id="L749"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">option</span>(self: *Build, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, name_raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, description_raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?T {</span>
+<span class="line" id="L750">    <span class="tok-kw">const</span> name = self.dupe(name_raw);</span>
+<span class="line" id="L751">    <span class="tok-kw">const</span> description = self.dupe(description_raw);</span>
+<span class="line" id="L752">    <span class="tok-kw">const</span> type_id = <span class="tok-kw">comptime</span> typeToEnum(T);</span>
+<span class="line" id="L753">    <span class="tok-kw">const</span> enum_options = <span class="tok-kw">if</span> (type_id == .@&quot;enum&quot;) blk: {</span>
+<span class="line" id="L754">        <span class="tok-kw">const</span> fields = <span class="tok-kw">comptime</span> std.meta.fields(T);</span>
+<span class="line" id="L755">        <span class="tok-kw">var</span> options = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).initCapacity(self.allocator, fields.len) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L756"></span>
+<span class="line" id="L757">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
+<span class="line" id="L758">            options.appendAssumeCapacity(field.name);</span>
+<span class="line" id="L759">        }</span>
+<span class="line" id="L760"></span>
+<span class="line" id="L761">        <span class="tok-kw">break</span> :blk options.toOwnedSlice() <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L762">    } <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L763">    <span class="tok-kw">const</span> available_option = AvailableOption{</span>
+<span class="line" id="L764">        .name = name,</span>
+<span class="line" id="L765">        .type_id = type_id,</span>
+<span class="line" id="L766">        .description = description,</span>
+<span class="line" id="L767">        .enum_options = enum_options,</span>
+<span class="line" id="L768">    };</span>
+<span class="line" id="L769">    <span class="tok-kw">if</span> ((self.available_options_map.fetchPut(name, available_option) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>)) != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L770">        panic(<span class="tok-str">&quot;Option '{s}' declared twice&quot;</span>, .{name});</span>
+<span class="line" id="L771">    }</span>
+<span class="line" id="L772">    self.available_options_list.append(available_option) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L773"></span>
+<span class="line" id="L774">    <span class="tok-kw">const</span> option_ptr = self.user_input_options.getPtr(name) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L775">    option_ptr.used = <span class="tok-null">true</span>;</span>
+<span class="line" id="L776">    <span class="tok-kw">switch</span> (type_id) {</span>
+<span class="line" id="L777">        .<span class="tok-type">bool</span> =&gt; <span class="tok-kw">switch</span> (option_ptr.value) {</span>
+<span class="line" id="L778">            .flag =&gt; <span class="tok-kw">return</span> <span class="tok-null">true</span>,</span>
+<span class="line" id="L779">            .scalar =&gt; |s| {</span>
+<span class="line" id="L780">                <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, s, <span class="tok-str">&quot;true&quot;</span>)) {</span>
+<span class="line" id="L781">                    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L782">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, s, <span class="tok-str">&quot;false&quot;</span>)) {</span>
+<span class="line" id="L783">                    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L784">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L785">                    log.err(<span class="tok-str">&quot;Expected -D{s} to be a boolean, but received '{s}'\n&quot;</span>, .{ name, s });</span>
+<span class="line" id="L786">                    self.markInvalidUserInput();</span>
+<span class="line" id="L787">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L788">                }</span>
+<span class="line" id="L789">            },</span>
+<span class="line" id="L790">            .list, .map =&gt; {</span>
+<span class="line" id="L791">                log.err(<span class="tok-str">&quot;Expected -D{s} to be a boolean, but received a {s}.\n&quot;</span>, .{</span>
+<span class="line" id="L792">                    name, <span class="tok-builtin">@tagName</span>(option_ptr.value),</span>
+<span class="line" id="L793">                });</span>
+<span class="line" id="L794">                self.markInvalidUserInput();</span>
+<span class="line" id="L795">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L796">            },</span>
+<span class="line" id="L797">        },</span>
+<span class="line" id="L798">        .int =&gt; <span class="tok-kw">switch</span> (option_ptr.value) {</span>
+<span class="line" id="L799">            .flag, .list, .map =&gt; {</span>
+<span class="line" id="L800">                log.err(<span class="tok-str">&quot;Expected -D{s} to be an integer, but received a {s}.\n&quot;</span>, .{</span>
+<span class="line" id="L801">                    name, <span class="tok-builtin">@tagName</span>(option_ptr.value),</span>
+<span class="line" id="L802">                });</span>
+<span class="line" id="L803">                self.markInvalidUserInput();</span>
+<span class="line" id="L804">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L805">            },</span>
+<span class="line" id="L806">            .scalar =&gt; |s| {</span>
+<span class="line" id="L807">                <span class="tok-kw">const</span> n = std.fmt.parseInt(T, s, <span class="tok-number">10</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L808">                    <span class="tok-kw">error</span>.Overflow =&gt; {</span>
+<span class="line" id="L809">                        log.err(<span class="tok-str">&quot;-D{s} value {s} cannot fit into type {s}.\n&quot;</span>, .{ name, s, <span class="tok-builtin">@typeName</span>(T) });</span>
+<span class="line" id="L810">                        self.markInvalidUserInput();</span>
+<span class="line" id="L811">                        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L812">                    },</span>
+<span class="line" id="L813">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L814">                        log.err(<span class="tok-str">&quot;Expected -D{s} to be an integer of type {s}.\n&quot;</span>, .{ name, <span class="tok-builtin">@typeName</span>(T) });</span>
+<span class="line" id="L815">                        self.markInvalidUserInput();</span>
+<span class="line" id="L816">                        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L817">                    },</span>
+<span class="line" id="L818">                };</span>
+<span class="line" id="L819">                <span class="tok-kw">return</span> n;</span>
+<span class="line" id="L820">            },</span>
+<span class="line" id="L821">        },</span>
+<span class="line" id="L822">        .float =&gt; <span class="tok-kw">switch</span> (option_ptr.value) {</span>
+<span class="line" id="L823">            .flag, .map, .list =&gt; {</span>
+<span class="line" id="L824">                log.err(<span class="tok-str">&quot;Expected -D{s} to be a float, but received a {s}.\n&quot;</span>, .{</span>
+<span class="line" id="L825">                    name, <span class="tok-builtin">@tagName</span>(option_ptr.value),</span>
+<span class="line" id="L826">                });</span>
+<span class="line" id="L827">                self.markInvalidUserInput();</span>
+<span class="line" id="L828">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L829">            },</span>
+<span class="line" id="L830">            .scalar =&gt; |s| {</span>
+<span class="line" id="L831">                <span class="tok-kw">const</span> n = std.fmt.parseFloat(T, s) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L832">                    log.err(<span class="tok-str">&quot;Expected -D{s} to be a float of type {s}.\n&quot;</span>, .{ name, <span class="tok-builtin">@typeName</span>(T) });</span>
+<span class="line" id="L833">                    self.markInvalidUserInput();</span>
+<span class="line" id="L834">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L835">                };</span>
+<span class="line" id="L836">                <span class="tok-kw">return</span> n;</span>
+<span class="line" id="L837">            },</span>
+<span class="line" id="L838">        },</span>
+<span class="line" id="L839">        .@&quot;enum&quot; =&gt; <span class="tok-kw">switch</span> (option_ptr.value) {</span>
+<span class="line" id="L840">            .flag, .map, .list =&gt; {</span>
+<span class="line" id="L841">                log.err(<span class="tok-str">&quot;Expected -D{s} to be an enum, but received a {s}.\n&quot;</span>, .{</span>
+<span class="line" id="L842">                    name, <span class="tok-builtin">@tagName</span>(option_ptr.value),</span>
+<span class="line" id="L843">                });</span>
+<span class="line" id="L844">                self.markInvalidUserInput();</span>
+<span class="line" id="L845">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L846">            },</span>
+<span class="line" id="L847">            .scalar =&gt; |s| {</span>
+<span class="line" id="L848">                <span class="tok-kw">if</span> (std.meta.stringToEnum(T, s)) |enum_lit| {</span>
+<span class="line" id="L849">                    <span class="tok-kw">return</span> enum_lit;</span>
+<span class="line" id="L850">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L851">                    log.err(<span class="tok-str">&quot;Expected -D{s} to be of type {s}.\n&quot;</span>, .{ name, <span class="tok-builtin">@typeName</span>(T) });</span>
+<span class="line" id="L852">                    self.markInvalidUserInput();</span>
+<span class="line" id="L853">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L854">                }</span>
+<span class="line" id="L855">            },</span>
+<span class="line" id="L856">        },</span>
+<span class="line" id="L857">        .string =&gt; <span class="tok-kw">switch</span> (option_ptr.value) {</span>
+<span class="line" id="L858">            .flag, .list, .map =&gt; {</span>
+<span class="line" id="L859">                log.err(<span class="tok-str">&quot;Expected -D{s} to be a string, but received a {s}.\n&quot;</span>, .{</span>
+<span class="line" id="L860">                    name, <span class="tok-builtin">@tagName</span>(option_ptr.value),</span>
+<span class="line" id="L861">                });</span>
+<span class="line" id="L862">                self.markInvalidUserInput();</span>
+<span class="line" id="L863">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L864">            },</span>
+<span class="line" id="L865">            .scalar =&gt; |s| <span class="tok-kw">return</span> s,</span>
+<span class="line" id="L866">        },</span>
+<span class="line" id="L867">        .list =&gt; <span class="tok-kw">switch</span> (option_ptr.value) {</span>
+<span class="line" id="L868">            .flag, .map =&gt; {</span>
+<span class="line" id="L869">                log.err(<span class="tok-str">&quot;Expected -D{s} to be a list, but received a {s}.\n&quot;</span>, .{</span>
+<span class="line" id="L870">                    name, <span class="tok-builtin">@tagName</span>(option_ptr.value),</span>
+<span class="line" id="L871">                });</span>
+<span class="line" id="L872">                self.markInvalidUserInput();</span>
+<span class="line" id="L873">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L874">            },</span>
+<span class="line" id="L875">            .scalar =&gt; |s| {</span>
+<span class="line" id="L876">                <span class="tok-kw">return</span> self.allocator.dupe([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{s}) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L877">            },</span>
+<span class="line" id="L878">            .list =&gt; |lst| <span class="tok-kw">return</span> lst.items,</span>
+<span class="line" id="L879">        },</span>
+<span class="line" id="L880">    }</span>
+<span class="line" id="L881">}</span>
+<span class="line" id="L882"></span>
+<span class="line" id="L883"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">step</span>(self: *Build, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, description: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *Step {</span>
+<span class="line" id="L884">    <span class="tok-kw">const</span> step_info = self.allocator.create(TopLevelStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L885">    step_info.* = TopLevelStep{</span>
+<span class="line" id="L886">        .step = Step.initNoOp(.top_level, name, self.allocator),</span>
+<span class="line" id="L887">        .description = self.dupe(description),</span>
+<span class="line" id="L888">    };</span>
+<span class="line" id="L889">    self.top_level_steps.append(step_info) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L890">    <span class="tok-kw">return</span> &amp;step_info.step;</span>
+<span class="line" id="L891">}</span>
+<span class="line" id="L892"></span>
+<span class="line" id="L893"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StandardOptimizeOptionOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L894">    preferred_optimize_mode: ?std.builtin.Mode = <span class="tok-null">null</span>,</span>
+<span class="line" id="L895">};</span>
+<span class="line" id="L896"></span>
+<span class="line" id="L897"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">standardOptimizeOption</span>(self: *Build, options: StandardOptimizeOptionOptions) std.builtin.Mode {</span>
+<span class="line" id="L898">    <span class="tok-kw">if</span> (options.preferred_optimize_mode) |mode| {</span>
+<span class="line" id="L899">        <span class="tok-kw">if</span> (self.option(<span class="tok-type">bool</span>, <span class="tok-str">&quot;release&quot;</span>, <span class="tok-str">&quot;optimize for end users&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-null">false</span>) {</span>
+<span class="line" id="L900">            <span class="tok-kw">return</span> mode;</span>
+<span class="line" id="L901">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L902">            <span class="tok-kw">return</span> .Debug;</span>
+<span class="line" id="L903">        }</span>
+<span class="line" id="L904">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L905">        <span class="tok-kw">return</span> self.option(</span>
+<span class="line" id="L906">            std.builtin.Mode,</span>
+<span class="line" id="L907">            <span class="tok-str">&quot;optimize&quot;</span>,</span>
+<span class="line" id="L908">            <span class="tok-str">&quot;prioritize performance, safety, or binary size (-O flag)&quot;</span>,</span>
+<span class="line" id="L909">        ) <span class="tok-kw">orelse</span> .Debug;</span>
+<span class="line" id="L910">    }</span>
+<span class="line" id="L911">}</span>
+<span class="line" id="L912"></span>
+<span class="line" id="L913"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StandardTargetOptionsArgs = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L914">    whitelist: ?[]<span class="tok-kw">const</span> CrossTarget = <span class="tok-null">null</span>,</span>
+<span class="line" id="L915"></span>
+<span class="line" id="L916">    default_target: CrossTarget = CrossTarget{},</span>
+<span class="line" id="L917">};</span>
+<span class="line" id="L918"></span>
+<span class="line" id="L919"><span class="tok-comment">/// Exposes standard `zig build` options for choosing a target.</span></span>
+<span class="line" id="L920"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">standardTargetOptions</span>(self: *Build, args: StandardTargetOptionsArgs) CrossTarget {</span>
+<span class="line" id="L921">    <span class="tok-kw">const</span> maybe_triple = self.option(</span>
+<span class="line" id="L922">        []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L923">        <span class="tok-str">&quot;target&quot;</span>,</span>
+<span class="line" id="L924">        <span class="tok-str">&quot;The CPU architecture, OS, and ABI to build for&quot;</span>,</span>
+<span class="line" id="L925">    );</span>
+<span class="line" id="L926">    <span class="tok-kw">const</span> mcpu = self.option([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-str">&quot;cpu&quot;</span>, <span class="tok-str">&quot;Target CPU features to add or subtract&quot;</span>);</span>
+<span class="line" id="L927"></span>
+<span class="line" id="L928">    <span class="tok-kw">if</span> (maybe_triple == <span class="tok-null">null</span> <span class="tok-kw">and</span> mcpu == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L929">        <span class="tok-kw">return</span> args.default_target;</span>
+<span class="line" id="L930">    }</span>
+<span class="line" id="L931"></span>
+<span class="line" id="L932">    <span class="tok-kw">const</span> triple = maybe_triple <span class="tok-kw">orelse</span> <span class="tok-str">&quot;native&quot;</span>;</span>
+<span class="line" id="L933"></span>
+<span class="line" id="L934">    <span class="tok-kw">var</span> diags: CrossTarget.ParseOptions.Diagnostics = .{};</span>
+<span class="line" id="L935">    <span class="tok-kw">const</span> selected_target = CrossTarget.parse(.{</span>
+<span class="line" id="L936">        .arch_os_abi = triple,</span>
+<span class="line" id="L937">        .cpu_features = mcpu,</span>
+<span class="line" id="L938">        .diagnostics = &amp;diags,</span>
+<span class="line" id="L939">    }) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L940">        <span class="tok-kw">error</span>.UnknownCpuModel =&gt; {</span>
+<span class="line" id="L941">            log.err(<span class="tok-str">&quot;Unknown CPU: '{s}'\nAvailable CPUs for architecture '{s}':&quot;</span>, .{</span>
+<span class="line" id="L942">                diags.cpu_name.?,</span>
+<span class="line" id="L943">                <span class="tok-builtin">@tagName</span>(diags.arch.?),</span>
+<span class="line" id="L944">            });</span>
+<span class="line" id="L945">            <span class="tok-kw">for</span> (diags.arch.?.allCpuModels()) |cpu| {</span>
+<span class="line" id="L946">                log.err(<span class="tok-str">&quot; {s}&quot;</span>, .{cpu.name});</span>
+<span class="line" id="L947">            }</span>
+<span class="line" id="L948">            self.markInvalidUserInput();</span>
+<span class="line" id="L949">            <span class="tok-kw">return</span> args.default_target;</span>
+<span class="line" id="L950">        },</span>
+<span class="line" id="L951">        <span class="tok-kw">error</span>.UnknownCpuFeature =&gt; {</span>
+<span class="line" id="L952">            log.err(</span>
+<span class="line" id="L953">                <span class="tok-str">\\Unknown CPU feature: '{s}'</span></span>
+
+<span class="line" id="L954">                <span class="tok-str">\\Available CPU features for architecture '{s}':</span></span>
+
+<span class="line" id="L955">                <span class="tok-str">\\</span></span>
+
+<span class="line" id="L956">            , .{</span>
+<span class="line" id="L957">                diags.unknown_feature_name.?,</span>
+<span class="line" id="L958">                <span class="tok-builtin">@tagName</span>(diags.arch.?),</span>
+<span class="line" id="L959">            });</span>
+<span class="line" id="L960">            <span class="tok-kw">for</span> (diags.arch.?.allFeaturesList()) |feature| {</span>
+<span class="line" id="L961">                log.err(<span class="tok-str">&quot; {s}: {s}&quot;</span>, .{ feature.name, feature.description });</span>
+<span class="line" id="L962">            }</span>
+<span class="line" id="L963">            self.markInvalidUserInput();</span>
+<span class="line" id="L964">            <span class="tok-kw">return</span> args.default_target;</span>
+<span class="line" id="L965">        },</span>
+<span class="line" id="L966">        <span class="tok-kw">error</span>.UnknownOperatingSystem =&gt; {</span>
+<span class="line" id="L967">            log.err(</span>
+<span class="line" id="L968">                <span class="tok-str">\\Unknown OS: '{s}'</span></span>
+
+<span class="line" id="L969">                <span class="tok-str">\\Available operating systems:</span></span>
+
+<span class="line" id="L970">                <span class="tok-str">\\</span></span>
+
+<span class="line" id="L971">            , .{diags.os_name.?});</span>
+<span class="line" id="L972">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (std.meta.fields(std.Target.Os.Tag)) |field| {</span>
+<span class="line" id="L973">                log.err(<span class="tok-str">&quot; {s}&quot;</span>, .{field.name});</span>
+<span class="line" id="L974">            }</span>
+<span class="line" id="L975">            self.markInvalidUserInput();</span>
+<span class="line" id="L976">            <span class="tok-kw">return</span> args.default_target;</span>
+<span class="line" id="L977">        },</span>
+<span class="line" id="L978">        <span class="tok-kw">else</span> =&gt; |e| {</span>
+<span class="line" id="L979">            log.err(<span class="tok-str">&quot;Unable to parse target '{s}': {s}\n&quot;</span>, .{ triple, <span class="tok-builtin">@errorName</span>(e) });</span>
+<span class="line" id="L980">            self.markInvalidUserInput();</span>
+<span class="line" id="L981">            <span class="tok-kw">return</span> args.default_target;</span>
+<span class="line" id="L982">        },</span>
+<span class="line" id="L983">    };</span>
+<span class="line" id="L984"></span>
+<span class="line" id="L985">    <span class="tok-kw">const</span> selected_canonicalized_triple = selected_target.zigTriple(self.allocator) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L986"></span>
+<span class="line" id="L987">    <span class="tok-kw">if</span> (args.whitelist) |list| whitelist_check: {</span>
+<span class="line" id="L988">        <span class="tok-comment">// Make sure it's a match of one of the list.</span>
+</span>
+<span class="line" id="L989">        <span class="tok-kw">var</span> mismatch_triple = <span class="tok-null">true</span>;</span>
+<span class="line" id="L990">        <span class="tok-kw">var</span> mismatch_cpu_features = <span class="tok-null">true</span>;</span>
+<span class="line" id="L991">        <span class="tok-kw">var</span> whitelist_item = CrossTarget{};</span>
+<span class="line" id="L992">        <span class="tok-kw">for</span> (list) |t| {</span>
+<span class="line" id="L993">            mismatch_cpu_features = <span class="tok-null">true</span>;</span>
+<span class="line" id="L994">            mismatch_triple = <span class="tok-null">true</span>;</span>
+<span class="line" id="L995"></span>
+<span class="line" id="L996">            <span class="tok-kw">const</span> t_triple = t.zigTriple(self.allocator) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L997">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, t_triple, selected_canonicalized_triple)) {</span>
+<span class="line" id="L998">                mismatch_triple = <span class="tok-null">false</span>;</span>
+<span class="line" id="L999">                whitelist_item = t;</span>
+<span class="line" id="L1000">                <span class="tok-kw">if</span> (t.getCpuFeatures().isSuperSetOf(selected_target.getCpuFeatures())) {</span>
+<span class="line" id="L1001">                    mismatch_cpu_features = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1002">                    <span class="tok-kw">break</span> :whitelist_check;</span>
+<span class="line" id="L1003">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1004">                    <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1005">                }</span>
+<span class="line" id="L1006">            }</span>
+<span class="line" id="L1007">        }</span>
+<span class="line" id="L1008">        <span class="tok-kw">if</span> (mismatch_triple) {</span>
+<span class="line" id="L1009">            log.err(<span class="tok-str">&quot;Chosen target '{s}' does not match one of the supported targets:&quot;</span>, .{</span>
+<span class="line" id="L1010">                selected_canonicalized_triple,</span>
+<span class="line" id="L1011">            });</span>
+<span class="line" id="L1012">            <span class="tok-kw">for</span> (list) |t| {</span>
+<span class="line" id="L1013">                <span class="tok-kw">const</span> t_triple = t.zigTriple(self.allocator) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1014">                log.err(<span class="tok-str">&quot; {s}&quot;</span>, .{t_triple});</span>
+<span class="line" id="L1015">            }</span>
+<span class="line" id="L1016">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1017">            assert(mismatch_cpu_features);</span>
+<span class="line" id="L1018">            <span class="tok-kw">const</span> whitelist_cpu = whitelist_item.getCpu();</span>
+<span class="line" id="L1019">            <span class="tok-kw">const</span> selected_cpu = selected_target.getCpu();</span>
+<span class="line" id="L1020">            log.err(<span class="tok-str">&quot;Chosen CPU model '{s}' does not match one of the supported targets:&quot;</span>, .{</span>
+<span class="line" id="L1021">                selected_cpu.model.name,</span>
+<span class="line" id="L1022">            });</span>
+<span class="line" id="L1023">            log.err(<span class="tok-str">&quot;  Supported feature Set: &quot;</span>, .{});</span>
+<span class="line" id="L1024">            <span class="tok-kw">const</span> all_features = whitelist_cpu.arch.allFeaturesList();</span>
+<span class="line" id="L1025">            <span class="tok-kw">var</span> populated_cpu_features = whitelist_cpu.model.features;</span>
+<span class="line" id="L1026">            populated_cpu_features.populateDependencies(all_features);</span>
+<span class="line" id="L1027">            <span class="tok-kw">for</span> (all_features) |feature, i_usize| {</span>
+<span class="line" id="L1028">                <span class="tok-kw">const</span> i = <span class="tok-builtin">@intCast</span>(std.Target.Cpu.Feature.Set.Index, i_usize);</span>
+<span class="line" id="L1029">                <span class="tok-kw">const</span> in_cpu_set = populated_cpu_features.isEnabled(i);</span>
+<span class="line" id="L1030">                <span class="tok-kw">if</span> (in_cpu_set) {</span>
+<span class="line" id="L1031">                    log.err(<span class="tok-str">&quot;{s} &quot;</span>, .{feature.name});</span>
+<span class="line" id="L1032">                }</span>
+<span class="line" id="L1033">            }</span>
+<span class="line" id="L1034">            log.err(<span class="tok-str">&quot;  Remove: &quot;</span>, .{});</span>
+<span class="line" id="L1035">            <span class="tok-kw">for</span> (all_features) |feature, i_usize| {</span>
+<span class="line" id="L1036">                <span class="tok-kw">const</span> i = <span class="tok-builtin">@intCast</span>(std.Target.Cpu.Feature.Set.Index, i_usize);</span>
+<span class="line" id="L1037">                <span class="tok-kw">const</span> in_cpu_set = populated_cpu_features.isEnabled(i);</span>
+<span class="line" id="L1038">                <span class="tok-kw">const</span> in_actual_set = selected_cpu.features.isEnabled(i);</span>
+<span class="line" id="L1039">                <span class="tok-kw">if</span> (in_actual_set <span class="tok-kw">and</span> !in_cpu_set) {</span>
+<span class="line" id="L1040">                    log.err(<span class="tok-str">&quot;{s} &quot;</span>, .{feature.name});</span>
+<span class="line" id="L1041">                }</span>
+<span class="line" id="L1042">            }</span>
+<span class="line" id="L1043">        }</span>
+<span class="line" id="L1044">        self.markInvalidUserInput();</span>
+<span class="line" id="L1045">        <span class="tok-kw">return</span> args.default_target;</span>
+<span class="line" id="L1046">    }</span>
+<span class="line" id="L1047"></span>
+<span class="line" id="L1048">    <span class="tok-kw">return</span> selected_target;</span>
+<span class="line" id="L1049">}</span>
+<span class="line" id="L1050"></span>
+<span class="line" id="L1051"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addUserInputOption</span>(self: *Build, name_raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value_raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">bool</span> {</span>
+<span class="line" id="L1052">    <span class="tok-kw">const</span> name = self.dupe(name_raw);</span>
+<span class="line" id="L1053">    <span class="tok-kw">const</span> value = self.dupe(value_raw);</span>
+<span class="line" id="L1054">    <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> self.user_input_options.getOrPut(name);</span>
+<span class="line" id="L1055">    <span class="tok-kw">if</span> (!gop.found_existing) {</span>
+<span class="line" id="L1056">        gop.value_ptr.* = UserInputOption{</span>
+<span class="line" id="L1057">            .name = name,</span>
+<span class="line" id="L1058">            .value = .{ .scalar = value },</span>
+<span class="line" id="L1059">            .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1060">        };</span>
+<span class="line" id="L1061">        <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L1062">    }</span>
+<span class="line" id="L1063"></span>
+<span class="line" id="L1064">    <span class="tok-comment">// option already exists</span>
+</span>
+<span class="line" id="L1065">    <span class="tok-kw">switch</span> (gop.value_ptr.value) {</span>
+<span class="line" id="L1066">        .scalar =&gt; |s| {</span>
+<span class="line" id="L1067">            <span class="tok-comment">// turn it into a list</span>
+</span>
+<span class="line" id="L1068">            <span class="tok-kw">var</span> list = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(self.allocator);</span>
+<span class="line" id="L1069">            <span class="tok-kw">try</span> list.append(s);</span>
+<span class="line" id="L1070">            <span class="tok-kw">try</span> list.append(value);</span>
+<span class="line" id="L1071">            <span class="tok-kw">try</span> self.user_input_options.put(name, .{</span>
+<span class="line" id="L1072">                .name = name,</span>
+<span class="line" id="L1073">                .value = .{ .list = list },</span>
+<span class="line" id="L1074">                .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1075">            });</span>
+<span class="line" id="L1076">        },</span>
+<span class="line" id="L1077">        .list =&gt; |*list| {</span>
+<span class="line" id="L1078">            <span class="tok-comment">// append to the list</span>
+</span>
+<span class="line" id="L1079">            <span class="tok-kw">try</span> list.append(value);</span>
+<span class="line" id="L1080">            <span class="tok-kw">try</span> self.user_input_options.put(name, .{</span>
+<span class="line" id="L1081">                .name = name,</span>
+<span class="line" id="L1082">                .value = .{ .list = list.* },</span>
+<span class="line" id="L1083">                .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1084">            });</span>
+<span class="line" id="L1085">        },</span>
+<span class="line" id="L1086">        .flag =&gt; {</span>
+<span class="line" id="L1087">            log.warn(<span class="tok-str">&quot;Option '-D{s}={s}' conflicts with flag '-D{s}'.&quot;</span>, .{ name, value, name });</span>
+<span class="line" id="L1088">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L1089">        },</span>
+<span class="line" id="L1090">        .map =&gt; |*map| {</span>
+<span class="line" id="L1091">            _ = map;</span>
+<span class="line" id="L1092">            log.warn(<span class="tok-str">&quot;TODO maps as command line arguments is not implemented yet.&quot;</span>, .{});</span>
+<span class="line" id="L1093">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L1094">        },</span>
+<span class="line" id="L1095">    }</span>
+<span class="line" id="L1096">    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L1097">}</span>
+<span class="line" id="L1098"></span>
+<span class="line" id="L1099"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addUserInputFlag</span>(self: *Build, name_raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">bool</span> {</span>
+<span class="line" id="L1100">    <span class="tok-kw">const</span> name = self.dupe(name_raw);</span>
+<span class="line" id="L1101">    <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> self.user_input_options.getOrPut(name);</span>
+<span class="line" id="L1102">    <span class="tok-kw">if</span> (!gop.found_existing) {</span>
+<span class="line" id="L1103">        gop.value_ptr.* = .{</span>
+<span class="line" id="L1104">            .name = name,</span>
+<span class="line" id="L1105">            .value = .{ .flag = {} },</span>
+<span class="line" id="L1106">            .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1107">        };</span>
+<span class="line" id="L1108">        <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L1109">    }</span>
+<span class="line" id="L1110"></span>
+<span class="line" id="L1111">    <span class="tok-comment">// option already exists</span>
+</span>
+<span class="line" id="L1112">    <span class="tok-kw">switch</span> (gop.value_ptr.value) {</span>
+<span class="line" id="L1113">        .scalar =&gt; |s| {</span>
+<span class="line" id="L1114">            log.err(<span class="tok-str">&quot;Flag '-D{s}' conflicts with option '-D{s}={s}'.&quot;</span>, .{ name, name, s });</span>
+<span class="line" id="L1115">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L1116">        },</span>
+<span class="line" id="L1117">        .list, .map =&gt; {</span>
+<span class="line" id="L1118">            log.err(<span class="tok-str">&quot;Flag '-D{s}' conflicts with multiple options of the same name.&quot;</span>, .{name});</span>
+<span class="line" id="L1119">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L1120">        },</span>
+<span class="line" id="L1121">        .flag =&gt; {},</span>
+<span class="line" id="L1122">    }</span>
+<span class="line" id="L1123">    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L1124">}</span>
+<span class="line" id="L1125"></span>
+<span class="line" id="L1126"><span class="tok-kw">fn</span> <span class="tok-fn">typeToEnum</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) TypeId {</span>
+<span class="line" id="L1127">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L1128">        .Int =&gt; .int,</span>
+<span class="line" id="L1129">        .Float =&gt; .float,</span>
+<span class="line" id="L1130">        .Bool =&gt; .<span class="tok-type">bool</span>,</span>
+<span class="line" id="L1131">        .Enum =&gt; .@&quot;enum&quot;,</span>
+<span class="line" id="L1132">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">switch</span> (T) {</span>
+<span class="line" id="L1133">            []<span class="tok-kw">const</span> <span class="tok-type">u8</span> =&gt; .string,</span>
+<span class="line" id="L1134">            []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span> =&gt; .list,</span>
+<span class="line" id="L1135">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L1136">        },</span>
+<span class="line" id="L1137">    };</span>
+<span class="line" id="L1138">}</span>
+<span class="line" id="L1139"></span>
+<span class="line" id="L1140"><span class="tok-kw">fn</span> <span class="tok-fn">markInvalidUserInput</span>(self: *Build) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1141">    self.invalid_user_input = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1142">}</span>
+<span class="line" id="L1143"></span>
+<span class="line" id="L1144"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validateUserInputDidItFail</span>(self: *Build) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1145">    <span class="tok-comment">// make sure all args are used</span>
+</span>
+<span class="line" id="L1146">    <span class="tok-kw">var</span> it = self.user_input_options.iterator();</span>
+<span class="line" id="L1147">    <span class="tok-kw">while</span> (it.next()) |entry| {</span>
+<span class="line" id="L1148">        <span class="tok-kw">if</span> (!entry.value_ptr.used) {</span>
+<span class="line" id="L1149">            log.err(<span class="tok-str">&quot;Invalid option: -D{s}&quot;</span>, .{entry.key_ptr.*});</span>
+<span class="line" id="L1150">            self.markInvalidUserInput();</span>
+<span class="line" id="L1151">        }</span>
+<span class="line" id="L1152">    }</span>
+<span class="line" id="L1153"></span>
+<span class="line" id="L1154">    <span class="tok-kw">return</span> self.invalid_user_input;</span>
+<span class="line" id="L1155">}</span>
+<span class="line" id="L1156"></span>
+<span class="line" id="L1157"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">spawnChild</span>(self: *Build, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1158">    <span class="tok-kw">return</span> self.spawnChildEnvMap(<span class="tok-null">null</span>, self.env_map, argv);</span>
+<span class="line" id="L1159">}</span>
+<span class="line" id="L1160"></span>
+<span class="line" id="L1161"><span class="tok-kw">fn</span> <span class="tok-fn">printCmd</span>(cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1162">    <span class="tok-kw">if</span> (cwd) |yes_cwd| std.debug.print(<span class="tok-str">&quot;cd {s} &amp;&amp; &quot;</span>, .{yes_cwd});</span>
+<span class="line" id="L1163">    <span class="tok-kw">for</span> (argv) |arg| {</span>
+<span class="line" id="L1164">        std.debug.print(<span class="tok-str">&quot;{s} &quot;</span>, .{arg});</span>
+<span class="line" id="L1165">    }</span>
+<span class="line" id="L1166">    std.debug.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L1167">}</span>
+<span class="line" id="L1168"></span>
+<span class="line" id="L1169"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">spawnChildEnvMap</span>(self: *Build, cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, env_map: *<span class="tok-kw">const</span> EnvMap, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1170">    <span class="tok-kw">if</span> (self.verbose) {</span>
+<span class="line" id="L1171">        printCmd(cwd, argv);</span>
+<span class="line" id="L1172">    }</span>
+<span class="line" id="L1173"></span>
+<span class="line" id="L1174">    <span class="tok-kw">if</span> (!std.process.can_spawn)</span>
+<span class="line" id="L1175">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExecNotSupported;</span>
+<span class="line" id="L1176"></span>
+<span class="line" id="L1177">    <span class="tok-kw">var</span> child = std.ChildProcess.init(argv, self.allocator);</span>
+<span class="line" id="L1178">    child.cwd = cwd;</span>
+<span class="line" id="L1179">    child.env_map = env_map;</span>
+<span class="line" id="L1180"></span>
+<span class="line" id="L1181">    <span class="tok-kw">const</span> term = child.spawnAndWait() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L1182">        log.err(<span class="tok-str">&quot;Unable to spawn {s}: {s}&quot;</span>, .{ argv[<span class="tok-number">0</span>], <span class="tok-builtin">@errorName</span>(err) });</span>
+<span class="line" id="L1183">        <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L1184">    };</span>
+<span class="line" id="L1185"></span>
+<span class="line" id="L1186">    <span class="tok-kw">switch</span> (term) {</span>
+<span class="line" id="L1187">        .Exited =&gt; |code| {</span>
+<span class="line" id="L1188">            <span class="tok-kw">if</span> (code != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1189">                log.err(<span class="tok-str">&quot;The following command exited with error code {}:&quot;</span>, .{code});</span>
+<span class="line" id="L1190">                printCmd(cwd, argv);</span>
+<span class="line" id="L1191">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UncleanExit;</span>
+<span class="line" id="L1192">            }</span>
+<span class="line" id="L1193">        },</span>
+<span class="line" id="L1194">        <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1195">            log.err(<span class="tok-str">&quot;The following command terminated unexpectedly:&quot;</span>, .{});</span>
+<span class="line" id="L1196">            printCmd(cwd, argv);</span>
+<span class="line" id="L1197"></span>
+<span class="line" id="L1198">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UncleanExit;</span>
+<span class="line" id="L1199">        },</span>
+<span class="line" id="L1200">    }</span>
+<span class="line" id="L1201">}</span>
+<span class="line" id="L1202"></span>
+<span class="line" id="L1203"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">makePath</span>(self: *Build, path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1204">    fs.cwd().makePath(self.pathFromRoot(path)) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L1205">        log.err(<span class="tok-str">&quot;Unable to create path {s}: {s}&quot;</span>, .{ path, <span class="tok-builtin">@errorName</span>(err) });</span>
+<span class="line" id="L1206">        <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L1207">    };</span>
+<span class="line" id="L1208">}</span>
+<span class="line" id="L1209"></span>
+<span class="line" id="L1210"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">installArtifact</span>(self: *Build, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1211">    self.getInstallStep().dependOn(&amp;self.addInstallArtifact(artifact).step);</span>
+<span class="line" id="L1212">}</span>
+<span class="line" id="L1213"></span>
+<span class="line" id="L1214"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallArtifact</span>(self: *Build, artifact: *CompileStep) *InstallArtifactStep {</span>
+<span class="line" id="L1215">    <span class="tok-kw">return</span> InstallArtifactStep.create(self, artifact);</span>
+<span class="line" id="L1216">}</span>
+<span class="line" id="L1217"></span>
+<span class="line" id="L1218"><span class="tok-comment">///`dest_rel_path` is relative to prefix path</span></span>
+<span class="line" id="L1219"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">installFile</span>(self: *Build, src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1220">    self.getInstallStep().dependOn(&amp;self.addInstallFileWithDir(.{ .path = src_path }, .prefix, dest_rel_path).step);</span>
+<span class="line" id="L1221">}</span>
+<span class="line" id="L1222"></span>
+<span class="line" id="L1223"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">installDirectory</span>(self: *Build, options: InstallDirectoryOptions) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1224">    self.getInstallStep().dependOn(&amp;self.addInstallDirectory(options).step);</span>
+<span class="line" id="L1225">}</span>
+<span class="line" id="L1226"></span>
+<span class="line" id="L1227"><span class="tok-comment">///`dest_rel_path` is relative to bin path</span></span>
+<span class="line" id="L1228"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">installBinFile</span>(self: *Build, src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1229">    self.getInstallStep().dependOn(&amp;self.addInstallFileWithDir(.{ .path = src_path }, .bin, dest_rel_path).step);</span>
+<span class="line" id="L1230">}</span>
+<span class="line" id="L1231"></span>
+<span class="line" id="L1232"><span class="tok-comment">///`dest_rel_path` is relative to lib path</span></span>
+<span class="line" id="L1233"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">installLibFile</span>(self: *Build, src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1234">    self.getInstallStep().dependOn(&amp;self.addInstallFileWithDir(.{ .path = src_path }, .lib, dest_rel_path).step);</span>
+<span class="line" id="L1235">}</span>
+<span class="line" id="L1236"></span>
+<span class="line" id="L1237"><span class="tok-comment">/// Output format (BIN vs Intel HEX) determined by filename</span></span>
+<span class="line" id="L1238"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">installRaw</span>(self: *Build, artifact: *CompileStep, dest_filename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, options: InstallRawStep.CreateOptions) *InstallRawStep {</span>
+<span class="line" id="L1239">    <span class="tok-kw">const</span> raw = self.addInstallRaw(artifact, dest_filename, options);</span>
+<span class="line" id="L1240">    self.getInstallStep().dependOn(&amp;raw.step);</span>
+<span class="line" id="L1241">    <span class="tok-kw">return</span> raw;</span>
+<span class="line" id="L1242">}</span>
+<span class="line" id="L1243"></span>
+<span class="line" id="L1244"><span class="tok-comment">///`dest_rel_path` is relative to install prefix path</span></span>
+<span class="line" id="L1245"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallFile</span>(self: *Build, source: FileSource, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *InstallFileStep {</span>
+<span class="line" id="L1246">    <span class="tok-kw">return</span> self.addInstallFileWithDir(source.dupe(self), .prefix, dest_rel_path);</span>
+<span class="line" id="L1247">}</span>
+<span class="line" id="L1248"></span>
+<span class="line" id="L1249"><span class="tok-comment">///`dest_rel_path` is relative to bin path</span></span>
+<span class="line" id="L1250"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallBinFile</span>(self: *Build, source: FileSource, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *InstallFileStep {</span>
+<span class="line" id="L1251">    <span class="tok-kw">return</span> self.addInstallFileWithDir(source.dupe(self), .bin, dest_rel_path);</span>
+<span class="line" id="L1252">}</span>
+<span class="line" id="L1253"></span>
+<span class="line" id="L1254"><span class="tok-comment">///`dest_rel_path` is relative to lib path</span></span>
+<span class="line" id="L1255"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallLibFile</span>(self: *Build, source: FileSource, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *InstallFileStep {</span>
+<span class="line" id="L1256">    <span class="tok-kw">return</span> self.addInstallFileWithDir(source.dupe(self), .lib, dest_rel_path);</span>
+<span class="line" id="L1257">}</span>
+<span class="line" id="L1258"></span>
+<span class="line" id="L1259"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallHeaderFile</span>(b: *Build, src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *InstallFileStep {</span>
+<span class="line" id="L1260">    <span class="tok-kw">return</span> b.addInstallFileWithDir(.{ .path = src_path }, .header, dest_rel_path);</span>
+<span class="line" id="L1261">}</span>
+<span class="line" id="L1262"></span>
+<span class="line" id="L1263"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallRaw</span>(self: *Build, artifact: *CompileStep, dest_filename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, options: InstallRawStep.CreateOptions) *InstallRawStep {</span>
+<span class="line" id="L1264">    <span class="tok-kw">return</span> InstallRawStep.create(self, artifact, dest_filename, options);</span>
+<span class="line" id="L1265">}</span>
+<span class="line" id="L1266"></span>
+<span class="line" id="L1267"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallFileWithDir</span>(</span>
+<span class="line" id="L1268">    self: *Build,</span>
+<span class="line" id="L1269">    source: FileSource,</span>
+<span class="line" id="L1270">    install_dir: InstallDir,</span>
+<span class="line" id="L1271">    dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1272">) *InstallFileStep {</span>
+<span class="line" id="L1273">    <span class="tok-kw">if</span> (dest_rel_path.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1274">        panic(<span class="tok-str">&quot;dest_rel_path must be non-empty&quot;</span>, .{});</span>
+<span class="line" id="L1275">    }</span>
+<span class="line" id="L1276">    <span class="tok-kw">const</span> install_step = self.allocator.create(InstallFileStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1277">    install_step.* = InstallFileStep.init(self, source.dupe(self), install_dir, dest_rel_path);</span>
+<span class="line" id="L1278">    <span class="tok-kw">return</span> install_step;</span>
+<span class="line" id="L1279">}</span>
+<span class="line" id="L1280"></span>
+<span class="line" id="L1281"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addInstallDirectory</span>(self: *Build, options: InstallDirectoryOptions) *InstallDirStep {</span>
+<span class="line" id="L1282">    <span class="tok-kw">const</span> install_step = self.allocator.create(InstallDirStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1283">    install_step.* = InstallDirStep.init(self, options);</span>
+<span class="line" id="L1284">    <span class="tok-kw">return</span> install_step;</span>
+<span class="line" id="L1285">}</span>
+<span class="line" id="L1286"></span>
+<span class="line" id="L1287"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushInstalledFile</span>(self: *Build, dir: InstallDir, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1288">    <span class="tok-kw">const</span> file = InstalledFile{</span>
+<span class="line" id="L1289">        .dir = dir,</span>
+<span class="line" id="L1290">        .path = dest_rel_path,</span>
+<span class="line" id="L1291">    };</span>
+<span class="line" id="L1292">    self.installed_files.append(file.dupe(self)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1293">}</span>
+<span class="line" id="L1294"></span>
+<span class="line" id="L1295"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">updateFile</span>(self: *Build, source_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, dest_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1296">    <span class="tok-kw">if</span> (self.verbose) {</span>
+<span class="line" id="L1297">        log.info(<span class="tok-str">&quot;cp {s} {s} &quot;</span>, .{ source_path, dest_path });</span>
+<span class="line" id="L1298">    }</span>
+<span class="line" id="L1299">    <span class="tok-kw">const</span> cwd = fs.cwd();</span>
+<span class="line" id="L1300">    <span class="tok-kw">const</span> prev_status = <span class="tok-kw">try</span> fs.Dir.updateFile(cwd, source_path, cwd, dest_path, .{});</span>
+<span class="line" id="L1301">    <span class="tok-kw">if</span> (self.verbose) <span class="tok-kw">switch</span> (prev_status) {</span>
+<span class="line" id="L1302">        .stale =&gt; log.info(<span class="tok-str">&quot;# installed&quot;</span>, .{}),</span>
+<span class="line" id="L1303">        .fresh =&gt; log.info(<span class="tok-str">&quot;# up-to-date&quot;</span>, .{}),</span>
+<span class="line" id="L1304">    };</span>
+<span class="line" id="L1305">}</span>
+<span class="line" id="L1306"></span>
+<span class="line" id="L1307"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">truncateFile</span>(self: *Build, dest_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1308">    <span class="tok-kw">if</span> (self.verbose) {</span>
+<span class="line" id="L1309">        log.info(<span class="tok-str">&quot;truncate {s}&quot;</span>, .{dest_path});</span>
+<span class="line" id="L1310">    }</span>
+<span class="line" id="L1311">    <span class="tok-kw">const</span> cwd = fs.cwd();</span>
+<span class="line" id="L1312">    <span class="tok-kw">var</span> src_file = cwd.createFile(dest_path, .{}) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1313">        <span class="tok-kw">error</span>.FileNotFound =&gt; blk: {</span>
+<span class="line" id="L1314">            <span class="tok-kw">if</span> (fs.path.dirname(dest_path)) |dirname| {</span>
+<span class="line" id="L1315">                <span class="tok-kw">try</span> cwd.makePath(dirname);</span>
+<span class="line" id="L1316">            }</span>
+<span class="line" id="L1317">            <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> cwd.createFile(dest_path, .{});</span>
+<span class="line" id="L1318">        },</span>
+<span class="line" id="L1319">        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L1320">    };</span>
+<span class="line" id="L1321">    src_file.close();</span>
+<span class="line" id="L1322">}</span>
+<span class="line" id="L1323"></span>
+<span class="line" id="L1324"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pathFromRoot</span>(self: *Build, rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1325">    <span class="tok-kw">return</span> fs.path.resolve(self.allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.build_root, rel_path }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1326">}</span>
+<span class="line" id="L1327"></span>
+<span class="line" id="L1328"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pathJoin</span>(self: *Build, paths: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1329">    <span class="tok-kw">return</span> fs.path.join(self.allocator, paths) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1330">}</span>
+<span class="line" id="L1331"></span>
+<span class="line" id="L1332"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fmt</span>(self: *Build, <span class="tok-kw">comptime</span> format: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args: <span class="tok-kw">anytype</span>) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1333">    <span class="tok-kw">return</span> fmt_lib.allocPrint(self.allocator, format, args) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1334">}</span>
+<span class="line" id="L1335"></span>
+<span class="line" id="L1336"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">findProgram</span>(self: *Build, names: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, paths: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1337">    <span class="tok-comment">// TODO report error for ambiguous situations</span>
+</span>
+<span class="line" id="L1338">    <span class="tok-kw">const</span> exe_extension = <span class="tok-builtin">@as</span>(CrossTarget, .{}).exeFileExt();</span>
+<span class="line" id="L1339">    <span class="tok-kw">for</span> (self.search_prefixes.items) |search_prefix| {</span>
+<span class="line" id="L1340">        <span class="tok-kw">for</span> (names) |name| {</span>
+<span class="line" id="L1341">            <span class="tok-kw">if</span> (fs.path.isAbsolute(name)) {</span>
+<span class="line" id="L1342">                <span class="tok-kw">return</span> name;</span>
+<span class="line" id="L1343">            }</span>
+<span class="line" id="L1344">            <span class="tok-kw">const</span> full_path = self.pathJoin(&amp;.{</span>
+<span class="line" id="L1345">                search_prefix,</span>
+<span class="line" id="L1346">                <span class="tok-str">&quot;bin&quot;</span>,</span>
+<span class="line" id="L1347">                self.fmt(<span class="tok-str">&quot;{s}{s}&quot;</span>, .{ name, exe_extension }),</span>
+<span class="line" id="L1348">            });</span>
+<span class="line" id="L1349">            <span class="tok-kw">return</span> fs.realpathAlloc(self.allocator, full_path) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1350">        }</span>
+<span class="line" id="L1351">    }</span>
+<span class="line" id="L1352">    <span class="tok-kw">if</span> (self.env_map.get(<span class="tok-str">&quot;PATH&quot;</span>)) |PATH| {</span>
+<span class="line" id="L1353">        <span class="tok-kw">for</span> (names) |name| {</span>
+<span class="line" id="L1354">            <span class="tok-kw">if</span> (fs.path.isAbsolute(name)) {</span>
+<span class="line" id="L1355">                <span class="tok-kw">return</span> name;</span>
+<span class="line" id="L1356">            }</span>
+<span class="line" id="L1357">            <span class="tok-kw">var</span> it = mem.tokenize(<span class="tok-type">u8</span>, PATH, &amp;[_]<span class="tok-type">u8</span>{fs.path.delimiter});</span>
+<span class="line" id="L1358">            <span class="tok-kw">while</span> (it.next()) |path| {</span>
+<span class="line" id="L1359">                <span class="tok-kw">const</span> full_path = self.pathJoin(&amp;.{</span>
+<span class="line" id="L1360">                    path,</span>
+<span class="line" id="L1361">                    self.fmt(<span class="tok-str">&quot;{s}{s}&quot;</span>, .{ name, exe_extension }),</span>
+<span class="line" id="L1362">                });</span>
+<span class="line" id="L1363">                <span class="tok-kw">return</span> fs.realpathAlloc(self.allocator, full_path) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1364">            }</span>
+<span class="line" id="L1365">        }</span>
+<span class="line" id="L1366">    }</span>
+<span class="line" id="L1367">    <span class="tok-kw">for</span> (names) |name| {</span>
+<span class="line" id="L1368">        <span class="tok-kw">if</span> (fs.path.isAbsolute(name)) {</span>
+<span class="line" id="L1369">            <span class="tok-kw">return</span> name;</span>
+<span class="line" id="L1370">        }</span>
+<span class="line" id="L1371">        <span class="tok-kw">for</span> (paths) |path| {</span>
+<span class="line" id="L1372">            <span class="tok-kw">const</span> full_path = self.pathJoin(&amp;.{</span>
+<span class="line" id="L1373">                path,</span>
+<span class="line" id="L1374">                self.fmt(<span class="tok-str">&quot;{s}{s}&quot;</span>, .{ name, exe_extension }),</span>
+<span class="line" id="L1375">            });</span>
+<span class="line" id="L1376">            <span class="tok-kw">return</span> fs.realpathAlloc(self.allocator, full_path) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1377">        }</span>
+<span class="line" id="L1378">    }</span>
+<span class="line" id="L1379">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L1380">}</span>
+<span class="line" id="L1381"></span>
+<span class="line" id="L1382"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">execAllowFail</span>(</span>
+<span class="line" id="L1383">    self: *Build,</span>
+<span class="line" id="L1384">    argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1385">    out_code: *<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1386">    stderr_behavior: std.ChildProcess.StdIo,</span>
+<span class="line" id="L1387">) ExecError![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1388">    assert(argv.len != <span class="tok-number">0</span>);</span>
+<span class="line" id="L1389"></span>
+<span class="line" id="L1390">    <span class="tok-kw">if</span> (!std.process.can_spawn)</span>
+<span class="line" id="L1391">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExecNotSupported;</span>
+<span class="line" id="L1392"></span>
+<span class="line" id="L1393">    <span class="tok-kw">const</span> max_output_size = <span class="tok-number">400</span> * <span class="tok-number">1024</span>;</span>
+<span class="line" id="L1394">    <span class="tok-kw">var</span> child = std.ChildProcess.init(argv, self.allocator);</span>
+<span class="line" id="L1395">    child.stdin_behavior = .Ignore;</span>
+<span class="line" id="L1396">    child.stdout_behavior = .Pipe;</span>
+<span class="line" id="L1397">    child.stderr_behavior = stderr_behavior;</span>
+<span class="line" id="L1398">    child.env_map = self.env_map;</span>
+<span class="line" id="L1399"></span>
+<span class="line" id="L1400">    <span class="tok-kw">try</span> child.spawn();</span>
+<span class="line" id="L1401"></span>
+<span class="line" id="L1402">    <span class="tok-kw">const</span> stdout = child.stdout.?.reader().readAllAlloc(self.allocator, max_output_size) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L1403">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ReadFailure;</span>
+<span class="line" id="L1404">    };</span>
+<span class="line" id="L1405">    <span class="tok-kw">errdefer</span> self.allocator.free(stdout);</span>
+<span class="line" id="L1406"></span>
+<span class="line" id="L1407">    <span class="tok-kw">const</span> term = <span class="tok-kw">try</span> child.wait();</span>
+<span class="line" id="L1408">    <span class="tok-kw">switch</span> (term) {</span>
+<span class="line" id="L1409">        .Exited =&gt; |code| {</span>
+<span class="line" id="L1410">            <span class="tok-kw">if</span> (code != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1411">                out_code.* = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, code);</span>
+<span class="line" id="L1412">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExitCodeFailure;</span>
+<span class="line" id="L1413">            }</span>
+<span class="line" id="L1414">            <span class="tok-kw">return</span> stdout;</span>
+<span class="line" id="L1415">        },</span>
+<span class="line" id="L1416">        .Signal, .Stopped, .Unknown =&gt; |code| {</span>
+<span class="line" id="L1417">            out_code.* = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, code);</span>
+<span class="line" id="L1418">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ProcessTerminated;</span>
+<span class="line" id="L1419">        },</span>
+<span class="line" id="L1420">    }</span>
+<span class="line" id="L1421">}</span>
+<span class="line" id="L1422"></span>
+<span class="line" id="L1423"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">execFromStep</span>(self: *Build, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, src_step: ?*Step) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1424">    assert(argv.len != <span class="tok-number">0</span>);</span>
+<span class="line" id="L1425"></span>
+<span class="line" id="L1426">    <span class="tok-kw">if</span> (self.verbose) {</span>
+<span class="line" id="L1427">        printCmd(<span class="tok-null">null</span>, argv);</span>
+<span class="line" id="L1428">    }</span>
+<span class="line" id="L1429"></span>
+<span class="line" id="L1430">    <span class="tok-kw">if</span> (!std.process.can_spawn) {</span>
+<span class="line" id="L1431">        <span class="tok-kw">if</span> (src_step) |s| log.err(<span class="tok-str">&quot;{s}...&quot;</span>, .{s.name});</span>
+<span class="line" id="L1432">        log.err(<span class="tok-str">&quot;Unable to spawn the following command: cannot spawn child process&quot;</span>, .{});</span>
+<span class="line" id="L1433">        printCmd(<span class="tok-null">null</span>, argv);</span>
+<span class="line" id="L1434">        std.os.abort();</span>
+<span class="line" id="L1435">    }</span>
+<span class="line" id="L1436"></span>
+<span class="line" id="L1437">    <span class="tok-kw">var</span> code: <span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1438">    <span class="tok-kw">return</span> self.execAllowFail(argv, &amp;code, .Inherit) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1439">        <span class="tok-kw">error</span>.ExecNotSupported =&gt; {</span>
+<span class="line" id="L1440">            <span class="tok-kw">if</span> (src_step) |s| log.err(<span class="tok-str">&quot;{s}...&quot;</span>, .{s.name});</span>
+<span class="line" id="L1441">            log.err(<span class="tok-str">&quot;Unable to spawn the following command: cannot spawn child process&quot;</span>, .{});</span>
+<span class="line" id="L1442">            printCmd(<span class="tok-null">null</span>, argv);</span>
+<span class="line" id="L1443">            std.os.abort();</span>
+<span class="line" id="L1444">        },</span>
+<span class="line" id="L1445">        <span class="tok-kw">error</span>.FileNotFound =&gt; {</span>
+<span class="line" id="L1446">            <span class="tok-kw">if</span> (src_step) |s| log.err(<span class="tok-str">&quot;{s}...&quot;</span>, .{s.name});</span>
+<span class="line" id="L1447">            log.err(<span class="tok-str">&quot;Unable to spawn the following command: file not found&quot;</span>, .{});</span>
+<span class="line" id="L1448">            printCmd(<span class="tok-null">null</span>, argv);</span>
+<span class="line" id="L1449">            std.os.exit(<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, code));</span>
+<span class="line" id="L1450">        },</span>
+<span class="line" id="L1451">        <span class="tok-kw">error</span>.ExitCodeFailure =&gt; {</span>
+<span class="line" id="L1452">            <span class="tok-kw">if</span> (src_step) |s| log.err(<span class="tok-str">&quot;{s}...&quot;</span>, .{s.name});</span>
+<span class="line" id="L1453">            <span class="tok-kw">if</span> (self.prominent_compile_errors) {</span>
+<span class="line" id="L1454">                log.err(<span class="tok-str">&quot;The step exited with error code {d}&quot;</span>, .{code});</span>
+<span class="line" id="L1455">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1456">                log.err(<span class="tok-str">&quot;The following command exited with error code {d}:&quot;</span>, .{code});</span>
+<span class="line" id="L1457">                printCmd(<span class="tok-null">null</span>, argv);</span>
+<span class="line" id="L1458">            }</span>
+<span class="line" id="L1459"></span>
+<span class="line" id="L1460">            std.os.exit(<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, code));</span>
+<span class="line" id="L1461">        },</span>
+<span class="line" id="L1462">        <span class="tok-kw">error</span>.ProcessTerminated =&gt; {</span>
+<span class="line" id="L1463">            <span class="tok-kw">if</span> (src_step) |s| log.err(<span class="tok-str">&quot;{s}...&quot;</span>, .{s.name});</span>
+<span class="line" id="L1464">            log.err(<span class="tok-str">&quot;The following command terminated unexpectedly:&quot;</span>, .{});</span>
+<span class="line" id="L1465">            printCmd(<span class="tok-null">null</span>, argv);</span>
+<span class="line" id="L1466">            std.os.exit(<span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, code));</span>
+<span class="line" id="L1467">        },</span>
+<span class="line" id="L1468">        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L1469">    };</span>
+<span class="line" id="L1470">}</span>
+<span class="line" id="L1471"></span>
+<span class="line" id="L1472"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">exec</span>(self: *Build, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1473">    <span class="tok-kw">return</span> self.execFromStep(argv, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1474">}</span>
+<span class="line" id="L1475"></span>
+<span class="line" id="L1476"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addSearchPrefix</span>(self: *Build, search_prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1477">    self.search_prefixes.append(self.dupePath(search_prefix)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1478">}</span>
+<span class="line" id="L1479"></span>
+<span class="line" id="L1480"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getInstallPath</span>(self: *Build, dir: InstallDir, dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1481">    assert(!fs.path.isAbsolute(dest_rel_path)); <span class="tok-comment">// Install paths must be relative to the prefix</span>
+</span>
+<span class="line" id="L1482">    <span class="tok-kw">const</span> base_dir = <span class="tok-kw">switch</span> (dir) {</span>
+<span class="line" id="L1483">        .prefix =&gt; self.install_path,</span>
+<span class="line" id="L1484">        .bin =&gt; self.exe_dir,</span>
+<span class="line" id="L1485">        .lib =&gt; self.lib_dir,</span>
+<span class="line" id="L1486">        .header =&gt; self.h_dir,</span>
+<span class="line" id="L1487">        .custom =&gt; |path| self.pathJoin(&amp;.{ self.install_path, path }),</span>
+<span class="line" id="L1488">    };</span>
+<span class="line" id="L1489">    <span class="tok-kw">return</span> fs.path.resolve(</span>
+<span class="line" id="L1490">        self.allocator,</span>
+<span class="line" id="L1491">        &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ base_dir, dest_rel_path },</span>
+<span class="line" id="L1492">    ) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1493">}</span>
+<span class="line" id="L1494"></span>
+<span class="line" id="L1495"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Dependency = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1496">    builder: *Build,</span>
+<span class="line" id="L1497"></span>
+<span class="line" id="L1498">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">artifact</span>(d: *Dependency, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *CompileStep {</span>
+<span class="line" id="L1499">        <span class="tok-kw">var</span> found: ?*CompileStep = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1500">        <span class="tok-kw">for</span> (d.builder.install_tls.step.dependencies.items) |dep_step| {</span>
+<span class="line" id="L1501">            <span class="tok-kw">const</span> inst = dep_step.cast(InstallArtifactStep) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1502">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, inst.artifact.name, name)) {</span>
+<span class="line" id="L1503">                <span class="tok-kw">if</span> (found != <span class="tok-null">null</span>) panic(<span class="tok-str">&quot;artifact name '{s}' is ambiguous&quot;</span>, .{name});</span>
+<span class="line" id="L1504">                found = inst.artifact;</span>
+<span class="line" id="L1505">            }</span>
+<span class="line" id="L1506">        }</span>
+<span class="line" id="L1507">        <span class="tok-kw">return</span> found <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L1508">            <span class="tok-kw">for</span> (d.builder.install_tls.step.dependencies.items) |dep_step| {</span>
+<span class="line" id="L1509">                <span class="tok-kw">const</span> inst = dep_step.cast(InstallArtifactStep) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1510">                log.info(<span class="tok-str">&quot;available artifact: '{s}'&quot;</span>, .{inst.artifact.name});</span>
+<span class="line" id="L1511">            }</span>
+<span class="line" id="L1512">            panic(<span class="tok-str">&quot;unable to find artifact '{s}'&quot;</span>, .{name});</span>
+<span class="line" id="L1513">        };</span>
+<span class="line" id="L1514">    }</span>
+<span class="line" id="L1515"></span>
+<span class="line" id="L1516">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">module</span>(d: *Dependency, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *Module {</span>
+<span class="line" id="L1517">        <span class="tok-kw">return</span> d.builder.modules.get(name) <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L1518">            panic(<span class="tok-str">&quot;unable to find module '{s}'&quot;</span>, .{name});</span>
+<span class="line" id="L1519">        };</span>
+<span class="line" id="L1520">    }</span>
+<span class="line" id="L1521">};</span>
+<span class="line" id="L1522"></span>
+<span class="line" id="L1523"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dependency</span>(b: *Build, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args: <span class="tok-kw">anytype</span>) *Dependency {</span>
+<span class="line" id="L1524">    <span class="tok-kw">const</span> build_runner = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;root&quot;</span>);</span>
+<span class="line" id="L1525">    <span class="tok-kw">const</span> deps = build_runner.dependencies;</span>
+<span class="line" id="L1526"></span>
+<span class="line" id="L1527">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-builtin">@typeInfo</span>(deps.imports).Struct.decls) |decl| {</span>
+<span class="line" id="L1528">        <span class="tok-kw">if</span> (mem.startsWith(<span class="tok-type">u8</span>, decl.name, b.dep_prefix) <span class="tok-kw">and</span></span>
+<span class="line" id="L1529">            mem.endsWith(<span class="tok-type">u8</span>, decl.name, name) <span class="tok-kw">and</span></span>
+<span class="line" id="L1530">            decl.name.len == b.dep_prefix.len + name.len)</span>
+<span class="line" id="L1531">        {</span>
+<span class="line" id="L1532">            <span class="tok-kw">const</span> build_zig = <span class="tok-builtin">@field</span>(deps.imports, decl.name);</span>
+<span class="line" id="L1533">            <span class="tok-kw">const</span> build_root = <span class="tok-builtin">@field</span>(deps.build_root, decl.name);</span>
+<span class="line" id="L1534">            <span class="tok-kw">return</span> dependencyInner(b, name, build_root, build_zig, args);</span>
+<span class="line" id="L1535">        }</span>
+<span class="line" id="L1536">    }</span>
+<span class="line" id="L1537"></span>
+<span class="line" id="L1538">    <span class="tok-kw">const</span> full_path = b.pathFromRoot(<span class="tok-str">&quot;build.zig.zon&quot;</span>);</span>
+<span class="line" id="L1539">    std.debug.print(<span class="tok-str">&quot;no dependency named '{s}' in '{s}'. All packages used in build.zig must be declared in this file.\n&quot;</span>, .{ name, full_path });</span>
+<span class="line" id="L1540">    std.process.exit(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1541">}</span>
+<span class="line" id="L1542"></span>
+<span class="line" id="L1543"><span class="tok-kw">fn</span> <span class="tok-fn">dependencyInner</span>(</span>
+<span class="line" id="L1544">    b: *Build,</span>
+<span class="line" id="L1545">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1546">    build_root: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1547">    <span class="tok-kw">comptime</span> build_zig: <span class="tok-type">type</span>,</span>
+<span class="line" id="L1548">    args: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L1549">) *Dependency {</span>
+<span class="line" id="L1550">    <span class="tok-kw">const</span> sub_builder = b.createChild(name, build_root, args) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;unhandled error&quot;</span>);</span>
+<span class="line" id="L1551">    sub_builder.runBuild(build_zig) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;unhandled error&quot;</span>);</span>
+<span class="line" id="L1552"></span>
+<span class="line" id="L1553">    <span class="tok-kw">if</span> (sub_builder.validateUserInputDidItFail()) {</span>
+<span class="line" id="L1554">        std.debug.dumpCurrentStackTrace(<span class="tok-builtin">@returnAddress</span>());</span>
+<span class="line" id="L1555">    }</span>
+<span class="line" id="L1556"></span>
+<span class="line" id="L1557">    <span class="tok-kw">const</span> dep = b.allocator.create(Dependency) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L1558">    dep.* = .{ .builder = sub_builder };</span>
+<span class="line" id="L1559">    <span class="tok-kw">return</span> dep;</span>
+<span class="line" id="L1560">}</span>
+<span class="line" id="L1561"></span>
+<span class="line" id="L1562"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runBuild</span>(b: *Build, build_zig: <span class="tok-kw">anytype</span>) <span class="tok-type">anyerror</span>!<span class="tok-type">void</span> {</span>
+<span class="line" id="L1563">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(build_zig.build)).Fn.return_type.?)) {</span>
+<span class="line" id="L1564">        .Void =&gt; build_zig.build(b),</span>
+<span class="line" id="L1565">        .ErrorUnion =&gt; <span class="tok-kw">try</span> build_zig.build(b),</span>
+<span class="line" id="L1566">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected return type of build to be 'void' or '!void'&quot;</span>),</span>
+<span class="line" id="L1567">    }</span>
+<span class="line" id="L1568">}</span>
+<span class="line" id="L1569"></span>
+<span class="line" id="L1570"><span class="tok-kw">test</span> <span class="tok-str">&quot;builder.findProgram compiles&quot;</span> {</span>
+<span class="line" id="L1571">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L1572"></span>
+<span class="line" id="L1573">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);</span>
+<span class="line" id="L1574">    <span class="tok-kw">defer</span> arena.deinit();</span>
+<span class="line" id="L1575"></span>
+<span class="line" id="L1576">    <span class="tok-kw">const</span> host = <span class="tok-kw">try</span> NativeTargetInfo.detect(.{});</span>
+<span class="line" id="L1577"></span>
+<span class="line" id="L1578">    <span class="tok-kw">const</span> builder = <span class="tok-kw">try</span> Build.create(</span>
+<span class="line" id="L1579">        arena.allocator(),</span>
+<span class="line" id="L1580">        <span class="tok-str">&quot;zig&quot;</span>,</span>
+<span class="line" id="L1581">        <span class="tok-str">&quot;zig-cache&quot;</span>,</span>
+<span class="line" id="L1582">        <span class="tok-str">&quot;zig-cache&quot;</span>,</span>
+<span class="line" id="L1583">        <span class="tok-str">&quot;zig-cache&quot;</span>,</span>
+<span class="line" id="L1584">        host,</span>
+<span class="line" id="L1585">    );</span>
+<span class="line" id="L1586">    <span class="tok-kw">defer</span> builder.destroy();</span>
+<span class="line" id="L1587">    _ = builder.findProgram(&amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{}, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{}) <span class="tok-kw">catch</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1588">}</span>
+<span class="line" id="L1589"></span>
+<span class="line" id="L1590"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Module = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1591">    builder: *Build,</span>
+<span class="line" id="L1592">    <span class="tok-comment">/// This could either be a generated file, in which case the module</span></span>
+<span class="line" id="L1593">    <span class="tok-comment">/// contains exactly one file, or it could be a path to the root source</span></span>
+<span class="line" id="L1594">    <span class="tok-comment">/// file of directory of files which constitute the module.</span></span>
+<span class="line" id="L1595">    source_file: FileSource,</span>
+<span class="line" id="L1596">    dependencies: std.StringArrayHashMap(*Module),</span>
+<span class="line" id="L1597">};</span>
+<span class="line" id="L1598"></span>
+<span class="line" id="L1599"><span class="tok-comment">/// A file that is generated by a build step.</span></span>
+<span class="line" id="L1600"><span class="tok-comment">/// This struct is an interface that is meant to be used with `@fieldParentPtr` to implement the actual path logic.</span></span>
+<span class="line" id="L1601"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> GeneratedFile = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1602">    <span class="tok-comment">/// The step that generates the file</span></span>
+<span class="line" id="L1603">    step: *Step,</span>
+<span class="line" id="L1604"></span>
+<span class="line" id="L1605">    <span class="tok-comment">/// The path to the generated file. Must be either absolute or relative to the build root.</span></span>
+<span class="line" id="L1606">    <span class="tok-comment">/// This value must be set in the `fn make()` of the `step` and must not be `null` afterwards.</span></span>
+<span class="line" id="L1607">    path: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L1608"></span>
+<span class="line" id="L1609">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getPath</span>(self: GeneratedFile) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1610">        <span class="tok-kw">return</span> self.path <span class="tok-kw">orelse</span> std.debug.panic(</span>
+<span class="line" id="L1611">            <span class="tok-str">&quot;getPath() was called on a GeneratedFile that wasn't build yet. Is there a missing Step dependency on step '{s}'?&quot;</span>,</span>
+<span class="line" id="L1612">            .{self.step.name},</span>
+<span class="line" id="L1613">        );</span>
+<span class="line" id="L1614">    }</span>
+<span class="line" id="L1615">};</span>
+<span class="line" id="L1616"></span>
+<span class="line" id="L1617"><span class="tok-comment">/// A file source is a reference to an existing or future file.</span></span>
+<span class="line" id="L1618"><span class="tok-comment">///</span></span>
+<span class="line" id="L1619"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> FileSource = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L1620">    <span class="tok-comment">/// A plain file path, relative to build root or absolute.</span></span>
+<span class="line" id="L1621">    path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1622"></span>
+<span class="line" id="L1623">    <span class="tok-comment">/// A file that is generated by an interface. Those files usually are</span></span>
+<span class="line" id="L1624">    <span class="tok-comment">/// not available until built by a build step.</span></span>
+<span class="line" id="L1625">    generated: *<span class="tok-kw">const</span> GeneratedFile,</span>
+<span class="line" id="L1626"></span>
+<span class="line" id="L1627">    <span class="tok-comment">/// Returns a new file source that will have a relative path to the build root guaranteed.</span></span>
+<span class="line" id="L1628">    <span class="tok-comment">/// This should be preferred over setting `.path` directly as it documents that the files are in the project directory.</span></span>
+<span class="line" id="L1629">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">relative</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) FileSource {</span>
+<span class="line" id="L1630">        std.debug.assert(!std.fs.path.isAbsolute(path));</span>
+<span class="line" id="L1631">        <span class="tok-kw">return</span> FileSource{ .path = path };</span>
+<span class="line" id="L1632">    }</span>
+<span class="line" id="L1633"></span>
+<span class="line" id="L1634">    <span class="tok-comment">/// Returns a string that can be shown to represent the file source.</span></span>
+<span class="line" id="L1635">    <span class="tok-comment">/// Either returns the path or `&quot;generated&quot;`.</span></span>
+<span class="line" id="L1636">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getDisplayName</span>(self: FileSource) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1637">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self) {</span>
+<span class="line" id="L1638">            .path =&gt; self.path,</span>
+<span class="line" id="L1639">            .generated =&gt; <span class="tok-str">&quot;generated&quot;</span>,</span>
+<span class="line" id="L1640">        };</span>
+<span class="line" id="L1641">    }</span>
+<span class="line" id="L1642"></span>
+<span class="line" id="L1643">    <span class="tok-comment">/// Adds dependencies this file source implies to the given step.</span></span>
+<span class="line" id="L1644">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addStepDependencies</span>(self: FileSource, other_step: *Step) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1645">        <span class="tok-kw">switch</span> (self) {</span>
+<span class="line" id="L1646">            .path =&gt; {},</span>
+<span class="line" id="L1647">            .generated =&gt; |gen| other_step.dependOn(gen.step),</span>
+<span class="line" id="L1648">        }</span>
+<span class="line" id="L1649">    }</span>
+<span class="line" id="L1650"></span>
+<span class="line" id="L1651">    <span class="tok-comment">/// Should only be called during make(), returns a path relative to the build root or absolute.</span></span>
+<span class="line" id="L1652">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getPath</span>(self: FileSource, builder: *Build) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1653">        <span class="tok-kw">const</span> path = <span class="tok-kw">switch</span> (self) {</span>
+<span class="line" id="L1654">            .path =&gt; |p| builder.pathFromRoot(p),</span>
+<span class="line" id="L1655">            .generated =&gt; |gen| gen.getPath(),</span>
+<span class="line" id="L1656">        };</span>
+<span class="line" id="L1657">        <span class="tok-kw">return</span> path;</span>
+<span class="line" id="L1658">    }</span>
+<span class="line" id="L1659"></span>
+<span class="line" id="L1660">    <span class="tok-comment">/// Duplicates the file source for a given builder.</span></span>
+<span class="line" id="L1661">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dupe</span>(self: FileSource, b: *Build) FileSource {</span>
+<span class="line" id="L1662">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self) {</span>
+<span class="line" id="L1663">            .path =&gt; |p| .{ .path = b.dupePath(p) },</span>
+<span class="line" id="L1664">            .generated =&gt; |gen| .{ .generated = gen },</span>
+<span class="line" id="L1665">        };</span>
+<span class="line" id="L1666">    }</span>
+<span class="line" id="L1667">};</span>
+<span class="line" id="L1668"></span>
+<span class="line" id="L1669"><span class="tok-comment">/// Allocates a new string for assigning a value to a named macro.</span></span>
+<span class="line" id="L1670"><span class="tok-comment">/// If the value is omitted, it is set to 1.</span></span>
+<span class="line" id="L1671"><span class="tok-comment">/// `name` and `value` need not live longer than the function call.</span></span>
+<span class="line" id="L1672"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">constructCMacro</span>(allocator: Allocator, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1673">    <span class="tok-kw">var</span> macro = allocator.alloc(</span>
+<span class="line" id="L1674">        <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1675">        name.len + <span class="tok-kw">if</span> (value) |value_slice| value_slice.len + <span class="tok-number">1</span> <span class="tok-kw">else</span> <span class="tok-number">0</span>,</span>
+<span class="line" id="L1676">    ) <span class="tok-kw">catch</span> |err| <span class="tok-kw">if</span> (err == <span class="tok-kw">error</span>.OutOfMemory) <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;Out of memory&quot;</span>) <span class="tok-kw">else</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1677">    mem.copy(<span class="tok-type">u8</span>, macro, name);</span>
+<span class="line" id="L1678">    <span class="tok-kw">if</span> (value) |value_slice| {</span>
+<span class="line" id="L1679">        macro[name.len] = <span class="tok-str">'='</span>;</span>
+<span class="line" id="L1680">        mem.copy(<span class="tok-type">u8</span>, macro[name.len + <span class="tok-number">1</span> ..], value_slice);</span>
+<span class="line" id="L1681">    }</span>
+<span class="line" id="L1682">    <span class="tok-kw">return</span> macro;</span>
+<span class="line" id="L1683">}</span>
+<span class="line" id="L1684"></span>
+<span class="line" id="L1685"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> VcpkgRoot = <span class="tok-kw">union</span>(VcpkgRootStatus) {</span>
+<span class="line" id="L1686">    unattempted: <span class="tok-type">void</span>,</span>
+<span class="line" id="L1687">    not_found: <span class="tok-type">void</span>,</span>
+<span class="line" id="L1688">    found: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1689">};</span>
+<span class="line" id="L1690"></span>
+<span class="line" id="L1691"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> VcpkgRootStatus = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L1692">    unattempted,</span>
+<span class="line" id="L1693">    not_found,</span>
+<span class="line" id="L1694">    found,</span>
+<span class="line" id="L1695">};</span>
+<span class="line" id="L1696"></span>
+<span class="line" id="L1697"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstallDir = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L1698">    prefix: <span class="tok-type">void</span>,</span>
+<span class="line" id="L1699">    lib: <span class="tok-type">void</span>,</span>
+<span class="line" id="L1700">    bin: <span class="tok-type">void</span>,</span>
+<span class="line" id="L1701">    header: <span class="tok-type">void</span>,</span>
+<span class="line" id="L1702">    <span class="tok-comment">/// A path relative to the prefix</span></span>
+<span class="line" id="L1703">    custom: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1704"></span>
+<span class="line" id="L1705">    <span class="tok-comment">/// Duplicates the install directory including the path if set to custom.</span></span>
+<span class="line" id="L1706">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dupe</span>(self: InstallDir, builder: *Build) InstallDir {</span>
+<span class="line" id="L1707">        <span class="tok-kw">if</span> (self == .custom) {</span>
+<span class="line" id="L1708">            <span class="tok-comment">// Written with this temporary to avoid RLS problems</span>
+</span>
+<span class="line" id="L1709">            <span class="tok-kw">const</span> duped_path = builder.dupe(self.custom);</span>
+<span class="line" id="L1710">            <span class="tok-kw">return</span> .{ .custom = duped_path };</span>
+<span class="line" id="L1711">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1712">            <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L1713">        }</span>
+<span class="line" id="L1714">    }</span>
+<span class="line" id="L1715">};</span>
+<span class="line" id="L1716"></span>
+<span class="line" id="L1717"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> InstalledFile = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1718">    dir: InstallDir,</span>
+<span class="line" id="L1719">    path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1720"></span>
+<span class="line" id="L1721">    <span class="tok-comment">/// Duplicates the installed file path and directory.</span></span>
+<span class="line" id="L1722">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dupe</span>(self: InstalledFile, builder: *Build) InstalledFile {</span>
+<span class="line" id="L1723">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1724">            .dir = self.dir.dupe(builder),</span>
+<span class="line" id="L1725">            .path = builder.dupe(self.path),</span>
+<span class="line" id="L1726">        };</span>
+<span class="line" id="L1727">    }</span>
+<span class="line" id="L1728">};</span>
+<span class="line" id="L1729"></span>
+<span class="line" id="L1730"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serializeCpu</span>(allocator: Allocator, cpu: std.Target.Cpu) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1731">    <span class="tok-comment">// TODO this logic can disappear if cpu model + features becomes part of the target triple</span>
+</span>
+<span class="line" id="L1732">    <span class="tok-kw">const</span> all_features = cpu.arch.allFeaturesList();</span>
+<span class="line" id="L1733">    <span class="tok-kw">var</span> populated_cpu_features = cpu.model.features;</span>
+<span class="line" id="L1734">    populated_cpu_features.populateDependencies(all_features);</span>
+<span class="line" id="L1735"></span>
+<span class="line" id="L1736">    <span class="tok-kw">if</span> (populated_cpu_features.eql(cpu.features)) {</span>
+<span class="line" id="L1737">        <span class="tok-comment">// The CPU name alone is sufficient.</span>
+</span>
+<span class="line" id="L1738">        <span class="tok-kw">return</span> cpu.model.name;</span>
+<span class="line" id="L1739">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1740">        <span class="tok-kw">var</span> mcpu_buffer = ArrayList(<span class="tok-type">u8</span>).init(allocator);</span>
+<span class="line" id="L1741">        <span class="tok-kw">try</span> mcpu_buffer.appendSlice(cpu.model.name);</span>
+<span class="line" id="L1742"></span>
+<span class="line" id="L1743">        <span class="tok-kw">for</span> (all_features) |feature, i_usize| {</span>
+<span class="line" id="L1744">            <span class="tok-kw">const</span> i = <span class="tok-builtin">@intCast</span>(std.Target.Cpu.Feature.Set.Index, i_usize);</span>
+<span class="line" id="L1745">            <span class="tok-kw">const</span> in_cpu_set = populated_cpu_features.isEnabled(i);</span>
+<span class="line" id="L1746">            <span class="tok-kw">const</span> in_actual_set = cpu.features.isEnabled(i);</span>
+<span class="line" id="L1747">            <span class="tok-kw">if</span> (in_cpu_set <span class="tok-kw">and</span> !in_actual_set) {</span>
+<span class="line" id="L1748">                <span class="tok-kw">try</span> mcpu_buffer.writer().print(<span class="tok-str">&quot;-{s}&quot;</span>, .{feature.name});</span>
+<span class="line" id="L1749">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (!in_cpu_set <span class="tok-kw">and</span> in_actual_set) {</span>
+<span class="line" id="L1750">                <span class="tok-kw">try</span> mcpu_buffer.writer().print(<span class="tok-str">&quot;+{s}&quot;</span>, .{feature.name});</span>
+<span class="line" id="L1751">            }</span>
+<span class="line" id="L1752">        }</span>
+<span class="line" id="L1753"></span>
+<span class="line" id="L1754">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> mcpu_buffer.toOwnedSlice();</span>
+<span class="line" id="L1755">    }</span>
+<span class="line" id="L1756">}</span>
+<span class="line" id="L1757"></span>
+<span class="line" id="L1758"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L1759">    _ = CheckFileStep;</span>
+<span class="line" id="L1760">    _ = CheckObjectStep;</span>
+<span class="line" id="L1761">    _ = EmulatableRunStep;</span>
+<span class="line" id="L1762">    _ = FmtStep;</span>
+<span class="line" id="L1763">    _ = InstallArtifactStep;</span>
+<span class="line" id="L1764">    _ = InstallDirStep;</span>
+<span class="line" id="L1765">    _ = InstallFileStep;</span>
+<span class="line" id="L1766">    _ = InstallRawStep;</span>
+<span class="line" id="L1767">    _ = CompileStep;</span>
+<span class="line" id="L1768">    _ = LogStep;</span>
+<span class="line" id="L1769">    _ = OptionsStep;</span>
+<span class="line" id="L1770">    _ = RemoveDirStep;</span>
+<span class="line" id="L1771">    _ = RunStep;</span>
+<span class="line" id="L1772">    _ = TranslateCStep;</span>
+<span class="line" id="L1773">    _ = WriteFileStep;</span>
+<span class="line" id="L1774">}</span>
+<span class="line" id="L1775"></span>
+</code></pre></body>
+</html>

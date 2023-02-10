@@ -122,343 +122,345 @@
 <span class="line" id="L9"></span>
 <span class="line" id="L10"><span class="tok-comment">/// Serializes a value into a `getty.Serializer`.</span></span>
 <span class="line" id="L11"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(</span>
-<span class="line" id="L12">    <span class="tok-comment">/// A value to serialize.</span></span>
-<span class="line" id="L13">    value: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L14">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
-<span class="line" id="L15">    serializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L16">) blk: {</span>
-<span class="line" id="L17">    <span class="tok-kw">const</span> S = <span class="tok-builtin">@TypeOf</span>(serializer);</span>
-<span class="line" id="L18">    concepts.@&quot;getty.Serializer&quot;(S);</span>
-<span class="line" id="L19">    <span class="tok-kw">break</span> :blk S.Error!S.Ok;</span>
-<span class="line" id="L20">} {</span>
-<span class="line" id="L21">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
-<span class="line" id="L22"></span>
-<span class="line" id="L23">    <span class="tok-kw">const</span> block = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L24">        <span class="tok-comment">// Process user SBs.</span>
+<span class="line" id="L12">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L13">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L14">    <span class="tok-comment">/// A value to serialize.</span></span>
+<span class="line" id="L15">    value: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L16">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
+<span class="line" id="L17">    serializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L18">) blk: {</span>
+<span class="line" id="L19">    <span class="tok-kw">const</span> S = <span class="tok-builtin">@TypeOf</span>(serializer);</span>
+<span class="line" id="L20">    concepts.@&quot;getty.Serializer&quot;(S);</span>
+<span class="line" id="L21">    <span class="tok-kw">break</span> :blk S.Error!S.Ok;</span>
+<span class="line" id="L22">} {</span>
+<span class="line" id="L23">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
+<span class="line" id="L24"></span>
+<span class="line" id="L25">    <span class="tok-kw">const</span> block = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L26">        <span class="tok-comment">// Process user SBs.</span>
 </span>
-<span class="line" id="L25">        <span class="tok-kw">for</span> (<span class="tok-builtin">@TypeOf</span>(serializer).user_st) |sb| {</span>
-<span class="line" id="L26">            <span class="tok-kw">if</span> (sb.is(T)) {</span>
-<span class="line" id="L27">                <span class="tok-kw">break</span> :blk sb;</span>
-<span class="line" id="L28">            }</span>
-<span class="line" id="L29">        }</span>
-<span class="line" id="L30"></span>
-<span class="line" id="L31">        <span class="tok-comment">// Process type SBs.</span>
+<span class="line" id="L27">        <span class="tok-kw">for</span> (<span class="tok-builtin">@TypeOf</span>(serializer).user_st) |sb| {</span>
+<span class="line" id="L28">            <span class="tok-kw">if</span> (sb.is(T)) {</span>
+<span class="line" id="L29">                <span class="tok-kw">break</span> :blk sb;</span>
+<span class="line" id="L30">            }</span>
+<span class="line" id="L31">        }</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33">        <span class="tok-comment">// Process type SBs.</span>
 </span>
-<span class="line" id="L32">        <span class="tok-kw">if</span> (traits.has_sb(T)) {</span>
-<span class="line" id="L33">            <span class="tok-kw">break</span> :blk T.@&quot;getty.sb&quot;;</span>
-<span class="line" id="L34">        }</span>
-<span class="line" id="L35"></span>
-<span class="line" id="L36">        <span class="tok-comment">// Process serializer SBs.</span>
+<span class="line" id="L34">        <span class="tok-kw">if</span> (traits.has_sb(T)) {</span>
+<span class="line" id="L35">            <span class="tok-kw">break</span> :blk T.@&quot;getty.sb&quot;;</span>
+<span class="line" id="L36">        }</span>
+<span class="line" id="L37"></span>
+<span class="line" id="L38">        <span class="tok-comment">// Process serializer SBs.</span>
 </span>
-<span class="line" id="L37">        <span class="tok-kw">for</span> (<span class="tok-builtin">@TypeOf</span>(serializer).serializer_st) |sb| {</span>
-<span class="line" id="L38">            <span class="tok-kw">if</span> (sb.is(T)) {</span>
-<span class="line" id="L39">                <span class="tok-kw">break</span> :blk sb;</span>
-<span class="line" id="L40">            }</span>
-<span class="line" id="L41">        }</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43">        <span class="tok-comment">// Process default SBs.</span>
+<span class="line" id="L39">        <span class="tok-kw">for</span> (<span class="tok-builtin">@TypeOf</span>(serializer).serializer_st) |sb| {</span>
+<span class="line" id="L40">            <span class="tok-kw">if</span> (sb.is(T)) {</span>
+<span class="line" id="L41">                <span class="tok-kw">break</span> :blk sb;</span>
+<span class="line" id="L42">            }</span>
+<span class="line" id="L43">        }</span>
+<span class="line" id="L44"></span>
+<span class="line" id="L45">        <span class="tok-comment">// Process default SBs.</span>
 </span>
-<span class="line" id="L44">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (default_st) |sb| {</span>
-<span class="line" id="L45">            <span class="tok-kw">if</span> (sb.is(T)) {</span>
-<span class="line" id="L46">                <span class="tok-kw">break</span> :blk sb;</span>
-<span class="line" id="L47">            }</span>
-<span class="line" id="L48">        }</span>
-<span class="line" id="L49"></span>
-<span class="line" id="L50">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;type is not supported: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T));</span>
-<span class="line" id="L51">    };</span>
-<span class="line" id="L52"></span>
-<span class="line" id="L53">    <span class="tok-comment">// Process attributes, if any exist.</span>
+<span class="line" id="L46">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (default_st) |sb| {</span>
+<span class="line" id="L47">            <span class="tok-kw">if</span> (sb.is(T)) {</span>
+<span class="line" id="L48">                <span class="tok-kw">break</span> :blk sb;</span>
+<span class="line" id="L49">            }</span>
+<span class="line" id="L50">        }</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;type is not supported: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T));</span>
+<span class="line" id="L53">    };</span>
+<span class="line" id="L54"></span>
+<span class="line" id="L55">    <span class="tok-comment">// Process attributes, if any exist.</span>
 </span>
-<span class="line" id="L54">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> traits.has_attributes(T, block)) {</span>
-<span class="line" id="L55">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L56">            .Struct =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.serialize(value, serializer),</span>
-<span class="line" id="L57">            .Union =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.serialize(value, serializer),</span>
-<span class="line" id="L58">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unexpected type cannot be serialized using attributes&quot;</span>),</span>
-<span class="line" id="L59">        }</span>
-<span class="line" id="L60">    }</span>
-<span class="line" id="L61"></span>
-<span class="line" id="L62">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> block.serialize(value, serializer);</span>
-<span class="line" id="L63">}</span>
-<span class="line" id="L64"></span>
-<span class="line" id="L65"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - success, normal&quot;</span> {</span>
-<span class="line" id="L66">    <span class="tok-kw">const</span> Point = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L67">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L68">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L69">    };</span>
-<span class="line" id="L70">    <span class="tok-kw">const</span> PointCustom = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L71">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L72">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L73"></span>
-<span class="line" id="L74">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L75">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(value: <span class="tok-kw">anytype</span>, serializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
-<span class="line" id="L76">                <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeSeq(<span class="tok-number">2</span>);</span>
-<span class="line" id="L77">                <span class="tok-kw">const</span> seq = s.seq();</span>
-<span class="line" id="L78"></span>
-<span class="line" id="L79">                <span class="tok-kw">try</span> seq.serializeElement(value.x);</span>
-<span class="line" id="L80">                <span class="tok-kw">try</span> seq.serializeElement(value.y);</span>
-<span class="line" id="L81"></span>
-<span class="line" id="L82">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seq.end();</span>
-<span class="line" id="L83">            }</span>
-<span class="line" id="L84">        };</span>
-<span class="line" id="L85">    };</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87">    <span class="tok-kw">const</span> block = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L88">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L89">            <span class="tok-kw">return</span> T == Point;</span>
-<span class="line" id="L90">        }</span>
-<span class="line" id="L91"></span>
-<span class="line" id="L92">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(value: <span class="tok-kw">anytype</span>, serializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
-<span class="line" id="L93">            <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeSeq(<span class="tok-number">2</span>);</span>
-<span class="line" id="L94">            <span class="tok-kw">const</span> seq = s.seq();</span>
-<span class="line" id="L95"></span>
-<span class="line" id="L96">            <span class="tok-kw">try</span> seq.serializeElement(value.x);</span>
-<span class="line" id="L97">            <span class="tok-kw">try</span> seq.serializeElement(value.y);</span>
-<span class="line" id="L98"></span>
-<span class="line" id="L99">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> seq.end();</span>
-<span class="line" id="L100">        }</span>
-<span class="line" id="L101">    };</span>
-<span class="line" id="L102"></span>
-<span class="line" id="L103">    <span class="tok-kw">const</span> v = Point{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L104">    <span class="tok-kw">const</span> v_attrs = PointCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L105">    <span class="tok-kw">const</span> expected: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L106"></span>
-<span class="line" id="L107">    <span class="tok-comment">// Default SB</span>
+<span class="line" id="L56">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> traits.has_attributes(T, block)) {</span>
+<span class="line" id="L57">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L58">            .Struct =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.serialize(allocator, value, serializer),</span>
+<span class="line" id="L59">            .Union =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.serialize(allocator, value, serializer),</span>
+<span class="line" id="L60">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unexpected type cannot be serialized using attributes&quot;</span>),</span>
+<span class="line" id="L61">        }</span>
+<span class="line" id="L62">    }</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> block.serialize(allocator, value, serializer);</span>
+<span class="line" id="L65">}</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - success, normal&quot;</span> {</span>
+<span class="line" id="L68">    <span class="tok-kw">const</span> Point = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L69">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L70">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L71">    };</span>
+<span class="line" id="L72">    <span class="tok-kw">const</span> PointCustom = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L73">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L74">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L75"></span>
+<span class="line" id="L76">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L77">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(_: ?std.mem.Allocator, value: <span class="tok-kw">anytype</span>, serializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L78">                <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeSeq(<span class="tok-number">2</span>);</span>
+<span class="line" id="L79">                <span class="tok-kw">const</span> seq = s.seq();</span>
+<span class="line" id="L80"></span>
+<span class="line" id="L81">                <span class="tok-kw">try</span> seq.serializeElement(value.x);</span>
+<span class="line" id="L82">                <span class="tok-kw">try</span> seq.serializeElement(value.y);</span>
+<span class="line" id="L83"></span>
+<span class="line" id="L84">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seq.end();</span>
+<span class="line" id="L85">            }</span>
+<span class="line" id="L86">        };</span>
+<span class="line" id="L87">    };</span>
+<span class="line" id="L88"></span>
+<span class="line" id="L89">    <span class="tok-kw">const</span> block = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L90">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L91">            <span class="tok-kw">return</span> T == Point;</span>
+<span class="line" id="L92">        }</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(_: ?std.mem.Allocator, value: <span class="tok-kw">anytype</span>, serializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L95">            <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeSeq(<span class="tok-number">2</span>);</span>
+<span class="line" id="L96">            <span class="tok-kw">const</span> seq = s.seq();</span>
+<span class="line" id="L97"></span>
+<span class="line" id="L98">            <span class="tok-kw">try</span> seq.serializeElement(value.x);</span>
+<span class="line" id="L99">            <span class="tok-kw">try</span> seq.serializeElement(value.y);</span>
+<span class="line" id="L100"></span>
+<span class="line" id="L101">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> seq.end();</span>
+<span class="line" id="L102">        }</span>
+<span class="line" id="L103">    };</span>
+<span class="line" id="L104"></span>
+<span class="line" id="L105">    <span class="tok-kw">const</span> v = Point{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L106">    <span class="tok-kw">const</span> v_attrs = PointCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L107">    <span class="tok-kw">const</span> expected: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109">    <span class="tok-comment">// Default SB</span>
 </span>
-<span class="line" id="L108">    {</span>
-<span class="line" id="L109">        <span class="tok-kw">var</span> s = t.DefaultSerializer.init(&amp;.{</span>
-<span class="line" id="L110">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L111">            .{ .String = <span class="tok-str">&quot;x&quot;</span> },</span>
-<span class="line" id="L112">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L113">            .{ .String = <span class="tok-str">&quot;y&quot;</span> },</span>
-<span class="line" id="L114">            .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L115">            .{ .StructEnd = {} },</span>
-<span class="line" id="L116">        });</span>
-<span class="line" id="L117"></span>
-<span class="line" id="L118">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L119">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L120">    }</span>
-<span class="line" id="L121"></span>
-<span class="line" id="L122">    <span class="tok-comment">// User SB</span>
+<span class="line" id="L110">    {</span>
+<span class="line" id="L111">        <span class="tok-kw">var</span> s = t.DefaultSerializer.init(&amp;.{</span>
+<span class="line" id="L112">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L113">            .{ .String = <span class="tok-str">&quot;x&quot;</span> },</span>
+<span class="line" id="L114">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L115">            .{ .String = <span class="tok-str">&quot;y&quot;</span> },</span>
+<span class="line" id="L116">            .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L117">            .{ .StructEnd = {} },</span>
+<span class="line" id="L118">        });</span>
+<span class="line" id="L119"></span>
+<span class="line" id="L120">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L121">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L122">    }</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124">    <span class="tok-comment">// User SB</span>
 </span>
-<span class="line" id="L123">    {</span>
-<span class="line" id="L124">        <span class="tok-kw">var</span> s = t.Serializer(block, <span class="tok-null">null</span>).init(&amp;.{</span>
-<span class="line" id="L125">            .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L126">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L127">            .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L128">            .{ .SeqEnd = {} },</span>
-<span class="line" id="L129">        });</span>
-<span class="line" id="L130"></span>
-<span class="line" id="L131">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L132">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L133">    }</span>
-<span class="line" id="L134"></span>
-<span class="line" id="L135">    <span class="tok-comment">// Serializer SB</span>
+<span class="line" id="L125">    {</span>
+<span class="line" id="L126">        <span class="tok-kw">var</span> s = t.Serializer(block, <span class="tok-null">null</span>).init(&amp;.{</span>
+<span class="line" id="L127">            .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L128">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L129">            .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L130">            .{ .SeqEnd = {} },</span>
+<span class="line" id="L131">        });</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L134">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L135">    }</span>
+<span class="line" id="L136"></span>
+<span class="line" id="L137">    <span class="tok-comment">// Serializer SB</span>
 </span>
-<span class="line" id="L136">    {</span>
-<span class="line" id="L137">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, block).init(&amp;.{</span>
-<span class="line" id="L138">            .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L139">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L140">            .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L141">            .{ .SeqEnd = {} },</span>
-<span class="line" id="L142">        });</span>
-<span class="line" id="L143"></span>
-<span class="line" id="L144">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L145">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L146">    }</span>
-<span class="line" id="L147"></span>
-<span class="line" id="L148">    <span class="tok-comment">// Type SB</span>
+<span class="line" id="L138">    {</span>
+<span class="line" id="L139">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, block).init(&amp;.{</span>
+<span class="line" id="L140">            .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L141">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L142">            .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L143">            .{ .SeqEnd = {} },</span>
+<span class="line" id="L144">        });</span>
+<span class="line" id="L145"></span>
+<span class="line" id="L146">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L147">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L148">    }</span>
+<span class="line" id="L149"></span>
+<span class="line" id="L150">    <span class="tok-comment">// Type SB</span>
 </span>
-<span class="line" id="L149">    {</span>
-<span class="line" id="L150">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, <span class="tok-null">null</span>).init(&amp;.{</span>
-<span class="line" id="L151">            .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L152">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L153">            .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L154">            .{ .SeqEnd = {} },</span>
-<span class="line" id="L155">        });</span>
-<span class="line" id="L156"></span>
-<span class="line" id="L157">        serialize(v_attrs, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L158">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L159">    }</span>
-<span class="line" id="L160">}</span>
-<span class="line" id="L161"></span>
-<span class="line" id="L162"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - success, attributes&quot;</span> {</span>
-<span class="line" id="L163">    <span class="tok-kw">const</span> attrs = .{</span>
-<span class="line" id="L164">        .x = .{ .rename = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L165">        .y = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L166">    };</span>
-<span class="line" id="L167"></span>
-<span class="line" id="L168">    <span class="tok-kw">const</span> Point = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L169">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L170">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L171">    };</span>
-<span class="line" id="L172">    <span class="tok-kw">const</span> PointCustom = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L173">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L174">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L175"></span>
-<span class="line" id="L176">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L177">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
-<span class="line" id="L178">        };</span>
-<span class="line" id="L179">    };</span>
-<span class="line" id="L180"></span>
-<span class="line" id="L181">    <span class="tok-kw">const</span> block = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L182">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L183">            <span class="tok-kw">return</span> T == Point;</span>
-<span class="line" id="L184">        }</span>
-<span class="line" id="L185"></span>
-<span class="line" id="L186">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
-<span class="line" id="L187">    };</span>
-<span class="line" id="L188"></span>
-<span class="line" id="L189">    <span class="tok-kw">const</span> v = Point{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L190">    <span class="tok-kw">const</span> v_attrs = PointCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L191">    <span class="tok-kw">const</span> expected: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L192"></span>
-<span class="line" id="L193">    <span class="tok-comment">// User SB</span>
+<span class="line" id="L151">    {</span>
+<span class="line" id="L152">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, <span class="tok-null">null</span>).init(&amp;.{</span>
+<span class="line" id="L153">            .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L154">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L155">            .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L156">            .{ .SeqEnd = {} },</span>
+<span class="line" id="L157">        });</span>
+<span class="line" id="L158"></span>
+<span class="line" id="L159">        serialize(<span class="tok-null">null</span>, v_attrs, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L160">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L161">    }</span>
+<span class="line" id="L162">}</span>
+<span class="line" id="L163"></span>
+<span class="line" id="L164"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - success, attributes&quot;</span> {</span>
+<span class="line" id="L165">    <span class="tok-kw">const</span> attrs = .{</span>
+<span class="line" id="L166">        .x = .{ .rename = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L167">        .y = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L168">    };</span>
+<span class="line" id="L169"></span>
+<span class="line" id="L170">    <span class="tok-kw">const</span> Point = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L171">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L172">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L173">    };</span>
+<span class="line" id="L174">    <span class="tok-kw">const</span> PointCustom = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L175">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L176">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L177"></span>
+<span class="line" id="L178">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L179">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
+<span class="line" id="L180">        };</span>
+<span class="line" id="L181">    };</span>
+<span class="line" id="L182"></span>
+<span class="line" id="L183">    <span class="tok-kw">const</span> block = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L184">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L185">            <span class="tok-kw">return</span> T == Point;</span>
+<span class="line" id="L186">        }</span>
+<span class="line" id="L187"></span>
+<span class="line" id="L188">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
+<span class="line" id="L189">    };</span>
+<span class="line" id="L190"></span>
+<span class="line" id="L191">    <span class="tok-kw">const</span> v = Point{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L192">    <span class="tok-kw">const</span> v_attrs = PointCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L193">    <span class="tok-kw">const</span> expected: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L194"></span>
+<span class="line" id="L195">    <span class="tok-comment">// User SB</span>
 </span>
-<span class="line" id="L194">    {</span>
-<span class="line" id="L195">        <span class="tok-kw">var</span> s = t.Serializer(block, <span class="tok-null">null</span>).init(&amp;.{</span>
-<span class="line" id="L196">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L197">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L198">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L199">            .{ .StructEnd = {} },</span>
-<span class="line" id="L200">        });</span>
-<span class="line" id="L201"></span>
-<span class="line" id="L202">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L203">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L204">    }</span>
-<span class="line" id="L205"></span>
-<span class="line" id="L206">    <span class="tok-comment">// Serializer SB</span>
+<span class="line" id="L196">    {</span>
+<span class="line" id="L197">        <span class="tok-kw">var</span> s = t.Serializer(block, <span class="tok-null">null</span>).init(&amp;.{</span>
+<span class="line" id="L198">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L199">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L200">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L201">            .{ .StructEnd = {} },</span>
+<span class="line" id="L202">        });</span>
+<span class="line" id="L203"></span>
+<span class="line" id="L204">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L205">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L206">    }</span>
+<span class="line" id="L207"></span>
+<span class="line" id="L208">    <span class="tok-comment">// Serializer SB</span>
 </span>
-<span class="line" id="L207">    {</span>
-<span class="line" id="L208">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, block).init(&amp;.{</span>
-<span class="line" id="L209">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L210">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L211">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L212">            .{ .StructEnd = {} },</span>
-<span class="line" id="L213">        });</span>
-<span class="line" id="L214"></span>
-<span class="line" id="L215">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L216">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L217">    }</span>
-<span class="line" id="L218"></span>
-<span class="line" id="L219">    <span class="tok-comment">// Type SB</span>
+<span class="line" id="L209">    {</span>
+<span class="line" id="L210">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, block).init(&amp;.{</span>
+<span class="line" id="L211">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L212">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L213">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L214">            .{ .StructEnd = {} },</span>
+<span class="line" id="L215">        });</span>
+<span class="line" id="L216"></span>
+<span class="line" id="L217">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L218">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L219">    }</span>
+<span class="line" id="L220"></span>
+<span class="line" id="L221">    <span class="tok-comment">// Type SB</span>
 </span>
-<span class="line" id="L220">    {</span>
-<span class="line" id="L221">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, <span class="tok-null">null</span>).init(&amp;.{</span>
-<span class="line" id="L222">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(PointCustom), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L223">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L224">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L225">            .{ .StructEnd = {} },</span>
-<span class="line" id="L226">        });</span>
-<span class="line" id="L227"></span>
-<span class="line" id="L228">        serialize(v_attrs, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L229">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L230">    }</span>
-<span class="line" id="L231">}</span>
-<span class="line" id="L232"></span>
-<span class="line" id="L233"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - priority&quot;</span> {</span>
-<span class="line" id="L234">    <span class="tok-kw">const</span> attrs = .{</span>
-<span class="line" id="L235">        .x = .{ .rename = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L236">        .y = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L237">    };</span>
-<span class="line" id="L238">    <span class="tok-kw">const</span> invalid_attrs = .{</span>
-<span class="line" id="L239">        .foo = .{ .bar = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L240">    };</span>
-<span class="line" id="L241"></span>
-<span class="line" id="L242">    <span class="tok-kw">const</span> Point = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L243">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L244">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L245">    };</span>
-<span class="line" id="L246">    <span class="tok-kw">const</span> PointCustom = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L247">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L248">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L249"></span>
-<span class="line" id="L250">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L251">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
-<span class="line" id="L252">        };</span>
-<span class="line" id="L253">    };</span>
-<span class="line" id="L254">    <span class="tok-kw">const</span> PointInvalidCustom = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L255">        x: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L256">        y: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L257"></span>
-<span class="line" id="L258">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L259">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = invalid_attrs;</span>
-<span class="line" id="L260">        };</span>
-<span class="line" id="L261">    };</span>
-<span class="line" id="L262"></span>
-<span class="line" id="L263">    <span class="tok-kw">const</span> expected: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L222">    {</span>
+<span class="line" id="L223">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, <span class="tok-null">null</span>).init(&amp;.{</span>
+<span class="line" id="L224">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(PointCustom), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L225">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L226">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L227">            .{ .StructEnd = {} },</span>
+<span class="line" id="L228">        });</span>
+<span class="line" id="L229"></span>
+<span class="line" id="L230">        serialize(<span class="tok-null">null</span>, v_attrs, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L231">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L232">    }</span>
+<span class="line" id="L233">}</span>
+<span class="line" id="L234"></span>
+<span class="line" id="L235"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - priority&quot;</span> {</span>
+<span class="line" id="L236">    <span class="tok-kw">const</span> attrs = .{</span>
+<span class="line" id="L237">        .x = .{ .rename = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L238">        .y = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L239">    };</span>
+<span class="line" id="L240">    <span class="tok-kw">const</span> invalid_attrs = .{</span>
+<span class="line" id="L241">        .foo = .{ .bar = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L242">    };</span>
+<span class="line" id="L243"></span>
+<span class="line" id="L244">    <span class="tok-kw">const</span> Point = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L245">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L246">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L247">    };</span>
+<span class="line" id="L248">    <span class="tok-kw">const</span> PointCustom = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L249">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L250">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L251"></span>
+<span class="line" id="L252">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L253">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
+<span class="line" id="L254">        };</span>
+<span class="line" id="L255">    };</span>
+<span class="line" id="L256">    <span class="tok-kw">const</span> PointInvalidCustom = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L257">        x: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L258">        y: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L261">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = invalid_attrs;</span>
+<span class="line" id="L262">        };</span>
+<span class="line" id="L263">    };</span>
 <span class="line" id="L264"></span>
-<span class="line" id="L265">    <span class="tok-comment">// Serializer SB &gt; Default SB</span>
+<span class="line" id="L265">    <span class="tok-kw">const</span> expected: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L266"></span>
+<span class="line" id="L267">    <span class="tok-comment">// Serializer SB &gt; Default SB</span>
 </span>
-<span class="line" id="L266">    {</span>
-<span class="line" id="L267">        <span class="tok-kw">var</span> v = Point{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L268"></span>
-<span class="line" id="L269">        <span class="tok-kw">const</span> serializer_block = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L270">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L271">                <span class="tok-kw">return</span> T == Point;</span>
-<span class="line" id="L272">            }</span>
-<span class="line" id="L273"></span>
-<span class="line" id="L274">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
-<span class="line" id="L275">        };</span>
-<span class="line" id="L276"></span>
-<span class="line" id="L277">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, serializer_block).init(&amp;.{</span>
-<span class="line" id="L278">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L279">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L280">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L281">            .{ .StructEnd = {} },</span>
-<span class="line" id="L282">        });</span>
-<span class="line" id="L283"></span>
-<span class="line" id="L284">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L285">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L286">    }</span>
-<span class="line" id="L287"></span>
-<span class="line" id="L288">    <span class="tok-comment">// Type SB &gt; Serializer SB</span>
+<span class="line" id="L268">    {</span>
+<span class="line" id="L269">        <span class="tok-kw">var</span> v = Point{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L270"></span>
+<span class="line" id="L271">        <span class="tok-kw">const</span> serializer_block = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L272">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L273">                <span class="tok-kw">return</span> T == Point;</span>
+<span class="line" id="L274">            }</span>
+<span class="line" id="L275"></span>
+<span class="line" id="L276">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
+<span class="line" id="L277">        };</span>
+<span class="line" id="L278"></span>
+<span class="line" id="L279">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, serializer_block).init(&amp;.{</span>
+<span class="line" id="L280">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Point), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L281">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L282">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L283">            .{ .StructEnd = {} },</span>
+<span class="line" id="L284">        });</span>
+<span class="line" id="L285"></span>
+<span class="line" id="L286">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L287">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L288">    }</span>
+<span class="line" id="L289"></span>
+<span class="line" id="L290">    <span class="tok-comment">// Type SB &gt; Serializer SB</span>
 </span>
-<span class="line" id="L289">    {</span>
-<span class="line" id="L290">        <span class="tok-kw">const</span> v = PointCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L291"></span>
-<span class="line" id="L292">        <span class="tok-kw">const</span> serializer_block = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L293">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L294">                <span class="tok-kw">return</span> T == PointCustom;</span>
-<span class="line" id="L295">            }</span>
-<span class="line" id="L296"></span>
-<span class="line" id="L297">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = invalid_attrs;</span>
-<span class="line" id="L298">        };</span>
-<span class="line" id="L299"></span>
-<span class="line" id="L300">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, serializer_block).init(&amp;.{</span>
-<span class="line" id="L301">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(PointCustom), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L302">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L303">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L304">            .{ .StructEnd = {} },</span>
-<span class="line" id="L305">        });</span>
-<span class="line" id="L306"></span>
-<span class="line" id="L307">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L308">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L309">    }</span>
-<span class="line" id="L310"></span>
-<span class="line" id="L311">    <span class="tok-comment">// User SB &gt; Type SB</span>
+<span class="line" id="L291">    {</span>
+<span class="line" id="L292">        <span class="tok-kw">const</span> v = PointCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L293"></span>
+<span class="line" id="L294">        <span class="tok-kw">const</span> serializer_block = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L295">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L296">                <span class="tok-kw">return</span> T == PointCustom;</span>
+<span class="line" id="L297">            }</span>
+<span class="line" id="L298"></span>
+<span class="line" id="L299">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = invalid_attrs;</span>
+<span class="line" id="L300">        };</span>
+<span class="line" id="L301"></span>
+<span class="line" id="L302">        <span class="tok-kw">var</span> s = t.Serializer(<span class="tok-null">null</span>, serializer_block).init(&amp;.{</span>
+<span class="line" id="L303">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(PointCustom), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L304">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L305">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L306">            .{ .StructEnd = {} },</span>
+<span class="line" id="L307">        });</span>
+<span class="line" id="L308"></span>
+<span class="line" id="L309">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L310">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L311">    }</span>
+<span class="line" id="L312"></span>
+<span class="line" id="L313">    <span class="tok-comment">// User SB &gt; Type SB</span>
 </span>
-<span class="line" id="L312">    {</span>
-<span class="line" id="L313">        <span class="tok-kw">const</span> v = PointInvalidCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
-<span class="line" id="L314"></span>
-<span class="line" id="L315">        <span class="tok-kw">const</span> user_block = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L316">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L317">                <span class="tok-kw">return</span> T == PointInvalidCustom;</span>
-<span class="line" id="L318">            }</span>
-<span class="line" id="L319"></span>
-<span class="line" id="L320">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
-<span class="line" id="L321">        };</span>
-<span class="line" id="L322"></span>
-<span class="line" id="L323">        <span class="tok-kw">var</span> s = t.Serializer(user_block, <span class="tok-null">null</span>).init(&amp;.{</span>
-<span class="line" id="L324">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(PointInvalidCustom), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L325">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L326">            .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L327">            .{ .StructEnd = {} },</span>
-<span class="line" id="L328">        });</span>
-<span class="line" id="L329"></span>
-<span class="line" id="L330">        serialize(v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L331">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
-<span class="line" id="L332">    }</span>
-<span class="line" id="L333">}</span>
-<span class="line" id="L334"></span>
+<span class="line" id="L314">    {</span>
+<span class="line" id="L315">        <span class="tok-kw">const</span> v = PointInvalidCustom{ .x = <span class="tok-number">1</span>, .y = <span class="tok-number">2</span> };</span>
+<span class="line" id="L316"></span>
+<span class="line" id="L317">        <span class="tok-kw">const</span> user_block = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L318">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L319">                <span class="tok-kw">return</span> T == PointInvalidCustom;</span>
+<span class="line" id="L320">            }</span>
+<span class="line" id="L321"></span>
+<span class="line" id="L322">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = attrs;</span>
+<span class="line" id="L323">        };</span>
+<span class="line" id="L324"></span>
+<span class="line" id="L325">        <span class="tok-kw">var</span> s = t.Serializer(user_block, <span class="tok-null">null</span>).init(&amp;.{</span>
+<span class="line" id="L326">            .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(PointInvalidCustom), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L327">            .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L328">            .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L329">            .{ .StructEnd = {} },</span>
+<span class="line" id="L330">        });</span>
+<span class="line" id="L331"></span>
+<span class="line" id="L332">        serialize(<span class="tok-null">null</span>, v, s.serializer()) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L333">        <span class="tok-kw">try</span> expectEqual(expected, s.remaining());</span>
+<span class="line" id="L334">    }</span>
+<span class="line" id="L335">}</span>
+<span class="line" id="L336"></span>
 </code></pre></body>
 </html>

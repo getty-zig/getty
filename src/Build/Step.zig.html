@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Build/Step.zig - source view</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <style>
+      body{
+        font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      pre > code {
+        display: block;
+        overflow: auto;
+        line-height: normal;
+        margin: 0em;
+      }
+      .tok-kw {
+          color: #333;
+          font-weight: bold;
+      }
+      .tok-str {
+          color: #d14;
+      }
+      .tok-builtin {
+          color: #005C7A;
+      }
+      .tok-comment {
+          color: #545454;
+          font-style: italic;
+      }
+      .tok-fn {
+          color: #900;
+          font-weight: bold;
+      }
+      .tok-null {
+          color: #005C5C;
+      }
+      .tok-number {
+          color: #005C5C;
+      }
+      .tok-type {
+          color: #458;
+          font-weight: bold;
+      }
+      pre {
+        counter-reset: line;
+      }
+      pre .line:before {
+        counter-increment: line;
+        content: counter(line);
+        display: inline-block;
+        padding-right: 1em;
+        width: 2em;
+        text-align: right;
+        color: #999;
+      }
+      
+      .line {
+        width: 100%;
+        display: inline-block;
+      }
+      .line:target {
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        background: #fafafa;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body{
+            background:#222;
+            color: #ccc;
+        }
+        pre > code {
+            color: #ccc;
+            background: #222;
+            border: unset;
+        }
+        .line:target {
+            border-top: 1px solid #444;
+            border-bottom: 1px solid #444;
+            background: #333;
+        }
+        .tok-kw {
+            color: #eee;
+        }
+        .tok-str {
+            color: #2e5;
+        }
+        .tok-builtin {
+            color: #ff894c;
+        }
+        .tok-comment {
+            color: #aa7;
+        }
+        .tok-fn {
+            color: #B1A0F8;
+        }
+        .tok-null {
+            color: #ff8080;
+        }
+        .tok-number {
+            color: #ff8080;
+        }
+        .tok-type {
+            color: #68f;
+        }
+      }
+    </style>
+</head>
+<body>
+<pre><code><span class="line" id="L1">id: Id,</span>
+<span class="line" id="L2">name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L3">makeFn: *<span class="tok-kw">const</span> <span class="tok-kw">fn</span> (self: *Step) <span class="tok-type">anyerror</span>!<span class="tok-type">void</span>,</span>
+<span class="line" id="L4">dependencies: std.ArrayList(*Step),</span>
+<span class="line" id="L5">loop_flag: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L6">done_flag: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Id = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L9">    top_level,</span>
+<span class="line" id="L10">    compile,</span>
+<span class="line" id="L11">    install_artifact,</span>
+<span class="line" id="L12">    install_file,</span>
+<span class="line" id="L13">    install_dir,</span>
+<span class="line" id="L14">    log,</span>
+<span class="line" id="L15">    remove_dir,</span>
+<span class="line" id="L16">    fmt,</span>
+<span class="line" id="L17">    translate_c,</span>
+<span class="line" id="L18">    write_file,</span>
+<span class="line" id="L19">    run,</span>
+<span class="line" id="L20">    emulatable_run,</span>
+<span class="line" id="L21">    check_file,</span>
+<span class="line" id="L22">    check_object,</span>
+<span class="line" id="L23">    config_header,</span>
+<span class="line" id="L24">    install_raw,</span>
+<span class="line" id="L25">    options,</span>
+<span class="line" id="L26">    custom,</span>
+<span class="line" id="L27"></span>
+<span class="line" id="L28">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Type</span>(<span class="tok-kw">comptime</span> id: Id) <span class="tok-type">type</span> {</span>
+<span class="line" id="L29">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (id) {</span>
+<span class="line" id="L30">            .top_level =&gt; Build.TopLevelStep,</span>
+<span class="line" id="L31">            .compile =&gt; Build.CompileStep,</span>
+<span class="line" id="L32">            .install_artifact =&gt; Build.InstallArtifactStep,</span>
+<span class="line" id="L33">            .install_file =&gt; Build.InstallFileStep,</span>
+<span class="line" id="L34">            .install_dir =&gt; Build.InstallDirStep,</span>
+<span class="line" id="L35">            .log =&gt; Build.LogStep,</span>
+<span class="line" id="L36">            .remove_dir =&gt; Build.RemoveDirStep,</span>
+<span class="line" id="L37">            .fmt =&gt; Build.FmtStep,</span>
+<span class="line" id="L38">            .translate_c =&gt; Build.TranslateCStep,</span>
+<span class="line" id="L39">            .write_file =&gt; Build.WriteFileStep,</span>
+<span class="line" id="L40">            .run =&gt; Build.RunStep,</span>
+<span class="line" id="L41">            .emulatable_run =&gt; Build.EmulatableRunStep,</span>
+<span class="line" id="L42">            .check_file =&gt; Build.CheckFileStep,</span>
+<span class="line" id="L43">            .check_object =&gt; Build.CheckObjectStep,</span>
+<span class="line" id="L44">            .config_header =&gt; Build.ConfigHeaderStep,</span>
+<span class="line" id="L45">            .install_raw =&gt; Build.InstallRawStep,</span>
+<span class="line" id="L46">            .options =&gt; Build.OptionsStep,</span>
+<span class="line" id="L47">            .custom =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;no type available for custom step&quot;</span>),</span>
+<span class="line" id="L48">        };</span>
+<span class="line" id="L49">    }</span>
+<span class="line" id="L50">};</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(</span>
+<span class="line" id="L53">    id: Id,</span>
+<span class="line" id="L54">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L55">    allocator: Allocator,</span>
+<span class="line" id="L56">    makeFn: *<span class="tok-kw">const</span> <span class="tok-kw">fn</span> (self: *Step) <span class="tok-type">anyerror</span>!<span class="tok-type">void</span>,</span>
+<span class="line" id="L57">) Step {</span>
+<span class="line" id="L58">    <span class="tok-kw">return</span> Step{</span>
+<span class="line" id="L59">        .id = id,</span>
+<span class="line" id="L60">        .name = allocator.dupe(<span class="tok-type">u8</span>, name) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>),</span>
+<span class="line" id="L61">        .makeFn = makeFn,</span>
+<span class="line" id="L62">        .dependencies = std.ArrayList(*Step).init(allocator),</span>
+<span class="line" id="L63">        .loop_flag = <span class="tok-null">false</span>,</span>
+<span class="line" id="L64">        .done_flag = <span class="tok-null">false</span>,</span>
+<span class="line" id="L65">    };</span>
+<span class="line" id="L66">}</span>
+<span class="line" id="L67"></span>
+<span class="line" id="L68"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initNoOp</span>(id: Id, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, allocator: Allocator) Step {</span>
+<span class="line" id="L69">    <span class="tok-kw">return</span> init(id, name, allocator, makeNoOp);</span>
+<span class="line" id="L70">}</span>
+<span class="line" id="L71"></span>
+<span class="line" id="L72"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">make</span>(self: *Step) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L73">    <span class="tok-kw">if</span> (self.done_flag) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L74"></span>
+<span class="line" id="L75">    <span class="tok-kw">try</span> self.makeFn(self);</span>
+<span class="line" id="L76">    self.done_flag = <span class="tok-null">true</span>;</span>
+<span class="line" id="L77">}</span>
+<span class="line" id="L78"></span>
+<span class="line" id="L79"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">dependOn</span>(self: *Step, other: *Step) <span class="tok-type">void</span> {</span>
+<span class="line" id="L80">    self.dependencies.append(other) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L81">}</span>
+<span class="line" id="L82"></span>
+<span class="line" id="L83"><span class="tok-kw">fn</span> <span class="tok-fn">makeNoOp</span>(self: *Step) <span class="tok-type">anyerror</span>!<span class="tok-type">void</span> {</span>
+<span class="line" id="L84">    _ = self;</span>
+<span class="line" id="L85">}</span>
+<span class="line" id="L86"></span>
+<span class="line" id="L87"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cast</span>(step: *Step, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) ?*T {</span>
+<span class="line" id="L88">    <span class="tok-kw">if</span> (step.id == T.base_id) {</span>
+<span class="line" id="L89">        <span class="tok-kw">return</span> <span class="tok-builtin">@fieldParentPtr</span>(T, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L90">    }</span>
+<span class="line" id="L91">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L92">}</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94"><span class="tok-kw">const</span> Step = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L95"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
+<span class="line" id="L96"><span class="tok-kw">const</span> Build = std.Build;</span>
+<span class="line" id="L97"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
+<span class="line" id="L98"></span>
+</code></pre></body>
+</html>
