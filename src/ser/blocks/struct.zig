@@ -47,28 +47,26 @@ pub fn serialize(
     const st = s.structure();
 
     inline for (fields) |field| {
-        if (field.type != void) {
-            // The name of the field to be serialized.
-            comptime var name: []const u8 = field.name;
+        // The name of the field to be serialized.
+        comptime var name: []const u8 = field.name;
 
-            // Process attributes.
-            if (attributes) |attrs| {
-                if (@hasField(@TypeOf(attrs), field.name)) {
-                    const attr = @field(attrs, field.name);
+        // Process attributes.
+        if (attributes) |attrs| {
+            if (@hasField(@TypeOf(attrs), field.name)) {
+                const attr = @field(attrs, field.name);
 
-                    if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                        continue;
-                    }
+                if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
+                    continue;
+                }
 
-                    if (@hasField(@TypeOf(attr), "rename")) {
-                        name = attr.rename;
-                    }
+                if (@hasField(@TypeOf(attr), "rename")) {
+                    name = attr.rename;
                 }
             }
-
-            // Serialize field.
-            try st.serializeField(name, @field(value, field.name));
         }
+
+        // Serialize field.
+        try st.serializeField(name, @field(value, field.name));
     }
 
     return try st.end();
@@ -88,6 +86,20 @@ test "serialize - struct" {
         .{ .I32 = 3 },
         .{ .String = "d" },
         .{ .I32 = 4 },
+        .{ .StructEnd = {} },
+    });
+}
+
+test "serialize - struct (void)" {
+    const T = struct { a: void, b: void };
+    const v = T{ .a = {}, .b = {} };
+
+    try t.run(null, serialize, v, &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 2 } },
+        .{ .String = "a" },
+        .{ .Void = {} },
+        .{ .String = "b" },
+        .{ .Void = {} },
         .{ .StructEnd = {} },
     });
 }
