@@ -26,17 +26,19 @@ pub fn serialize(
     const fields = std.meta.fields(T);
     const attributes = comptime getAttributes(T, @TypeOf(serializer));
 
-    // Get number of fields that will actually be serialized.
+    // The number of fields that will be serialized.
+    //
+    // length is initially set to the number of fields in the struct, but is
+    // decremented for any field that has the "skip" attribute set.
     const length: usize = comptime blk: {
         var len: usize = fields.len;
 
         if (attributes) |attrs| {
-            for (std.meta.fields(@TypeOf(attrs))) |attr_field| {
-                const attr = @field(attrs, attr_field.name);
+            for (std.meta.fields(@TypeOf(attrs))) |field| {
+                const attr = @field(attrs, field.name);
+                const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
 
-                if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                    len -= 1;
-                }
+                if (skipped) len -= 1;
             }
         }
 
@@ -47,25 +49,43 @@ pub fn serialize(
     const st = s.structure();
 
     inline for (fields) |field| {
-        // The name of the field to be serialized.
-        comptime var name: []const u8 = field.name;
+        // Attributes for field.
+        //
+        // If field has no associated attributes, attrs is null.
+        const attrs = comptime blk: {
+            if (attributes) |attrs| {
+                if (@hasField(@TypeOf(attrs), field.name)) {
+                    const a = @field(attrs, field.name);
+                    const A = @TypeOf(a);
 
-        // Process attributes.
-        if (attributes) |attrs| {
-            if (@hasField(@TypeOf(attrs), field.name)) {
-                const attr = @field(attrs, field.name);
-
-                if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                    continue;
-                }
-
-                if (@hasField(@TypeOf(attr), "rename")) {
-                    name = attr.rename;
+                    break :blk @as(?A, a);
                 }
             }
+
+            break :blk null;
+        };
+
+        // If field has the "skip" attribute set, then it is skipped.
+        if (attrs) |a| {
+            const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+            if (skipped) continue;
         }
 
-        // Serialize field.
+        // The name that will be used when serializing field.
+        //
+        // Initially, name is set to field's name. But field has the "rename"
+        // attribute set, name is set to the attribute's value.
+        comptime var name = blk: {
+            var n = field.name;
+
+            if (attrs) |a| {
+                const renamed = @hasField(@TypeOf(a), "rename");
+                if (renamed) n = a.rename;
+            }
+
+            break :blk n;
+        };
+
         try st.serializeField(name, @field(value, field.name));
     }
 

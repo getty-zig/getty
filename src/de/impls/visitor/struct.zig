@@ -34,14 +34,14 @@ pub fn Visitor(comptime Struct: type) type {
                 }
             }
 
+            // Indicates whether or not unknown fields should be ignored.
             const ignore_unknown_fields = comptime blk: {
                 if (attributes) |attrs| {
                     if (@hasField(@TypeOf(attrs), "Container")) {
                         const attr = attrs.Container;
+                        const ignore = @hasField(@TypeOf(attr), "ignore_unknown_fields") and attr.ignore_unknown_fields;
 
-                        if (@hasField(@TypeOf(attr), "ignore_unknown_fields") and attr.ignore_unknown_fields) {
-                            break :blk true;
-                        }
+                        if (ignore) break :blk true;
                     }
                 }
 
@@ -49,6 +49,10 @@ pub fn Visitor(comptime Struct: type) type {
             };
 
             key_loop: while (try map.nextKey(allocator, []const u8)) |key| {
+                // If key is allocated, free it at the end of this loop.
+                //
+                // key won't ever be part of the final value returned by the
+                // visitor, so there's never a reason to keep it around.
                 const key_is_allocated = map.isKeyAllocated(@TypeOf(key));
 
                 if (key_is_allocated and allocator == null) {
@@ -60,54 +64,70 @@ pub fn Visitor(comptime Struct: type) type {
                     free(allocator.?, key);
                 };
 
+                // Indicates whether or not key matches any field in the struct.
                 var found = false;
 
-                // Check to see if the key matches any field in Struct.
-                //
-                // If there are no matches, found will remain false and an
-                // error will be returned immediately after this loop.
                 inline for (fields) |field, i| {
-                    // The name of the field to be deserialized.
-                    var name = field.name;
+                    // Attributes for field.
+                    //
+                    // If field has no associated attributes, attrs is null.
+                    const attrs = comptime blk: {
+                        if (attributes) |attrs| {
+                            if (@hasField(@TypeOf(attrs), field.name)) {
+                                const a = @field(attrs, field.name);
+                                const A = @TypeOf(a);
 
-                    // Process 'rename' attribute.
-                    if (attributes) |attrs| {
-                        if (@hasField(@TypeOf(attrs), field.name)) {
-                            const attr = @field(attrs, field.name);
-
-                            if (@hasField(@TypeOf(attr), "rename")) {
-                                name = attr.rename;
+                                break :blk @as(?A, a);
                             }
                         }
-                    }
 
-                    // Deserialize field.
+                        break :blk null;
+                    };
+
+                    // The name that will be used to compare key against.
+                    //
+                    // Initially, name is set to field's name. But field has
+                    // the "rename" attribute set, name is set to the
+                    // attribute's value.
+                    var name = blk: {
+                        var n = field.name;
+
+                        if (attrs) |a| {
+                            const renamed = @hasField(@TypeOf(a), "rename");
+                            if (renamed) n = a.rename;
+                        }
+
+                        break :blk n;
+                    };
+
+                    // If key matches field's name or its rename attribute,
+                    // deserialize the field.
                     if (std.mem.eql(u8, name, key)) {
-                        // Return an error for duplicate fields.
+                        if (field.is_comptime) {
+                            @compileError("TODO: DESERIALIZATION OF COMPTIME FIELD");
+                        }
+
+                        // If field has already been deserialized, return an
+                        // error.
                         if (seen[i]) {
                             return error.DuplicateField;
                         }
 
-                        // Process 'skip' attribute.
-                        if (attributes) |attrs| {
-                            if (@hasField(@TypeOf(attrs), field.name)) {
-                                const attr = @field(attrs, field.name);
+                        const value = try map.nextValue(allocator, field.type);
 
-                                if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                                    // Skip value, but check its validity.
-                                    _ = try map.nextValue(allocator, field.type);
-
-                                    // Move on to next key.
-                                    continue :key_loop;
-                                }
-                            }
+                        // Do assign value to field if the "skip" attribute is
+                        // set.
+                        //
+                        // Note that we still deserialize a value and check its
+                        // validity (e.g., its type is correct), we just don't
+                        // assign it to field.
+                        if (attrs) |a| {
+                            const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+                            if (skipped) continue :key_loop;
                         }
 
                         // Deserialize and assign value to field.
-                        switch (field.is_comptime) {
-                            false => @field(structure, field.name) = try map.nextValue(allocator, field.type),
-                            true => @compileError("TODO"),
-                        }
+                        @field(structure, field.name) = value;
 
                         seen[i] = true;
                         found = true;
@@ -116,6 +136,12 @@ pub fn Visitor(comptime Struct: type) type {
                     }
                 }
 
+                // Handle any keys that didn't match any fields in the struct.
+                //
+                // If the "ignore_unknown_fields" attribute is set, we'll
+                // deserialize and discard its corresponding value. Note that
+                // unlike with the "skip" attribute, the validity of an unknown
+                // field is not checked.
                 if (!found) {
                     switch (ignore_unknown_fields) {
                         true => _ = try map.nextValue(allocator, Ignored),
@@ -124,10 +150,11 @@ pub fn Visitor(comptime Struct: type) type {
                 }
             }
 
-            // Set remaining, unassigned fields that have default values.
+            // Process any remaining, unassigned fields.
             inline for (fields) |field, i| {
                 if (!seen[i]) blk: {
-                    // Process "default" attribute.
+                    // Assign to field the value of the "default" attribute, if
+                    // it is set.
                     if (attributes) |attrs| {
                         if (@hasField(@TypeOf(attrs), field.name)) {
                             const attr = @field(attrs, field.name);
@@ -142,7 +169,8 @@ pub fn Visitor(comptime Struct: type) type {
                         }
                     }
 
-                    // Process default values.
+                    // Assign to field its default value if it exists and the
+                    // "default" attribute is not set.
                     if (field.default_value) |default_ptr| {
                         if (!field.is_comptime) {
                             const aligned_default_ptr = @alignCast(@alignOf(field.type), default_ptr);
@@ -153,6 +181,8 @@ pub fn Visitor(comptime Struct: type) type {
                         }
                     }
 
+                    // The field has not been assigned a value and does not
+                    // have any default value, so return an error.
                     return error.MissingField;
                 }
             }
