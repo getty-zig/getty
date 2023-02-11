@@ -147,14 +147,15 @@
 <span class="line" id="L34">                }</span>
 <span class="line" id="L35">            }</span>
 <span class="line" id="L36"></span>
-<span class="line" id="L37">            <span class="tok-kw">const</span> ignore_unknown_fields = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L38">                <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L39">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), <span class="tok-str">&quot;Container&quot;</span>)) {</span>
-<span class="line" id="L40">                        <span class="tok-kw">const</span> attr = attrs.Container;</span>
-<span class="line" id="L41"></span>
-<span class="line" id="L42">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;ignore_unknown_fields&quot;</span>) <span class="tok-kw">and</span> attr.ignore_unknown_fields) {</span>
-<span class="line" id="L43">                            <span class="tok-kw">break</span> :blk <span class="tok-null">true</span>;</span>
-<span class="line" id="L44">                        }</span>
+<span class="line" id="L37">            <span class="tok-comment">// Indicates whether or not unknown fields should be ignored.</span>
+</span>
+<span class="line" id="L38">            <span class="tok-kw">const</span> ignore_unknown_fields = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L39">                <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L40">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), <span class="tok-str">&quot;Container&quot;</span>)) {</span>
+<span class="line" id="L41">                        <span class="tok-kw">const</span> attr = attrs.Container;</span>
+<span class="line" id="L42">                        <span class="tok-kw">const</span> ignore = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;ignore_unknown_fields&quot;</span>) <span class="tok-kw">and</span> attr.ignore_unknown_fields;</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44">                        <span class="tok-kw">if</span> (ignore) <span class="tok-kw">break</span> :blk <span class="tok-null">true</span>;</span>
 <span class="line" id="L45">                    }</span>
 <span class="line" id="L46">                }</span>
 <span class="line" id="L47"></span>
@@ -162,133 +163,185 @@
 <span class="line" id="L49">            };</span>
 <span class="line" id="L50"></span>
 <span class="line" id="L51">            key_loop: <span class="tok-kw">while</span> (<span class="tok-kw">try</span> map.nextKey(allocator, []<span class="tok-kw">const</span> <span class="tok-type">u8</span>)) |key| {</span>
-<span class="line" id="L52">                <span class="tok-kw">const</span> key_is_allocated = map.isKeyAllocated(<span class="tok-builtin">@TypeOf</span>(key));</span>
-<span class="line" id="L53"></span>
-<span class="line" id="L54">                <span class="tok-kw">if</span> (key_is_allocated <span class="tok-kw">and</span> allocator == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L55">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L56">                }</span>
+<span class="line" id="L52">                <span class="tok-comment">// If key is allocated, free it at the end of this loop.</span>
+</span>
+<span class="line" id="L53">                <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L54">                <span class="tok-comment">// key won't ever be part of the final value returned by the</span>
+</span>
+<span class="line" id="L55">                <span class="tok-comment">// visitor, so there's never a reason to keep it around.</span>
+</span>
+<span class="line" id="L56">                <span class="tok-kw">const</span> key_is_allocated = map.isKeyAllocated(<span class="tok-builtin">@TypeOf</span>(key));</span>
 <span class="line" id="L57"></span>
-<span class="line" id="L58">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (key_is_allocated) {</span>
-<span class="line" id="L59">                    std.debug.assert(allocator != <span class="tok-null">null</span>);</span>
-<span class="line" id="L60">                    free(allocator.?, key);</span>
-<span class="line" id="L61">                };</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63">                <span class="tok-kw">var</span> found = <span class="tok-null">false</span>;</span>
-<span class="line" id="L64"></span>
-<span class="line" id="L65">                <span class="tok-comment">// Check to see if the key matches any field in Struct.</span>
+<span class="line" id="L58">                <span class="tok-kw">if</span> (key_is_allocated <span class="tok-kw">and</span> allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L59">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
+<span class="line" id="L60">                }</span>
+<span class="line" id="L61"></span>
+<span class="line" id="L62">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (key_is_allocated) {</span>
+<span class="line" id="L63">                    std.debug.assert(allocator != <span class="tok-null">null</span>);</span>
+<span class="line" id="L64">                    free(allocator.?, key);</span>
+<span class="line" id="L65">                };</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67">                <span class="tok-comment">// Indicates whether or not key matches any field in the struct.</span>
 </span>
-<span class="line" id="L66">                <span class="tok-comment">//</span>
+<span class="line" id="L68">                <span class="tok-kw">var</span> found = <span class="tok-null">false</span>;</span>
+<span class="line" id="L69"></span>
+<span class="line" id="L70">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field, i| {</span>
+<span class="line" id="L71">                    <span class="tok-comment">// Attributes for field.</span>
 </span>
-<span class="line" id="L67">                <span class="tok-comment">// If there are no matches, found will remain false and an</span>
+<span class="line" id="L72">                    <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L68">                <span class="tok-comment">// error will be returned immediately after this loop.</span>
+<span class="line" id="L73">                    <span class="tok-comment">// If field has no associated attributes, attrs is null.</span>
 </span>
-<span class="line" id="L69">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field, i| {</span>
-<span class="line" id="L70">                    <span class="tok-comment">// The name of the field to be deserialized.</span>
-</span>
-<span class="line" id="L71">                    <span class="tok-kw">var</span> name = field.name;</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">                    <span class="tok-comment">// Process 'rename' attribute.</span>
-</span>
-<span class="line" id="L74">                    <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L75">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
-<span class="line" id="L76">                            <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
-<span class="line" id="L77"></span>
-<span class="line" id="L78">                            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;rename&quot;</span>)) {</span>
-<span class="line" id="L79">                                name = attr.rename;</span>
-<span class="line" id="L80">                            }</span>
-<span class="line" id="L81">                        }</span>
-<span class="line" id="L82">                    }</span>
+<span class="line" id="L74">                    <span class="tok-kw">const</span> attrs = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L75">                        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L76">                            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
+<span class="line" id="L77">                                <span class="tok-kw">const</span> a = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L78">                                <span class="tok-kw">const</span> A = <span class="tok-builtin">@TypeOf</span>(a);</span>
+<span class="line" id="L79"></span>
+<span class="line" id="L80">                                <span class="tok-kw">break</span> :blk <span class="tok-builtin">@as</span>(?A, a);</span>
+<span class="line" id="L81">                            }</span>
+<span class="line" id="L82">                        }</span>
 <span class="line" id="L83"></span>
-<span class="line" id="L84">                    <span class="tok-comment">// Deserialize field.</span>
+<span class="line" id="L84">                        <span class="tok-kw">break</span> :blk <span class="tok-null">null</span>;</span>
+<span class="line" id="L85">                    };</span>
+<span class="line" id="L86"></span>
+<span class="line" id="L87">                    <span class="tok-comment">// The name that will be used to compare key against.</span>
 </span>
-<span class="line" id="L85">                    <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, name, key)) {</span>
-<span class="line" id="L86">                        <span class="tok-comment">// Return an error for duplicate fields.</span>
+<span class="line" id="L88">                    <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L87">                        <span class="tok-kw">if</span> (seen[i]) {</span>
-<span class="line" id="L88">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.DuplicateField;</span>
-<span class="line" id="L89">                        }</span>
-<span class="line" id="L90"></span>
-<span class="line" id="L91">                        <span class="tok-comment">// Process 'skip' attribute.</span>
+<span class="line" id="L89">                    <span class="tok-comment">// Initially, name is set to field's name. But field has</span>
 </span>
-<span class="line" id="L92">                        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L93">                            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
-<span class="line" id="L94">                                <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
-<span class="line" id="L95"></span>
-<span class="line" id="L96">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> attr.skip) {</span>
-<span class="line" id="L97">                                    <span class="tok-comment">// Skip value, but check its validity.</span>
+<span class="line" id="L90">                    <span class="tok-comment">// the &quot;rename&quot; attribute set, name is set to the</span>
 </span>
-<span class="line" id="L98">                                    _ = <span class="tok-kw">try</span> map.nextValue(allocator, field.<span class="tok-type">type</span>);</span>
+<span class="line" id="L91">                    <span class="tok-comment">// attribute's value.</span>
+</span>
+<span class="line" id="L92">                    <span class="tok-kw">var</span> name = blk: {</span>
+<span class="line" id="L93">                        <span class="tok-kw">var</span> n = field.name;</span>
+<span class="line" id="L94"></span>
+<span class="line" id="L95">                        <span class="tok-kw">if</span> (attrs) |a| {</span>
+<span class="line" id="L96">                            <span class="tok-kw">const</span> renamed = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;rename&quot;</span>);</span>
+<span class="line" id="L97">                            <span class="tok-kw">if</span> (renamed) n = a.rename;</span>
+<span class="line" id="L98">                        }</span>
 <span class="line" id="L99"></span>
-<span class="line" id="L100">                                    <span class="tok-comment">// Move on to next key.</span>
+<span class="line" id="L100">                        <span class="tok-kw">break</span> :blk n;</span>
+<span class="line" id="L101">                    };</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">                    <span class="tok-comment">// If key matches field's name or its rename attribute,</span>
 </span>
-<span class="line" id="L101">                                    <span class="tok-kw">continue</span> :key_loop;</span>
-<span class="line" id="L102">                                }</span>
-<span class="line" id="L103">                            }</span>
-<span class="line" id="L104">                        }</span>
-<span class="line" id="L105"></span>
-<span class="line" id="L106">                        <span class="tok-comment">// Deserialize and assign value to field.</span>
+<span class="line" id="L104">                    <span class="tok-comment">// deserialize the field.</span>
 </span>
-<span class="line" id="L107">                        <span class="tok-kw">switch</span> (field.is_comptime) {</span>
-<span class="line" id="L108">                            <span class="tok-null">false</span> =&gt; <span class="tok-builtin">@field</span>(structure, field.name) = <span class="tok-kw">try</span> map.nextValue(allocator, field.<span class="tok-type">type</span>),</span>
-<span class="line" id="L109">                            <span class="tok-null">true</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO&quot;</span>),</span>
-<span class="line" id="L110">                        }</span>
-<span class="line" id="L111"></span>
-<span class="line" id="L112">                        seen[i] = <span class="tok-null">true</span>;</span>
-<span class="line" id="L113">                        found = <span class="tok-null">true</span>;</span>
-<span class="line" id="L114"></span>
-<span class="line" id="L115">                        <span class="tok-kw">break</span>;</span>
-<span class="line" id="L116">                    }</span>
-<span class="line" id="L117">                }</span>
-<span class="line" id="L118"></span>
-<span class="line" id="L119">                <span class="tok-kw">if</span> (!found) {</span>
-<span class="line" id="L120">                    <span class="tok-kw">switch</span> (ignore_unknown_fields) {</span>
-<span class="line" id="L121">                        <span class="tok-null">true</span> =&gt; _ = <span class="tok-kw">try</span> map.nextValue(allocator, Ignored),</span>
-<span class="line" id="L122">                        <span class="tok-null">false</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownField,</span>
-<span class="line" id="L123">                    }</span>
-<span class="line" id="L124">                }</span>
-<span class="line" id="L125">            }</span>
-<span class="line" id="L126"></span>
-<span class="line" id="L127">            <span class="tok-comment">// Set remaining, unassigned fields that have default values.</span>
+<span class="line" id="L105">                    <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, name, key)) {</span>
+<span class="line" id="L106">                        <span class="tok-kw">if</span> (field.is_comptime) {</span>
+<span class="line" id="L107">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: DESERIALIZATION OF COMPTIME FIELD&quot;</span>);</span>
+<span class="line" id="L108">                        }</span>
+<span class="line" id="L109"></span>
+<span class="line" id="L110">                        <span class="tok-comment">// If field has already been deserialized, return an</span>
 </span>
-<span class="line" id="L128">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field, i| {</span>
-<span class="line" id="L129">                <span class="tok-kw">if</span> (!seen[i]) blk: {</span>
-<span class="line" id="L130">                    <span class="tok-comment">// Process &quot;default&quot; attribute.</span>
+<span class="line" id="L111">                        <span class="tok-comment">// error.</span>
 </span>
-<span class="line" id="L131">                    <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L132">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
-<span class="line" id="L133">                            <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L112">                        <span class="tok-kw">if</span> (seen[i]) {</span>
+<span class="line" id="L113">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.DuplicateField;</span>
+<span class="line" id="L114">                        }</span>
+<span class="line" id="L115"></span>
+<span class="line" id="L116">                        <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> map.nextValue(allocator, field.<span class="tok-type">type</span>);</span>
+<span class="line" id="L117"></span>
+<span class="line" id="L118">                        <span class="tok-comment">// Do assign value to field if the &quot;skip&quot; attribute is</span>
+</span>
+<span class="line" id="L119">                        <span class="tok-comment">// set.</span>
+</span>
+<span class="line" id="L120">                        <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L121">                        <span class="tok-comment">// Note that we still deserialize a value and check its</span>
+</span>
+<span class="line" id="L122">                        <span class="tok-comment">// validity (e.g., its type is correct), we just don't</span>
+</span>
+<span class="line" id="L123">                        <span class="tok-comment">// assign it to field.</span>
+</span>
+<span class="line" id="L124">                        <span class="tok-kw">if</span> (attrs) |a| {</span>
+<span class="line" id="L125">                            <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> a.skip;</span>
+<span class="line" id="L126">                            <span class="tok-kw">if</span> (skipped) <span class="tok-kw">continue</span> :key_loop;</span>
+<span class="line" id="L127">                        }</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">                        <span class="tok-comment">// Deserialize and assign value to field.</span>
+</span>
+<span class="line" id="L130">                        <span class="tok-builtin">@field</span>(structure, field.name) = value;</span>
+<span class="line" id="L131"></span>
+<span class="line" id="L132">                        seen[i] = <span class="tok-null">true</span>;</span>
+<span class="line" id="L133">                        found = <span class="tok-null">true</span>;</span>
 <span class="line" id="L134"></span>
-<span class="line" id="L135">                            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;default&quot;</span>)) {</span>
-<span class="line" id="L136">                                <span class="tok-kw">if</span> (!field.is_comptime) {</span>
-<span class="line" id="L137">                                    <span class="tok-builtin">@field</span>(structure, field.name) = attr.default;</span>
+<span class="line" id="L135">                        <span class="tok-kw">break</span>;</span>
+<span class="line" id="L136">                    }</span>
+<span class="line" id="L137">                }</span>
 <span class="line" id="L138"></span>
-<span class="line" id="L139">                                    <span class="tok-kw">break</span> :blk;</span>
-<span class="line" id="L140">                                }</span>
-<span class="line" id="L141">                            }</span>
-<span class="line" id="L142">                        }</span>
-<span class="line" id="L143">                    }</span>
-<span class="line" id="L144"></span>
-<span class="line" id="L145">                    <span class="tok-comment">// Process default values.</span>
+<span class="line" id="L139">                <span class="tok-comment">// Handle any keys that didn't match any fields in the struct.</span>
 </span>
-<span class="line" id="L146">                    <span class="tok-kw">if</span> (field.default_value) |default_ptr| {</span>
-<span class="line" id="L147">                        <span class="tok-kw">if</span> (!field.is_comptime) {</span>
-<span class="line" id="L148">                            <span class="tok-kw">const</span> aligned_default_ptr = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), default_ptr);</span>
-<span class="line" id="L149">                            <span class="tok-kw">const</span> default_value = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> field.<span class="tok-type">type</span>, aligned_default_ptr).*;</span>
-<span class="line" id="L150">                            <span class="tok-builtin">@field</span>(structure, field.name) = default_value;</span>
-<span class="line" id="L151"></span>
-<span class="line" id="L152">                            <span class="tok-kw">break</span> :blk;</span>
-<span class="line" id="L153">                        }</span>
-<span class="line" id="L154">                    }</span>
-<span class="line" id="L155"></span>
-<span class="line" id="L156">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingField;</span>
-<span class="line" id="L157">                }</span>
-<span class="line" id="L158">            }</span>
-<span class="line" id="L159"></span>
-<span class="line" id="L160">            <span class="tok-kw">return</span> structure;</span>
-<span class="line" id="L161">        }</span>
-<span class="line" id="L162">    };</span>
-<span class="line" id="L163">}</span>
-<span class="line" id="L164"></span>
+<span class="line" id="L140">                <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L141">                <span class="tok-comment">// If the &quot;ignore_unknown_fields&quot; attribute is set, we'll</span>
+</span>
+<span class="line" id="L142">                <span class="tok-comment">// deserialize and discard its corresponding value. Note that</span>
+</span>
+<span class="line" id="L143">                <span class="tok-comment">// unlike with the &quot;skip&quot; attribute, the validity of an unknown</span>
+</span>
+<span class="line" id="L144">                <span class="tok-comment">// field is not checked.</span>
+</span>
+<span class="line" id="L145">                <span class="tok-kw">if</span> (!found) {</span>
+<span class="line" id="L146">                    <span class="tok-kw">switch</span> (ignore_unknown_fields) {</span>
+<span class="line" id="L147">                        <span class="tok-null">true</span> =&gt; _ = <span class="tok-kw">try</span> map.nextValue(allocator, Ignored),</span>
+<span class="line" id="L148">                        <span class="tok-null">false</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownField,</span>
+<span class="line" id="L149">                    }</span>
+<span class="line" id="L150">                }</span>
+<span class="line" id="L151">            }</span>
+<span class="line" id="L152"></span>
+<span class="line" id="L153">            <span class="tok-comment">// Process any remaining, unassigned fields.</span>
+</span>
+<span class="line" id="L154">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field, i| {</span>
+<span class="line" id="L155">                <span class="tok-kw">if</span> (!seen[i]) blk: {</span>
+<span class="line" id="L156">                    <span class="tok-comment">// Assign to field the value of the &quot;default&quot; attribute, if</span>
+</span>
+<span class="line" id="L157">                    <span class="tok-comment">// it is set.</span>
+</span>
+<span class="line" id="L158">                    <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L159">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
+<span class="line" id="L160">                            <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L161"></span>
+<span class="line" id="L162">                            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;default&quot;</span>)) {</span>
+<span class="line" id="L163">                                <span class="tok-kw">if</span> (!field.is_comptime) {</span>
+<span class="line" id="L164">                                    <span class="tok-builtin">@field</span>(structure, field.name) = attr.default;</span>
+<span class="line" id="L165"></span>
+<span class="line" id="L166">                                    <span class="tok-kw">break</span> :blk;</span>
+<span class="line" id="L167">                                }</span>
+<span class="line" id="L168">                            }</span>
+<span class="line" id="L169">                        }</span>
+<span class="line" id="L170">                    }</span>
+<span class="line" id="L171"></span>
+<span class="line" id="L172">                    <span class="tok-comment">// Assign to field its default value if it exists and the</span>
+</span>
+<span class="line" id="L173">                    <span class="tok-comment">// &quot;default&quot; attribute is not set.</span>
+</span>
+<span class="line" id="L174">                    <span class="tok-kw">if</span> (field.default_value) |default_ptr| {</span>
+<span class="line" id="L175">                        <span class="tok-kw">if</span> (!field.is_comptime) {</span>
+<span class="line" id="L176">                            <span class="tok-kw">const</span> aligned_default_ptr = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(field.<span class="tok-type">type</span>), default_ptr);</span>
+<span class="line" id="L177">                            <span class="tok-kw">const</span> default_value = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> field.<span class="tok-type">type</span>, aligned_default_ptr).*;</span>
+<span class="line" id="L178">                            <span class="tok-builtin">@field</span>(structure, field.name) = default_value;</span>
+<span class="line" id="L179"></span>
+<span class="line" id="L180">                            <span class="tok-kw">break</span> :blk;</span>
+<span class="line" id="L181">                        }</span>
+<span class="line" id="L182">                    }</span>
+<span class="line" id="L183"></span>
+<span class="line" id="L184">                    <span class="tok-comment">// The field has not been assigned a value and does not</span>
+</span>
+<span class="line" id="L185">                    <span class="tok-comment">// have any default value, so return an error.</span>
+</span>
+<span class="line" id="L186">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingField;</span>
+<span class="line" id="L187">                }</span>
+<span class="line" id="L188">            }</span>
+<span class="line" id="L189"></span>
+<span class="line" id="L190">            <span class="tok-kw">return</span> structure;</span>
+<span class="line" id="L191">        }</span>
+<span class="line" id="L192">    };</span>
+<span class="line" id="L193">}</span>
+<span class="line" id="L194"></span>
 </code></pre></body>
 </html>
