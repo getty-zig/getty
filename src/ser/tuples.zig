@@ -68,6 +68,7 @@ pub const default = .{
     blocks.PackedIntArray,
 
     blocks.SemanticVersion,
+    blocks.StaticBitSet,
     blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////

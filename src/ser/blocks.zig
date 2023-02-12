@@ -123,6 +123,9 @@ pub const SemanticVersion = @import("blocks/semantic_version.zig");
 /// Serialization block for `std.SinglyLinkedList` values.
 pub const SinglyLinkedList = @import("blocks/singly_linked_list.zig");
 
+/// Serialization block for `std.StaticBitSet`.
+pub const StaticBitSet = @import("blocks/static_bit_set.zig");
+
 /// Serialization block for `std.StringArrayHashMap` values.
 pub const StringArrayHashMap = _HashMap;
 
