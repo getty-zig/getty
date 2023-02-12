@@ -51,6 +51,9 @@ pub const Void = @import("blocks/void.zig");
 /// Serialization block for `std.mem.Allocator` values.
 pub const Allocator = @import("blocks/allocator.zig");
 
+/// Serialization block for `std.ArrayBitSet` values.
+pub const ArrayBitSet = @import("blocks/array_bit_set.zig");
+
 /// Serialization block for `std.ArrayHashMap` values.
 pub const ArrayHashMap = _HashMap;
 
