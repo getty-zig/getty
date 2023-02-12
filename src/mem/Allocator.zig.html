@@ -223,7 +223,7 @@
 <span class="line" id="L109"><span class="tok-comment">/// `ptr` should be the return value of `create`, or otherwise</span></span>
 <span class="line" id="L110"><span class="tok-comment">/// have the same address and alignment property.</span></span>
 <span class="line" id="L111"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">destroy</span>(self: Allocator, ptr: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L112">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(ptr)).Pointer;</span>
+<span class="line" id="L112">    <span class="tok-kw">const</span> info = ensureSlice(<span class="tok-builtin">@TypeOf</span>(ptr), <span class="tok-str">&quot;destroy&quot;</span>, .One);</span>
 <span class="line" id="L113">    <span class="tok-kw">const</span> T = info.child;</span>
 <span class="line" id="L114">    <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(T) == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
 <span class="line" id="L115">    <span class="tok-kw">const</span> non_const_ptr = <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrToInt</span>(ptr));</span>
@@ -342,7 +342,7 @@
 <span class="line" id="L224"><span class="tok-comment">/// the pointer, however the allocator implementation may refuse the resize</span></span>
 <span class="line" id="L225"><span class="tok-comment">/// request by returning `false`.</span></span>
 <span class="line" id="L226"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">resize</span>(self: Allocator, old_mem: <span class="tok-kw">anytype</span>, new_n: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L227">    <span class="tok-kw">const</span> Slice = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(old_mem)).Pointer;</span>
+<span class="line" id="L227">    <span class="tok-kw">const</span> Slice = ensureSlice(<span class="tok-builtin">@TypeOf</span>(old_mem), <span class="tok-str">&quot;resize&quot;</span>, .Slice);</span>
 <span class="line" id="L228">    <span class="tok-kw">const</span> T = Slice.child;</span>
 <span class="line" id="L229">    <span class="tok-kw">if</span> (new_n == <span class="tok-number">0</span>) {</span>
 <span class="line" id="L230">        self.free(old_mem);</span>
@@ -366,7 +366,7 @@
 <span class="line" id="L245"><span class="tok-comment">/// can be larger, smaller, or the same size as the old memory allocation.</span></span>
 <span class="line" id="L246"><span class="tok-comment">/// If `new_n` is 0, this is the same as `free` and it always succeeds.</span></span>
 <span class="line" id="L247"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realloc</span>(self: Allocator, old_mem: <span class="tok-kw">anytype</span>, new_n: <span class="tok-type">usize</span>) t: {</span>
-<span class="line" id="L248">    <span class="tok-kw">const</span> Slice = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(old_mem)).Pointer;</span>
+<span class="line" id="L248">    <span class="tok-kw">const</span> Slice = ensureSlice(<span class="tok-builtin">@TypeOf</span>(old_mem), <span class="tok-str">&quot;realloc&quot;</span>, .Slice);</span>
 <span class="line" id="L249">    <span class="tok-kw">break</span> :t Error![]<span class="tok-kw">align</span>(Slice.alignment) Slice.child;</span>
 <span class="line" id="L250">} {</span>
 <span class="line" id="L251">    <span class="tok-kw">return</span> self.reallocAdvanced(old_mem, new_n, <span class="tok-builtin">@returnAddress</span>());</span>
@@ -378,10 +378,10 @@
 <span class="line" id="L257">    new_n: <span class="tok-type">usize</span>,</span>
 <span class="line" id="L258">    return_address: <span class="tok-type">usize</span>,</span>
 <span class="line" id="L259">) t: {</span>
-<span class="line" id="L260">    <span class="tok-kw">const</span> Slice = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(old_mem)).Pointer;</span>
+<span class="line" id="L260">    <span class="tok-kw">const</span> Slice = ensureSlice(<span class="tok-builtin">@TypeOf</span>(old_mem), <span class="tok-str">&quot;reallocAdvanced&quot;</span>, .Slice);</span>
 <span class="line" id="L261">    <span class="tok-kw">break</span> :t Error![]<span class="tok-kw">align</span>(Slice.alignment) Slice.child;</span>
 <span class="line" id="L262">} {</span>
-<span class="line" id="L263">    <span class="tok-kw">const</span> Slice = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(old_mem)).Pointer;</span>
+<span class="line" id="L263">    <span class="tok-kw">const</span> Slice = ensureSlice(<span class="tok-builtin">@TypeOf</span>(old_mem), <span class="tok-str">&quot;reallocAdvanced&quot;</span>, .Slice);</span>
 <span class="line" id="L264">    <span class="tok-kw">const</span> T = Slice.child;</span>
 <span class="line" id="L265">    <span class="tok-kw">if</span> (old_mem.len == <span class="tok-number">0</span>) {</span>
 <span class="line" id="L266">        <span class="tok-kw">return</span> self.allocAdvancedWithRetAddr(T, Slice.alignment, new_n, return_address);</span>
@@ -416,7 +416,7 @@
 <span class="line" id="L293"><span class="tok-comment">/// Free an array allocated with `alloc`. To free a single item,</span></span>
 <span class="line" id="L294"><span class="tok-comment">/// see `destroy`.</span></span>
 <span class="line" id="L295"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(self: Allocator, memory: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L296">    <span class="tok-kw">const</span> Slice = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(memory)).Pointer;</span>
+<span class="line" id="L296">    <span class="tok-kw">const</span> Slice = ensureSlice(<span class="tok-builtin">@TypeOf</span>(memory), <span class="tok-str">&quot;free&quot;</span>, .Slice);</span>
 <span class="line" id="L297">    <span class="tok-kw">const</span> bytes = mem.sliceAsBytes(memory);</span>
 <span class="line" id="L298">    <span class="tok-kw">const</span> bytes_len = bytes.len + <span class="tok-kw">if</span> (Slice.sentinel != <span class="tok-null">null</span>) <span class="tok-builtin">@sizeOf</span>(Slice.child) <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
 <span class="line" id="L299">    <span class="tok-kw">if</span> (bytes_len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
@@ -442,19 +442,42 @@
 <span class="line" id="L318">    <span class="tok-kw">return</span> new_buf[<span class="tok-number">0</span>..m.len :<span class="tok-number">0</span>];</span>
 <span class="line" id="L319">}</span>
 <span class="line" id="L320"></span>
-<span class="line" id="L321"><span class="tok-comment">/// TODO replace callsites with `@log2` after this proposal is implemented:</span></span>
-<span class="line" id="L322"><span class="tok-comment">/// https://github.com/ziglang/zig/issues/13642</span></span>
-<span class="line" id="L323"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">log2a</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(x))) {</span>
-<span class="line" id="L324">    .Int =&gt; math.Log2Int(<span class="tok-builtin">@TypeOf</span>(x)),</span>
-<span class="line" id="L325">    .ComptimeInt =&gt; <span class="tok-type">comptime_int</span>,</span>
-<span class="line" id="L326">    <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;int please&quot;</span>),</span>
-<span class="line" id="L327">} {</span>
-<span class="line" id="L328">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(x))) {</span>
-<span class="line" id="L329">        .Int =&gt; <span class="tok-kw">return</span> math.log2_int(<span class="tok-builtin">@TypeOf</span>(x), x),</span>
-<span class="line" id="L330">        .ComptimeInt =&gt; <span class="tok-kw">return</span> math.log2(x),</span>
-<span class="line" id="L331">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;bad&quot;</span>),</span>
-<span class="line" id="L332">    }</span>
-<span class="line" id="L333">}</span>
-<span class="line" id="L334"></span>
+<span class="line" id="L321"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">ensureSlice</span>(</span>
+<span class="line" id="L322">    <span class="tok-kw">comptime</span> Type: <span class="tok-type">type</span>,</span>
+<span class="line" id="L323">    <span class="tok-kw">comptime</span> function_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L324">    <span class="tok-kw">comptime</span> expected_size: std.builtin.Type.Pointer.Size,</span>
+<span class="line" id="L325">) std.builtin.Type.Pointer {</span>
+<span class="line" id="L326">    <span class="tok-kw">const</span> expectation = <span class="tok-kw">switch</span> (expected_size) {</span>
+<span class="line" id="L327">        .One =&gt; <span class="tok-str">&quot;a single item pointer&quot;</span>,</span>
+<span class="line" id="L328">        .Slice =&gt; <span class="tok-str">&quot;a slice&quot;</span>,</span>
+<span class="line" id="L329">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L330">    };</span>
+<span class="line" id="L331">    <span class="tok-kw">const</span> type_info = <span class="tok-builtin">@typeInfo</span>(Type);</span>
+<span class="line" id="L332"></span>
+<span class="line" id="L333">    <span class="tok-kw">if</span> (type_info == .Pointer) {</span>
+<span class="line" id="L334">        <span class="tok-kw">const</span> pointer = type_info.Pointer;</span>
+<span class="line" id="L335"></span>
+<span class="line" id="L336">        <span class="tok-kw">if</span> (pointer.size == expected_size) {</span>
+<span class="line" id="L337">            <span class="tok-kw">return</span> pointer;</span>
+<span class="line" id="L338">        }</span>
+<span class="line" id="L339">    }</span>
+<span class="line" id="L340"></span>
+<span class="line" id="L341">    <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;{s} expects {s} but received a value of type `{s}`&quot;</span>, .{ function_name, expectation, <span class="tok-builtin">@typeName</span>(Type) }));</span>
+<span class="line" id="L342">}</span>
+<span class="line" id="L343"></span>
+<span class="line" id="L344"><span class="tok-comment">/// TODO replace callsites with `@log2` after this proposal is implemented:</span></span>
+<span class="line" id="L345"><span class="tok-comment">/// https://github.com/ziglang/zig/issues/13642</span></span>
+<span class="line" id="L346"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">log2a</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(x))) {</span>
+<span class="line" id="L347">    .Int =&gt; math.Log2Int(<span class="tok-builtin">@TypeOf</span>(x)),</span>
+<span class="line" id="L348">    .ComptimeInt =&gt; <span class="tok-type">comptime_int</span>,</span>
+<span class="line" id="L349">    <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;int please&quot;</span>),</span>
+<span class="line" id="L350">} {</span>
+<span class="line" id="L351">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(x))) {</span>
+<span class="line" id="L352">        .Int =&gt; <span class="tok-kw">return</span> math.log2_int(<span class="tok-builtin">@TypeOf</span>(x), x),</span>
+<span class="line" id="L353">        .ComptimeInt =&gt; <span class="tok-kw">return</span> math.log2(x),</span>
+<span class="line" id="L354">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;bad&quot;</span>),</span>
+<span class="line" id="L355">    }</span>
+<span class="line" id="L356">}</span>
+<span class="line" id="L357"></span>
 </code></pre></body>
 </html>

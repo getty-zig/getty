@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>ser/blocks/array_bit_set.zig - source view</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <style>
+      body{
+        font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      pre > code {
+        display: block;
+        overflow: auto;
+        line-height: normal;
+        margin: 0em;
+      }
+      .tok-kw {
+          color: #333;
+          font-weight: bold;
+      }
+      .tok-str {
+          color: #d14;
+      }
+      .tok-builtin {
+          color: #005C7A;
+      }
+      .tok-comment {
+          color: #545454;
+          font-style: italic;
+      }
+      .tok-fn {
+          color: #900;
+          font-weight: bold;
+      }
+      .tok-null {
+          color: #005C5C;
+      }
+      .tok-number {
+          color: #005C5C;
+      }
+      .tok-type {
+          color: #458;
+          font-weight: bold;
+      }
+      pre {
+        counter-reset: line;
+      }
+      pre .line:before {
+        counter-increment: line;
+        content: counter(line);
+        display: inline-block;
+        padding-right: 1em;
+        width: 2em;
+        text-align: right;
+        color: #999;
+      }
+      
+      .line {
+        width: 100%;
+        display: inline-block;
+      }
+      .line:target {
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        background: #fafafa;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body{
+            background:#222;
+            color: #ccc;
+        }
+        pre > code {
+            color: #ccc;
+            background: #222;
+            border: unset;
+        }
+        .line:target {
+            border-top: 1px solid #444;
+            border-bottom: 1px solid #444;
+            background: #333;
+        }
+        .tok-kw {
+            color: #eee;
+        }
+        .tok-str {
+            color: #2e5;
+        }
+        .tok-builtin {
+            color: #ff894c;
+        }
+        .tok-comment {
+            color: #aa7;
+        }
+        .tok-fn {
+            color: #B1A0F8;
+        }
+        .tok-null {
+            color: #ff8080;
+        }
+        .tok-number {
+            color: #ff8080;
+        }
+        .tok-type {
+            color: #68f;
+        }
+      }
+    </style>
+</head>
+<body>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
+<span class="line" id="L2"></span>
+<span class="line" id="L3"><span class="tok-kw">const</span> t = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L4"></span>
+<span class="line" id="L5"><span class="tok-comment">/// Specifies all types that can be serialized by this block.</span></span>
+<span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L7">    <span class="tok-comment">/// The type of a value being serialized.</span></span>
+<span class="line" id="L8">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L9">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L10">    <span class="tok-kw">return</span> <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;bit_set.ArrayBitSet&quot;</span>);</span>
+<span class="line" id="L11">}</span>
+<span class="line" id="L12"></span>
+<span class="line" id="L13"><span class="tok-comment">/// Specifies the serialization process for values relevant to this block.</span></span>
+<span class="line" id="L14"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serialize</span>(</span>
+<span class="line" id="L15">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L16">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L17">    <span class="tok-comment">/// A value being serialized.</span></span>
+<span class="line" id="L18">    value: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L19">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
+<span class="line" id="L20">    serializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L21">) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L22">    _ = allocator;</span>
+<span class="line" id="L23"></span>
+<span class="line" id="L24">    <span class="tok-kw">const</span> Value = <span class="tok-builtin">@TypeOf</span>(value);</span>
+<span class="line" id="L25">    <span class="tok-kw">const</span> MaskInt = Value.MaskInt;</span>
+<span class="line" id="L26">    <span class="tok-kw">const</span> zero = <span class="tok-builtin">@as</span>(MaskInt, <span class="tok-number">0</span>);</span>
+<span class="line" id="L27">    <span class="tok-kw">const</span> one = <span class="tok-builtin">@as</span>(MaskInt, <span class="tok-number">1</span>);</span>
+<span class="line" id="L28"></span>
+<span class="line" id="L29">    <span class="tok-kw">const</span> cap = value.capacity();</span>
+<span class="line" id="L30">    std.debug.assert(cap != <span class="tok-number">0</span>); <span class="tok-comment">// std.IntegerBitSet would be used if cap was 0.</span>
+</span>
+<span class="line" id="L31"></span>
+<span class="line" id="L32">    <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeSeq(cap);</span>
+<span class="line" id="L33">    <span class="tok-kw">const</span> seq = s.seq();</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35">    <span class="tok-comment">// Serialize bits from N to M, where N is value's bit length and M is the</span>
+</span>
+<span class="line" id="L36">    <span class="tok-comment">// last bit position in value that is set.</span>
+</span>
+<span class="line" id="L37">    <span class="tok-kw">var</span> it = value.iterator(.{ .direction = .reverse });</span>
+<span class="line" id="L38">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = cap - <span class="tok-number">1</span>;</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40">    <span class="tok-kw">while</span> (it.next()) |pos| {</span>
+<span class="line" id="L41">        <span class="tok-kw">while</span> (i != pos) {</span>
+<span class="line" id="L42">            <span class="tok-kw">try</span> seq.serializeElement(zero);</span>
+<span class="line" id="L43">            <span class="tok-kw">if</span> (i &gt; <span class="tok-number">0</span>) i -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L44">        }</span>
+<span class="line" id="L45"></span>
+<span class="line" id="L46">        <span class="tok-kw">try</span> seq.serializeElement(one);</span>
+<span class="line" id="L47">        <span class="tok-kw">if</span> (i &gt; <span class="tok-number">0</span>) i -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L48">    }</span>
+<span class="line" id="L49"></span>
+<span class="line" id="L50">    <span class="tok-comment">// Serialize remaining bits (which are all unset).</span>
+</span>
+<span class="line" id="L51">    <span class="tok-kw">if</span> (i != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L52">        i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L53"></span>
+<span class="line" id="L54">        <span class="tok-kw">while</span> (i != <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L55">            <span class="tok-kw">try</span> seq.serializeElement(zero);</span>
+<span class="line" id="L56">        }</span>
+<span class="line" id="L57">    }</span>
+<span class="line" id="L58"></span>
+<span class="line" id="L59">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> seq.end();</span>
+<span class="line" id="L60">}</span>
+<span class="line" id="L61"></span>
+<span class="line" id="L62"><span class="tok-comment">// NOTE: The token sequence's length needs to match the bitset's size, which</span>
+</span>
+<span class="line" id="L63"><span class="tok-comment">// must be a bit width supported by the test serializer.</span>
+</span>
+<span class="line" id="L64"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - std.ArrayBitSet&quot;</span> {</span>
+<span class="line" id="L65">    <span class="tok-kw">const</span> size = <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">usize</span>) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67">    <span class="tok-comment">// Empty</span>
+</span>
+<span class="line" id="L68">    {</span>
+<span class="line" id="L69">        <span class="tok-kw">var</span> want = std.StaticBitSet(size).initEmpty();</span>
+<span class="line" id="L70"></span>
+<span class="line" id="L71">        <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, want, &amp;.{</span>
+<span class="line" id="L72">            .{ .Seq = .{ .len = size } },</span>
+<span class="line" id="L73">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L74">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L75">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L76">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L77">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L78">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L79">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L80">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L81">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L82">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L83">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L84">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L85">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L86">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L87">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L88">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L89">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L90">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L91">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L92">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L93">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L94">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L95">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L96">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L97">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L98">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L99">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L100">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L101">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L102">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L103">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L104">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L105">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L106">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L107">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L108">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L109">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L110">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L111">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L112">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L113">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L114">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L115">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L116">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L117">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L118">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L119">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L120">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L121">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L122">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L123">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L124">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L125">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L126">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L127">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L128">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L129">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L130">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L131">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L132">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L133">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L134">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L135">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L136">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L137">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L138">            .{ .SeqEnd = {} },</span>
+<span class="line" id="L139">        });</span>
+<span class="line" id="L140">    }</span>
+<span class="line" id="L141"></span>
+<span class="line" id="L142">    <span class="tok-comment">// Full</span>
+</span>
+<span class="line" id="L143">    {</span>
+<span class="line" id="L144">        <span class="tok-kw">var</span> want = std.StaticBitSet(size).initFull();</span>
+<span class="line" id="L145"></span>
+<span class="line" id="L146">        <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, want, &amp;.{</span>
+<span class="line" id="L147">            .{ .Seq = .{ .len = size } },</span>
+<span class="line" id="L148">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L149">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L150">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L151">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L152">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L153">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L154">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L155">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L156">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L157">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L158">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L159">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L160">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L161">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L162">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L163">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L164">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L165">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L166">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L167">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L168">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L169">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L170">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L171">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L172">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L173">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L174">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L175">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L176">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L177">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L178">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L179">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L180">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L181">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L182">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L183">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L184">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L185">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L186">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L187">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L188">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L189">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L190">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L191">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L192">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L193">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L194">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L195">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L196">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L197">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L198">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L199">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L200">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L201">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L202">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L203">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L204">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L205">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L206">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L207">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L208">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L209">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L210">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L211">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L212">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L213">            .{ .SeqEnd = {} },</span>
+<span class="line" id="L214">        });</span>
+<span class="line" id="L215">    }</span>
+<span class="line" id="L216"></span>
+<span class="line" id="L217">    <span class="tok-comment">// Mixed</span>
+</span>
+<span class="line" id="L218">    {</span>
+<span class="line" id="L219">        <span class="tok-kw">var</span> want = std.StaticBitSet(size).initEmpty();</span>
+<span class="line" id="L220">        want.set(<span class="tok-number">1</span>);</span>
+<span class="line" id="L221">        want.set(<span class="tok-number">3</span>);</span>
+<span class="line" id="L222">        want.set(<span class="tok-number">5</span>);</span>
+<span class="line" id="L223">        want.set(<span class="tok-number">7</span>);</span>
+<span class="line" id="L224">        want.set(<span class="tok-number">9</span>);</span>
+<span class="line" id="L225">        want.set(<span class="tok-number">11</span>);</span>
+<span class="line" id="L226">        want.set(<span class="tok-number">13</span>);</span>
+<span class="line" id="L227">        want.set(<span class="tok-number">15</span>);</span>
+<span class="line" id="L228">        want.set(<span class="tok-number">17</span>);</span>
+<span class="line" id="L229">        want.set(<span class="tok-number">19</span>);</span>
+<span class="line" id="L230">        want.set(<span class="tok-number">21</span>);</span>
+<span class="line" id="L231">        want.set(<span class="tok-number">23</span>);</span>
+<span class="line" id="L232">        want.set(<span class="tok-number">25</span>);</span>
+<span class="line" id="L233">        want.set(<span class="tok-number">27</span>);</span>
+<span class="line" id="L234">        want.set(<span class="tok-number">29</span>);</span>
+<span class="line" id="L235">        want.set(<span class="tok-number">31</span>);</span>
+<span class="line" id="L236">        want.set(<span class="tok-number">33</span>);</span>
+<span class="line" id="L237">        want.set(<span class="tok-number">35</span>);</span>
+<span class="line" id="L238">        want.set(<span class="tok-number">37</span>);</span>
+<span class="line" id="L239">        want.set(<span class="tok-number">39</span>);</span>
+<span class="line" id="L240">        want.set(<span class="tok-number">41</span>);</span>
+<span class="line" id="L241">        want.set(<span class="tok-number">43</span>);</span>
+<span class="line" id="L242">        want.set(<span class="tok-number">45</span>);</span>
+<span class="line" id="L243">        want.set(<span class="tok-number">47</span>);</span>
+<span class="line" id="L244">        want.set(<span class="tok-number">49</span>);</span>
+<span class="line" id="L245">        want.set(<span class="tok-number">51</span>);</span>
+<span class="line" id="L246">        want.set(<span class="tok-number">53</span>);</span>
+<span class="line" id="L247">        want.set(<span class="tok-number">55</span>);</span>
+<span class="line" id="L248">        want.set(<span class="tok-number">57</span>);</span>
+<span class="line" id="L249">        want.set(<span class="tok-number">59</span>);</span>
+<span class="line" id="L250">        want.set(<span class="tok-number">61</span>);</span>
+<span class="line" id="L251">        want.set(<span class="tok-number">63</span>);</span>
+<span class="line" id="L252"></span>
+<span class="line" id="L253">        <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, want, &amp;.{</span>
+<span class="line" id="L254">            .{ .Seq = .{ .len = size } },</span>
+<span class="line" id="L255">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L256">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L257">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L258">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L259">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L260">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L261">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L262">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L263">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L264">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L265">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L266">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L267">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L268">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L269">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L270">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L271">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L272">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L273">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L274">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L275">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L276">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L277">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L278">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L279">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L280">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L281">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L282">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L283">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L284">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L285">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L286">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L287">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L288">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L289">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L290">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L291">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L292">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L293">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L294">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L295">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L296">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L297">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L298">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L299">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L300">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L301">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L302">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L303">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L304">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L305">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L306">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L307">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L308">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L309">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L310">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L311">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L312">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L313">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L314">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L315">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L316">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L317">            .{ .U64 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L318">            .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L319">            .{ .SeqEnd = {} },</span>
+<span class="line" id="L320">        });</span>
+<span class="line" id="L321">    }</span>
+<span class="line" id="L322">}</span>
+<span class="line" id="L323"></span>
+</code></pre></body>
+</html>
