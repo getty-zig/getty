@@ -359,72 +359,73 @@
 <span class="line" id="L234">        );</span>
 <span class="line" id="L235">    }</span>
 <span class="line" id="L236"></span>
-<span class="line" id="L237">    <span class="tok-kw">const</span> options_directory = self.builder.pathFromRoot(</span>
-<span class="line" id="L238">        <span class="tok-kw">try</span> fs.path.join(</span>
-<span class="line" id="L239">            self.builder.allocator,</span>
-<span class="line" id="L240">            &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ self.builder.cache_root, <span class="tok-str">&quot;options&quot;</span> },</span>
-<span class="line" id="L241">        ),</span>
-<span class="line" id="L242">    );</span>
+<span class="line" id="L237">    <span class="tok-kw">var</span> options_dir = <span class="tok-kw">try</span> self.builder.cache_root.handle.makeOpenPath(<span class="tok-str">&quot;options&quot;</span>, .{});</span>
+<span class="line" id="L238">    <span class="tok-kw">defer</span> options_dir.close();</span>
+<span class="line" id="L239"></span>
+<span class="line" id="L240">    <span class="tok-kw">const</span> basename = self.hashContentsToFileName();</span>
+<span class="line" id="L241"></span>
+<span class="line" id="L242">    <span class="tok-kw">try</span> options_dir.writeFile(&amp;basename, self.contents.items);</span>
 <span class="line" id="L243"></span>
-<span class="line" id="L244">    <span class="tok-kw">try</span> fs.cwd().makePath(options_directory);</span>
-<span class="line" id="L245"></span>
-<span class="line" id="L246">    <span class="tok-kw">const</span> options_file = <span class="tok-kw">try</span> fs.path.join(</span>
-<span class="line" id="L247">        self.builder.allocator,</span>
-<span class="line" id="L248">        &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ options_directory, &amp;self.hashContentsToFileName() },</span>
-<span class="line" id="L249">    );</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251">    <span class="tok-kw">try</span> fs.cwd().writeFile(options_file, self.contents.items);</span>
+<span class="line" id="L244">    self.generated_file.path = <span class="tok-kw">try</span> self.builder.cache_root.join(self.builder.allocator, &amp;.{</span>
+<span class="line" id="L245">        <span class="tok-str">&quot;options&quot;</span>, &amp;basename,</span>
+<span class="line" id="L246">    });</span>
+<span class="line" id="L247">}</span>
+<span class="line" id="L248"></span>
+<span class="line" id="L249"><span class="tok-kw">fn</span> <span class="tok-fn">hashContentsToFileName</span>(self: *OptionsStep) [<span class="tok-number">64</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L250">    <span class="tok-comment">// TODO update to use the cache system instead of this</span>
+</span>
+<span class="line" id="L251">    <span class="tok-comment">// This implementation is copied from `WriteFileStep.make`</span>
+</span>
 <span class="line" id="L252"></span>
-<span class="line" id="L253">    self.generated_file.path = options_file;</span>
-<span class="line" id="L254">}</span>
-<span class="line" id="L255"></span>
-<span class="line" id="L256"><span class="tok-kw">fn</span> <span class="tok-fn">hashContentsToFileName</span>(self: *OptionsStep) [<span class="tok-number">64</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L257">    <span class="tok-comment">// This implementation is copied from `WriteFileStep.make`</span>
+<span class="line" id="L253">    <span class="tok-kw">var</span> hash = std.crypto.hash.blake2.Blake2b384.init(.{});</span>
+<span class="line" id="L254"></span>
+<span class="line" id="L255">    <span class="tok-comment">// Random bytes to make OptionsStep unique. Refresh this with</span>
 </span>
-<span class="line" id="L258"></span>
-<span class="line" id="L259">    <span class="tok-kw">var</span> hash = std.crypto.hash.blake2.Blake2b384.init(.{});</span>
+<span class="line" id="L256">    <span class="tok-comment">// new random bytes when OptionsStep implementation is modified</span>
+</span>
+<span class="line" id="L257">    <span class="tok-comment">// in a non-backwards-compatible way.</span>
+</span>
+<span class="line" id="L258">    hash.update(<span class="tok-str">&quot;yL0Ya4KkmcCjBlP8&quot;</span>);</span>
+<span class="line" id="L259">    hash.update(self.contents.items);</span>
 <span class="line" id="L260"></span>
-<span class="line" id="L261">    <span class="tok-comment">// Random bytes to make OptionsStep unique. Refresh this with</span>
-</span>
-<span class="line" id="L262">    <span class="tok-comment">// new random bytes when OptionsStep implementation is modified</span>
-</span>
-<span class="line" id="L263">    <span class="tok-comment">// in a non-backwards-compatible way.</span>
-</span>
-<span class="line" id="L264">    hash.update(<span class="tok-str">&quot;yL0Ya4KkmcCjBlP8&quot;</span>);</span>
-<span class="line" id="L265">    hash.update(self.contents.items);</span>
-<span class="line" id="L266"></span>
-<span class="line" id="L267">    <span class="tok-kw">var</span> digest: [<span class="tok-number">48</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L268">    hash.final(&amp;digest);</span>
-<span class="line" id="L269">    <span class="tok-kw">var</span> hash_basename: [<span class="tok-number">64</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L270">    _ = fs.base64_encoder.encode(&amp;hash_basename, &amp;digest);</span>
-<span class="line" id="L271">    <span class="tok-kw">return</span> hash_basename;</span>
-<span class="line" id="L272">}</span>
-<span class="line" id="L273"></span>
-<span class="line" id="L274"><span class="tok-kw">const</span> OptionArtifactArg = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L275">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L276">    artifact: *CompileStep,</span>
-<span class="line" id="L277">};</span>
-<span class="line" id="L278"></span>
-<span class="line" id="L279"><span class="tok-kw">const</span> OptionFileSourceArg = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L280">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L281">    source: FileSource,</span>
-<span class="line" id="L282">};</span>
+<span class="line" id="L261">    <span class="tok-kw">var</span> digest: [<span class="tok-number">48</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L262">    hash.final(&amp;digest);</span>
+<span class="line" id="L263">    <span class="tok-kw">var</span> hash_basename: [<span class="tok-number">64</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L264">    _ = fs.base64_encoder.encode(&amp;hash_basename, &amp;digest);</span>
+<span class="line" id="L265">    <span class="tok-kw">return</span> hash_basename;</span>
+<span class="line" id="L266">}</span>
+<span class="line" id="L267"></span>
+<span class="line" id="L268"><span class="tok-kw">const</span> OptionArtifactArg = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L269">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L270">    artifact: *CompileStep,</span>
+<span class="line" id="L271">};</span>
+<span class="line" id="L272"></span>
+<span class="line" id="L273"><span class="tok-kw">const</span> OptionFileSourceArg = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L274">    name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L275">    source: FileSource,</span>
+<span class="line" id="L276">};</span>
+<span class="line" id="L277"></span>
+<span class="line" id="L278"><span class="tok-kw">test</span> <span class="tok-str">&quot;OptionsStep&quot;</span> {</span>
+<span class="line" id="L279">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L280"></span>
+<span class="line" id="L281">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(std.testing.allocator);</span>
+<span class="line" id="L282">    <span class="tok-kw">defer</span> arena.deinit();</span>
 <span class="line" id="L283"></span>
-<span class="line" id="L284"><span class="tok-kw">test</span> <span class="tok-str">&quot;OptionsStep&quot;</span> {</span>
-<span class="line" id="L285">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L286"></span>
-<span class="line" id="L287">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(std.testing.allocator);</span>
-<span class="line" id="L288">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L289"></span>
-<span class="line" id="L290">    <span class="tok-kw">const</span> host = <span class="tok-kw">try</span> std.zig.system.NativeTargetInfo.detect(.{});</span>
-<span class="line" id="L291"></span>
-<span class="line" id="L292">    <span class="tok-kw">var</span> builder = <span class="tok-kw">try</span> std.Build.create(</span>
-<span class="line" id="L293">        arena.allocator(),</span>
-<span class="line" id="L294">        <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L295">        <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L296">        <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L297">        <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L298">        host,</span>
+<span class="line" id="L284">    <span class="tok-kw">const</span> host = <span class="tok-kw">try</span> std.zig.system.NativeTargetInfo.detect(.{});</span>
+<span class="line" id="L285"></span>
+<span class="line" id="L286">    <span class="tok-kw">var</span> cache: std.Build.Cache = .{</span>
+<span class="line" id="L287">        .gpa = arena.allocator(),</span>
+<span class="line" id="L288">        .manifest_dir = std.fs.cwd(),</span>
+<span class="line" id="L289">    };</span>
+<span class="line" id="L290"></span>
+<span class="line" id="L291">    <span class="tok-kw">var</span> builder = <span class="tok-kw">try</span> std.Build.create(</span>
+<span class="line" id="L292">        arena.allocator(),</span>
+<span class="line" id="L293">        <span class="tok-str">&quot;test&quot;</span>,</span>
+<span class="line" id="L294">        .{ .path = <span class="tok-str">&quot;test&quot;</span>, .handle = std.fs.cwd() },</span>
+<span class="line" id="L295">        .{ .path = <span class="tok-str">&quot;test&quot;</span>, .handle = std.fs.cwd() },</span>
+<span class="line" id="L296">        .{ .path = <span class="tok-str">&quot;test&quot;</span>, .handle = std.fs.cwd() },</span>
+<span class="line" id="L297">        host,</span>
+<span class="line" id="L298">        &amp;cache,</span>
 <span class="line" id="L299">    );</span>
 <span class="line" id="L300">    <span class="tok-kw">defer</span> builder.destroy();</span>
 <span class="line" id="L301"></span>

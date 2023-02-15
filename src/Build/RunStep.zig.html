@@ -153,367 +153,498 @@
 <span class="line" id="L39"></span>
 <span class="line" id="L40"><span class="tok-comment">/// Print the command before running it</span></span>
 <span class="line" id="L41">print: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StdIoAction = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L44">    inherit,</span>
-<span class="line" id="L45">    ignore,</span>
-<span class="line" id="L46">    expect_exact: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L47">    expect_matches: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L48">};</span>
-<span class="line" id="L49"></span>
-<span class="line" id="L50"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Arg = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L51">    artifact: *CompileStep,</span>
-<span class="line" id="L52">    file_source: std.Build.FileSource,</span>
-<span class="line" id="L53">    bytes: []<span class="tok-type">u8</span>,</span>
-<span class="line" id="L54">};</span>
-<span class="line" id="L55"></span>
-<span class="line" id="L56"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(builder: *std.Build, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *RunStep {</span>
-<span class="line" id="L57">    <span class="tok-kw">const</span> self = builder.allocator.create(RunStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L58">    self.* = RunStep{</span>
-<span class="line" id="L59">        .builder = builder,</span>
-<span class="line" id="L60">        .step = Step.init(base_id, name, builder.allocator, make),</span>
-<span class="line" id="L61">        .argv = ArrayList(Arg).init(builder.allocator),</span>
-<span class="line" id="L62">        .cwd = <span class="tok-null">null</span>,</span>
-<span class="line" id="L63">        .env_map = <span class="tok-null">null</span>,</span>
-<span class="line" id="L64">        .print = builder.verbose,</span>
-<span class="line" id="L65">    };</span>
-<span class="line" id="L66">    <span class="tok-kw">return</span> self;</span>
-<span class="line" id="L67">}</span>
-<span class="line" id="L68"></span>
-<span class="line" id="L69"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addArtifactArg</span>(self: *RunStep, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
-<span class="line" id="L70">    self.argv.append(Arg{ .artifact = artifact }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L71">    self.step.dependOn(&amp;artifact.step);</span>
-<span class="line" id="L72">}</span>
-<span class="line" id="L73"></span>
-<span class="line" id="L74"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addFileSourceArg</span>(self: *RunStep, file_source: std.Build.FileSource) <span class="tok-type">void</span> {</span>
-<span class="line" id="L75">    self.argv.append(Arg{</span>
-<span class="line" id="L76">        .file_source = file_source.dupe(self.builder),</span>
-<span class="line" id="L77">    }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L78">    file_source.addStepDependencies(&amp;self.step);</span>
-<span class="line" id="L79">}</span>
-<span class="line" id="L80"></span>
-<span class="line" id="L81"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addArg</span>(self: *RunStep, arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L82">    self.argv.append(Arg{ .bytes = self.builder.dupe(arg) }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L83">}</span>
-<span class="line" id="L84"></span>
-<span class="line" id="L85"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addArgs</span>(self: *RunStep, args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L86">    <span class="tok-kw">for</span> (args) |arg| {</span>
-<span class="line" id="L87">        self.addArg(arg);</span>
-<span class="line" id="L88">    }</span>
-<span class="line" id="L89">}</span>
-<span class="line" id="L90"></span>
-<span class="line" id="L91"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">clearEnvironment</span>(self: *RunStep) <span class="tok-type">void</span> {</span>
-<span class="line" id="L92">    <span class="tok-kw">const</span> new_env_map = self.builder.allocator.create(EnvMap) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L93">    new_env_map.* = EnvMap.init(self.builder.allocator);</span>
-<span class="line" id="L94">    self.env_map = new_env_map;</span>
-<span class="line" id="L95">}</span>
-<span class="line" id="L96"></span>
-<span class="line" id="L97"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addPathDir</span>(self: *RunStep, search_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L98">    addPathDirInternal(&amp;self.step, self.builder, search_path);</span>
-<span class="line" id="L99">}</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101"><span class="tok-comment">/// For internal use only, users of `RunStep` should use `addPathDir` directly.</span></span>
-<span class="line" id="L102"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addPathDirInternal</span>(step: *Step, builder: *std.Build, search_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L103">    <span class="tok-kw">const</span> env_map = getEnvMapInternal(step, builder.allocator);</span>
-<span class="line" id="L104"></span>
-<span class="line" id="L105">    <span class="tok-kw">const</span> key = <span class="tok-str">&quot;PATH&quot;</span>;</span>
-<span class="line" id="L106">    <span class="tok-kw">var</span> prev_path = env_map.get(key);</span>
-<span class="line" id="L107"></span>
-<span class="line" id="L108">    <span class="tok-kw">if</span> (prev_path) |pp| {</span>
-<span class="line" id="L109">        <span class="tok-kw">const</span> new_path = builder.fmt(<span class="tok-str">&quot;{s}&quot;</span> ++ [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{fs.path.delimiter} ++ <span class="tok-str">&quot;{s}&quot;</span>, .{ pp, search_path });</span>
-<span class="line" id="L110">        env_map.put(key, new_path) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L111">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L112">        env_map.put(key, builder.dupePath(search_path)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L113">    }</span>
-<span class="line" id="L114">}</span>
-<span class="line" id="L115"></span>
-<span class="line" id="L116"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getEnvMap</span>(self: *RunStep) *EnvMap {</span>
-<span class="line" id="L117">    <span class="tok-kw">return</span> getEnvMapInternal(&amp;self.step, self.builder.allocator);</span>
-<span class="line" id="L118">}</span>
-<span class="line" id="L119"></span>
-<span class="line" id="L120"><span class="tok-kw">fn</span> <span class="tok-fn">getEnvMapInternal</span>(step: *Step, allocator: Allocator) *EnvMap {</span>
-<span class="line" id="L121">    <span class="tok-kw">const</span> maybe_env_map = <span class="tok-kw">switch</span> (step.id) {</span>
-<span class="line" id="L122">        .run =&gt; step.cast(RunStep).?.env_map,</span>
-<span class="line" id="L123">        .emulatable_run =&gt; step.cast(std.Build.EmulatableRunStep).?.env_map,</span>
-<span class="line" id="L124">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L125">    };</span>
-<span class="line" id="L126">    <span class="tok-kw">return</span> maybe_env_map <span class="tok-kw">orelse</span> {</span>
-<span class="line" id="L127">        <span class="tok-kw">const</span> env_map = allocator.create(EnvMap) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L128">        env_map.* = process.getEnvMap(allocator) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;unhandled error&quot;</span>);</span>
-<span class="line" id="L129">        <span class="tok-kw">switch</span> (step.id) {</span>
-<span class="line" id="L130">            .run =&gt; step.cast(RunStep).?.env_map = env_map,</span>
-<span class="line" id="L131">            .emulatable_run =&gt; step.cast(RunStep).?.env_map = env_map,</span>
-<span class="line" id="L132">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L133">        }</span>
-<span class="line" id="L134">        <span class="tok-kw">return</span> env_map;</span>
-<span class="line" id="L135">    };</span>
-<span class="line" id="L136">}</span>
-<span class="line" id="L137"></span>
-<span class="line" id="L138"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">setEnvironmentVariable</span>(self: *RunStep, key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L139">    <span class="tok-kw">const</span> env_map = self.getEnvMap();</span>
-<span class="line" id="L140">    env_map.put(</span>
-<span class="line" id="L141">        self.builder.dupe(key),</span>
-<span class="line" id="L142">        self.builder.dupe(value),</span>
-<span class="line" id="L143">    ) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;unhandled error&quot;</span>);</span>
-<span class="line" id="L144">}</span>
-<span class="line" id="L145"></span>
-<span class="line" id="L146"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">expectStdErrEqual</span>(self: *RunStep, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L147">    self.stderr_action = .{ .expect_exact = self.builder.dupe(bytes) };</span>
-<span class="line" id="L148">}</span>
-<span class="line" id="L149"></span>
-<span class="line" id="L150"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">expectStdOutEqual</span>(self: *RunStep, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L151">    self.stdout_action = .{ .expect_exact = self.builder.dupe(bytes) };</span>
-<span class="line" id="L152">}</span>
-<span class="line" id="L153"></span>
-<span class="line" id="L154"><span class="tok-kw">fn</span> <span class="tok-fn">stdIoActionToBehavior</span>(action: StdIoAction) std.ChildProcess.StdIo {</span>
-<span class="line" id="L155">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (action) {</span>
-<span class="line" id="L156">        .ignore =&gt; .Ignore,</span>
-<span class="line" id="L157">        .inherit =&gt; .Inherit,</span>
-<span class="line" id="L158">        .expect_exact, .expect_matches =&gt; .Pipe,</span>
-<span class="line" id="L159">    };</span>
-<span class="line" id="L160">}</span>
-<span class="line" id="L161"></span>
-<span class="line" id="L162"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L163">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(RunStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L164"></span>
-<span class="line" id="L165">    <span class="tok-kw">var</span> argv_list = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(self.builder.allocator);</span>
-<span class="line" id="L166">    <span class="tok-kw">for</span> (self.argv.items) |arg| {</span>
-<span class="line" id="L167">        <span class="tok-kw">switch</span> (arg) {</span>
-<span class="line" id="L168">            .bytes =&gt; |bytes| <span class="tok-kw">try</span> argv_list.append(bytes),</span>
-<span class="line" id="L169">            .file_source =&gt; |file| <span class="tok-kw">try</span> argv_list.append(file.getPath(self.builder)),</span>
-<span class="line" id="L170">            .artifact =&gt; |artifact| {</span>
-<span class="line" id="L171">                <span class="tok-kw">if</span> (artifact.target.isWindows()) {</span>
-<span class="line" id="L172">                    <span class="tok-comment">// On Windows we don't have rpaths so we have to add .dll search paths to PATH</span>
-</span>
-<span class="line" id="L173">                    self.addPathForDynLibs(artifact);</span>
-<span class="line" id="L174">                }</span>
-<span class="line" id="L175">                <span class="tok-kw">const</span> executable_path = artifact.installed_path <span class="tok-kw">orelse</span> artifact.getOutputSource().getPath(self.builder);</span>
-<span class="line" id="L176">                <span class="tok-kw">try</span> argv_list.append(executable_path);</span>
-<span class="line" id="L177">            },</span>
-<span class="line" id="L178">        }</span>
-<span class="line" id="L179">    }</span>
-<span class="line" id="L180"></span>
-<span class="line" id="L181">    <span class="tok-kw">try</span> runCommand(</span>
-<span class="line" id="L182">        argv_list.items,</span>
-<span class="line" id="L183">        self.builder,</span>
-<span class="line" id="L184">        self.expected_exit_code,</span>
-<span class="line" id="L185">        self.stdout_action,</span>
-<span class="line" id="L186">        self.stderr_action,</span>
-<span class="line" id="L187">        self.stdin_behavior,</span>
-<span class="line" id="L188">        self.env_map,</span>
-<span class="line" id="L189">        self.cwd,</span>
-<span class="line" id="L190">        self.print,</span>
-<span class="line" id="L191">    );</span>
-<span class="line" id="L192">}</span>
-<span class="line" id="L193"></span>
-<span class="line" id="L194"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runCommand</span>(</span>
-<span class="line" id="L195">    argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L196">    builder: *std.Build,</span>
-<span class="line" id="L197">    expected_exit_code: ?<span class="tok-type">u8</span>,</span>
-<span class="line" id="L198">    stdout_action: StdIoAction,</span>
-<span class="line" id="L199">    stderr_action: StdIoAction,</span>
-<span class="line" id="L200">    stdin_behavior: std.ChildProcess.StdIo,</span>
-<span class="line" id="L201">    env_map: ?*EnvMap,</span>
-<span class="line" id="L202">    maybe_cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L203">    print: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L204">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L205">    <span class="tok-kw">const</span> cwd = <span class="tok-kw">if</span> (maybe_cwd) |cwd| builder.pathFromRoot(cwd) <span class="tok-kw">else</span> builder.build_root;</span>
-<span class="line" id="L206"></span>
-<span class="line" id="L207">    <span class="tok-kw">if</span> (!std.process.can_spawn) {</span>
-<span class="line" id="L208">        <span class="tok-kw">const</span> cmd = <span class="tok-kw">try</span> std.mem.join(builder.allocator, <span class="tok-str">&quot; &quot;</span>, argv);</span>
-<span class="line" id="L209">        std.debug.print(<span class="tok-str">&quot;the following command cannot be executed ({s} does not support spawning a child process):\n{s}&quot;</span>, .{ <span class="tok-builtin">@tagName</span>(builtin.os.tag), cmd });</span>
-<span class="line" id="L210">        builder.allocator.free(cmd);</span>
-<span class="line" id="L211">        <span class="tok-kw">return</span> ExecError.ExecNotSupported;</span>
-<span class="line" id="L212">    }</span>
+<span class="line" id="L42"><span class="tok-comment">/// Controls whether execution is skipped if the output file is up-to-date.</span></span>
+<span class="line" id="L43"><span class="tok-comment">/// The default is to always run if there is no output file, and to skip</span></span>
+<span class="line" id="L44"><span class="tok-comment">/// running if all output files are up-to-date.</span></span>
+<span class="line" id="L45">condition: <span class="tok-kw">enum</span> { output_outdated, always } = .output_outdated,</span>
+<span class="line" id="L46"></span>
+<span class="line" id="L47"><span class="tok-comment">/// Additional file paths relative to build.zig that, when modified, indicate</span></span>
+<span class="line" id="L48"><span class="tok-comment">/// that the RunStep should be re-executed.</span></span>
+<span class="line" id="L49">extra_file_dependencies: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = &amp;.{},</span>
+<span class="line" id="L50"></span>
+<span class="line" id="L51"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StdIoAction = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L52">    inherit,</span>
+<span class="line" id="L53">    ignore,</span>
+<span class="line" id="L54">    expect_exact: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L55">    expect_matches: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L56">};</span>
+<span class="line" id="L57"></span>
+<span class="line" id="L58"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Arg = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L59">    artifact: *CompileStep,</span>
+<span class="line" id="L60">    file_source: std.Build.FileSource,</span>
+<span class="line" id="L61">    bytes: []<span class="tok-type">u8</span>,</span>
+<span class="line" id="L62">    output: Output,</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Output = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L65">        generated_file: *std.Build.GeneratedFile,</span>
+<span class="line" id="L66">        basename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L67">    };</span>
+<span class="line" id="L68">};</span>
+<span class="line" id="L69"></span>
+<span class="line" id="L70"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(builder: *std.Build, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *RunStep {</span>
+<span class="line" id="L71">    <span class="tok-kw">const</span> self = builder.allocator.create(RunStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L72">    self.* = RunStep{</span>
+<span class="line" id="L73">        .builder = builder,</span>
+<span class="line" id="L74">        .step = Step.init(base_id, name, builder.allocator, make),</span>
+<span class="line" id="L75">        .argv = ArrayList(Arg).init(builder.allocator),</span>
+<span class="line" id="L76">        .cwd = <span class="tok-null">null</span>,</span>
+<span class="line" id="L77">        .env_map = <span class="tok-null">null</span>,</span>
+<span class="line" id="L78">        .print = builder.verbose,</span>
+<span class="line" id="L79">    };</span>
+<span class="line" id="L80">    <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L81">}</span>
+<span class="line" id="L82"></span>
+<span class="line" id="L83"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addArtifactArg</span>(self: *RunStep, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
+<span class="line" id="L84">    self.argv.append(Arg{ .artifact = artifact }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L85">    self.step.dependOn(&amp;artifact.step);</span>
+<span class="line" id="L86">}</span>
+<span class="line" id="L87"></span>
+<span class="line" id="L88"><span class="tok-comment">/// This provides file path as a command line argument to the command being</span></span>
+<span class="line" id="L89"><span class="tok-comment">/// run, and returns a FileSource which can be used as inputs to other APIs</span></span>
+<span class="line" id="L90"><span class="tok-comment">/// throughout the build system.</span></span>
+<span class="line" id="L91"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addOutputFileArg</span>(rs: *RunStep, basename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) std.Build.FileSource {</span>
+<span class="line" id="L92">    <span class="tok-kw">const</span> generated_file = rs.builder.allocator.create(std.Build.GeneratedFile) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L93">    generated_file.* = .{ .step = &amp;rs.step };</span>
+<span class="line" id="L94">    rs.argv.append(.{ .output = .{</span>
+<span class="line" id="L95">        .generated_file = generated_file,</span>
+<span class="line" id="L96">        .basename = rs.builder.dupe(basename),</span>
+<span class="line" id="L97">    } }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L98"></span>
+<span class="line" id="L99">    <span class="tok-kw">return</span> .{ .generated = generated_file };</span>
+<span class="line" id="L100">}</span>
+<span class="line" id="L101"></span>
+<span class="line" id="L102"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addFileSourceArg</span>(self: *RunStep, file_source: std.Build.FileSource) <span class="tok-type">void</span> {</span>
+<span class="line" id="L103">    self.argv.append(Arg{</span>
+<span class="line" id="L104">        .file_source = file_source.dupe(self.builder),</span>
+<span class="line" id="L105">    }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L106">    file_source.addStepDependencies(&amp;self.step);</span>
+<span class="line" id="L107">}</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addArg</span>(self: *RunStep, arg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L110">    self.argv.append(Arg{ .bytes = self.builder.dupe(arg) }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L111">}</span>
+<span class="line" id="L112"></span>
+<span class="line" id="L113"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addArgs</span>(self: *RunStep, args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L114">    <span class="tok-kw">for</span> (args) |arg| {</span>
+<span class="line" id="L115">        self.addArg(arg);</span>
+<span class="line" id="L116">    }</span>
+<span class="line" id="L117">}</span>
+<span class="line" id="L118"></span>
+<span class="line" id="L119"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">clearEnvironment</span>(self: *RunStep) <span class="tok-type">void</span> {</span>
+<span class="line" id="L120">    <span class="tok-kw">const</span> new_env_map = self.builder.allocator.create(EnvMap) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L121">    new_env_map.* = EnvMap.init(self.builder.allocator);</span>
+<span class="line" id="L122">    self.env_map = new_env_map;</span>
+<span class="line" id="L123">}</span>
+<span class="line" id="L124"></span>
+<span class="line" id="L125"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addPathDir</span>(self: *RunStep, search_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L126">    addPathDirInternal(&amp;self.step, self.builder, search_path);</span>
+<span class="line" id="L127">}</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129"><span class="tok-comment">/// For internal use only, users of `RunStep` should use `addPathDir` directly.</span></span>
+<span class="line" id="L130"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addPathDirInternal</span>(step: *Step, builder: *std.Build, search_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L131">    <span class="tok-kw">const</span> env_map = getEnvMapInternal(step, builder.allocator);</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">    <span class="tok-kw">const</span> key = <span class="tok-str">&quot;PATH&quot;</span>;</span>
+<span class="line" id="L134">    <span class="tok-kw">var</span> prev_path = env_map.get(key);</span>
+<span class="line" id="L135"></span>
+<span class="line" id="L136">    <span class="tok-kw">if</span> (prev_path) |pp| {</span>
+<span class="line" id="L137">        <span class="tok-kw">const</span> new_path = builder.fmt(<span class="tok-str">&quot;{s}&quot;</span> ++ [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{fs.path.delimiter} ++ <span class="tok-str">&quot;{s}&quot;</span>, .{ pp, search_path });</span>
+<span class="line" id="L138">        env_map.put(key, new_path) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L139">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L140">        env_map.put(key, builder.dupePath(search_path)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L141">    }</span>
+<span class="line" id="L142">}</span>
+<span class="line" id="L143"></span>
+<span class="line" id="L144"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getEnvMap</span>(self: *RunStep) *EnvMap {</span>
+<span class="line" id="L145">    <span class="tok-kw">return</span> getEnvMapInternal(&amp;self.step, self.builder.allocator);</span>
+<span class="line" id="L146">}</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148"><span class="tok-kw">fn</span> <span class="tok-fn">getEnvMapInternal</span>(step: *Step, allocator: Allocator) *EnvMap {</span>
+<span class="line" id="L149">    <span class="tok-kw">const</span> maybe_env_map = <span class="tok-kw">switch</span> (step.id) {</span>
+<span class="line" id="L150">        .run =&gt; step.cast(RunStep).?.env_map,</span>
+<span class="line" id="L151">        .emulatable_run =&gt; step.cast(std.Build.EmulatableRunStep).?.env_map,</span>
+<span class="line" id="L152">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L153">    };</span>
+<span class="line" id="L154">    <span class="tok-kw">return</span> maybe_env_map <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L155">        <span class="tok-kw">const</span> env_map = allocator.create(EnvMap) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L156">        env_map.* = process.getEnvMap(allocator) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;unhandled error&quot;</span>);</span>
+<span class="line" id="L157">        <span class="tok-kw">switch</span> (step.id) {</span>
+<span class="line" id="L158">            .run =&gt; step.cast(RunStep).?.env_map = env_map,</span>
+<span class="line" id="L159">            .emulatable_run =&gt; step.cast(RunStep).?.env_map = env_map,</span>
+<span class="line" id="L160">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L161">        }</span>
+<span class="line" id="L162">        <span class="tok-kw">return</span> env_map;</span>
+<span class="line" id="L163">    };</span>
+<span class="line" id="L164">}</span>
+<span class="line" id="L165"></span>
+<span class="line" id="L166"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">setEnvironmentVariable</span>(self: *RunStep, key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L167">    <span class="tok-kw">const</span> env_map = self.getEnvMap();</span>
+<span class="line" id="L168">    env_map.put(</span>
+<span class="line" id="L169">        self.builder.dupe(key),</span>
+<span class="line" id="L170">        self.builder.dupe(value),</span>
+<span class="line" id="L171">    ) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;unhandled error&quot;</span>);</span>
+<span class="line" id="L172">}</span>
+<span class="line" id="L173"></span>
+<span class="line" id="L174"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">expectStdErrEqual</span>(self: *RunStep, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L175">    self.stderr_action = .{ .expect_exact = self.builder.dupe(bytes) };</span>
+<span class="line" id="L176">}</span>
+<span class="line" id="L177"></span>
+<span class="line" id="L178"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">expectStdOutEqual</span>(self: *RunStep, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L179">    self.stdout_action = .{ .expect_exact = self.builder.dupe(bytes) };</span>
+<span class="line" id="L180">}</span>
+<span class="line" id="L181"></span>
+<span class="line" id="L182"><span class="tok-kw">fn</span> <span class="tok-fn">stdIoActionToBehavior</span>(action: StdIoAction) std.ChildProcess.StdIo {</span>
+<span class="line" id="L183">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (action) {</span>
+<span class="line" id="L184">        .ignore =&gt; .Ignore,</span>
+<span class="line" id="L185">        .inherit =&gt; .Inherit,</span>
+<span class="line" id="L186">        .expect_exact, .expect_matches =&gt; .Pipe,</span>
+<span class="line" id="L187">    };</span>
+<span class="line" id="L188">}</span>
+<span class="line" id="L189"></span>
+<span class="line" id="L190"><span class="tok-kw">fn</span> <span class="tok-fn">needOutputCheck</span>(self: RunStep) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L191">    <span class="tok-kw">if</span> (self.extra_file_dependencies.len &gt; <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L192"></span>
+<span class="line" id="L193">    <span class="tok-kw">for</span> (self.argv.items) |arg| <span class="tok-kw">switch</span> (arg) {</span>
+<span class="line" id="L194">        .output =&gt; <span class="tok-kw">return</span> <span class="tok-null">true</span>,</span>
+<span class="line" id="L195">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L196">    };</span>
+<span class="line" id="L197"></span>
+<span class="line" id="L198">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.condition) {</span>
+<span class="line" id="L199">        .always =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L200">        .output_outdated =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L201">    };</span>
+<span class="line" id="L202">}</span>
+<span class="line" id="L203"></span>
+<span class="line" id="L204"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L205">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(RunStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L206">    <span class="tok-kw">const</span> need_output_check = self.needOutputCheck();</span>
+<span class="line" id="L207"></span>
+<span class="line" id="L208">    <span class="tok-kw">var</span> argv_list = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(self.builder.allocator);</span>
+<span class="line" id="L209">    <span class="tok-kw">var</span> output_placeholders = ArrayList(<span class="tok-kw">struct</span> {</span>
+<span class="line" id="L210">        index: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L211">        output: Arg.Output,</span>
+<span class="line" id="L212">    }).init(self.builder.allocator);</span>
 <span class="line" id="L213"></span>
-<span class="line" id="L214">    <span class="tok-kw">var</span> child = std.ChildProcess.init(argv, builder.allocator);</span>
-<span class="line" id="L215">    child.cwd = cwd;</span>
-<span class="line" id="L216">    child.env_map = env_map <span class="tok-kw">orelse</span> builder.env_map;</span>
-<span class="line" id="L217"></span>
-<span class="line" id="L218">    child.stdin_behavior = stdin_behavior;</span>
-<span class="line" id="L219">    child.stdout_behavior = stdIoActionToBehavior(stdout_action);</span>
-<span class="line" id="L220">    child.stderr_behavior = stdIoActionToBehavior(stderr_action);</span>
-<span class="line" id="L221"></span>
-<span class="line" id="L222">    <span class="tok-kw">if</span> (print)</span>
-<span class="line" id="L223">        printCmd(cwd, argv);</span>
-<span class="line" id="L224"></span>
-<span class="line" id="L225">    child.spawn() <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L226">        std.debug.print(<span class="tok-str">&quot;Unable to spawn {s}: {s}\n&quot;</span>, .{ argv[<span class="tok-number">0</span>], <span class="tok-builtin">@errorName</span>(err) });</span>
-<span class="line" id="L227">        <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L228">    };</span>
-<span class="line" id="L229"></span>
-<span class="line" id="L230">    <span class="tok-comment">// TODO need to poll to read these streams to prevent a deadlock (or rely on evented I/O).</span>
+<span class="line" id="L214">    <span class="tok-kw">var</span> man = self.builder.cache.obtain();</span>
+<span class="line" id="L215">    <span class="tok-kw">defer</span> man.deinit();</span>
+<span class="line" id="L216"></span>
+<span class="line" id="L217">    <span class="tok-kw">for</span> (self.argv.items) |arg| {</span>
+<span class="line" id="L218">        <span class="tok-kw">switch</span> (arg) {</span>
+<span class="line" id="L219">            .bytes =&gt; |bytes| {</span>
+<span class="line" id="L220">                <span class="tok-kw">try</span> argv_list.append(bytes);</span>
+<span class="line" id="L221">                man.hash.addBytes(bytes);</span>
+<span class="line" id="L222">            },</span>
+<span class="line" id="L223">            .file_source =&gt; |file| {</span>
+<span class="line" id="L224">                <span class="tok-kw">const</span> file_path = file.getPath(self.builder);</span>
+<span class="line" id="L225">                <span class="tok-kw">try</span> argv_list.append(file_path);</span>
+<span class="line" id="L226">                _ = <span class="tok-kw">try</span> man.addFile(file_path, <span class="tok-null">null</span>);</span>
+<span class="line" id="L227">            },</span>
+<span class="line" id="L228">            .artifact =&gt; |artifact| {</span>
+<span class="line" id="L229">                <span class="tok-kw">if</span> (artifact.target.isWindows()) {</span>
+<span class="line" id="L230">                    <span class="tok-comment">// On Windows we don't have rpaths so we have to add .dll search paths to PATH</span>
 </span>
-<span class="line" id="L231"></span>
-<span class="line" id="L232">    <span class="tok-kw">var</span> stdout: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
-<span class="line" id="L233">    <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (stdout) |s| builder.allocator.free(s);</span>
-<span class="line" id="L234"></span>
-<span class="line" id="L235">    <span class="tok-kw">switch</span> (stdout_action) {</span>
-<span class="line" id="L236">        .expect_exact, .expect_matches =&gt; {</span>
-<span class="line" id="L237">            stdout = <span class="tok-kw">try</span> child.stdout.?.reader().readAllAlloc(builder.allocator, max_stdout_size);</span>
-<span class="line" id="L238">        },</span>
-<span class="line" id="L239">        .inherit, .ignore =&gt; {},</span>
-<span class="line" id="L240">    }</span>
-<span class="line" id="L241"></span>
-<span class="line" id="L242">    <span class="tok-kw">var</span> stderr: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
-<span class="line" id="L243">    <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (stderr) |s| builder.allocator.free(s);</span>
-<span class="line" id="L244"></span>
-<span class="line" id="L245">    <span class="tok-kw">switch</span> (stderr_action) {</span>
-<span class="line" id="L246">        .expect_exact, .expect_matches =&gt; {</span>
-<span class="line" id="L247">            stderr = <span class="tok-kw">try</span> child.stderr.?.reader().readAllAlloc(builder.allocator, max_stdout_size);</span>
-<span class="line" id="L248">        },</span>
-<span class="line" id="L249">        .inherit, .ignore =&gt; {},</span>
-<span class="line" id="L250">    }</span>
-<span class="line" id="L251"></span>
-<span class="line" id="L252">    <span class="tok-kw">const</span> term = child.wait() <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L253">        std.debug.print(<span class="tok-str">&quot;Unable to spawn {s}: {s}\n&quot;</span>, .{ argv[<span class="tok-number">0</span>], <span class="tok-builtin">@errorName</span>(err) });</span>
-<span class="line" id="L254">        <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L255">    };</span>
-<span class="line" id="L256"></span>
-<span class="line" id="L257">    <span class="tok-kw">switch</span> (term) {</span>
-<span class="line" id="L258">        .Exited =&gt; |code| blk: {</span>
-<span class="line" id="L259">            <span class="tok-kw">const</span> expected_code = expected_exit_code <span class="tok-kw">orelse</span> <span class="tok-kw">break</span> :blk;</span>
-<span class="line" id="L260"></span>
-<span class="line" id="L261">            <span class="tok-kw">if</span> (code != expected_code) {</span>
-<span class="line" id="L262">                <span class="tok-kw">if</span> (builder.prominent_compile_errors) {</span>
-<span class="line" id="L263">                    std.debug.print(<span class="tok-str">&quot;Run step exited with error code {} (expected {})\n&quot;</span>, .{</span>
-<span class="line" id="L264">                        code,</span>
-<span class="line" id="L265">                        expected_code,</span>
-<span class="line" id="L266">                    });</span>
-<span class="line" id="L267">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L268">                    std.debug.print(<span class="tok-str">&quot;The following command exited with error code {} (expected {}):\n&quot;</span>, .{</span>
-<span class="line" id="L269">                        code,</span>
-<span class="line" id="L270">                        expected_code,</span>
-<span class="line" id="L271">                    });</span>
-<span class="line" id="L272">                    printCmd(cwd, argv);</span>
-<span class="line" id="L273">                }</span>
-<span class="line" id="L274"></span>
-<span class="line" id="L275">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedExitCode;</span>
-<span class="line" id="L276">            }</span>
-<span class="line" id="L277">        },</span>
-<span class="line" id="L278">        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L279">            std.debug.print(<span class="tok-str">&quot;The following command terminated unexpectedly:\n&quot;</span>, .{});</span>
-<span class="line" id="L280">            printCmd(cwd, argv);</span>
-<span class="line" id="L281">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UncleanExit;</span>
-<span class="line" id="L282">        },</span>
-<span class="line" id="L283">    }</span>
-<span class="line" id="L284"></span>
-<span class="line" id="L285">    <span class="tok-kw">switch</span> (stderr_action) {</span>
-<span class="line" id="L286">        .inherit, .ignore =&gt; {},</span>
-<span class="line" id="L287">        .expect_exact =&gt; |expected_bytes| {</span>
-<span class="line" id="L288">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, expected_bytes, stderr.?)) {</span>
-<span class="line" id="L289">                std.debug.print(</span>
-<span class="line" id="L290">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L291">                    <span class="tok-str">\\========= Expected this stderr: =========</span></span>
-
-<span class="line" id="L292">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L293">                    <span class="tok-str">\\========= But found: ====================</span></span>
-
-<span class="line" id="L294">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L295">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L296">                , .{ expected_bytes, stderr.? });</span>
-<span class="line" id="L297">                printCmd(cwd, argv);</span>
-<span class="line" id="L298">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
-<span class="line" id="L299">            }</span>
-<span class="line" id="L300">        },</span>
-<span class="line" id="L301">        .expect_matches =&gt; |matches| <span class="tok-kw">for</span> (matches) |match| {</span>
-<span class="line" id="L302">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, stderr.?, match) == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L303">                std.debug.print(</span>
-<span class="line" id="L304">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L305">                    <span class="tok-str">\\========= Expected to find in stderr: =========</span></span>
-
-<span class="line" id="L306">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L307">                    <span class="tok-str">\\========= But stderr does not contain it: =====</span></span>
-
-<span class="line" id="L308">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L309">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L310">                , .{ match, stderr.? });</span>
-<span class="line" id="L311">                printCmd(cwd, argv);</span>
-<span class="line" id="L312">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
-<span class="line" id="L313">            }</span>
-<span class="line" id="L314">        },</span>
-<span class="line" id="L315">    }</span>
-<span class="line" id="L316"></span>
-<span class="line" id="L317">    <span class="tok-kw">switch</span> (stdout_action) {</span>
-<span class="line" id="L318">        .inherit, .ignore =&gt; {},</span>
-<span class="line" id="L319">        .expect_exact =&gt; |expected_bytes| {</span>
-<span class="line" id="L320">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, expected_bytes, stdout.?)) {</span>
-<span class="line" id="L321">                std.debug.print(</span>
-<span class="line" id="L322">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L323">                    <span class="tok-str">\\========= Expected this stdout: =========</span></span>
-
-<span class="line" id="L324">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L325">                    <span class="tok-str">\\========= But found: ====================</span></span>
-
-<span class="line" id="L326">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L327">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L328">                , .{ expected_bytes, stdout.? });</span>
-<span class="line" id="L329">                printCmd(cwd, argv);</span>
-<span class="line" id="L330">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
-<span class="line" id="L331">            }</span>
-<span class="line" id="L332">        },</span>
-<span class="line" id="L333">        .expect_matches =&gt; |matches| <span class="tok-kw">for</span> (matches) |match| {</span>
-<span class="line" id="L334">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, stdout.?, match) == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L335">                std.debug.print(</span>
-<span class="line" id="L336">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L337">                    <span class="tok-str">\\========= Expected to find in stdout: =========</span></span>
-
-<span class="line" id="L338">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L339">                    <span class="tok-str">\\========= But stdout does not contain it: =====</span></span>
-
-<span class="line" id="L340">                    <span class="tok-str">\\{s}</span></span>
-
-<span class="line" id="L341">                    <span class="tok-str">\\</span></span>
-
-<span class="line" id="L342">                , .{ match, stdout.? });</span>
-<span class="line" id="L343">                printCmd(cwd, argv);</span>
-<span class="line" id="L344">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
-<span class="line" id="L345">            }</span>
-<span class="line" id="L346">        },</span>
-<span class="line" id="L347">    }</span>
-<span class="line" id="L348">}</span>
-<span class="line" id="L349"></span>
-<span class="line" id="L350"><span class="tok-kw">fn</span> <span class="tok-fn">printCmd</span>(cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L351">    <span class="tok-kw">if</span> (cwd) |yes_cwd| std.debug.print(<span class="tok-str">&quot;cd {s} &amp;&amp; &quot;</span>, .{yes_cwd});</span>
-<span class="line" id="L352">    <span class="tok-kw">for</span> (argv) |arg| {</span>
-<span class="line" id="L353">        std.debug.print(<span class="tok-str">&quot;{s} &quot;</span>, .{arg});</span>
+<span class="line" id="L231">                    self.addPathForDynLibs(artifact);</span>
+<span class="line" id="L232">                }</span>
+<span class="line" id="L233">                <span class="tok-kw">const</span> file_path = artifact.installed_path <span class="tok-kw">orelse</span></span>
+<span class="line" id="L234">                    artifact.getOutputSource().getPath(self.builder);</span>
+<span class="line" id="L235"></span>
+<span class="line" id="L236">                <span class="tok-kw">try</span> argv_list.append(file_path);</span>
+<span class="line" id="L237"></span>
+<span class="line" id="L238">                _ = <span class="tok-kw">try</span> man.addFile(file_path, <span class="tok-null">null</span>);</span>
+<span class="line" id="L239">            },</span>
+<span class="line" id="L240">            .output =&gt; |output| {</span>
+<span class="line" id="L241">                man.hash.addBytes(output.basename);</span>
+<span class="line" id="L242">                <span class="tok-comment">// Add a placeholder into the argument list because we need the</span>
+</span>
+<span class="line" id="L243">                <span class="tok-comment">// manifest hash to be updated with all arguments before the</span>
+</span>
+<span class="line" id="L244">                <span class="tok-comment">// object directory is computed.</span>
+</span>
+<span class="line" id="L245">                <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L246">                <span class="tok-kw">try</span> output_placeholders.append(.{</span>
+<span class="line" id="L247">                    .index = argv_list.items.len - <span class="tok-number">1</span>,</span>
+<span class="line" id="L248">                    .output = output,</span>
+<span class="line" id="L249">                });</span>
+<span class="line" id="L250">            },</span>
+<span class="line" id="L251">        }</span>
+<span class="line" id="L252">    }</span>
+<span class="line" id="L253"></span>
+<span class="line" id="L254">    <span class="tok-kw">if</span> (need_output_check) {</span>
+<span class="line" id="L255">        <span class="tok-kw">for</span> (self.extra_file_dependencies) |file_path| {</span>
+<span class="line" id="L256">            _ = <span class="tok-kw">try</span> man.addFile(self.builder.pathFromRoot(file_path), <span class="tok-null">null</span>);</span>
+<span class="line" id="L257">        }</span>
+<span class="line" id="L258"></span>
+<span class="line" id="L259">        <span class="tok-kw">if</span> (man.hit() <span class="tok-kw">catch</span> |err| failWithCacheError(man, err)) {</span>
+<span class="line" id="L260">            <span class="tok-comment">// cache hit, skip running command</span>
+</span>
+<span class="line" id="L261">            <span class="tok-kw">const</span> digest = man.final();</span>
+<span class="line" id="L262">            <span class="tok-kw">for</span> (output_placeholders.items) |placeholder| {</span>
+<span class="line" id="L263">                placeholder.output.generated_file.path = <span class="tok-kw">try</span> self.builder.cache_root.join(</span>
+<span class="line" id="L264">                    self.builder.allocator,</span>
+<span class="line" id="L265">                    &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;digest, placeholder.output.basename },</span>
+<span class="line" id="L266">                );</span>
+<span class="line" id="L267">            }</span>
+<span class="line" id="L268">            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L269">        }</span>
+<span class="line" id="L270"></span>
+<span class="line" id="L271">        <span class="tok-kw">const</span> digest = man.final();</span>
+<span class="line" id="L272"></span>
+<span class="line" id="L273">        <span class="tok-kw">for</span> (output_placeholders.items) |placeholder| {</span>
+<span class="line" id="L274">            <span class="tok-kw">const</span> output_path = <span class="tok-kw">try</span> self.builder.cache_root.join(</span>
+<span class="line" id="L275">                self.builder.allocator,</span>
+<span class="line" id="L276">                &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;digest, placeholder.output.basename },</span>
+<span class="line" id="L277">            );</span>
+<span class="line" id="L278">            <span class="tok-kw">const</span> output_dir = fs.path.dirname(output_path).?;</span>
+<span class="line" id="L279">            fs.cwd().makePath(output_dir) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L280">                std.debug.print(<span class="tok-str">&quot;unable to make path {s}: {s}\n&quot;</span>, .{ output_dir, <span class="tok-builtin">@errorName</span>(err) });</span>
+<span class="line" id="L281">                <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L282">            };</span>
+<span class="line" id="L283"></span>
+<span class="line" id="L284">            placeholder.output.generated_file.path = output_path;</span>
+<span class="line" id="L285">            argv_list.items[placeholder.index] = output_path;</span>
+<span class="line" id="L286">        }</span>
+<span class="line" id="L287">    }</span>
+<span class="line" id="L288"></span>
+<span class="line" id="L289">    <span class="tok-kw">try</span> runCommand(</span>
+<span class="line" id="L290">        argv_list.items,</span>
+<span class="line" id="L291">        self.builder,</span>
+<span class="line" id="L292">        self.expected_exit_code,</span>
+<span class="line" id="L293">        self.stdout_action,</span>
+<span class="line" id="L294">        self.stderr_action,</span>
+<span class="line" id="L295">        self.stdin_behavior,</span>
+<span class="line" id="L296">        self.env_map,</span>
+<span class="line" id="L297">        self.cwd,</span>
+<span class="line" id="L298">        self.print,</span>
+<span class="line" id="L299">    );</span>
+<span class="line" id="L300"></span>
+<span class="line" id="L301">    <span class="tok-kw">if</span> (need_output_check) {</span>
+<span class="line" id="L302">        <span class="tok-kw">try</span> man.writeManifest();</span>
+<span class="line" id="L303">    }</span>
+<span class="line" id="L304">}</span>
+<span class="line" id="L305"></span>
+<span class="line" id="L306"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runCommand</span>(</span>
+<span class="line" id="L307">    argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L308">    builder: *std.Build,</span>
+<span class="line" id="L309">    expected_exit_code: ?<span class="tok-type">u8</span>,</span>
+<span class="line" id="L310">    stdout_action: StdIoAction,</span>
+<span class="line" id="L311">    stderr_action: StdIoAction,</span>
+<span class="line" id="L312">    stdin_behavior: std.ChildProcess.StdIo,</span>
+<span class="line" id="L313">    env_map: ?*EnvMap,</span>
+<span class="line" id="L314">    maybe_cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L315">    print: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L316">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L317">    <span class="tok-kw">const</span> cwd = <span class="tok-kw">if</span> (maybe_cwd) |cwd| builder.pathFromRoot(cwd) <span class="tok-kw">else</span> builder.build_root.path;</span>
+<span class="line" id="L318"></span>
+<span class="line" id="L319">    <span class="tok-kw">if</span> (!std.process.can_spawn) {</span>
+<span class="line" id="L320">        <span class="tok-kw">const</span> cmd = <span class="tok-kw">try</span> std.mem.join(builder.allocator, <span class="tok-str">&quot; &quot;</span>, argv);</span>
+<span class="line" id="L321">        std.debug.print(<span class="tok-str">&quot;the following command cannot be executed ({s} does not support spawning a child process):\n{s}&quot;</span>, .{</span>
+<span class="line" id="L322">            <span class="tok-builtin">@tagName</span>(builtin.os.tag), cmd,</span>
+<span class="line" id="L323">        });</span>
+<span class="line" id="L324">        builder.allocator.free(cmd);</span>
+<span class="line" id="L325">        <span class="tok-kw">return</span> ExecError.ExecNotSupported;</span>
+<span class="line" id="L326">    }</span>
+<span class="line" id="L327"></span>
+<span class="line" id="L328">    <span class="tok-kw">var</span> child = std.ChildProcess.init(argv, builder.allocator);</span>
+<span class="line" id="L329">    child.cwd = cwd;</span>
+<span class="line" id="L330">    child.env_map = env_map <span class="tok-kw">orelse</span> builder.env_map;</span>
+<span class="line" id="L331"></span>
+<span class="line" id="L332">    child.stdin_behavior = stdin_behavior;</span>
+<span class="line" id="L333">    child.stdout_behavior = stdIoActionToBehavior(stdout_action);</span>
+<span class="line" id="L334">    child.stderr_behavior = stdIoActionToBehavior(stderr_action);</span>
+<span class="line" id="L335"></span>
+<span class="line" id="L336">    <span class="tok-kw">if</span> (print)</span>
+<span class="line" id="L337">        printCmd(cwd, argv);</span>
+<span class="line" id="L338"></span>
+<span class="line" id="L339">    child.spawn() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L340">        std.debug.print(<span class="tok-str">&quot;Unable to spawn {s}: {s}\n&quot;</span>, .{ argv[<span class="tok-number">0</span>], <span class="tok-builtin">@errorName</span>(err) });</span>
+<span class="line" id="L341">        <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L342">    };</span>
+<span class="line" id="L343"></span>
+<span class="line" id="L344">    <span class="tok-comment">// TODO need to poll to read these streams to prevent a deadlock (or rely on evented I/O).</span>
+</span>
+<span class="line" id="L345"></span>
+<span class="line" id="L346">    <span class="tok-kw">var</span> stdout: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
+<span class="line" id="L347">    <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (stdout) |s| builder.allocator.free(s);</span>
+<span class="line" id="L348"></span>
+<span class="line" id="L349">    <span class="tok-kw">switch</span> (stdout_action) {</span>
+<span class="line" id="L350">        .expect_exact, .expect_matches =&gt; {</span>
+<span class="line" id="L351">            stdout = <span class="tok-kw">try</span> child.stdout.?.reader().readAllAlloc(builder.allocator, max_stdout_size);</span>
+<span class="line" id="L352">        },</span>
+<span class="line" id="L353">        .inherit, .ignore =&gt; {},</span>
 <span class="line" id="L354">    }</span>
-<span class="line" id="L355">    std.debug.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L356">}</span>
-<span class="line" id="L357"></span>
-<span class="line" id="L358"><span class="tok-kw">fn</span> <span class="tok-fn">addPathForDynLibs</span>(self: *RunStep, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
-<span class="line" id="L359">    addPathForDynLibsInternal(&amp;self.step, self.builder, artifact);</span>
-<span class="line" id="L360">}</span>
-<span class="line" id="L361"></span>
-<span class="line" id="L362"><span class="tok-comment">/// This should only be used for internal usage, this is called automatically</span></span>
-<span class="line" id="L363"><span class="tok-comment">/// for the user.</span></span>
-<span class="line" id="L364"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addPathForDynLibsInternal</span>(step: *Step, builder: *std.Build, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
-<span class="line" id="L365">    <span class="tok-kw">for</span> (artifact.link_objects.items) |link_object| {</span>
-<span class="line" id="L366">        <span class="tok-kw">switch</span> (link_object) {</span>
-<span class="line" id="L367">            .other_step =&gt; |other| {</span>
-<span class="line" id="L368">                <span class="tok-kw">if</span> (other.target.isWindows() <span class="tok-kw">and</span> other.isDynamicLibrary()) {</span>
-<span class="line" id="L369">                    addPathDirInternal(step, builder, fs.path.dirname(other.getOutputSource().getPath(builder)).?);</span>
-<span class="line" id="L370">                    addPathForDynLibsInternal(step, builder, other);</span>
-<span class="line" id="L371">                }</span>
-<span class="line" id="L372">            },</span>
-<span class="line" id="L373">            <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L374">        }</span>
-<span class="line" id="L375">    }</span>
-<span class="line" id="L376">}</span>
-<span class="line" id="L377"></span>
+<span class="line" id="L355"></span>
+<span class="line" id="L356">    <span class="tok-kw">var</span> stderr: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
+<span class="line" id="L357">    <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (stderr) |s| builder.allocator.free(s);</span>
+<span class="line" id="L358"></span>
+<span class="line" id="L359">    <span class="tok-kw">switch</span> (stderr_action) {</span>
+<span class="line" id="L360">        .expect_exact, .expect_matches =&gt; {</span>
+<span class="line" id="L361">            stderr = <span class="tok-kw">try</span> child.stderr.?.reader().readAllAlloc(builder.allocator, max_stdout_size);</span>
+<span class="line" id="L362">        },</span>
+<span class="line" id="L363">        .inherit, .ignore =&gt; {},</span>
+<span class="line" id="L364">    }</span>
+<span class="line" id="L365"></span>
+<span class="line" id="L366">    <span class="tok-kw">const</span> term = child.wait() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L367">        std.debug.print(<span class="tok-str">&quot;Unable to spawn {s}: {s}\n&quot;</span>, .{ argv[<span class="tok-number">0</span>], <span class="tok-builtin">@errorName</span>(err) });</span>
+<span class="line" id="L368">        <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L369">    };</span>
+<span class="line" id="L370"></span>
+<span class="line" id="L371">    <span class="tok-kw">switch</span> (term) {</span>
+<span class="line" id="L372">        .Exited =&gt; |code| blk: {</span>
+<span class="line" id="L373">            <span class="tok-kw">const</span> expected_code = expected_exit_code <span class="tok-kw">orelse</span> <span class="tok-kw">break</span> :blk;</span>
+<span class="line" id="L374"></span>
+<span class="line" id="L375">            <span class="tok-kw">if</span> (code != expected_code) {</span>
+<span class="line" id="L376">                <span class="tok-kw">if</span> (builder.prominent_compile_errors) {</span>
+<span class="line" id="L377">                    std.debug.print(<span class="tok-str">&quot;Run step exited with error code {} (expected {})\n&quot;</span>, .{</span>
+<span class="line" id="L378">                        code,</span>
+<span class="line" id="L379">                        expected_code,</span>
+<span class="line" id="L380">                    });</span>
+<span class="line" id="L381">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L382">                    std.debug.print(<span class="tok-str">&quot;The following command exited with error code {} (expected {}):\n&quot;</span>, .{</span>
+<span class="line" id="L383">                        code,</span>
+<span class="line" id="L384">                        expected_code,</span>
+<span class="line" id="L385">                    });</span>
+<span class="line" id="L386">                    printCmd(cwd, argv);</span>
+<span class="line" id="L387">                }</span>
+<span class="line" id="L388"></span>
+<span class="line" id="L389">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedExitCode;</span>
+<span class="line" id="L390">            }</span>
+<span class="line" id="L391">        },</span>
+<span class="line" id="L392">        <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L393">            std.debug.print(<span class="tok-str">&quot;The following command terminated unexpectedly:\n&quot;</span>, .{});</span>
+<span class="line" id="L394">            printCmd(cwd, argv);</span>
+<span class="line" id="L395">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UncleanExit;</span>
+<span class="line" id="L396">        },</span>
+<span class="line" id="L397">    }</span>
+<span class="line" id="L398"></span>
+<span class="line" id="L399">    <span class="tok-kw">switch</span> (stderr_action) {</span>
+<span class="line" id="L400">        .inherit, .ignore =&gt; {},</span>
+<span class="line" id="L401">        .expect_exact =&gt; |expected_bytes| {</span>
+<span class="line" id="L402">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, expected_bytes, stderr.?)) {</span>
+<span class="line" id="L403">                std.debug.print(</span>
+<span class="line" id="L404">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L405">                    <span class="tok-str">\\========= Expected this stderr: =========</span></span>
+
+<span class="line" id="L406">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L407">                    <span class="tok-str">\\========= But found: ====================</span></span>
+
+<span class="line" id="L408">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L409">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L410">                , .{ expected_bytes, stderr.? });</span>
+<span class="line" id="L411">                printCmd(cwd, argv);</span>
+<span class="line" id="L412">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
+<span class="line" id="L413">            }</span>
+<span class="line" id="L414">        },</span>
+<span class="line" id="L415">        .expect_matches =&gt; |matches| <span class="tok-kw">for</span> (matches) |match| {</span>
+<span class="line" id="L416">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, stderr.?, match) == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L417">                std.debug.print(</span>
+<span class="line" id="L418">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L419">                    <span class="tok-str">\\========= Expected to find in stderr: =========</span></span>
+
+<span class="line" id="L420">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L421">                    <span class="tok-str">\\========= But stderr does not contain it: =====</span></span>
+
+<span class="line" id="L422">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L423">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L424">                , .{ match, stderr.? });</span>
+<span class="line" id="L425">                printCmd(cwd, argv);</span>
+<span class="line" id="L426">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
+<span class="line" id="L427">            }</span>
+<span class="line" id="L428">        },</span>
+<span class="line" id="L429">    }</span>
+<span class="line" id="L430"></span>
+<span class="line" id="L431">    <span class="tok-kw">switch</span> (stdout_action) {</span>
+<span class="line" id="L432">        .inherit, .ignore =&gt; {},</span>
+<span class="line" id="L433">        .expect_exact =&gt; |expected_bytes| {</span>
+<span class="line" id="L434">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, expected_bytes, stdout.?)) {</span>
+<span class="line" id="L435">                std.debug.print(</span>
+<span class="line" id="L436">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L437">                    <span class="tok-str">\\========= Expected this stdout: =========</span></span>
+
+<span class="line" id="L438">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L439">                    <span class="tok-str">\\========= But found: ====================</span></span>
+
+<span class="line" id="L440">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L441">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L442">                , .{ expected_bytes, stdout.? });</span>
+<span class="line" id="L443">                printCmd(cwd, argv);</span>
+<span class="line" id="L444">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
+<span class="line" id="L445">            }</span>
+<span class="line" id="L446">        },</span>
+<span class="line" id="L447">        .expect_matches =&gt; |matches| <span class="tok-kw">for</span> (matches) |match| {</span>
+<span class="line" id="L448">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, stdout.?, match) == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L449">                std.debug.print(</span>
+<span class="line" id="L450">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L451">                    <span class="tok-str">\\========= Expected to find in stdout: =========</span></span>
+
+<span class="line" id="L452">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L453">                    <span class="tok-str">\\========= But stdout does not contain it: =====</span></span>
+
+<span class="line" id="L454">                    <span class="tok-str">\\{s}</span></span>
+
+<span class="line" id="L455">                    <span class="tok-str">\\</span></span>
+
+<span class="line" id="L456">                , .{ match, stdout.? });</span>
+<span class="line" id="L457">                printCmd(cwd, argv);</span>
+<span class="line" id="L458">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed;</span>
+<span class="line" id="L459">            }</span>
+<span class="line" id="L460">        },</span>
+<span class="line" id="L461">    }</span>
+<span class="line" id="L462">}</span>
+<span class="line" id="L463"></span>
+<span class="line" id="L464"><span class="tok-kw">fn</span> <span class="tok-fn">failWithCacheError</span>(man: std.Build.Cache.Manifest, err: <span class="tok-type">anyerror</span>) <span class="tok-type">noreturn</span> {</span>
+<span class="line" id="L465">    <span class="tok-kw">const</span> i = man.failed_file_index <span class="tok-kw">orelse</span> failWithSimpleError(err);</span>
+<span class="line" id="L466">    <span class="tok-kw">const</span> pp = man.files.items[i].prefixed_path <span class="tok-kw">orelse</span> failWithSimpleError(err);</span>
+<span class="line" id="L467">    <span class="tok-kw">const</span> prefix = man.cache.prefixes()[pp.prefix].path <span class="tok-kw">orelse</span> <span class="tok-str">&quot;&quot;</span>;</span>
+<span class="line" id="L468">    std.debug.print(<span class="tok-str">&quot;{s}: {s}/{s}\n&quot;</span>, .{ <span class="tok-builtin">@errorName</span>(err), prefix, pp.sub_path });</span>
+<span class="line" id="L469">    std.process.exit(<span class="tok-number">1</span>);</span>
+<span class="line" id="L470">}</span>
+<span class="line" id="L471"></span>
+<span class="line" id="L472"><span class="tok-kw">fn</span> <span class="tok-fn">failWithSimpleError</span>(err: <span class="tok-type">anyerror</span>) <span class="tok-type">noreturn</span> {</span>
+<span class="line" id="L473">    std.debug.print(<span class="tok-str">&quot;{s}\n&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L474">    std.process.exit(<span class="tok-number">1</span>);</span>
+<span class="line" id="L475">}</span>
+<span class="line" id="L476"></span>
+<span class="line" id="L477"><span class="tok-kw">fn</span> <span class="tok-fn">printCmd</span>(cwd: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L478">    <span class="tok-kw">if</span> (cwd) |yes_cwd| std.debug.print(<span class="tok-str">&quot;cd {s} &amp;&amp; &quot;</span>, .{yes_cwd});</span>
+<span class="line" id="L479">    <span class="tok-kw">for</span> (argv) |arg| {</span>
+<span class="line" id="L480">        std.debug.print(<span class="tok-str">&quot;{s} &quot;</span>, .{arg});</span>
+<span class="line" id="L481">    }</span>
+<span class="line" id="L482">    std.debug.print(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L483">}</span>
+<span class="line" id="L484"></span>
+<span class="line" id="L485"><span class="tok-kw">fn</span> <span class="tok-fn">addPathForDynLibs</span>(self: *RunStep, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
+<span class="line" id="L486">    addPathForDynLibsInternal(&amp;self.step, self.builder, artifact);</span>
+<span class="line" id="L487">}</span>
+<span class="line" id="L488"></span>
+<span class="line" id="L489"><span class="tok-comment">/// This should only be used for internal usage, this is called automatically</span></span>
+<span class="line" id="L490"><span class="tok-comment">/// for the user.</span></span>
+<span class="line" id="L491"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addPathForDynLibsInternal</span>(step: *Step, builder: *std.Build, artifact: *CompileStep) <span class="tok-type">void</span> {</span>
+<span class="line" id="L492">    <span class="tok-kw">for</span> (artifact.link_objects.items) |link_object| {</span>
+<span class="line" id="L493">        <span class="tok-kw">switch</span> (link_object) {</span>
+<span class="line" id="L494">            .other_step =&gt; |other| {</span>
+<span class="line" id="L495">                <span class="tok-kw">if</span> (other.target.isWindows() <span class="tok-kw">and</span> other.isDynamicLibrary()) {</span>
+<span class="line" id="L496">                    addPathDirInternal(step, builder, fs.path.dirname(other.getOutputSource().getPath(builder)).?);</span>
+<span class="line" id="L497">                    addPathForDynLibsInternal(step, builder, other);</span>
+<span class="line" id="L498">                }</span>
+<span class="line" id="L499">            },</span>
+<span class="line" id="L500">            <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L501">        }</span>
+<span class="line" id="L502">    }</span>
+<span class="line" id="L503">}</span>
+<span class="line" id="L504"></span>
 </code></pre></body>
 </html>
