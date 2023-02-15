@@ -2,7 +2,7 @@ const std = @import("std");
 
 const is_sbt = @import("block.zig").is_sbt;
 const is_tsb = @import("block.zig").is_tsb;
-//const Attributes = @import("../../attributes.zig").Attributes;
+const Attributes = @import("../../attributes.zig").Attributes;
 
 /// Checks whether `SB` defines serialization attributes for `T`.
 pub fn has_attributes(
@@ -23,17 +23,14 @@ pub fn is_attributes(
     /// An attribute list to check.
     attributes: anytype,
 ) bool {
-    _ = attributes;
-    _ = T;
     comptime {
-        return true;
-        //const A = Attributes(T, attributes);
-        //var a = A{};
+        const A = Attributes(T, attributes);
+        var a = A{};
 
-        //inline for (std.meta.fields(@TypeOf(attributes))) |field| {
-        //@field(a, field.name) = @field(attributes, field.name);
-        //}
+        inline for (std.meta.fields(@TypeOf(attributes))) |field| {
+            @field(a, field.name) = @field(attributes, field.name);
+        }
 
-        //return std.meta.eql(a, attributes);
+        return std.meta.eql(a, attributes);
     }
 }
