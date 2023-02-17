@@ -52,7 +52,6 @@ pub const default = .{
 
     blocks.IntegerBitSet,
     blocks.MultiArrayList,
-    blocks.SinglyLinkedList,
     blocks.NetAddress,
 
     // Covers the following types:
@@ -64,6 +63,7 @@ pub const default = .{
     blocks.PackedIntArray,
 
     blocks.SemanticVersion,
+    blocks.SinglyLinkedList,
     blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////

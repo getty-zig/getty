@@ -25,7 +25,14 @@ pub const default = .{
     ////////////////////////////////////////////////////////////////////////////
 
     blocks.Allocator,
+
+    // Covers the following types:
+    //
+    //   - std.ArrayBitSet
+    //   - std.IntegerBitSet
+    //   - std.StaticBitSet
     blocks.ArrayBitSet,
+    blocks.IntegerBitSet,
 
     // Covers the following types:
     //
@@ -54,8 +61,6 @@ pub const default = .{
     //   - std.StringArrayHashMapUnmanaged
     blocks.HashMap,
 
-    blocks.IntegerBitSet,
-    blocks.SinglyLinkedList,
     blocks.MultiArrayList,
     blocks.NetAddress,
 
@@ -67,8 +72,8 @@ pub const default = .{
     //   - std.PackedIntSliceEndian
     blocks.PackedIntArray,
 
+    blocks.SinglyLinkedList,
     blocks.SemanticVersion,
-    blocks.StaticBitSet,
     blocks.TailQueue,
 
     ////////////////////////////////////////////////////////////////////////////
