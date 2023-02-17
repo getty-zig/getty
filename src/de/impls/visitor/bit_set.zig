@@ -21,7 +21,7 @@ pub fn Visitor(comptime IntegerBitSet: type) type {
             var bitset = Value.initEmpty();
 
             if (Value.bit_length == 0) {
-                if (try seq.nextElement(allocator, Value.MaskInt) != null) {
+                if (try seq.nextElement(allocator, Ignored) != null) {
                     return error.InvalidLength;
                 }
 
