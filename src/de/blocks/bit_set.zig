@@ -367,7 +367,7 @@ test "deserialize - std.ArrayBitSet" {
             .want = blk: {
                 var want = std.StaticBitSet(size).initEmpty();
                 {
-                    var i: usize = 0; // 0, 2, 4, ..., size - 1
+                    var i: usize = 0; // 0, 2, 4, ..., size - 2
                     while (i < size) : (i += 2) want.set(i);
                 }
                 break :blk want;
