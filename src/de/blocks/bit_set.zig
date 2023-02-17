@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const IntegerBitSetVisitor = @import("../impls/visitor/integer_bit_set.zig").Visitor;
+const BitSetVisitor = @import("../impls/visitor/bit_set.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -10,7 +10,10 @@ pub fn is(
     /// The type being deserialized into.
     comptime T: type,
 ) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "bit_set.IntegerBitSet");
+    const is_int_bitset = comptime std.mem.startsWith(u8, @typeName(T), "bit_set.IntegerBitSet");
+    const is_arr_bitset = comptime std.mem.startsWith(u8, @typeName(T), "bit_set.ArrayBitSet");
+
+    return is_int_bitset or is_arr_bitset;
 }
 
 /// Specifies the deserialization process for types relevant to this block.
@@ -34,7 +37,7 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return IntegerBitSetVisitor(T);
+    return BitSetVisitor(T);
 }
 
 test "deserialize - std.IntegerBitSet" {
@@ -70,10 +73,10 @@ test "deserialize - std.IntegerBitSet" {
             .want = std.StaticBitSet(3).initFull(),
         },
         .{
-            .name = "mixed (I)",
+            .name = "mixed (LSB unset)",
             .tokens = &.{
                 .{ .Seq = .{ .len = 5 } },
-                .{ .I32 = 1 },
+                .{ .I32 = 0 },
                 .{ .I32 = 1 },
                 .{ .I32 = 0 },
                 .{ .I32 = 1 },
@@ -84,25 +87,24 @@ test "deserialize - std.IntegerBitSet" {
                 var want = std.StaticBitSet(5).initEmpty();
                 want.set(1);
                 want.set(3);
-                want.set(4);
                 break :blk want;
             },
         },
         .{
-            .name = "mixed (I*)",
+            .name = "mixed (LSB set)",
             .tokens = &.{
                 .{ .Seq = .{ .len = 5 } },
                 .{ .I32 = 1 },
                 .{ .I32 = 0 },
-                .{ .I32 = 0 },
                 .{ .I32 = 1 },
+                .{ .I32 = 0 },
                 .{ .I32 = 1 },
                 .{ .SeqEnd = {} },
             },
             .want = blk: {
                 var want = std.StaticBitSet(5).initEmpty();
                 want.set(0);
-                want.set(1);
+                want.set(2);
                 want.set(4);
                 break :blk want;
             },

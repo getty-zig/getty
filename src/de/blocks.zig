@@ -79,7 +79,7 @@ pub const BufMap = @import("blocks/buf_map.zig");
 pub const HashMap = _HashMap;
 
 /// Deserialization block for `std.IntegerBitSet` values.
-pub const IntegerBitSet = @import("blocks/integer_bit_set.zig");
+pub const IntegerBitSet = @import("blocks/bit_set.zig");
 
 /// Deserialization block for `std.HashMapUnmanaged` values.
 pub const HashMapUnmanaged = _HashMap;

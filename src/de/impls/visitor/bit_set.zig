@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
@@ -60,7 +59,7 @@ pub fn Visitor(comptime IntegerBitSet: type) type {
             }
 
             // Check for end of sequence.
-            if (try seq.nextElement(allocator, Value.MaskInt) != null) {
+            if (try seq.nextElement(allocator, Ignored) != null) {
                 return error.InvalidLength;
             }
 
