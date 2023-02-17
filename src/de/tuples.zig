@@ -21,6 +21,7 @@ pub const default = .{
     ////////////////////////////////////////////////////////////////////////////
 
     blocks.Allocator,
+    blocks.ArrayBitSet,
 
     // Covers the following types:
     //
