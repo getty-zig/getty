@@ -40,7 +40,7 @@ pub const Void = @import("blocks/void.zig");
 pub const Allocator = @import("blocks/allocator.zig");
 
 /// Deserialization block for `std.ArrayBitSet` values.
-pub const ArrayBitSet = @import("blocks/bit_set.zig");
+pub const ArrayBitSet = @import("blocks/static_bit_set.zig");
 
 /// Deserialization block for `std.ArrayHashMap` values.
 pub const ArrayHashMap = _HashMap;
@@ -82,7 +82,7 @@ pub const BufMap = @import("blocks/buf_map.zig");
 pub const HashMap = _HashMap;
 
 /// Deserialization block for `std.IntegerBitSet` values.
-pub const IntegerBitSet = @import("blocks/bit_set.zig");
+pub const IntegerBitSet = @import("blocks/static_bit_set.zig");
 
 /// Deserialization block for `std.HashMapUnmanaged` values.
 pub const HashMapUnmanaged = _HashMap;
@@ -110,6 +110,9 @@ pub const SemanticVersion = @import("blocks/semantic_version.zig");
 
 /// Deserialization block for `std.SinglyLinkedList` values.
 pub const SinglyLinkedList = @import("blocks/singly_linked_list.zig");
+
+/// Deserialization block for `std.StaticBitSet` values.
+pub const StaticBitSet = @import("blocks/static_bit_set.zig");
 
 /// Deserialization block for `std.StringArrayHashMap` values.
 pub const StringArrayHashMap = _HashMap;
