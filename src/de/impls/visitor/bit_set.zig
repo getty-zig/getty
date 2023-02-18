@@ -3,7 +3,7 @@ const std = @import("std");
 const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
-pub fn Visitor(comptime IntegerBitSet: type) type {
+pub fn Visitor(comptime BitSet: type) type {
     return struct {
         const Self = @This();
 
@@ -15,7 +15,7 @@ pub fn Visitor(comptime IntegerBitSet: type) type {
             },
         );
 
-        const Value = IntegerBitSet;
+        const Value = BitSet;
 
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var bitset = Value.initEmpty();
