@@ -78,6 +78,12 @@ pub const BoundedArray = @import("blocks/bounded_array.zig");
 /// Deserialization block for `std.BufMap` values.
 pub const BufMap = @import("blocks/buf_map.zig");
 
+/// Deserialization block for `std.DynamicBitSet` values.
+pub const DynamicBitSet = _DynamicBitSet;
+
+/// Deserialization block for `std.DynamicBitSetUnmanaged` values.
+pub const DynamicBitSetUnmanaged = _DynamicBitSet;
+
 /// Deserialization block for `std.HashMap` values.
 pub const HashMap = _HashMap;
 
@@ -155,5 +161,6 @@ pub const Union = @import("blocks/union.zig");
 ////////////////////////////////////////////////////////////////////////////
 
 const _ArrayListAligned = @import("blocks/array_list_aligned.zig");
+const _DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
