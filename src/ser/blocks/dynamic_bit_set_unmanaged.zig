@@ -1,4 +1,5 @@
 const std = @import("std");
+const test_allocator = std.testing.allocator;
 
 const t = @import("../testing.zig");
 
@@ -7,7 +8,7 @@ pub fn is(
     /// The type of a value being serialized.
     comptime T: type,
 ) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "bit_set.ArrayBitSet");
+    return T == std.DynamicBitSetUnmanaged;
 }
 
 /// Specifies the serialization process for values relevant to this block.
@@ -22,10 +23,13 @@ pub fn serialize(
     _ = allocator;
 
     const cap = value.capacity();
-    std.debug.assert(cap != 0); // std.IntegerBitSet would be used if cap was 0.
 
     var s = try serializer.serializeSeq(cap);
     const seq = s.seq();
+
+    if (cap == 0) {
+        return try seq.end();
+    }
 
     const MaskInt = @TypeOf(value).MaskInt;
     const zero = @as(MaskInt, 0);
@@ -63,19 +67,13 @@ pub fn serialize(
     return try seq.end();
 }
 
-test "serialize - std.ArrayBitSet" {
-    // Any size <= @bitSizeOf(usize) will result in std.IntegerBitSet being
-    // used. So, 1 is added to size to make sure that std.ArrayBitSet is used.
-    //
-    // Also, another 1 is added to size to ensure that the bitset's length is
-    // even, so that the LSB and MSB won't be the same. This lets us make sure
-    // that the last element of a sequence is being serialized as the LSB of a
-    // bitset, and not the MSB.
+test "serialize - std.DynamicBitSetUnmanaged" {
     const size = @bitSizeOf(usize) + 2;
 
     // Empty
     {
-        var want = std.StaticBitSet(size).initEmpty();
+        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, size);
+        defer want.deinit(test_allocator);
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = size } },
@@ -151,7 +149,8 @@ test "serialize - std.ArrayBitSet" {
 
     // Full
     {
-        var want = std.StaticBitSet(size).initFull();
+        var want = try std.DynamicBitSetUnmanaged.initFull(test_allocator, size);
+        defer want.deinit(test_allocator);
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = size } },
@@ -227,7 +226,8 @@ test "serialize - std.ArrayBitSet" {
 
     // Mixed (LSB set)
     {
-        var want = std.StaticBitSet(size).initEmpty();
+        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, size);
+        defer want.deinit(test_allocator);
         {
             var i: usize = 0; // 0, 2, 4, ..., size - 2
             while (i < size) : (i += 2) want.set(i);
@@ -307,7 +307,8 @@ test "serialize - std.ArrayBitSet" {
 
     // Mixed (LSB unset)
     {
-        var want = std.StaticBitSet(size).initEmpty();
+        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, size);
+        defer want.deinit(test_allocator);
         {
             var i: usize = 1; // 1, 3, 5, ..., size - 1
             while (i < size) : (i += 2) want.set(i);

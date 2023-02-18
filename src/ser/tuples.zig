@@ -44,6 +44,7 @@ pub const default = .{
 
     blocks.BoundedArray,
     blocks.BufMap,
+    blocks.DynamicBitSetUnmanaged,
 
     // Covers the following types:
     //

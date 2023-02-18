@@ -47,8 +47,6 @@ pub fn serialize(
     return try seq.end();
 }
 
-// NOTE: The token sequence's length needs to match the bitset's size, which
-// must be a bit width supported by the test serializer.
 test "serialize - std.IntegerBitSet" {
     // Zero-sized
     {
