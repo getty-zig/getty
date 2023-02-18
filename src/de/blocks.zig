@@ -26,8 +26,14 @@ pub const Pointer = @import("blocks/pointer.zig");
 /// Deserialization block for slice values.
 pub const Slice = @import("blocks/slice.zig");
 
+/// Deserialization block for `struct` values.
+pub const Struct = @import("blocks/struct.zig");
+
 /// Deserialization block for tuple values.
 pub const Tuple = @import("blocks/tuple.zig");
+
+/// Deserialization block for `union` values.
+pub const Union = @import("blocks/union.zig");
 
 /// Deserialization block for `void` values.
 pub const Void = @import("blocks/void.zig");
@@ -141,20 +147,6 @@ pub const TailQueue = @import("blocks/tail_queue.zig");
 
 /// Deserialization block for `getty.de.Ignored` values.
 pub const Ignored = @import("blocks/ignored.zig");
-
-////////////////////////////////////////////////////////////////////////////
-// Aggregates
-//
-// IMPORTANT: All user-defined types must be listed BEFORE this section.
-//            Each type in this section has user-defined aliases that are
-//            supported by Getty (e.g., std.ArrayList is a struct).
-////////////////////////////////////////////////////////////////////////////
-
-/// Deserialization block for `struct` values.
-pub const Struct = @import("blocks/struct.zig");
-
-/// Deserialization block for `union` values.
-pub const Union = @import("blocks/union.zig");
 
 ////////////////////////////////////////////////////////////////////////////
 // Private
