@@ -86,7 +86,7 @@ test "deserialize - array" {
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
         const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
-        for (t.want) |want, i| {
+        for (t.want, 0..) |want, i| {
             try testing.expectEqual(t.name, want, got[i]);
         }
     }

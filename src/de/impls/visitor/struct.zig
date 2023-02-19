@@ -26,7 +26,7 @@ pub fn Visitor(comptime Struct: type) type {
 
             errdefer {
                 if (allocator) |alloc| {
-                    inline for (fields) |field, i| {
+                    inline for (fields, 0..) |field, i| {
                         if (!field.is_comptime and seen[i]) {
                             free(alloc, @field(structure, field.name));
                         }
@@ -67,7 +67,7 @@ pub fn Visitor(comptime Struct: type) type {
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;
 
-                inline for (fields) |field, i| {
+                inline for (fields, 0..) |field, i| {
                     // Attributes for field.
                     //
                     // If field has no associated attributes, attrs is null.
@@ -151,7 +151,7 @@ pub fn Visitor(comptime Struct: type) type {
             }
 
             // Process any remaining, unassigned fields.
-            inline for (fields) |field, i| {
+            inline for (fields, 0..) |field, i| {
                 if (!seen[i]) blk: {
                     // Assign to field the value of the "default" attribute, if
                     // it is set.

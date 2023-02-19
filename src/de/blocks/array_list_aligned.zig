@@ -122,7 +122,7 @@ test "deserialize - array list (recursive)" {
     defer free(std.testing.allocator, got);
 
     try std.testing.expectEqual(want.capacity, got.capacity);
-    for (got.items) |l, i| {
+    for (got.items, 0..) |l, i| {
         try std.testing.expectEqual(want.items[i].capacity, l.capacity);
         try std.testing.expectEqualSlices(isize, want.items[i].items, l.items);
     }

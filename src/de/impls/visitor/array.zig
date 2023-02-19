@@ -36,7 +36,7 @@ pub fn Visitor(comptime Array: type) type {
 
             switch (array.len) {
                 0 => array = .{},
-                else => for (array) |*elem| {
+                else => for (&array) |*elem| {
                     if (try seq.nextElement(allocator, Child)) |value| {
                         elem.* = value;
                         seen += 1;

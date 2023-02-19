@@ -41,7 +41,7 @@ pub fn Visitor(comptime Value: type) type {
             var bitset = try Value.initEmpty(allocator.?, list.items.len);
             errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(allocator.?);
 
-            for (list.items) |bit, i| {
+            for (list.items, 0..) |bit, i| {
                 if (bit == 1) bitset.set(list.items.len - 1 - i);
             }
 

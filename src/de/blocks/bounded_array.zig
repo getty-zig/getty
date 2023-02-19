@@ -107,7 +107,7 @@ test "deserialize - bounded array (recursive)" {
     const got = try testing.deserialize(null, null, Self, Parent, tokens);
 
     try std.testing.expectEqual(expected.capacity(), got.capacity());
-    for (got.slice()) |l, i| {
+    for (got.slice(), 0..) |l, i| {
         try std.testing.expectEqual(expected.get(i).capacity(), l.capacity());
         try std.testing.expectEqualSlices(i32, expected.get(i).slice(), l.slice());
     }

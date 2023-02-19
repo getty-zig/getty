@@ -26,7 +26,7 @@ pub fn Visitor(comptime Tuple: type) type {
             errdefer {
                 if (allocator) |alloc| {
                     if (len > 0) {
-                        inline for (tuple) |v, i| {
+                        inline for (tuple, 0..) |v, i| {
                             if (i < seen) {
                                 free(alloc, v);
                             }

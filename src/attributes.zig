@@ -180,7 +180,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
 
     var fields: [attributes_info.Struct.fields.len]Type.StructField = undefined;
 
-    inline for (attributes_info.Struct.fields) |field, i| {
+    inline for (attributes_info.Struct.fields, 0..) |field, i| {
         if (@hasField(T, field.name)) {
             for (std.meta.fields(T)) |f| {
                 if (std.mem.eql(u8, field.name, f.name)) {
