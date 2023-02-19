@@ -91,8 +91,7 @@ pub fn free(
                     mut.deinit(allocator);
                 }
 
-                var i: usize = 0;
-                while (i < value.len) : (i += 1) {
+                for (0..value.len) |i| {
                     free(allocator, value.get(i));
                 }
             } else if (comptime std.mem.startsWith(u8, name, "linked_list")) {

@@ -38,9 +38,7 @@ pub fn Visitor(comptime Tuple: type) type {
             switch (len) {
                 0 => tuple = .{},
                 else => {
-                    comptime var i: usize = 0;
-
-                    inline while (i < len) : (i += 1) {
+                    inline for (0..len) |i| {
                         // NOTE: Using an if to unwrap `value` runs into a
                         // compiler bug, so this is a workaround.
                         const value = try seq.nextElement(allocator, fields[i].type);

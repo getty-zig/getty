@@ -82,10 +82,7 @@ test "deserialize - tuple" {
         const Want = @TypeOf(t.want);
         const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
 
-        const length = std.meta.fields(Want).len;
-        comptime var i: usize = 0;
-
-        inline while (i < length) : (i += 1) {
+        inline for (0..std.meta.fields(Want).len) |i| {
             try testing.expectEqual(t.name, t.want[i], got[i]);
         }
     }

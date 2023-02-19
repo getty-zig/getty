@@ -59,7 +59,7 @@ pub fn serialize(
 
     // Serialize remaining bits (which are all unset).
     if (last_pos != 0) {
-        while (last_pos != 0) : (last_pos -= 1) {
+        for (0..last_pos) |_| {
             try seq.serializeElement(zero);
         }
     }

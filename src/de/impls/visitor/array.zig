@@ -25,9 +25,7 @@ pub fn Visitor(comptime Array: type) type {
             errdefer {
                 if (allocator) |alloc| {
                     if (array.len > 0) {
-                        var i: usize = 0;
-
-                        while (i < seen) : (i += 1) {
+                        for (0..seen) |i| {
                             free(alloc, array[i]);
                         }
                     }

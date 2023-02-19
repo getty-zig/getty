@@ -105,8 +105,7 @@ test "deserialize - array list" {
         try testing.expectEqual(t.name, t.want.len, got.len);
         try testing.expectEqual(t.name, t.want.capacity, got.capacity);
 
-        var i: usize = 0;
-        while (i < t.want.len) : (i += 1) {
+        for (0..t.want.len) |i| {
             try testing.expectEqual(t.name, t.want.get(i), got.get(i));
         }
     }

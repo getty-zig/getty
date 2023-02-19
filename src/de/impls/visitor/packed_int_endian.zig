@@ -24,8 +24,7 @@ pub fn Visitor(comptime PackedIntEndian: type) type {
                 return array;
             }
 
-            var i: usize = 0;
-            while (i < array.len) : (i += 1) {
+            for (0..array.len) |i| {
                 if (try seq.nextElement(allocator, Value.Child)) |value| {
                     array.set(i, value);
                 } else {

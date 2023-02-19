@@ -29,8 +29,7 @@ pub fn serialize(
     var s = try serializer.serializeSeq(value.len);
     const seq = s.seq();
 
-    var i: usize = 0;
-    while (i < value.len) : (i += 1) {
+    for (0..value.len) |i| {
         try seq.serializeElement(value.get(i));
     }
 
