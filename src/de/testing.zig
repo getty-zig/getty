@@ -114,7 +114,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .deserializeFloat = deserializeAny,
                 .deserializeInt = deserializeAny,
                 .deserializeIgnored = deserializeIgnored,
-                .deserializeMap = deserializeAny,
+                .deserializeMap = deserializeMap,
                 .deserializeOptional = deserializeAny,
                 .deserializeSeq = deserializeAny,
                 .deserializeString = deserializeAny,
@@ -158,15 +158,6 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .Some => try visitor.visitSome(allocator, self.deserializer()),
                 .String => |v| try visitor.visitString(allocator, De, v),
                 .Void => try visitor.visitVoid(allocator, De),
-                .Map => |v| blk: {
-                    var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
-                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
-
-                    try expectEqual(@as(usize, 0), m.len.?);
-                    try self.assertNextToken(.MapEnd);
-
-                    break :blk value;
-                },
                 .Seq => |v| blk: {
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
                     var value = try visitor.visitSeq(allocator, De, s.seqAccess());
@@ -191,6 +182,21 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
 
                 // Panic! At The Disco
+                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
+            };
+        }
+
+        fn deserializeMap(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            return switch (self.nextToken()) {
+                .Map => |v| blk: {
+                    var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
+                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
+
+                    try expectEqual(@as(usize, 0), m.len.?);
+                    try self.assertNextToken(.MapEnd);
+
+                    break :blk value;
+                },
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }

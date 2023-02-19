@@ -24,7 +24,7 @@ pub fn Visitor(comptime HashMap: type) type {
 
             const K = std.meta.fieldInfo(Value.KV, .key).type;
             const V = std.meta.fieldInfo(Value.KV, .value).type;
-            const unmanaged = is_hash_map_unamanaged or is_array_hash_map_unmanaged;
+            const unmanaged = is_hash_map_unmanaged or is_array_hash_map_unmanaged;
 
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(a);
             errdefer free(a, hash_map);
@@ -43,7 +43,7 @@ pub fn Visitor(comptime HashMap: type) type {
             return hash_map;
         }
 
-        const is_hash_map_unamanaged = std.mem.startsWith(u8, @typeName(Value), "hash_map.HashMapUnmanaged");
-        const is_array_hash_map_unmanaged = std.mem.startsWith(u8, @typeName(Value), "array_hash_map.HashMapUnmanaged");
+        const is_hash_map_unmanaged = std.mem.startsWith(u8, @typeName(Value), "hash_map.HashMapUnmanaged");
+        const is_array_hash_map_unmanaged = std.mem.startsWith(u8, @typeName(Value), "array_hash_map.ArrayHashMapUnmanaged");
     };
 }

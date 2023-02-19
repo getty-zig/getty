@@ -65,7 +65,9 @@ pub fn free(
                 }
                 var mut = value;
                 mut.hash_map.deinit();
-            } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMapUnmanaged")) {
+            } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMapUnmanaged") or
+                std.mem.startsWith(u8, name, "array_hash_map.ArrayHashMapUnmanaged"))
+            {
                 var iterator = value.iterator();
                 while (iterator.next()) |entry| {
                     free(allocator, entry.key_ptr.*);
@@ -73,7 +75,9 @@ pub fn free(
                 }
                 var mut = value;
                 mut.deinit(allocator);
-            } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMap")) {
+            } else if (comptime std.mem.startsWith(u8, name, "hash_map.HashMap") or
+                std.mem.startsWith(u8, name, "array_hash_map.ArrayHashMap"))
+            {
                 var iterator = value.iterator();
                 while (iterator.next()) |entry| {
                     free(allocator, entry.key_ptr.*);
