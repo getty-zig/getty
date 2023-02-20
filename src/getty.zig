@@ -1,20 +1,19 @@
 //! A (de)serialization framework for the Zig programming language.
 
-const s = @import("ser/ser.zig");
 const d = @import("de/de.zig");
 
 ////////////////////////////////////////////////////////////////////////////////
 // Types
 ////////////////////////////////////////////////////////////////////////////////
 
-pub const Serializer = s.Serializer;
-pub const Deserializer = d.Deserializer;
+pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Namespaces
 ////////////////////////////////////////////////////////////////////////////////
 
-pub const ser = s.ser;
+pub const ser = @import("ser/ser.zig").ser;
 pub const de = d.de;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,26 +21,24 @@ pub const de = d.de;
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Serializes a value into a `getty.Serializer`.
-pub const serialize = s.serialize;
+pub const serialize = @import("ser/serialize.zig").serialize;
 
 /// Deserializes into a value of type `T` from a `getty.Deserializer`.
-pub const deserialize = d.deserialize;
+pub const deserialize = @import("de/deserialize.zig").deserialize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Values
 ////////////////////////////////////////////////////////////////////////////////
 
 /// The default serialization tuple used by Getty.
-pub const default_st = s.default_st;
+pub const default_st = @import("ser/tuples.zig").default;
 
 /// The default deserialization tuple used by Getty.
-pub const default_dt = d.default_dt;
+pub const default_dt = @import("de/tuples.zig").default;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Miscellaneous
+// Testing
 ////////////////////////////////////////////////////////////////////////////////
-
-pub usingnamespace @import("attributes.zig");
 
 comptime {
     @import("std").testing.refAllDecls(@This());

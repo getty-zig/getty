@@ -49,6 +49,7 @@ const ContainerAttributes = struct {
     //untagged: bool = false,
 };
 
+/// Case conventions for the `rename_all` attribute.
 pub const Case = enum {
     // foobar
     lower,
@@ -76,91 +77,6 @@ pub const Case = enum {
 };
 
 /// Returns an attribute map type.
-///
-/// Generally, users won't actually call this function. It's mostly designed to
-/// be used by Getty to validate anonymous struct literals, which users are
-/// encouraged to use instead.
-///
-/// ## Parameters
-///
-/// - T is the type of the value being serialized.
-///
-/// - attributes is a struct value, whose field names must match either the
-///   word "Container" or a field/variant name in the value being serialized.
-///   The value of each field in attributes must be a struct. Specifically, the
-///   value for any field named "Container" must be coercable to
-///   ContainerAttributes type, while the value for all other fields must be
-///   coercable to either the FieldAttributes or VariantAttributes type,
-///   depending on whether or not the value being serialized is a struct, enum,
-///   or union.
-///
-///   For example, the following code defines container and field attributes
-///   for a Point type:
-///
-///     ```
-///     const Point = struct {
-///         x: i32,
-///         y: i32,
-///     };
-///
-///     const attributes = .{
-///       .Container = .{ .rename = "Coordinate" },
-///       .x = .{ .rename = "X" },
-///       .y = .{ .skip = true },
-///     };
-///     ```
-///
-/// ## Return Value
-///
-/// The return value is a type. Specifically, a struct type with fields that
-/// correspond to either:
-///
-///   1. Fields/variants in the struct/enum/union for which attributes are
-///      being specified (in the previous example, these would be "x" and "y").
-///
-///   2) The struct/enum/union itself (in the previous example, this would be
-///      "Container").
-///
-/// The returned type will only contain fields that exist in the attribute map
-/// passed in to the function.
-///
-/// ## Examples
-///
-/// Consider the following code:
-///
-///   ```
-///   const Point = struct {
-///       x: i32,
-///       y: i32,
-///   };
-///
-///   const attributes = .{
-///     .Container = .{ .rename = "Coordinate" },
-///     .x = .{ .rename = "X" },
-///     .y = .{ .skip = true },
-///   };
-///
-///   const T = getty.Attributes(Point, attributes);
-///   ```
-///
-/// Here, T would resolve to the following type:
-///
-///   ```
-///   struct {
-///       Container: struct {
-///           rename: ?[]const u8 = null,
-///           // (...) other container attributes
-///       },
-///       x: struct {
-///           rename: ?[]const u8 = null,
-///           // (...) other field attributes
-///       },
-///       y: struct {
-///           skip: bool = false,
-///           // (...) other field attributes
-///       },
-///   }
-///   ```
 pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
     const type_name = @typeName(T);
     const A = @TypeOf(attributes);
