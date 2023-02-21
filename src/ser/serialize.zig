@@ -15,11 +15,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) blk: {
-    const S = @TypeOf(serializer);
-    concepts.@"getty.Serializer"(S);
-    break :blk S.Error!S.Ok;
-} {
+) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     const block = comptime blk: {

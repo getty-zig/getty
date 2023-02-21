@@ -15,8 +15,6 @@ pub fn getAttributes(
     /// A `getty.Serializer` interface type.
     comptime S: type,
 ) blk: {
-    concepts.@"getty.Serializer"(S);
-
     // Process user SBs.
     for (S.user_st) |sb| {
         if (sb.is(T) and traits.has_attributes(T, sb)) {
