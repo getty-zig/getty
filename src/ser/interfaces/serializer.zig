@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const err = @import("../error.zig");
-const concepts = @import("../concepts.zig");
 const tuples = @import("../tuples.zig");
 
 /// A `Serializer` serializes values from Getty's data model into a data format.
@@ -67,13 +66,6 @@ pub fn Serializer(
         serializeVoid: ?fn (Context) E!O = null,
     },
 ) type {
-    comptime {
-        //concepts.@"getty.ser.sbt"(user_sbt);
-        //concepts.@"getty.ser.sbt"(serializer_sbt);
-
-        //TODO: Add concept for Error (blocked by concepts library).
-    }
-
     return struct {
         /// An interface type.
         pub const @"getty.Serializer" = struct {

@@ -2,7 +2,6 @@ const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
 const blocks = @import("blocks.zig");
-const concepts = @import("concepts.zig");
 const default_st = @import("tuples.zig").default;
 const t = @import("testing.zig");
 const traits = @import("traits.zig");
