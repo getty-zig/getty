@@ -23,7 +23,7 @@ pub fn is_attributes(
     /// An attribute list to check.
     attributes: anytype,
 ) bool {
-    comptime {
+    comptime {    
         const A = Attributes(T, attributes);
         var a = A{};
 
