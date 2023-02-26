@@ -84,3 +84,102 @@ test "deserialize - enum" {
         try testing.expectEqual(t.name, t.want, got);
     }
 }
+
+
+test "deserialize - enum, attributes (rename)" {
+    const T = enum {
+        foo,
+        bar,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .rename = "baz" },
+                .bar = .{ .rename = "qux" },
+            };
+        };
+    };
+
+    const tests = .{
+        .{
+            .name = "from integer, u8",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U8 = 0 } },
+            .want = T.foo,
+        },
+        .{
+            .name = "from integer, u16",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U16 = 1 } },
+            .want = T.bar,
+        },
+        .{
+            .name = "from string (I)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "baz" } },
+            .want = T.foo,
+        },
+        .{
+            .name = "from string (II)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "qux" } },
+            .want = T.bar,
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
+}
+
+test "deserialize - enum, attributes (skip)" {
+    const T = enum {
+        foo,
+        bar,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .skip = true },
+                .bar = .{ .skip = false },
+            };
+        };
+    };
+
+    const tests = .{
+        .{
+            .name = "from integer, u8",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U8 = 0 } },
+            .dont_want = T.foo,
+            .want_err = error.InvalidValue,
+        },
+        .{
+            .name = "from integer, u16",
+            .tokens = &.{ .{ .Enum = {} }, .{ .U16 = 1 } },
+            .want = T.bar,
+        },
+        .{
+            .name = "from string (I)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "foo" } },
+            .dont_want = T.foo,
+            .want_err = error.UnknownVariant,
+        },
+        .{
+            .name = "from string (II)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "bar" } },
+            .want = T.bar,
+        },
+    };
+
+    inline for (tests) |t| {
+        const Test = @TypeOf(t);
+        if (@hasField(Test, "want_err")) {
+            const DontWant = @TypeOf(t.dont_want);
+            try testing.expectError(
+                t.name,
+                t.want_err,
+                testing.deserializeErr(null, Self, DontWant, t.tokens),
+            );
+        } else {
+            const Want = @TypeOf(t.want);
+            const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+            try testing.expectEqual(t.name, t.want, got);
+        }
+    }
+}

@@ -6,10 +6,11 @@ pub fn has_db(
     comptime T: type,
 ) bool {
     comptime {
+        const is_enum = @typeInfo(T) == .Enum;
         const is_struct = @typeInfo(T) == .Struct and !@typeInfo(T).Struct.is_tuple;
         const is_union = @typeInfo(T) == .Union;
 
-        return (is_struct or is_union) and @hasDecl(T, "getty.db") and is_tdb(T.@"getty.db");
+        return (is_enum or is_struct or is_union) and @hasDecl(T, "getty.db") and is_tdb(T.@"getty.db");
     }
 }
 
