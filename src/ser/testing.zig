@@ -88,9 +88,10 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
             try assertNextToken(self, Token{ .Bool = v });
         }
 
-        fn serializeEnum(self: *Self, v: anytype) Error!Ok {
+        fn serializeEnum(self: *Self, v: anytype, name: []const u8) Error!Ok {
+            _ = v;
             try assertNextToken(self, Token{ .Enum = {} });
-            try assertNextToken(self, Token{ .String = @tagName(v) });
+            try assertNextToken(self, Token{ .String = name });
         }
 
         fn serializeFloat(self: *Self, v: anytype) Error!Ok {

@@ -46,17 +46,20 @@ pub fn serialize(
             };
 
             if (attrs) |a| {
+                const matches = std.meta.isTag(value, field.name);
+
                 const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+                if (skipped and matches) return error.UnknownVariant;
+
                 const renamed = @hasField(@TypeOf(a), "rename");
-                if (skipped) continue;
-                if (renamed and std.meta.isTag(value, field.name)) {
-                    return try serializer.serializeString(a.rename);
+                if (renamed and matches) {
+                    return try serializer.serializeEnum(value, a.rename);
                 }
             }
         }
     }
 
-    return try serializer.serializeEnum(value);
+    return try serializer.serializeEnum(value, @tagName(value));
 }
 
 test "serialize - enum" {
@@ -83,7 +86,23 @@ test "serialize - enum, attributes (rename)" {
         };
     };
 
-    // non-literal
-    try t.run(null, serialize, T.foo, &.{ .{ .String = "baz" } });
-    try t.run(null, serialize, T.bar, &.{ .{ .String = "qux" } });
+    try t.run(null, serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "baz" } });
+    try t.run(null, serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "qux" } });
+}
+
+test "serialize - enum, attributes (skip)" {
+    const T = enum {
+        foo,
+        bar,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .foo = .{ .skip = true },
+                .bar = .{ .skip = false },
+            };
+        };
+    };
+
+    try t.runErr(null, serialize, error.UnknownVariant, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.run(null, serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
 }
