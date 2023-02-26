@@ -101,10 +101,12 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
             for (std.meta.fields(T)) |f| {
                 if (std.mem.eql(u8, field.name, f.name)) {
                     const Attrs = blk: {
-                        if (@typeInfo(T) == .Enum) {
-                            break :blk VariantAttributes();
-                        }
-                        break :blk InnerAttributes(T, f.type);
+                        break :blk switch (@typeInfo(T)) {
+                            .Enum => VariantAttributes(),
+                            .Struct => FieldAttributes(f.type),
+                            .Union => VariantAttributes(),
+                            else => @compileError(comptimePrint("expected attributes to be defined in a struct or union, found `{s}`", .{@typeName(T)})),
+                        };
                     };
                     const attrs = &Attrs{};
 
@@ -146,13 +148,9 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
     });
 }
 
-fn InnerAttributes(comptime T: type, comptime Field: type) type {
-    return switch (@typeInfo(T)) {
-        .Struct => FieldAttributes(Field),
-        .Union => VariantAttributes(),
-        else => @compileError(comptimePrint("expected attributes to be defined in a struct or union, found `{s}`", .{@typeName(T)})),
-    };
-}
+// fn InnerAttributes(comptime T: type, comptime Field: type) type {
+
+// }
 
 fn VariantAttributes() type {
     return struct {
