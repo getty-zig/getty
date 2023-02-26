@@ -85,7 +85,6 @@ test "deserialize - enum" {
     }
 }
 
-
 test "deserialize - enum, attributes (rename)" {
     const T = enum {
         foo,
