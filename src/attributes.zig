@@ -105,7 +105,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
                             .Enum => VariantAttributes(),
                             .Struct => FieldAttributes(f.type),
                             .Union => VariantAttributes(),
-                            else => @compileError(comptimePrint("expected attributes to be defined in a struct or union, found `{s}`", .{@typeName(T)})),
+                            else => @compileError(comptimePrint("expected attributes to be defined in an enum, struct or union: found `{s}`", .{@typeName(T)})),
                         };
                     };
                     const attrs = &Attrs{};
