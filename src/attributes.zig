@@ -148,10 +148,6 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
     });
 }
 
-// fn InnerAttributes(comptime T: type, comptime Field: type) type {
-
-// }
-
 fn VariantAttributes() type {
     return struct {
         // Deserialize this variant from the given names *or* its type
