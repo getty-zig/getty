@@ -100,13 +100,11 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
         if (@hasField(T, field.name)) {
             for (std.meta.fields(T)) |f| {
                 if (std.mem.eql(u8, field.name, f.name)) {
-                    const Attrs = blk: {
-                        break :blk switch (@typeInfo(T)) {
-                            .Enum => VariantAttributes(),
-                            .Struct => FieldAttributes(f.type),
-                            .Union => VariantAttributes(),
-                            else => @compileError(comptimePrint("expected attributes to be defined in an enum, struct or union: found `{s}`", .{@typeName(T)})),
-                        };
+                    const Attrs = switch (@typeInfo(T)) {
+                        .Enum => VariantAttributes,
+                        .Struct => FieldAttributes(f.type),
+                        .Union => VariantAttributes,
+                        else => @compileError(comptimePrint("expected attributes to be defined in an enum, struct or union: found `{s}`", .{@typeName(T)})),
                     };
                     const attrs = &Attrs{};
 
@@ -148,31 +146,29 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
     });
 }
 
-fn VariantAttributes() type {
-    return struct {
-        // Deserialize this variant from the given names *or* its type
-        // name.
-        //alias: ?[][]const u8 = null,
+const VariantAttributes = struct {
+    // Deserialize this variant from the given names *or* its type
+    // name.
+    //alias: ?[][]const u8 = null,
 
-        // Deserialize this variant using a function that is different
-        // from the normal deserialization implementation.
-        //deserialize_with: ?[]const u8 = null,
+    // Deserialize this variant using a function that is different
+    // from the normal deserialization implementation.
+    //deserialize_with: ?[]const u8 = null,
 
-        // Serialize and deserialize this variant with the given name
-        // instead of its type name.
-        rename: ?[]const u8 = null,
+    // Serialize and deserialize this variant with the given name
+    // instead of its type name.
+    rename: ?[]const u8 = null,
 
-        // Never serialize or deserialize this variant.
-        skip: bool = false,
+    // Never serialize or deserialize this variant.
+    skip: bool = false,
 
-        // Serialize this variant using a function that is different from
-        // the normal serialization implementation.
-        //serialize_with: ?[]const u8 = null,
+    // Serialize this variant using a function that is different from
+    // the normal serialization implementation.
+    //serialize_with: ?[]const u8 = null,
 
-        // Combination of serialize_with and deserialize_with.
-        //with: ?[]const u8 = null,
-    };
-}
+    // Combination of serialize_with and deserialize_with.
+    //with: ?[]const u8 = null,
+};
 
 fn FieldAttributes(comptime Field: type) type {
     return struct {
