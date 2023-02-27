@@ -189,11 +189,11 @@ pub fn Serializer(
             }
 
             // Serializes a Getty Enum value.
-            pub fn serializeEnum(self: Self, value: anytype, name: []const u8) Error!Ok {
+            pub fn serializeEnum(self: Self, index: anytype, name: []const u8) Error!Ok {
                 if (methods.serializeEnum) |f| {
-                    switch (@typeInfo(@TypeOf(value))) {
-                        .Enum, .EnumLiteral => return try f(self.context, value, name),
-                        else => @compileError("expected enum or enum literal, found: " ++ @typeName(@TypeOf(value))),
+                    switch (@typeInfo(@TypeOf(index))) {
+                        .Int, .ComptimeInt => return try f(self.context, index, name),
+                        else => @compileError("expected integer, found: " ++ @typeName(@TypeOf(index))),
                     }
                 }
 

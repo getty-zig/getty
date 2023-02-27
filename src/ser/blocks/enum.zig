@@ -26,13 +26,16 @@ pub fn serialize(
     _ = allocator;
 
     const T = @TypeOf(value);
+    const is_literal = @typeInfo(T) == .EnumLiteral;
+
     var name = @tagName(value);
+    const index = if (is_literal) 0 else @enumToInt(value);
 
     // Process attributes.
     //
     // Only non-literal enums can define attributes (and have type
     // information), hence why this if statement is here.
-    if (@typeInfo(T) == .Enum) {
+    if (!is_literal) {
         const fields = std.meta.fields(T);
         const attributes = comptime getAttributes(T, @TypeOf(serializer));
 
@@ -59,7 +62,7 @@ pub fn serialize(
         }
     }
 
-    return try serializer.serializeEnum(value, name);
+    return try serializer.serializeEnum(index, name);
 }
 
 test "serialize - enum" {
