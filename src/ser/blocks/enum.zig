@@ -26,40 +26,40 @@ pub fn serialize(
     _ = allocator;
 
     const T = @TypeOf(value);
+    var name = @tagName(value);
 
+    // Process attributes.
+    //
+    // Only non-literal enums can define attributes (and have type
+    // information), hence why this if statement is here.
     if (@typeInfo(T) == .Enum) {
         const fields = std.meta.fields(T);
         const attributes = comptime getAttributes(T, @TypeOf(serializer));
 
-        inline for (fields) |field| {
-            const attrs = comptime blk: {
-                if (attributes) |attrs| {
-                    if (@hasField(@TypeOf(attrs), field.name)) {
-                        const a = @field(attrs, field.name);
-                        const A = @TypeOf(a);
+        if (attributes) |attrs| {
+            inline for (fields) |field| {
+                if (std.meta.isTag(value, field.name)) {
+                    const attr = @field(attrs, field.name);
 
-                        break :blk @as(?A, a);
+                    // Process "skip" attribute.
+                    const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
+                    if (skipped) {
+                        return error.UnknownVariant;
                     }
-                }
 
-                break :blk null;
-            };
+                    // Process "rename" attribute.
+                    const renamed = @hasField(@TypeOf(attr), "rename");
+                    if (renamed) {
+                        name = attr.rename;
+                    }
 
-            if (attrs) |a| {
-                const matches = std.meta.isTag(value, field.name);
-
-                const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
-                if (skipped and matches) return error.UnknownVariant;
-
-                const renamed = @hasField(@TypeOf(a), "rename");
-                if (renamed and matches) {
-                    return try serializer.serializeEnum(value, a.rename);
+                    break;
                 }
             }
         }
     }
 
-    return try serializer.serializeEnum(value, @tagName(value));
+    return try serializer.serializeEnum(value, name);
 }
 
 test "serialize - enum" {
