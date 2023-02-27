@@ -49,9 +49,6 @@ pub fn serialize(
     const st = s.structure();
 
     inline for (fields) |field| {
-        // Attributes for field.
-        //
-        // If field has no associated attributes, attrs is null.
         const attrs = comptime blk: {
             if (attributes) |attrs| {
                 if (@hasField(@TypeOf(attrs), field.name)) {
@@ -65,7 +62,6 @@ pub fn serialize(
             break :blk null;
         };
 
-        // If field has the "skip" attribute set, then it is skipped.
         if (attrs) |a| {
             const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
             if (skipped) continue;

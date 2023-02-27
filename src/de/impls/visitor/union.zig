@@ -21,29 +21,30 @@ pub fn Visitor(comptime Union: type) type {
             var variant = try ua.variant(allocator, []const u8);
 
             inline for (std.meta.fields(Value)) |f| {
-                comptime var name = f.name;
+                const attrs = comptime blk: {
+                    if (attributes) |attrs| {
+                        if (@hasField(@TypeOf(attrs), f.name)) {
+                            const a = @field(attrs, f.name);
+                            const A = @TypeOf(a);
 
-                // Process "rename" attribute.
-                if (attributes) |attrs| {
-                    if (@hasField(@TypeOf(attrs), f.name)) {
-                        const attr = @field(attrs, f.name);
-
-                        if (@hasField(@TypeOf(attr), "rename")) {
-                            name = attr.rename;
+                            break :blk @as(?A, a);
                         }
                     }
+
+                    break :blk null;
+                };
+
+                comptime var name = f.name;
+
+                if (attrs) |a| {
+                    const renamed = @hasField(@TypeOf(a), "rename");
+                    if (renamed) name = a.rename;
                 }
 
                 if (std.mem.eql(u8, name, variant)) {
-                    // Process "skip" attribute.
-                    if (attributes) |attrs| {
-                        if (@hasField(@TypeOf(attrs), f.name)) {
-                            const attr = @field(attrs, f.name);
-
-                            if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                                return error.UnknownVariant;
-                            }
-                        }
+                    if (attrs) |a| {
+                        const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+                        if (skipped) return error.UnknownVariant;
                     }
 
                     return @unionInit(Value, f.name, try va.payload(allocator, f.type));

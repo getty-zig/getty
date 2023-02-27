@@ -38,22 +38,22 @@ pub fn serialize(
 
         if (attributes) |attrs| {
             inline for (fields) |field| {
-                if (std.meta.isTag(value, field.name)) {
-                    const attr = @field(attrs, field.name);
+                const tag_matches = std.meta.isTag(value, field.name);
 
-                    // Process "skip" attribute.
-                    const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
-                    if (skipped) {
-                        return error.UnknownVariant;
+                if (tag_matches) {
+                    const attrs_exist = @hasField(@TypeOf(attrs), field.name);
+
+                    if (attrs_exist) {
+                        const attr = @field(attrs, field.name);
+
+                        const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
+                        if (skipped) return error.UnknownVariant;
+
+                        const renamed = @hasField(@TypeOf(attr), "rename");
+                        if (renamed) name = attr.rename;
+
+                        break;
                     }
-
-                    // Process "rename" attribute.
-                    const renamed = @hasField(@TypeOf(attr), "rename");
-                    if (renamed) {
-                        name = attr.rename;
-                    }
-
-                    break;
                 }
             }
         }

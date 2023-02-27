@@ -35,16 +35,25 @@ pub fn serialize(
     // for loop here so that we can use the field name provided by @typeInfo
     // instead.
     inline for (info.fields) |field| {
-        if (std.mem.eql(u8, field.name, @tagName(value))) {
-            // Process "skip" attribute.
-            if (attributes) |attrs| {
-                if (@hasField(@TypeOf(attrs), field.name)) {
-                    const attr = @field(attrs, field.name);
+        const tag_matches = std.meta.isTag(value, field.name);
 
-                    if (@hasField(@TypeOf(attr), "skip") and attr.skip) {
-                        return error.UnknownVariant;
+        if (tag_matches) {
+            const attrs = comptime blk: {
+                if (attributes) |attrs| {
+                    if (@hasField(@TypeOf(attrs), field.name)) {
+                        const a = @field(attrs, field.name);
+                        const A = @TypeOf(a);
+
+                        break :blk @as(?A, a);
                     }
                 }
+
+                break :blk null;
+            };
+
+            if (attrs) |a| {
+                const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+                if (skipped) return error.UnknownVariant;
             }
 
             var m = try serializer.serializeMap(1);
@@ -52,15 +61,9 @@ pub fn serialize(
 
             comptime var name = field.name;
 
-            // Process "rename" attribute.
-            if (attributes) |attrs| {
-                if (@hasField(@TypeOf(attrs), field.name)) {
-                    const attr = @field(attrs, field.name);
-
-                    if (@hasField(@TypeOf(attr), "rename")) {
-                        name = attr.rename;
-                    }
-                }
+            if (attrs) |a| {
+                const renamed = @hasField(@TypeOf(a), "rename");
+                if (renamed) name = a.rename;
             }
 
             try map.serializeEntry(name, @field(value, field.name));

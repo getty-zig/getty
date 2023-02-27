@@ -68,9 +68,6 @@ pub fn Visitor(comptime Struct: type) type {
                 var found = false;
 
                 inline for (fields, 0..) |field, i| {
-                    // Attributes for field.
-                    //
-                    // If field has no associated attributes, attrs is null.
                     const attrs = comptime blk: {
                         if (attributes) |attrs| {
                             if (@hasField(@TypeOf(attrs), field.name)) {
