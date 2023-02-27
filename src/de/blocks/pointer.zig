@@ -44,9 +44,10 @@ pub fn deserialize(
 
     if (comptime has_attributes(Child, db)) {
         switch (@typeInfo(Child)) {
+            .Enum => return try blocks.Enum.deserialize(allocator, Child, deserializer, visitor),
             .Struct => return try blocks.Struct.deserialize(allocator, Child, deserializer, visitor),
             .Union => return try blocks.Union.deserialize(allocator, Child, deserializer, visitor),
-            else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is a struct or union.
+            else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.
         }
     }
 

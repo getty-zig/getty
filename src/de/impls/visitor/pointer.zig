@@ -194,9 +194,10 @@ pub fn Visitor(comptime Pointer: type) type {
 
             if (comptime has_attributes(Child, child_db)) {
                 return switch (@typeInfo(Child)) {
+                    .Enum => blocks.Enum.Visitor(Child),
                     .Struct => blocks.Struct.Visitor(Child),
                     .Union => blocks.Union.Visitor(Child),
-                    else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is a struct or union.
+                    else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.
                 };
             }
 
