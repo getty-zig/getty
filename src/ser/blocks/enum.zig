@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const getAttributes = @import("../attributes.zig").getAttributes;
 const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
@@ -24,7 +25,41 @@ pub fn serialize(
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     _ = allocator;
 
-    return try serializer.serializeEnum(value);
+    const T = @TypeOf(value);
+    var name = @tagName(value);
+
+    // Process attributes.
+    //
+    // Only non-literal enums can define attributes (and have type
+    // information), hence why this if statement is here.
+    if (@typeInfo(T) == .Enum) {
+        const fields = std.meta.fields(T);
+        const attributes = comptime getAttributes(T, @TypeOf(serializer));
+
+        if (attributes) |attrs| {
+            inline for (fields) |field| {
+                if (std.meta.isTag(value, field.name)) {
+                    const attr = @field(attrs, field.name);
+
+                    // Process "skip" attribute.
+                    const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
+                    if (skipped) {
+                        return error.UnknownVariant;
+                    }
+
+                    // Process "rename" attribute.
+                    const renamed = @hasField(@TypeOf(attr), "rename");
+                    if (renamed) {
+                        name = attr.rename;
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    return try serializer.serializeEnum(value, name);
 }
 
 test "serialize - enum" {
@@ -35,5 +70,39 @@ test "serialize - enum" {
     // non-literal
     const T = enum { foo, bar };
     try t.run(null, serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
+    try t.run(null, serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
+}
+
+test "serialize - enum, attributes (rename)" {
+    const T = enum {
+        foo,
+        bar,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .foo = .{ .rename = "baz" },
+                .bar = .{ .rename = "qux" },
+            };
+        };
+    };
+
+    try t.run(null, serialize, T.foo, &.{ .{ .Enum = {} }, .{ .String = "baz" } });
+    try t.run(null, serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "qux" } });
+}
+
+test "serialize - enum, attributes (skip)" {
+    const T = enum {
+        foo,
+        bar,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .foo = .{ .skip = true },
+                .bar = .{ .skip = false },
+            };
+        };
+    };
+
+    try t.runErr(null, serialize, error.UnknownVariant, T.foo, &.{ .{ .Enum = {} }, .{ .String = "foo" } });
     try t.run(null, serialize, T.bar, &.{ .{ .Enum = {} }, .{ .String = "bar" } });
 }

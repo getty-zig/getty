@@ -25,7 +25,7 @@ pub fn Serializer(
     /// A namespace containing the methods that implementations of `Serializer` can implement.
     comptime methods: struct {
         serializeBool: ?fn (Context, bool) E!O = null,
-        serializeEnum: ?fn (Context, anytype) E!O = null,
+        serializeEnum: ?fn (Context, anytype, []const u8) E!O = null,
         serializeFloat: ?fn (Context, anytype) E!O = null,
         serializeInt: ?fn (Context, anytype) E!O = null,
         serializeMap: blk: {
@@ -189,11 +189,11 @@ pub fn Serializer(
             }
 
             // Serializes a Getty Enum value.
-            pub fn serializeEnum(self: Self, value: anytype) Error!Ok {
+            pub fn serializeEnum(self: Self, value: anytype, name: []const u8) Error!Ok {
                 if (methods.serializeEnum) |f| {
                     switch (@typeInfo(@TypeOf(value))) {
-                        .Enum, .EnumLiteral => return try f(self.context, value),
-                        else => @compileError("expected enum, found: " ++ @typeName(@TypeOf(value))),
+                        .Enum, .EnumLiteral => return try f(self.context, value, name),
+                        else => @compileError("expected enum or enum literal, found: " ++ @typeName(@TypeOf(value))),
                     }
                 }
 
