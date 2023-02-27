@@ -7514,5 +7514,25 @@
 <span class="line" id="L7057">    };</span>
 <span class="line" id="L7058">}</span>
 <span class="line" id="L7059"></span>
+<span class="line" id="L7060"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> have_sigpipe_support = <span class="tok-builtin">@hasDecl</span>(<span class="tok-builtin">@This</span>(), <span class="tok-str">&quot;SIG&quot;</span>) <span class="tok-kw">and</span> <span class="tok-builtin">@hasDecl</span>(SIG, <span class="tok-str">&quot;PIPE&quot;</span>);</span>
+<span class="line" id="L7061"></span>
+<span class="line" id="L7062"><span class="tok-kw">fn</span> <span class="tok-fn">noopSigHandler</span>(_: <span class="tok-type">c_int</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">void</span> {}</span>
+<span class="line" id="L7063"></span>
+<span class="line" id="L7064"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">maybeIgnoreSigpipe</span>() <span class="tok-type">void</span> {</span>
+<span class="line" id="L7065">    <span class="tok-kw">if</span> (have_sigpipe_support <span class="tok-kw">and</span> !std.options.keep_sigpipe) {</span>
+<span class="line" id="L7066">        <span class="tok-kw">const</span> act = Sigaction{</span>
+<span class="line" id="L7067">            <span class="tok-comment">// We set handler to a noop function instead of SIG.IGN so we don't leak our</span>
+</span>
+<span class="line" id="L7068">            <span class="tok-comment">// signal disposition to a child process</span>
+</span>
+<span class="line" id="L7069">            .handler = .{ .handler = noopSigHandler },</span>
+<span class="line" id="L7070">            .mask = empty_sigset,</span>
+<span class="line" id="L7071">            .flags = <span class="tok-number">0</span>,</span>
+<span class="line" id="L7072">        };</span>
+<span class="line" id="L7073">        sigaction(SIG.PIPE, &amp;act, <span class="tok-null">null</span>) <span class="tok-kw">catch</span> |err|</span>
+<span class="line" id="L7074">            std.debug.panic(<span class="tok-str">&quot;failed to install noop SIGPIPE handler with '{s}'&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L7075">    }</span>
+<span class="line" id="L7076">}</span>
+<span class="line" id="L7077"></span>
 </code></pre></body>
 </html>

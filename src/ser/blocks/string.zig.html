@@ -134,14 +134,26 @@
 <span class="line" id="L21">) <span class="tok-builtin">@TypeOf</span>(serializer).Error!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
 <span class="line" id="L22">    _ = allocator;</span>
 <span class="line" id="L23"></span>
-<span class="line" id="L24">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializer.serializeString(value);</span>
-<span class="line" id="L25">}</span>
-<span class="line" id="L26"></span>
-<span class="line" id="L27"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - string&quot;</span> {</span>
-<span class="line" id="L28">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, <span class="tok-str">&quot;abc&quot;</span>, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
-<span class="line" id="L29">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, &amp;[_]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> }, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
-<span class="line" id="L30">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> }, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
-<span class="line" id="L31">}</span>
-<span class="line" id="L32"></span>
+<span class="line" id="L24">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
+<span class="line" id="L25"></span>
+<span class="line" id="L26">    <span class="tok-kw">comptime</span> std.debug.assert(std.meta.trait.isZigString(T));</span>
+<span class="line" id="L27"></span>
+<span class="line" id="L28">    <span class="tok-comment">// If there is a sentinel value, avoid serializing anything after it.</span>
+</span>
+<span class="line" id="L29">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.sentinel(T)) |sentinel| {</span>
+<span class="line" id="L30">        <span class="tok-kw">const</span> i = std.mem.indexOfSentinel(<span class="tok-type">u8</span>, sentinel, value);</span>
+<span class="line" id="L31">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializer.serializeString(value[<span class="tok-number">0</span>..i]);</span>
+<span class="line" id="L32">    }</span>
+<span class="line" id="L33"></span>
+<span class="line" id="L34">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializer.serializeString(value);</span>
+<span class="line" id="L35">}</span>
+<span class="line" id="L36"></span>
+<span class="line" id="L37"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - string&quot;</span> {</span>
+<span class="line" id="L38">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, <span class="tok-str">&quot;abc&quot;</span>, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
+<span class="line" id="L39">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, &amp;[_]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> }, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
+<span class="line" id="L40">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span> }, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
+<span class="line" id="L41">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u8</span>{ <span class="tok-str">'a'</span>, <span class="tok-str">'b'</span>, <span class="tok-str">'c'</span>, <span class="tok-number">0</span>, <span class="tok-number">0xAA</span>, <span class="tok-number">0xAA</span> }, &amp;.{.{ .String = <span class="tok-str">&quot;abc&quot;</span> }});</span>
+<span class="line" id="L42">}</span>
+<span class="line" id="L43"></span>
 </code></pre></body>
 </html>

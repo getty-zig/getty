@@ -182,48 +182,51 @@
 <span class="line" id="L65">                }</span>
 <span class="line" id="L66">                <span class="tok-kw">var</span> mut = value;</span>
 <span class="line" id="L67">                mut.hash_map.deinit();</span>
-<span class="line" id="L68">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;hash_map.HashMapUnmanaged&quot;</span>)) {</span>
-<span class="line" id="L69">                <span class="tok-kw">var</span> iterator = value.iterator();</span>
-<span class="line" id="L70">                <span class="tok-kw">while</span> (iterator.next()) |entry| {</span>
-<span class="line" id="L71">                    free(allocator, entry.key_ptr.*);</span>
-<span class="line" id="L72">                    free(allocator, entry.value_ptr.*);</span>
-<span class="line" id="L73">                }</span>
-<span class="line" id="L74">                <span class="tok-kw">var</span> mut = value;</span>
-<span class="line" id="L75">                mut.deinit(allocator);</span>
-<span class="line" id="L76">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;hash_map.HashMap&quot;</span>)) {</span>
-<span class="line" id="L77">                <span class="tok-kw">var</span> iterator = value.iterator();</span>
-<span class="line" id="L78">                <span class="tok-kw">while</span> (iterator.next()) |entry| {</span>
-<span class="line" id="L79">                    free(allocator, entry.key_ptr.*);</span>
-<span class="line" id="L80">                    free(allocator, entry.value_ptr.*);</span>
-<span class="line" id="L81">                }</span>
-<span class="line" id="L82">                <span class="tok-kw">var</span> mut = value;</span>
-<span class="line" id="L83">                mut.deinit();</span>
-<span class="line" id="L84">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;multi_array_list&quot;</span>)) {</span>
-<span class="line" id="L85">                <span class="tok-kw">defer</span> {</span>
-<span class="line" id="L86">                    <span class="tok-kw">var</span> mut = value;</span>
-<span class="line" id="L87">                    mut.deinit(allocator);</span>
-<span class="line" id="L88">                }</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">                <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L91">                <span class="tok-kw">while</span> (i &lt; value.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L92">                    free(allocator, value.get(i));</span>
-<span class="line" id="L93">                }</span>
-<span class="line" id="L94">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;linked_list&quot;</span>)) {</span>
-<span class="line" id="L95">                <span class="tok-kw">var</span> iterator = value.first;</span>
-<span class="line" id="L96">                <span class="tok-kw">while</span> (iterator) |node| {</span>
-<span class="line" id="L97">                    free(allocator, node.data);</span>
-<span class="line" id="L98">                    iterator = node.next;</span>
-<span class="line" id="L99">                    allocator.destroy(node);</span>
-<span class="line" id="L100">                }</span>
-<span class="line" id="L101">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L102">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |field| {</span>
-<span class="line" id="L103">                    <span class="tok-kw">if</span> (!field.is_comptime) free(allocator, <span class="tok-builtin">@field</span>(value, field.name));</span>
-<span class="line" id="L104">                }</span>
-<span class="line" id="L105">            }</span>
-<span class="line" id="L106">        },</span>
-<span class="line" id="L107">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L108">    }</span>
-<span class="line" id="L109">}</span>
-<span class="line" id="L110"></span>
+<span class="line" id="L68">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;hash_map.HashMapUnmanaged&quot;</span>) <span class="tok-kw">or</span></span>
+<span class="line" id="L69">                std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;array_hash_map.ArrayHashMapUnmanaged&quot;</span>))</span>
+<span class="line" id="L70">            {</span>
+<span class="line" id="L71">                <span class="tok-kw">var</span> iterator = value.iterator();</span>
+<span class="line" id="L72">                <span class="tok-kw">while</span> (iterator.next()) |entry| {</span>
+<span class="line" id="L73">                    free(allocator, entry.key_ptr.*);</span>
+<span class="line" id="L74">                    free(allocator, entry.value_ptr.*);</span>
+<span class="line" id="L75">                }</span>
+<span class="line" id="L76">                <span class="tok-kw">var</span> mut = value;</span>
+<span class="line" id="L77">                mut.deinit(allocator);</span>
+<span class="line" id="L78">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;hash_map.HashMap&quot;</span>) <span class="tok-kw">or</span></span>
+<span class="line" id="L79">                std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;array_hash_map.ArrayHashMap&quot;</span>))</span>
+<span class="line" id="L80">            {</span>
+<span class="line" id="L81">                <span class="tok-kw">var</span> iterator = value.iterator();</span>
+<span class="line" id="L82">                <span class="tok-kw">while</span> (iterator.next()) |entry| {</span>
+<span class="line" id="L83">                    free(allocator, entry.key_ptr.*);</span>
+<span class="line" id="L84">                    free(allocator, entry.value_ptr.*);</span>
+<span class="line" id="L85">                }</span>
+<span class="line" id="L86">                <span class="tok-kw">var</span> mut = value;</span>
+<span class="line" id="L87">                mut.deinit();</span>
+<span class="line" id="L88">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;multi_array_list&quot;</span>)) {</span>
+<span class="line" id="L89">                <span class="tok-kw">defer</span> {</span>
+<span class="line" id="L90">                    <span class="tok-kw">var</span> mut = value;</span>
+<span class="line" id="L91">                    mut.deinit(allocator);</span>
+<span class="line" id="L92">                }</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..value.len) |i| {</span>
+<span class="line" id="L95">                    free(allocator, value.get(i));</span>
+<span class="line" id="L96">                }</span>
+<span class="line" id="L97">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, name, <span class="tok-str">&quot;linked_list&quot;</span>)) {</span>
+<span class="line" id="L98">                <span class="tok-kw">var</span> iterator = value.first;</span>
+<span class="line" id="L99">                <span class="tok-kw">while</span> (iterator) |node| {</span>
+<span class="line" id="L100">                    free(allocator, node.data);</span>
+<span class="line" id="L101">                    iterator = node.next;</span>
+<span class="line" id="L102">                    allocator.destroy(node);</span>
+<span class="line" id="L103">                }</span>
+<span class="line" id="L104">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L105">                <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |field| {</span>
+<span class="line" id="L106">                    <span class="tok-kw">if</span> (!field.is_comptime) free(allocator, <span class="tok-builtin">@field</span>(value, field.name));</span>
+<span class="line" id="L107">                }</span>
+<span class="line" id="L108">            }</span>
+<span class="line" id="L109">        },</span>
+<span class="line" id="L110">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L111">    }</span>
+<span class="line" id="L112">}</span>
+<span class="line" id="L113"></span>
 </code></pre></body>
 </html>
