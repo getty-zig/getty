@@ -55,6 +55,15 @@ pub fn deserialize(
 }
 
 test "deserialize - pointer" {
+    const EnumAB = enum {
+        foo,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .rename = "FOO" },
+            };
+        };
+    };
     const StructAB = struct {
         x: i32,
         y: i32,
@@ -77,6 +86,7 @@ test "deserialize - pointer" {
     };
 
     var int: i32 = 1;
+    var eab = EnumAB.foo;
     var sab = StructAB{ .x = 1, .y = 2 };
     var uab = UnionAB{ .foo = 1 };
 
@@ -85,6 +95,14 @@ test "deserialize - pointer" {
             .name = "one level of indirection",
             .tokens = &.{.{ .I32 = 1 }},
             .want = @as(*i32, &int),
+        },
+        .{
+            .name = "enum with AB",
+            .tokens = &.{
+                .{ .Enum = {} },
+                .{ .String = "FOO" },
+            },
+            .want = @as(*EnumAB, &eab),
         },
         .{
             .name = "struct with AB",
