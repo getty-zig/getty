@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const is_sbt = @import("block.zig").is_sbt;
-const is_tsb = @import("block.zig").is_tsb;
 const Attributes = @import("../../attributes.zig").Attributes;
 
 /// Checks whether `SB` defines serialization attributes for `T`.
@@ -12,7 +10,7 @@ pub fn has_attributes(
     comptime SB: type,
 ) bool {
     comptime {
-        return (is_sbt(SB) or is_tsb(SB)) and @hasDecl(SB, "attributes") and is_attributes(T, SB.attributes);
+        return @hasDecl(SB, "attributes") and is_attributes(T, SB.attributes);
     }
 }
 
