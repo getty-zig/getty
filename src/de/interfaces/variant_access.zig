@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const concepts = @import("../concepts.zig");
 const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 
 /// Deserialization and access interface for variants of Getty Unions.
@@ -12,7 +11,7 @@ pub fn VariantAccess(
     /// A namespace containing the methods that implementations of `VariantAccess` can implement.
     comptime methods: struct {
         payloadSeed: ?@TypeOf(struct {
-            fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) Return(E, @TypeOf(seed)) {
+            fn f(_: Context, _: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 unreachable;
             }
         }.f) = null,
@@ -34,7 +33,7 @@ pub fn VariantAccess(
 
             pub const Error = E;
 
-            pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Return(Error, @TypeOf(seed)) {
+            pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (methods.payloadSeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
@@ -59,10 +58,4 @@ pub fn VariantAccess(
             return .{ .context = self };
         }
     };
-}
-
-fn Return(comptime Error: type, comptime Seed: type) type {
-    comptime concepts.@"getty.de.Seed"(Seed);
-
-    return Error!Seed.Value;
 }

@@ -2,7 +2,6 @@ const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
 const blocks = @import("blocks.zig");
-const concepts = @import("concepts.zig");
 const find_db = @import("find.zig").find_db;
 const Ignored = @import("impls/seed/ignored.zig").Ignored;
 const t = @import("testing.zig");
@@ -17,10 +16,7 @@ pub fn deserialize(
     comptime T: type,
     /// A `getty.Deserializer` interface value.
     deserializer: anytype,
-) blk: {
-    concepts.@"getty.Deserializer"(@TypeOf(deserializer));
-    break :blk @TypeOf(deserializer).Error!T;
-} {
+) @TypeOf(deserializer).Error!T {
     const db = comptime find_db(T, @TypeOf(deserializer));
 
     if (comptime traits.has_attributes(T, db)) {

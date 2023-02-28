@@ -1,8 +1,6 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-const concepts = @import("../concepts.zig");
-
 /// A `Visitor` deserializes values from Getty's data model into Zig.
 pub fn Visitor(
     /// A namespace that owns the method implementations passed to the `methods` parameter.
@@ -130,11 +128,7 @@ pub fn Visitor(
                 return error.Unsupported;
             }
 
-            pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) blk: {
-                concepts.@"getty.de.MapAccess"(@TypeOf(map));
-
-                break :blk Deserializer.Error!Value;
-            } {
+            pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
                 if (methods.visitMap) |f| {
                     return try f(self.context, allocator, Deserializer, map);
                 }
@@ -155,11 +149,7 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSeq(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) blk: {
-                concepts.@"getty.de.SeqAccess"(@TypeOf(seq));
-
-                break :blk Deserializer.Error!Value;
-            } {
+            pub fn visitSeq(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 if (methods.visitSeq) |f| {
                     return try f(self.context, allocator, Deserializer, seq);
                 }
@@ -167,11 +157,7 @@ pub fn Visitor(
                 return error.Unsupported;
             }
 
-            pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) blk: {
-                concepts.@"getty.Deserializer"(@TypeOf(deserializer));
-
-                break :blk @TypeOf(deserializer).Error!Value;
-            } {
+            pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 if (methods.visitSome) |f| {
                     return try f(self.context, allocator, deserializer);
                 }
@@ -196,12 +182,7 @@ pub fn Visitor(
                 return error.Unsupported;
             }
 
-            pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) blk: {
-                concepts.@"getty.de.UnionAccess"(@TypeOf(ua));
-                concepts.@"getty.de.VariantAccess"(@TypeOf(va));
-
-                break :blk Deserializer.Error!Value;
-            } {
+            pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
                 if (methods.visitUnion) |f| {
                     return try f(self.context, allocator, Deserializer, ua, va);
                 }

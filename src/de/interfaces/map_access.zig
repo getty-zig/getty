@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const concepts = @import("../concepts.zig");
 const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 
 /// Deserialization and access interface for Getty Maps.
@@ -53,7 +52,7 @@ pub fn MapAccess(
 
             pub const Error = E;
 
-            pub fn nextKeySeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) KeyReturn(@TypeOf(seed)) {
+            pub fn nextKeySeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 if (methods.nextKeySeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
@@ -61,7 +60,7 @@ pub fn MapAccess(
                 @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Context));
             }
 
-            pub fn nextValueSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) ValueReturn(@TypeOf(seed)) {
+            pub fn nextValueSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (methods.nextValueSeed) |f| {
                     return try f(self.context, allocator, seed);
                 }
@@ -105,18 +104,6 @@ pub fn MapAccess(
                 }
 
                 return @typeInfo(K) == .Pointer;
-            }
-
-            fn KeyReturn(comptime Seed: type) type {
-                comptime concepts.@"getty.de.Seed"(Seed);
-
-                return Error!?Seed.Value;
-            }
-
-            fn ValueReturn(comptime Seed: type) type {
-                comptime concepts.@"getty.de.Seed"(Seed);
-
-                return Error!Seed.Value;
             }
         };
 

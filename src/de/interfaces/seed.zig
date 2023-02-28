@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const concepts = @import("../concepts.zig");
-
 /// A `Seed` facilitates stateful deserialization.
 ///
 /// Generally speaking, deserialization tends to be a stateless operation.
@@ -36,7 +34,7 @@ pub fn Seed(
 
             pub const Value = V;
 
-            pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) Return(@TypeOf(deserializer)) {
+            pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
                 if (methods.deserialize) |f| {
                     return try f(self.context, allocator, deserializer);
                 }
@@ -48,12 +46,6 @@ pub fn Seed(
         /// Returns an interface value.
         pub fn seed(self: Context) @"getty.de.Seed" {
             return .{ .context = self };
-        }
-
-        fn Return(comptime Deserializer: type) type {
-            comptime concepts.@"getty.Deserializer"(Deserializer);
-
-            return Deserializer.Error!V;
         }
     };
 }

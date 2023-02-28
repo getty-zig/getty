@@ -1,7 +1,6 @@
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
-const concepts = @import("concepts.zig");
 const t = @import("testing.zig");
 const tuples = @import("tuples.zig");
 const traits = @import("traits.zig");
@@ -13,8 +12,6 @@ pub fn getAttributes(
     /// A `getty.Deserializer` interface type.
     comptime D: type,
 ) blk: {
-    concepts.@"getty.Deserializer"(D);
-
     // Process user DBs.
     for (D.user_dt) |db| {
         if (db.is(T) and traits.has_attributes(T, db)) {

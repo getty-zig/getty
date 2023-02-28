@@ -1,4 +1,3 @@
-const concepts = @import("concepts.zig");
 const default_dt = @import("tuples.zig").default;
 const traits = @import("traits.zig");
 
@@ -10,8 +9,6 @@ pub fn find_db(
     comptime De: type,
 ) type {
     comptime {
-        concepts.@"getty.Deserializer"(De);
-
         // Process user DBs.
         for (De.user_dt) |db| {
             if (db.is(T)) {

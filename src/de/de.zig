@@ -24,10 +24,6 @@ pub const de = struct {
     /// Deserialization blocks provided by Getty.
     pub const blocks = @import("blocks.zig");
 
-    /// Constraints that can be used to perform compile-time validation for a
-    /// type.
-    pub const concepts = @import("concepts.zig");
-
     /// Functions that can be used to query, at compile-time, the properties of
     /// a type.
     pub const traits = @import("traits.zig");
