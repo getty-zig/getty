@@ -2,9 +2,10 @@ const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
 const blocks = @import("blocks.zig");
+const has_attributes = @import("../attributes.zig").has_attributes;
+const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
 const tuples = @import("tuples.zig");
-const traits = @import("traits.zig");
 
 /// Returns serialization attributes for `T`. If none exist, `null` is
 /// returned.
@@ -16,23 +17,23 @@ pub fn getAttributes(
 ) blk: {
     // Process user SBs.
     for (S.user_st) |sb| {
-        if (sb.is(T) and traits.has_attributes(T, sb)) {
+        if (sb.is(T) and has_attributes(T, sb)) {
             break :blk ?@TypeOf(sb.attributes);
         }
     }
 
     // Process type SBs.
-    if (traits.has_sb(T)) {
+    if (has_block(T, .ser)) {
         const sb = T.@"getty.sb";
 
-        if (traits.has_attributes(T, sb)) {
+        if (has_attributes(T, sb)) {
             break :blk ?@TypeOf(sb.attributes);
         }
     }
 
     // Process user SBs.
     for (S.serializer_st) |sb| {
-        if (sb.is(T) and traits.has_attributes(T, sb)) {
+        if (sb.is(T) and has_attributes(T, sb)) {
             break :blk ?@TypeOf(sb.attributes);
         }
     }
@@ -42,23 +43,23 @@ pub fn getAttributes(
     comptime {
         // Process user SBs.
         for (S.user_st) |sb| {
-            if (sb.is(T) and traits.has_attributes(T, sb)) {
+            if (sb.is(T) and has_attributes(T, sb)) {
                 return @as(?@TypeOf(sb.attributes), sb.attributes);
             }
         }
 
         // Process type SBs.
-        if (traits.has_sb(T)) {
+        if (has_block(T, .ser)) {
             const sb = T.@"getty.sb";
 
-            if (traits.has_attributes(T, sb)) {
+            if (has_attributes(T, sb)) {
                 return @as(?@TypeOf(sb.attributes), sb.attributes);
             }
         }
 
         // Process serializer SBs.
         for (S.serializer_st) |sb| {
-            if (sb.is(T) and traits.has_attributes(T, sb)) {
+            if (sb.is(T) and has_attributes(T, sb)) {
                 return @as(?@TypeOf(sb.attributes), sb.attributes);
             }
         }
@@ -148,7 +149,7 @@ test "getAttributes - priority" {
         .x = .{ .rename = "X" },
         .y = .{ .skip = true },
     };
-    const invalid_attrs = .{
+    const invalid_attributes = .{
         .foo = .{ .bar = "TESTING" },
     };
 
@@ -169,7 +170,7 @@ test "getAttributes - priority" {
         y: i32,
 
         pub const @"getty.sb" = struct {
-            pub const attributes = invalid_attrs;
+            pub const attributes = invalid_attributes;
         };
     };
 
@@ -205,7 +206,7 @@ test "getAttributes - priority" {
                 return T == Point;
             }
 
-            pub const attributes = invalid_attrs;
+            pub const attributes = invalid_attributes;
         };
 
         const S = t.Serializer(user_block, serializer_block);
@@ -221,7 +222,7 @@ test "getAttributes - priority" {
                 return T == PointCustom;
             }
 
-            pub const attributes = invalid_attrs;
+            pub const attributes = invalid_attributes;
         };
 
         const S = t.Serializer(null, serializer_block);

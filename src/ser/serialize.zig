@@ -1,10 +1,11 @@
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
+const attributes = @import("../attributes.zig");
 const blocks = @import("blocks.zig");
 const default_st = @import("tuples.zig").default;
+const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
-const traits = @import("traits.zig");
 
 /// Serializes a value into a `getty.Serializer`.
 pub fn serialize(
@@ -26,7 +27,7 @@ pub fn serialize(
         }
 
         // Process type SBs.
-        if (traits.has_sb(T)) {
+        if (has_block(T, .ser)) {
             break :blk T.@"getty.sb";
         }
 
@@ -48,7 +49,7 @@ pub fn serialize(
     };
 
     // Process attributes, if any exist.
-    if (comptime traits.has_attributes(T, block)) {
+    if (comptime attributes.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
             .Enum => return try blocks.Enum.serialize(allocator, value, serializer),
             .Struct => return try blocks.Struct.serialize(allocator, value, serializer),

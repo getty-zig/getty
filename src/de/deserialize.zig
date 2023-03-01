@@ -1,11 +1,11 @@
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
+const attributes = @import("../attributes.zig");
 const blocks = @import("blocks.zig");
 const find_db = @import("find.zig").find_db;
 const Ignored = @import("impls/seed/ignored.zig").Ignored;
 const t = @import("testing.zig");
-const traits = @import("traits.zig");
 const Visitor = @import("interfaces/visitor.zig").Visitor;
 
 /// Deserializes into a value of type `T` from a `getty.Deserializer`.
@@ -19,7 +19,7 @@ pub fn deserialize(
 ) @TypeOf(deserializer).Error!T {
     const db = comptime find_db(T, @TypeOf(deserializer));
 
-    if (comptime traits.has_attributes(T, db)) {
+    if (comptime attributes.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
             .Enum => {
                 var v = blocks.Enum.Visitor(T){};

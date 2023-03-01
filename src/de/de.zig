@@ -24,10 +24,6 @@ pub const de = struct {
     /// Deserialization blocks provided by Getty.
     pub const blocks = @import("blocks.zig");
 
-    /// Functions that can be used to query, at compile-time, the properties of
-    /// a type.
-    pub const traits = @import("traits.zig");
-
     ////////////////////////////////////////////////////////////////////////////////
     // Functions
     ////////////////////////////////////////////////////////////////////////////////

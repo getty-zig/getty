@@ -1,5 +1,5 @@
 const default_dt = @import("tuples.zig").default;
-const traits = @import("traits.zig");
+const has_block = @import("../block.zig").has_block;
 
 /// Returns the highest priority Deserialization Block for a type.
 pub fn find_db(
@@ -17,7 +17,7 @@ pub fn find_db(
         }
 
         // Process type DBs.
-        if (traits.has_db(T)) {
+        if (has_block(T, .de)) {
             return T.@"getty.db";
         }
 

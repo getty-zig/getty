@@ -1,9 +1,10 @@
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
+const has_attributes = @import("../attributes.zig").has_attributes;
+const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
 const tuples = @import("tuples.zig");
-const traits = @import("traits.zig");
 
 /// Returns deserialization attributes for `T`. If none exist, `null` is returned.
 pub fn getAttributes(
@@ -14,23 +15,23 @@ pub fn getAttributes(
 ) blk: {
     // Process user DBs.
     for (D.user_dt) |db| {
-        if (db.is(T) and traits.has_attributes(T, db)) {
+        if (db.is(T) and has_attributes(T, db)) {
             break :blk ?@TypeOf(db.attributes);
         }
     }
 
     // Process type DBs.
-    if (traits.has_db(T)) {
+    if (has_block(T, .de)) {
         const db = T.@"getty.db";
 
-        if (traits.has_attributes(T, db)) {
+        if (has_attributes(T, db)) {
             break :blk ?@TypeOf(db.attributes);
         }
     }
 
     // Process deserializer DBs.
     for (D.deserializer_dt) |db| {
-        if (db.is(T) and traits.has_attributes(T, db)) {
+        if (db.is(T) and has_attributes(T, db)) {
             break :blk ?@TypeOf(db.attributes);
         }
     }
@@ -40,23 +41,23 @@ pub fn getAttributes(
     comptime {
         // Process user DBs.
         for (D.user_dt) |db| {
-            if (db.is(T) and traits.has_attributes(T, db)) {
+            if (db.is(T) and has_attributes(T, db)) {
                 return @as(?@TypeOf(db.attributes), db.attributes);
             }
         }
 
         // Process type DBs.
-        if (traits.has_db(T)) {
+        if (has_block(T, .de)) {
             const db = T.@"getty.db";
 
-            if (traits.has_attributes(T, db)) {
+            if (has_attributes(T, db)) {
                 return @as(?@TypeOf(db.attributes), db.attributes);
             }
         }
 
         // Process deserializer DBs.
         for (D.deserializer_dt) |db| {
-            if (db.is(T) and traits.has_attributes(T, db)) {
+            if (db.is(T) and has_attributes(T, db)) {
                 return @as(?@TypeOf(db.attributes), db.attributes);
             }
         }

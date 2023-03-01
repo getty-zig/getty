@@ -2,53 +2,6 @@ const std = @import("std");
 const comptimePrint = std.fmt.comptimePrint;
 const Type = std.builtin.Type;
 
-const ContainerAttributes = struct {
-    //content: ?[]const u8 = null,
-
-    // When deserializing, any missing fields should be filled in from the
-    // field's default value.
-    //default: bool = false,
-
-    // When deserializing, any missing fields should be filled in from the
-    // object returned by the given function.
-    //
-    // Overrides `default`.
-    //default_path: ?[]const u8 = null,
-
-    // Always error during deserialization when encountering unknown fields.
-    //
-    // This attribute isn't compatible with `flatten`.
-    ignore_unknown_fields: bool = false,
-
-    // Deserialize this type by deserializing into the given type, then
-    // converting.
-    //from: ?[]const u8 = null,
-
-    // Serialize this type by converting it into the specified type and
-    // serializing that.
-    //into: ?[]const u8 = null,
-
-    // Serialize and deserialize this struct with the given name instead of
-    // its type name.
-    //rename: []const u8 = @typeName(T),
-    rename: ?[]const u8 = null,
-
-    // Rename all the fields of this struct according to the given case
-    // convention.
-    //rename_all: ?Case = null,
-
-    // Use the internally tagged enum representation for this enum, with
-    // the given tag.
-    //tag: ?[]const u8 = null,
-
-    // Deserialize this type by deserializing into the given type, then
-    // converting fallibly.
-    //try_from: ?[]const u8 = null,
-
-    // Use the untagged enum representation for this enum.
-    //untagged: bool = false,
-};
-
 /// Case conventions for the `rename_all` attribute.
 pub const Case = enum {
     // foobar
@@ -145,6 +98,90 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
         },
     });
 }
+
+/// Checks whether `block` defines (de)serialization attributes for `T`.
+pub fn has_attributes(
+    /// A type to check.
+    comptime T: type,
+    /// A (de)serialization block.
+    comptime block: type,
+) bool {
+    comptime {
+        switch (@typeInfo(T)) {
+            .Enum, .Union => {},
+            .Struct => |info| if (info.is_tuple) return false,
+            else => return false,
+        }
+
+        return @hasDecl(block, "attributes") and is_attributes(T, block.attributes);
+    }
+}
+
+/// Checks whether `attributes` is a (de)serialization attribute list for `T`.
+pub fn is_attributes(
+    /// A type that `attributes` applies to.
+    comptime T: type,
+    /// An attribute list to check.
+    attributes: anytype,
+) bool {
+    comptime {
+        const A = Attributes(T, attributes);
+        var a = A{};
+
+        inline for (std.meta.fields(@TypeOf(attributes))) |field| {
+            @field(a, field.name) = @field(attributes, field.name);
+        }
+
+        return std.meta.eql(a, attributes);
+    }
+}
+
+const ContainerAttributes = struct {
+    //content: ?[]const u8 = null,
+
+    // When deserializing, any missing fields should be filled in from the
+    // field's default value.
+    //default: bool = false,
+
+    // When deserializing, any missing fields should be filled in from the
+    // object returned by the given function.
+    //
+    // Overrides `default`.
+    //default_path: ?[]const u8 = null,
+
+    // Always error during deserialization when encountering unknown fields.
+    //
+    // This attribute isn't compatible with `flatten`.
+    ignore_unknown_fields: bool = false,
+
+    // Deserialize this type by deserializing into the given type, then
+    // converting.
+    //from: ?[]const u8 = null,
+
+    // Serialize this type by converting it into the specified type and
+    // serializing that.
+    //into: ?[]const u8 = null,
+
+    // Serialize and deserialize this struct with the given name instead of
+    // its type name.
+    //rename: []const u8 = @typeName(T),
+    rename: ?[]const u8 = null,
+
+    // Rename all the fields of this struct according to the given case
+    // convention.
+    //rename_all: ?Case = null,
+
+    // Use the internally tagged enum representation for this enum, with
+    // the given tag.
+    //tag: ?[]const u8 = null,
+
+    // Deserialize this type by deserializing into the given type, then
+    // converting fallibly.
+    //try_from: ?[]const u8 = null,
+
+    // Use the untagged enum representation for this enum.
+    //untagged: bool = false,
+};
 
 const VariantAttributes = struct {
     // Deserialize this variant from the given names *or* its type

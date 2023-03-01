@@ -3,7 +3,7 @@ const std = @import("std");
 const blocks = @import("../../blocks.zig");
 const find_db = @import("../../find.zig").find_db;
 const free = @import("../../free.zig").free;
-const has_attributes = @import("../../traits.zig").has_attributes;
+const has_attributes = @import("../../../attributes.zig").has_attributes;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Pointer: type) type {
