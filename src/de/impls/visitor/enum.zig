@@ -24,6 +24,8 @@ pub fn Visitor(comptime Enum: type) type {
         }
 
         fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            @setEvalBranchQuota(10_000);
+
             const fields = std.meta.fields(Value);
             const attributes = comptime getAttributes(Value, Deserializer);
             const result = std.meta.intToEnum(Value, input) catch return error.InvalidValue;
@@ -51,6 +53,8 @@ pub fn Visitor(comptime Enum: type) type {
         }
 
         fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            @setEvalBranchQuota(10_000);
+
             const fields = std.meta.fields(Value);
             const attributes = comptime getAttributes(Value, Deserializer);
 
