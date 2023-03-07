@@ -18,6 +18,8 @@ pub fn Visitor(comptime Struct: type) type {
         const Value = Struct;
 
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            @setEvalBranchQuota(10_000);
+
             const fields = comptime std.meta.fields(Value);
             const attributes = comptime getAttributes(Value, Deserializer);
 

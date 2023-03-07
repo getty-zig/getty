@@ -16,6 +16,8 @@ pub fn Visitor(comptime Union: type) type {
         const Value = Union;
 
         fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
+            @setEvalBranchQuota(10_000);
+
             const attributes = comptime getAttributes(Value, Deserializer);
 
             var variant = try ua.variant(allocator, []const u8);
