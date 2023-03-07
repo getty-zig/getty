@@ -7,10 +7,10 @@ pub fn build(b: *std.build.Builder) void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardOptimizeOption(.{});
 
-    b.addModule(.{
-        .name = package_name,
-        .source_file = .{ .path = package_path },
-    });
+    _ = b.addModule(
+        package_name,
+        .{ .source_file = .{ .path = package_path } },
+    );
 
     tests(b, target, mode);
     docs(b, target, mode);
