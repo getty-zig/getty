@@ -126,930 +126,388 @@
 <span class="line" id="L13"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
 <span class="line" id="L14"><span class="tok-kw">const</span> testing = std.testing;</span>
 <span class="line" id="L15"></span>
-<span class="line" id="L16"><span class="tok-comment">/// Used for tcpConnectToHost and storing HTTP headers when an externally</span></span>
-<span class="line" id="L17"><span class="tok-comment">/// managed buffer is not provided.</span></span>
-<span class="line" id="L18">allocator: Allocator,</span>
-<span class="line" id="L19">ca_bundle: std.crypto.Certificate.Bundle = .{},</span>
-<span class="line" id="L20"><span class="tok-comment">/// When this is `true`, the next time this client performs an HTTPS request,</span></span>
-<span class="line" id="L21"><span class="tok-comment">/// it will first rescan the system for root certificates.</span></span>
-<span class="line" id="L22">next_https_rescan_certs: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L23"></span>
-<span class="line" id="L24"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Connection = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L25">    stream: net.Stream,</span>
-<span class="line" id="L26">    <span class="tok-comment">/// undefined unless protocol is tls.</span></span>
-<span class="line" id="L27">    tls_client: std.crypto.tls.Client,</span>
-<span class="line" id="L28">    protocol: Protocol,</span>
+<span class="line" id="L16"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Request = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Client/Request.zig&quot;</span>);</span>
+<span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Response = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;Client/Response.zig&quot;</span>);</span>
+<span class="line" id="L18"></span>
+<span class="line" id="L19"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> default_connection_pool_size = <span class="tok-number">32</span>;</span>
+<span class="line" id="L20"><span class="tok-kw">const</span> connection_pool_size = std.options.http_connection_pool_size;</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22"><span class="tok-comment">/// Used for tcpConnectToHost and storing HTTP headers when an externally</span></span>
+<span class="line" id="L23"><span class="tok-comment">/// managed buffer is not provided.</span></span>
+<span class="line" id="L24">allocator: Allocator,</span>
+<span class="line" id="L25">ca_bundle: std.crypto.Certificate.Bundle = .{},</span>
+<span class="line" id="L26"><span class="tok-comment">/// When this is `true`, the next time this client performs an HTTPS request,</span></span>
+<span class="line" id="L27"><span class="tok-comment">/// it will first rescan the system for root certificates.</span></span>
+<span class="line" id="L28">next_https_rescan_certs: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
 <span class="line" id="L29"></span>
-<span class="line" id="L30">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Protocol = <span class="tok-kw">enum</span> { plain, tls };</span>
+<span class="line" id="L30">connection_pool: ConnectionPool = .{},</span>
 <span class="line" id="L31"></span>
-<span class="line" id="L32">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(conn: *Connection, buffer: []<span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L33">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
-<span class="line" id="L34">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.read(buffer),</span>
-<span class="line" id="L35">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.read(conn.stream, buffer),</span>
-<span class="line" id="L36">        }</span>
-<span class="line" id="L37">    }</span>
+<span class="line" id="L32"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ConnectionPool = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L33">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Criteria = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L34">        host: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L35">        port: <span class="tok-type">u16</span>,</span>
+<span class="line" id="L36">        is_tls: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L37">    };</span>
 <span class="line" id="L38"></span>
-<span class="line" id="L39">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(conn: *Connection, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L40">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
-<span class="line" id="L41">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.readAtLeast(buffer, len),</span>
-<span class="line" id="L42">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.readAtLeast(conn.stream, buffer, len),</span>
-<span class="line" id="L43">        }</span>
-<span class="line" id="L44">    }</span>
-<span class="line" id="L45"></span>
-<span class="line" id="L46">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeAll</span>(conn: *Connection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L47">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
-<span class="line" id="L48">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.writeAll(buffer),</span>
-<span class="line" id="L49">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.writeAll(conn.stream, buffer),</span>
-<span class="line" id="L50">        }</span>
-<span class="line" id="L51">    }</span>
-<span class="line" id="L52"></span>
-<span class="line" id="L53">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(conn: *Connection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L54">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
-<span class="line" id="L55">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.write(buffer),</span>
-<span class="line" id="L56">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.write(conn.stream, buffer),</span>
-<span class="line" id="L57">        }</span>
-<span class="line" id="L58">    }</span>
-<span class="line" id="L59">};</span>
-<span class="line" id="L60"></span>
-<span class="line" id="L61"><span class="tok-comment">/// TODO: emit error.UnexpectedEndOfStream or something like that when the read</span></span>
-<span class="line" id="L62"><span class="tok-comment">/// data does not match the content length. This is necessary since HTTPS disables</span></span>
-<span class="line" id="L63"><span class="tok-comment">/// close_notify protection on underlying TLS streams.</span></span>
-<span class="line" id="L64"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Request = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L65">    client: *Client,</span>
-<span class="line" id="L66">    connection: Connection,</span>
-<span class="line" id="L67">    redirects_left: <span class="tok-type">u32</span>,</span>
-<span class="line" id="L68">    response: Response,</span>
-<span class="line" id="L69">    <span class="tok-comment">/// These are stored in Request so that they are available when following</span></span>
-<span class="line" id="L70">    <span class="tok-comment">/// redirects.</span></span>
-<span class="line" id="L71">    headers: Headers,</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Response = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L74">        headers: Response.Headers,</span>
-<span class="line" id="L75">        state: State,</span>
-<span class="line" id="L76">        header_bytes_owned: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L77">        <span class="tok-comment">/// This could either be a fixed buffer provided by the API user or it</span></span>
-<span class="line" id="L78">        <span class="tok-comment">/// could be our own array list.</span></span>
-<span class="line" id="L79">        header_bytes: std.ArrayListUnmanaged(<span class="tok-type">u8</span>),</span>
-<span class="line" id="L80">        max_header_bytes: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L81">        next_chunk_length: <span class="tok-type">u64</span>,</span>
+<span class="line" id="L39">    <span class="tok-kw">const</span> Queue = std.TailQueue(Connection);</span>
+<span class="line" id="L40">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Node = Queue.Node;</span>
+<span class="line" id="L41"></span>
+<span class="line" id="L42">    mutex: std.Thread.Mutex = .{},</span>
+<span class="line" id="L43">    used: Queue = .{},</span>
+<span class="line" id="L44">    free: Queue = .{},</span>
+<span class="line" id="L45">    free_len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L46">    free_size: <span class="tok-type">usize</span> = default_connection_pool_size,</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">    <span class="tok-comment">/// Finds and acquires a connection from the connection pool matching the criteria. This function is threadsafe.</span></span>
+<span class="line" id="L49">    <span class="tok-comment">/// If no connection is found, null is returned.</span></span>
+<span class="line" id="L50">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">findConnection</span>(pool: *ConnectionPool, criteria: Criteria) ?*Node {</span>
+<span class="line" id="L51">        pool.mutex.lock();</span>
+<span class="line" id="L52">        <span class="tok-kw">defer</span> pool.mutex.unlock();</span>
+<span class="line" id="L53"></span>
+<span class="line" id="L54">        <span class="tok-kw">var</span> next = pool.free.last;</span>
+<span class="line" id="L55">        <span class="tok-kw">while</span> (next) |node| : (next = node.prev) {</span>
+<span class="line" id="L56">            <span class="tok-kw">if</span> ((node.data.protocol == .tls) != criteria.is_tls) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L57">            <span class="tok-kw">if</span> (node.data.port != criteria.port) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L58">            <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, node.data.host, criteria.host)) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L59"></span>
+<span class="line" id="L60">            pool.acquireUnsafe(node);</span>
+<span class="line" id="L61">            <span class="tok-kw">return</span> node;</span>
+<span class="line" id="L62">        }</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L65">    }</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67">    <span class="tok-comment">/// Acquires an existing connection from the connection pool. This function is not threadsafe.</span></span>
+<span class="line" id="L68">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">acquireUnsafe</span>(pool: *ConnectionPool, node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L69">        pool.free.remove(node);</span>
+<span class="line" id="L70">        pool.free_len -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L71"></span>
+<span class="line" id="L72">        pool.used.append(node);</span>
+<span class="line" id="L73">    }</span>
+<span class="line" id="L74"></span>
+<span class="line" id="L75">    <span class="tok-comment">/// Acquires an existing connection from the connection pool. This function is threadsafe.</span></span>
+<span class="line" id="L76">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">acquire</span>(pool: *ConnectionPool, node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L77">        pool.mutex.lock();</span>
+<span class="line" id="L78">        <span class="tok-kw">defer</span> pool.mutex.unlock();</span>
+<span class="line" id="L79"></span>
+<span class="line" id="L80">        <span class="tok-kw">return</span> pool.acquireUnsafe(node);</span>
+<span class="line" id="L81">    }</span>
 <span class="line" id="L82"></span>
-<span class="line" id="L83">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Headers = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L84">            status: http.Status,</span>
-<span class="line" id="L85">            version: http.Version,</span>
-<span class="line" id="L86">            location: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L87">            content_length: ?<span class="tok-type">u64</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L88">            transfer_encoding: ?http.TransferEncoding = <span class="tok-null">null</span>,</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parse</span>(bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !Response.Headers {</span>
-<span class="line" id="L91">                <span class="tok-kw">var</span> it = mem.split(<span class="tok-type">u8</span>, bytes[<span class="tok-number">0</span> .. bytes.len - <span class="tok-number">4</span>], <span class="tok-str">&quot;\r\n&quot;</span>);</span>
-<span class="line" id="L92"></span>
-<span class="line" id="L93">                <span class="tok-kw">const</span> first_line = it.first();</span>
-<span class="line" id="L94">                <span class="tok-kw">if</span> (first_line.len &lt; <span class="tok-number">12</span>)</span>
-<span class="line" id="L95">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ShortHttpStatusLine;</span>
+<span class="line" id="L83">    <span class="tok-comment">/// Tries to release a connection back to the connection pool. This function is threadsafe.</span></span>
+<span class="line" id="L84">    <span class="tok-comment">/// If the connection is marked as closing, it will be closed instead.</span></span>
+<span class="line" id="L85">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">release</span>(pool: *ConnectionPool, client: *Client, node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L86">        pool.mutex.lock();</span>
+<span class="line" id="L87">        <span class="tok-kw">defer</span> pool.mutex.unlock();</span>
+<span class="line" id="L88"></span>
+<span class="line" id="L89">        pool.used.remove(node);</span>
+<span class="line" id="L90"></span>
+<span class="line" id="L91">        <span class="tok-kw">if</span> (node.data.closing) {</span>
+<span class="line" id="L92">            node.data.close(client);</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94">            <span class="tok-kw">return</span> client.allocator.destroy(node);</span>
+<span class="line" id="L95">        }</span>
 <span class="line" id="L96"></span>
-<span class="line" id="L97">                <span class="tok-kw">const</span> version: http.Version = <span class="tok-kw">switch</span> (int64(first_line[<span class="tok-number">0</span>..<span class="tok-number">8</span>])) {</span>
-<span class="line" id="L98">                    int64(<span class="tok-str">&quot;HTTP/1.0&quot;</span>) =&gt; .@&quot;HTTP/1.0&quot;,</span>
-<span class="line" id="L99">                    int64(<span class="tok-str">&quot;HTTP/1.1&quot;</span>) =&gt; .@&quot;HTTP/1.1&quot;,</span>
-<span class="line" id="L100">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BadHttpVersion,</span>
-<span class="line" id="L101">                };</span>
-<span class="line" id="L102">                <span class="tok-kw">if</span> (first_line[<span class="tok-number">8</span>] != <span class="tok-str">' '</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L103">                <span class="tok-kw">const</span> status = <span class="tok-builtin">@intToEnum</span>(http.Status, parseInt3(first_line[<span class="tok-number">9</span>..<span class="tok-number">12</span>].*));</span>
+<span class="line" id="L97">        <span class="tok-kw">if</span> (pool.free_len + <span class="tok-number">1</span> &gt;= pool.free_size) {</span>
+<span class="line" id="L98">            <span class="tok-kw">const</span> popped = pool.free.popFirst() <span class="tok-kw">orelse</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">            popped.data.close(client);</span>
+<span class="line" id="L101"></span>
+<span class="line" id="L102">            <span class="tok-kw">return</span> client.allocator.destroy(popped);</span>
+<span class="line" id="L103">        }</span>
 <span class="line" id="L104"></span>
-<span class="line" id="L105">                <span class="tok-kw">var</span> headers: Response.Headers = .{</span>
-<span class="line" id="L106">                    .version = version,</span>
-<span class="line" id="L107">                    .status = status,</span>
-<span class="line" id="L108">                };</span>
-<span class="line" id="L109"></span>
-<span class="line" id="L110">                <span class="tok-kw">while</span> (it.next()) |line| {</span>
-<span class="line" id="L111">                    <span class="tok-kw">if</span> (line.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L112">                    <span class="tok-kw">switch</span> (line[<span class="tok-number">0</span>]) {</span>
-<span class="line" id="L113">                        <span class="tok-str">' '</span>, <span class="tok-str">'\t'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeaderContinuationsUnsupported,</span>
-<span class="line" id="L114">                        <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L115">                    }</span>
-<span class="line" id="L116">                    <span class="tok-kw">var</span> line_it = mem.split(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot;: &quot;</span>);</span>
-<span class="line" id="L117">                    <span class="tok-kw">const</span> header_name = line_it.first();</span>
-<span class="line" id="L118">                    <span class="tok-kw">const</span> header_value = line_it.rest();</span>
-<span class="line" id="L119">                    <span class="tok-kw">if</span> (std.ascii.eqlIgnoreCase(header_name, <span class="tok-str">&quot;location&quot;</span>)) {</span>
-<span class="line" id="L120">                        <span class="tok-kw">if</span> (headers.location != <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L121">                        headers.location = header_value;</span>
-<span class="line" id="L122">                    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (std.ascii.eqlIgnoreCase(header_name, <span class="tok-str">&quot;content-length&quot;</span>)) {</span>
-<span class="line" id="L123">                        <span class="tok-kw">if</span> (headers.content_length != <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L124">                        headers.content_length = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">u64</span>, header_value, <span class="tok-number">10</span>);</span>
-<span class="line" id="L125">                    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (std.ascii.eqlIgnoreCase(header_name, <span class="tok-str">&quot;transfer-encoding&quot;</span>)) {</span>
-<span class="line" id="L126">                        <span class="tok-kw">if</span> (headers.transfer_encoding != <span class="tok-null">null</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L127">                        headers.transfer_encoding = std.meta.stringToEnum(http.TransferEncoding, header_value) <span class="tok-kw">orelse</span></span>
-<span class="line" id="L128">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpTransferEncodingUnsupported;</span>
-<span class="line" id="L129">                    }</span>
-<span class="line" id="L130">                }</span>
-<span class="line" id="L131"></span>
-<span class="line" id="L132">                <span class="tok-kw">return</span> headers;</span>
-<span class="line" id="L133">            }</span>
-<span class="line" id="L134"></span>
-<span class="line" id="L135">            <span class="tok-kw">test</span> <span class="tok-str">&quot;parse headers&quot;</span> {</span>
-<span class="line" id="L136">                <span class="tok-kw">const</span> example =</span>
-<span class="line" id="L137">                    <span class="tok-str">&quot;HTTP/1.1 301 Moved Permanently\r\n&quot;</span> ++</span>
-<span class="line" id="L138">                    <span class="tok-str">&quot;Location: https://www.example.com/\r\n&quot;</span> ++</span>
-<span class="line" id="L139">                    <span class="tok-str">&quot;Content-Type: text/html; charset=UTF-8\r\n&quot;</span> ++</span>
-<span class="line" id="L140">                    <span class="tok-str">&quot;Content-Length: 220\r\n\r\n&quot;</span>;</span>
-<span class="line" id="L141">                <span class="tok-kw">const</span> parsed = <span class="tok-kw">try</span> Response.Headers.parse(example);</span>
-<span class="line" id="L142">                <span class="tok-kw">try</span> testing.expectEqual(http.Version.@&quot;HTTP/1.1&quot;, parsed.version);</span>
-<span class="line" id="L143">                <span class="tok-kw">try</span> testing.expectEqual(http.Status.moved_permanently, parsed.status);</span>
-<span class="line" id="L144">                <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;https://www.example.com/&quot;</span>, parsed.location <span class="tok-kw">orelse</span></span>
-<span class="line" id="L145">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TestFailed);</span>
-<span class="line" id="L146">                <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">u64</span>, <span class="tok-number">220</span>), parsed.content_length);</span>
-<span class="line" id="L147">            }</span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149">            <span class="tok-kw">test</span> <span class="tok-str">&quot;header continuation&quot;</span> {</span>
-<span class="line" id="L150">                <span class="tok-kw">const</span> example =</span>
-<span class="line" id="L151">                    <span class="tok-str">&quot;HTTP/1.0 200 OK\r\n&quot;</span> ++</span>
-<span class="line" id="L152">                    <span class="tok-str">&quot;Content-Type: text/html;\r\n charset=UTF-8\r\n&quot;</span> ++</span>
-<span class="line" id="L153">                    <span class="tok-str">&quot;Content-Length: 220\r\n\r\n&quot;</span>;</span>
-<span class="line" id="L154">                <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L155">                    <span class="tok-kw">error</span>.HttpHeaderContinuationsUnsupported,</span>
-<span class="line" id="L156">                    Response.Headers.parse(example),</span>
-<span class="line" id="L157">                );</span>
-<span class="line" id="L158">            }</span>
-<span class="line" id="L159"></span>
-<span class="line" id="L160">            <span class="tok-kw">test</span> <span class="tok-str">&quot;extra content length&quot;</span> {</span>
-<span class="line" id="L161">                <span class="tok-kw">const</span> example =</span>
-<span class="line" id="L162">                    <span class="tok-str">&quot;HTTP/1.0 200 OK\r\n&quot;</span> ++</span>
-<span class="line" id="L163">                    <span class="tok-str">&quot;Content-Length: 220\r\n&quot;</span> ++</span>
-<span class="line" id="L164">                    <span class="tok-str">&quot;Content-Type: text/html; charset=UTF-8\r\n&quot;</span> ++</span>
-<span class="line" id="L165">                    <span class="tok-str">&quot;content-length: 220\r\n\r\n&quot;</span>;</span>
-<span class="line" id="L166">                <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L167">                    <span class="tok-kw">error</span>.HttpHeadersInvalid,</span>
-<span class="line" id="L168">                    Response.Headers.parse(example),</span>
-<span class="line" id="L169">                );</span>
-<span class="line" id="L170">            }</span>
-<span class="line" id="L171">        };</span>
-<span class="line" id="L172"></span>
-<span class="line" id="L173">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> State = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L174">            <span class="tok-comment">/// Begin header parsing states.</span></span>
-<span class="line" id="L175">            invalid,</span>
-<span class="line" id="L176">            start,</span>
-<span class="line" id="L177">            seen_r,</span>
-<span class="line" id="L178">            seen_rn,</span>
-<span class="line" id="L179">            seen_rnr,</span>
-<span class="line" id="L180">            finished,</span>
-<span class="line" id="L181">            <span class="tok-comment">/// Begin transfer-encoding: chunked parsing states.</span></span>
-<span class="line" id="L182">            chunk_size_prefix_r,</span>
-<span class="line" id="L183">            chunk_size_prefix_n,</span>
-<span class="line" id="L184">            chunk_size,</span>
-<span class="line" id="L185">            chunk_r,</span>
-<span class="line" id="L186">            chunk_data,</span>
-<span class="line" id="L187"></span>
-<span class="line" id="L188">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">zeroMeansEnd</span>(state: State) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L189">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (state) {</span>
-<span class="line" id="L190">                    .finished, .chunk_data =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L191">                    <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L192">                };</span>
-<span class="line" id="L193">            }</span>
-<span class="line" id="L194">        };</span>
+<span class="line" id="L105">        pool.free.append(node);</span>
+<span class="line" id="L106">        pool.free_len += <span class="tok-number">1</span>;</span>
+<span class="line" id="L107">    }</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109">    <span class="tok-comment">/// Adds a newly created node to the pool of used connections. This function is threadsafe.</span></span>
+<span class="line" id="L110">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addUsed</span>(pool: *ConnectionPool, node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L111">        pool.mutex.lock();</span>
+<span class="line" id="L112">        <span class="tok-kw">defer</span> pool.mutex.unlock();</span>
+<span class="line" id="L113"></span>
+<span class="line" id="L114">        pool.used.append(node);</span>
+<span class="line" id="L115">    }</span>
+<span class="line" id="L116"></span>
+<span class="line" id="L117">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(pool: *ConnectionPool, client: *Client) <span class="tok-type">void</span> {</span>
+<span class="line" id="L118">        pool.mutex.lock();</span>
+<span class="line" id="L119"></span>
+<span class="line" id="L120">        <span class="tok-kw">var</span> next = pool.free.first;</span>
+<span class="line" id="L121">        <span class="tok-kw">while</span> (next) |node| {</span>
+<span class="line" id="L122">            <span class="tok-kw">defer</span> client.allocator.destroy(node);</span>
+<span class="line" id="L123">            next = node.next;</span>
+<span class="line" id="L124"></span>
+<span class="line" id="L125">            node.data.close(client);</span>
+<span class="line" id="L126">        }</span>
+<span class="line" id="L127"></span>
+<span class="line" id="L128">        next = pool.used.first;</span>
+<span class="line" id="L129">        <span class="tok-kw">while</span> (next) |node| {</span>
+<span class="line" id="L130">            <span class="tok-kw">defer</span> client.allocator.destroy(node);</span>
+<span class="line" id="L131">            next = node.next;</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">            node.data.close(client);</span>
+<span class="line" id="L134">        }</span>
+<span class="line" id="L135"></span>
+<span class="line" id="L136">        pool.* = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L137">    }</span>
+<span class="line" id="L138">};</span>
+<span class="line" id="L139"></span>
+<span class="line" id="L140"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DeflateDecompressor = std.compress.zlib.ZlibStream(Request.ReaderRaw);</span>
+<span class="line" id="L141"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> GzipDecompressor = std.compress.gzip.Decompress(Request.ReaderRaw);</span>
+<span class="line" id="L142"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ZstdDecompressor = std.compress.zstd.DecompressStream(Request.ReaderRaw, .{});</span>
+<span class="line" id="L143"></span>
+<span class="line" id="L144"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Connection = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L145">    stream: net.Stream,</span>
+<span class="line" id="L146">    <span class="tok-comment">/// undefined unless protocol is tls.</span></span>
+<span class="line" id="L147">    tls_client: *std.crypto.tls.Client, <span class="tok-comment">// TODO: allocate this, it's currently 16 KB.</span>
+</span>
+<span class="line" id="L148">    protocol: Protocol,</span>
+<span class="line" id="L149">    host: []<span class="tok-type">u8</span>,</span>
+<span class="line" id="L150">    port: <span class="tok-type">u16</span>,</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">    <span class="tok-comment">// This connection has been part of a non keepalive request and cannot be added to the pool.</span>
+</span>
+<span class="line" id="L153">    closing: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L154"></span>
+<span class="line" id="L155">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Protocol = <span class="tok-kw">enum</span> { plain, tls };</span>
+<span class="line" id="L156"></span>
+<span class="line" id="L157">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(conn: *Connection, buffer: []<span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L158">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
+<span class="line" id="L159">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.read(buffer),</span>
+<span class="line" id="L160">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.read(conn.stream, buffer),</span>
+<span class="line" id="L161">        }</span>
+<span class="line" id="L162">    }</span>
+<span class="line" id="L163"></span>
+<span class="line" id="L164">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(conn: *Connection, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L165">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
+<span class="line" id="L166">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.readAtLeast(buffer, len),</span>
+<span class="line" id="L167">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.readAtLeast(conn.stream, buffer, len),</span>
+<span class="line" id="L168">        }</span>
+<span class="line" id="L169">    }</span>
+<span class="line" id="L170"></span>
+<span class="line" id="L171">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadError = net.Stream.ReadError || <span class="tok-kw">error</span>{</span>
+<span class="line" id="L172">        TlsConnectionTruncated,</span>
+<span class="line" id="L173">        TlsRecordOverflow,</span>
+<span class="line" id="L174">        TlsDecodeError,</span>
+<span class="line" id="L175">        TlsAlert,</span>
+<span class="line" id="L176">        TlsBadRecordMac,</span>
+<span class="line" id="L177">        Overflow,</span>
+<span class="line" id="L178">        TlsBadLength,</span>
+<span class="line" id="L179">        TlsIllegalParameter,</span>
+<span class="line" id="L180">        TlsUnexpectedMessage,</span>
+<span class="line" id="L181">    };</span>
+<span class="line" id="L182"></span>
+<span class="line" id="L183">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = std.io.Reader(*Connection, ReadError, read);</span>
+<span class="line" id="L184"></span>
+<span class="line" id="L185">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(conn: *Connection) Reader {</span>
+<span class="line" id="L186">        <span class="tok-kw">return</span> Reader{ .context = conn };</span>
+<span class="line" id="L187">    }</span>
+<span class="line" id="L188"></span>
+<span class="line" id="L189">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeAll</span>(conn: *Connection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L190">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
+<span class="line" id="L191">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.writeAll(buffer),</span>
+<span class="line" id="L192">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.writeAll(conn.stream, buffer),</span>
+<span class="line" id="L193">        }</span>
+<span class="line" id="L194">    }</span>
 <span class="line" id="L195"></span>
-<span class="line" id="L196">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initDynamic</span>(max: <span class="tok-type">usize</span>) Response {</span>
-<span class="line" id="L197">            <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L198">                .state = .start,</span>
-<span class="line" id="L199">                .headers = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L200">                .header_bytes = .{},</span>
-<span class="line" id="L201">                .max_header_bytes = max,</span>
-<span class="line" id="L202">                .header_bytes_owned = <span class="tok-null">true</span>,</span>
-<span class="line" id="L203">                .next_chunk_length = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L204">            };</span>
-<span class="line" id="L205">        }</span>
-<span class="line" id="L206"></span>
-<span class="line" id="L207">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initStatic</span>(buf: []<span class="tok-type">u8</span>) Response {</span>
-<span class="line" id="L208">            <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L209">                .state = .start,</span>
-<span class="line" id="L210">                .headers = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L211">                .header_bytes = .{ .items = buf[<span class="tok-number">0</span>..<span class="tok-number">0</span>], .capacity = buf.len },</span>
-<span class="line" id="L212">                .max_header_bytes = buf.len,</span>
-<span class="line" id="L213">                .header_bytes_owned = <span class="tok-null">false</span>,</span>
-<span class="line" id="L214">                .next_chunk_length = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L215">            };</span>
-<span class="line" id="L216">        }</span>
-<span class="line" id="L217"></span>
-<span class="line" id="L218">        <span class="tok-comment">/// Returns how many bytes are part of HTTP headers. Always less than or</span></span>
-<span class="line" id="L219">        <span class="tok-comment">/// equal to bytes.len. If the amount returned is less than bytes.len, it</span></span>
-<span class="line" id="L220">        <span class="tok-comment">/// means the headers ended and the first byte after the double \r\n\r\n is</span></span>
-<span class="line" id="L221">        <span class="tok-comment">/// located at `bytes[result]`.</span></span>
-<span class="line" id="L222">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">findHeadersEnd</span>(r: *Response, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L223">            <span class="tok-kw">var</span> index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L224"></span>
-<span class="line" id="L225">            <span class="tok-comment">// TODO: https://github.com/ziglang/zig/issues/8220</span>
+<span class="line" id="L196">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(conn: *Connection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L197">        <span class="tok-kw">switch</span> (conn.protocol) {</span>
+<span class="line" id="L198">            .plain =&gt; <span class="tok-kw">return</span> conn.stream.write(buffer),</span>
+<span class="line" id="L199">            .tls =&gt; <span class="tok-kw">return</span> conn.tls_client.write(conn.stream, buffer),</span>
+<span class="line" id="L200">        }</span>
+<span class="line" id="L201">    }</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = net.Stream.WriteError || <span class="tok-kw">error</span>{};</span>
+<span class="line" id="L204">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = std.io.Writer(*Connection, WriteError, write);</span>
+<span class="line" id="L205"></span>
+<span class="line" id="L206">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(conn: *Connection) Writer {</span>
+<span class="line" id="L207">        <span class="tok-kw">return</span> Writer{ .context = conn };</span>
+<span class="line" id="L208">    }</span>
+<span class="line" id="L209"></span>
+<span class="line" id="L210">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(conn: *Connection, client: *<span class="tok-kw">const</span> Client) <span class="tok-type">void</span> {</span>
+<span class="line" id="L211">        <span class="tok-kw">if</span> (conn.protocol == .tls) {</span>
+<span class="line" id="L212">            <span class="tok-comment">// try to cleanly close the TLS connection, for any server that cares.</span>
 </span>
-<span class="line" id="L226">            state: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L227">                <span class="tok-kw">switch</span> (r.state) {</span>
-<span class="line" id="L228">                    .invalid =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L229">                    .finished =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L230">                    .start =&gt; <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L231">                        <span class="tok-kw">switch</span> (bytes.len - index) {</span>
-<span class="line" id="L232">                            <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> index,</span>
-<span class="line" id="L233">                            <span class="tok-number">1</span> =&gt; {</span>
-<span class="line" id="L234">                                <span class="tok-kw">if</span> (bytes[index] == <span class="tok-str">'\r'</span>)</span>
-<span class="line" id="L235">                                    r.state = .seen_r;</span>
-<span class="line" id="L236">                                <span class="tok-kw">return</span> index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L237">                            },</span>
-<span class="line" id="L238">                            <span class="tok-number">2</span> =&gt; {</span>
-<span class="line" id="L239">                                <span class="tok-kw">if</span> (int16(bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\r\n&quot;</span>)) {</span>
-<span class="line" id="L240">                                    r.state = .seen_rn;</span>
-<span class="line" id="L241">                                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (bytes[index + <span class="tok-number">1</span>] == <span class="tok-str">'\r'</span>) {</span>
-<span class="line" id="L242">                                    r.state = .seen_r;</span>
-<span class="line" id="L243">                                }</span>
-<span class="line" id="L244">                                <span class="tok-kw">return</span> index + <span class="tok-number">2</span>;</span>
-<span class="line" id="L245">                            },</span>
-<span class="line" id="L246">                            <span class="tok-number">3</span> =&gt; {</span>
-<span class="line" id="L247">                                <span class="tok-kw">if</span> (int16(bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\r\n&quot;</span>) <span class="tok-kw">and</span></span>
-<span class="line" id="L248">                                    bytes[index + <span class="tok-number">2</span>] == <span class="tok-str">'\r'</span>)</span>
-<span class="line" id="L249">                                {</span>
-<span class="line" id="L250">                                    r.state = .seen_rnr;</span>
-<span class="line" id="L251">                                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (int16(bytes[index + <span class="tok-number">1</span> ..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\r\n&quot;</span>)) {</span>
-<span class="line" id="L252">                                    r.state = .seen_rn;</span>
-<span class="line" id="L253">                                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (bytes[index + <span class="tok-number">2</span>] == <span class="tok-str">'\r'</span>) {</span>
-<span class="line" id="L254">                                    r.state = .seen_r;</span>
-<span class="line" id="L255">                                }</span>
-<span class="line" id="L256">                                <span class="tok-kw">return</span> index + <span class="tok-number">3</span>;</span>
-<span class="line" id="L257">                            },</span>
-<span class="line" id="L258">                            <span class="tok-number">4</span>...<span class="tok-number">15</span> =&gt; {</span>
-<span class="line" id="L259">                                <span class="tok-kw">if</span> (int32(bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">4</span>]) == int32(<span class="tok-str">&quot;\r\n\r\n&quot;</span>)) {</span>
-<span class="line" id="L260">                                    r.state = .finished;</span>
-<span class="line" id="L261">                                    <span class="tok-kw">return</span> index + <span class="tok-number">4</span>;</span>
-<span class="line" id="L262">                                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (int16(bytes[index + <span class="tok-number">1</span> ..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\r\n&quot;</span>) <span class="tok-kw">and</span></span>
-<span class="line" id="L263">                                    bytes[index + <span class="tok-number">3</span>] == <span class="tok-str">'\r'</span>)</span>
-<span class="line" id="L264">                                {</span>
-<span class="line" id="L265">                                    r.state = .seen_rnr;</span>
-<span class="line" id="L266">                                    index += <span class="tok-number">4</span>;</span>
-<span class="line" id="L267">                                    <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L268">                                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (int16(bytes[index + <span class="tok-number">2</span> ..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\r\n&quot;</span>)) {</span>
-<span class="line" id="L269">                                    r.state = .seen_rn;</span>
-<span class="line" id="L270">                                    index += <span class="tok-number">4</span>;</span>
-<span class="line" id="L271">                                    <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L272">                                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (bytes[index + <span class="tok-number">3</span>] == <span class="tok-str">'\r'</span>) {</span>
-<span class="line" id="L273">                                    r.state = .seen_r;</span>
-<span class="line" id="L274">                                    index += <span class="tok-number">4</span>;</span>
-<span class="line" id="L275">                                    <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L276">                                }</span>
-<span class="line" id="L277">                                index += <span class="tok-number">4</span>;</span>
-<span class="line" id="L278">                                <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L279">                            },</span>
-<span class="line" id="L280">                            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L281">                                <span class="tok-kw">const</span> chunk = bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">16</span>];</span>
-<span class="line" id="L282">                                <span class="tok-kw">const</span> v: <span class="tok-builtin">@Vector</span>(<span class="tok-number">16</span>, <span class="tok-type">u8</span>) = chunk.*;</span>
-<span class="line" id="L283">                                <span class="tok-kw">const</span> matches_r = v == <span class="tok-builtin">@splat</span>(<span class="tok-number">16</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-str">'\r'</span>));</span>
-<span class="line" id="L284">                                <span class="tok-kw">const</span> iota = std.simd.iota(<span class="tok-type">u8</span>, <span class="tok-number">16</span>);</span>
-<span class="line" id="L285">                                <span class="tok-kw">const</span> default = <span class="tok-builtin">@splat</span>(<span class="tok-number">16</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">16</span>));</span>
-<span class="line" id="L286">                                <span class="tok-kw">const</span> sub_index = <span class="tok-builtin">@reduce</span>(.Min, <span class="tok-builtin">@select</span>(<span class="tok-type">u8</span>, matches_r, iota, default));</span>
-<span class="line" id="L287">                                <span class="tok-kw">switch</span> (sub_index) {</span>
-<span class="line" id="L288">                                    <span class="tok-number">0</span>...<span class="tok-number">12</span> =&gt; {</span>
-<span class="line" id="L289">                                        index += sub_index + <span class="tok-number">4</span>;</span>
-<span class="line" id="L290">                                        <span class="tok-kw">if</span> (int32(chunk[sub_index..][<span class="tok-number">0</span>..<span class="tok-number">4</span>]) == int32(<span class="tok-str">&quot;\r\n\r\n&quot;</span>)) {</span>
-<span class="line" id="L291">                                            r.state = .finished;</span>
-<span class="line" id="L292">                                            <span class="tok-kw">return</span> index;</span>
-<span class="line" id="L293">                                        }</span>
-<span class="line" id="L294">                                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L295">                                    },</span>
-<span class="line" id="L296">                                    <span class="tok-number">13</span> =&gt; {</span>
-<span class="line" id="L297">                                        index += <span class="tok-number">16</span>;</span>
-<span class="line" id="L298">                                        <span class="tok-kw">if</span> (int16(chunk[<span class="tok-number">14</span>..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\n\r&quot;</span>)) {</span>
-<span class="line" id="L299">                                            r.state = .seen_rnr;</span>
-<span class="line" id="L300">                                            <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L301">                                        }</span>
-<span class="line" id="L302">                                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L303">                                    },</span>
-<span class="line" id="L304">                                    <span class="tok-number">14</span> =&gt; {</span>
-<span class="line" id="L305">                                        index += <span class="tok-number">16</span>;</span>
-<span class="line" id="L306">                                        <span class="tok-kw">if</span> (chunk[<span class="tok-number">15</span>] == <span class="tok-str">'\n'</span>) {</span>
-<span class="line" id="L307">                                            r.state = .seen_rn;</span>
-<span class="line" id="L308">                                            <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L309">                                        }</span>
-<span class="line" id="L310">                                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L311">                                    },</span>
-<span class="line" id="L312">                                    <span class="tok-number">15</span> =&gt; {</span>
-<span class="line" id="L313">                                        r.state = .seen_r;</span>
-<span class="line" id="L314">                                        index += <span class="tok-number">16</span>;</span>
-<span class="line" id="L315">                                        <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L316">                                    },</span>
-<span class="line" id="L317">                                    <span class="tok-number">16</span> =&gt; {</span>
-<span class="line" id="L318">                                        index += <span class="tok-number">16</span>;</span>
-<span class="line" id="L319">                                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L320">                                    },</span>
-<span class="line" id="L321">                                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L322">                                }</span>
-<span class="line" id="L323">                            },</span>
-<span class="line" id="L324">                        }</span>
-<span class="line" id="L325">                    },</span>
-<span class="line" id="L326"></span>
-<span class="line" id="L327">                    .seen_r =&gt; <span class="tok-kw">switch</span> (bytes.len - index) {</span>
-<span class="line" id="L328">                        <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> index,</span>
-<span class="line" id="L329">                        <span class="tok-number">1</span> =&gt; {</span>
-<span class="line" id="L330">                            <span class="tok-kw">switch</span> (bytes[index]) {</span>
-<span class="line" id="L331">                                <span class="tok-str">'\n'</span> =&gt; r.state = .seen_rn,</span>
-<span class="line" id="L332">                                <span class="tok-str">'\r'</span> =&gt; r.state = .seen_r,</span>
-<span class="line" id="L333">                                <span class="tok-kw">else</span> =&gt; r.state = .start,</span>
-<span class="line" id="L334">                            }</span>
-<span class="line" id="L335">                            <span class="tok-kw">return</span> index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L336">                        },</span>
-<span class="line" id="L337">                        <span class="tok-number">2</span> =&gt; {</span>
-<span class="line" id="L338">                            <span class="tok-kw">if</span> (int16(bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\n\r&quot;</span>)) {</span>
-<span class="line" id="L339">                                r.state = .seen_rnr;</span>
-<span class="line" id="L340">                                <span class="tok-kw">return</span> index + <span class="tok-number">2</span>;</span>
-<span class="line" id="L341">                            }</span>
-<span class="line" id="L342">                            r.state = .start;</span>
-<span class="line" id="L343">                            <span class="tok-kw">return</span> index + <span class="tok-number">2</span>;</span>
-<span class="line" id="L344">                        },</span>
-<span class="line" id="L345">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L346">                            <span class="tok-kw">if</span> (int16(bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\n\r&quot;</span>) <span class="tok-kw">and</span></span>
-<span class="line" id="L347">                                bytes[index + <span class="tok-number">2</span>] == <span class="tok-str">'\n'</span>)</span>
-<span class="line" id="L348">                            {</span>
-<span class="line" id="L349">                                r.state = .finished;</span>
-<span class="line" id="L350">                                <span class="tok-kw">return</span> index + <span class="tok-number">3</span>;</span>
-<span class="line" id="L351">                            }</span>
-<span class="line" id="L352">                            index += <span class="tok-number">3</span>;</span>
-<span class="line" id="L353">                            r.state = .start;</span>
-<span class="line" id="L354">                            <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L355">                        },</span>
-<span class="line" id="L356">                    },</span>
-<span class="line" id="L357">                    .seen_rn =&gt; <span class="tok-kw">switch</span> (bytes.len - index) {</span>
-<span class="line" id="L358">                        <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> index,</span>
-<span class="line" id="L359">                        <span class="tok-number">1</span> =&gt; {</span>
-<span class="line" id="L360">                            <span class="tok-kw">switch</span> (bytes[index]) {</span>
-<span class="line" id="L361">                                <span class="tok-str">'\r'</span> =&gt; r.state = .seen_rnr,</span>
-<span class="line" id="L362">                                <span class="tok-kw">else</span> =&gt; r.state = .start,</span>
-<span class="line" id="L363">                            }</span>
-<span class="line" id="L364">                            <span class="tok-kw">return</span> index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L365">                        },</span>
-<span class="line" id="L366">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L367">                            <span class="tok-kw">if</span> (int16(bytes[index..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]) == int16(<span class="tok-str">&quot;\r\n&quot;</span>)) {</span>
-<span class="line" id="L368">                                r.state = .finished;</span>
-<span class="line" id="L369">                                <span class="tok-kw">return</span> index + <span class="tok-number">2</span>;</span>
-<span class="line" id="L370">                            }</span>
-<span class="line" id="L371">                            index += <span class="tok-number">2</span>;</span>
-<span class="line" id="L372">                            r.state = .start;</span>
-<span class="line" id="L373">                            <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L374">                        },</span>
-<span class="line" id="L375">                    },</span>
-<span class="line" id="L376">                    .seen_rnr =&gt; <span class="tok-kw">switch</span> (bytes.len - index) {</span>
-<span class="line" id="L377">                        <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> index,</span>
-<span class="line" id="L378">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L379">                            <span class="tok-kw">if</span> (bytes[index] == <span class="tok-str">'\n'</span>) {</span>
-<span class="line" id="L380">                                r.state = .finished;</span>
-<span class="line" id="L381">                                <span class="tok-kw">return</span> index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L382">                            }</span>
-<span class="line" id="L383">                            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L384">                            r.state = .start;</span>
-<span class="line" id="L385">                            <span class="tok-kw">continue</span> :state;</span>
-<span class="line" id="L386">                        },</span>
-<span class="line" id="L387">                    },</span>
-<span class="line" id="L388">                    .chunk_size_prefix_r =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L389">                    .chunk_size_prefix_n =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L390">                    .chunk_size =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L391">                    .chunk_r =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L392">                    .chunk_data =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L393">                }</span>
-<span class="line" id="L394"></span>
-<span class="line" id="L395">                <span class="tok-kw">return</span> index;</span>
-<span class="line" id="L396">            }</span>
-<span class="line" id="L397">        }</span>
-<span class="line" id="L398"></span>
-<span class="line" id="L399">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">findChunkedLen</span>(r: *Response, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L400">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L401">            <span class="tok-kw">if</span> (r.state == .chunk_size) {</span>
-<span class="line" id="L402">                <span class="tok-kw">while</span> (i &lt; bytes.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L403">                    <span class="tok-kw">const</span> digit = <span class="tok-kw">switch</span> (bytes[i]) {</span>
-<span class="line" id="L404">                        <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; |b| b - <span class="tok-str">'0'</span>,</span>
-<span class="line" id="L405">                        <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span> =&gt; |b| b - <span class="tok-str">'A'</span> + <span class="tok-number">10</span>,</span>
-<span class="line" id="L406">                        <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span> =&gt; |b| b - <span class="tok-str">'a'</span> + <span class="tok-number">10</span>,</span>
-<span class="line" id="L407">                        <span class="tok-str">'\r'</span> =&gt; {</span>
-<span class="line" id="L408">                            r.state = .chunk_r;</span>
-<span class="line" id="L409">                            i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L410">                            <span class="tok-kw">break</span>;</span>
-<span class="line" id="L411">                        },</span>
-<span class="line" id="L412">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L413">                            r.state = .invalid;</span>
-<span class="line" id="L414">                            <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L415">                        },</span>
-<span class="line" id="L416">                    };</span>
-<span class="line" id="L417">                    <span class="tok-kw">const</span> mul = <span class="tok-builtin">@mulWithOverflow</span>(r.next_chunk_length, <span class="tok-number">16</span>);</span>
-<span class="line" id="L418">                    <span class="tok-kw">if</span> (mul[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L419">                        r.state = .invalid;</span>
-<span class="line" id="L420">                        <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L421">                    }</span>
-<span class="line" id="L422">                    <span class="tok-kw">const</span> add = <span class="tok-builtin">@addWithOverflow</span>(mul[<span class="tok-number">0</span>], digit);</span>
-<span class="line" id="L423">                    <span class="tok-kw">if</span> (add[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L424">                        r.state = .invalid;</span>
-<span class="line" id="L425">                        <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L426">                    }</span>
-<span class="line" id="L427">                    r.next_chunk_length = add[<span class="tok-number">0</span>];</span>
-<span class="line" id="L428">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L429">                    <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L430">                }</span>
-<span class="line" id="L431">            }</span>
-<span class="line" id="L432">            assert(r.state == .chunk_r);</span>
-<span class="line" id="L433">            <span class="tok-kw">if</span> (i == bytes.len) <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L434"></span>
-<span class="line" id="L435">            <span class="tok-kw">if</span> (bytes[i] == <span class="tok-str">'\n'</span>) {</span>
-<span class="line" id="L436">                r.state = .chunk_data;</span>
-<span class="line" id="L437">                <span class="tok-kw">return</span> i + <span class="tok-number">1</span>;</span>
-<span class="line" id="L438">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L439">                r.state = .invalid;</span>
-<span class="line" id="L440">                <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L441">            }</span>
-<span class="line" id="L442">        }</span>
-<span class="line" id="L443"></span>
-<span class="line" id="L444">        <span class="tok-kw">fn</span> <span class="tok-fn">parseInt3</span>(nnn: <span class="tok-builtin">@Vector</span>(<span class="tok-number">3</span>, <span class="tok-type">u8</span>)) <span class="tok-type">u10</span> {</span>
-<span class="line" id="L445">            <span class="tok-kw">const</span> zero: <span class="tok-builtin">@Vector</span>(<span class="tok-number">3</span>, <span class="tok-type">u8</span>) = .{ <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span> };</span>
-<span class="line" id="L446">            <span class="tok-kw">const</span> mmm: <span class="tok-builtin">@Vector</span>(<span class="tok-number">3</span>, <span class="tok-type">u10</span>) = .{ <span class="tok-number">100</span>, <span class="tok-number">10</span>, <span class="tok-number">1</span> };</span>
-<span class="line" id="L447">            <span class="tok-kw">return</span> <span class="tok-builtin">@reduce</span>(.Add, <span class="tok-builtin">@as</span>(<span class="tok-builtin">@Vector</span>(<span class="tok-number">3</span>, <span class="tok-type">u10</span>), nnn -% zero) *% mmm);</span>
-<span class="line" id="L448">        }</span>
-<span class="line" id="L449"></span>
-<span class="line" id="L450">        <span class="tok-kw">test</span> parseInt3 {</span>
-<span class="line" id="L451">            <span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
-<span class="line" id="L452">            <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u10</span>, <span class="tok-number">0</span>), parseInt3(<span class="tok-str">&quot;000&quot;</span>.*));</span>
-<span class="line" id="L453">            <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u10</span>, <span class="tok-number">418</span>), parseInt3(<span class="tok-str">&quot;418&quot;</span>.*));</span>
-<span class="line" id="L454">            <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u10</span>, <span class="tok-number">999</span>), parseInt3(<span class="tok-str">&quot;999&quot;</span>.*));</span>
-<span class="line" id="L455">        }</span>
-<span class="line" id="L456"></span>
-<span class="line" id="L457">        <span class="tok-kw">test</span> <span class="tok-str">&quot;find headers end basic&quot;</span> {</span>
-<span class="line" id="L458">            <span class="tok-kw">var</span> buffer: [<span class="tok-number">1</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L459">            <span class="tok-kw">var</span> r = Response.initStatic(&amp;buffer);</span>
-<span class="line" id="L460">            <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), r.findHeadersEnd(<span class="tok-str">&quot;HTTP/1.1 4&quot;</span>));</span>
-<span class="line" id="L461">            <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), r.findHeadersEnd(<span class="tok-str">&quot;18&quot;</span>));</span>
-<span class="line" id="L462">            <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">8</span>), r.findHeadersEnd(<span class="tok-str">&quot; lol\r\n\r\nblah blah&quot;</span>));</span>
-<span class="line" id="L463">        }</span>
-<span class="line" id="L464"></span>
-<span class="line" id="L465">        <span class="tok-kw">test</span> <span class="tok-str">&quot;find headers end vectorized&quot;</span> {</span>
-<span class="line" id="L466">            <span class="tok-kw">var</span> buffer: [<span class="tok-number">1</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L467">            <span class="tok-kw">var</span> r = Response.initStatic(&amp;buffer);</span>
-<span class="line" id="L468">            <span class="tok-kw">const</span> example =</span>
-<span class="line" id="L469">                <span class="tok-str">&quot;HTTP/1.1 301 Moved Permanently\r\n&quot;</span> ++</span>
-<span class="line" id="L470">                <span class="tok-str">&quot;Location: https://www.example.com/\r\n&quot;</span> ++</span>
-<span class="line" id="L471">                <span class="tok-str">&quot;Content-Type: text/html; charset=UTF-8\r\n&quot;</span> ++</span>
-<span class="line" id="L472">                <span class="tok-str">&quot;Content-Length: 220\r\n&quot;</span> ++</span>
-<span class="line" id="L473">                <span class="tok-str">&quot;\r\ncontent&quot;</span>;</span>
-<span class="line" id="L474">            <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">131</span>), r.findHeadersEnd(example));</span>
-<span class="line" id="L475">        }</span>
-<span class="line" id="L476"></span>
-<span class="line" id="L477">        <span class="tok-kw">test</span> <span class="tok-str">&quot;find headers end bug&quot;</span> {</span>
-<span class="line" id="L478">            <span class="tok-kw">var</span> buffer: [<span class="tok-number">1</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L479">            <span class="tok-kw">var</span> r = Response.initStatic(&amp;buffer);</span>
-<span class="line" id="L480">            <span class="tok-kw">const</span> trail = <span class="tok-str">&quot;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span>;</span>
-<span class="line" id="L481">            <span class="tok-kw">const</span> example =</span>
-<span class="line" id="L482">                <span class="tok-str">&quot;HTTP/1.1 200 OK\r\n&quot;</span> ++</span>
-<span class="line" id="L483">                <span class="tok-str">&quot;Access-Control-Allow-Origin: https://render.githubusercontent.com\r\n&quot;</span> ++</span>
-<span class="line" id="L484">                <span class="tok-str">&quot;content-disposition: attachment; filename=zig-0.10.0.tar.gz\r\n&quot;</span> ++</span>
-<span class="line" id="L485">                <span class="tok-str">&quot;Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox\r\n&quot;</span> ++</span>
-<span class="line" id="L486">                <span class="tok-str">&quot;Content-Type: application/x-gzip\r\n&quot;</span> ++</span>
-<span class="line" id="L487">                <span class="tok-str">&quot;ETag: \&quot;bfae0af6b01c7c0d89eb667cb5f0e65265968aeebda2689177e6b26acd3155ca\&quot;\r\n&quot;</span> ++</span>
-<span class="line" id="L488">                <span class="tok-str">&quot;Strict-Transport-Security: max-age=31536000\r\n&quot;</span> ++</span>
-<span class="line" id="L489">                <span class="tok-str">&quot;Vary: Authorization,Accept-Encoding,Origin\r\n&quot;</span> ++</span>
-<span class="line" id="L490">                <span class="tok-str">&quot;X-Content-Type-Options: nosniff\r\n&quot;</span> ++</span>
-<span class="line" id="L491">                <span class="tok-str">&quot;X-Frame-Options: deny\r\n&quot;</span> ++</span>
-<span class="line" id="L492">                <span class="tok-str">&quot;X-XSS-Protection: 1; mode=block\r\n&quot;</span> ++</span>
-<span class="line" id="L493">                <span class="tok-str">&quot;Date: Fri, 06 Jan 2023 22:26:22 GMT\r\n&quot;</span> ++</span>
-<span class="line" id="L494">                <span class="tok-str">&quot;Transfer-Encoding: chunked\r\n&quot;</span> ++</span>
-<span class="line" id="L495">                <span class="tok-str">&quot;X-GitHub-Request-Id: 89C6:17E9:A7C9E:124B51:63B8A00E\r\n&quot;</span> ++</span>
-<span class="line" id="L496">                <span class="tok-str">&quot;connection: close\r\n\r\n&quot;</span> ++ trail;</span>
-<span class="line" id="L497">            <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, example.len - trail.len), r.findHeadersEnd(example));</span>
-<span class="line" id="L498">        }</span>
-<span class="line" id="L499">    };</span>
-<span class="line" id="L500"></span>
-<span class="line" id="L501">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Headers = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L502">        version: http.Version = .@&quot;HTTP/1.1&quot;,</span>
-<span class="line" id="L503">        method: http.Method = .GET,</span>
-<span class="line" id="L504">    };</span>
-<span class="line" id="L505"></span>
-<span class="line" id="L506">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L507">        max_redirects: <span class="tok-type">u32</span> = <span class="tok-number">3</span>,</span>
-<span class="line" id="L508">        header_strategy: HeaderStrategy = .{ .dynamic = <span class="tok-number">16</span> * <span class="tok-number">1024</span> },</span>
-<span class="line" id="L509"></span>
-<span class="line" id="L510">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> HeaderStrategy = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L511">            <span class="tok-comment">/// In this case, the client's Allocator will be used to store the</span></span>
-<span class="line" id="L512">            <span class="tok-comment">/// entire HTTP header. This value is the maximum total size of</span></span>
-<span class="line" id="L513">            <span class="tok-comment">/// HTTP headers allowed, otherwise</span></span>
-<span class="line" id="L514">            <span class="tok-comment">/// error.HttpHeadersExceededSizeLimit is returned from read().</span></span>
-<span class="line" id="L515">            dynamic: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L516">            <span class="tok-comment">/// This is used to store the entire HTTP header. If the HTTP</span></span>
-<span class="line" id="L517">            <span class="tok-comment">/// header is too big to fit, `error.HttpHeadersExceededSizeLimit`</span></span>
-<span class="line" id="L518">            <span class="tok-comment">/// is returned from read(). When this is used, `error.OutOfMemory`</span></span>
-<span class="line" id="L519">            <span class="tok-comment">/// cannot be returned from `read()`.</span></span>
-<span class="line" id="L520">            static: []<span class="tok-type">u8</span>,</span>
-<span class="line" id="L521">        };</span>
-<span class="line" id="L522">    };</span>
-<span class="line" id="L523"></span>
-<span class="line" id="L524">    <span class="tok-comment">/// May be skipped if header strategy is buffer.</span></span>
-<span class="line" id="L525">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(req: *Request) <span class="tok-type">void</span> {</span>
-<span class="line" id="L526">        <span class="tok-kw">if</span> (req.response.header_bytes_owned) {</span>
-<span class="line" id="L527">            req.response.header_bytes.deinit(req.client.allocator);</span>
-<span class="line" id="L528">        }</span>
-<span class="line" id="L529">        req.* = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L530">    }</span>
-<span class="line" id="L531"></span>
-<span class="line" id="L532">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = std.io.Reader(*Request, ReadError, read);</span>
-<span class="line" id="L533"></span>
-<span class="line" id="L534">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(req: *Request) Reader {</span>
-<span class="line" id="L535">        <span class="tok-kw">return</span> .{ .context = req };</span>
-<span class="line" id="L536">    }</span>
-<span class="line" id="L537"></span>
-<span class="line" id="L538">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAll</span>(req: *Request, buffer: []<span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L539">        <span class="tok-kw">return</span> readAtLeast(req, buffer, buffer.len);</span>
-<span class="line" id="L540">    }</span>
-<span class="line" id="L541"></span>
-<span class="line" id="L542">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadError = net.Stream.ReadError || <span class="tok-kw">error</span>{</span>
-<span class="line" id="L543">        <span class="tok-comment">// From HTTP protocol</span>
+<span class="line" id="L213">            _ = conn.tls_client.writeEnd(conn.stream, <span class="tok-str">&quot;&quot;</span>, <span class="tok-null">true</span>) <span class="tok-kw">catch</span> {};</span>
+<span class="line" id="L214">            client.allocator.destroy(conn.tls_client);</span>
+<span class="line" id="L215">        }</span>
+<span class="line" id="L216"></span>
+<span class="line" id="L217">        conn.stream.close();</span>
+<span class="line" id="L218"></span>
+<span class="line" id="L219">        client.allocator.free(conn.host);</span>
+<span class="line" id="L220">    }</span>
+<span class="line" id="L221">};</span>
+<span class="line" id="L222"></span>
+<span class="line" id="L223"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(client: *Client) <span class="tok-type">void</span> {</span>
+<span class="line" id="L224">    client.connection_pool.deinit(client);</span>
+<span class="line" id="L225"></span>
+<span class="line" id="L226">    client.ca_bundle.deinit(client.allocator);</span>
+<span class="line" id="L227">    client.* = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L228">}</span>
+<span class="line" id="L229"></span>
+<span class="line" id="L230"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ConnectError = std.mem.Allocator.Error || net.TcpConnectToHostError || std.crypto.tls.Client.InitError(net.Stream);</span>
+<span class="line" id="L231"></span>
+<span class="line" id="L232"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">connect</span>(client: *Client, host: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, port: <span class="tok-type">u16</span>, protocol: Connection.Protocol) ConnectError!*ConnectionPool.Node {</span>
+<span class="line" id="L233">    <span class="tok-kw">if</span> (client.connection_pool.findConnection(.{</span>
+<span class="line" id="L234">        .host = host,</span>
+<span class="line" id="L235">        .port = port,</span>
+<span class="line" id="L236">        .is_tls = protocol == .tls,</span>
+<span class="line" id="L237">    })) |node|</span>
+<span class="line" id="L238">        <span class="tok-kw">return</span> node;</span>
+<span class="line" id="L239"></span>
+<span class="line" id="L240">    <span class="tok-kw">const</span> conn = <span class="tok-kw">try</span> client.allocator.create(ConnectionPool.Node);</span>
+<span class="line" id="L241">    <span class="tok-kw">errdefer</span> client.allocator.destroy(conn);</span>
+<span class="line" id="L242">    conn.* = .{ .data = <span class="tok-null">undefined</span> };</span>
+<span class="line" id="L243"></span>
+<span class="line" id="L244">    conn.data = .{</span>
+<span class="line" id="L245">        .stream = <span class="tok-kw">try</span> net.tcpConnectToHost(client.allocator, host, port),</span>
+<span class="line" id="L246">        .tls_client = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L247">        .protocol = protocol,</span>
+<span class="line" id="L248">        .host = <span class="tok-kw">try</span> client.allocator.dupe(<span class="tok-type">u8</span>, host),</span>
+<span class="line" id="L249">        .port = port,</span>
+<span class="line" id="L250">    };</span>
+<span class="line" id="L251"></span>
+<span class="line" id="L252">    <span class="tok-kw">switch</span> (protocol) {</span>
+<span class="line" id="L253">        .plain =&gt; {},</span>
+<span class="line" id="L254">        .tls =&gt; {</span>
+<span class="line" id="L255">            conn.data.tls_client = <span class="tok-kw">try</span> client.allocator.create(std.crypto.tls.Client);</span>
+<span class="line" id="L256">            conn.data.tls_client.* = <span class="tok-kw">try</span> std.crypto.tls.Client.init(conn.data.stream, client.ca_bundle, host);</span>
+<span class="line" id="L257">            <span class="tok-comment">// This is appropriate for HTTPS because the HTTP headers contain</span>
 </span>
-<span class="line" id="L544">        HttpHeadersInvalid,</span>
-<span class="line" id="L545">        HttpHeadersExceededSizeLimit,</span>
-<span class="line" id="L546">        HttpRedirectMissingLocation,</span>
-<span class="line" id="L547">        HttpTransferEncodingUnsupported,</span>
-<span class="line" id="L548">        HttpContentLengthUnknown,</span>
-<span class="line" id="L549">        TooManyHttpRedirects,</span>
-<span class="line" id="L550">        ShortHttpStatusLine,</span>
-<span class="line" id="L551">        BadHttpVersion,</span>
-<span class="line" id="L552">        HttpHeaderContinuationsUnsupported,</span>
-<span class="line" id="L553">        UnsupportedUrlScheme,</span>
-<span class="line" id="L554">        UriMissingHost,</span>
-<span class="line" id="L555">        UnknownHostName,</span>
-<span class="line" id="L556"></span>
-<span class="line" id="L557">        <span class="tok-comment">// Network problems</span>
+<span class="line" id="L258">            <span class="tok-comment">// the content length which is used to detect truncation attacks.</span>
 </span>
-<span class="line" id="L558">        NetworkUnreachable,</span>
-<span class="line" id="L559">        HostLacksNetworkAddresses,</span>
-<span class="line" id="L560">        TemporaryNameServerFailure,</span>
-<span class="line" id="L561">        NameServerFailure,</span>
-<span class="line" id="L562">        ProtocolFamilyNotAvailable,</span>
-<span class="line" id="L563">        ProtocolNotSupported,</span>
-<span class="line" id="L564"></span>
-<span class="line" id="L565">        <span class="tok-comment">// System resource problems</span>
+<span class="line" id="L259">            conn.data.tls_client.allow_truncation_attacks = <span class="tok-null">true</span>;</span>
+<span class="line" id="L260">        },</span>
+<span class="line" id="L261">    }</span>
+<span class="line" id="L262"></span>
+<span class="line" id="L263">    client.connection_pool.addUsed(conn);</span>
+<span class="line" id="L264"></span>
+<span class="line" id="L265">    <span class="tok-kw">return</span> conn;</span>
+<span class="line" id="L266">}</span>
+<span class="line" id="L267"></span>
+<span class="line" id="L268"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> RequestError = ConnectError || Connection.WriteError || <span class="tok-kw">error</span>{</span>
+<span class="line" id="L269">    UnsupportedUrlScheme,</span>
+<span class="line" id="L270">    UriMissingHost,</span>
+<span class="line" id="L271"></span>
+<span class="line" id="L272">    CertificateAuthorityBundleTooBig,</span>
+<span class="line" id="L273">    InvalidPadding,</span>
+<span class="line" id="L274">    MissingEndCertificateMarker,</span>
+<span class="line" id="L275">    Unseekable,</span>
+<span class="line" id="L276">    EndOfStream,</span>
+<span class="line" id="L277">};</span>
+<span class="line" id="L278"></span>
+<span class="line" id="L279"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">request</span>(client: *Client, uri: Uri, headers: Request.Headers, options: Request.Options) RequestError!Request {</span>
+<span class="line" id="L280">    <span class="tok-kw">const</span> protocol: Connection.Protocol = <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, uri.scheme, <span class="tok-str">&quot;http&quot;</span>))</span>
+<span class="line" id="L281">        .plain</span>
+<span class="line" id="L282">    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, uri.scheme, <span class="tok-str">&quot;https&quot;</span>))</span>
+<span class="line" id="L283">        .tls</span>
+<span class="line" id="L284">    <span class="tok-kw">else</span></span>
+<span class="line" id="L285">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnsupportedUrlScheme;</span>
+<span class="line" id="L286"></span>
+<span class="line" id="L287">    <span class="tok-kw">const</span> port: <span class="tok-type">u16</span> = uri.port <span class="tok-kw">orelse</span> <span class="tok-kw">switch</span> (protocol) {</span>
+<span class="line" id="L288">        .plain =&gt; <span class="tok-number">80</span>,</span>
+<span class="line" id="L289">        .tls =&gt; <span class="tok-number">443</span>,</span>
+<span class="line" id="L290">    };</span>
+<span class="line" id="L291"></span>
+<span class="line" id="L292">    <span class="tok-kw">const</span> host = uri.host <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UriMissingHost;</span>
+<span class="line" id="L293"></span>
+<span class="line" id="L294">    <span class="tok-kw">if</span> (client.next_https_rescan_certs <span class="tok-kw">and</span> protocol == .tls) {</span>
+<span class="line" id="L295">        client.connection_pool.mutex.lock(); <span class="tok-comment">// TODO: this could be so much better than reusing the connection pool mutex.</span>
 </span>
-<span class="line" id="L566">        ProcessFdQuotaExceeded,</span>
-<span class="line" id="L567">        SystemFdQuotaExceeded,</span>
-<span class="line" id="L568">        OutOfMemory,</span>
-<span class="line" id="L569"></span>
-<span class="line" id="L570">        <span class="tok-comment">// TLS problems</span>
+<span class="line" id="L296">        <span class="tok-kw">defer</span> client.connection_pool.mutex.unlock();</span>
+<span class="line" id="L297"></span>
+<span class="line" id="L298">        <span class="tok-kw">if</span> (client.next_https_rescan_certs) {</span>
+<span class="line" id="L299">            <span class="tok-kw">try</span> client.ca_bundle.rescan(client.allocator);</span>
+<span class="line" id="L300">            client.next_https_rescan_certs = <span class="tok-null">false</span>;</span>
+<span class="line" id="L301">        }</span>
+<span class="line" id="L302">    }</span>
+<span class="line" id="L303"></span>
+<span class="line" id="L304">    <span class="tok-kw">var</span> req: Request = .{</span>
+<span class="line" id="L305">        .uri = uri,</span>
+<span class="line" id="L306">        .client = client,</span>
+<span class="line" id="L307">        .headers = headers,</span>
+<span class="line" id="L308">        .connection = <span class="tok-kw">try</span> client.connect(host, port, protocol),</span>
+<span class="line" id="L309">        .redirects_left = options.max_redirects,</span>
+<span class="line" id="L310">        .handle_redirects = options.handle_redirects,</span>
+<span class="line" id="L311">        .compression_init = <span class="tok-null">false</span>,</span>
+<span class="line" id="L312">        .response = <span class="tok-kw">switch</span> (options.header_strategy) {</span>
+<span class="line" id="L313">            .dynamic =&gt; |max| Response.initDynamic(max),</span>
+<span class="line" id="L314">            .static =&gt; |buf| Response.initStatic(buf),</span>
+<span class="line" id="L315">        },</span>
+<span class="line" id="L316">        .arena = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L317">    };</span>
+<span class="line" id="L318"></span>
+<span class="line" id="L319">    req.arena = std.heap.ArenaAllocator.init(client.allocator);</span>
+<span class="line" id="L320"></span>
+<span class="line" id="L321">    {</span>
+<span class="line" id="L322">        <span class="tok-kw">var</span> buffered = std.io.bufferedWriter(req.connection.data.writer());</span>
+<span class="line" id="L323">        <span class="tok-kw">const</span> writer = buffered.writer();</span>
+<span class="line" id="L324"></span>
+<span class="line" id="L325">        <span class="tok-kw">const</span> escaped_path = <span class="tok-kw">try</span> Uri.escapePath(client.allocator, uri.path);</span>
+<span class="line" id="L326">        <span class="tok-kw">defer</span> client.allocator.free(escaped_path);</span>
+<span class="line" id="L327"></span>
+<span class="line" id="L328">        <span class="tok-kw">const</span> escaped_query = <span class="tok-kw">if</span> (uri.query) |q| <span class="tok-kw">try</span> Uri.escapeQuery(client.allocator, q) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L329">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (escaped_query) |q| client.allocator.free(q);</span>
+<span class="line" id="L330"></span>
+<span class="line" id="L331">        <span class="tok-kw">const</span> escaped_fragment = <span class="tok-kw">if</span> (uri.fragment) |f| <span class="tok-kw">try</span> Uri.escapeQuery(client.allocator, f) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L332">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (escaped_fragment) |f| client.allocator.free(f);</span>
+<span class="line" id="L333"></span>
+<span class="line" id="L334">        <span class="tok-kw">try</span> writer.writeAll(<span class="tok-builtin">@tagName</span>(headers.method));</span>
+<span class="line" id="L335">        <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">' '</span>);</span>
+<span class="line" id="L336">        <span class="tok-kw">try</span> writer.writeAll(escaped_path);</span>
+<span class="line" id="L337">        <span class="tok-kw">if</span> (escaped_query) |q| {</span>
+<span class="line" id="L338">            <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'?'</span>);</span>
+<span class="line" id="L339">            <span class="tok-kw">try</span> writer.writeAll(q);</span>
+<span class="line" id="L340">        }</span>
+<span class="line" id="L341">        <span class="tok-kw">if</span> (escaped_fragment) |f| {</span>
+<span class="line" id="L342">            <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'#'</span>);</span>
+<span class="line" id="L343">            <span class="tok-kw">try</span> writer.writeAll(f);</span>
+<span class="line" id="L344">        }</span>
+<span class="line" id="L345">        <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">' '</span>);</span>
+<span class="line" id="L346">        <span class="tok-kw">try</span> writer.writeAll(<span class="tok-builtin">@tagName</span>(headers.version));</span>
+<span class="line" id="L347">        <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\nHost: &quot;</span>);</span>
+<span class="line" id="L348">        <span class="tok-kw">try</span> writer.writeAll(host);</span>
+<span class="line" id="L349">        <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\nUser-Agent: &quot;</span>);</span>
+<span class="line" id="L350">        <span class="tok-kw">try</span> writer.writeAll(headers.user_agent);</span>
+<span class="line" id="L351">        <span class="tok-kw">if</span> (headers.connection == .close) {</span>
+<span class="line" id="L352">            <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\nConnection: close&quot;</span>);</span>
+<span class="line" id="L353">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L354">            <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\nConnection: keep-alive&quot;</span>);</span>
+<span class="line" id="L355">        }</span>
+<span class="line" id="L356">        <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\nAccept-Encoding: gzip, deflate, zstd&quot;</span>);</span>
+<span class="line" id="L357"></span>
+<span class="line" id="L358">        <span class="tok-kw">switch</span> (headers.transfer_encoding) {</span>
+<span class="line" id="L359">            .chunked =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\nTransfer-Encoding: chunked&quot;</span>),</span>
+<span class="line" id="L360">            .content_length =&gt; |content_length| <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\r\nContent-Length: {d}&quot;</span>, .{content_length}),</span>
+<span class="line" id="L361">            .none =&gt; {},</span>
+<span class="line" id="L362">        }</span>
+<span class="line" id="L363"></span>
+<span class="line" id="L364">        <span class="tok-kw">for</span> (headers.custom) |header| {</span>
+<span class="line" id="L365">            <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\n&quot;</span>);</span>
+<span class="line" id="L366">            <span class="tok-kw">try</span> writer.writeAll(header.name);</span>
+<span class="line" id="L367">            <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;: &quot;</span>);</span>
+<span class="line" id="L368">            <span class="tok-kw">try</span> writer.writeAll(header.value);</span>
+<span class="line" id="L369">        }</span>
+<span class="line" id="L370"></span>
+<span class="line" id="L371">        <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\r\n\r\n&quot;</span>);</span>
+<span class="line" id="L372"></span>
+<span class="line" id="L373">        <span class="tok-kw">try</span> buffered.flush();</span>
+<span class="line" id="L374">    }</span>
+<span class="line" id="L375"></span>
+<span class="line" id="L376">    <span class="tok-kw">return</span> req;</span>
+<span class="line" id="L377">}</span>
+<span class="line" id="L378"></span>
+<span class="line" id="L379"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L380">    <span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L381">    <span class="tok-kw">const</span> native_endian = <span class="tok-kw">comptime</span> builtin.cpu.arch.endian();</span>
+<span class="line" id="L382">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_llvm <span class="tok-kw">and</span> native_endian == .Big) {</span>
+<span class="line" id="L383">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/13782</span>
 </span>
-<span class="line" id="L571">        InsufficientEntropy,</span>
-<span class="line" id="L572">        TlsConnectionTruncated,</span>
-<span class="line" id="L573">        TlsRecordOverflow,</span>
-<span class="line" id="L574">        TlsDecodeError,</span>
-<span class="line" id="L575">        TlsAlert,</span>
-<span class="line" id="L576">        TlsBadRecordMac,</span>
-<span class="line" id="L577">        TlsBadLength,</span>
-<span class="line" id="L578">        TlsIllegalParameter,</span>
-<span class="line" id="L579">        TlsUnexpectedMessage,</span>
-<span class="line" id="L580">        TlsDecryptFailure,</span>
-<span class="line" id="L581">        CertificateFieldHasInvalidLength,</span>
-<span class="line" id="L582">        CertificateHostMismatch,</span>
-<span class="line" id="L583">        CertificatePublicKeyInvalid,</span>
-<span class="line" id="L584">        CertificateExpired,</span>
-<span class="line" id="L585">        CertificateFieldHasWrongDataType,</span>
-<span class="line" id="L586">        CertificateIssuerMismatch,</span>
-<span class="line" id="L587">        CertificateNotYetValid,</span>
-<span class="line" id="L588">        CertificateSignatureAlgorithmMismatch,</span>
-<span class="line" id="L589">        CertificateSignatureAlgorithmUnsupported,</span>
-<span class="line" id="L590">        CertificateSignatureInvalid,</span>
-<span class="line" id="L591">        CertificateSignatureInvalidLength,</span>
-<span class="line" id="L592">        CertificateSignatureNamedCurveUnsupported,</span>
-<span class="line" id="L593">        CertificateSignatureUnsupportedBitCount,</span>
-<span class="line" id="L594">        TlsCertificateNotVerified,</span>
-<span class="line" id="L595">        TlsBadSignatureScheme,</span>
-<span class="line" id="L596">        TlsBadRsaSignatureBitCount,</span>
-<span class="line" id="L597">        TlsDecryptError,</span>
-<span class="line" id="L598">        UnsupportedCertificateVersion,</span>
-<span class="line" id="L599">        CertificateTimeInvalid,</span>
-<span class="line" id="L600">        CertificateHasUnrecognizedObjectId,</span>
-<span class="line" id="L601">        CertificateHasInvalidBitString,</span>
-<span class="line" id="L602">        CertificateAuthorityBundleTooBig,</span>
-<span class="line" id="L603"></span>
-<span class="line" id="L604">        <span class="tok-comment">// TODO: convert to higher level errors</span>
-</span>
-<span class="line" id="L605">        InvalidFormat,</span>
-<span class="line" id="L606">        InvalidPort,</span>
-<span class="line" id="L607">        UnexpectedCharacter,</span>
-<span class="line" id="L608">        Overflow,</span>
-<span class="line" id="L609">        InvalidCharacter,</span>
-<span class="line" id="L610">        AddressFamilyNotSupported,</span>
-<span class="line" id="L611">        AddressInUse,</span>
-<span class="line" id="L612">        AddressNotAvailable,</span>
-<span class="line" id="L613">        ConnectionPending,</span>
-<span class="line" id="L614">        ConnectionRefused,</span>
-<span class="line" id="L615">        FileNotFound,</span>
-<span class="line" id="L616">        PermissionDenied,</span>
-<span class="line" id="L617">        ServiceUnavailable,</span>
-<span class="line" id="L618">        SocketTypeNotSupported,</span>
-<span class="line" id="L619">        FileTooBig,</span>
-<span class="line" id="L620">        LockViolation,</span>
-<span class="line" id="L621">        NoSpaceLeft,</span>
-<span class="line" id="L622">        NotOpenForWriting,</span>
-<span class="line" id="L623">        InvalidEncoding,</span>
-<span class="line" id="L624">        IdentityElement,</span>
-<span class="line" id="L625">        NonCanonical,</span>
-<span class="line" id="L626">        SignatureVerificationFailed,</span>
-<span class="line" id="L627">        MessageTooLong,</span>
-<span class="line" id="L628">        NegativeIntoUnsigned,</span>
-<span class="line" id="L629">        TargetTooSmall,</span>
-<span class="line" id="L630">        BufferTooSmall,</span>
-<span class="line" id="L631">        InvalidSignature,</span>
-<span class="line" id="L632">        NotSquare,</span>
-<span class="line" id="L633">        DiskQuota,</span>
-<span class="line" id="L634">        InvalidEnd,</span>
-<span class="line" id="L635">        Incomplete,</span>
-<span class="line" id="L636">        InvalidIpv4Mapping,</span>
-<span class="line" id="L637">        InvalidIPAddressFormat,</span>
-<span class="line" id="L638">        BadPathName,</span>
-<span class="line" id="L639">        DeviceBusy,</span>
-<span class="line" id="L640">        FileBusy,</span>
-<span class="line" id="L641">        FileLocksNotSupported,</span>
-<span class="line" id="L642">        InvalidHandle,</span>
-<span class="line" id="L643">        InvalidUtf8,</span>
-<span class="line" id="L644">        NameTooLong,</span>
-<span class="line" id="L645">        NoDevice,</span>
-<span class="line" id="L646">        PathAlreadyExists,</span>
-<span class="line" id="L647">        PipeBusy,</span>
-<span class="line" id="L648">        SharingViolation,</span>
-<span class="line" id="L649">        SymLinkLoop,</span>
-<span class="line" id="L650">        FileSystem,</span>
-<span class="line" id="L651">        InterfaceNotFound,</span>
-<span class="line" id="L652">        AlreadyBound,</span>
-<span class="line" id="L653">        FileDescriptorNotASocket,</span>
-<span class="line" id="L654">        NetworkSubsystemFailed,</span>
-<span class="line" id="L655">        NotDir,</span>
-<span class="line" id="L656">        ReadOnlyFileSystem,</span>
-<span class="line" id="L657">        Unseekable,</span>
-<span class="line" id="L658">        MissingEndCertificateMarker,</span>
-<span class="line" id="L659">        InvalidPadding,</span>
-<span class="line" id="L660">        EndOfStream,</span>
-<span class="line" id="L661">        InvalidArgument,</span>
-<span class="line" id="L662">    };</span>
-<span class="line" id="L663"></span>
-<span class="line" id="L664">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(req: *Request, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L665">        <span class="tok-kw">return</span> readAtLeast(req, buffer, <span class="tok-number">1</span>);</span>
-<span class="line" id="L666">    }</span>
-<span class="line" id="L667"></span>
-<span class="line" id="L668">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(req: *Request, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L669">        assert(len &lt;= buffer.len);</span>
-<span class="line" id="L670">        <span class="tok-kw">var</span> index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L671">        <span class="tok-kw">while</span> (index &lt; len) {</span>
-<span class="line" id="L672">            <span class="tok-kw">const</span> zero_means_end = req.response.state.zeroMeansEnd();</span>
-<span class="line" id="L673">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> readAdvanced(req, buffer[index..]);</span>
-<span class="line" id="L674">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span> <span class="tok-kw">and</span> zero_means_end) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L675">            index += amt;</span>
-<span class="line" id="L676">        }</span>
-<span class="line" id="L677">        <span class="tok-kw">return</span> index;</span>
-<span class="line" id="L678">    }</span>
-<span class="line" id="L679"></span>
-<span class="line" id="L680">    <span class="tok-comment">/// This one can return 0 without meaning EOF.</span></span>
-<span class="line" id="L681">    <span class="tok-comment">/// TODO change to readvAdvanced</span></span>
-<span class="line" id="L682">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAdvanced</span>(req: *Request, buffer: []<span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L683">        <span class="tok-kw">var</span> in = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> req.connection.read(buffer)];</span>
-<span class="line" id="L684">        <span class="tok-kw">var</span> out_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L685">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L686">            <span class="tok-kw">switch</span> (req.response.state) {</span>
-<span class="line" id="L687">                .invalid =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L688">                .start, .seen_r, .seen_rn, .seen_rnr =&gt; {</span>
-<span class="line" id="L689">                    <span class="tok-kw">const</span> i = req.response.findHeadersEnd(in);</span>
-<span class="line" id="L690">                    <span class="tok-kw">if</span> (req.response.state == .invalid) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L691"></span>
-<span class="line" id="L692">                    <span class="tok-kw">const</span> headers_data = in[<span class="tok-number">0</span>..i];</span>
-<span class="line" id="L693">                    <span class="tok-kw">if</span> (req.response.header_bytes.items.len + headers_data.len &gt; req.response.max_header_bytes) {</span>
-<span class="line" id="L694">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersExceededSizeLimit;</span>
-<span class="line" id="L695">                    }</span>
-<span class="line" id="L696">                    <span class="tok-kw">try</span> req.response.header_bytes.appendSlice(req.client.allocator, headers_data);</span>
-<span class="line" id="L697"></span>
-<span class="line" id="L698">                    <span class="tok-kw">if</span> (req.response.state == .finished) {</span>
-<span class="line" id="L699">                        req.response.headers = <span class="tok-kw">try</span> Response.Headers.parse(req.response.header_bytes.items);</span>
-<span class="line" id="L700"></span>
-<span class="line" id="L701">                        <span class="tok-kw">if</span> (req.response.headers.status.class() == .redirect) {</span>
-<span class="line" id="L702">                            <span class="tok-kw">if</span> (req.redirects_left == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TooManyHttpRedirects;</span>
-<span class="line" id="L703">                            <span class="tok-kw">const</span> location = req.response.headers.location <span class="tok-kw">orelse</span></span>
-<span class="line" id="L704">                                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpRedirectMissingLocation;</span>
-<span class="line" id="L705">                            <span class="tok-kw">const</span> new_url = <span class="tok-kw">try</span> std.Uri.parse(location);</span>
-<span class="line" id="L706">                            <span class="tok-kw">const</span> new_req = <span class="tok-kw">try</span> req.client.request(new_url, req.headers, .{</span>
-<span class="line" id="L707">                                .max_redirects = req.redirects_left - <span class="tok-number">1</span>,</span>
-<span class="line" id="L708">                                .header_strategy = <span class="tok-kw">if</span> (req.response.header_bytes_owned) .{</span>
-<span class="line" id="L709">                                    .dynamic = req.response.max_header_bytes,</span>
-<span class="line" id="L710">                                } <span class="tok-kw">else</span> .{</span>
-<span class="line" id="L711">                                    .static = req.response.header_bytes.unusedCapacitySlice(),</span>
-<span class="line" id="L712">                                },</span>
-<span class="line" id="L713">                            });</span>
-<span class="line" id="L714">                            req.deinit();</span>
-<span class="line" id="L715">                            req.* = new_req;</span>
-<span class="line" id="L716">                            assert(out_index == <span class="tok-number">0</span>);</span>
-<span class="line" id="L717">                            in = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> req.connection.read(buffer)];</span>
-<span class="line" id="L718">                            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L719">                        }</span>
-<span class="line" id="L720"></span>
-<span class="line" id="L721">                        <span class="tok-kw">if</span> (req.response.headers.transfer_encoding) |transfer_encoding| {</span>
-<span class="line" id="L722">                            <span class="tok-kw">switch</span> (transfer_encoding) {</span>
-<span class="line" id="L723">                                .chunked =&gt; {</span>
-<span class="line" id="L724">                                    req.response.next_chunk_length = <span class="tok-number">0</span>;</span>
-<span class="line" id="L725">                                    req.response.state = .chunk_size;</span>
-<span class="line" id="L726">                                },</span>
-<span class="line" id="L727">                                .compress =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpTransferEncodingUnsupported,</span>
-<span class="line" id="L728">                                .deflate =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpTransferEncodingUnsupported,</span>
-<span class="line" id="L729">                                .gzip =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpTransferEncodingUnsupported,</span>
-<span class="line" id="L730">                            }</span>
-<span class="line" id="L731">                        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (req.response.headers.content_length) |content_length| {</span>
-<span class="line" id="L732">                            req.response.next_chunk_length = content_length;</span>
-<span class="line" id="L733">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L734">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpContentLengthUnknown;</span>
-<span class="line" id="L735">                        }</span>
-<span class="line" id="L736"></span>
-<span class="line" id="L737">                        in = in[i..];</span>
-<span class="line" id="L738">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L739">                    }</span>
-<span class="line" id="L740"></span>
-<span class="line" id="L741">                    assert(out_index == <span class="tok-number">0</span>);</span>
-<span class="line" id="L742">                    <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L743">                },</span>
-<span class="line" id="L744">                .finished =&gt; {</span>
-<span class="line" id="L745">                    <span class="tok-kw">if</span> (in.ptr == buffer.ptr) {</span>
-<span class="line" id="L746">                        <span class="tok-kw">return</span> in.len;</span>
-<span class="line" id="L747">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L748">                        mem.copy(<span class="tok-type">u8</span>, buffer[out_index..], in);</span>
-<span class="line" id="L749">                        <span class="tok-kw">return</span> out_index + in.len;</span>
-<span class="line" id="L750">                    }</span>
-<span class="line" id="L751">                },</span>
-<span class="line" id="L752">                .chunk_size_prefix_r =&gt; <span class="tok-kw">switch</span> (in.len) {</span>
-<span class="line" id="L753">                    <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> out_index,</span>
-<span class="line" id="L754">                    <span class="tok-number">1</span> =&gt; <span class="tok-kw">switch</span> (in[<span class="tok-number">0</span>]) {</span>
-<span class="line" id="L755">                        <span class="tok-str">'\r'</span> =&gt; {</span>
-<span class="line" id="L756">                            req.response.state = .chunk_size_prefix_n;</span>
-<span class="line" id="L757">                            <span class="tok-kw">return</span> out_index;</span>
-<span class="line" id="L758">                        },</span>
-<span class="line" id="L759">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L760">                            req.response.state = .invalid;</span>
-<span class="line" id="L761">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L762">                        },</span>
-<span class="line" id="L763">                    },</span>
-<span class="line" id="L764">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">switch</span> (int16(in[<span class="tok-number">0</span>..<span class="tok-number">2</span>])) {</span>
-<span class="line" id="L765">                        int16(<span class="tok-str">&quot;\r\n&quot;</span>) =&gt; {</span>
-<span class="line" id="L766">                            in = in[<span class="tok-number">2</span>..];</span>
-<span class="line" id="L767">                            req.response.state = .chunk_size;</span>
-<span class="line" id="L768">                            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L769">                        },</span>
-<span class="line" id="L770">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L771">                            req.response.state = .invalid;</span>
-<span class="line" id="L772">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L773">                        },</span>
-<span class="line" id="L774">                    },</span>
-<span class="line" id="L775">                },</span>
-<span class="line" id="L776">                .chunk_size_prefix_n =&gt; <span class="tok-kw">switch</span> (in.len) {</span>
-<span class="line" id="L777">                    <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> out_index,</span>
-<span class="line" id="L778">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">switch</span> (in[<span class="tok-number">0</span>]) {</span>
-<span class="line" id="L779">                        <span class="tok-str">'\n'</span> =&gt; {</span>
-<span class="line" id="L780">                            in = in[<span class="tok-number">1</span>..];</span>
-<span class="line" id="L781">                            req.response.state = .chunk_size;</span>
-<span class="line" id="L782">                            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L783">                        },</span>
-<span class="line" id="L784">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L785">                            req.response.state = .invalid;</span>
-<span class="line" id="L786">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L787">                        },</span>
-<span class="line" id="L788">                    },</span>
-<span class="line" id="L789">                },</span>
-<span class="line" id="L790">                .chunk_size, .chunk_r =&gt; {</span>
-<span class="line" id="L791">                    <span class="tok-kw">const</span> i = req.response.findChunkedLen(in);</span>
-<span class="line" id="L792">                    <span class="tok-kw">switch</span> (req.response.state) {</span>
-<span class="line" id="L793">                        .invalid =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid,</span>
-<span class="line" id="L794">                        .chunk_data =&gt; {</span>
-<span class="line" id="L795">                            <span class="tok-kw">if</span> (req.response.next_chunk_length == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L796">                                req.response.state = .start;</span>
-<span class="line" id="L797">                                <span class="tok-kw">return</span> out_index;</span>
-<span class="line" id="L798">                            }</span>
-<span class="line" id="L799">                            in = in[i..];</span>
-<span class="line" id="L800">                            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L801">                        },</span>
-<span class="line" id="L802">                        .chunk_size =&gt; <span class="tok-kw">return</span> out_index,</span>
-<span class="line" id="L803">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L804">                    }</span>
-<span class="line" id="L805">                },</span>
-<span class="line" id="L806">                .chunk_data =&gt; {</span>
-<span class="line" id="L807">                    <span class="tok-comment">// TODO https://github.com/ziglang/zig/issues/14039</span>
-</span>
-<span class="line" id="L808">                    <span class="tok-kw">const</span> sub_amt = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@min</span>(req.response.next_chunk_length, in.len));</span>
-<span class="line" id="L809">                    req.response.next_chunk_length -= sub_amt;</span>
-<span class="line" id="L810">                    <span class="tok-kw">if</span> (req.response.next_chunk_length &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L811">                        <span class="tok-kw">if</span> (in.ptr == buffer.ptr) {</span>
-<span class="line" id="L812">                            <span class="tok-kw">return</span> sub_amt;</span>
-<span class="line" id="L813">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L814">                            mem.copy(<span class="tok-type">u8</span>, buffer[out_index..], in[<span class="tok-number">0</span>..sub_amt]);</span>
-<span class="line" id="L815">                            out_index += sub_amt;</span>
-<span class="line" id="L816">                            <span class="tok-kw">return</span> out_index;</span>
-<span class="line" id="L817">                        }</span>
-<span class="line" id="L818">                    }</span>
-<span class="line" id="L819">                    mem.copy(<span class="tok-type">u8</span>, buffer[out_index..], in[<span class="tok-number">0</span>..sub_amt]);</span>
-<span class="line" id="L820">                    out_index += sub_amt;</span>
-<span class="line" id="L821">                    req.response.state = .chunk_size_prefix_r;</span>
-<span class="line" id="L822">                    in = in[sub_amt..];</span>
-<span class="line" id="L823">                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L824">                },</span>
-<span class="line" id="L825">            }</span>
-<span class="line" id="L826">        }</span>
-<span class="line" id="L827">    }</span>
-<span class="line" id="L828"></span>
-<span class="line" id="L829">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int16</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">2</span>]<span class="tok-type">u8</span>) <span class="tok-type">u16</span> {</span>
-<span class="line" id="L830">        <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u16</span>, array.*);</span>
-<span class="line" id="L831">    }</span>
-<span class="line" id="L832"></span>
-<span class="line" id="L833">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int32</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">4</span>]<span class="tok-type">u8</span>) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L834">        <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, array.*);</span>
-<span class="line" id="L835">    }</span>
-<span class="line" id="L836"></span>
-<span class="line" id="L837">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int64</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">8</span>]<span class="tok-type">u8</span>) <span class="tok-type">u64</span> {</span>
-<span class="line" id="L838">        <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, array.*);</span>
-<span class="line" id="L839">    }</span>
-<span class="line" id="L840"></span>
-<span class="line" id="L841">    <span class="tok-kw">test</span> {</span>
-<span class="line" id="L842">        _ = Response;</span>
-<span class="line" id="L843">    }</span>
-<span class="line" id="L844">};</span>
-<span class="line" id="L845"></span>
-<span class="line" id="L846"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(client: *Client) <span class="tok-type">void</span> {</span>
-<span class="line" id="L847">    client.ca_bundle.deinit(client.allocator);</span>
-<span class="line" id="L848">    client.* = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L849">}</span>
-<span class="line" id="L850"></span>
-<span class="line" id="L851"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">connect</span>(client: *Client, host: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, port: <span class="tok-type">u16</span>, protocol: Connection.Protocol) !Connection {</span>
-<span class="line" id="L852">    <span class="tok-kw">var</span> conn: Connection = .{</span>
-<span class="line" id="L853">        .stream = <span class="tok-kw">try</span> net.tcpConnectToHost(client.allocator, host, port),</span>
-<span class="line" id="L854">        .tls_client = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L855">        .protocol = protocol,</span>
-<span class="line" id="L856">    };</span>
-<span class="line" id="L857"></span>
-<span class="line" id="L858">    <span class="tok-kw">switch</span> (protocol) {</span>
-<span class="line" id="L859">        .plain =&gt; {},</span>
-<span class="line" id="L860">        .tls =&gt; {</span>
-<span class="line" id="L861">            conn.tls_client = <span class="tok-kw">try</span> std.crypto.tls.Client.init(conn.stream, client.ca_bundle, host);</span>
-<span class="line" id="L862">            <span class="tok-comment">// This is appropriate for HTTPS because the HTTP headers contain</span>
-</span>
-<span class="line" id="L863">            <span class="tok-comment">// the content length which is used to detect truncation attacks.</span>
-</span>
-<span class="line" id="L864">            conn.tls_client.allow_truncation_attacks = <span class="tok-null">true</span>;</span>
-<span class="line" id="L865">        },</span>
-<span class="line" id="L866">    }</span>
-<span class="line" id="L867"></span>
-<span class="line" id="L868">    <span class="tok-kw">return</span> conn;</span>
-<span class="line" id="L869">}</span>
-<span class="line" id="L870"></span>
-<span class="line" id="L871"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">request</span>(client: *Client, uri: Uri, headers: Request.Headers, options: Request.Options) !Request {</span>
-<span class="line" id="L872">    <span class="tok-kw">const</span> protocol: Connection.Protocol = <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, uri.scheme, <span class="tok-str">&quot;http&quot;</span>))</span>
-<span class="line" id="L873">        .plain</span>
-<span class="line" id="L874">    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, uri.scheme, <span class="tok-str">&quot;https&quot;</span>))</span>
-<span class="line" id="L875">        .tls</span>
-<span class="line" id="L876">    <span class="tok-kw">else</span></span>
-<span class="line" id="L877">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnsupportedUrlScheme;</span>
-<span class="line" id="L878"></span>
-<span class="line" id="L879">    <span class="tok-kw">const</span> port: <span class="tok-type">u16</span> = uri.port <span class="tok-kw">orelse</span> <span class="tok-kw">switch</span> (protocol) {</span>
-<span class="line" id="L880">        .plain =&gt; <span class="tok-number">80</span>,</span>
-<span class="line" id="L881">        .tls =&gt; <span class="tok-number">443</span>,</span>
-<span class="line" id="L882">    };</span>
-<span class="line" id="L883"></span>
-<span class="line" id="L884">    <span class="tok-kw">const</span> host = uri.host <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UriMissingHost;</span>
-<span class="line" id="L885"></span>
-<span class="line" id="L886">    <span class="tok-kw">if</span> (client.next_https_rescan_certs <span class="tok-kw">and</span> protocol == .tls) {</span>
-<span class="line" id="L887">        <span class="tok-kw">try</span> client.ca_bundle.rescan(client.allocator);</span>
-<span class="line" id="L888">        client.next_https_rescan_certs = <span class="tok-null">false</span>;</span>
-<span class="line" id="L889">    }</span>
-<span class="line" id="L890"></span>
-<span class="line" id="L891">    <span class="tok-kw">var</span> req: Request = .{</span>
-<span class="line" id="L892">        .client = client,</span>
-<span class="line" id="L893">        .headers = headers,</span>
-<span class="line" id="L894">        .connection = <span class="tok-kw">try</span> client.connect(host, port, protocol),</span>
-<span class="line" id="L895">        .redirects_left = options.max_redirects,</span>
-<span class="line" id="L896">        .response = <span class="tok-kw">switch</span> (options.header_strategy) {</span>
-<span class="line" id="L897">            .dynamic =&gt; |max| Request.Response.initDynamic(max),</span>
-<span class="line" id="L898">            .static =&gt; |buf| Request.Response.initStatic(buf),</span>
-<span class="line" id="L899">        },</span>
-<span class="line" id="L900">    };</span>
-<span class="line" id="L901"></span>
-<span class="line" id="L902">    {</span>
-<span class="line" id="L903">        <span class="tok-kw">var</span> h = <span class="tok-kw">try</span> std.BoundedArray(<span class="tok-type">u8</span>, <span class="tok-number">1000</span>).init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L904">        <span class="tok-kw">try</span> h.appendSlice(<span class="tok-builtin">@tagName</span>(headers.method));</span>
-<span class="line" id="L905">        <span class="tok-kw">try</span> h.appendSlice(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L906">        <span class="tok-kw">try</span> h.appendSlice(uri.path);</span>
-<span class="line" id="L907">        <span class="tok-kw">try</span> h.appendSlice(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L908">        <span class="tok-kw">try</span> h.appendSlice(<span class="tok-builtin">@tagName</span>(headers.version));</span>
-<span class="line" id="L909">        <span class="tok-kw">try</span> h.appendSlice(<span class="tok-str">&quot;\r\nHost: &quot;</span>);</span>
-<span class="line" id="L910">        <span class="tok-kw">try</span> h.appendSlice(host);</span>
-<span class="line" id="L911">        <span class="tok-kw">try</span> h.appendSlice(<span class="tok-str">&quot;\r\nConnection: close\r\n\r\n&quot;</span>);</span>
-<span class="line" id="L912"></span>
-<span class="line" id="L913">        <span class="tok-kw">const</span> header_bytes = h.slice();</span>
-<span class="line" id="L914">        <span class="tok-kw">try</span> req.connection.writeAll(header_bytes);</span>
-<span class="line" id="L915">    }</span>
-<span class="line" id="L916"></span>
-<span class="line" id="L917">    <span class="tok-kw">return</span> req;</span>
-<span class="line" id="L918">}</span>
-<span class="line" id="L919"></span>
-<span class="line" id="L920"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L921">    <span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
-<span class="line" id="L922">    <span class="tok-kw">const</span> native_endian = <span class="tok-kw">comptime</span> builtin.cpu.arch.endian();</span>
-<span class="line" id="L923">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_llvm <span class="tok-kw">and</span> native_endian == .Big) {</span>
-<span class="line" id="L924">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/13782</span>
-</span>
-<span class="line" id="L925">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L926">    }</span>
-<span class="line" id="L927"></span>
-<span class="line" id="L928">    _ = Request;</span>
-<span class="line" id="L929">}</span>
-<span class="line" id="L930"></span>
+<span class="line" id="L384">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L385">    }</span>
+<span class="line" id="L386"></span>
+<span class="line" id="L387">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L388"></span>
+<span class="line" id="L389">    _ = Request;</span>
+<span class="line" id="L390">}</span>
+<span class="line" id="L391"></span>
 </code></pre></body>
 </html>

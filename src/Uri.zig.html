@@ -129,515 +129,598 @@
 <span class="line" id="L16"></span>
 <span class="line" id="L17"><span class="tok-comment">/// Applies URI encoding and replaces all reserved characters with their respective %XX code.</span></span>
 <span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">escapeString</span>(allocator: std.mem.Allocator, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{OutOfMemory}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L19">    <span class="tok-kw">var</span> outsize: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L20">    <span class="tok-kw">for</span> (input) |c| {</span>
-<span class="line" id="L21">        outsize += <span class="tok-kw">if</span> (isUnreserved(c)) <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) <span class="tok-kw">else</span> <span class="tok-number">3</span>;</span>
-<span class="line" id="L22">    }</span>
-<span class="line" id="L23">    <span class="tok-kw">var</span> output = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, outsize);</span>
-<span class="line" id="L24">    <span class="tok-kw">var</span> outptr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L19">    <span class="tok-kw">return</span> escapeStringWithFn(allocator, input, isUnreserved);</span>
+<span class="line" id="L20">}</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">escapePath</span>(allocator: std.mem.Allocator, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{OutOfMemory}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L23">    <span class="tok-kw">return</span> escapeStringWithFn(allocator, input, isPathChar);</span>
+<span class="line" id="L24">}</span>
 <span class="line" id="L25"></span>
-<span class="line" id="L26">    <span class="tok-kw">for</span> (input) |c| {</span>
-<span class="line" id="L27">        <span class="tok-kw">if</span> (isUnreserved(c)) {</span>
-<span class="line" id="L28">            output[outptr] = c;</span>
-<span class="line" id="L29">            outptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L30">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L31">            <span class="tok-kw">var</span> buf: [<span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L32">            _ = std.fmt.bufPrint(&amp;buf, <span class="tok-str">&quot;{X:0&gt;2}&quot;</span>, .{c}) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">            output[outptr + <span class="tok-number">0</span>] = <span class="tok-str">'%'</span>;</span>
-<span class="line" id="L35">            output[outptr + <span class="tok-number">1</span>] = buf[<span class="tok-number">0</span>];</span>
-<span class="line" id="L36">            output[outptr + <span class="tok-number">2</span>] = buf[<span class="tok-number">1</span>];</span>
-<span class="line" id="L37">            outptr += <span class="tok-number">3</span>;</span>
-<span class="line" id="L38">        }</span>
-<span class="line" id="L39">    }</span>
-<span class="line" id="L40">    <span class="tok-kw">return</span> output;</span>
-<span class="line" id="L41">}</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43"><span class="tok-comment">/// Parses a URI string and unescapes all %XX where XX is a valid hex number. Otherwise, verbatim copies</span></span>
-<span class="line" id="L44"><span class="tok-comment">/// them to the output.</span></span>
-<span class="line" id="L45"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">unescapeString</span>(allocator: std.mem.Allocator, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{OutOfMemory}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L46">    <span class="tok-kw">var</span> outsize: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L47">    <span class="tok-kw">var</span> inptr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L48">    <span class="tok-kw">while</span> (inptr &lt; input.len) {</span>
-<span class="line" id="L49">        <span class="tok-kw">if</span> (input[inptr] == <span class="tok-str">'%'</span>) {</span>
-<span class="line" id="L50">            inptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L51">            <span class="tok-kw">if</span> (inptr + <span class="tok-number">2</span> &lt;= input.len) {</span>
-<span class="line" id="L52">                _ = std.fmt.parseInt(<span class="tok-type">u8</span>, input[inptr..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], <span class="tok-number">16</span>) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L53">                    outsize += <span class="tok-number">3</span>;</span>
-<span class="line" id="L54">                    inptr += <span class="tok-number">2</span>;</span>
-<span class="line" id="L55">                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L56">                };</span>
-<span class="line" id="L57">                inptr += <span class="tok-number">2</span>;</span>
-<span class="line" id="L58">                outsize += <span class="tok-number">1</span>;</span>
-<span class="line" id="L59">            }</span>
-<span class="line" id="L60">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L61">            inptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L62">            outsize += <span class="tok-number">1</span>;</span>
-<span class="line" id="L63">        }</span>
-<span class="line" id="L64">    }</span>
-<span class="line" id="L65"></span>
-<span class="line" id="L66">    <span class="tok-kw">var</span> output = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, outsize);</span>
-<span class="line" id="L67">    <span class="tok-kw">var</span> outptr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L68">    inptr = <span class="tok-number">0</span>;</span>
-<span class="line" id="L69">    <span class="tok-kw">while</span> (inptr &lt; input.len) {</span>
-<span class="line" id="L70">        <span class="tok-kw">if</span> (input[inptr] == <span class="tok-str">'%'</span>) {</span>
-<span class="line" id="L71">            inptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L72">            <span class="tok-kw">if</span> (inptr + <span class="tok-number">2</span> &lt;= input.len) {</span>
-<span class="line" id="L73">                <span class="tok-kw">const</span> value = std.fmt.parseInt(<span class="tok-type">u8</span>, input[inptr..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], <span class="tok-number">16</span>) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L74">                    output[outptr + <span class="tok-number">0</span>] = input[inptr + <span class="tok-number">0</span>];</span>
-<span class="line" id="L75">                    output[outptr + <span class="tok-number">1</span>] = input[inptr + <span class="tok-number">1</span>];</span>
-<span class="line" id="L76">                    inptr += <span class="tok-number">2</span>;</span>
-<span class="line" id="L77">                    outptr += <span class="tok-number">2</span>;</span>
-<span class="line" id="L78">                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L79">                };</span>
-<span class="line" id="L80"></span>
-<span class="line" id="L81">                output[outptr] = value;</span>
-<span class="line" id="L82"></span>
-<span class="line" id="L83">                inptr += <span class="tok-number">2</span>;</span>
-<span class="line" id="L84">                outptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L85">            }</span>
-<span class="line" id="L86">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L87">            output[outptr] = input[inptr];</span>
-<span class="line" id="L88">            inptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L89">            outptr += <span class="tok-number">1</span>;</span>
-<span class="line" id="L90">        }</span>
-<span class="line" id="L91">    }</span>
-<span class="line" id="L92">    <span class="tok-kw">return</span> output;</span>
-<span class="line" id="L93">}</span>
+<span class="line" id="L26"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">escapeQuery</span>(allocator: std.mem.Allocator, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{OutOfMemory}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L27">    <span class="tok-kw">return</span> escapeStringWithFn(allocator, input, isQueryChar);</span>
+<span class="line" id="L28">}</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">escapeStringWithFn</span>(allocator: std.mem.Allocator, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> keepUnescaped: <span class="tok-kw">fn</span> (c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span>) std.mem.Allocator.Error![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L31">    <span class="tok-kw">var</span> outsize: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L32">    <span class="tok-kw">for</span> (input) |c| {</span>
+<span class="line" id="L33">        outsize += <span class="tok-kw">if</span> (keepUnescaped(c)) <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) <span class="tok-kw">else</span> <span class="tok-number">3</span>;</span>
+<span class="line" id="L34">    }</span>
+<span class="line" id="L35">    <span class="tok-kw">var</span> output = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, outsize);</span>
+<span class="line" id="L36">    <span class="tok-kw">var</span> outptr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L37"></span>
+<span class="line" id="L38">    <span class="tok-kw">for</span> (input) |c| {</span>
+<span class="line" id="L39">        <span class="tok-kw">if</span> (keepUnescaped(c)) {</span>
+<span class="line" id="L40">            output[outptr] = c;</span>
+<span class="line" id="L41">            outptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L42">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L43">            <span class="tok-kw">var</span> buf: [<span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L44">            _ = std.fmt.bufPrint(&amp;buf, <span class="tok-str">&quot;{X:0&gt;2}&quot;</span>, .{c}) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L45"></span>
+<span class="line" id="L46">            output[outptr + <span class="tok-number">0</span>] = <span class="tok-str">'%'</span>;</span>
+<span class="line" id="L47">            output[outptr + <span class="tok-number">1</span>] = buf[<span class="tok-number">0</span>];</span>
+<span class="line" id="L48">            output[outptr + <span class="tok-number">2</span>] = buf[<span class="tok-number">1</span>];</span>
+<span class="line" id="L49">            outptr += <span class="tok-number">3</span>;</span>
+<span class="line" id="L50">        }</span>
+<span class="line" id="L51">    }</span>
+<span class="line" id="L52">    <span class="tok-kw">return</span> output;</span>
+<span class="line" id="L53">}</span>
+<span class="line" id="L54"></span>
+<span class="line" id="L55"><span class="tok-comment">/// Parses a URI string and unescapes all %XX where XX is a valid hex number. Otherwise, verbatim copies</span></span>
+<span class="line" id="L56"><span class="tok-comment">/// them to the output.</span></span>
+<span class="line" id="L57"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">unescapeString</span>(allocator: std.mem.Allocator, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{OutOfMemory}![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L58">    <span class="tok-kw">var</span> outsize: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L59">    <span class="tok-kw">var</span> inptr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L60">    <span class="tok-kw">while</span> (inptr &lt; input.len) {</span>
+<span class="line" id="L61">        <span class="tok-kw">if</span> (input[inptr] == <span class="tok-str">'%'</span>) {</span>
+<span class="line" id="L62">            inptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L63">            <span class="tok-kw">if</span> (inptr + <span class="tok-number">2</span> &lt;= input.len) {</span>
+<span class="line" id="L64">                _ = std.fmt.parseInt(<span class="tok-type">u8</span>, input[inptr..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], <span class="tok-number">16</span>) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L65">                    outsize += <span class="tok-number">3</span>;</span>
+<span class="line" id="L66">                    inptr += <span class="tok-number">2</span>;</span>
+<span class="line" id="L67">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L68">                };</span>
+<span class="line" id="L69">                inptr += <span class="tok-number">2</span>;</span>
+<span class="line" id="L70">                outsize += <span class="tok-number">1</span>;</span>
+<span class="line" id="L71">            }</span>
+<span class="line" id="L72">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L73">            inptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L74">            outsize += <span class="tok-number">1</span>;</span>
+<span class="line" id="L75">        }</span>
+<span class="line" id="L76">    }</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78">    <span class="tok-kw">var</span> output = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, outsize);</span>
+<span class="line" id="L79">    <span class="tok-kw">var</span> outptr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L80">    inptr = <span class="tok-number">0</span>;</span>
+<span class="line" id="L81">    <span class="tok-kw">while</span> (inptr &lt; input.len) {</span>
+<span class="line" id="L82">        <span class="tok-kw">if</span> (input[inptr] == <span class="tok-str">'%'</span>) {</span>
+<span class="line" id="L83">            inptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L84">            <span class="tok-kw">if</span> (inptr + <span class="tok-number">2</span> &lt;= input.len) {</span>
+<span class="line" id="L85">                <span class="tok-kw">const</span> value = std.fmt.parseInt(<span class="tok-type">u8</span>, input[inptr..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], <span class="tok-number">16</span>) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L86">                    output[outptr + <span class="tok-number">0</span>] = input[inptr + <span class="tok-number">0</span>];</span>
+<span class="line" id="L87">                    output[outptr + <span class="tok-number">1</span>] = input[inptr + <span class="tok-number">1</span>];</span>
+<span class="line" id="L88">                    inptr += <span class="tok-number">2</span>;</span>
+<span class="line" id="L89">                    outptr += <span class="tok-number">2</span>;</span>
+<span class="line" id="L90">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L91">                };</span>
+<span class="line" id="L92"></span>
+<span class="line" id="L93">                output[outptr] = value;</span>
 <span class="line" id="L94"></span>
-<span class="line" id="L95"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ParseError = <span class="tok-kw">error</span>{ UnexpectedCharacter, InvalidFormat, InvalidPort };</span>
-<span class="line" id="L96"></span>
-<span class="line" id="L97"><span class="tok-comment">/// Parses the URI or returns an error.</span></span>
-<span class="line" id="L98"><span class="tok-comment">/// The return value will contain unescaped strings pointing into the</span></span>
-<span class="line" id="L99"><span class="tok-comment">/// original `text`. Each component that is provided, will be non-`null`.</span></span>
-<span class="line" id="L100"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parse</span>(text: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ParseError!Uri {</span>
-<span class="line" id="L101">    <span class="tok-kw">var</span> reader = SliceReader{ .slice = text };</span>
-<span class="line" id="L102">    <span class="tok-kw">var</span> uri = Uri{</span>
-<span class="line" id="L103">        .scheme = reader.readWhile(isSchemeChar),</span>
-<span class="line" id="L104">        .user = <span class="tok-null">null</span>,</span>
-<span class="line" id="L105">        .password = <span class="tok-null">null</span>,</span>
-<span class="line" id="L106">        .host = <span class="tok-null">null</span>,</span>
-<span class="line" id="L107">        .port = <span class="tok-null">null</span>,</span>
-<span class="line" id="L108">        .path = <span class="tok-str">&quot;&quot;</span>, <span class="tok-comment">// path is always set, but empty by default.</span>
+<span class="line" id="L95">                inptr += <span class="tok-number">2</span>;</span>
+<span class="line" id="L96">                outptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L97">            }</span>
+<span class="line" id="L98">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L99">            output[outptr] = input[inptr];</span>
+<span class="line" id="L100">            inptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L101">            outptr += <span class="tok-number">1</span>;</span>
+<span class="line" id="L102">        }</span>
+<span class="line" id="L103">    }</span>
+<span class="line" id="L104">    <span class="tok-kw">return</span> output;</span>
+<span class="line" id="L105">}</span>
+<span class="line" id="L106"></span>
+<span class="line" id="L107"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ParseError = <span class="tok-kw">error</span>{ UnexpectedCharacter, InvalidFormat, InvalidPort };</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109"><span class="tok-comment">/// Parses the URI or returns an error. This function is not compliant, but is required to parse</span></span>
+<span class="line" id="L110"><span class="tok-comment">/// some forms of URIs in the wild. Such as HTTP Location headers.</span></span>
+<span class="line" id="L111"><span class="tok-comment">/// The return value will contain unescaped strings pointing into the</span></span>
+<span class="line" id="L112"><span class="tok-comment">/// original `text`. Each component that is provided, will be non-`null`.</span></span>
+<span class="line" id="L113"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseWithoutScheme</span>(text: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ParseError!Uri {</span>
+<span class="line" id="L114">    <span class="tok-kw">var</span> reader = SliceReader{ .slice = text };</span>
+<span class="line" id="L115">    <span class="tok-kw">var</span> uri = Uri{</span>
+<span class="line" id="L116">        .scheme = <span class="tok-str">&quot;&quot;</span>,</span>
+<span class="line" id="L117">        .user = <span class="tok-null">null</span>,</span>
+<span class="line" id="L118">        .password = <span class="tok-null">null</span>,</span>
+<span class="line" id="L119">        .host = <span class="tok-null">null</span>,</span>
+<span class="line" id="L120">        .port = <span class="tok-null">null</span>,</span>
+<span class="line" id="L121">        .path = <span class="tok-str">&quot;&quot;</span>, <span class="tok-comment">// path is always set, but empty by default.</span>
 </span>
-<span class="line" id="L109">        .query = <span class="tok-null">null</span>,</span>
-<span class="line" id="L110">        .fragment = <span class="tok-null">null</span>,</span>
-<span class="line" id="L111">    };</span>
-<span class="line" id="L112"></span>
-<span class="line" id="L113">    <span class="tok-comment">// after the scheme, a ':' must appear</span>
+<span class="line" id="L122">        .query = <span class="tok-null">null</span>,</span>
+<span class="line" id="L123">        .fragment = <span class="tok-null">null</span>,</span>
+<span class="line" id="L124">    };</span>
+<span class="line" id="L125"></span>
+<span class="line" id="L126">    <span class="tok-kw">if</span> (reader.peekPrefix(<span class="tok-str">&quot;//&quot;</span>)) { <span class="tok-comment">// authority part</span>
 </span>
-<span class="line" id="L114">    <span class="tok-kw">if</span> (reader.get()) |c| {</span>
-<span class="line" id="L115">        <span class="tok-kw">if</span> (c != <span class="tok-str">':'</span>)</span>
-<span class="line" id="L116">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedCharacter;</span>
-<span class="line" id="L117">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L118">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
-<span class="line" id="L119">    }</span>
-<span class="line" id="L120"></span>
-<span class="line" id="L121">    <span class="tok-kw">if</span> (reader.peekPrefix(<span class="tok-str">&quot;//&quot;</span>)) { <span class="tok-comment">// authority part</span>
-</span>
-<span class="line" id="L122">        std.debug.assert(reader.get().? == <span class="tok-str">'/'</span>);</span>
-<span class="line" id="L123">        std.debug.assert(reader.get().? == <span class="tok-str">'/'</span>);</span>
-<span class="line" id="L124"></span>
-<span class="line" id="L125">        <span class="tok-kw">const</span> authority = reader.readUntil(isAuthoritySeparator);</span>
-<span class="line" id="L126">        <span class="tok-kw">if</span> (authority.len == <span class="tok-number">0</span>)</span>
-<span class="line" id="L127">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
-<span class="line" id="L128"></span>
-<span class="line" id="L129">        <span class="tok-kw">var</span> start_of_host: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L130">        <span class="tok-kw">if</span> (std.mem.indexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;@&quot;</span>)) |index| {</span>
-<span class="line" id="L131">            start_of_host = index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L132">            <span class="tok-kw">const</span> user_info = authority[<span class="tok-number">0</span>..index];</span>
+<span class="line" id="L127">        std.debug.assert(reader.get().? == <span class="tok-str">'/'</span>);</span>
+<span class="line" id="L128">        std.debug.assert(reader.get().? == <span class="tok-str">'/'</span>);</span>
+<span class="line" id="L129"></span>
+<span class="line" id="L130">        <span class="tok-kw">const</span> authority = reader.readUntil(isAuthoritySeparator);</span>
+<span class="line" id="L131">        <span class="tok-kw">if</span> (authority.len == <span class="tok-number">0</span>)</span>
+<span class="line" id="L132">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
 <span class="line" id="L133"></span>
-<span class="line" id="L134">            <span class="tok-kw">if</span> (std.mem.indexOf(<span class="tok-type">u8</span>, user_info, <span class="tok-str">&quot;:&quot;</span>)) |idx| {</span>
-<span class="line" id="L135">                uri.user = user_info[<span class="tok-number">0</span>..idx];</span>
-<span class="line" id="L136">                <span class="tok-kw">if</span> (idx &lt; user_info.len - <span class="tok-number">1</span>) { <span class="tok-comment">// empty password is also &quot;no password&quot;</span>
+<span class="line" id="L134">        <span class="tok-kw">var</span> start_of_host: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L135">        <span class="tok-kw">if</span> (std.mem.indexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;@&quot;</span>)) |index| {</span>
+<span class="line" id="L136">            start_of_host = index + <span class="tok-number">1</span>;</span>
+<span class="line" id="L137">            <span class="tok-kw">const</span> user_info = authority[<span class="tok-number">0</span>..index];</span>
+<span class="line" id="L138"></span>
+<span class="line" id="L139">            <span class="tok-kw">if</span> (std.mem.indexOf(<span class="tok-type">u8</span>, user_info, <span class="tok-str">&quot;:&quot;</span>)) |idx| {</span>
+<span class="line" id="L140">                uri.user = user_info[<span class="tok-number">0</span>..idx];</span>
+<span class="line" id="L141">                <span class="tok-kw">if</span> (idx &lt; user_info.len - <span class="tok-number">1</span>) { <span class="tok-comment">// empty password is also &quot;no password&quot;</span>
 </span>
-<span class="line" id="L137">                    uri.password = user_info[idx + <span class="tok-number">1</span> ..];</span>
-<span class="line" id="L138">                }</span>
-<span class="line" id="L139">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L140">                uri.user = user_info;</span>
-<span class="line" id="L141">                uri.password = <span class="tok-null">null</span>;</span>
-<span class="line" id="L142">            }</span>
-<span class="line" id="L143">        }</span>
-<span class="line" id="L144"></span>
-<span class="line" id="L145">        <span class="tok-kw">var</span> end_of_host: <span class="tok-type">usize</span> = authority.len;</span>
-<span class="line" id="L146"></span>
-<span class="line" id="L147">        <span class="tok-kw">if</span> (authority[start_of_host] == <span class="tok-str">'['</span>) { <span class="tok-comment">// IPv6</span>
+<span class="line" id="L142">                    uri.password = user_info[idx + <span class="tok-number">1</span> ..];</span>
+<span class="line" id="L143">                }</span>
+<span class="line" id="L144">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L145">                uri.user = user_info;</span>
+<span class="line" id="L146">                uri.password = <span class="tok-null">null</span>;</span>
+<span class="line" id="L147">            }</span>
+<span class="line" id="L148">        }</span>
+<span class="line" id="L149"></span>
+<span class="line" id="L150">        <span class="tok-kw">var</span> end_of_host: <span class="tok-type">usize</span> = authority.len;</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">        <span class="tok-kw">if</span> (authority[start_of_host] == <span class="tok-str">'['</span>) { <span class="tok-comment">// IPv6</span>
 </span>
-<span class="line" id="L148">            end_of_host = std.mem.lastIndexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;]&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
-<span class="line" id="L149">            end_of_host += <span class="tok-number">1</span>;</span>
-<span class="line" id="L150"></span>
-<span class="line" id="L151">            <span class="tok-kw">if</span> (std.mem.lastIndexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;:&quot;</span>)) |index| {</span>
-<span class="line" id="L152">                <span class="tok-kw">if</span> (index &gt;= end_of_host) { <span class="tok-comment">// if not part of the V6 address field</span>
+<span class="line" id="L153">            end_of_host = std.mem.lastIndexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;]&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
+<span class="line" id="L154">            end_of_host += <span class="tok-number">1</span>;</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156">            <span class="tok-kw">if</span> (std.mem.lastIndexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;:&quot;</span>)) |index| {</span>
+<span class="line" id="L157">                <span class="tok-kw">if</span> (index &gt;= end_of_host) { <span class="tok-comment">// if not part of the V6 address field</span>
 </span>
-<span class="line" id="L153">                    end_of_host = std.math.min(end_of_host, index);</span>
-<span class="line" id="L154">                    uri.port = std.fmt.parseInt(<span class="tok-type">u16</span>, authority[index + <span class="tok-number">1</span> ..], <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPort;</span>
-<span class="line" id="L155">                }</span>
-<span class="line" id="L156">            }</span>
-<span class="line" id="L157">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (std.mem.lastIndexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;:&quot;</span>)) |index| {</span>
-<span class="line" id="L158">            <span class="tok-kw">if</span> (index &gt;= start_of_host) { <span class="tok-comment">// if not part of the userinfo field</span>
-</span>
-<span class="line" id="L159">                end_of_host = std.math.min(end_of_host, index);</span>
-<span class="line" id="L160">                uri.port = std.fmt.parseInt(<span class="tok-type">u16</span>, authority[index + <span class="tok-number">1</span> ..], <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPort;</span>
+<span class="line" id="L158">                    end_of_host = std.math.min(end_of_host, index);</span>
+<span class="line" id="L159">                    uri.port = std.fmt.parseInt(<span class="tok-type">u16</span>, authority[index + <span class="tok-number">1</span> ..], <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPort;</span>
+<span class="line" id="L160">                }</span>
 <span class="line" id="L161">            }</span>
-<span class="line" id="L162">        }</span>
-<span class="line" id="L163"></span>
-<span class="line" id="L164">        uri.host = authority[start_of_host..end_of_host];</span>
-<span class="line" id="L165">    }</span>
-<span class="line" id="L166"></span>
-<span class="line" id="L167">    uri.path = reader.readUntil(isPathSeparator);</span>
+<span class="line" id="L162">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (std.mem.lastIndexOf(<span class="tok-type">u8</span>, authority, <span class="tok-str">&quot;:&quot;</span>)) |index| {</span>
+<span class="line" id="L163">            <span class="tok-kw">if</span> (index &gt;= start_of_host) { <span class="tok-comment">// if not part of the userinfo field</span>
+</span>
+<span class="line" id="L164">                end_of_host = std.math.min(end_of_host, index);</span>
+<span class="line" id="L165">                uri.port = std.fmt.parseInt(<span class="tok-type">u16</span>, authority[index + <span class="tok-number">1</span> ..], <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPort;</span>
+<span class="line" id="L166">            }</span>
+<span class="line" id="L167">        }</span>
 <span class="line" id="L168"></span>
-<span class="line" id="L169">    <span class="tok-kw">if</span> ((reader.peek() <span class="tok-kw">orelse</span> <span class="tok-number">0</span>) == <span class="tok-str">'?'</span>) { <span class="tok-comment">// query part</span>
-</span>
-<span class="line" id="L170">        std.debug.assert(reader.get().? == <span class="tok-str">'?'</span>);</span>
-<span class="line" id="L171">        uri.query = reader.readUntil(isQuerySeparator);</span>
-<span class="line" id="L172">    }</span>
+<span class="line" id="L169">        uri.host = authority[start_of_host..end_of_host];</span>
+<span class="line" id="L170">    }</span>
+<span class="line" id="L171"></span>
+<span class="line" id="L172">    uri.path = reader.readUntil(isPathSeparator);</span>
 <span class="line" id="L173"></span>
-<span class="line" id="L174">    <span class="tok-kw">if</span> ((reader.peek() <span class="tok-kw">orelse</span> <span class="tok-number">0</span>) == <span class="tok-str">'#'</span>) { <span class="tok-comment">// fragment part</span>
+<span class="line" id="L174">    <span class="tok-kw">if</span> ((reader.peek() <span class="tok-kw">orelse</span> <span class="tok-number">0</span>) == <span class="tok-str">'?'</span>) { <span class="tok-comment">// query part</span>
 </span>
-<span class="line" id="L175">        std.debug.assert(reader.get().? == <span class="tok-str">'#'</span>);</span>
-<span class="line" id="L176">        uri.fragment = reader.readUntilEof();</span>
+<span class="line" id="L175">        std.debug.assert(reader.get().? == <span class="tok-str">'?'</span>);</span>
+<span class="line" id="L176">        uri.query = reader.readUntil(isQuerySeparator);</span>
 <span class="line" id="L177">    }</span>
 <span class="line" id="L178"></span>
-<span class="line" id="L179">    <span class="tok-kw">return</span> uri;</span>
-<span class="line" id="L180">}</span>
-<span class="line" id="L181"></span>
-<span class="line" id="L182"><span class="tok-kw">const</span> SliceReader = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L183">    <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L184"></span>
-<span class="line" id="L185">    slice: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L186">    offset: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L187"></span>
-<span class="line" id="L188">    <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: *Self) ?<span class="tok-type">u8</span> {</span>
-<span class="line" id="L189">        <span class="tok-kw">if</span> (self.offset &gt;= self.slice.len)</span>
-<span class="line" id="L190">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L191">        <span class="tok-kw">const</span> c = self.slice[self.offset];</span>
-<span class="line" id="L192">        self.offset += <span class="tok-number">1</span>;</span>
-<span class="line" id="L193">        <span class="tok-kw">return</span> c;</span>
-<span class="line" id="L194">    }</span>
-<span class="line" id="L195"></span>
-<span class="line" id="L196">    <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(self: Self) ?<span class="tok-type">u8</span> {</span>
-<span class="line" id="L197">        <span class="tok-kw">if</span> (self.offset &gt;= self.slice.len)</span>
-<span class="line" id="L198">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L199">        <span class="tok-kw">return</span> self.slice[self.offset];</span>
+<span class="line" id="L179">    <span class="tok-kw">if</span> ((reader.peek() <span class="tok-kw">orelse</span> <span class="tok-number">0</span>) == <span class="tok-str">'#'</span>) { <span class="tok-comment">// fragment part</span>
+</span>
+<span class="line" id="L180">        std.debug.assert(reader.get().? == <span class="tok-str">'#'</span>);</span>
+<span class="line" id="L181">        uri.fragment = reader.readUntilEof();</span>
+<span class="line" id="L182">    }</span>
+<span class="line" id="L183"></span>
+<span class="line" id="L184">    <span class="tok-kw">return</span> uri;</span>
+<span class="line" id="L185">}</span>
+<span class="line" id="L186"></span>
+<span class="line" id="L187"><span class="tok-comment">/// Parses the URI or returns an error.</span></span>
+<span class="line" id="L188"><span class="tok-comment">/// The return value will contain unescaped strings pointing into the</span></span>
+<span class="line" id="L189"><span class="tok-comment">/// original `text`. Each component that is provided, will be non-`null`.</span></span>
+<span class="line" id="L190"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parse</span>(text: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ParseError!Uri {</span>
+<span class="line" id="L191">    <span class="tok-kw">var</span> reader = SliceReader{ .slice = text };</span>
+<span class="line" id="L192">    <span class="tok-kw">const</span> scheme = reader.readWhile(isSchemeChar);</span>
+<span class="line" id="L193"></span>
+<span class="line" id="L194">    <span class="tok-comment">// after the scheme, a ':' must appear</span>
+</span>
+<span class="line" id="L195">    <span class="tok-kw">if</span> (reader.get()) |c| {</span>
+<span class="line" id="L196">        <span class="tok-kw">if</span> (c != <span class="tok-str">':'</span>)</span>
+<span class="line" id="L197">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedCharacter;</span>
+<span class="line" id="L198">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L199">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidFormat;</span>
 <span class="line" id="L200">    }</span>
 <span class="line" id="L201"></span>
-<span class="line" id="L202">    <span class="tok-kw">fn</span> <span class="tok-fn">readWhile</span>(self: *Self, <span class="tok-kw">comptime</span> predicate: <span class="tok-kw">fn</span> (<span class="tok-type">u8</span>) <span class="tok-type">bool</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L203">        <span class="tok-kw">const</span> start = self.offset;</span>
-<span class="line" id="L204">        <span class="tok-kw">var</span> end = start;</span>
-<span class="line" id="L205">        <span class="tok-kw">while</span> (end &lt; self.slice.len <span class="tok-kw">and</span> predicate(self.slice[end])) {</span>
-<span class="line" id="L206">            end += <span class="tok-number">1</span>;</span>
-<span class="line" id="L207">        }</span>
-<span class="line" id="L208">        self.offset = end;</span>
-<span class="line" id="L209">        <span class="tok-kw">return</span> self.slice[start..end];</span>
-<span class="line" id="L210">    }</span>
-<span class="line" id="L211"></span>
-<span class="line" id="L212">    <span class="tok-kw">fn</span> <span class="tok-fn">readUntil</span>(self: *Self, <span class="tok-kw">comptime</span> predicate: <span class="tok-kw">fn</span> (<span class="tok-type">u8</span>) <span class="tok-type">bool</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L213">        <span class="tok-kw">const</span> start = self.offset;</span>
-<span class="line" id="L214">        <span class="tok-kw">var</span> end = start;</span>
-<span class="line" id="L215">        <span class="tok-kw">while</span> (end &lt; self.slice.len <span class="tok-kw">and</span> !predicate(self.slice[end])) {</span>
-<span class="line" id="L216">            end += <span class="tok-number">1</span>;</span>
-<span class="line" id="L217">        }</span>
-<span class="line" id="L218">        self.offset = end;</span>
-<span class="line" id="L219">        <span class="tok-kw">return</span> self.slice[start..end];</span>
-<span class="line" id="L220">    }</span>
-<span class="line" id="L221"></span>
-<span class="line" id="L222">    <span class="tok-kw">fn</span> <span class="tok-fn">readUntilEof</span>(self: *Self) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L223">        <span class="tok-kw">const</span> start = self.offset;</span>
-<span class="line" id="L224">        self.offset = self.slice.len;</span>
-<span class="line" id="L225">        <span class="tok-kw">return</span> self.slice[start..];</span>
-<span class="line" id="L226">    }</span>
-<span class="line" id="L227"></span>
-<span class="line" id="L228">    <span class="tok-kw">fn</span> <span class="tok-fn">peekPrefix</span>(self: Self, prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L229">        <span class="tok-kw">if</span> (self.offset + prefix.len &gt; self.slice.len)</span>
-<span class="line" id="L230">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L231">        <span class="tok-kw">return</span> std.mem.eql(<span class="tok-type">u8</span>, self.slice[self.offset..][<span class="tok-number">0</span>..prefix.len], prefix);</span>
-<span class="line" id="L232">    }</span>
-<span class="line" id="L233">};</span>
-<span class="line" id="L234"></span>
-<span class="line" id="L235"><span class="tok-comment">/// scheme      = ALPHA *( ALPHA / DIGIT / &quot;+&quot; / &quot;-&quot; / &quot;.&quot; )</span></span>
-<span class="line" id="L236"><span class="tok-kw">fn</span> <span class="tok-fn">isSchemeChar</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L237">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L238">        <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span>, <span class="tok-str">'+'</span>, <span class="tok-str">'-'</span>, <span class="tok-str">'.'</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L239">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L240">    };</span>
-<span class="line" id="L241">}</span>
-<span class="line" id="L242"></span>
-<span class="line" id="L243"><span class="tok-kw">fn</span> <span class="tok-fn">isAuthoritySeparator</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L244">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L245">        <span class="tok-str">'/'</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'#'</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L246">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L247">    };</span>
-<span class="line" id="L248">}</span>
-<span class="line" id="L249"></span>
-<span class="line" id="L250"><span class="tok-comment">/// reserved    = gen-delims / sub-delims</span></span>
-<span class="line" id="L251"><span class="tok-kw">fn</span> <span class="tok-fn">isReserved</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L252">    <span class="tok-kw">return</span> isGenLimit(c) <span class="tok-kw">or</span> isSubLimit(c);</span>
-<span class="line" id="L253">}</span>
-<span class="line" id="L254"></span>
-<span class="line" id="L255"><span class="tok-comment">/// gen-delims  = &quot;:&quot; / &quot;/&quot; / &quot;?&quot; / &quot;#&quot; / &quot;[&quot; / &quot;]&quot; / &quot;@&quot;</span></span>
-<span class="line" id="L256"><span class="tok-kw">fn</span> <span class="tok-fn">isGenLimit</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L257">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L258">        <span class="tok-str">':'</span>, <span class="tok-str">','</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'#'</span>, <span class="tok-str">'['</span>, <span class="tok-str">']'</span>, <span class="tok-str">'@'</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L259">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L260">    };</span>
-<span class="line" id="L261">}</span>
+<span class="line" id="L202">    <span class="tok-kw">var</span> uri = <span class="tok-kw">try</span> parseWithoutScheme(reader.readUntilEof());</span>
+<span class="line" id="L203">    uri.scheme = scheme;</span>
+<span class="line" id="L204"></span>
+<span class="line" id="L205">    <span class="tok-kw">return</span> uri;</span>
+<span class="line" id="L206">}</span>
+<span class="line" id="L207"></span>
+<span class="line" id="L208"><span class="tok-comment">/// Resolves a URI against a base URI, conforming to RFC 3986, Section 5.</span></span>
+<span class="line" id="L209"><span class="tok-comment">/// arena owns any memory allocated by this function.</span></span>
+<span class="line" id="L210"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">resolve</span>(Base: Uri, R: Uri, strict: <span class="tok-type">bool</span>, arena: std.mem.Allocator) !Uri {</span>
+<span class="line" id="L211">    <span class="tok-kw">var</span> T: Uri = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L212"></span>
+<span class="line" id="L213">    <span class="tok-kw">if</span> (R.scheme.len &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> !((!strict) <span class="tok-kw">and</span> (std.mem.eql(<span class="tok-type">u8</span>, R.scheme, Base.scheme)))) {</span>
+<span class="line" id="L214">        T.scheme = R.scheme;</span>
+<span class="line" id="L215">        T.user = R.user;</span>
+<span class="line" id="L216">        T.host = R.host;</span>
+<span class="line" id="L217">        T.port = R.port;</span>
+<span class="line" id="L218">        T.path = <span class="tok-kw">try</span> std.fs.path.resolvePosix(arena, &amp;.{ <span class="tok-str">&quot;/&quot;</span>, R.path });</span>
+<span class="line" id="L219">        T.query = R.query;</span>
+<span class="line" id="L220">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L221">        <span class="tok-kw">if</span> (R.host) |host| {</span>
+<span class="line" id="L222">            T.user = R.user;</span>
+<span class="line" id="L223">            T.host = host;</span>
+<span class="line" id="L224">            T.port = R.port;</span>
+<span class="line" id="L225">            T.path = R.path;</span>
+<span class="line" id="L226">            T.path = <span class="tok-kw">try</span> std.fs.path.resolvePosix(arena, &amp;.{ <span class="tok-str">&quot;/&quot;</span>, R.path });</span>
+<span class="line" id="L227">            T.query = R.query;</span>
+<span class="line" id="L228">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L229">            <span class="tok-kw">if</span> (R.path.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L230">                T.path = Base.path;</span>
+<span class="line" id="L231">                <span class="tok-kw">if</span> (R.query) |query| {</span>
+<span class="line" id="L232">                    T.query = query;</span>
+<span class="line" id="L233">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L234">                    T.query = Base.query;</span>
+<span class="line" id="L235">                }</span>
+<span class="line" id="L236">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L237">                <span class="tok-kw">if</span> (R.path[<span class="tok-number">0</span>] == <span class="tok-str">'/'</span>) {</span>
+<span class="line" id="L238">                    T.path = <span class="tok-kw">try</span> std.fs.path.resolvePosix(arena, &amp;.{ <span class="tok-str">&quot;/&quot;</span>, R.path });</span>
+<span class="line" id="L239">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L240">                    T.path = <span class="tok-kw">try</span> std.fs.path.resolvePosix(arena, &amp;.{ <span class="tok-str">&quot;/&quot;</span>, Base.path, R.path });</span>
+<span class="line" id="L241">                }</span>
+<span class="line" id="L242">                T.query = R.query;</span>
+<span class="line" id="L243">            }</span>
+<span class="line" id="L244"></span>
+<span class="line" id="L245">            T.user = Base.user;</span>
+<span class="line" id="L246">            T.host = Base.host;</span>
+<span class="line" id="L247">            T.port = Base.port;</span>
+<span class="line" id="L248">        }</span>
+<span class="line" id="L249">        T.scheme = Base.scheme;</span>
+<span class="line" id="L250">    }</span>
+<span class="line" id="L251"></span>
+<span class="line" id="L252">    T.fragment = R.fragment;</span>
+<span class="line" id="L253"></span>
+<span class="line" id="L254">    <span class="tok-kw">return</span> T;</span>
+<span class="line" id="L255">}</span>
+<span class="line" id="L256"></span>
+<span class="line" id="L257"><span class="tok-kw">const</span> SliceReader = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L258">    <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260">    slice: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L261">    offset: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
 <span class="line" id="L262"></span>
-<span class="line" id="L263"><span class="tok-comment">/// sub-delims  = &quot;!&quot; / &quot;$&quot; / &quot;&amp;&quot; / &quot;'&quot; / &quot;(&quot; / &quot;)&quot;</span></span>
-<span class="line" id="L264"><span class="tok-comment">///             / &quot;*&quot; / &quot;+&quot; / &quot;,&quot; / &quot;;&quot; / &quot;=&quot;</span></span>
-<span class="line" id="L265"><span class="tok-kw">fn</span> <span class="tok-fn">isSubLimit</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L266">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L267">        <span class="tok-str">'!'</span>, <span class="tok-str">'$'</span>, <span class="tok-str">'&amp;'</span>, <span class="tok-str">'\''</span>, <span class="tok-str">'('</span>, <span class="tok-str">')'</span>, <span class="tok-str">'*'</span>, <span class="tok-str">'+'</span>, <span class="tok-str">','</span>, <span class="tok-str">';'</span>, <span class="tok-str">'='</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L268">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L269">    };</span>
-<span class="line" id="L270">}</span>
-<span class="line" id="L271"></span>
-<span class="line" id="L272"><span class="tok-comment">/// unreserved  = ALPHA / DIGIT / &quot;-&quot; / &quot;.&quot; / &quot;_&quot; / &quot;~&quot;</span></span>
-<span class="line" id="L273"><span class="tok-kw">fn</span> <span class="tok-fn">isUnreserved</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L274">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L275">        <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span>, <span class="tok-str">'-'</span>, <span class="tok-str">'.'</span>, <span class="tok-str">'_'</span>, <span class="tok-str">'~'</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L276">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L277">    };</span>
-<span class="line" id="L278">}</span>
-<span class="line" id="L279"></span>
-<span class="line" id="L280"><span class="tok-kw">fn</span> <span class="tok-fn">isPathSeparator</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L281">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L282">        <span class="tok-str">'?'</span>, <span class="tok-str">'#'</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L283">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L284">    };</span>
-<span class="line" id="L285">}</span>
+<span class="line" id="L263">    <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: *Self) ?<span class="tok-type">u8</span> {</span>
+<span class="line" id="L264">        <span class="tok-kw">if</span> (self.offset &gt;= self.slice.len)</span>
+<span class="line" id="L265">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L266">        <span class="tok-kw">const</span> c = self.slice[self.offset];</span>
+<span class="line" id="L267">        self.offset += <span class="tok-number">1</span>;</span>
+<span class="line" id="L268">        <span class="tok-kw">return</span> c;</span>
+<span class="line" id="L269">    }</span>
+<span class="line" id="L270"></span>
+<span class="line" id="L271">    <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(self: Self) ?<span class="tok-type">u8</span> {</span>
+<span class="line" id="L272">        <span class="tok-kw">if</span> (self.offset &gt;= self.slice.len)</span>
+<span class="line" id="L273">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L274">        <span class="tok-kw">return</span> self.slice[self.offset];</span>
+<span class="line" id="L275">    }</span>
+<span class="line" id="L276"></span>
+<span class="line" id="L277">    <span class="tok-kw">fn</span> <span class="tok-fn">readWhile</span>(self: *Self, <span class="tok-kw">comptime</span> predicate: <span class="tok-kw">fn</span> (<span class="tok-type">u8</span>) <span class="tok-type">bool</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L278">        <span class="tok-kw">const</span> start = self.offset;</span>
+<span class="line" id="L279">        <span class="tok-kw">var</span> end = start;</span>
+<span class="line" id="L280">        <span class="tok-kw">while</span> (end &lt; self.slice.len <span class="tok-kw">and</span> predicate(self.slice[end])) {</span>
+<span class="line" id="L281">            end += <span class="tok-number">1</span>;</span>
+<span class="line" id="L282">        }</span>
+<span class="line" id="L283">        self.offset = end;</span>
+<span class="line" id="L284">        <span class="tok-kw">return</span> self.slice[start..end];</span>
+<span class="line" id="L285">    }</span>
 <span class="line" id="L286"></span>
-<span class="line" id="L287"><span class="tok-kw">fn</span> <span class="tok-fn">isQuerySeparator</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L288">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L289">        <span class="tok-str">'#'</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L290">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L291">    };</span>
-<span class="line" id="L292">}</span>
-<span class="line" id="L293"></span>
-<span class="line" id="L294"><span class="tok-kw">test</span> <span class="tok-str">&quot;basic&quot;</span> {</span>
-<span class="line" id="L295">    <span class="tok-kw">const</span> parsed = <span class="tok-kw">try</span> parse(<span class="tok-str">&quot;https://ziglang.org/download&quot;</span>);</span>
-<span class="line" id="L296">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;https&quot;</span>, parsed.scheme);</span>
-<span class="line" id="L297">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;ziglang.org&quot;</span>, parsed.host <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedNull);</span>
-<span class="line" id="L298">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;/download&quot;</span>, parsed.path);</span>
-<span class="line" id="L299">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">u16</span>, <span class="tok-null">null</span>), parsed.port);</span>
-<span class="line" id="L300">}</span>
-<span class="line" id="L301"></span>
-<span class="line" id="L302"><span class="tok-kw">test</span> <span class="tok-str">&quot;with port&quot;</span> {</span>
-<span class="line" id="L303">    <span class="tok-kw">const</span> parsed = <span class="tok-kw">try</span> parse(<span class="tok-str">&quot;http://example:1337/&quot;</span>);</span>
-<span class="line" id="L304">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;http&quot;</span>, parsed.scheme);</span>
-<span class="line" id="L305">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;example&quot;</span>, parsed.host <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedNull);</span>
-<span class="line" id="L306">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;/&quot;</span>, parsed.path);</span>
-<span class="line" id="L307">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">u16</span>, <span class="tok-number">1337</span>), parsed.port);</span>
-<span class="line" id="L308">}</span>
+<span class="line" id="L287">    <span class="tok-kw">fn</span> <span class="tok-fn">readUntil</span>(self: *Self, <span class="tok-kw">comptime</span> predicate: <span class="tok-kw">fn</span> (<span class="tok-type">u8</span>) <span class="tok-type">bool</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L288">        <span class="tok-kw">const</span> start = self.offset;</span>
+<span class="line" id="L289">        <span class="tok-kw">var</span> end = start;</span>
+<span class="line" id="L290">        <span class="tok-kw">while</span> (end &lt; self.slice.len <span class="tok-kw">and</span> !predicate(self.slice[end])) {</span>
+<span class="line" id="L291">            end += <span class="tok-number">1</span>;</span>
+<span class="line" id="L292">        }</span>
+<span class="line" id="L293">        self.offset = end;</span>
+<span class="line" id="L294">        <span class="tok-kw">return</span> self.slice[start..end];</span>
+<span class="line" id="L295">    }</span>
+<span class="line" id="L296"></span>
+<span class="line" id="L297">    <span class="tok-kw">fn</span> <span class="tok-fn">readUntilEof</span>(self: *Self) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L298">        <span class="tok-kw">const</span> start = self.offset;</span>
+<span class="line" id="L299">        self.offset = self.slice.len;</span>
+<span class="line" id="L300">        <span class="tok-kw">return</span> self.slice[start..];</span>
+<span class="line" id="L301">    }</span>
+<span class="line" id="L302"></span>
+<span class="line" id="L303">    <span class="tok-kw">fn</span> <span class="tok-fn">peekPrefix</span>(self: Self, prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L304">        <span class="tok-kw">if</span> (self.offset + prefix.len &gt; self.slice.len)</span>
+<span class="line" id="L305">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L306">        <span class="tok-kw">return</span> std.mem.eql(<span class="tok-type">u8</span>, self.slice[self.offset..][<span class="tok-number">0</span>..prefix.len], prefix);</span>
+<span class="line" id="L307">    }</span>
+<span class="line" id="L308">};</span>
 <span class="line" id="L309"></span>
-<span class="line" id="L310"><span class="tok-kw">test</span> <span class="tok-str">&quot;should fail gracefully&quot;</span> {</span>
-<span class="line" id="L311">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(ParseError!Uri, <span class="tok-kw">error</span>.InvalidFormat), parse(<span class="tok-str">&quot;foobar://&quot;</span>));</span>
-<span class="line" id="L312">}</span>
-<span class="line" id="L313"></span>
-<span class="line" id="L314"><span class="tok-kw">test</span> <span class="tok-str">&quot;scheme&quot;</span> {</span>
-<span class="line" id="L315">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;http&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;http:_&quot;</span>)).scheme);</span>
-<span class="line" id="L316">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;scheme-mee&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme-mee:_&quot;</span>)).scheme);</span>
-<span class="line" id="L317">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;a.b.c&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;a.b.c:_&quot;</span>)).scheme);</span>
-<span class="line" id="L318">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;ab+&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;ab+:_&quot;</span>)).scheme);</span>
-<span class="line" id="L319">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;X+++&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;X+++:_&quot;</span>)).scheme);</span>
-<span class="line" id="L320">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;Y+-.&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;Y+-.:_&quot;</span>)).scheme);</span>
-<span class="line" id="L321">}</span>
-<span class="line" id="L322"></span>
-<span class="line" id="L323"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority&quot;</span> {</span>
-<span class="line" id="L324">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://hostname&quot;</span>)).host.?);</span>
-<span class="line" id="L325"></span>
-<span class="line" id="L326">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname&quot;</span>)).host.?);</span>
-<span class="line" id="L327">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;userinfo&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname&quot;</span>)).user.?);</span>
-<span class="line" id="L328">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname&quot;</span>)).password);</span>
+<span class="line" id="L310"><span class="tok-comment">/// scheme      = ALPHA *( ALPHA / DIGIT / &quot;+&quot; / &quot;-&quot; / &quot;.&quot; )</span></span>
+<span class="line" id="L311"><span class="tok-kw">fn</span> <span class="tok-fn">isSchemeChar</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L312">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L313">        <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span>, <span class="tok-str">'+'</span>, <span class="tok-str">'-'</span>, <span class="tok-str">'.'</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L314">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L315">    };</span>
+<span class="line" id="L316">}</span>
+<span class="line" id="L317"></span>
+<span class="line" id="L318"><span class="tok-kw">fn</span> <span class="tok-fn">isAuthoritySeparator</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L319">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L320">        <span class="tok-str">'/'</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'#'</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L321">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L322">    };</span>
+<span class="line" id="L323">}</span>
+<span class="line" id="L324"></span>
+<span class="line" id="L325"><span class="tok-comment">/// reserved    = gen-delims / sub-delims</span></span>
+<span class="line" id="L326"><span class="tok-kw">fn</span> <span class="tok-fn">isReserved</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L327">    <span class="tok-kw">return</span> isGenLimit(c) <span class="tok-kw">or</span> isSubLimit(c);</span>
+<span class="line" id="L328">}</span>
 <span class="line" id="L329"></span>
-<span class="line" id="L330">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname&quot;</span>)).host.?);</span>
-<span class="line" id="L331">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;user&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname&quot;</span>)).user.?);</span>
-<span class="line" id="L332">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;password&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname&quot;</span>)).password.?);</span>
-<span class="line" id="L333"></span>
-<span class="line" id="L334">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://hostname:0&quot;</span>)).host.?);</span>
-<span class="line" id="L335">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">1234</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://hostname:1234&quot;</span>)).port.?);</span>
-<span class="line" id="L336"></span>
-<span class="line" id="L337">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).host.?);</span>
-<span class="line" id="L338">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">1234</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).port.?);</span>
-<span class="line" id="L339">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;userinfo&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).user.?);</span>
-<span class="line" id="L340">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).password);</span>
-<span class="line" id="L341"></span>
-<span class="line" id="L342">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).host.?);</span>
-<span class="line" id="L343">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">1234</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).port.?);</span>
-<span class="line" id="L344">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;user&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).user.?);</span>
-<span class="line" id="L345">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;password&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).password.?);</span>
-<span class="line" id="L346">}</span>
-<span class="line" id="L347"></span>
-<span class="line" id="L348"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.password&quot;</span> {</span>
-<span class="line" id="L349">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username@a&quot;</span>)).user.?);</span>
-<span class="line" id="L350">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username@a&quot;</span>)).password);</span>
-<span class="line" id="L351"></span>
-<span class="line" id="L352">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:@a&quot;</span>)).user.?);</span>
-<span class="line" id="L353">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:@a&quot;</span>)).password);</span>
+<span class="line" id="L330"><span class="tok-comment">/// gen-delims  = &quot;:&quot; / &quot;/&quot; / &quot;?&quot; / &quot;#&quot; / &quot;[&quot; / &quot;]&quot; / &quot;@&quot;</span></span>
+<span class="line" id="L331"><span class="tok-kw">fn</span> <span class="tok-fn">isGenLimit</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L332">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L333">        <span class="tok-str">':'</span>, <span class="tok-str">','</span>, <span class="tok-str">'?'</span>, <span class="tok-str">'#'</span>, <span class="tok-str">'['</span>, <span class="tok-str">']'</span>, <span class="tok-str">'@'</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L334">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L335">    };</span>
+<span class="line" id="L336">}</span>
+<span class="line" id="L337"></span>
+<span class="line" id="L338"><span class="tok-comment">/// sub-delims  = &quot;!&quot; / &quot;$&quot; / &quot;&amp;&quot; / &quot;'&quot; / &quot;(&quot; / &quot;)&quot;</span></span>
+<span class="line" id="L339"><span class="tok-comment">///             / &quot;*&quot; / &quot;+&quot; / &quot;,&quot; / &quot;;&quot; / &quot;=&quot;</span></span>
+<span class="line" id="L340"><span class="tok-kw">fn</span> <span class="tok-fn">isSubLimit</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L341">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L342">        <span class="tok-str">'!'</span>, <span class="tok-str">'$'</span>, <span class="tok-str">'&amp;'</span>, <span class="tok-str">'\''</span>, <span class="tok-str">'('</span>, <span class="tok-str">')'</span>, <span class="tok-str">'*'</span>, <span class="tok-str">'+'</span>, <span class="tok-str">','</span>, <span class="tok-str">';'</span>, <span class="tok-str">'='</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L343">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L344">    };</span>
+<span class="line" id="L345">}</span>
+<span class="line" id="L346"></span>
+<span class="line" id="L347"><span class="tok-comment">/// unreserved  = ALPHA / DIGIT / &quot;-&quot; / &quot;.&quot; / &quot;_&quot; / &quot;~&quot;</span></span>
+<span class="line" id="L348"><span class="tok-kw">fn</span> <span class="tok-fn">isUnreserved</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L349">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L350">        <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span>, <span class="tok-str">'-'</span>, <span class="tok-str">'.'</span>, <span class="tok-str">'_'</span>, <span class="tok-str">'~'</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L351">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L352">    };</span>
+<span class="line" id="L353">}</span>
 <span class="line" id="L354"></span>
-<span class="line" id="L355">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:password@a&quot;</span>)).user.?);</span>
-<span class="line" id="L356">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;password&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:password@a&quot;</span>)).password.?);</span>
-<span class="line" id="L357"></span>
-<span class="line" id="L358">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username::@a&quot;</span>)).user.?);</span>
-<span class="line" id="L359">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;:&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username::@a&quot;</span>)).password.?);</span>
+<span class="line" id="L355"><span class="tok-kw">fn</span> <span class="tok-fn">isPathSeparator</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L356">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L357">        <span class="tok-str">'?'</span>, <span class="tok-str">'#'</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L358">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L359">    };</span>
 <span class="line" id="L360">}</span>
 <span class="line" id="L361"></span>
-<span class="line" id="L362"><span class="tok-kw">fn</span> <span class="tok-fn">testAuthorityHost</span>(<span class="tok-kw">comptime</span> hostlist: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L363">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (hostlist) |hostname| {</span>
-<span class="line" id="L364">        <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, hostname, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://&quot;</span> ++ hostname)).host.?);</span>
-<span class="line" id="L365">    }</span>
-<span class="line" id="L366">}</span>
-<span class="line" id="L367"></span>
-<span class="line" id="L368"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.dns-names&quot;</span> {</span>
-<span class="line" id="L369">    <span class="tok-kw">try</span> testAuthorityHost(.{</span>
-<span class="line" id="L370">        <span class="tok-str">&quot;a&quot;</span>,</span>
-<span class="line" id="L371">        <span class="tok-str">&quot;a.b&quot;</span>,</span>
-<span class="line" id="L372">        <span class="tok-str">&quot;example.com&quot;</span>,</span>
-<span class="line" id="L373">        <span class="tok-str">&quot;www.example.com&quot;</span>,</span>
-<span class="line" id="L374">        <span class="tok-str">&quot;example.org.&quot;</span>,</span>
-<span class="line" id="L375">        <span class="tok-str">&quot;www.example.org.&quot;</span>,</span>
-<span class="line" id="L376">        <span class="tok-str">&quot;xn--nw2a.xn--j6w193g&quot;</span>, <span class="tok-comment">// internationalized URI: 見.香港</span>
-</span>
-<span class="line" id="L377">        <span class="tok-str">&quot;fe80--1ff-fe23-4567-890as3.ipv6-literal.net&quot;</span>,</span>
-<span class="line" id="L378">    });</span>
-<span class="line" id="L379">}</span>
-<span class="line" id="L380"></span>
-<span class="line" id="L381"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.IPv4&quot;</span> {</span>
-<span class="line" id="L382">    <span class="tok-kw">try</span> testAuthorityHost(.{</span>
-<span class="line" id="L383">        <span class="tok-str">&quot;127.0.0.1&quot;</span>,</span>
-<span class="line" id="L384">        <span class="tok-str">&quot;255.255.255.255&quot;</span>,</span>
-<span class="line" id="L385">        <span class="tok-str">&quot;0.0.0.0&quot;</span>,</span>
-<span class="line" id="L386">        <span class="tok-str">&quot;8.8.8.8&quot;</span>,</span>
-<span class="line" id="L387">        <span class="tok-str">&quot;1.2.3.4&quot;</span>,</span>
-<span class="line" id="L388">        <span class="tok-str">&quot;192.168.0.1&quot;</span>,</span>
-<span class="line" id="L389">        <span class="tok-str">&quot;10.42.0.0&quot;</span>,</span>
-<span class="line" id="L390">    });</span>
+<span class="line" id="L362"><span class="tok-kw">fn</span> <span class="tok-fn">isPathChar</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L363">    <span class="tok-kw">return</span> isUnreserved(c) <span class="tok-kw">or</span> isSubLimit(c) <span class="tok-kw">or</span> c == <span class="tok-str">'/'</span> <span class="tok-kw">or</span> c == <span class="tok-str">':'</span> <span class="tok-kw">or</span> c == <span class="tok-str">'@'</span>;</span>
+<span class="line" id="L364">}</span>
+<span class="line" id="L365"></span>
+<span class="line" id="L366"><span class="tok-kw">fn</span> <span class="tok-fn">isQueryChar</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L367">    <span class="tok-kw">return</span> isPathChar(c) <span class="tok-kw">or</span> c == <span class="tok-str">'?'</span>;</span>
+<span class="line" id="L368">}</span>
+<span class="line" id="L369"></span>
+<span class="line" id="L370"><span class="tok-kw">fn</span> <span class="tok-fn">isQuerySeparator</span>(c: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L371">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L372">        <span class="tok-str">'#'</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L373">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L374">    };</span>
+<span class="line" id="L375">}</span>
+<span class="line" id="L376"></span>
+<span class="line" id="L377"><span class="tok-kw">test</span> <span class="tok-str">&quot;basic&quot;</span> {</span>
+<span class="line" id="L378">    <span class="tok-kw">const</span> parsed = <span class="tok-kw">try</span> parse(<span class="tok-str">&quot;https://ziglang.org/download&quot;</span>);</span>
+<span class="line" id="L379">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;https&quot;</span>, parsed.scheme);</span>
+<span class="line" id="L380">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;ziglang.org&quot;</span>, parsed.host <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedNull);</span>
+<span class="line" id="L381">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;/download&quot;</span>, parsed.path);</span>
+<span class="line" id="L382">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">u16</span>, <span class="tok-null">null</span>), parsed.port);</span>
+<span class="line" id="L383">}</span>
+<span class="line" id="L384"></span>
+<span class="line" id="L385"><span class="tok-kw">test</span> <span class="tok-str">&quot;with port&quot;</span> {</span>
+<span class="line" id="L386">    <span class="tok-kw">const</span> parsed = <span class="tok-kw">try</span> parse(<span class="tok-str">&quot;http://example:1337/&quot;</span>);</span>
+<span class="line" id="L387">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;http&quot;</span>, parsed.scheme);</span>
+<span class="line" id="L388">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;example&quot;</span>, parsed.host <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedNull);</span>
+<span class="line" id="L389">    <span class="tok-kw">try</span> testing.expectEqualStrings(<span class="tok-str">&quot;/&quot;</span>, parsed.path);</span>
+<span class="line" id="L390">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">u16</span>, <span class="tok-number">1337</span>), parsed.port);</span>
 <span class="line" id="L391">}</span>
 <span class="line" id="L392"></span>
-<span class="line" id="L393"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.IPv6&quot;</span> {</span>
-<span class="line" id="L394">    <span class="tok-kw">try</span> testAuthorityHost(.{</span>
-<span class="line" id="L395">        <span class="tok-str">&quot;[2001:db8:0:0:0:0:2:1]&quot;</span>,</span>
-<span class="line" id="L396">        <span class="tok-str">&quot;[2001:db8::2:1]&quot;</span>,</span>
-<span class="line" id="L397">        <span class="tok-str">&quot;[2001:db8:0000:1:1:1:1:1]&quot;</span>,</span>
-<span class="line" id="L398">        <span class="tok-str">&quot;[2001:db8:0:1:1:1:1:1]&quot;</span>,</span>
-<span class="line" id="L399">        <span class="tok-str">&quot;[0:0:0:0:0:0:0:0]&quot;</span>,</span>
-<span class="line" id="L400">        <span class="tok-str">&quot;[0:0:0:0:0:0:0:1]&quot;</span>,</span>
-<span class="line" id="L401">        <span class="tok-str">&quot;[::1]&quot;</span>,</span>
-<span class="line" id="L402">        <span class="tok-str">&quot;[::]&quot;</span>,</span>
-<span class="line" id="L403">        <span class="tok-str">&quot;[2001:db8:85a3:8d3:1319:8a2e:370:7348]&quot;</span>,</span>
-<span class="line" id="L404">        <span class="tok-str">&quot;[fe80::1ff:fe23:4567:890a%25eth2]&quot;</span>,</span>
-<span class="line" id="L405">        <span class="tok-str">&quot;[fe80::1ff:fe23:4567:890a]&quot;</span>,</span>
-<span class="line" id="L406">        <span class="tok-str">&quot;[fe80::1ff:fe23:4567:890a%253]&quot;</span>,</span>
-<span class="line" id="L407">        <span class="tok-str">&quot;[fe80:3::1ff:fe23:4567:890a]&quot;</span>,</span>
-<span class="line" id="L408">    });</span>
-<span class="line" id="L409">}</span>
-<span class="line" id="L410"></span>
-<span class="line" id="L411"><span class="tok-kw">test</span> <span class="tok-str">&quot;RFC example 1&quot;</span> {</span>
-<span class="line" id="L412">    <span class="tok-kw">const</span> uri = <span class="tok-str">&quot;foo://example.com:8042/over/there?name=ferret#nose&quot;</span>;</span>
-<span class="line" id="L413">    <span class="tok-kw">try</span> std.testing.expectEqual(Uri{</span>
-<span class="line" id="L414">        .scheme = uri[<span class="tok-number">0</span>..<span class="tok-number">3</span>],</span>
-<span class="line" id="L415">        .user = <span class="tok-null">null</span>,</span>
-<span class="line" id="L416">        .password = <span class="tok-null">null</span>,</span>
-<span class="line" id="L417">        .host = uri[<span class="tok-number">6</span>..<span class="tok-number">17</span>],</span>
-<span class="line" id="L418">        .port = <span class="tok-number">8042</span>,</span>
-<span class="line" id="L419">        .path = uri[<span class="tok-number">22</span>..<span class="tok-number">33</span>],</span>
-<span class="line" id="L420">        .query = uri[<span class="tok-number">34</span>..<span class="tok-number">45</span>],</span>
-<span class="line" id="L421">        .fragment = uri[<span class="tok-number">46</span>..<span class="tok-number">50</span>],</span>
-<span class="line" id="L422">    }, <span class="tok-kw">try</span> parse(uri));</span>
-<span class="line" id="L423">}</span>
+<span class="line" id="L393"><span class="tok-kw">test</span> <span class="tok-str">&quot;should fail gracefully&quot;</span> {</span>
+<span class="line" id="L394">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(ParseError!Uri, <span class="tok-kw">error</span>.InvalidFormat), parse(<span class="tok-str">&quot;foobar://&quot;</span>));</span>
+<span class="line" id="L395">}</span>
+<span class="line" id="L396"></span>
+<span class="line" id="L397"><span class="tok-kw">test</span> <span class="tok-str">&quot;scheme&quot;</span> {</span>
+<span class="line" id="L398">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;http&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;http:_&quot;</span>)).scheme);</span>
+<span class="line" id="L399">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;scheme-mee&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme-mee:_&quot;</span>)).scheme);</span>
+<span class="line" id="L400">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;a.b.c&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;a.b.c:_&quot;</span>)).scheme);</span>
+<span class="line" id="L401">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;ab+&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;ab+:_&quot;</span>)).scheme);</span>
+<span class="line" id="L402">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;X+++&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;X+++:_&quot;</span>)).scheme);</span>
+<span class="line" id="L403">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;Y+-.&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;Y+-.:_&quot;</span>)).scheme);</span>
+<span class="line" id="L404">}</span>
+<span class="line" id="L405"></span>
+<span class="line" id="L406"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority&quot;</span> {</span>
+<span class="line" id="L407">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://hostname&quot;</span>)).host.?);</span>
+<span class="line" id="L408"></span>
+<span class="line" id="L409">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname&quot;</span>)).host.?);</span>
+<span class="line" id="L410">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;userinfo&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname&quot;</span>)).user.?);</span>
+<span class="line" id="L411">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname&quot;</span>)).password);</span>
+<span class="line" id="L412"></span>
+<span class="line" id="L413">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname&quot;</span>)).host.?);</span>
+<span class="line" id="L414">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;user&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname&quot;</span>)).user.?);</span>
+<span class="line" id="L415">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;password&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname&quot;</span>)).password.?);</span>
+<span class="line" id="L416"></span>
+<span class="line" id="L417">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://hostname:0&quot;</span>)).host.?);</span>
+<span class="line" id="L418">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">1234</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://hostname:1234&quot;</span>)).port.?);</span>
+<span class="line" id="L419"></span>
+<span class="line" id="L420">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).host.?);</span>
+<span class="line" id="L421">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">1234</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).port.?);</span>
+<span class="line" id="L422">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;userinfo&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).user.?);</span>
+<span class="line" id="L423">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://userinfo@hostname:1234&quot;</span>)).password);</span>
 <span class="line" id="L424"></span>
-<span class="line" id="L425"><span class="tok-kw">test</span> <span class="tok-str">&quot;RFX example 2&quot;</span> {</span>
-<span class="line" id="L426">    <span class="tok-kw">const</span> uri = <span class="tok-str">&quot;urn:example:animal:ferret:nose&quot;</span>;</span>
-<span class="line" id="L427">    <span class="tok-kw">try</span> std.testing.expectEqual(Uri{</span>
-<span class="line" id="L428">        .scheme = uri[<span class="tok-number">0</span>..<span class="tok-number">3</span>],</span>
-<span class="line" id="L429">        .user = <span class="tok-null">null</span>,</span>
-<span class="line" id="L430">        .password = <span class="tok-null">null</span>,</span>
-<span class="line" id="L431">        .host = <span class="tok-null">null</span>,</span>
-<span class="line" id="L432">        .port = <span class="tok-null">null</span>,</span>
-<span class="line" id="L433">        .path = uri[<span class="tok-number">4</span>..],</span>
-<span class="line" id="L434">        .query = <span class="tok-null">null</span>,</span>
-<span class="line" id="L435">        .fragment = <span class="tok-null">null</span>,</span>
-<span class="line" id="L436">    }, <span class="tok-kw">try</span> parse(uri));</span>
-<span class="line" id="L437">}</span>
-<span class="line" id="L438"></span>
-<span class="line" id="L439"><span class="tok-comment">// source:</span>
+<span class="line" id="L425">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;hostname&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).host.?);</span>
+<span class="line" id="L426">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">1234</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).port.?);</span>
+<span class="line" id="L427">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;user&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).user.?);</span>
+<span class="line" id="L428">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;password&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://user:password@hostname:1234&quot;</span>)).password.?);</span>
+<span class="line" id="L429">}</span>
+<span class="line" id="L430"></span>
+<span class="line" id="L431"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.password&quot;</span> {</span>
+<span class="line" id="L432">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username@a&quot;</span>)).user.?);</span>
+<span class="line" id="L433">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username@a&quot;</span>)).password);</span>
+<span class="line" id="L434"></span>
+<span class="line" id="L435">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:@a&quot;</span>)).user.?);</span>
+<span class="line" id="L436">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-null">null</span>), (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:@a&quot;</span>)).password);</span>
+<span class="line" id="L437"></span>
+<span class="line" id="L438">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:password@a&quot;</span>)).user.?);</span>
+<span class="line" id="L439">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;password&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username:password@a&quot;</span>)).password.?);</span>
+<span class="line" id="L440"></span>
+<span class="line" id="L441">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;username&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username::@a&quot;</span>)).user.?);</span>
+<span class="line" id="L442">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;:&quot;</span>, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://username::@a&quot;</span>)).password.?);</span>
+<span class="line" id="L443">}</span>
+<span class="line" id="L444"></span>
+<span class="line" id="L445"><span class="tok-kw">fn</span> <span class="tok-fn">testAuthorityHost</span>(<span class="tok-kw">comptime</span> hostlist: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L446">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (hostlist) |hostname| {</span>
+<span class="line" id="L447">        <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, hostname, (<span class="tok-kw">try</span> parse(<span class="tok-str">&quot;scheme://&quot;</span> ++ hostname)).host.?);</span>
+<span class="line" id="L448">    }</span>
+<span class="line" id="L449">}</span>
+<span class="line" id="L450"></span>
+<span class="line" id="L451"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.dns-names&quot;</span> {</span>
+<span class="line" id="L452">    <span class="tok-kw">try</span> testAuthorityHost(.{</span>
+<span class="line" id="L453">        <span class="tok-str">&quot;a&quot;</span>,</span>
+<span class="line" id="L454">        <span class="tok-str">&quot;a.b&quot;</span>,</span>
+<span class="line" id="L455">        <span class="tok-str">&quot;example.com&quot;</span>,</span>
+<span class="line" id="L456">        <span class="tok-str">&quot;www.example.com&quot;</span>,</span>
+<span class="line" id="L457">        <span class="tok-str">&quot;example.org.&quot;</span>,</span>
+<span class="line" id="L458">        <span class="tok-str">&quot;www.example.org.&quot;</span>,</span>
+<span class="line" id="L459">        <span class="tok-str">&quot;xn--nw2a.xn--j6w193g&quot;</span>, <span class="tok-comment">// internationalized URI: 見.香港</span>
 </span>
-<span class="line" id="L440"><span class="tok-comment">// https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Examples</span>
-</span>
-<span class="line" id="L441"><span class="tok-kw">test</span> <span class="tok-str">&quot;Examples from wikipedia&quot;</span> {</span>
-<span class="line" id="L442">    <span class="tok-kw">const</span> list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
-<span class="line" id="L443">        <span class="tok-str">&quot;https://john.doe@www.example.com:123/forum/questions/?tag=networking&amp;order=newest#top&quot;</span>,</span>
-<span class="line" id="L444">        <span class="tok-str">&quot;ldap://[2001:db8::7]/c=GB?objectClass?one&quot;</span>,</span>
-<span class="line" id="L445">        <span class="tok-str">&quot;mailto:John.Doe@example.com&quot;</span>,</span>
-<span class="line" id="L446">        <span class="tok-str">&quot;news:comp.infosystems.www.servers.unix&quot;</span>,</span>
-<span class="line" id="L447">        <span class="tok-str">&quot;tel:+1-816-555-1212&quot;</span>,</span>
-<span class="line" id="L448">        <span class="tok-str">&quot;telnet://192.0.2.16:80/&quot;</span>,</span>
-<span class="line" id="L449">        <span class="tok-str">&quot;urn:oasis:names:specification:docbook:dtd:xml:4.1.2&quot;</span>,</span>
-<span class="line" id="L450">        <span class="tok-str">&quot;http://a/b/c/d;p?q&quot;</span>,</span>
-<span class="line" id="L451">    };</span>
-<span class="line" id="L452">    <span class="tok-kw">for</span> (list) |uri| {</span>
-<span class="line" id="L453">        _ = <span class="tok-kw">try</span> parse(uri);</span>
-<span class="line" id="L454">    }</span>
-<span class="line" id="L455">}</span>
-<span class="line" id="L456"></span>
-<span class="line" id="L457"><span class="tok-comment">// source:</span>
-</span>
-<span class="line" id="L458"><span class="tok-comment">// https://tools.ietf.org/html/rfc3986#section-5.4.1</span>
-</span>
-<span class="line" id="L459"><span class="tok-kw">test</span> <span class="tok-str">&quot;Examples from RFC3986&quot;</span> {</span>
-<span class="line" id="L460">    <span class="tok-kw">const</span> list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
-<span class="line" id="L461">        <span class="tok-str">&quot;http://a/b/c/g&quot;</span>,</span>
-<span class="line" id="L462">        <span class="tok-str">&quot;http://a/b/c/g&quot;</span>,</span>
-<span class="line" id="L463">        <span class="tok-str">&quot;http://a/b/c/g/&quot;</span>,</span>
-<span class="line" id="L464">        <span class="tok-str">&quot;http://a/g&quot;</span>,</span>
-<span class="line" id="L465">        <span class="tok-str">&quot;http://g&quot;</span>,</span>
-<span class="line" id="L466">        <span class="tok-str">&quot;http://a/b/c/d;p?y&quot;</span>,</span>
-<span class="line" id="L467">        <span class="tok-str">&quot;http://a/b/c/g?y&quot;</span>,</span>
-<span class="line" id="L468">        <span class="tok-str">&quot;http://a/b/c/d;p?q#s&quot;</span>,</span>
-<span class="line" id="L469">        <span class="tok-str">&quot;http://a/b/c/g#s&quot;</span>,</span>
-<span class="line" id="L470">        <span class="tok-str">&quot;http://a/b/c/g?y#s&quot;</span>,</span>
-<span class="line" id="L471">        <span class="tok-str">&quot;http://a/b/c/;x&quot;</span>,</span>
-<span class="line" id="L472">        <span class="tok-str">&quot;http://a/b/c/g;x&quot;</span>,</span>
-<span class="line" id="L473">        <span class="tok-str">&quot;http://a/b/c/g;x?y#s&quot;</span>,</span>
-<span class="line" id="L474">        <span class="tok-str">&quot;http://a/b/c/d;p?q&quot;</span>,</span>
-<span class="line" id="L475">        <span class="tok-str">&quot;http://a/b/c/&quot;</span>,</span>
-<span class="line" id="L476">        <span class="tok-str">&quot;http://a/b/c/&quot;</span>,</span>
-<span class="line" id="L477">        <span class="tok-str">&quot;http://a/b/&quot;</span>,</span>
-<span class="line" id="L478">        <span class="tok-str">&quot;http://a/b/&quot;</span>,</span>
-<span class="line" id="L479">        <span class="tok-str">&quot;http://a/b/g&quot;</span>,</span>
-<span class="line" id="L480">        <span class="tok-str">&quot;http://a/&quot;</span>,</span>
-<span class="line" id="L481">        <span class="tok-str">&quot;http://a/&quot;</span>,</span>
-<span class="line" id="L482">        <span class="tok-str">&quot;http://a/g&quot;</span>,</span>
-<span class="line" id="L483">    };</span>
-<span class="line" id="L484">    <span class="tok-kw">for</span> (list) |uri| {</span>
-<span class="line" id="L485">        _ = <span class="tok-kw">try</span> parse(uri);</span>
-<span class="line" id="L486">    }</span>
-<span class="line" id="L487">}</span>
-<span class="line" id="L488"></span>
-<span class="line" id="L489"><span class="tok-kw">test</span> <span class="tok-str">&quot;Special test&quot;</span> {</span>
-<span class="line" id="L490">    <span class="tok-comment">// This is for all of you code readers ♥</span>
-</span>
-<span class="line" id="L491">    _ = <span class="tok-kw">try</span> parse(<span class="tok-str">&quot;https://www.youtube.com/watch?v=dQw4w9WgXcQ&amp;feature=youtu.be&amp;t=0&quot;</span>);</span>
+<span class="line" id="L460">        <span class="tok-str">&quot;fe80--1ff-fe23-4567-890as3.ipv6-literal.net&quot;</span>,</span>
+<span class="line" id="L461">    });</span>
+<span class="line" id="L462">}</span>
+<span class="line" id="L463"></span>
+<span class="line" id="L464"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.IPv4&quot;</span> {</span>
+<span class="line" id="L465">    <span class="tok-kw">try</span> testAuthorityHost(.{</span>
+<span class="line" id="L466">        <span class="tok-str">&quot;127.0.0.1&quot;</span>,</span>
+<span class="line" id="L467">        <span class="tok-str">&quot;255.255.255.255&quot;</span>,</span>
+<span class="line" id="L468">        <span class="tok-str">&quot;0.0.0.0&quot;</span>,</span>
+<span class="line" id="L469">        <span class="tok-str">&quot;8.8.8.8&quot;</span>,</span>
+<span class="line" id="L470">        <span class="tok-str">&quot;1.2.3.4&quot;</span>,</span>
+<span class="line" id="L471">        <span class="tok-str">&quot;192.168.0.1&quot;</span>,</span>
+<span class="line" id="L472">        <span class="tok-str">&quot;10.42.0.0&quot;</span>,</span>
+<span class="line" id="L473">    });</span>
+<span class="line" id="L474">}</span>
+<span class="line" id="L475"></span>
+<span class="line" id="L476"><span class="tok-kw">test</span> <span class="tok-str">&quot;authority.IPv6&quot;</span> {</span>
+<span class="line" id="L477">    <span class="tok-kw">try</span> testAuthorityHost(.{</span>
+<span class="line" id="L478">        <span class="tok-str">&quot;[2001:db8:0:0:0:0:2:1]&quot;</span>,</span>
+<span class="line" id="L479">        <span class="tok-str">&quot;[2001:db8::2:1]&quot;</span>,</span>
+<span class="line" id="L480">        <span class="tok-str">&quot;[2001:db8:0000:1:1:1:1:1]&quot;</span>,</span>
+<span class="line" id="L481">        <span class="tok-str">&quot;[2001:db8:0:1:1:1:1:1]&quot;</span>,</span>
+<span class="line" id="L482">        <span class="tok-str">&quot;[0:0:0:0:0:0:0:0]&quot;</span>,</span>
+<span class="line" id="L483">        <span class="tok-str">&quot;[0:0:0:0:0:0:0:1]&quot;</span>,</span>
+<span class="line" id="L484">        <span class="tok-str">&quot;[::1]&quot;</span>,</span>
+<span class="line" id="L485">        <span class="tok-str">&quot;[::]&quot;</span>,</span>
+<span class="line" id="L486">        <span class="tok-str">&quot;[2001:db8:85a3:8d3:1319:8a2e:370:7348]&quot;</span>,</span>
+<span class="line" id="L487">        <span class="tok-str">&quot;[fe80::1ff:fe23:4567:890a%25eth2]&quot;</span>,</span>
+<span class="line" id="L488">        <span class="tok-str">&quot;[fe80::1ff:fe23:4567:890a]&quot;</span>,</span>
+<span class="line" id="L489">        <span class="tok-str">&quot;[fe80::1ff:fe23:4567:890a%253]&quot;</span>,</span>
+<span class="line" id="L490">        <span class="tok-str">&quot;[fe80:3::1ff:fe23:4567:890a]&quot;</span>,</span>
+<span class="line" id="L491">    });</span>
 <span class="line" id="L492">}</span>
 <span class="line" id="L493"></span>
-<span class="line" id="L494"><span class="tok-kw">test</span> <span class="tok-str">&quot;URI escaping&quot;</span> {</span>
-<span class="line" id="L495">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;\\ö/ äöß ~~.adas-https://canvas:123/#ads&amp;&amp;sad&quot;</span>;</span>
-<span class="line" id="L496">    <span class="tok-kw">const</span> expected = <span class="tok-str">&quot;%5C%C3%B6%2F%20%C3%A4%C3%B6%C3%9F%20~~.adas-https%3A%2F%2Fcanvas%3A123%2F%23ads%26%26sad&quot;</span>;</span>
-<span class="line" id="L497"></span>
-<span class="line" id="L498">    <span class="tok-kw">const</span> actual = <span class="tok-kw">try</span> escapeString(std.testing.allocator, input);</span>
-<span class="line" id="L499">    <span class="tok-kw">defer</span> std.testing.allocator.free(actual);</span>
-<span class="line" id="L500"></span>
-<span class="line" id="L501">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, actual);</span>
-<span class="line" id="L502">}</span>
-<span class="line" id="L503"></span>
-<span class="line" id="L504"><span class="tok-kw">test</span> <span class="tok-str">&quot;URI unescaping&quot;</span> {</span>
-<span class="line" id="L505">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;%5C%C3%B6%2F%20%C3%A4%C3%B6%C3%9F%20~~.adas-https%3A%2F%2Fcanvas%3A123%2F%23ads%26%26sad&quot;</span>;</span>
-<span class="line" id="L506">    <span class="tok-kw">const</span> expected = <span class="tok-str">&quot;\\ö/ äöß ~~.adas-https://canvas:123/#ads&amp;&amp;sad&quot;</span>;</span>
+<span class="line" id="L494"><span class="tok-kw">test</span> <span class="tok-str">&quot;RFC example 1&quot;</span> {</span>
+<span class="line" id="L495">    <span class="tok-kw">const</span> uri = <span class="tok-str">&quot;foo://example.com:8042/over/there?name=ferret#nose&quot;</span>;</span>
+<span class="line" id="L496">    <span class="tok-kw">try</span> std.testing.expectEqual(Uri{</span>
+<span class="line" id="L497">        .scheme = uri[<span class="tok-number">0</span>..<span class="tok-number">3</span>],</span>
+<span class="line" id="L498">        .user = <span class="tok-null">null</span>,</span>
+<span class="line" id="L499">        .password = <span class="tok-null">null</span>,</span>
+<span class="line" id="L500">        .host = uri[<span class="tok-number">6</span>..<span class="tok-number">17</span>],</span>
+<span class="line" id="L501">        .port = <span class="tok-number">8042</span>,</span>
+<span class="line" id="L502">        .path = uri[<span class="tok-number">22</span>..<span class="tok-number">33</span>],</span>
+<span class="line" id="L503">        .query = uri[<span class="tok-number">34</span>..<span class="tok-number">45</span>],</span>
+<span class="line" id="L504">        .fragment = uri[<span class="tok-number">46</span>..<span class="tok-number">50</span>],</span>
+<span class="line" id="L505">    }, <span class="tok-kw">try</span> parse(uri));</span>
+<span class="line" id="L506">}</span>
 <span class="line" id="L507"></span>
-<span class="line" id="L508">    <span class="tok-kw">const</span> actual = <span class="tok-kw">try</span> unescapeString(std.testing.allocator, input);</span>
-<span class="line" id="L509">    <span class="tok-kw">defer</span> std.testing.allocator.free(actual);</span>
-<span class="line" id="L510"></span>
-<span class="line" id="L511">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, actual);</span>
-<span class="line" id="L512">}</span>
-<span class="line" id="L513"></span>
+<span class="line" id="L508"><span class="tok-kw">test</span> <span class="tok-str">&quot;RFX example 2&quot;</span> {</span>
+<span class="line" id="L509">    <span class="tok-kw">const</span> uri = <span class="tok-str">&quot;urn:example:animal:ferret:nose&quot;</span>;</span>
+<span class="line" id="L510">    <span class="tok-kw">try</span> std.testing.expectEqual(Uri{</span>
+<span class="line" id="L511">        .scheme = uri[<span class="tok-number">0</span>..<span class="tok-number">3</span>],</span>
+<span class="line" id="L512">        .user = <span class="tok-null">null</span>,</span>
+<span class="line" id="L513">        .password = <span class="tok-null">null</span>,</span>
+<span class="line" id="L514">        .host = <span class="tok-null">null</span>,</span>
+<span class="line" id="L515">        .port = <span class="tok-null">null</span>,</span>
+<span class="line" id="L516">        .path = uri[<span class="tok-number">4</span>..],</span>
+<span class="line" id="L517">        .query = <span class="tok-null">null</span>,</span>
+<span class="line" id="L518">        .fragment = <span class="tok-null">null</span>,</span>
+<span class="line" id="L519">    }, <span class="tok-kw">try</span> parse(uri));</span>
+<span class="line" id="L520">}</span>
+<span class="line" id="L521"></span>
+<span class="line" id="L522"><span class="tok-comment">// source:</span>
+</span>
+<span class="line" id="L523"><span class="tok-comment">// https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Examples</span>
+</span>
+<span class="line" id="L524"><span class="tok-kw">test</span> <span class="tok-str">&quot;Examples from wikipedia&quot;</span> {</span>
+<span class="line" id="L525">    <span class="tok-kw">const</span> list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
+<span class="line" id="L526">        <span class="tok-str">&quot;https://john.doe@www.example.com:123/forum/questions/?tag=networking&amp;order=newest#top&quot;</span>,</span>
+<span class="line" id="L527">        <span class="tok-str">&quot;ldap://[2001:db8::7]/c=GB?objectClass?one&quot;</span>,</span>
+<span class="line" id="L528">        <span class="tok-str">&quot;mailto:John.Doe@example.com&quot;</span>,</span>
+<span class="line" id="L529">        <span class="tok-str">&quot;news:comp.infosystems.www.servers.unix&quot;</span>,</span>
+<span class="line" id="L530">        <span class="tok-str">&quot;tel:+1-816-555-1212&quot;</span>,</span>
+<span class="line" id="L531">        <span class="tok-str">&quot;telnet://192.0.2.16:80/&quot;</span>,</span>
+<span class="line" id="L532">        <span class="tok-str">&quot;urn:oasis:names:specification:docbook:dtd:xml:4.1.2&quot;</span>,</span>
+<span class="line" id="L533">        <span class="tok-str">&quot;http://a/b/c/d;p?q&quot;</span>,</span>
+<span class="line" id="L534">    };</span>
+<span class="line" id="L535">    <span class="tok-kw">for</span> (list) |uri| {</span>
+<span class="line" id="L536">        _ = <span class="tok-kw">try</span> parse(uri);</span>
+<span class="line" id="L537">    }</span>
+<span class="line" id="L538">}</span>
+<span class="line" id="L539"></span>
+<span class="line" id="L540"><span class="tok-comment">// source:</span>
+</span>
+<span class="line" id="L541"><span class="tok-comment">// https://tools.ietf.org/html/rfc3986#section-5.4.1</span>
+</span>
+<span class="line" id="L542"><span class="tok-kw">test</span> <span class="tok-str">&quot;Examples from RFC3986&quot;</span> {</span>
+<span class="line" id="L543">    <span class="tok-kw">const</span> list = [_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
+<span class="line" id="L544">        <span class="tok-str">&quot;http://a/b/c/g&quot;</span>,</span>
+<span class="line" id="L545">        <span class="tok-str">&quot;http://a/b/c/g&quot;</span>,</span>
+<span class="line" id="L546">        <span class="tok-str">&quot;http://a/b/c/g/&quot;</span>,</span>
+<span class="line" id="L547">        <span class="tok-str">&quot;http://a/g&quot;</span>,</span>
+<span class="line" id="L548">        <span class="tok-str">&quot;http://g&quot;</span>,</span>
+<span class="line" id="L549">        <span class="tok-str">&quot;http://a/b/c/d;p?y&quot;</span>,</span>
+<span class="line" id="L550">        <span class="tok-str">&quot;http://a/b/c/g?y&quot;</span>,</span>
+<span class="line" id="L551">        <span class="tok-str">&quot;http://a/b/c/d;p?q#s&quot;</span>,</span>
+<span class="line" id="L552">        <span class="tok-str">&quot;http://a/b/c/g#s&quot;</span>,</span>
+<span class="line" id="L553">        <span class="tok-str">&quot;http://a/b/c/g?y#s&quot;</span>,</span>
+<span class="line" id="L554">        <span class="tok-str">&quot;http://a/b/c/;x&quot;</span>,</span>
+<span class="line" id="L555">        <span class="tok-str">&quot;http://a/b/c/g;x&quot;</span>,</span>
+<span class="line" id="L556">        <span class="tok-str">&quot;http://a/b/c/g;x?y#s&quot;</span>,</span>
+<span class="line" id="L557">        <span class="tok-str">&quot;http://a/b/c/d;p?q&quot;</span>,</span>
+<span class="line" id="L558">        <span class="tok-str">&quot;http://a/b/c/&quot;</span>,</span>
+<span class="line" id="L559">        <span class="tok-str">&quot;http://a/b/c/&quot;</span>,</span>
+<span class="line" id="L560">        <span class="tok-str">&quot;http://a/b/&quot;</span>,</span>
+<span class="line" id="L561">        <span class="tok-str">&quot;http://a/b/&quot;</span>,</span>
+<span class="line" id="L562">        <span class="tok-str">&quot;http://a/b/g&quot;</span>,</span>
+<span class="line" id="L563">        <span class="tok-str">&quot;http://a/&quot;</span>,</span>
+<span class="line" id="L564">        <span class="tok-str">&quot;http://a/&quot;</span>,</span>
+<span class="line" id="L565">        <span class="tok-str">&quot;http://a/g&quot;</span>,</span>
+<span class="line" id="L566">    };</span>
+<span class="line" id="L567">    <span class="tok-kw">for</span> (list) |uri| {</span>
+<span class="line" id="L568">        _ = <span class="tok-kw">try</span> parse(uri);</span>
+<span class="line" id="L569">    }</span>
+<span class="line" id="L570">}</span>
+<span class="line" id="L571"></span>
+<span class="line" id="L572"><span class="tok-kw">test</span> <span class="tok-str">&quot;Special test&quot;</span> {</span>
+<span class="line" id="L573">    <span class="tok-comment">// This is for all of you code readers ♥</span>
+</span>
+<span class="line" id="L574">    _ = <span class="tok-kw">try</span> parse(<span class="tok-str">&quot;https://www.youtube.com/watch?v=dQw4w9WgXcQ&amp;feature=youtu.be&amp;t=0&quot;</span>);</span>
+<span class="line" id="L575">}</span>
+<span class="line" id="L576"></span>
+<span class="line" id="L577"><span class="tok-kw">test</span> <span class="tok-str">&quot;URI escaping&quot;</span> {</span>
+<span class="line" id="L578">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;\\ö/ äöß ~~.adas-https://canvas:123/#ads&amp;&amp;sad&quot;</span>;</span>
+<span class="line" id="L579">    <span class="tok-kw">const</span> expected = <span class="tok-str">&quot;%5C%C3%B6%2F%20%C3%A4%C3%B6%C3%9F%20~~.adas-https%3A%2F%2Fcanvas%3A123%2F%23ads%26%26sad&quot;</span>;</span>
+<span class="line" id="L580"></span>
+<span class="line" id="L581">    <span class="tok-kw">const</span> actual = <span class="tok-kw">try</span> escapeString(std.testing.allocator, input);</span>
+<span class="line" id="L582">    <span class="tok-kw">defer</span> std.testing.allocator.free(actual);</span>
+<span class="line" id="L583"></span>
+<span class="line" id="L584">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, actual);</span>
+<span class="line" id="L585">}</span>
+<span class="line" id="L586"></span>
+<span class="line" id="L587"><span class="tok-kw">test</span> <span class="tok-str">&quot;URI unescaping&quot;</span> {</span>
+<span class="line" id="L588">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;%5C%C3%B6%2F%20%C3%A4%C3%B6%C3%9F%20~~.adas-https%3A%2F%2Fcanvas%3A123%2F%23ads%26%26sad&quot;</span>;</span>
+<span class="line" id="L589">    <span class="tok-kw">const</span> expected = <span class="tok-str">&quot;\\ö/ äöß ~~.adas-https://canvas:123/#ads&amp;&amp;sad&quot;</span>;</span>
+<span class="line" id="L590"></span>
+<span class="line" id="L591">    <span class="tok-kw">const</span> actual = <span class="tok-kw">try</span> unescapeString(std.testing.allocator, input);</span>
+<span class="line" id="L592">    <span class="tok-kw">defer</span> std.testing.allocator.free(actual);</span>
+<span class="line" id="L593"></span>
+<span class="line" id="L594">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, actual);</span>
+<span class="line" id="L595">}</span>
+<span class="line" id="L596"></span>
 </code></pre></body>
 </html>
