@@ -113,249 +113,268 @@
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> StructVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/struct.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L7"></span>
-<span class="line" id="L8"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L10">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L11">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L12">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Struct <span class="tok-kw">and</span> !<span class="tok-builtin">@typeInfo</span>(T).Struct.is_tuple;</span>
-<span class="line" id="L14">}</span>
-<span class="line" id="L15"></span>
-<span class="line" id="L16"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L18">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L19">    allocator: ?std.mem.Allocator,</span>
-<span class="line" id="L20">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L21">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L22">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L23">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L24">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L25">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L26">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L27">    _ = T;</span>
-<span class="line" id="L28"></span>
-<span class="line" id="L29">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeStruct(allocator, visitor);</span>
-<span class="line" id="L30">}</span>
-<span class="line" id="L31"></span>
-<span class="line" id="L32"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L33"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L34">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L35">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L36">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L37">    <span class="tok-kw">return</span> StructVisitor(T);</span>
-<span class="line" id="L38">}</span>
-<span class="line" id="L39"></span>
-<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - struct&quot;</span> {</span>
-<span class="line" id="L41">    <span class="tok-kw">const</span> Empty = <span class="tok-kw">struct</span> {};</span>
-<span class="line" id="L42">    <span class="tok-kw">const</span> NonEmpty = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L43">        a: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L44">        b: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L45">        c: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L46">    };</span>
-<span class="line" id="L47"></span>
-<span class="line" id="L48">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L49">        .{</span>
-<span class="line" id="L50">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
-<span class="line" id="L51">            .tokens = &amp;.{</span>
-<span class="line" id="L52">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Empty), .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L53">                .{ .StructEnd = {} },</span>
-<span class="line" id="L54">            },</span>
-<span class="line" id="L55">            .want = Empty{},</span>
-<span class="line" id="L56">        },</span>
-<span class="line" id="L57">        .{</span>
-<span class="line" id="L58">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
-<span class="line" id="L59">            .tokens = &amp;.{</span>
-<span class="line" id="L60">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(NonEmpty), .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L61">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L62">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L63">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L64">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L65">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L66">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L67">                .{ .StructEnd = {} },</span>
-<span class="line" id="L68">            },</span>
-<span class="line" id="L69">            .want = NonEmpty{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
-<span class="line" id="L70">        },</span>
-<span class="line" id="L71">    };</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L74">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L75">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L76">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L77">    }</span>
-<span class="line" id="L78">}</span>
-<span class="line" id="L79"></span>
-<span class="line" id="L80"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - struct, attributes&quot;</span> {</span>
-<span class="line" id="L81">    <span class="tok-kw">const</span> IgnoreUnknownFields = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L82">        a: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L83">        b: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L84">        c: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L85"></span>
-<span class="line" id="L86">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L87">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L88">                .Container = .{ .ignore_unknown_fields = <span class="tok-null">true</span> },</span>
-<span class="line" id="L89">            };</span>
-<span class="line" id="L90">        };</span>
-<span class="line" id="L91">    };</span>
-<span class="line" id="L92"></span>
-<span class="line" id="L93">    <span class="tok-kw">const</span> Rename = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L94">        a: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L95">        b: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L96">        c: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L97"></span>
-<span class="line" id="L98">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L99">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L100">                .a = .{ .rename = <span class="tok-str">&quot;A&quot;</span> },</span>
-<span class="line" id="L101">                .b = .{ .rename = <span class="tok-str">&quot;B&quot;</span> },</span>
-<span class="line" id="L102">                .c = .{ .rename = <span class="tok-str">&quot;C&quot;</span> },</span>
-<span class="line" id="L103">            };</span>
-<span class="line" id="L104">        };</span>
-<span class="line" id="L105">    };</span>
-<span class="line" id="L106"></span>
-<span class="line" id="L107">    <span class="tok-kw">const</span> Skip = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L108">        a: <span class="tok-type">i32</span> = <span class="tok-number">1</span>,</span>
-<span class="line" id="L109">        b: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L110">        c: <span class="tok-type">i32</span> = <span class="tok-number">3</span>,</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> getty_free = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../free.zig&quot;</span>).free;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> StructVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/struct.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L8"></span>
+<span class="line" id="L9"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L11">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L12">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L13">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L14">    <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(T) == .Struct <span class="tok-kw">and</span> !<span class="tok-builtin">@typeInfo</span>(T).Struct.is_tuple;</span>
+<span class="line" id="L15">}</span>
+<span class="line" id="L16"></span>
+<span class="line" id="L17"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L19">    <span class="tok-comment">/// An optional memory allocator.</span></span>
+<span class="line" id="L20">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L21">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L22">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L23">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L24">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L25">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L26">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L27">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L28">    _ = T;</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeStruct(allocator, visitor);</span>
+<span class="line" id="L31">}</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L34"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L35">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L36">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L37">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L38">    <span class="tok-kw">return</span> StructVisitor(T);</span>
+<span class="line" id="L39">}</span>
+<span class="line" id="L40"></span>
+<span class="line" id="L41"><span class="tok-comment">/// Frees resources allocated by Getty during deserialization.</span></span>
+<span class="line" id="L42"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(</span>
+<span class="line" id="L43">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L44">    allocator: std.mem.Allocator,</span>
+<span class="line" id="L45">    <span class="tok-comment">/// A `getty.Deserializer` interface type.</span></span>
+<span class="line" id="L46">    <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
+<span class="line" id="L47">    <span class="tok-comment">/// A value to deallocate.</span></span>
+<span class="line" id="L48">    value: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L49">) <span class="tok-type">void</span> {</span>
+<span class="line" id="L50">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(value)).Struct;</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |field| {</span>
+<span class="line" id="L53">        <span class="tok-kw">if</span> (!field.is_comptime) {</span>
+<span class="line" id="L54">            getty_free(allocator, Deserializer, <span class="tok-builtin">@field</span>(value, field.name));</span>
+<span class="line" id="L55">        }</span>
+<span class="line" id="L56">    }</span>
+<span class="line" id="L57">}</span>
+<span class="line" id="L58"></span>
+<span class="line" id="L59"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - struct&quot;</span> {</span>
+<span class="line" id="L60">    <span class="tok-kw">const</span> Empty = <span class="tok-kw">struct</span> {};</span>
+<span class="line" id="L61">    <span class="tok-kw">const</span> NonEmpty = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L62">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L63">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L64">        c: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L65">    };</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L68">        .{</span>
+<span class="line" id="L69">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
+<span class="line" id="L70">            .tokens = &amp;.{</span>
+<span class="line" id="L71">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Empty), .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L72">                .{ .StructEnd = {} },</span>
+<span class="line" id="L73">            },</span>
+<span class="line" id="L74">            .want = Empty{},</span>
+<span class="line" id="L75">        },</span>
+<span class="line" id="L76">        .{</span>
+<span class="line" id="L77">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
+<span class="line" id="L78">            .tokens = &amp;.{</span>
+<span class="line" id="L79">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(NonEmpty), .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L80">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L81">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L82">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L83">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L84">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L85">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L86">                .{ .StructEnd = {} },</span>
+<span class="line" id="L87">            },</span>
+<span class="line" id="L88">            .want = NonEmpty{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
+<span class="line" id="L89">        },</span>
+<span class="line" id="L90">    };</span>
+<span class="line" id="L91"></span>
+<span class="line" id="L92">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L93">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L94">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L95">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
+<span class="line" id="L96">    }</span>
+<span class="line" id="L97">}</span>
+<span class="line" id="L98"></span>
+<span class="line" id="L99"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - struct, attributes&quot;</span> {</span>
+<span class="line" id="L100">    <span class="tok-kw">const</span> IgnoreUnknownFields = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L101">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L102">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L103">        c: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L104"></span>
+<span class="line" id="L105">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L106">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L107">                .Container = .{ .ignore_unknown_fields = <span class="tok-null">true</span> },</span>
+<span class="line" id="L108">            };</span>
+<span class="line" id="L109">        };</span>
+<span class="line" id="L110">    };</span>
 <span class="line" id="L111"></span>
-<span class="line" id="L112">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L113">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L114">                .a = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L115">                .c = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L116">            };</span>
-<span class="line" id="L117">        };</span>
-<span class="line" id="L118">    };</span>
-<span class="line" id="L119"></span>
-<span class="line" id="L120">    <span class="tok-kw">const</span> Default = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L121">        a: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L122">        b: <span class="tok-type">i32</span> = <span class="tok-number">2</span>,</span>
-<span class="line" id="L123">        c: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L124"></span>
-<span class="line" id="L125">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L126">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L127">                .b = .{ .default = <span class="tok-number">20</span> },</span>
-<span class="line" id="L128">                .c = .{ .default = <span class="tok-number">3</span> },</span>
-<span class="line" id="L129">            };</span>
-<span class="line" id="L130">        };</span>
-<span class="line" id="L131">    };</span>
-<span class="line" id="L132"></span>
-<span class="line" id="L133">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L134">        .{</span>
-<span class="line" id="L135">            .name = <span class="tok-str">&quot;ignore_unknown_fields&quot;</span>,</span>
-<span class="line" id="L136">            .tokens = &amp;.{</span>
-<span class="line" id="L137">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(IgnoreUnknownFields), .len = <span class="tok-number">4</span> } },</span>
-<span class="line" id="L138">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L139">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L140">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L141">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L142">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L143">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L144">                .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
-<span class="line" id="L145">                .{ .I32 = <span class="tok-number">4</span> },</span>
-<span class="line" id="L146">                .{ .StructEnd = {} },</span>
-<span class="line" id="L147">            },</span>
-<span class="line" id="L148">            .want = IgnoreUnknownFields{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
-<span class="line" id="L149">        },</span>
-<span class="line" id="L150">        .{</span>
-<span class="line" id="L151">            .name = <span class="tok-str">&quot;rename (success)&quot;</span>,</span>
-<span class="line" id="L152">            .tokens = &amp;.{</span>
-<span class="line" id="L153">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Rename), .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L154">                .{ .String = <span class="tok-str">&quot;A&quot;</span> },</span>
-<span class="line" id="L155">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L156">                .{ .String = <span class="tok-str">&quot;B&quot;</span> },</span>
-<span class="line" id="L157">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L158">                .{ .String = <span class="tok-str">&quot;C&quot;</span> },</span>
-<span class="line" id="L159">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L160">                .{ .StructEnd = {} },</span>
-<span class="line" id="L161">            },</span>
-<span class="line" id="L162">            .want = Rename{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
-<span class="line" id="L163">        },</span>
-<span class="line" id="L164">        .{</span>
-<span class="line" id="L165">            .name = <span class="tok-str">&quot;rename (fail)&quot;</span>,</span>
-<span class="line" id="L166">            .tokens = &amp;.{</span>
-<span class="line" id="L167">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Rename), .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L168">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L169">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L170">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L171">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L172">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L173">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L174">                .{ .StructEnd = {} },</span>
-<span class="line" id="L175">            },</span>
-<span class="line" id="L176">            .Want = Rename,</span>
-<span class="line" id="L177">            .want_err = <span class="tok-kw">error</span>.UnknownField,</span>
-<span class="line" id="L178">        },</span>
-<span class="line" id="L179">        .{</span>
-<span class="line" id="L180">            .name = <span class="tok-str">&quot;skip (success, two fields omitted)&quot;</span>,</span>
-<span class="line" id="L181">            .tokens = &amp;.{</span>
-<span class="line" id="L182">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Skip), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L183">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L184">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L185">                .{ .StructEnd = {} },</span>
-<span class="line" id="L186">            },</span>
-<span class="line" id="L187">            .want = Skip{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
-<span class="line" id="L188">        },</span>
-<span class="line" id="L189">        .{</span>
-<span class="line" id="L190">            .name = <span class="tok-str">&quot;skip (success, zero fields omitted)&quot;</span>,</span>
-<span class="line" id="L191">            .tokens = &amp;.{</span>
-<span class="line" id="L192">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Skip), .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L193">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L194">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L195">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L196">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L197">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L198">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L199">                .{ .StructEnd = {} },</span>
-<span class="line" id="L200">            },</span>
-<span class="line" id="L201">            .want = Skip{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
-<span class="line" id="L202">        },</span>
-<span class="line" id="L203">        .{</span>
-<span class="line" id="L204">            .name = <span class="tok-str">&quot;default (success)&quot;</span>,</span>
-<span class="line" id="L205">            .tokens = &amp;.{</span>
-<span class="line" id="L206">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Default), .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L207">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L208">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L209">                .{ .StructEnd = {} },</span>
-<span class="line" id="L210">            },</span>
-<span class="line" id="L211">            .want = Default{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">20</span>, .c = <span class="tok-number">3</span> },</span>
-<span class="line" id="L212">        },</span>
-<span class="line" id="L213">        .{</span>
-<span class="line" id="L214">            .name = <span class="tok-str">&quot;default (ignored)&quot;</span>,</span>
-<span class="line" id="L215">            .tokens = &amp;.{</span>
-<span class="line" id="L216">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Default), .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L217">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L218">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L219">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L220">                .{ .I32 = <span class="tok-number">30</span> },</span>
-<span class="line" id="L221">                .{ .StructEnd = {} },</span>
-<span class="line" id="L222">            },</span>
-<span class="line" id="L223">            .want = Default{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">20</span>, .c = <span class="tok-number">30</span> },</span>
-<span class="line" id="L224">        },</span>
-<span class="line" id="L225">    };</span>
-<span class="line" id="L226"></span>
-<span class="line" id="L227">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L228">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
-<span class="line" id="L229"></span>
-<span class="line" id="L230">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
-<span class="line" id="L231">            <span class="tok-kw">const</span> Want = t.Want;</span>
-<span class="line" id="L232"></span>
-<span class="line" id="L233">            <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L234">                t.name,</span>
-<span class="line" id="L235">                t.want_err,</span>
-<span class="line" id="L236">                testing.deserializeErr(<span class="tok-null">null</span>, Self, Want, t.tokens),</span>
-<span class="line" id="L237">            );</span>
-<span class="line" id="L238">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L239">            <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L240"></span>
-<span class="line" id="L241">            <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L242">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L243">        }</span>
-<span class="line" id="L244">    }</span>
-<span class="line" id="L245">}</span>
-<span class="line" id="L246"></span>
+<span class="line" id="L112">    <span class="tok-kw">const</span> Rename = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L113">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L114">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L115">        c: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L116"></span>
+<span class="line" id="L117">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L118">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L119">                .a = .{ .rename = <span class="tok-str">&quot;A&quot;</span> },</span>
+<span class="line" id="L120">                .b = .{ .rename = <span class="tok-str">&quot;B&quot;</span> },</span>
+<span class="line" id="L121">                .c = .{ .rename = <span class="tok-str">&quot;C&quot;</span> },</span>
+<span class="line" id="L122">            };</span>
+<span class="line" id="L123">        };</span>
+<span class="line" id="L124">    };</span>
+<span class="line" id="L125"></span>
+<span class="line" id="L126">    <span class="tok-kw">const</span> Skip = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L127">        a: <span class="tok-type">i32</span> = <span class="tok-number">1</span>,</span>
+<span class="line" id="L128">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L129">        c: <span class="tok-type">i32</span> = <span class="tok-number">3</span>,</span>
+<span class="line" id="L130"></span>
+<span class="line" id="L131">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L132">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L133">                .a = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L134">                .c = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L135">            };</span>
+<span class="line" id="L136">        };</span>
+<span class="line" id="L137">    };</span>
+<span class="line" id="L138"></span>
+<span class="line" id="L139">    <span class="tok-kw">const</span> Default = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L140">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L141">        b: <span class="tok-type">i32</span> = <span class="tok-number">2</span>,</span>
+<span class="line" id="L142">        c: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L143"></span>
+<span class="line" id="L144">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L145">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L146">                .b = .{ .default = <span class="tok-number">20</span> },</span>
+<span class="line" id="L147">                .c = .{ .default = <span class="tok-number">3</span> },</span>
+<span class="line" id="L148">            };</span>
+<span class="line" id="L149">        };</span>
+<span class="line" id="L150">    };</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L153">        .{</span>
+<span class="line" id="L154">            .name = <span class="tok-str">&quot;ignore_unknown_fields&quot;</span>,</span>
+<span class="line" id="L155">            .tokens = &amp;.{</span>
+<span class="line" id="L156">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(IgnoreUnknownFields), .len = <span class="tok-number">4</span> } },</span>
+<span class="line" id="L157">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L158">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L159">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L160">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L161">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L162">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L163">                .{ .String = <span class="tok-str">&quot;TESTING&quot;</span> },</span>
+<span class="line" id="L164">                .{ .I32 = <span class="tok-number">4</span> },</span>
+<span class="line" id="L165">                .{ .StructEnd = {} },</span>
+<span class="line" id="L166">            },</span>
+<span class="line" id="L167">            .want = IgnoreUnknownFields{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
+<span class="line" id="L168">        },</span>
+<span class="line" id="L169">        .{</span>
+<span class="line" id="L170">            .name = <span class="tok-str">&quot;rename (success)&quot;</span>,</span>
+<span class="line" id="L171">            .tokens = &amp;.{</span>
+<span class="line" id="L172">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Rename), .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L173">                .{ .String = <span class="tok-str">&quot;A&quot;</span> },</span>
+<span class="line" id="L174">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L175">                .{ .String = <span class="tok-str">&quot;B&quot;</span> },</span>
+<span class="line" id="L176">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L177">                .{ .String = <span class="tok-str">&quot;C&quot;</span> },</span>
+<span class="line" id="L178">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L179">                .{ .StructEnd = {} },</span>
+<span class="line" id="L180">            },</span>
+<span class="line" id="L181">            .want = Rename{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
+<span class="line" id="L182">        },</span>
+<span class="line" id="L183">        .{</span>
+<span class="line" id="L184">            .name = <span class="tok-str">&quot;rename (fail)&quot;</span>,</span>
+<span class="line" id="L185">            .tokens = &amp;.{</span>
+<span class="line" id="L186">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Rename), .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L187">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L188">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L189">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L190">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L191">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L192">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L193">                .{ .StructEnd = {} },</span>
+<span class="line" id="L194">            },</span>
+<span class="line" id="L195">            .Want = Rename,</span>
+<span class="line" id="L196">            .want_err = <span class="tok-kw">error</span>.UnknownField,</span>
+<span class="line" id="L197">        },</span>
+<span class="line" id="L198">        .{</span>
+<span class="line" id="L199">            .name = <span class="tok-str">&quot;skip (success, two fields omitted)&quot;</span>,</span>
+<span class="line" id="L200">            .tokens = &amp;.{</span>
+<span class="line" id="L201">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Skip), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L202">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L203">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L204">                .{ .StructEnd = {} },</span>
+<span class="line" id="L205">            },</span>
+<span class="line" id="L206">            .want = Skip{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
+<span class="line" id="L207">        },</span>
+<span class="line" id="L208">        .{</span>
+<span class="line" id="L209">            .name = <span class="tok-str">&quot;skip (success, zero fields omitted)&quot;</span>,</span>
+<span class="line" id="L210">            .tokens = &amp;.{</span>
+<span class="line" id="L211">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Skip), .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L212">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L213">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L214">                .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L215">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L216">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L217">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L218">                .{ .StructEnd = {} },</span>
+<span class="line" id="L219">            },</span>
+<span class="line" id="L220">            .want = Skip{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span> },</span>
+<span class="line" id="L221">        },</span>
+<span class="line" id="L222">        .{</span>
+<span class="line" id="L223">            .name = <span class="tok-str">&quot;default (success)&quot;</span>,</span>
+<span class="line" id="L224">            .tokens = &amp;.{</span>
+<span class="line" id="L225">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Default), .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L226">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L227">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L228">                .{ .StructEnd = {} },</span>
+<span class="line" id="L229">            },</span>
+<span class="line" id="L230">            .want = Default{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">20</span>, .c = <span class="tok-number">3</span> },</span>
+<span class="line" id="L231">        },</span>
+<span class="line" id="L232">        .{</span>
+<span class="line" id="L233">            .name = <span class="tok-str">&quot;default (ignored)&quot;</span>,</span>
+<span class="line" id="L234">            .tokens = &amp;.{</span>
+<span class="line" id="L235">                .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(Default), .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L236">                .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L237">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L238">                .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L239">                .{ .I32 = <span class="tok-number">30</span> },</span>
+<span class="line" id="L240">                .{ .StructEnd = {} },</span>
+<span class="line" id="L241">            },</span>
+<span class="line" id="L242">            .want = Default{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">20</span>, .c = <span class="tok-number">30</span> },</span>
+<span class="line" id="L243">        },</span>
+<span class="line" id="L244">    };</span>
+<span class="line" id="L245"></span>
+<span class="line" id="L246">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L247">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L248"></span>
+<span class="line" id="L249">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L250">            <span class="tok-kw">const</span> Want = t.Want;</span>
+<span class="line" id="L251"></span>
+<span class="line" id="L252">            <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L253">                t.name,</span>
+<span class="line" id="L254">                t.want_err,</span>
+<span class="line" id="L255">                testing.deserializeErr(<span class="tok-null">null</span>, Self, Want, t.tokens),</span>
+<span class="line" id="L256">            );</span>
+<span class="line" id="L257">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L258">            <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260">            <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L261">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
+<span class="line" id="L262">        }</span>
+<span class="line" id="L263">    }</span>
+<span class="line" id="L264">}</span>
+<span class="line" id="L265"></span>
 </code></pre></body>
 </html>
