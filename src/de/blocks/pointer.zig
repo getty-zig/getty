@@ -39,6 +39,10 @@ pub fn deserialize(
     /// A `getty.de.Visitor` interface value.
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
+    if (comptime std.meta.trait.isZigString(T)) {
+        return try deserializer.deserializeString(allocator, visitor);
+    }
+
     const Child = std.meta.Child(T);
     const db = comptime find_db(Child, @TypeOf(deserializer));
 
