@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const getty_free = @import("../free.zig").free;
 const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -35,6 +36,20 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return OptionalVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    if (value) |v| {
+        getty_free(allocator, Deserializer, v);
+    }
 }
 
 test "deserialize - optional" {

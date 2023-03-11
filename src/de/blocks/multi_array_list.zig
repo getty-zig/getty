@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const getty_free = @import("../free.zig").free;
 const MultiArrayListVisitor = @import("../impls/visitor/multi_array_list.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -35,6 +36,25 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return MultiArrayListVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    defer {
+        var mut = value;
+        mut.deinit(allocator);
+    }
+
+    for (0..value.len) |i| {
+        getty_free(allocator, Deserializer, value.get(i));
+    }
 }
 
 test "deserialize - array list" {

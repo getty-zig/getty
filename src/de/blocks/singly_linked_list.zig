@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const free = @import("../free.zig").free;
+const getty_free = @import("../free.zig").free;
 const SinglyLinkedListVisitor = @import("../impls/visitor/singly_linked_list.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -38,6 +38,23 @@ pub fn Visitor(
     return SinglyLinkedListVisitor(T);
 }
 
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    var iterator = value.first;
+    while (iterator) |node| {
+        getty_free(allocator, Deserializer, node.data);
+        iterator = node.next;
+        allocator.destroy(node);
+    }
+}
+
 test "deserialize - std.SinglyLinkedList" {
     const List = std.SinglyLinkedList(i32);
 
@@ -73,11 +90,13 @@ test "deserialize - std.SinglyLinkedList" {
         },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
         var got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, got);
+        defer free(std.testing.allocator, Deserializer, got);
 
         // Check that the lists' lengths match.
         try testing.expectEqual(t.name, t.want.len(), got.len());
@@ -130,8 +149,10 @@ test "deserialize - linked list (recursive)" {
         .{ .SeqEnd = {} },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     var got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
-    defer free(std.testing.allocator, got);
+    defer free(std.testing.allocator, Deserializer, got);
 
     // Check that the lists' lengths match.
     try std.testing.expectEqual(expected.len(), got.len());

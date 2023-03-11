@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 
 const blocks = @import("../blocks.zig");
 const find_db = @import("../find.zig").find_db;
-const free = @import("../free.zig").free;
+const getty_free = @import("../free.zig").free;
 const has_attributes = @import("../../attributes.zig").has_attributes;
 const Ignored = @import("../impls/seed/ignored.zig").Ignored;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
@@ -18,14 +18,6 @@ pub fn is(
     comptime T: type,
 ) bool {
     return @typeInfo(T) == .Pointer and @typeInfo(T).Pointer.size == .One;
-}
-
-/// Returns a type that implements `getty.de.Visitor`.
-pub fn Visitor(
-    /// The type being deserialized into.
-    comptime T: type,
-) type {
-    return PointerVisitor(T);
 }
 
 /// Specifies the deserialization process for types relevant to this block.
@@ -56,6 +48,38 @@ pub fn deserialize(
     }
 
     return try db.deserialize(allocator, Child, deserializer, visitor);
+}
+
+/// Returns a type that implements `getty.de.Visitor`.
+pub fn Visitor(
+    /// The type being deserialized into.
+    comptime T: type,
+) type {
+    return PointerVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    const info = @typeInfo(@TypeOf(value)).Pointer;
+
+    comptime std.debug.assert(info.size == .One);
+
+    // Trying to free `anyopaque` or `fn` values here triggers the errors in
+    // the following issue: https://github.com/getty-zig/getty/issues/37.
+    switch (@typeInfo(info.child)) {
+        .Fn, .Opaque => {},
+        else => {
+            getty_free(allocator, Deserializer, value.*);
+            allocator.destroy(value);
+        },
+    }
 }
 
 test "deserialize - pointer" {
@@ -131,10 +155,12 @@ test "deserialize - pointer" {
         },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
         const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, got);
+        defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.*, got.*);
     }
@@ -214,21 +240,25 @@ test "deserialize - pointer, string" {
         },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
         const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, got);
+        defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqualStrings(t.name, t.want, got);
     }
 }
 
 test "deserialize - pointer (recursive)" {
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     const Want = **i32;
     const want: i32 = 1;
 
     const got = try testing.deserialize(std.testing.allocator, null, Self, Want, &.{.{ .I32 = 1 }});
-    defer free(std.testing.allocator, got);
+    defer free(std.testing.allocator, Deserializer, got);
 
     try std.testing.expectEqual(Want, @TypeOf(got));
     try std.testing.expectEqual(*i32, @TypeOf(got.*));

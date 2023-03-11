@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ArrayVisitor = @import("../impls/visitor/array.zig").Visitor;
+const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -35,6 +36,20 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return ArrayVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    for (value) |v| {
+        getty_free(allocator, Deserializer, v);
+    }
 }
 
 // TODO: Cannot use expectEqualSlices to compare elements due to some TODO

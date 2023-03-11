@@ -26,7 +26,7 @@ pub fn Visitor(comptime Array: type) type {
                 if (allocator) |alloc| {
                     if (array.len > 0) {
                         for (0..seen) |i| {
-                            free(alloc, array[i]);
+                            free(alloc, Deserializer, array[i]);
                         }
                     }
                 }

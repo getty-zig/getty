@@ -23,15 +23,15 @@ pub fn Visitor(comptime BufMap: type) type {
             const a = allocator.?;
 
             var m = BufMap.init(a);
-            errdefer free(a, m);
+            errdefer free(a, Deserializer, m);
 
             while (try map.nextKey(a, []const u8)) |k| {
                 defer if (map.isKeyAllocated(@TypeOf(k))) {
-                    free(a, k);
+                    free(a, Deserializer, k);
                 };
 
                 const v = try map.nextValue(a, []const u8);
-                defer free(a, v);
+                defer free(a, Deserializer, v);
 
                 try m.put(k, v);
             }

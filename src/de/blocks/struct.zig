@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const getty_free = @import("../free.zig").free;
 const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -35,6 +36,24 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return StructVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    const info = @typeInfo(@TypeOf(value)).Struct;
+
+    inline for (info.fields) |field| {
+        if (!field.is_comptime) {
+            getty_free(allocator, Deserializer, @field(value, field.name));
+        }
+    }
 }
 
 test "deserialize - struct" {

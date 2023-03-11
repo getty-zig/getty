@@ -23,7 +23,7 @@ pub fn Visitor(comptime SinglyLinkedList: type) type {
             const a = allocator.?;
 
             var list = Value{};
-            errdefer free(a, list);
+            errdefer free(a, Deserializer, list);
 
             var current: ?*Value.Node = null;
             while (try seq.nextElement(a, Value.Node.Data)) |value| {

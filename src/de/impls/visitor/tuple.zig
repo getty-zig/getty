@@ -30,7 +30,7 @@ pub fn Visitor(comptime Tuple: type) type {
                     if (len > 0) {
                         inline for (tuple, 0..) |v, i| {
                             if (i < seen) {
-                                free(alloc, v);
+                                free(alloc, Deserializer, v);
                             }
                         }
                     }

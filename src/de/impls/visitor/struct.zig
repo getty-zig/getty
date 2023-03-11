@@ -30,7 +30,7 @@ pub fn Visitor(comptime Struct: type) type {
                 if (allocator) |alloc| {
                     inline for (fields, 0..) |field, i| {
                         if (!field.is_comptime and seen[i]) {
-                            free(alloc, @field(structure, field.name));
+                            free(alloc, Deserializer, @field(structure, field.name));
                         }
                     }
                 }
@@ -63,7 +63,7 @@ pub fn Visitor(comptime Struct: type) type {
 
                 defer if (key_is_allocated) {
                     std.debug.assert(allocator != null);
-                    free(allocator.?, key);
+                    free(allocator.?, Deserializer, key);
                 };
 
                 // Indicates whether or not key matches any field in the struct.

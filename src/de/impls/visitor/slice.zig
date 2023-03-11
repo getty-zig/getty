@@ -26,7 +26,7 @@ pub fn Visitor(comptime Slice: type) type {
             const a = allocator.?;
 
             var list = std.ArrayList(Child).init(a);
-            errdefer free(a, list);
+            errdefer free(a, Deserializer, list);
 
             while (try seq.nextElement(a, Child)) |elem| {
                 try list.append(elem);

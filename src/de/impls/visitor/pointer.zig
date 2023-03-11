@@ -38,7 +38,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitBool(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitBool(a, Deserializer, input);
@@ -52,7 +52,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitEnum(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitEnum(a, Deserializer, input);
@@ -66,7 +66,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitFloat(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitFloat(a, Deserializer, input);
@@ -80,7 +80,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitInt(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitInt(a, Deserializer, input);
@@ -94,7 +94,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitMap(a, Deserializer, map);
@@ -108,7 +108,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitNull(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitNull(a, Deserializer);
@@ -122,7 +122,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitSeq(a, Deserializer, seq);
@@ -136,7 +136,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitSome(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, @TypeOf(deserializer), value);
 
                 var cv = ChildVisitor(@TypeOf(deserializer)){};
                 value.* = try cv.visitor().visitSome(a, deserializer);
@@ -150,7 +150,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitString(a, Deserializer, input);
@@ -164,7 +164,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitUnion(a, Deserializer, ua, va);
@@ -178,7 +178,7 @@ pub fn Visitor(comptime Pointer: type) type {
         fn visitVoid(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
             if (allocator) |a| {
                 const value = try a.create(Child);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitVoid(a, Deserializer);

@@ -23,7 +23,7 @@ pub fn Visitor(comptime ArrayList: type) type {
             );
 
             var list = if (unmanaged) ArrayList{} else ArrayList.init(allocator.?);
-            errdefer free(allocator.?, list);
+            errdefer free(allocator.?, Deserializer, list);
 
             while (try seq.nextElement(allocator, std.meta.Child(ArrayList.Slice))) |value| {
                 try if (unmanaged) list.append(allocator.?, value) else list.append(value);

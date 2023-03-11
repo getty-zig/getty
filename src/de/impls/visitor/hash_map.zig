@@ -27,15 +27,15 @@ pub fn Visitor(comptime HashMap: type) type {
             const unmanaged = is_hash_map_unmanaged or is_array_hash_map_unmanaged;
 
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(a);
-            errdefer free(a, hash_map);
+            errdefer free(a, Deserializer, hash_map);
 
             while (try map.nextKey(a, K)) |key| {
                 errdefer if (map.isKeyAllocated(@TypeOf(key))) {
-                    free(a, key);
+                    free(a, Deserializer, key);
                 };
 
                 const value = try map.nextValue(a, V);
-                errdefer free(a, value);
+                errdefer free(a, Deserializer, value);
 
                 try if (unmanaged) hash_map.put(a, key, value) else hash_map.put(key, value);
             }

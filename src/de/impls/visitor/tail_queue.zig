@@ -23,7 +23,7 @@ pub fn Visitor(comptime TailQueue: type) type {
             const a = allocator.?;
 
             var list = Value{};
-            errdefer free(a, list);
+            errdefer free(a, Deserializer, list);
 
             const Child = std.meta.fieldInfo(Value.Node, .data).type;
 

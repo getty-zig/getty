@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list_aligned.zig").Visitor;
+const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -35,6 +36,33 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return ArrayListVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    for (value.items) |v| {
+        getty_free(allocator, Deserializer, v);
+    }
+
+    const unmanaged = comptime std.mem.startsWith(
+        u8,
+        @typeName(@TypeOf(value)),
+        "array_list.ArrayListAlignedUnmanaged",
+    );
+
+    if (unmanaged) {
+        var mut = value;
+        mut.deinit(allocator);
+    } else {
+        value.deinit();
+    }
 }
 
 test "deserialize - array list" {
@@ -81,8 +109,6 @@ test "deserialize - array list" {
 }
 
 test "deserialize - array list (recursive)" {
-    const free = @import("../free.zig").free;
-
     const Child = std.ArrayList(isize);
     const Parent = std.ArrayList(Child);
 
@@ -118,8 +144,10 @@ test "deserialize - array list (recursive)" {
         .{ .SeqEnd = {} },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     const got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
-    defer free(std.testing.allocator, got);
+    defer free(std.testing.allocator, Deserializer, got);
 
     try std.testing.expectEqual(want.capacity, got.capacity);
     for (got.items, 0..) |l, i| {

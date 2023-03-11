@@ -23,10 +23,10 @@ pub fn Visitor(comptime MultiArrayList: type) type {
             const a = allocator.?;
 
             var list = Value{};
-            errdefer free(a, list);
+            errdefer free(a, Deserializer, list);
 
             while (try seq.nextElement(a, Value.Elem)) |elem| {
-                errdefer free(a, elem);
+                errdefer free(a, Deserializer, elem);
                 try list.append(a, elem);
             }
 

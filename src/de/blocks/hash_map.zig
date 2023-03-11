@@ -1,7 +1,7 @@
 const std = @import("std");
 const test_allocator = std.testing.allocator;
 
-const free = @import("../free.zig").free;
+const getty_free = @import("../free.zig").free;
 const HashMapVisitor = @import("../impls/visitor/hash_map.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -40,6 +40,42 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return HashMapVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    const T = @TypeOf(value);
+    const name = @typeName(T);
+
+    const unmanaged = comptime std.mem.startsWith(
+        u8,
+        name,
+        "hash_map.HashMapUnmanaged",
+    ) or std.mem.startsWith(
+        u8,
+        name,
+        "array_hash_map.ArrayHashMapUnmanaged",
+    );
+
+    var iterator = value.iterator();
+    while (iterator.next()) |entry| {
+        getty_free(allocator, Deserializer, entry.key_ptr.*);
+        getty_free(allocator, Deserializer, entry.value_ptr.*);
+    }
+
+    var mut = value;
+    if (unmanaged) {
+        mut.deinit(allocator);
+    } else {
+        mut.deinit();
+    }
 }
 
 // TODO: Empty tests for ArrayHashMap variants are commented out due to an
@@ -162,12 +198,14 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
         },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     inline for (tests) |t| {
-        defer free(test_allocator, t.want);
+        defer free(test_allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
         var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer free(test_allocator, got);
+        defer free(test_allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
 
@@ -238,13 +276,15 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     inline for (tests) |t| {
         var want = t.want;
         defer want.deinit();
 
         const Want = @TypeOf(t.want);
         var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer free(test_allocator, got);
+        defer free(test_allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
 
@@ -299,13 +339,15 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
         },
     };
 
+    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
     inline for (tests) |t| {
         var want = t.want;
         defer want.deinit(test_allocator);
 
         const Want = @TypeOf(t.want);
         var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer free(test_allocator, got);
+        defer free(test_allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
 
