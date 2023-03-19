@@ -70,8 +70,8 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
     t_de.setMainPkgPath("src/");
 
     // Configure module-level test steps.
-    test_ser_step.dependOn(&t_ser.step);
-    test_de_step.dependOn(&t_de.step);
+    test_ser_step.dependOn(&t_ser.run().step);
+    test_de_step.dependOn(&t_de.run().step);
 
     // Configure top-level test step.
     test_step.dependOn(test_ser_step);
