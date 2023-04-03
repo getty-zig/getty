@@ -336,284 +336,289 @@
 <span class="line" id="L215">    ffdhe6144 = <span class="tok-number">0x0103</span>,</span>
 <span class="line" id="L216">    ffdhe8192 = <span class="tok-number">0x0104</span>,</span>
 <span class="line" id="L217"></span>
-<span class="line" id="L218">    _,</span>
-<span class="line" id="L219">};</span>
-<span class="line" id="L220"></span>
-<span class="line" id="L221"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CipherSuite = <span class="tok-kw">enum</span>(<span class="tok-type">u16</span>) {</span>
-<span class="line" id="L222">    AES_128_GCM_SHA256 = <span class="tok-number">0x1301</span>,</span>
-<span class="line" id="L223">    AES_256_GCM_SHA384 = <span class="tok-number">0x1302</span>,</span>
-<span class="line" id="L224">    CHACHA20_POLY1305_SHA256 = <span class="tok-number">0x1303</span>,</span>
-<span class="line" id="L225">    AES_128_CCM_SHA256 = <span class="tok-number">0x1304</span>,</span>
-<span class="line" id="L226">    AES_128_CCM_8_SHA256 = <span class="tok-number">0x1305</span>,</span>
-<span class="line" id="L227">    AEGIS_256_SHA384 = <span class="tok-number">0x1306</span>,</span>
-<span class="line" id="L228">    AEGIS_128L_SHA256 = <span class="tok-number">0x1307</span>,</span>
-<span class="line" id="L229">    _,</span>
-<span class="line" id="L230">};</span>
-<span class="line" id="L231"></span>
-<span class="line" id="L232"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CertificateType = <span class="tok-kw">enum</span>(<span class="tok-type">u8</span>) {</span>
-<span class="line" id="L233">    X509 = <span class="tok-number">0</span>,</span>
-<span class="line" id="L234">    RawPublicKey = <span class="tok-number">2</span>,</span>
-<span class="line" id="L235">    _,</span>
-<span class="line" id="L236">};</span>
-<span class="line" id="L237"></span>
-<span class="line" id="L238"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> KeyUpdateRequest = <span class="tok-kw">enum</span>(<span class="tok-type">u8</span>) {</span>
-<span class="line" id="L239">    update_not_requested = <span class="tok-number">0</span>,</span>
-<span class="line" id="L240">    update_requested = <span class="tok-number">1</span>,</span>
-<span class="line" id="L241">    _,</span>
-<span class="line" id="L242">};</span>
-<span class="line" id="L243"></span>
-<span class="line" id="L244"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">HandshakeCipherT</span>(<span class="tok-kw">comptime</span> AeadType: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> HashType: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L245">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L246">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AEAD = AeadType;</span>
-<span class="line" id="L247">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hash = HashType;</span>
-<span class="line" id="L248">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hmac = crypto.auth.hmac.Hmac(Hash);</span>
-<span class="line" id="L249">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hkdf = crypto.kdf.hkdf.Hkdf(Hmac);</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251">        handshake_secret: [Hkdf.prk_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L252">        master_secret: [Hkdf.prk_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L253">        client_handshake_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L254">        server_handshake_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L255">        client_finished_key: [Hmac.key_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L256">        server_finished_key: [Hmac.key_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L257">        client_handshake_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L258">        server_handshake_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L259">        transcript_hash: Hash,</span>
-<span class="line" id="L260">    };</span>
-<span class="line" id="L261">}</span>
-<span class="line" id="L262"></span>
-<span class="line" id="L263"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> HandshakeCipher = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L264">    AES_128_GCM_SHA256: HandshakeCipherT(crypto.aead.aes_gcm.Aes128Gcm, crypto.hash.sha2.Sha256),</span>
-<span class="line" id="L265">    AES_256_GCM_SHA384: HandshakeCipherT(crypto.aead.aes_gcm.Aes256Gcm, crypto.hash.sha2.Sha384),</span>
-<span class="line" id="L266">    CHACHA20_POLY1305_SHA256: HandshakeCipherT(crypto.aead.chacha_poly.ChaCha20Poly1305, crypto.hash.sha2.Sha256),</span>
-<span class="line" id="L267">    AEGIS_256_SHA384: HandshakeCipherT(crypto.aead.aegis.Aegis256, crypto.hash.sha2.Sha384),</span>
-<span class="line" id="L268">    AEGIS_128L_SHA256: HandshakeCipherT(crypto.aead.aegis.Aegis128L, crypto.hash.sha2.Sha256),</span>
-<span class="line" id="L269">};</span>
-<span class="line" id="L270"></span>
-<span class="line" id="L271"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ApplicationCipherT</span>(<span class="tok-kw">comptime</span> AeadType: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> HashType: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L272">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L273">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AEAD = AeadType;</span>
-<span class="line" id="L274">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hash = HashType;</span>
-<span class="line" id="L275">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hmac = crypto.auth.hmac.Hmac(Hash);</span>
-<span class="line" id="L276">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hkdf = crypto.kdf.hkdf.Hkdf(Hmac);</span>
-<span class="line" id="L277"></span>
-<span class="line" id="L278">        client_secret: [Hash.digest_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L279">        server_secret: [Hash.digest_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L280">        client_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L281">        server_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L282">        client_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L283">        server_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L284">    };</span>
-<span class="line" id="L285">}</span>
-<span class="line" id="L286"></span>
-<span class="line" id="L287"><span class="tok-comment">/// Encryption parameters for application traffic.</span></span>
-<span class="line" id="L288"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ApplicationCipher = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L289">    AES_128_GCM_SHA256: ApplicationCipherT(crypto.aead.aes_gcm.Aes128Gcm, crypto.hash.sha2.Sha256),</span>
-<span class="line" id="L290">    AES_256_GCM_SHA384: ApplicationCipherT(crypto.aead.aes_gcm.Aes256Gcm, crypto.hash.sha2.Sha384),</span>
-<span class="line" id="L291">    CHACHA20_POLY1305_SHA256: ApplicationCipherT(crypto.aead.chacha_poly.ChaCha20Poly1305, crypto.hash.sha2.Sha256),</span>
-<span class="line" id="L292">    AEGIS_256_SHA384: ApplicationCipherT(crypto.aead.aegis.Aegis256, crypto.hash.sha2.Sha384),</span>
-<span class="line" id="L293">    AEGIS_128L_SHA256: ApplicationCipherT(crypto.aead.aegis.Aegis128L, crypto.hash.sha2.Sha256),</span>
-<span class="line" id="L294">};</span>
-<span class="line" id="L295"></span>
-<span class="line" id="L296"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hkdfExpandLabel</span>(</span>
-<span class="line" id="L297">    <span class="tok-kw">comptime</span> Hkdf: <span class="tok-type">type</span>,</span>
-<span class="line" id="L298">    key: [Hkdf.prk_length]<span class="tok-type">u8</span>,</span>
-<span class="line" id="L299">    label: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L300">    context: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L301">    <span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L302">) [len]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L303">    <span class="tok-kw">const</span> max_label_len = <span class="tok-number">255</span>;</span>
-<span class="line" id="L304">    <span class="tok-kw">const</span> max_context_len = <span class="tok-number">255</span>;</span>
-<span class="line" id="L305">    <span class="tok-kw">const</span> tls13 = <span class="tok-str">&quot;tls13 &quot;</span>;</span>
-<span class="line" id="L306">    <span class="tok-kw">var</span> buf: [<span class="tok-number">2</span> + <span class="tok-number">1</span> + tls13.len + max_label_len + <span class="tok-number">1</span> + max_context_len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L307">    mem.writeIntBig(<span class="tok-type">u16</span>, buf[<span class="tok-number">0</span>..<span class="tok-number">2</span>], len);</span>
-<span class="line" id="L308">    buf[<span class="tok-number">2</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, tls13.len + label.len);</span>
-<span class="line" id="L309">    buf[<span class="tok-number">3</span>..][<span class="tok-number">0</span>..tls13.len].* = tls13.*;</span>
-<span class="line" id="L310">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">3</span> + tls13.len;</span>
-<span class="line" id="L311">    mem.copy(<span class="tok-type">u8</span>, buf[i..], label);</span>
-<span class="line" id="L312">    i += label.len;</span>
-<span class="line" id="L313">    buf[i] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, context.len);</span>
-<span class="line" id="L314">    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L315">    mem.copy(<span class="tok-type">u8</span>, buf[i..], context);</span>
-<span class="line" id="L316">    i += context.len;</span>
-<span class="line" id="L317"></span>
-<span class="line" id="L318">    <span class="tok-kw">var</span> result: [len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L319">    Hkdf.expand(&amp;result, buf[<span class="tok-number">0</span>..i], key);</span>
-<span class="line" id="L320">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L321">}</span>
-<span class="line" id="L322"></span>
-<span class="line" id="L323"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">emptyHash</span>(<span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>) [Hash.digest_length]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L324">    <span class="tok-kw">var</span> result: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L325">    Hash.hash(&amp;.{}, &amp;result, .{});</span>
-<span class="line" id="L326">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L327">}</span>
-<span class="line" id="L328"></span>
-<span class="line" id="L329"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hmac</span>(<span class="tok-kw">comptime</span> Hmac: <span class="tok-type">type</span>, message: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, key: [Hmac.key_length]<span class="tok-type">u8</span>) [Hmac.mac_length]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L330">    <span class="tok-kw">var</span> result: [Hmac.mac_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L331">    Hmac.create(&amp;result, message, &amp;key);</span>
-<span class="line" id="L332">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L333">}</span>
-<span class="line" id="L334"></span>
-<span class="line" id="L335"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">extension</span>(<span class="tok-kw">comptime</span> et: ExtensionType, bytes: <span class="tok-kw">anytype</span>) [<span class="tok-number">2</span> + <span class="tok-number">2</span> + bytes.len]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L336">    <span class="tok-kw">return</span> int2(<span class="tok-builtin">@enumToInt</span>(et)) ++ array(<span class="tok-number">1</span>, bytes);</span>
+<span class="line" id="L218">    <span class="tok-comment">// Hybrid post-quantum key agreements</span>
+</span>
+<span class="line" id="L219">    x25519_kyber512d00 = <span class="tok-number">0xFE30</span>,</span>
+<span class="line" id="L220">    x25519_kyber768d00 = <span class="tok-number">0xFE31</span>,</span>
+<span class="line" id="L221"></span>
+<span class="line" id="L222">    _,</span>
+<span class="line" id="L223">};</span>
+<span class="line" id="L224"></span>
+<span class="line" id="L225"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CipherSuite = <span class="tok-kw">enum</span>(<span class="tok-type">u16</span>) {</span>
+<span class="line" id="L226">    AES_128_GCM_SHA256 = <span class="tok-number">0x1301</span>,</span>
+<span class="line" id="L227">    AES_256_GCM_SHA384 = <span class="tok-number">0x1302</span>,</span>
+<span class="line" id="L228">    CHACHA20_POLY1305_SHA256 = <span class="tok-number">0x1303</span>,</span>
+<span class="line" id="L229">    AES_128_CCM_SHA256 = <span class="tok-number">0x1304</span>,</span>
+<span class="line" id="L230">    AES_128_CCM_8_SHA256 = <span class="tok-number">0x1305</span>,</span>
+<span class="line" id="L231">    AEGIS_256_SHA384 = <span class="tok-number">0x1306</span>,</span>
+<span class="line" id="L232">    AEGIS_128L_SHA256 = <span class="tok-number">0x1307</span>,</span>
+<span class="line" id="L233">    _,</span>
+<span class="line" id="L234">};</span>
+<span class="line" id="L235"></span>
+<span class="line" id="L236"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> CertificateType = <span class="tok-kw">enum</span>(<span class="tok-type">u8</span>) {</span>
+<span class="line" id="L237">    X509 = <span class="tok-number">0</span>,</span>
+<span class="line" id="L238">    RawPublicKey = <span class="tok-number">2</span>,</span>
+<span class="line" id="L239">    _,</span>
+<span class="line" id="L240">};</span>
+<span class="line" id="L241"></span>
+<span class="line" id="L242"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> KeyUpdateRequest = <span class="tok-kw">enum</span>(<span class="tok-type">u8</span>) {</span>
+<span class="line" id="L243">    update_not_requested = <span class="tok-number">0</span>,</span>
+<span class="line" id="L244">    update_requested = <span class="tok-number">1</span>,</span>
+<span class="line" id="L245">    _,</span>
+<span class="line" id="L246">};</span>
+<span class="line" id="L247"></span>
+<span class="line" id="L248"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">HandshakeCipherT</span>(<span class="tok-kw">comptime</span> AeadType: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> HashType: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L249">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L250">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AEAD = AeadType;</span>
+<span class="line" id="L251">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hash = HashType;</span>
+<span class="line" id="L252">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hmac = crypto.auth.hmac.Hmac(Hash);</span>
+<span class="line" id="L253">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hkdf = crypto.kdf.hkdf.Hkdf(Hmac);</span>
+<span class="line" id="L254"></span>
+<span class="line" id="L255">        handshake_secret: [Hkdf.prk_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L256">        master_secret: [Hkdf.prk_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L257">        client_handshake_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L258">        server_handshake_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L259">        client_finished_key: [Hmac.key_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L260">        server_finished_key: [Hmac.key_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L261">        client_handshake_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L262">        server_handshake_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L263">        transcript_hash: Hash,</span>
+<span class="line" id="L264">    };</span>
+<span class="line" id="L265">}</span>
+<span class="line" id="L266"></span>
+<span class="line" id="L267"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> HandshakeCipher = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L268">    AES_128_GCM_SHA256: HandshakeCipherT(crypto.aead.aes_gcm.Aes128Gcm, crypto.hash.sha2.Sha256),</span>
+<span class="line" id="L269">    AES_256_GCM_SHA384: HandshakeCipherT(crypto.aead.aes_gcm.Aes256Gcm, crypto.hash.sha2.Sha384),</span>
+<span class="line" id="L270">    CHACHA20_POLY1305_SHA256: HandshakeCipherT(crypto.aead.chacha_poly.ChaCha20Poly1305, crypto.hash.sha2.Sha256),</span>
+<span class="line" id="L271">    AEGIS_256_SHA384: HandshakeCipherT(crypto.aead.aegis.Aegis256, crypto.hash.sha2.Sha384),</span>
+<span class="line" id="L272">    AEGIS_128L_SHA256: HandshakeCipherT(crypto.aead.aegis.Aegis128L, crypto.hash.sha2.Sha256),</span>
+<span class="line" id="L273">};</span>
+<span class="line" id="L274"></span>
+<span class="line" id="L275"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ApplicationCipherT</span>(<span class="tok-kw">comptime</span> AeadType: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> HashType: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L276">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L277">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AEAD = AeadType;</span>
+<span class="line" id="L278">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hash = HashType;</span>
+<span class="line" id="L279">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hmac = crypto.auth.hmac.Hmac(Hash);</span>
+<span class="line" id="L280">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Hkdf = crypto.kdf.hkdf.Hkdf(Hmac);</span>
+<span class="line" id="L281"></span>
+<span class="line" id="L282">        client_secret: [Hash.digest_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L283">        server_secret: [Hash.digest_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L284">        client_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L285">        server_key: [AEAD.key_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L286">        client_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L287">        server_iv: [AEAD.nonce_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L288">    };</span>
+<span class="line" id="L289">}</span>
+<span class="line" id="L290"></span>
+<span class="line" id="L291"><span class="tok-comment">/// Encryption parameters for application traffic.</span></span>
+<span class="line" id="L292"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ApplicationCipher = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L293">    AES_128_GCM_SHA256: ApplicationCipherT(crypto.aead.aes_gcm.Aes128Gcm, crypto.hash.sha2.Sha256),</span>
+<span class="line" id="L294">    AES_256_GCM_SHA384: ApplicationCipherT(crypto.aead.aes_gcm.Aes256Gcm, crypto.hash.sha2.Sha384),</span>
+<span class="line" id="L295">    CHACHA20_POLY1305_SHA256: ApplicationCipherT(crypto.aead.chacha_poly.ChaCha20Poly1305, crypto.hash.sha2.Sha256),</span>
+<span class="line" id="L296">    AEGIS_256_SHA384: ApplicationCipherT(crypto.aead.aegis.Aegis256, crypto.hash.sha2.Sha384),</span>
+<span class="line" id="L297">    AEGIS_128L_SHA256: ApplicationCipherT(crypto.aead.aegis.Aegis128L, crypto.hash.sha2.Sha256),</span>
+<span class="line" id="L298">};</span>
+<span class="line" id="L299"></span>
+<span class="line" id="L300"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hkdfExpandLabel</span>(</span>
+<span class="line" id="L301">    <span class="tok-kw">comptime</span> Hkdf: <span class="tok-type">type</span>,</span>
+<span class="line" id="L302">    key: [Hkdf.prk_length]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L303">    label: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L304">    context: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L305">    <span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L306">) [len]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L307">    <span class="tok-kw">const</span> max_label_len = <span class="tok-number">255</span>;</span>
+<span class="line" id="L308">    <span class="tok-kw">const</span> max_context_len = <span class="tok-number">255</span>;</span>
+<span class="line" id="L309">    <span class="tok-kw">const</span> tls13 = <span class="tok-str">&quot;tls13 &quot;</span>;</span>
+<span class="line" id="L310">    <span class="tok-kw">var</span> buf: [<span class="tok-number">2</span> + <span class="tok-number">1</span> + tls13.len + max_label_len + <span class="tok-number">1</span> + max_context_len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L311">    mem.writeIntBig(<span class="tok-type">u16</span>, buf[<span class="tok-number">0</span>..<span class="tok-number">2</span>], len);</span>
+<span class="line" id="L312">    buf[<span class="tok-number">2</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, tls13.len + label.len);</span>
+<span class="line" id="L313">    buf[<span class="tok-number">3</span>..][<span class="tok-number">0</span>..tls13.len].* = tls13.*;</span>
+<span class="line" id="L314">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">3</span> + tls13.len;</span>
+<span class="line" id="L315">    mem.copy(<span class="tok-type">u8</span>, buf[i..], label);</span>
+<span class="line" id="L316">    i += label.len;</span>
+<span class="line" id="L317">    buf[i] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, context.len);</span>
+<span class="line" id="L318">    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L319">    mem.copy(<span class="tok-type">u8</span>, buf[i..], context);</span>
+<span class="line" id="L320">    i += context.len;</span>
+<span class="line" id="L321"></span>
+<span class="line" id="L322">    <span class="tok-kw">var</span> result: [len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L323">    Hkdf.expand(&amp;result, buf[<span class="tok-number">0</span>..i], key);</span>
+<span class="line" id="L324">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L325">}</span>
+<span class="line" id="L326"></span>
+<span class="line" id="L327"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">emptyHash</span>(<span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>) [Hash.digest_length]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L328">    <span class="tok-kw">var</span> result: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L329">    Hash.hash(&amp;.{}, &amp;result, .{});</span>
+<span class="line" id="L330">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L331">}</span>
+<span class="line" id="L332"></span>
+<span class="line" id="L333"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hmac</span>(<span class="tok-kw">comptime</span> Hmac: <span class="tok-type">type</span>, message: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, key: [Hmac.key_length]<span class="tok-type">u8</span>) [Hmac.mac_length]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L334">    <span class="tok-kw">var</span> result: [Hmac.mac_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L335">    Hmac.create(&amp;result, message, &amp;key);</span>
+<span class="line" id="L336">    <span class="tok-kw">return</span> result;</span>
 <span class="line" id="L337">}</span>
 <span class="line" id="L338"></span>
-<span class="line" id="L339"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">array</span>(<span class="tok-kw">comptime</span> elem_size: <span class="tok-type">comptime_int</span>, bytes: <span class="tok-kw">anytype</span>) [<span class="tok-number">2</span> + bytes.len]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L340">    <span class="tok-kw">comptime</span> assert(bytes.len % elem_size == <span class="tok-number">0</span>);</span>
-<span class="line" id="L341">    <span class="tok-kw">return</span> int2(bytes.len) ++ bytes;</span>
-<span class="line" id="L342">}</span>
-<span class="line" id="L343"></span>
-<span class="line" id="L344"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">enum_array</span>(<span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> tags: []<span class="tok-kw">const</span> E) [<span class="tok-number">2</span> + <span class="tok-builtin">@sizeOf</span>(E) * tags.len]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L345">    assert(<span class="tok-builtin">@sizeOf</span>(E) == <span class="tok-number">2</span>);</span>
-<span class="line" id="L346">    <span class="tok-kw">var</span> result: [tags.len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L347">    <span class="tok-kw">for</span> (tags, <span class="tok-number">0</span>..) |elem, i| {</span>
-<span class="line" id="L348">        result[i * <span class="tok-number">2</span>] = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@enumToInt</span>(elem) &gt;&gt; <span class="tok-number">8</span>);</span>
-<span class="line" id="L349">        result[i * <span class="tok-number">2</span> + <span class="tok-number">1</span>] = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@enumToInt</span>(elem));</span>
-<span class="line" id="L350">    }</span>
-<span class="line" id="L351">    <span class="tok-kw">return</span> array(<span class="tok-number">2</span>, result);</span>
-<span class="line" id="L352">}</span>
-<span class="line" id="L353"></span>
-<span class="line" id="L354"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int2</span>(x: <span class="tok-type">u16</span>) [<span class="tok-number">2</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L355">    <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L356">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">8</span>),</span>
-<span class="line" id="L357">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x),</span>
-<span class="line" id="L358">    };</span>
-<span class="line" id="L359">}</span>
-<span class="line" id="L360"></span>
-<span class="line" id="L361"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int3</span>(x: <span class="tok-type">u24</span>) [<span class="tok-number">3</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L362">    <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L363">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">16</span>),</span>
-<span class="line" id="L364">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">8</span>),</span>
-<span class="line" id="L365">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x),</span>
-<span class="line" id="L366">    };</span>
-<span class="line" id="L367">}</span>
-<span class="line" id="L368"></span>
-<span class="line" id="L369"><span class="tok-comment">/// An abstraction to ensure that protocol-parsing code does not perform an</span></span>
-<span class="line" id="L370"><span class="tok-comment">/// out-of-bounds read.</span></span>
-<span class="line" id="L371"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Decoder = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L372">    buf: []<span class="tok-type">u8</span>,</span>
-<span class="line" id="L373">    <span class="tok-comment">/// Points to the next byte in buffer that will be decoded.</span></span>
-<span class="line" id="L374">    idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L375">    <span class="tok-comment">/// Up to this point in `buf` we have already checked that `cap` is greater than it.</span></span>
-<span class="line" id="L376">    our_end: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L377">    <span class="tok-comment">/// Beyond this point in `buf` is extra tag-along bytes beyond the amount we</span></span>
-<span class="line" id="L378">    <span class="tok-comment">/// requested with `readAtLeast`.</span></span>
-<span class="line" id="L379">    their_end: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L380">    <span class="tok-comment">/// Points to the end within buffer that has been filled. Beyond this point</span></span>
-<span class="line" id="L381">    <span class="tok-comment">/// in buf is undefined bytes.</span></span>
-<span class="line" id="L382">    cap: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L383">    <span class="tok-comment">/// Debug helper to prevent illegal calls to read functions.</span></span>
-<span class="line" id="L384">    disable_reads: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L385"></span>
-<span class="line" id="L386">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fromTheirSlice</span>(buf: []<span class="tok-type">u8</span>) Decoder {</span>
-<span class="line" id="L387">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L388">            .buf = buf,</span>
-<span class="line" id="L389">            .their_end = buf.len,</span>
-<span class="line" id="L390">            .cap = buf.len,</span>
-<span class="line" id="L391">            .disable_reads = <span class="tok-null">true</span>,</span>
-<span class="line" id="L392">        };</span>
-<span class="line" id="L393">    }</span>
-<span class="line" id="L394"></span>
-<span class="line" id="L395">    <span class="tok-comment">/// Use this function to increase `their_end`.</span></span>
-<span class="line" id="L396">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(d: *Decoder, stream: <span class="tok-kw">anytype</span>, their_amt: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L397">        assert(!d.disable_reads);</span>
-<span class="line" id="L398">        <span class="tok-kw">const</span> existing_amt = d.cap - d.idx;</span>
-<span class="line" id="L399">        d.their_end = d.idx + their_amt;</span>
-<span class="line" id="L400">        <span class="tok-kw">if</span> (their_amt &lt;= existing_amt) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L401">        <span class="tok-kw">const</span> request_amt = their_amt - existing_amt;</span>
-<span class="line" id="L402">        <span class="tok-kw">const</span> dest = d.buf[d.cap..];</span>
-<span class="line" id="L403">        <span class="tok-kw">if</span> (request_amt &gt; dest.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsRecordOverflow;</span>
-<span class="line" id="L404">        <span class="tok-kw">const</span> actual_amt = <span class="tok-kw">try</span> stream.readAtLeast(dest, request_amt);</span>
-<span class="line" id="L405">        <span class="tok-kw">if</span> (actual_amt &lt; request_amt) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsConnectionTruncated;</span>
-<span class="line" id="L406">        d.cap += actual_amt;</span>
-<span class="line" id="L407">    }</span>
-<span class="line" id="L408"></span>
-<span class="line" id="L409">    <span class="tok-comment">/// Same as `readAtLeast` but also increases `our_end` by exactly `our_amt`.</span></span>
-<span class="line" id="L410">    <span class="tok-comment">/// Use when `our_amt` is calculated by us, not by them.</span></span>
-<span class="line" id="L411">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeastOurAmt</span>(d: *Decoder, stream: <span class="tok-kw">anytype</span>, our_amt: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L412">        assert(!d.disable_reads);</span>
-<span class="line" id="L413">        <span class="tok-kw">try</span> readAtLeast(d, stream, our_amt);</span>
-<span class="line" id="L414">        d.our_end = d.idx + our_amt;</span>
-<span class="line" id="L415">    }</span>
-<span class="line" id="L416"></span>
-<span class="line" id="L417">    <span class="tok-comment">/// Use this function to increase `our_end`.</span></span>
-<span class="line" id="L418">    <span class="tok-comment">/// This should always be called with an amount provided by us, not them.</span></span>
-<span class="line" id="L419">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ensure</span>(d: *Decoder, amt: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L420">        d.our_end = <span class="tok-builtin">@max</span>(d.idx + amt, d.our_end);</span>
-<span class="line" id="L421">        <span class="tok-kw">if</span> (d.our_end &gt; d.their_end) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
-<span class="line" id="L422">    }</span>
-<span class="line" id="L423"></span>
-<span class="line" id="L424">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
-<span class="line" id="L425">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decode</span>(d: *Decoder, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
-<span class="line" id="L426">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L427">            .Int =&gt; |info| <span class="tok-kw">switch</span> (info.bits) {</span>
-<span class="line" id="L428">                <span class="tok-number">8</span> =&gt; {</span>
-<span class="line" id="L429">                    skip(d, <span class="tok-number">1</span>);</span>
-<span class="line" id="L430">                    <span class="tok-kw">return</span> d.buf[d.idx - <span class="tok-number">1</span>];</span>
-<span class="line" id="L431">                },</span>
-<span class="line" id="L432">                <span class="tok-number">16</span> =&gt; {</span>
-<span class="line" id="L433">                    skip(d, <span class="tok-number">2</span>);</span>
-<span class="line" id="L434">                    <span class="tok-kw">const</span> b0: <span class="tok-type">u16</span> = d.buf[d.idx - <span class="tok-number">2</span>];</span>
-<span class="line" id="L435">                    <span class="tok-kw">const</span> b1: <span class="tok-type">u16</span> = d.buf[d.idx - <span class="tok-number">1</span>];</span>
-<span class="line" id="L436">                    <span class="tok-kw">return</span> (b0 &lt;&lt; <span class="tok-number">8</span>) | b1;</span>
-<span class="line" id="L437">                },</span>
-<span class="line" id="L438">                <span class="tok-number">24</span> =&gt; {</span>
-<span class="line" id="L439">                    skip(d, <span class="tok-number">3</span>);</span>
-<span class="line" id="L440">                    <span class="tok-kw">const</span> b0: <span class="tok-type">u24</span> = d.buf[d.idx - <span class="tok-number">3</span>];</span>
-<span class="line" id="L441">                    <span class="tok-kw">const</span> b1: <span class="tok-type">u24</span> = d.buf[d.idx - <span class="tok-number">2</span>];</span>
-<span class="line" id="L442">                    <span class="tok-kw">const</span> b2: <span class="tok-type">u24</span> = d.buf[d.idx - <span class="tok-number">1</span>];</span>
-<span class="line" id="L443">                    <span class="tok-kw">return</span> (b0 &lt;&lt; <span class="tok-number">16</span>) | (b1 &lt;&lt; <span class="tok-number">8</span>) | b2;</span>
-<span class="line" id="L444">                },</span>
-<span class="line" id="L445">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported int type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L446">            },</span>
-<span class="line" id="L447">            .Enum =&gt; |info| {</span>
-<span class="line" id="L448">                <span class="tok-kw">const</span> int = d.decode(info.tag_type);</span>
-<span class="line" id="L449">                <span class="tok-kw">if</span> (info.is_exhaustive) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;exhaustive enum cannot be used&quot;</span>);</span>
-<span class="line" id="L450">                <span class="tok-kw">return</span> <span class="tok-builtin">@intToEnum</span>(T, int);</span>
-<span class="line" id="L451">            },</span>
-<span class="line" id="L452">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L453">        }</span>
-<span class="line" id="L454">    }</span>
-<span class="line" id="L455"></span>
-<span class="line" id="L456">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
-<span class="line" id="L457">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">array</span>(d: *Decoder, <span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>) *[len]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L458">        skip(d, len);</span>
-<span class="line" id="L459">        <span class="tok-kw">return</span> d.buf[d.idx - len ..][<span class="tok-number">0</span>..len];</span>
-<span class="line" id="L460">    }</span>
-<span class="line" id="L461"></span>
-<span class="line" id="L462">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
-<span class="line" id="L463">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">slice</span>(d: *Decoder, len: <span class="tok-type">usize</span>) []<span class="tok-type">u8</span> {</span>
-<span class="line" id="L464">        skip(d, len);</span>
-<span class="line" id="L465">        <span class="tok-kw">return</span> d.buf[d.idx - len ..][<span class="tok-number">0</span>..len];</span>
-<span class="line" id="L466">    }</span>
-<span class="line" id="L467"></span>
-<span class="line" id="L468">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
-<span class="line" id="L469">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">skip</span>(d: *Decoder, amt: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L470">        d.idx += amt;</span>
-<span class="line" id="L471">        assert(d.idx &lt;= d.our_end); <span class="tok-comment">// insufficient ensured bytes</span>
+<span class="line" id="L339"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">extension</span>(<span class="tok-kw">comptime</span> et: ExtensionType, bytes: <span class="tok-kw">anytype</span>) [<span class="tok-number">2</span> + <span class="tok-number">2</span> + bytes.len]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L340">    <span class="tok-kw">return</span> int2(<span class="tok-builtin">@enumToInt</span>(et)) ++ array(<span class="tok-number">1</span>, bytes);</span>
+<span class="line" id="L341">}</span>
+<span class="line" id="L342"></span>
+<span class="line" id="L343"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">array</span>(<span class="tok-kw">comptime</span> elem_size: <span class="tok-type">comptime_int</span>, bytes: <span class="tok-kw">anytype</span>) [<span class="tok-number">2</span> + bytes.len]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L344">    <span class="tok-kw">comptime</span> assert(bytes.len % elem_size == <span class="tok-number">0</span>);</span>
+<span class="line" id="L345">    <span class="tok-kw">return</span> int2(bytes.len) ++ bytes;</span>
+<span class="line" id="L346">}</span>
+<span class="line" id="L347"></span>
+<span class="line" id="L348"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">enum_array</span>(<span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> tags: []<span class="tok-kw">const</span> E) [<span class="tok-number">2</span> + <span class="tok-builtin">@sizeOf</span>(E) * tags.len]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L349">    assert(<span class="tok-builtin">@sizeOf</span>(E) == <span class="tok-number">2</span>);</span>
+<span class="line" id="L350">    <span class="tok-kw">var</span> result: [tags.len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L351">    <span class="tok-kw">for</span> (tags, <span class="tok-number">0</span>..) |elem, i| {</span>
+<span class="line" id="L352">        result[i * <span class="tok-number">2</span>] = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@enumToInt</span>(elem) &gt;&gt; <span class="tok-number">8</span>);</span>
+<span class="line" id="L353">        result[i * <span class="tok-number">2</span> + <span class="tok-number">1</span>] = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@enumToInt</span>(elem));</span>
+<span class="line" id="L354">    }</span>
+<span class="line" id="L355">    <span class="tok-kw">return</span> array(<span class="tok-number">2</span>, result);</span>
+<span class="line" id="L356">}</span>
+<span class="line" id="L357"></span>
+<span class="line" id="L358"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int2</span>(x: <span class="tok-type">u16</span>) [<span class="tok-number">2</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L359">    <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L360">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">8</span>),</span>
+<span class="line" id="L361">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x),</span>
+<span class="line" id="L362">    };</span>
+<span class="line" id="L363">}</span>
+<span class="line" id="L364"></span>
+<span class="line" id="L365"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int3</span>(x: <span class="tok-type">u24</span>) [<span class="tok-number">3</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L366">    <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L367">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">16</span>),</span>
+<span class="line" id="L368">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x &gt;&gt; <span class="tok-number">8</span>),</span>
+<span class="line" id="L369">        <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, x),</span>
+<span class="line" id="L370">    };</span>
+<span class="line" id="L371">}</span>
+<span class="line" id="L372"></span>
+<span class="line" id="L373"><span class="tok-comment">/// An abstraction to ensure that protocol-parsing code does not perform an</span></span>
+<span class="line" id="L374"><span class="tok-comment">/// out-of-bounds read.</span></span>
+<span class="line" id="L375"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Decoder = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L376">    buf: []<span class="tok-type">u8</span>,</span>
+<span class="line" id="L377">    <span class="tok-comment">/// Points to the next byte in buffer that will be decoded.</span></span>
+<span class="line" id="L378">    idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L379">    <span class="tok-comment">/// Up to this point in `buf` we have already checked that `cap` is greater than it.</span></span>
+<span class="line" id="L380">    our_end: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L381">    <span class="tok-comment">/// Beyond this point in `buf` is extra tag-along bytes beyond the amount we</span></span>
+<span class="line" id="L382">    <span class="tok-comment">/// requested with `readAtLeast`.</span></span>
+<span class="line" id="L383">    their_end: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L384">    <span class="tok-comment">/// Points to the end within buffer that has been filled. Beyond this point</span></span>
+<span class="line" id="L385">    <span class="tok-comment">/// in buf is undefined bytes.</span></span>
+<span class="line" id="L386">    cap: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L387">    <span class="tok-comment">/// Debug helper to prevent illegal calls to read functions.</span></span>
+<span class="line" id="L388">    disable_reads: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L389"></span>
+<span class="line" id="L390">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fromTheirSlice</span>(buf: []<span class="tok-type">u8</span>) Decoder {</span>
+<span class="line" id="L391">        <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L392">            .buf = buf,</span>
+<span class="line" id="L393">            .their_end = buf.len,</span>
+<span class="line" id="L394">            .cap = buf.len,</span>
+<span class="line" id="L395">            .disable_reads = <span class="tok-null">true</span>,</span>
+<span class="line" id="L396">        };</span>
+<span class="line" id="L397">    }</span>
+<span class="line" id="L398"></span>
+<span class="line" id="L399">    <span class="tok-comment">/// Use this function to increase `their_end`.</span></span>
+<span class="line" id="L400">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(d: *Decoder, stream: <span class="tok-kw">anytype</span>, their_amt: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L401">        assert(!d.disable_reads);</span>
+<span class="line" id="L402">        <span class="tok-kw">const</span> existing_amt = d.cap - d.idx;</span>
+<span class="line" id="L403">        d.their_end = d.idx + their_amt;</span>
+<span class="line" id="L404">        <span class="tok-kw">if</span> (their_amt &lt;= existing_amt) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L405">        <span class="tok-kw">const</span> request_amt = their_amt - existing_amt;</span>
+<span class="line" id="L406">        <span class="tok-kw">const</span> dest = d.buf[d.cap..];</span>
+<span class="line" id="L407">        <span class="tok-kw">if</span> (request_amt &gt; dest.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsRecordOverflow;</span>
+<span class="line" id="L408">        <span class="tok-kw">const</span> actual_amt = <span class="tok-kw">try</span> stream.readAtLeast(dest, request_amt);</span>
+<span class="line" id="L409">        <span class="tok-kw">if</span> (actual_amt &lt; request_amt) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsConnectionTruncated;</span>
+<span class="line" id="L410">        d.cap += actual_amt;</span>
+<span class="line" id="L411">    }</span>
+<span class="line" id="L412"></span>
+<span class="line" id="L413">    <span class="tok-comment">/// Same as `readAtLeast` but also increases `our_end` by exactly `our_amt`.</span></span>
+<span class="line" id="L414">    <span class="tok-comment">/// Use when `our_amt` is calculated by us, not by them.</span></span>
+<span class="line" id="L415">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeastOurAmt</span>(d: *Decoder, stream: <span class="tok-kw">anytype</span>, our_amt: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L416">        assert(!d.disable_reads);</span>
+<span class="line" id="L417">        <span class="tok-kw">try</span> readAtLeast(d, stream, our_amt);</span>
+<span class="line" id="L418">        d.our_end = d.idx + our_amt;</span>
+<span class="line" id="L419">    }</span>
+<span class="line" id="L420"></span>
+<span class="line" id="L421">    <span class="tok-comment">/// Use this function to increase `our_end`.</span></span>
+<span class="line" id="L422">    <span class="tok-comment">/// This should always be called with an amount provided by us, not them.</span></span>
+<span class="line" id="L423">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ensure</span>(d: *Decoder, amt: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L424">        d.our_end = <span class="tok-builtin">@max</span>(d.idx + amt, d.our_end);</span>
+<span class="line" id="L425">        <span class="tok-kw">if</span> (d.our_end &gt; d.their_end) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
+<span class="line" id="L426">    }</span>
+<span class="line" id="L427"></span>
+<span class="line" id="L428">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
+<span class="line" id="L429">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decode</span>(d: *Decoder, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L430">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L431">            .Int =&gt; |info| <span class="tok-kw">switch</span> (info.bits) {</span>
+<span class="line" id="L432">                <span class="tok-number">8</span> =&gt; {</span>
+<span class="line" id="L433">                    skip(d, <span class="tok-number">1</span>);</span>
+<span class="line" id="L434">                    <span class="tok-kw">return</span> d.buf[d.idx - <span class="tok-number">1</span>];</span>
+<span class="line" id="L435">                },</span>
+<span class="line" id="L436">                <span class="tok-number">16</span> =&gt; {</span>
+<span class="line" id="L437">                    skip(d, <span class="tok-number">2</span>);</span>
+<span class="line" id="L438">                    <span class="tok-kw">const</span> b0: <span class="tok-type">u16</span> = d.buf[d.idx - <span class="tok-number">2</span>];</span>
+<span class="line" id="L439">                    <span class="tok-kw">const</span> b1: <span class="tok-type">u16</span> = d.buf[d.idx - <span class="tok-number">1</span>];</span>
+<span class="line" id="L440">                    <span class="tok-kw">return</span> (b0 &lt;&lt; <span class="tok-number">8</span>) | b1;</span>
+<span class="line" id="L441">                },</span>
+<span class="line" id="L442">                <span class="tok-number">24</span> =&gt; {</span>
+<span class="line" id="L443">                    skip(d, <span class="tok-number">3</span>);</span>
+<span class="line" id="L444">                    <span class="tok-kw">const</span> b0: <span class="tok-type">u24</span> = d.buf[d.idx - <span class="tok-number">3</span>];</span>
+<span class="line" id="L445">                    <span class="tok-kw">const</span> b1: <span class="tok-type">u24</span> = d.buf[d.idx - <span class="tok-number">2</span>];</span>
+<span class="line" id="L446">                    <span class="tok-kw">const</span> b2: <span class="tok-type">u24</span> = d.buf[d.idx - <span class="tok-number">1</span>];</span>
+<span class="line" id="L447">                    <span class="tok-kw">return</span> (b0 &lt;&lt; <span class="tok-number">16</span>) | (b1 &lt;&lt; <span class="tok-number">8</span>) | b2;</span>
+<span class="line" id="L448">                },</span>
+<span class="line" id="L449">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported int type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L450">            },</span>
+<span class="line" id="L451">            .Enum =&gt; |info| {</span>
+<span class="line" id="L452">                <span class="tok-kw">const</span> int = d.decode(info.tag_type);</span>
+<span class="line" id="L453">                <span class="tok-kw">if</span> (info.is_exhaustive) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;exhaustive enum cannot be used&quot;</span>);</span>
+<span class="line" id="L454">                <span class="tok-kw">return</span> <span class="tok-builtin">@intToEnum</span>(T, int);</span>
+<span class="line" id="L455">            },</span>
+<span class="line" id="L456">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L457">        }</span>
+<span class="line" id="L458">    }</span>
+<span class="line" id="L459"></span>
+<span class="line" id="L460">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
+<span class="line" id="L461">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">array</span>(d: *Decoder, <span class="tok-kw">comptime</span> len: <span class="tok-type">usize</span>) *[len]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L462">        skip(d, len);</span>
+<span class="line" id="L463">        <span class="tok-kw">return</span> d.buf[d.idx - len ..][<span class="tok-number">0</span>..len];</span>
+<span class="line" id="L464">    }</span>
+<span class="line" id="L465"></span>
+<span class="line" id="L466">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
+<span class="line" id="L467">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">slice</span>(d: *Decoder, len: <span class="tok-type">usize</span>) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L468">        skip(d, len);</span>
+<span class="line" id="L469">        <span class="tok-kw">return</span> d.buf[d.idx - len ..][<span class="tok-number">0</span>..len];</span>
+<span class="line" id="L470">    }</span>
+<span class="line" id="L471"></span>
+<span class="line" id="L472">    <span class="tok-comment">/// Use this function to increase `idx`.</span></span>
+<span class="line" id="L473">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">skip</span>(d: *Decoder, amt: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L474">        d.idx += amt;</span>
+<span class="line" id="L475">        assert(d.idx &lt;= d.our_end); <span class="tok-comment">// insufficient ensured bytes</span>
 </span>
-<span class="line" id="L472">    }</span>
-<span class="line" id="L473"></span>
-<span class="line" id="L474">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">eof</span>(d: Decoder) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L475">        assert(d.our_end &lt;= d.their_end);</span>
-<span class="line" id="L476">        assert(d.idx &lt;= d.our_end);</span>
-<span class="line" id="L477">        <span class="tok-kw">return</span> d.idx == d.their_end;</span>
-<span class="line" id="L478">    }</span>
-<span class="line" id="L479"></span>
-<span class="line" id="L480">    <span class="tok-comment">/// Provide the length they claim, and receive a sub-decoder specific to that slice.</span></span>
-<span class="line" id="L481">    <span class="tok-comment">/// The parent decoder is advanced to the end.</span></span>
-<span class="line" id="L482">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">sub</span>(d: *Decoder, their_len: <span class="tok-type">usize</span>) !Decoder {</span>
-<span class="line" id="L483">        <span class="tok-kw">const</span> end = d.idx + their_len;</span>
-<span class="line" id="L484">        <span class="tok-kw">if</span> (end &gt; d.their_end) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
-<span class="line" id="L485">        <span class="tok-kw">const</span> sub_buf = d.buf[d.idx..end];</span>
-<span class="line" id="L486">        d.idx = end;</span>
-<span class="line" id="L487">        d.our_end = end;</span>
-<span class="line" id="L488">        <span class="tok-kw">return</span> fromTheirSlice(sub_buf);</span>
-<span class="line" id="L489">    }</span>
-<span class="line" id="L490"></span>
-<span class="line" id="L491">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">rest</span>(d: Decoder) []<span class="tok-type">u8</span> {</span>
-<span class="line" id="L492">        <span class="tok-kw">return</span> d.buf[d.idx..d.cap];</span>
+<span class="line" id="L476">    }</span>
+<span class="line" id="L477"></span>
+<span class="line" id="L478">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">eof</span>(d: Decoder) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L479">        assert(d.our_end &lt;= d.their_end);</span>
+<span class="line" id="L480">        assert(d.idx &lt;= d.our_end);</span>
+<span class="line" id="L481">        <span class="tok-kw">return</span> d.idx == d.their_end;</span>
+<span class="line" id="L482">    }</span>
+<span class="line" id="L483"></span>
+<span class="line" id="L484">    <span class="tok-comment">/// Provide the length they claim, and receive a sub-decoder specific to that slice.</span></span>
+<span class="line" id="L485">    <span class="tok-comment">/// The parent decoder is advanced to the end.</span></span>
+<span class="line" id="L486">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">sub</span>(d: *Decoder, their_len: <span class="tok-type">usize</span>) !Decoder {</span>
+<span class="line" id="L487">        <span class="tok-kw">const</span> end = d.idx + their_len;</span>
+<span class="line" id="L488">        <span class="tok-kw">if</span> (end &gt; d.their_end) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
+<span class="line" id="L489">        <span class="tok-kw">const</span> sub_buf = d.buf[d.idx..end];</span>
+<span class="line" id="L490">        d.idx = end;</span>
+<span class="line" id="L491">        d.our_end = end;</span>
+<span class="line" id="L492">        <span class="tok-kw">return</span> fromTheirSlice(sub_buf);</span>
 <span class="line" id="L493">    }</span>
-<span class="line" id="L494">};</span>
-<span class="line" id="L495"></span>
+<span class="line" id="L494"></span>
+<span class="line" id="L495">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">rest</span>(d: Decoder) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L496">        <span class="tok-kw">return</span> d.buf[d.idx..d.cap];</span>
+<span class="line" id="L497">    }</span>
+<span class="line" id="L498">};</span>
+<span class="line" id="L499"></span>
 </code></pre></body>
 </html>

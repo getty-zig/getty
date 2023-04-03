@@ -959,365 +959,394 @@
 <span class="line" id="L828">    <span class="tok-kw">return</span> ArgIterator.initWithAllocator(allocator);</span>
 <span class="line" id="L829">}</span>
 <span class="line" id="L830"></span>
-<span class="line" id="L831"><span class="tok-kw">test</span> <span class="tok-str">&quot;args iterator&quot;</span> {</span>
-<span class="line" id="L832">    <span class="tok-kw">var</span> ga = std.testing.allocator;</span>
-<span class="line" id="L833">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> argsWithAllocator(ga);</span>
-<span class="line" id="L834">    <span class="tok-kw">defer</span> it.deinit(); <span class="tok-comment">// no-op unless WASI or Windows</span>
+<span class="line" id="L831"><span class="tok-comment">/// Caller must call argsFree on result.</span></span>
+<span class="line" id="L832"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argsAlloc</span>(allocator: Allocator) ![][:<span class="tok-number">0</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L833">    <span class="tok-comment">// TODO refactor to only make 1 allocation.</span>
 </span>
-<span class="line" id="L835"></span>
-<span class="line" id="L836">    <span class="tok-kw">const</span> prog_name = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L837">    <span class="tok-kw">const</span> expected_suffix = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L838">        .wasi =&gt; <span class="tok-str">&quot;test.wasm&quot;</span>,</span>
-<span class="line" id="L839">        .windows =&gt; <span class="tok-str">&quot;test.exe&quot;</span>,</span>
-<span class="line" id="L840">        <span class="tok-kw">else</span> =&gt; <span class="tok-str">&quot;test&quot;</span>,</span>
-<span class="line" id="L841">    };</span>
-<span class="line" id="L842">    <span class="tok-kw">const</span> given_suffix = std.fs.path.basename(prog_name);</span>
-<span class="line" id="L843"></span>
-<span class="line" id="L844">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, expected_suffix, given_suffix));</span>
-<span class="line" id="L845">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
-<span class="line" id="L846">    <span class="tok-kw">try</span> testing.expect(!it.skip());</span>
-<span class="line" id="L847">}</span>
-<span class="line" id="L848"></span>
-<span class="line" id="L849"><span class="tok-comment">/// Caller must call argsFree on result.</span></span>
-<span class="line" id="L850"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argsAlloc</span>(allocator: Allocator) ![][:<span class="tok-number">0</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L851">    <span class="tok-comment">// TODO refactor to only make 1 allocation.</span>
-</span>
-<span class="line" id="L852">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> argsWithAllocator(allocator);</span>
-<span class="line" id="L853">    <span class="tok-kw">defer</span> it.deinit();</span>
+<span class="line" id="L834">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> argsWithAllocator(allocator);</span>
+<span class="line" id="L835">    <span class="tok-kw">defer</span> it.deinit();</span>
+<span class="line" id="L836"></span>
+<span class="line" id="L837">    <span class="tok-kw">var</span> contents = std.ArrayList(<span class="tok-type">u8</span>).init(allocator);</span>
+<span class="line" id="L838">    <span class="tok-kw">defer</span> contents.deinit();</span>
+<span class="line" id="L839"></span>
+<span class="line" id="L840">    <span class="tok-kw">var</span> slice_list = std.ArrayList(<span class="tok-type">usize</span>).init(allocator);</span>
+<span class="line" id="L841">    <span class="tok-kw">defer</span> slice_list.deinit();</span>
+<span class="line" id="L842"></span>
+<span class="line" id="L843">    <span class="tok-kw">while</span> (it.next()) |arg| {</span>
+<span class="line" id="L844">        <span class="tok-kw">try</span> contents.appendSlice(arg[<span class="tok-number">0</span> .. arg.len + <span class="tok-number">1</span>]);</span>
+<span class="line" id="L845">        <span class="tok-kw">try</span> slice_list.append(arg.len);</span>
+<span class="line" id="L846">    }</span>
+<span class="line" id="L847"></span>
+<span class="line" id="L848">    <span class="tok-kw">const</span> contents_slice = contents.items;</span>
+<span class="line" id="L849">    <span class="tok-kw">const</span> slice_sizes = slice_list.items;</span>
+<span class="line" id="L850">    <span class="tok-kw">const</span> slice_list_bytes = <span class="tok-kw">try</span> math.mul(<span class="tok-type">usize</span>, <span class="tok-builtin">@sizeOf</span>([]<span class="tok-type">u8</span>), slice_sizes.len);</span>
+<span class="line" id="L851">    <span class="tok-kw">const</span> total_bytes = <span class="tok-kw">try</span> math.add(<span class="tok-type">usize</span>, slice_list_bytes, contents_slice.len);</span>
+<span class="line" id="L852">    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> allocator.alignedAlloc(<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>([]<span class="tok-type">u8</span>), total_bytes);</span>
+<span class="line" id="L853">    <span class="tok-kw">errdefer</span> allocator.free(buf);</span>
 <span class="line" id="L854"></span>
-<span class="line" id="L855">    <span class="tok-kw">var</span> contents = std.ArrayList(<span class="tok-type">u8</span>).init(allocator);</span>
-<span class="line" id="L856">    <span class="tok-kw">defer</span> contents.deinit();</span>
-<span class="line" id="L857"></span>
-<span class="line" id="L858">    <span class="tok-kw">var</span> slice_list = std.ArrayList(<span class="tok-type">usize</span>).init(allocator);</span>
-<span class="line" id="L859">    <span class="tok-kw">defer</span> slice_list.deinit();</span>
-<span class="line" id="L860"></span>
-<span class="line" id="L861">    <span class="tok-kw">while</span> (it.next()) |arg| {</span>
-<span class="line" id="L862">        <span class="tok-kw">try</span> contents.appendSlice(arg[<span class="tok-number">0</span> .. arg.len + <span class="tok-number">1</span>]);</span>
-<span class="line" id="L863">        <span class="tok-kw">try</span> slice_list.append(arg.len);</span>
+<span class="line" id="L855">    <span class="tok-kw">const</span> result_slice_list = mem.bytesAsSlice([:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..slice_list_bytes]);</span>
+<span class="line" id="L856">    <span class="tok-kw">const</span> result_contents = buf[slice_list_bytes..];</span>
+<span class="line" id="L857">    mem.copy(<span class="tok-type">u8</span>, result_contents, contents_slice);</span>
+<span class="line" id="L858"></span>
+<span class="line" id="L859">    <span class="tok-kw">var</span> contents_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L860">    <span class="tok-kw">for</span> (slice_sizes, <span class="tok-number">0</span>..) |len, i| {</span>
+<span class="line" id="L861">        <span class="tok-kw">const</span> new_index = contents_index + len;</span>
+<span class="line" id="L862">        result_slice_list[i] = result_contents[contents_index..new_index :<span class="tok-number">0</span>];</span>
+<span class="line" id="L863">        contents_index = new_index + <span class="tok-number">1</span>;</span>
 <span class="line" id="L864">    }</span>
 <span class="line" id="L865"></span>
-<span class="line" id="L866">    <span class="tok-kw">const</span> contents_slice = contents.items;</span>
-<span class="line" id="L867">    <span class="tok-kw">const</span> slice_sizes = slice_list.items;</span>
-<span class="line" id="L868">    <span class="tok-kw">const</span> slice_list_bytes = <span class="tok-kw">try</span> math.mul(<span class="tok-type">usize</span>, <span class="tok-builtin">@sizeOf</span>([]<span class="tok-type">u8</span>), slice_sizes.len);</span>
-<span class="line" id="L869">    <span class="tok-kw">const</span> total_bytes = <span class="tok-kw">try</span> math.add(<span class="tok-type">usize</span>, slice_list_bytes, contents_slice.len);</span>
-<span class="line" id="L870">    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> allocator.alignedAlloc(<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>([]<span class="tok-type">u8</span>), total_bytes);</span>
-<span class="line" id="L871">    <span class="tok-kw">errdefer</span> allocator.free(buf);</span>
-<span class="line" id="L872"></span>
-<span class="line" id="L873">    <span class="tok-kw">const</span> result_slice_list = mem.bytesAsSlice([:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..slice_list_bytes]);</span>
-<span class="line" id="L874">    <span class="tok-kw">const</span> result_contents = buf[slice_list_bytes..];</span>
-<span class="line" id="L875">    mem.copy(<span class="tok-type">u8</span>, result_contents, contents_slice);</span>
-<span class="line" id="L876"></span>
-<span class="line" id="L877">    <span class="tok-kw">var</span> contents_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L878">    <span class="tok-kw">for</span> (slice_sizes, <span class="tok-number">0</span>..) |len, i| {</span>
-<span class="line" id="L879">        <span class="tok-kw">const</span> new_index = contents_index + len;</span>
-<span class="line" id="L880">        result_slice_list[i] = result_contents[contents_index..new_index :<span class="tok-number">0</span>];</span>
-<span class="line" id="L881">        contents_index = new_index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L882">    }</span>
-<span class="line" id="L883"></span>
-<span class="line" id="L884">    <span class="tok-kw">return</span> result_slice_list;</span>
-<span class="line" id="L885">}</span>
-<span class="line" id="L886"></span>
-<span class="line" id="L887"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argsFree</span>(allocator: Allocator, args_alloc: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L888">    <span class="tok-kw">var</span> total_bytes: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L889">    <span class="tok-kw">for</span> (args_alloc) |arg| {</span>
-<span class="line" id="L890">        total_bytes += <span class="tok-builtin">@sizeOf</span>([]<span class="tok-type">u8</span>) + arg.len + <span class="tok-number">1</span>;</span>
-<span class="line" id="L891">    }</span>
-<span class="line" id="L892">    <span class="tok-kw">const</span> unaligned_allocated_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args_alloc.ptr)[<span class="tok-number">0</span>..total_bytes];</span>
-<span class="line" id="L893">    <span class="tok-kw">const</span> aligned_allocated_buf = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>([]<span class="tok-type">u8</span>), unaligned_allocated_buf);</span>
-<span class="line" id="L894">    <span class="tok-kw">return</span> allocator.free(aligned_allocated_buf);</span>
-<span class="line" id="L895">}</span>
+<span class="line" id="L866">    <span class="tok-kw">return</span> result_slice_list;</span>
+<span class="line" id="L867">}</span>
+<span class="line" id="L868"></span>
+<span class="line" id="L869"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argsFree</span>(allocator: Allocator, args_alloc: []<span class="tok-kw">const</span> [:<span class="tok-number">0</span>]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L870">    <span class="tok-kw">var</span> total_bytes: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L871">    <span class="tok-kw">for</span> (args_alloc) |arg| {</span>
+<span class="line" id="L872">        total_bytes += <span class="tok-builtin">@sizeOf</span>([]<span class="tok-type">u8</span>) + arg.len + <span class="tok-number">1</span>;</span>
+<span class="line" id="L873">    }</span>
+<span class="line" id="L874">    <span class="tok-kw">const</span> unaligned_allocated_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args_alloc.ptr)[<span class="tok-number">0</span>..total_bytes];</span>
+<span class="line" id="L875">    <span class="tok-kw">const</span> aligned_allocated_buf = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>([]<span class="tok-type">u8</span>), unaligned_allocated_buf);</span>
+<span class="line" id="L876">    <span class="tok-kw">return</span> allocator.free(aligned_allocated_buf);</span>
+<span class="line" id="L877">}</span>
+<span class="line" id="L878"></span>
+<span class="line" id="L879"><span class="tok-kw">test</span> <span class="tok-str">&quot;general arg parsing&quot;</span> {</span>
+<span class="line" id="L880">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a   b\tc d&quot;</span>, &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d&quot;</span> });</span>
+<span class="line" id="L881">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;\&quot;abc\&quot; d e&quot;</span>, &amp;.{ <span class="tok-str">&quot;abc&quot;</span>, <span class="tok-str">&quot;d&quot;</span>, <span class="tok-str">&quot;e&quot;</span> });</span>
+<span class="line" id="L882">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a\\\\\\b d\&quot;e f\&quot;g h&quot;</span>, &amp;.{ <span class="tok-str">&quot;a\\\\\\b&quot;</span>, <span class="tok-str">&quot;de fg&quot;</span>, <span class="tok-str">&quot;h&quot;</span> });</span>
+<span class="line" id="L883">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a\\\\\\\&quot;b c d&quot;</span>, &amp;.{ <span class="tok-str">&quot;a\\\&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d&quot;</span> });</span>
+<span class="line" id="L884">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a\\\\\\\\\&quot;b c\&quot; d e&quot;</span>, &amp;.{ <span class="tok-str">&quot;a\\\\b c&quot;</span>, <span class="tok-str">&quot;d&quot;</span>, <span class="tok-str">&quot;e&quot;</span> });</span>
+<span class="line" id="L885">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a   b\tc \&quot;d f&quot;</span>, &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d f&quot;</span> });</span>
+<span class="line" id="L886">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;j k l\\&quot;</span>, &amp;.{ <span class="tok-str">&quot;j&quot;</span>, <span class="tok-str">&quot;k&quot;</span>, <span class="tok-str">&quot;l\\&quot;</span> });</span>
+<span class="line" id="L887">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;\&quot;\&quot; x y z\\\\&quot;</span>, &amp;.{ <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;x&quot;</span>, <span class="tok-str">&quot;y&quot;</span>, <span class="tok-str">&quot;z\\\\&quot;</span> });</span>
+<span class="line" id="L888"></span>
+<span class="line" id="L889">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;\&quot;.\\..\\zig-cache\\build\&quot; \&quot;bin\\zig.exe\&quot; \&quot;.\\..\&quot; \&quot;.\\..\\zig-cache\&quot; \&quot;--help\&quot;&quot;</span>, &amp;.{</span>
+<span class="line" id="L890">        <span class="tok-str">&quot;.\\..\\zig-cache\\build&quot;</span>,</span>
+<span class="line" id="L891">        <span class="tok-str">&quot;bin\\zig.exe&quot;</span>,</span>
+<span class="line" id="L892">        <span class="tok-str">&quot;.\\..&quot;</span>,</span>
+<span class="line" id="L893">        <span class="tok-str">&quot;.\\..\\zig-cache&quot;</span>,</span>
+<span class="line" id="L894">        <span class="tok-str">&quot;--help&quot;</span>,</span>
+<span class="line" id="L895">    });</span>
 <span class="line" id="L896"></span>
-<span class="line" id="L897"><span class="tok-kw">test</span> <span class="tok-str">&quot;general arg parsing&quot;</span> {</span>
-<span class="line" id="L898">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a   b\tc d&quot;</span>, &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d&quot;</span> });</span>
-<span class="line" id="L899">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;\&quot;abc\&quot; d e&quot;</span>, &amp;.{ <span class="tok-str">&quot;abc&quot;</span>, <span class="tok-str">&quot;d&quot;</span>, <span class="tok-str">&quot;e&quot;</span> });</span>
-<span class="line" id="L900">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a\\\\\\b d\&quot;e f\&quot;g h&quot;</span>, &amp;.{ <span class="tok-str">&quot;a\\\\\\b&quot;</span>, <span class="tok-str">&quot;de fg&quot;</span>, <span class="tok-str">&quot;h&quot;</span> });</span>
-<span class="line" id="L901">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a\\\\\\\&quot;b c d&quot;</span>, &amp;.{ <span class="tok-str">&quot;a\\\&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d&quot;</span> });</span>
-<span class="line" id="L902">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a\\\\\\\\\&quot;b c\&quot; d e&quot;</span>, &amp;.{ <span class="tok-str">&quot;a\\\\b c&quot;</span>, <span class="tok-str">&quot;d&quot;</span>, <span class="tok-str">&quot;e&quot;</span> });</span>
-<span class="line" id="L903">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;a   b\tc \&quot;d f&quot;</span>, &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d f&quot;</span> });</span>
-<span class="line" id="L904">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;j k l\\&quot;</span>, &amp;.{ <span class="tok-str">&quot;j&quot;</span>, <span class="tok-str">&quot;k&quot;</span>, <span class="tok-str">&quot;l\\&quot;</span> });</span>
-<span class="line" id="L905">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;\&quot;\&quot; x y z\\\\&quot;</span>, &amp;.{ <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;x&quot;</span>, <span class="tok-str">&quot;y&quot;</span>, <span class="tok-str">&quot;z\\\\&quot;</span> });</span>
-<span class="line" id="L906"></span>
-<span class="line" id="L907">    <span class="tok-kw">try</span> testGeneralCmdLine(<span class="tok-str">&quot;\&quot;.\\..\\zig-cache\\build\&quot; \&quot;bin\\zig.exe\&quot; \&quot;.\\..\&quot; \&quot;.\\..\\zig-cache\&quot; \&quot;--help\&quot;&quot;</span>, &amp;.{</span>
-<span class="line" id="L908">        <span class="tok-str">&quot;.\\..\\zig-cache\\build&quot;</span>,</span>
-<span class="line" id="L909">        <span class="tok-str">&quot;bin\\zig.exe&quot;</span>,</span>
-<span class="line" id="L910">        <span class="tok-str">&quot;.\\..&quot;</span>,</span>
-<span class="line" id="L911">        <span class="tok-str">&quot;.\\..\\zig-cache&quot;</span>,</span>
-<span class="line" id="L912">        <span class="tok-str">&quot;--help&quot;</span>,</span>
-<span class="line" id="L913">    });</span>
-<span class="line" id="L914"></span>
-<span class="line" id="L915">    <span class="tok-kw">try</span> testGeneralCmdLine(</span>
-<span class="line" id="L916">        <span class="tok-str">\\ 'foo' &quot;bar&quot;</span></span>
+<span class="line" id="L897">    <span class="tok-kw">try</span> testGeneralCmdLine(</span>
+<span class="line" id="L898">        <span class="tok-str">\\ 'foo' &quot;bar&quot;</span></span>
 
-<span class="line" id="L917">    , &amp;.{ <span class="tok-str">&quot;'foo'&quot;</span>, <span class="tok-str">&quot;bar&quot;</span> });</span>
-<span class="line" id="L918">}</span>
-<span class="line" id="L919"></span>
-<span class="line" id="L920"><span class="tok-kw">fn</span> <span class="tok-fn">testGeneralCmdLine</span>(input_cmd_line: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L921">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> ArgIteratorGeneral(.{}).init(std.testing.allocator, input_cmd_line);</span>
-<span class="line" id="L922">    <span class="tok-kw">defer</span> it.deinit();</span>
-<span class="line" id="L923">    <span class="tok-kw">for</span> (expected_args) |expected_arg| {</span>
-<span class="line" id="L924">        <span class="tok-kw">const</span> arg = it.next().?;</span>
-<span class="line" id="L925">        <span class="tok-kw">try</span> testing.expectEqualStrings(expected_arg, arg);</span>
-<span class="line" id="L926">    }</span>
-<span class="line" id="L927">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
-<span class="line" id="L928">}</span>
-<span class="line" id="L929"></span>
-<span class="line" id="L930"><span class="tok-kw">test</span> <span class="tok-str">&quot;response file arg parsing&quot;</span> {</span>
-<span class="line" id="L931">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
-<span class="line" id="L932">        <span class="tok-str">\\a b</span></span>
+<span class="line" id="L899">    , &amp;.{ <span class="tok-str">&quot;'foo'&quot;</span>, <span class="tok-str">&quot;bar&quot;</span> });</span>
+<span class="line" id="L900">}</span>
+<span class="line" id="L901"></span>
+<span class="line" id="L902"><span class="tok-kw">fn</span> <span class="tok-fn">testGeneralCmdLine</span>(input_cmd_line: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L903">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> ArgIteratorGeneral(.{}).init(std.testing.allocator, input_cmd_line);</span>
+<span class="line" id="L904">    <span class="tok-kw">defer</span> it.deinit();</span>
+<span class="line" id="L905">    <span class="tok-kw">for</span> (expected_args) |expected_arg| {</span>
+<span class="line" id="L906">        <span class="tok-kw">const</span> arg = it.next().?;</span>
+<span class="line" id="L907">        <span class="tok-kw">try</span> testing.expectEqualStrings(expected_arg, arg);</span>
+<span class="line" id="L908">    }</span>
+<span class="line" id="L909">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
+<span class="line" id="L910">}</span>
+<span class="line" id="L911"></span>
+<span class="line" id="L912"><span class="tok-kw">test</span> <span class="tok-str">&quot;response file arg parsing&quot;</span> {</span>
+<span class="line" id="L913">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
+<span class="line" id="L914">        <span class="tok-str">\\a b</span></span>
 
-<span class="line" id="L933">        <span class="tok-str">\\c d\</span></span>
+<span class="line" id="L915">        <span class="tok-str">\\c d\</span></span>
 
-<span class="line" id="L934">    , &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d\\&quot;</span> });</span>
-<span class="line" id="L935">    <span class="tok-kw">try</span> testResponseFileCmdLine(<span class="tok-str">&quot;a b c d\\&quot;</span>, &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d\\&quot;</span> });</span>
+<span class="line" id="L916">    , &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d\\&quot;</span> });</span>
+<span class="line" id="L917">    <span class="tok-kw">try</span> testResponseFileCmdLine(<span class="tok-str">&quot;a b c d\\&quot;</span>, &amp;.{ <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;b&quot;</span>, <span class="tok-str">&quot;c&quot;</span>, <span class="tok-str">&quot;d\\&quot;</span> });</span>
+<span class="line" id="L918"></span>
+<span class="line" id="L919">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
+<span class="line" id="L920">        <span class="tok-str">\\j</span></span>
+
+<span class="line" id="L921">        <span class="tok-str">\\ k l # this is a comment \\ \\\ \\\\ &quot;none&quot; &quot;\\&quot; &quot;\\\&quot;</span></span>
+
+<span class="line" id="L922">        <span class="tok-str">\\ &quot;m&quot; #another comment</span></span>
+
+<span class="line" id="L923">        <span class="tok-str">\\</span></span>
+
+<span class="line" id="L924">    , &amp;.{ <span class="tok-str">&quot;j&quot;</span>, <span class="tok-str">&quot;k&quot;</span>, <span class="tok-str">&quot;l&quot;</span>, <span class="tok-str">&quot;m&quot;</span> });</span>
+<span class="line" id="L925"></span>
+<span class="line" id="L926">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
+<span class="line" id="L927">        <span class="tok-str">\\ &quot;&quot; q &quot;&quot;</span></span>
+
+<span class="line" id="L928">        <span class="tok-str">\\ &quot;r s # t&quot; &quot;u\&quot; v&quot; #another comment</span></span>
+
+<span class="line" id="L929">        <span class="tok-str">\\</span></span>
+
+<span class="line" id="L930">    , &amp;.{ <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;q&quot;</span>, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;r s # t&quot;</span>, <span class="tok-str">&quot;u\&quot; v&quot;</span> });</span>
+<span class="line" id="L931"></span>
+<span class="line" id="L932">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
+<span class="line" id="L933">        <span class="tok-str">\\ -l&quot;advapi32&quot; a# b#c d#</span></span>
+
+<span class="line" id="L934">        <span class="tok-str">\\e\\\</span></span>
+
+<span class="line" id="L935">    , &amp;.{ <span class="tok-str">&quot;-ladvapi32&quot;</span>, <span class="tok-str">&quot;a#&quot;</span>, <span class="tok-str">&quot;b#c&quot;</span>, <span class="tok-str">&quot;d#&quot;</span>, <span class="tok-str">&quot;e\\\\\\&quot;</span> });</span>
 <span class="line" id="L936"></span>
 <span class="line" id="L937">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
-<span class="line" id="L938">        <span class="tok-str">\\j</span></span>
+<span class="line" id="L938">        <span class="tok-str">\\ 'foo' &quot;bar&quot;</span></span>
 
-<span class="line" id="L939">        <span class="tok-str">\\ k l # this is a comment \\ \\\ \\\\ &quot;none&quot; &quot;\\&quot; &quot;\\\&quot;</span></span>
-
-<span class="line" id="L940">        <span class="tok-str">\\ &quot;m&quot; #another comment</span></span>
-
-<span class="line" id="L941">        <span class="tok-str">\\</span></span>
-
-<span class="line" id="L942">    , &amp;.{ <span class="tok-str">&quot;j&quot;</span>, <span class="tok-str">&quot;k&quot;</span>, <span class="tok-str">&quot;l&quot;</span>, <span class="tok-str">&quot;m&quot;</span> });</span>
-<span class="line" id="L943"></span>
-<span class="line" id="L944">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
-<span class="line" id="L945">        <span class="tok-str">\\ &quot;&quot; q &quot;&quot;</span></span>
-
-<span class="line" id="L946">        <span class="tok-str">\\ &quot;r s # t&quot; &quot;u\&quot; v&quot; #another comment</span></span>
-
-<span class="line" id="L947">        <span class="tok-str">\\</span></span>
-
-<span class="line" id="L948">    , &amp;.{ <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;q&quot;</span>, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;r s # t&quot;</span>, <span class="tok-str">&quot;u\&quot; v&quot;</span> });</span>
-<span class="line" id="L949"></span>
-<span class="line" id="L950">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
-<span class="line" id="L951">        <span class="tok-str">\\ -l&quot;advapi32&quot; a# b#c d#</span></span>
-
-<span class="line" id="L952">        <span class="tok-str">\\e\\\</span></span>
-
-<span class="line" id="L953">    , &amp;.{ <span class="tok-str">&quot;-ladvapi32&quot;</span>, <span class="tok-str">&quot;a#&quot;</span>, <span class="tok-str">&quot;b#c&quot;</span>, <span class="tok-str">&quot;d#&quot;</span>, <span class="tok-str">&quot;e\\\\\\&quot;</span> });</span>
-<span class="line" id="L954"></span>
-<span class="line" id="L955">    <span class="tok-kw">try</span> testResponseFileCmdLine(</span>
-<span class="line" id="L956">        <span class="tok-str">\\ 'foo' &quot;bar&quot;</span></span>
-
-<span class="line" id="L957">    , &amp;.{ <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;bar&quot;</span> });</span>
-<span class="line" id="L958">}</span>
-<span class="line" id="L959"></span>
-<span class="line" id="L960"><span class="tok-kw">fn</span> <span class="tok-fn">testResponseFileCmdLine</span>(input_cmd_line: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L961">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> ArgIteratorGeneral(.{ .comments = <span class="tok-null">true</span>, .single_quotes = <span class="tok-null">true</span> })</span>
-<span class="line" id="L962">        .init(std.testing.allocator, input_cmd_line);</span>
-<span class="line" id="L963">    <span class="tok-kw">defer</span> it.deinit();</span>
-<span class="line" id="L964">    <span class="tok-kw">for</span> (expected_args) |expected_arg| {</span>
-<span class="line" id="L965">        <span class="tok-kw">const</span> arg = it.next().?;</span>
-<span class="line" id="L966">        <span class="tok-kw">try</span> testing.expectEqualStrings(expected_arg, arg);</span>
-<span class="line" id="L967">    }</span>
-<span class="line" id="L968">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
-<span class="line" id="L969">}</span>
-<span class="line" id="L970"></span>
-<span class="line" id="L971"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> UserInfo = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L972">    uid: os.uid_t,</span>
-<span class="line" id="L973">    gid: os.gid_t,</span>
-<span class="line" id="L974">};</span>
-<span class="line" id="L975"></span>
-<span class="line" id="L976"><span class="tok-comment">/// POSIX function which gets a uid from username.</span></span>
-<span class="line" id="L977"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getUserInfo</span>(name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !UserInfo {</span>
-<span class="line" id="L978">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L979">        .linux, .macos, .watchos, .tvos, .ios, .freebsd, .netbsd, .openbsd, .haiku, .solaris =&gt; posixGetUserInfo(name),</span>
-<span class="line" id="L980">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported OS&quot;</span>),</span>
-<span class="line" id="L981">    };</span>
-<span class="line" id="L982">}</span>
-<span class="line" id="L983"></span>
-<span class="line" id="L984"><span class="tok-comment">/// TODO this reads /etc/passwd. But sometimes the user/id mapping is in something else</span></span>
-<span class="line" id="L985"><span class="tok-comment">/// like NIS, AD, etc. See `man nss` or look at an strace for `id myuser`.</span></span>
-<span class="line" id="L986"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">posixGetUserInfo</span>(name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !UserInfo {</span>
-<span class="line" id="L987">    <span class="tok-kw">const</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsolute(<span class="tok-str">&quot;/etc/passwd&quot;</span>, .{});</span>
-<span class="line" id="L988">    <span class="tok-kw">defer</span> file.close();</span>
-<span class="line" id="L989"></span>
-<span class="line" id="L990">    <span class="tok-kw">const</span> reader = file.reader();</span>
-<span class="line" id="L991"></span>
-<span class="line" id="L992">    <span class="tok-kw">const</span> State = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L993">        Start,</span>
-<span class="line" id="L994">        WaitForNextLine,</span>
-<span class="line" id="L995">        SkipPassword,</span>
-<span class="line" id="L996">        ReadUserId,</span>
-<span class="line" id="L997">        ReadGroupId,</span>
-<span class="line" id="L998">    };</span>
-<span class="line" id="L999"></span>
-<span class="line" id="L1000">    <span class="tok-kw">var</span> buf: [std.mem.page_size]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1001">    <span class="tok-kw">var</span> name_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1002">    <span class="tok-kw">var</span> state = State.Start;</span>
-<span class="line" id="L1003">    <span class="tok-kw">var</span> uid: os.uid_t = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1004">    <span class="tok-kw">var</span> gid: os.gid_t = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1005"></span>
-<span class="line" id="L1006">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1007">        <span class="tok-kw">const</span> amt_read = <span class="tok-kw">try</span> reader.read(buf[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L1008">        <span class="tok-kw">for</span> (buf[<span class="tok-number">0</span>..amt_read]) |byte| {</span>
-<span class="line" id="L1009">            <span class="tok-kw">switch</span> (state) {</span>
-<span class="line" id="L1010">                .Start =&gt; <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1011">                    <span class="tok-str">':'</span> =&gt; {</span>
-<span class="line" id="L1012">                        state = <span class="tok-kw">if</span> (name_index == name.len) State.SkipPassword <span class="tok-kw">else</span> State.WaitForNextLine;</span>
-<span class="line" id="L1013">                    },</span>
-<span class="line" id="L1014">                    <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
-<span class="line" id="L1015">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1016">                        <span class="tok-kw">if</span> (name_index == name.len <span class="tok-kw">or</span> name[name_index] != byte) {</span>
-<span class="line" id="L1017">                            state = .WaitForNextLine;</span>
-<span class="line" id="L1018">                        }</span>
-<span class="line" id="L1019">                        name_index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1020">                    },</span>
-<span class="line" id="L1021">                },</span>
-<span class="line" id="L1022">                .WaitForNextLine =&gt; <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1023">                    <span class="tok-str">'\n'</span> =&gt; {</span>
-<span class="line" id="L1024">                        name_index = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1025">                        state = .Start;</span>
-<span class="line" id="L1026">                    },</span>
-<span class="line" id="L1027">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1028">                },</span>
-<span class="line" id="L1029">                .SkipPassword =&gt; <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1030">                    <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
-<span class="line" id="L1031">                    <span class="tok-str">':'</span> =&gt; {</span>
-<span class="line" id="L1032">                        state = .ReadUserId;</span>
-<span class="line" id="L1033">                    },</span>
-<span class="line" id="L1034">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1035">                },</span>
-<span class="line" id="L1036">                .ReadUserId =&gt; <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1037">                    <span class="tok-str">':'</span> =&gt; {</span>
-<span class="line" id="L1038">                        state = .ReadGroupId;</span>
-<span class="line" id="L1039">                    },</span>
-<span class="line" id="L1040">                    <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
-<span class="line" id="L1041">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1042">                        <span class="tok-kw">const</span> digit = <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1043">                            <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; byte - <span class="tok-str">'0'</span>,</span>
-<span class="line" id="L1044">                            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
+<span class="line" id="L939">    , &amp;.{ <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;bar&quot;</span> });</span>
+<span class="line" id="L940">}</span>
+<span class="line" id="L941"></span>
+<span class="line" id="L942"><span class="tok-kw">fn</span> <span class="tok-fn">testResponseFileCmdLine</span>(input_cmd_line: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_args: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L943">    <span class="tok-kw">var</span> it = <span class="tok-kw">try</span> ArgIteratorGeneral(.{ .comments = <span class="tok-null">true</span>, .single_quotes = <span class="tok-null">true</span> })</span>
+<span class="line" id="L944">        .init(std.testing.allocator, input_cmd_line);</span>
+<span class="line" id="L945">    <span class="tok-kw">defer</span> it.deinit();</span>
+<span class="line" id="L946">    <span class="tok-kw">for</span> (expected_args) |expected_arg| {</span>
+<span class="line" id="L947">        <span class="tok-kw">const</span> arg = it.next().?;</span>
+<span class="line" id="L948">        <span class="tok-kw">try</span> testing.expectEqualStrings(expected_arg, arg);</span>
+<span class="line" id="L949">    }</span>
+<span class="line" id="L950">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
+<span class="line" id="L951">}</span>
+<span class="line" id="L952"></span>
+<span class="line" id="L953"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> UserInfo = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L954">    uid: os.uid_t,</span>
+<span class="line" id="L955">    gid: os.gid_t,</span>
+<span class="line" id="L956">};</span>
+<span class="line" id="L957"></span>
+<span class="line" id="L958"><span class="tok-comment">/// POSIX function which gets a uid from username.</span></span>
+<span class="line" id="L959"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getUserInfo</span>(name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !UserInfo {</span>
+<span class="line" id="L960">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L961">        .linux, .macos, .watchos, .tvos, .ios, .freebsd, .netbsd, .openbsd, .haiku, .solaris =&gt; posixGetUserInfo(name),</span>
+<span class="line" id="L962">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported OS&quot;</span>),</span>
+<span class="line" id="L963">    };</span>
+<span class="line" id="L964">}</span>
+<span class="line" id="L965"></span>
+<span class="line" id="L966"><span class="tok-comment">/// TODO this reads /etc/passwd. But sometimes the user/id mapping is in something else</span></span>
+<span class="line" id="L967"><span class="tok-comment">/// like NIS, AD, etc. See `man nss` or look at an strace for `id myuser`.</span></span>
+<span class="line" id="L968"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">posixGetUserInfo</span>(name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !UserInfo {</span>
+<span class="line" id="L969">    <span class="tok-kw">const</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsolute(<span class="tok-str">&quot;/etc/passwd&quot;</span>, .{});</span>
+<span class="line" id="L970">    <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L971"></span>
+<span class="line" id="L972">    <span class="tok-kw">const</span> reader = file.reader();</span>
+<span class="line" id="L973"></span>
+<span class="line" id="L974">    <span class="tok-kw">const</span> State = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L975">        Start,</span>
+<span class="line" id="L976">        WaitForNextLine,</span>
+<span class="line" id="L977">        SkipPassword,</span>
+<span class="line" id="L978">        ReadUserId,</span>
+<span class="line" id="L979">        ReadGroupId,</span>
+<span class="line" id="L980">    };</span>
+<span class="line" id="L981"></span>
+<span class="line" id="L982">    <span class="tok-kw">var</span> buf: [std.mem.page_size]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L983">    <span class="tok-kw">var</span> name_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L984">    <span class="tok-kw">var</span> state = State.Start;</span>
+<span class="line" id="L985">    <span class="tok-kw">var</span> uid: os.uid_t = <span class="tok-number">0</span>;</span>
+<span class="line" id="L986">    <span class="tok-kw">var</span> gid: os.gid_t = <span class="tok-number">0</span>;</span>
+<span class="line" id="L987"></span>
+<span class="line" id="L988">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L989">        <span class="tok-kw">const</span> amt_read = <span class="tok-kw">try</span> reader.read(buf[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L990">        <span class="tok-kw">for</span> (buf[<span class="tok-number">0</span>..amt_read]) |byte| {</span>
+<span class="line" id="L991">            <span class="tok-kw">switch</span> (state) {</span>
+<span class="line" id="L992">                .Start =&gt; <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L993">                    <span class="tok-str">':'</span> =&gt; {</span>
+<span class="line" id="L994">                        state = <span class="tok-kw">if</span> (name_index == name.len) State.SkipPassword <span class="tok-kw">else</span> State.WaitForNextLine;</span>
+<span class="line" id="L995">                    },</span>
+<span class="line" id="L996">                    <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
+<span class="line" id="L997">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L998">                        <span class="tok-kw">if</span> (name_index == name.len <span class="tok-kw">or</span> name[name_index] != byte) {</span>
+<span class="line" id="L999">                            state = .WaitForNextLine;</span>
+<span class="line" id="L1000">                        }</span>
+<span class="line" id="L1001">                        name_index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1002">                    },</span>
+<span class="line" id="L1003">                },</span>
+<span class="line" id="L1004">                .WaitForNextLine =&gt; <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1005">                    <span class="tok-str">'\n'</span> =&gt; {</span>
+<span class="line" id="L1006">                        name_index = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1007">                        state = .Start;</span>
+<span class="line" id="L1008">                    },</span>
+<span class="line" id="L1009">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1010">                },</span>
+<span class="line" id="L1011">                .SkipPassword =&gt; <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1012">                    <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
+<span class="line" id="L1013">                    <span class="tok-str">':'</span> =&gt; {</span>
+<span class="line" id="L1014">                        state = .ReadUserId;</span>
+<span class="line" id="L1015">                    },</span>
+<span class="line" id="L1016">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1017">                },</span>
+<span class="line" id="L1018">                .ReadUserId =&gt; <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1019">                    <span class="tok-str">':'</span> =&gt; {</span>
+<span class="line" id="L1020">                        state = .ReadGroupId;</span>
+<span class="line" id="L1021">                    },</span>
+<span class="line" id="L1022">                    <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
+<span class="line" id="L1023">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1024">                        <span class="tok-kw">const</span> digit = <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1025">                            <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; byte - <span class="tok-str">'0'</span>,</span>
+<span class="line" id="L1026">                            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
+<span class="line" id="L1027">                        };</span>
+<span class="line" id="L1028">                        {</span>
+<span class="line" id="L1029">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@mulWithOverflow</span>(uid, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1030">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
+<span class="line" id="L1031">                            uid = ov[<span class="tok-number">0</span>];</span>
+<span class="line" id="L1032">                        }</span>
+<span class="line" id="L1033">                        {</span>
+<span class="line" id="L1034">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@addWithOverflow</span>(uid, digit);</span>
+<span class="line" id="L1035">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
+<span class="line" id="L1036">                            uid = ov[<span class="tok-number">0</span>];</span>
+<span class="line" id="L1037">                        }</span>
+<span class="line" id="L1038">                    },</span>
+<span class="line" id="L1039">                },</span>
+<span class="line" id="L1040">                .ReadGroupId =&gt; <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1041">                    <span class="tok-str">'\n'</span>, <span class="tok-str">':'</span> =&gt; {</span>
+<span class="line" id="L1042">                        <span class="tok-kw">return</span> UserInfo{</span>
+<span class="line" id="L1043">                            .uid = uid,</span>
+<span class="line" id="L1044">                            .gid = gid,</span>
 <span class="line" id="L1045">                        };</span>
-<span class="line" id="L1046">                        {</span>
-<span class="line" id="L1047">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@mulWithOverflow</span>(uid, <span class="tok-number">10</span>);</span>
-<span class="line" id="L1048">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
-<span class="line" id="L1049">                            uid = ov[<span class="tok-number">0</span>];</span>
-<span class="line" id="L1050">                        }</span>
-<span class="line" id="L1051">                        {</span>
-<span class="line" id="L1052">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@addWithOverflow</span>(uid, digit);</span>
-<span class="line" id="L1053">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
-<span class="line" id="L1054">                            uid = ov[<span class="tok-number">0</span>];</span>
-<span class="line" id="L1055">                        }</span>
-<span class="line" id="L1056">                    },</span>
-<span class="line" id="L1057">                },</span>
-<span class="line" id="L1058">                .ReadGroupId =&gt; <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1059">                    <span class="tok-str">'\n'</span>, <span class="tok-str">':'</span> =&gt; {</span>
-<span class="line" id="L1060">                        <span class="tok-kw">return</span> UserInfo{</span>
-<span class="line" id="L1061">                            .uid = uid,</span>
-<span class="line" id="L1062">                            .gid = gid,</span>
-<span class="line" id="L1063">                        };</span>
-<span class="line" id="L1064">                    },</span>
-<span class="line" id="L1065">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1066">                        <span class="tok-kw">const</span> digit = <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1067">                            <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; byte - <span class="tok-str">'0'</span>,</span>
-<span class="line" id="L1068">                            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
-<span class="line" id="L1069">                        };</span>
-<span class="line" id="L1070">                        {</span>
-<span class="line" id="L1071">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@mulWithOverflow</span>(gid, <span class="tok-number">10</span>);</span>
-<span class="line" id="L1072">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
-<span class="line" id="L1073">                            gid = ov[<span class="tok-number">0</span>];</span>
-<span class="line" id="L1074">                        }</span>
-<span class="line" id="L1075">                        {</span>
-<span class="line" id="L1076">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@addWithOverflow</span>(gid, digit);</span>
-<span class="line" id="L1077">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
-<span class="line" id="L1078">                            gid = ov[<span class="tok-number">0</span>];</span>
-<span class="line" id="L1079">                        }</span>
-<span class="line" id="L1080">                    },</span>
-<span class="line" id="L1081">                },</span>
-<span class="line" id="L1082">            }</span>
-<span class="line" id="L1083">        }</span>
-<span class="line" id="L1084">        <span class="tok-kw">if</span> (amt_read &lt; buf.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UserNotFound;</span>
+<span class="line" id="L1046">                    },</span>
+<span class="line" id="L1047">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1048">                        <span class="tok-kw">const</span> digit = <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1049">                            <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; byte - <span class="tok-str">'0'</span>,</span>
+<span class="line" id="L1050">                            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile,</span>
+<span class="line" id="L1051">                        };</span>
+<span class="line" id="L1052">                        {</span>
+<span class="line" id="L1053">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@mulWithOverflow</span>(gid, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1054">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
+<span class="line" id="L1055">                            gid = ov[<span class="tok-number">0</span>];</span>
+<span class="line" id="L1056">                        }</span>
+<span class="line" id="L1057">                        {</span>
+<span class="line" id="L1058">                            <span class="tok-kw">const</span> ov = <span class="tok-builtin">@addWithOverflow</span>(gid, digit);</span>
+<span class="line" id="L1059">                            <span class="tok-kw">if</span> (ov[<span class="tok-number">1</span>] != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CorruptPasswordFile;</span>
+<span class="line" id="L1060">                            gid = ov[<span class="tok-number">0</span>];</span>
+<span class="line" id="L1061">                        }</span>
+<span class="line" id="L1062">                    },</span>
+<span class="line" id="L1063">                },</span>
+<span class="line" id="L1064">            }</span>
+<span class="line" id="L1065">        }</span>
+<span class="line" id="L1066">        <span class="tok-kw">if</span> (amt_read &lt; buf.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UserNotFound;</span>
+<span class="line" id="L1067">    }</span>
+<span class="line" id="L1068">}</span>
+<span class="line" id="L1069"></span>
+<span class="line" id="L1070"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getBaseAddress</span>() <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1071">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L1072">        .linux =&gt; {</span>
+<span class="line" id="L1073">            <span class="tok-kw">const</span> base = os.system.getauxval(std.elf.AT_BASE);</span>
+<span class="line" id="L1074">            <span class="tok-kw">if</span> (base != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1075">                <span class="tok-kw">return</span> base;</span>
+<span class="line" id="L1076">            }</span>
+<span class="line" id="L1077">            <span class="tok-kw">const</span> phdr = os.system.getauxval(std.elf.AT_PHDR);</span>
+<span class="line" id="L1078">            <span class="tok-kw">return</span> phdr - <span class="tok-builtin">@sizeOf</span>(std.elf.Ehdr);</span>
+<span class="line" id="L1079">        },</span>
+<span class="line" id="L1080">        .macos, .freebsd, .netbsd =&gt; {</span>
+<span class="line" id="L1081">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(&amp;std.c._mh_execute_header);</span>
+<span class="line" id="L1082">        },</span>
+<span class="line" id="L1083">        .windows =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>)),</span>
+<span class="line" id="L1084">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported OS&quot;</span>),</span>
 <span class="line" id="L1085">    }</span>
 <span class="line" id="L1086">}</span>
 <span class="line" id="L1087"></span>
-<span class="line" id="L1088"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getBaseAddress</span>() <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1089">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L1090">        .linux =&gt; {</span>
-<span class="line" id="L1091">            <span class="tok-kw">const</span> base = os.system.getauxval(std.elf.AT_BASE);</span>
-<span class="line" id="L1092">            <span class="tok-kw">if</span> (base != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1093">                <span class="tok-kw">return</span> base;</span>
-<span class="line" id="L1094">            }</span>
-<span class="line" id="L1095">            <span class="tok-kw">const</span> phdr = os.system.getauxval(std.elf.AT_PHDR);</span>
-<span class="line" id="L1096">            <span class="tok-kw">return</span> phdr - <span class="tok-builtin">@sizeOf</span>(std.elf.Ehdr);</span>
-<span class="line" id="L1097">        },</span>
-<span class="line" id="L1098">        .macos, .freebsd, .netbsd =&gt; {</span>
-<span class="line" id="L1099">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(&amp;std.c._mh_execute_header);</span>
-<span class="line" id="L1100">        },</span>
-<span class="line" id="L1101">        .windows =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>)),</span>
-<span class="line" id="L1102">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported OS&quot;</span>),</span>
-<span class="line" id="L1103">    }</span>
-<span class="line" id="L1104">}</span>
-<span class="line" id="L1105"></span>
-<span class="line" id="L1106"><span class="tok-comment">/// Tells whether calling the `execv` or `execve` functions will be a compile error.</span></span>
-<span class="line" id="L1107"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> can_execv = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L1108">    .windows, .haiku, .wasi =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L1109">    <span class="tok-kw">else</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L1110">};</span>
-<span class="line" id="L1111"></span>
-<span class="line" id="L1112"><span class="tok-comment">/// Tells whether spawning child processes is supported (e.g. via ChildProcess)</span></span>
-<span class="line" id="L1113"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> can_spawn = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L1114">    .wasi =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L1115">    <span class="tok-kw">else</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L1116">};</span>
-<span class="line" id="L1117"></span>
-<span class="line" id="L1118"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ExecvError = std.os.ExecveError || <span class="tok-kw">error</span>{OutOfMemory};</span>
-<span class="line" id="L1119"></span>
-<span class="line" id="L1120"><span class="tok-comment">/// Replaces the current process image with the executed process.</span></span>
-<span class="line" id="L1121"><span class="tok-comment">/// This function must allocate memory to add a null terminating bytes on path and each arg.</span></span>
-<span class="line" id="L1122"><span class="tok-comment">/// It must also convert to KEY=VALUE\0 format for environment variables, and include null</span></span>
-<span class="line" id="L1123"><span class="tok-comment">/// pointers after the args and after the environment variables.</span></span>
-<span class="line" id="L1124"><span class="tok-comment">/// `argv[0]` is the executable path.</span></span>
-<span class="line" id="L1125"><span class="tok-comment">/// This function also uses the PATH environment variable to get the full path to the executable.</span></span>
-<span class="line" id="L1126"><span class="tok-comment">/// Due to the heap-allocation, it is illegal to call this function in a fork() child.</span></span>
-<span class="line" id="L1127"><span class="tok-comment">/// For that use case, use the `std.os` functions directly.</span></span>
-<span class="line" id="L1128"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">execv</span>(allocator: Allocator, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ExecvError {</span>
-<span class="line" id="L1129">    <span class="tok-kw">return</span> execve(allocator, argv, <span class="tok-null">null</span>);</span>
-<span class="line" id="L1130">}</span>
-<span class="line" id="L1131"></span>
-<span class="line" id="L1132"><span class="tok-comment">/// Replaces the current process image with the executed process.</span></span>
-<span class="line" id="L1133"><span class="tok-comment">/// This function must allocate memory to add a null terminating bytes on path and each arg.</span></span>
-<span class="line" id="L1134"><span class="tok-comment">/// It must also convert to KEY=VALUE\0 format for environment variables, and include null</span></span>
-<span class="line" id="L1135"><span class="tok-comment">/// pointers after the args and after the environment variables.</span></span>
-<span class="line" id="L1136"><span class="tok-comment">/// `argv[0]` is the executable path.</span></span>
-<span class="line" id="L1137"><span class="tok-comment">/// This function also uses the PATH environment variable to get the full path to the executable.</span></span>
-<span class="line" id="L1138"><span class="tok-comment">/// Due to the heap-allocation, it is illegal to call this function in a fork() child.</span></span>
-<span class="line" id="L1139"><span class="tok-comment">/// For that use case, use the `std.os` functions directly.</span></span>
-<span class="line" id="L1140"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">execve</span>(</span>
-<span class="line" id="L1141">    allocator: Allocator,</span>
-<span class="line" id="L1142">    argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1143">    env_map: ?*<span class="tok-kw">const</span> EnvMap,</span>
-<span class="line" id="L1144">) ExecvError {</span>
-<span class="line" id="L1145">    <span class="tok-kw">if</span> (!can_execv) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The target OS does not support execv&quot;</span>);</span>
-<span class="line" id="L1146"></span>
-<span class="line" id="L1147">    <span class="tok-kw">var</span> arena_allocator = std.heap.ArenaAllocator.init(allocator);</span>
-<span class="line" id="L1148">    <span class="tok-kw">defer</span> arena_allocator.deinit();</span>
-<span class="line" id="L1149">    <span class="tok-kw">const</span> arena = arena_allocator.allocator();</span>
-<span class="line" id="L1150"></span>
-<span class="line" id="L1151">    <span class="tok-kw">const</span> argv_buf = <span class="tok-kw">try</span> arena.allocSentinel(?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, argv.len, <span class="tok-null">null</span>);</span>
-<span class="line" id="L1152">    <span class="tok-kw">for</span> (argv, <span class="tok-number">0</span>..) |arg, i| argv_buf[i] = (<span class="tok-kw">try</span> arena.dupeZ(<span class="tok-type">u8</span>, arg)).ptr;</span>
-<span class="line" id="L1153"></span>
-<span class="line" id="L1154">    <span class="tok-kw">const</span> envp = m: {</span>
-<span class="line" id="L1155">        <span class="tok-kw">if</span> (env_map) |m| {</span>
-<span class="line" id="L1156">            <span class="tok-kw">const</span> envp_buf = <span class="tok-kw">try</span> child_process.createNullDelimitedEnvMap(arena, m);</span>
-<span class="line" id="L1157">            <span class="tok-kw">break</span> :m envp_buf.ptr;</span>
-<span class="line" id="L1158">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.link_libc) {</span>
-<span class="line" id="L1159">            <span class="tok-kw">break</span> :m std.c.environ;</span>
-<span class="line" id="L1160">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.output_mode == .Exe) {</span>
-<span class="line" id="L1161">            <span class="tok-comment">// Then we have Zig start code and this works.</span>
+<span class="line" id="L1088"><span class="tok-comment">/// Tells whether calling the `execv` or `execve` functions will be a compile error.</span></span>
+<span class="line" id="L1089"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> can_execv = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L1090">    .windows, .haiku, .wasi =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L1091">    <span class="tok-kw">else</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L1092">};</span>
+<span class="line" id="L1093"></span>
+<span class="line" id="L1094"><span class="tok-comment">/// Tells whether spawning child processes is supported (e.g. via ChildProcess)</span></span>
+<span class="line" id="L1095"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> can_spawn = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L1096">    .wasi, .watchos, .tvos =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L1097">    <span class="tok-kw">else</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L1098">};</span>
+<span class="line" id="L1099"></span>
+<span class="line" id="L1100"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ExecvError = std.os.ExecveError || <span class="tok-kw">error</span>{OutOfMemory};</span>
+<span class="line" id="L1101"></span>
+<span class="line" id="L1102"><span class="tok-comment">/// Replaces the current process image with the executed process.</span></span>
+<span class="line" id="L1103"><span class="tok-comment">/// This function must allocate memory to add a null terminating bytes on path and each arg.</span></span>
+<span class="line" id="L1104"><span class="tok-comment">/// It must also convert to KEY=VALUE\0 format for environment variables, and include null</span></span>
+<span class="line" id="L1105"><span class="tok-comment">/// pointers after the args and after the environment variables.</span></span>
+<span class="line" id="L1106"><span class="tok-comment">/// `argv[0]` is the executable path.</span></span>
+<span class="line" id="L1107"><span class="tok-comment">/// This function also uses the PATH environment variable to get the full path to the executable.</span></span>
+<span class="line" id="L1108"><span class="tok-comment">/// Due to the heap-allocation, it is illegal to call this function in a fork() child.</span></span>
+<span class="line" id="L1109"><span class="tok-comment">/// For that use case, use the `std.os` functions directly.</span></span>
+<span class="line" id="L1110"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">execv</span>(allocator: Allocator, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ExecvError {</span>
+<span class="line" id="L1111">    <span class="tok-kw">return</span> execve(allocator, argv, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1112">}</span>
+<span class="line" id="L1113"></span>
+<span class="line" id="L1114"><span class="tok-comment">/// Replaces the current process image with the executed process.</span></span>
+<span class="line" id="L1115"><span class="tok-comment">/// This function must allocate memory to add a null terminating bytes on path and each arg.</span></span>
+<span class="line" id="L1116"><span class="tok-comment">/// It must also convert to KEY=VALUE\0 format for environment variables, and include null</span></span>
+<span class="line" id="L1117"><span class="tok-comment">/// pointers after the args and after the environment variables.</span></span>
+<span class="line" id="L1118"><span class="tok-comment">/// `argv[0]` is the executable path.</span></span>
+<span class="line" id="L1119"><span class="tok-comment">/// This function also uses the PATH environment variable to get the full path to the executable.</span></span>
+<span class="line" id="L1120"><span class="tok-comment">/// Due to the heap-allocation, it is illegal to call this function in a fork() child.</span></span>
+<span class="line" id="L1121"><span class="tok-comment">/// For that use case, use the `std.os` functions directly.</span></span>
+<span class="line" id="L1122"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">execve</span>(</span>
+<span class="line" id="L1123">    allocator: Allocator,</span>
+<span class="line" id="L1124">    argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1125">    env_map: ?*<span class="tok-kw">const</span> EnvMap,</span>
+<span class="line" id="L1126">) ExecvError {</span>
+<span class="line" id="L1127">    <span class="tok-kw">if</span> (!can_execv) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;The target OS does not support execv&quot;</span>);</span>
+<span class="line" id="L1128"></span>
+<span class="line" id="L1129">    <span class="tok-kw">var</span> arena_allocator = std.heap.ArenaAllocator.init(allocator);</span>
+<span class="line" id="L1130">    <span class="tok-kw">defer</span> arena_allocator.deinit();</span>
+<span class="line" id="L1131">    <span class="tok-kw">const</span> arena = arena_allocator.allocator();</span>
+<span class="line" id="L1132"></span>
+<span class="line" id="L1133">    <span class="tok-kw">const</span> argv_buf = <span class="tok-kw">try</span> arena.allocSentinel(?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, argv.len, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1134">    <span class="tok-kw">for</span> (argv, <span class="tok-number">0</span>..) |arg, i| argv_buf[i] = (<span class="tok-kw">try</span> arena.dupeZ(<span class="tok-type">u8</span>, arg)).ptr;</span>
+<span class="line" id="L1135"></span>
+<span class="line" id="L1136">    <span class="tok-kw">const</span> envp = m: {</span>
+<span class="line" id="L1137">        <span class="tok-kw">if</span> (env_map) |m| {</span>
+<span class="line" id="L1138">            <span class="tok-kw">const</span> envp_buf = <span class="tok-kw">try</span> child_process.createNullDelimitedEnvMap(arena, m);</span>
+<span class="line" id="L1139">            <span class="tok-kw">break</span> :m envp_buf.ptr;</span>
+<span class="line" id="L1140">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.link_libc) {</span>
+<span class="line" id="L1141">            <span class="tok-kw">break</span> :m std.c.environ;</span>
+<span class="line" id="L1142">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.output_mode == .Exe) {</span>
+<span class="line" id="L1143">            <span class="tok-comment">// Then we have Zig start code and this works.</span>
 </span>
-<span class="line" id="L1162">            <span class="tok-comment">// TODO type-safety for null-termination of `os.environ`.</span>
+<span class="line" id="L1144">            <span class="tok-comment">// TODO type-safety for null-termination of `os.environ`.</span>
 </span>
-<span class="line" id="L1163">            <span class="tok-kw">break</span> :m <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, os.environ.ptr);</span>
-<span class="line" id="L1164">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1165">            <span class="tok-comment">// TODO come up with a solution for this.</span>
+<span class="line" id="L1145">            <span class="tok-kw">break</span> :m <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, os.environ.ptr);</span>
+<span class="line" id="L1146">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1147">            <span class="tok-comment">// TODO come up with a solution for this.</span>
 </span>
-<span class="line" id="L1166">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;missing std lib enhancement: std.process.execv implementation has no way to collect the environment variables to forward to the child process&quot;</span>);</span>
-<span class="line" id="L1167">        }</span>
-<span class="line" id="L1168">    };</span>
-<span class="line" id="L1169"></span>
-<span class="line" id="L1170">    <span class="tok-kw">return</span> os.execvpeZ_expandArg0(.no_expand, argv_buf.ptr[<span class="tok-number">0</span>].?, argv_buf.ptr, envp);</span>
-<span class="line" id="L1171">}</span>
-<span class="line" id="L1172"></span>
+<span class="line" id="L1148">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;missing std lib enhancement: std.process.execv implementation has no way to collect the environment variables to forward to the child process&quot;</span>);</span>
+<span class="line" id="L1149">        }</span>
+<span class="line" id="L1150">    };</span>
+<span class="line" id="L1151"></span>
+<span class="line" id="L1152">    <span class="tok-kw">return</span> os.execvpeZ_expandArg0(.no_expand, argv_buf.ptr[<span class="tok-number">0</span>].?, argv_buf.ptr, envp);</span>
+<span class="line" id="L1153">}</span>
+<span class="line" id="L1154"></span>
+<span class="line" id="L1155"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> TotalSystemMemoryError = <span class="tok-kw">error</span>{</span>
+<span class="line" id="L1156">    UnknownTotalSystemMemory,</span>
+<span class="line" id="L1157">};</span>
+<span class="line" id="L1158"></span>
+<span class="line" id="L1159"><span class="tok-comment">/// Returns the total system memory, in bytes.</span></span>
+<span class="line" id="L1160"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">totalSystemMemory</span>() TotalSystemMemoryError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1161">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L1162">        .linux =&gt; {</span>
+<span class="line" id="L1163">            <span class="tok-kw">return</span> totalSystemMemoryLinux() <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory;</span>
+<span class="line" id="L1164">        },</span>
+<span class="line" id="L1165">        .windows =&gt; {</span>
+<span class="line" id="L1166">            <span class="tok-kw">var</span> kilobytes: std.os.windows.ULONGLONG = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1167">            assert(std.os.windows.kernel32.GetPhysicallyInstalledSystemMemory(&amp;kilobytes) == std.os.windows.TRUE);</span>
+<span class="line" id="L1168">            <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
+<span class="line" id="L1169">        },</span>
+<span class="line" id="L1170">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
+<span class="line" id="L1171">    }</span>
+<span class="line" id="L1172">}</span>
+<span class="line" id="L1173"></span>
+<span class="line" id="L1174"><span class="tok-kw">fn</span> <span class="tok-fn">totalSystemMemoryLinux</span>() !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1175">    <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsoluteZ(<span class="tok-str">&quot;/proc/meminfo&quot;</span>, .{});</span>
+<span class="line" id="L1176">    <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L1177">    <span class="tok-kw">var</span> buf: [<span class="tok-number">50</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1178">    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> file.read(&amp;buf);</span>
+<span class="line" id="L1179">    <span class="tok-kw">if</span> (amt != <span class="tok-number">50</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1180">    <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..amt], <span class="tok-str">&quot; \n&quot;</span>);</span>
+<span class="line" id="L1181">    <span class="tok-kw">const</span> label = it.next().?;</span>
+<span class="line" id="L1182">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, label, <span class="tok-str">&quot;MemTotal:&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1183">    <span class="tok-kw">const</span> int_text = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1184">    <span class="tok-kw">const</span> units = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1185">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, units, <span class="tok-str">&quot;kB&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1186">    <span class="tok-kw">const</span> kilobytes = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">usize</span>, int_text, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1187">    <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
+<span class="line" id="L1188">}</span>
+<span class="line" id="L1189"></span>
+<span class="line" id="L1190"><span class="tok-comment">/// Indicate that we are now terminating with a successful exit code.</span></span>
+<span class="line" id="L1191"><span class="tok-comment">/// In debug builds, this is a no-op, so that the calling code's</span></span>
+<span class="line" id="L1192"><span class="tok-comment">/// cleanup mechanisms are tested and so that external tools that</span></span>
+<span class="line" id="L1193"><span class="tok-comment">/// check for resource leaks can be accurate. In release builds, this</span></span>
+<span class="line" id="L1194"><span class="tok-comment">/// calls exit(0), and does not return.</span></span>
+<span class="line" id="L1195"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cleanExit</span>() <span class="tok-type">void</span> {</span>
+<span class="line" id="L1196">    <span class="tok-kw">if</span> (builtin.mode == .Debug) {</span>
+<span class="line" id="L1197">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1198">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1199">        exit(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1200">    }</span>
+<span class="line" id="L1201">}</span>
+<span class="line" id="L1202"></span>
 </code></pre></body>
 </html>

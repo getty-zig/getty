@@ -875,7 +875,7 @@
 <span class="line" id="L741">    <span class="tok-kw">return</span> Stream{ .handle = sockfd };</span>
 <span class="line" id="L742">}</span>
 <span class="line" id="L743"></span>
-<span class="line" id="L744"><span class="tok-kw">const</span> GetAddressListError = std.mem.Allocator.Error || std.fs.File.OpenError || std.fs.File.ReadError || std.os.SocketError || std.os.BindError || <span class="tok-kw">error</span>{</span>
+<span class="line" id="L744"><span class="tok-kw">const</span> GetAddressListError = std.mem.Allocator.Error || std.fs.File.OpenError || std.fs.File.ReadError || std.os.SocketError || std.os.BindError || std.os.SetSockOptError || <span class="tok-kw">error</span>{</span>
 <span class="line" id="L745">    <span class="tok-comment">// TODO: break this up into error sets from the various underlying functions</span>
 </span>
 <span class="line" id="L746"></span>
@@ -1715,508 +1715,497 @@
 <span class="line" id="L1534">        ns[i] = iplit.addr;</span>
 <span class="line" id="L1535">        assert(ns[i].getPort() == <span class="tok-number">53</span>);</span>
 <span class="line" id="L1536">        <span class="tok-kw">if</span> (iplit.addr.any.family != os.AF.INET) {</span>
-<span class="line" id="L1537">            sl = <span class="tok-builtin">@sizeOf</span>(os.sockaddr.in6);</span>
-<span class="line" id="L1538">            family = os.AF.INET6;</span>
-<span class="line" id="L1539">        }</span>
-<span class="line" id="L1540">    }</span>
-<span class="line" id="L1541"></span>
-<span class="line" id="L1542">    <span class="tok-comment">// Get local address and open/bind a socket</span>
+<span class="line" id="L1537">            family = os.AF.INET6;</span>
+<span class="line" id="L1538">        }</span>
+<span class="line" id="L1539">    }</span>
+<span class="line" id="L1540"></span>
+<span class="line" id="L1541">    <span class="tok-kw">const</span> flags = os.SOCK.DGRAM | os.SOCK.CLOEXEC | os.SOCK.NONBLOCK;</span>
+<span class="line" id="L1542">    <span class="tok-kw">const</span> fd = os.socket(family, flags, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1543">        <span class="tok-kw">error</span>.AddressFamilyNotSupported =&gt; blk: {</span>
+<span class="line" id="L1544">            <span class="tok-comment">// Handle case where system lacks IPv6 support</span>
 </span>
-<span class="line" id="L1543">    <span class="tok-kw">var</span> sa: Address = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1544">    <span class="tok-builtin">@memset</span>(<span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, &amp;sa), <span class="tok-number">0</span>, <span class="tok-builtin">@sizeOf</span>(Address));</span>
-<span class="line" id="L1545">    sa.any.family = family;</span>
-<span class="line" id="L1546">    <span class="tok-kw">const</span> flags = os.SOCK.DGRAM | os.SOCK.CLOEXEC | os.SOCK.NONBLOCK;</span>
-<span class="line" id="L1547">    <span class="tok-kw">const</span> fd = os.socket(family, flags, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L1548">        <span class="tok-kw">error</span>.AddressFamilyNotSupported =&gt; blk: {</span>
-<span class="line" id="L1549">            <span class="tok-comment">// Handle case where system lacks IPv6 support</span>
+<span class="line" id="L1545">            <span class="tok-kw">if</span> (family == os.AF.INET6) {</span>
+<span class="line" id="L1546">                family = os.AF.INET;</span>
+<span class="line" id="L1547">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> os.socket(os.AF.INET, flags, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1548">            }</span>
+<span class="line" id="L1549">            <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L1550">        },</span>
+<span class="line" id="L1551">        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L1552">    };</span>
+<span class="line" id="L1553">    <span class="tok-kw">defer</span> os.closeSocket(fd);</span>
+<span class="line" id="L1554"></span>
+<span class="line" id="L1555">    <span class="tok-comment">// Past this point, there are no errors. Each individual query will</span>
 </span>
-<span class="line" id="L1550">            <span class="tok-kw">if</span> (family == os.AF.INET6) {</span>
-<span class="line" id="L1551">                family = os.AF.INET;</span>
-<span class="line" id="L1552">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> os.socket(os.AF.INET, flags, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1553">            }</span>
-<span class="line" id="L1554">            <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L1555">        },</span>
-<span class="line" id="L1556">        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
-<span class="line" id="L1557">    };</span>
-<span class="line" id="L1558">    <span class="tok-kw">defer</span> os.closeSocket(fd);</span>
-<span class="line" id="L1559">    <span class="tok-kw">try</span> os.bind(fd, &amp;sa.any, sl);</span>
-<span class="line" id="L1560"></span>
-<span class="line" id="L1561">    <span class="tok-comment">// Past this point, there are no errors. Each individual query will</span>
+<span class="line" id="L1556">    <span class="tok-comment">// yield either no reply (indicated by zero length) or an answer</span>
 </span>
-<span class="line" id="L1562">    <span class="tok-comment">// yield either no reply (indicated by zero length) or an answer</span>
+<span class="line" id="L1557">    <span class="tok-comment">// packet which is up to the caller to interpret.</span>
 </span>
-<span class="line" id="L1563">    <span class="tok-comment">// packet which is up to the caller to interpret.</span>
+<span class="line" id="L1558"></span>
+<span class="line" id="L1559">    <span class="tok-comment">// Convert any IPv4 addresses in a mixed environment to v4-mapped</span>
 </span>
-<span class="line" id="L1564"></span>
-<span class="line" id="L1565">    <span class="tok-comment">// Convert any IPv4 addresses in a mixed environment to v4-mapped</span>
+<span class="line" id="L1560">    <span class="tok-kw">if</span> (family == os.AF.INET6) {</span>
+<span class="line" id="L1561">        <span class="tok-kw">try</span> os.setsockopt(</span>
+<span class="line" id="L1562">            fd,</span>
+<span class="line" id="L1563">            os.SOL.IPV6,</span>
+<span class="line" id="L1564">            os.linux.IPV6.V6ONLY,</span>
+<span class="line" id="L1565">            &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">0</span>)),</span>
+<span class="line" id="L1566">        );</span>
+<span class="line" id="L1567">        <span class="tok-kw">for</span> (<span class="tok-number">0</span>..ns.len) |i| {</span>
+<span class="line" id="L1568">            <span class="tok-kw">if</span> (ns[i].any.family != os.AF.INET) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1569">            mem.writeIntNative(<span class="tok-type">u32</span>, ns[i].in6.sa.addr[<span class="tok-number">12</span>..], ns[i].in.sa.addr);</span>
+<span class="line" id="L1570">            mem.copy(<span class="tok-type">u8</span>, ns[i].in6.sa.addr[<span class="tok-number">0</span>..<span class="tok-number">12</span>], <span class="tok-str">&quot;\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff&quot;</span>);</span>
+<span class="line" id="L1571">            ns[i].any.family = os.AF.INET6;</span>
+<span class="line" id="L1572">            ns[i].in6.sa.flowinfo = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1573">            ns[i].in6.sa.scope_id = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1574">        }</span>
+<span class="line" id="L1575">        sl = <span class="tok-builtin">@sizeOf</span>(os.sockaddr.in6);</span>
+<span class="line" id="L1576">    }</span>
+<span class="line" id="L1577"></span>
+<span class="line" id="L1578">    <span class="tok-comment">// Get local address and open/bind a socket</span>
 </span>
-<span class="line" id="L1566">    <span class="tok-comment">// TODO</span>
+<span class="line" id="L1579">    <span class="tok-kw">var</span> sa: Address = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1580">    <span class="tok-builtin">@memset</span>(<span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, &amp;sa), <span class="tok-number">0</span>, <span class="tok-builtin">@sizeOf</span>(Address));</span>
+<span class="line" id="L1581">    sa.any.family = family;</span>
+<span class="line" id="L1582">    <span class="tok-kw">try</span> os.bind(fd, &amp;sa.any, sl);</span>
+<span class="line" id="L1583"></span>
+<span class="line" id="L1584">    <span class="tok-kw">var</span> pfd = [<span class="tok-number">1</span>]os.pollfd{os.pollfd{</span>
+<span class="line" id="L1585">        .fd = fd,</span>
+<span class="line" id="L1586">        .events = os.POLL.IN,</span>
+<span class="line" id="L1587">        .revents = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1588">    }};</span>
+<span class="line" id="L1589">    <span class="tok-kw">const</span> retry_interval = timeout / attempts;</span>
+<span class="line" id="L1590">    <span class="tok-kw">var</span> next: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1591">    <span class="tok-kw">var</span> t2: <span class="tok-type">u64</span> = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, std.time.milliTimestamp());</span>
+<span class="line" id="L1592">    <span class="tok-kw">var</span> t0 = t2;</span>
+<span class="line" id="L1593">    <span class="tok-kw">var</span> t1 = t2 - retry_interval;</span>
+<span class="line" id="L1594"></span>
+<span class="line" id="L1595">    <span class="tok-kw">var</span> servfail_retry: <span class="tok-type">usize</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1596"></span>
+<span class="line" id="L1597">    outer: <span class="tok-kw">while</span> (t2 - t0 &lt; timeout) : (t2 = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, std.time.milliTimestamp())) {</span>
+<span class="line" id="L1598">        <span class="tok-kw">if</span> (t2 - t1 &gt;= retry_interval) {</span>
+<span class="line" id="L1599">            <span class="tok-comment">// Query all configured nameservers in parallel</span>
 </span>
-<span class="line" id="L1567">    <span class="tok-comment">//if (family == AF.INET6) {</span>
+<span class="line" id="L1600">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1601">            <span class="tok-kw">while</span> (i &lt; queries.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1602">                <span class="tok-kw">if</span> (answers[i].len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1603">                    <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1604">                    <span class="tok-kw">while</span> (j &lt; ns.len) : (j += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1605">                        <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L1606">                            _ = std.event.Loop.instance.?.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1607">                        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1608">                            _ = os.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1609">                        }</span>
+<span class="line" id="L1610">                    }</span>
+<span class="line" id="L1611">                }</span>
+<span class="line" id="L1612">            }</span>
+<span class="line" id="L1613">            t1 = t2;</span>
+<span class="line" id="L1614">            servfail_retry = <span class="tok-number">2</span> * queries.len;</span>
+<span class="line" id="L1615">        }</span>
+<span class="line" id="L1616"></span>
+<span class="line" id="L1617">        <span class="tok-comment">// Wait for a response, or until time to retry</span>
 </span>
-<span class="line" id="L1568">    <span class="tok-comment">//    setsockopt(fd, IPPROTO.IPV6, IPV6_V6ONLY, &amp;(int){0}, sizeof 0);</span>
-</span>
-<span class="line" id="L1569">    <span class="tok-comment">//    for (i=0; i&lt;nns; i++) {</span>
-</span>
-<span class="line" id="L1570">    <span class="tok-comment">//        if (ns[i].sin.sin_family != AF.INET) continue;</span>
-</span>
-<span class="line" id="L1571">    <span class="tok-comment">//        memcpy(ns[i].sin6.sin6_addr.s6_addr+12,</span>
-</span>
-<span class="line" id="L1572">    <span class="tok-comment">//            &amp;ns[i].sin.sin_addr, 4);</span>
-</span>
-<span class="line" id="L1573">    <span class="tok-comment">//        memcpy(ns[i].sin6.sin6_addr.s6_addr,</span>
-</span>
-<span class="line" id="L1574">    <span class="tok-comment">//            &quot;\0\0\0\0\0\0\0\0\0\0\xff\xff&quot;, 12);</span>
-</span>
-<span class="line" id="L1575">    <span class="tok-comment">//        ns[i].sin6.sin6_family = AF.INET6;</span>
-</span>
-<span class="line" id="L1576">    <span class="tok-comment">//        ns[i].sin6.sin6_flowinfo = 0;</span>
-</span>
-<span class="line" id="L1577">    <span class="tok-comment">//        ns[i].sin6.sin6_scope_id = 0;</span>
-</span>
-<span class="line" id="L1578">    <span class="tok-comment">//    }</span>
-</span>
-<span class="line" id="L1579">    <span class="tok-comment">//}</span>
-</span>
-<span class="line" id="L1580"></span>
-<span class="line" id="L1581">    <span class="tok-kw">var</span> pfd = [<span class="tok-number">1</span>]os.pollfd{os.pollfd{</span>
-<span class="line" id="L1582">        .fd = fd,</span>
-<span class="line" id="L1583">        .events = os.POLL.IN,</span>
-<span class="line" id="L1584">        .revents = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1585">    }};</span>
-<span class="line" id="L1586">    <span class="tok-kw">const</span> retry_interval = timeout / attempts;</span>
-<span class="line" id="L1587">    <span class="tok-kw">var</span> next: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1588">    <span class="tok-kw">var</span> t2: <span class="tok-type">u64</span> = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, std.time.milliTimestamp());</span>
-<span class="line" id="L1589">    <span class="tok-kw">var</span> t0 = t2;</span>
-<span class="line" id="L1590">    <span class="tok-kw">var</span> t1 = t2 - retry_interval;</span>
-<span class="line" id="L1591"></span>
-<span class="line" id="L1592">    <span class="tok-kw">var</span> servfail_retry: <span class="tok-type">usize</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1593"></span>
-<span class="line" id="L1594">    outer: <span class="tok-kw">while</span> (t2 - t0 &lt; timeout) : (t2 = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, std.time.milliTimestamp())) {</span>
-<span class="line" id="L1595">        <span class="tok-kw">if</span> (t2 - t1 &gt;= retry_interval) {</span>
-<span class="line" id="L1596">            <span class="tok-comment">// Query all configured nameservers in parallel</span>
-</span>
-<span class="line" id="L1597">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1598">            <span class="tok-kw">while</span> (i &lt; queries.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1599">                <span class="tok-kw">if</span> (answers[i].len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1600">                    <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1601">                    <span class="tok-kw">while</span> (j &lt; ns.len) : (j += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1602">                        <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1603">                            _ = std.event.Loop.instance.?.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1604">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1605">                            _ = os.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1606">                        }</span>
-<span class="line" id="L1607">                    }</span>
-<span class="line" id="L1608">                }</span>
-<span class="line" id="L1609">            }</span>
-<span class="line" id="L1610">            t1 = t2;</span>
-<span class="line" id="L1611">            servfail_retry = <span class="tok-number">2</span> * queries.len;</span>
-<span class="line" id="L1612">        }</span>
-<span class="line" id="L1613"></span>
-<span class="line" id="L1614">        <span class="tok-comment">// Wait for a response, or until time to retry</span>
-</span>
-<span class="line" id="L1615">        <span class="tok-kw">const</span> clamped_timeout = std.math.min(<span class="tok-builtin">@as</span>(<span class="tok-type">u31</span>, std.math.maxInt(<span class="tok-type">u31</span>)), t1 + retry_interval - t2);</span>
-<span class="line" id="L1616">        <span class="tok-kw">const</span> nevents = os.poll(&amp;pfd, clamped_timeout) <span class="tok-kw">catch</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L1617">        <span class="tok-kw">if</span> (nevents == <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1618"></span>
-<span class="line" id="L1619">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1620">            <span class="tok-kw">var</span> sl_copy = sl;</span>
-<span class="line" id="L1621">            <span class="tok-kw">const</span> rlen = <span class="tok-kw">if</span> (std.io.is_async)</span>
-<span class="line" id="L1622">                std.event.Loop.instance.?.recvfrom(fd, answer_bufs[next], <span class="tok-number">0</span>, &amp;sa.any, &amp;sl_copy) <span class="tok-kw">catch</span> <span class="tok-kw">break</span></span>
-<span class="line" id="L1623">            <span class="tok-kw">else</span></span>
-<span class="line" id="L1624">                os.recvfrom(fd, answer_bufs[next], <span class="tok-number">0</span>, &amp;sa.any, &amp;sl_copy) <span class="tok-kw">catch</span> <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1625"></span>
-<span class="line" id="L1626">            <span class="tok-comment">// Ignore non-identifiable packets</span>
-</span>
-<span class="line" id="L1627">            <span class="tok-kw">if</span> (rlen &lt; <span class="tok-number">4</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1618">        <span class="tok-kw">const</span> clamped_timeout = std.math.min(<span class="tok-builtin">@as</span>(<span class="tok-type">u31</span>, std.math.maxInt(<span class="tok-type">u31</span>)), t1 + retry_interval - t2);</span>
+<span class="line" id="L1619">        <span class="tok-kw">const</span> nevents = os.poll(&amp;pfd, clamped_timeout) <span class="tok-kw">catch</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L1620">        <span class="tok-kw">if</span> (nevents == <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1621"></span>
+<span class="line" id="L1622">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1623">            <span class="tok-kw">var</span> sl_copy = sl;</span>
+<span class="line" id="L1624">            <span class="tok-kw">const</span> rlen = <span class="tok-kw">if</span> (std.io.is_async)</span>
+<span class="line" id="L1625">                std.event.Loop.instance.?.recvfrom(fd, answer_bufs[next], <span class="tok-number">0</span>, &amp;sa.any, &amp;sl_copy) <span class="tok-kw">catch</span> <span class="tok-kw">break</span></span>
+<span class="line" id="L1626">            <span class="tok-kw">else</span></span>
+<span class="line" id="L1627">                os.recvfrom(fd, answer_bufs[next], <span class="tok-number">0</span>, &amp;sa.any, &amp;sl_copy) <span class="tok-kw">catch</span> <span class="tok-kw">break</span>;</span>
 <span class="line" id="L1628"></span>
-<span class="line" id="L1629">            <span class="tok-comment">// Ignore replies from addresses we didn't send to</span>
+<span class="line" id="L1629">            <span class="tok-comment">// Ignore non-identifiable packets</span>
 </span>
-<span class="line" id="L1630">            <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1631">            <span class="tok-kw">while</span> (j &lt; ns.len <span class="tok-kw">and</span> !ns[j].eql(sa)) : (j += <span class="tok-number">1</span>) {}</span>
-<span class="line" id="L1632">            <span class="tok-kw">if</span> (j == ns.len) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1633"></span>
-<span class="line" id="L1634">            <span class="tok-comment">// Find which query this answer goes with, if any</span>
+<span class="line" id="L1630">            <span class="tok-kw">if</span> (rlen &lt; <span class="tok-number">4</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1631"></span>
+<span class="line" id="L1632">            <span class="tok-comment">// Ignore replies from addresses we didn't send to</span>
 </span>
-<span class="line" id="L1635">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = next;</span>
-<span class="line" id="L1636">            <span class="tok-kw">while</span> (i &lt; queries.len <span class="tok-kw">and</span> (answer_bufs[next][<span class="tok-number">0</span>] != queries[i][<span class="tok-number">0</span>] <span class="tok-kw">or</span></span>
-<span class="line" id="L1637">                answer_bufs[next][<span class="tok-number">1</span>] != queries[i][<span class="tok-number">1</span>])) : (i += <span class="tok-number">1</span>)</span>
-<span class="line" id="L1638">            {}</span>
-<span class="line" id="L1639"></span>
-<span class="line" id="L1640">            <span class="tok-kw">if</span> (i == queries.len) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1641">            <span class="tok-kw">if</span> (answers[i].len != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1633">            <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1634">            <span class="tok-kw">while</span> (j &lt; ns.len <span class="tok-kw">and</span> !ns[j].eql(sa)) : (j += <span class="tok-number">1</span>) {}</span>
+<span class="line" id="L1635">            <span class="tok-kw">if</span> (j == ns.len) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1636"></span>
+<span class="line" id="L1637">            <span class="tok-comment">// Find which query this answer goes with, if any</span>
+</span>
+<span class="line" id="L1638">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = next;</span>
+<span class="line" id="L1639">            <span class="tok-kw">while</span> (i &lt; queries.len <span class="tok-kw">and</span> (answer_bufs[next][<span class="tok-number">0</span>] != queries[i][<span class="tok-number">0</span>] <span class="tok-kw">or</span></span>
+<span class="line" id="L1640">                answer_bufs[next][<span class="tok-number">1</span>] != queries[i][<span class="tok-number">1</span>])) : (i += <span class="tok-number">1</span>)</span>
+<span class="line" id="L1641">            {}</span>
 <span class="line" id="L1642"></span>
-<span class="line" id="L1643">            <span class="tok-comment">// Only accept positive or negative responses;</span>
+<span class="line" id="L1643">            <span class="tok-kw">if</span> (i == queries.len) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1644">            <span class="tok-kw">if</span> (answers[i].len != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1645"></span>
+<span class="line" id="L1646">            <span class="tok-comment">// Only accept positive or negative responses;</span>
 </span>
-<span class="line" id="L1644">            <span class="tok-comment">// retry immediately on server failure, and ignore</span>
+<span class="line" id="L1647">            <span class="tok-comment">// retry immediately on server failure, and ignore</span>
 </span>
-<span class="line" id="L1645">            <span class="tok-comment">// all other codes such as refusal.</span>
+<span class="line" id="L1648">            <span class="tok-comment">// all other codes such as refusal.</span>
 </span>
-<span class="line" id="L1646">            <span class="tok-kw">switch</span> (answer_bufs[next][<span class="tok-number">3</span>] &amp; <span class="tok-number">15</span>) {</span>
-<span class="line" id="L1647">                <span class="tok-number">0</span>, <span class="tok-number">3</span> =&gt; {},</span>
-<span class="line" id="L1648">                <span class="tok-number">2</span> =&gt; <span class="tok-kw">if</span> (servfail_retry != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1649">                    servfail_retry -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L1650">                    <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1651">                        _ = std.event.Loop.instance.?.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1652">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1653">                        _ = os.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1654">                    }</span>
-<span class="line" id="L1655">                },</span>
-<span class="line" id="L1656">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1657">            }</span>
-<span class="line" id="L1658"></span>
-<span class="line" id="L1659">            <span class="tok-comment">// Store answer in the right slot, or update next</span>
+<span class="line" id="L1649">            <span class="tok-kw">switch</span> (answer_bufs[next][<span class="tok-number">3</span>] &amp; <span class="tok-number">15</span>) {</span>
+<span class="line" id="L1650">                <span class="tok-number">0</span>, <span class="tok-number">3</span> =&gt; {},</span>
+<span class="line" id="L1651">                <span class="tok-number">2</span> =&gt; <span class="tok-kw">if</span> (servfail_retry != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1652">                    servfail_retry -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L1653">                    <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L1654">                        _ = std.event.Loop.instance.?.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1655">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1656">                        _ = os.sendto(fd, queries[i], os.MSG.NOSIGNAL, &amp;ns[j].any, sl) <span class="tok-kw">catch</span> <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1657">                    }</span>
+<span class="line" id="L1658">                },</span>
+<span class="line" id="L1659">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1660">            }</span>
+<span class="line" id="L1661"></span>
+<span class="line" id="L1662">            <span class="tok-comment">// Store answer in the right slot, or update next</span>
 </span>
-<span class="line" id="L1660">            <span class="tok-comment">// available temp slot if it's already in place.</span>
+<span class="line" id="L1663">            <span class="tok-comment">// available temp slot if it's already in place.</span>
 </span>
-<span class="line" id="L1661">            answers[i].len = rlen;</span>
-<span class="line" id="L1662">            <span class="tok-kw">if</span> (i == next) {</span>
-<span class="line" id="L1663">                <span class="tok-kw">while</span> (next &lt; queries.len <span class="tok-kw">and</span> answers[next].len != <span class="tok-number">0</span>) : (next += <span class="tok-number">1</span>) {}</span>
-<span class="line" id="L1664">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1665">                mem.copy(<span class="tok-type">u8</span>, answer_bufs[i], answer_bufs[next][<span class="tok-number">0</span>..rlen]);</span>
-<span class="line" id="L1666">            }</span>
-<span class="line" id="L1667"></span>
-<span class="line" id="L1668">            <span class="tok-kw">if</span> (next == queries.len) <span class="tok-kw">break</span> :outer;</span>
-<span class="line" id="L1669">        }</span>
-<span class="line" id="L1670">    }</span>
-<span class="line" id="L1671">}</span>
-<span class="line" id="L1672"></span>
-<span class="line" id="L1673"><span class="tok-kw">fn</span> <span class="tok-fn">dnsParse</span>(</span>
-<span class="line" id="L1674">    r: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1675">    ctx: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L1676">    <span class="tok-kw">comptime</span> callback: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L1677">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1678">    <span class="tok-comment">// This implementation is ported from musl libc.</span>
+<span class="line" id="L1664">            answers[i].len = rlen;</span>
+<span class="line" id="L1665">            <span class="tok-kw">if</span> (i == next) {</span>
+<span class="line" id="L1666">                <span class="tok-kw">while</span> (next &lt; queries.len <span class="tok-kw">and</span> answers[next].len != <span class="tok-number">0</span>) : (next += <span class="tok-number">1</span>) {}</span>
+<span class="line" id="L1667">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1668">                mem.copy(<span class="tok-type">u8</span>, answer_bufs[i], answer_bufs[next][<span class="tok-number">0</span>..rlen]);</span>
+<span class="line" id="L1669">            }</span>
+<span class="line" id="L1670"></span>
+<span class="line" id="L1671">            <span class="tok-kw">if</span> (next == queries.len) <span class="tok-kw">break</span> :outer;</span>
+<span class="line" id="L1672">        }</span>
+<span class="line" id="L1673">    }</span>
+<span class="line" id="L1674">}</span>
+<span class="line" id="L1675"></span>
+<span class="line" id="L1676"><span class="tok-kw">fn</span> <span class="tok-fn">dnsParse</span>(</span>
+<span class="line" id="L1677">    r: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1678">    ctx: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L1679">    <span class="tok-kw">comptime</span> callback: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L1680">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1681">    <span class="tok-comment">// This implementation is ported from musl libc.</span>
 </span>
-<span class="line" id="L1679">    <span class="tok-comment">// A more idiomatic &quot;ziggy&quot; implementation would be welcome.</span>
+<span class="line" id="L1682">    <span class="tok-comment">// A more idiomatic &quot;ziggy&quot; implementation would be welcome.</span>
 </span>
-<span class="line" id="L1680">    <span class="tok-kw">if</span> (r.len &lt; <span class="tok-number">12</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
-<span class="line" id="L1681">    <span class="tok-kw">if</span> ((r[<span class="tok-number">3</span>] &amp; <span class="tok-number">15</span>) != <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1682">    <span class="tok-kw">var</span> p = r.ptr + <span class="tok-number">12</span>;</span>
-<span class="line" id="L1683">    <span class="tok-kw">var</span> qdcount = r[<span class="tok-number">4</span>] * <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">256</span>) + r[<span class="tok-number">5</span>];</span>
-<span class="line" id="L1684">    <span class="tok-kw">var</span> ancount = r[<span class="tok-number">6</span>] * <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">256</span>) + r[<span class="tok-number">7</span>];</span>
-<span class="line" id="L1685">    <span class="tok-kw">if</span> (qdcount + ancount &gt; <span class="tok-number">64</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
-<span class="line" id="L1686">    <span class="tok-kw">while</span> (qdcount != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1687">        qdcount -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L1688">        <span class="tok-kw">while</span> (<span class="tok-builtin">@ptrToInt</span>(p) - <span class="tok-builtin">@ptrToInt</span>(r.ptr) &lt; r.len <span class="tok-kw">and</span> p[<span class="tok-number">0</span>] -% <span class="tok-number">1</span> &lt; <span class="tok-number">127</span>) p += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1689">        <span class="tok-kw">if</span> (p[<span class="tok-number">0</span>] &gt; <span class="tok-number">193</span> <span class="tok-kw">or</span> (p[<span class="tok-number">0</span>] == <span class="tok-number">193</span> <span class="tok-kw">and</span> p[<span class="tok-number">1</span>] &gt; <span class="tok-number">254</span>) <span class="tok-kw">or</span> <span class="tok-builtin">@ptrToInt</span>(p) &gt; <span class="tok-builtin">@ptrToInt</span>(r.ptr) + r.len - <span class="tok-number">6</span>)</span>
-<span class="line" id="L1690">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
-<span class="line" id="L1691">        p += <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>) + <span class="tok-builtin">@boolToInt</span>(p[<span class="tok-number">0</span>] != <span class="tok-number">0</span>);</span>
-<span class="line" id="L1692">    }</span>
-<span class="line" id="L1693">    <span class="tok-kw">while</span> (ancount != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1694">        ancount -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L1695">        <span class="tok-kw">while</span> (<span class="tok-builtin">@ptrToInt</span>(p) - <span class="tok-builtin">@ptrToInt</span>(r.ptr) &lt; r.len <span class="tok-kw">and</span> p[<span class="tok-number">0</span>] -% <span class="tok-number">1</span> &lt; <span class="tok-number">127</span>) p += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1696">        <span class="tok-kw">if</span> (p[<span class="tok-number">0</span>] &gt; <span class="tok-number">193</span> <span class="tok-kw">or</span> (p[<span class="tok-number">0</span>] == <span class="tok-number">193</span> <span class="tok-kw">and</span> p[<span class="tok-number">1</span>] &gt; <span class="tok-number">254</span>) <span class="tok-kw">or</span> <span class="tok-builtin">@ptrToInt</span>(p) &gt; <span class="tok-builtin">@ptrToInt</span>(r.ptr) + r.len - <span class="tok-number">6</span>)</span>
-<span class="line" id="L1697">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
-<span class="line" id="L1698">        p += <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) + <span class="tok-builtin">@boolToInt</span>(p[<span class="tok-number">0</span>] != <span class="tok-number">0</span>);</span>
-<span class="line" id="L1699">        <span class="tok-kw">const</span> len = p[<span class="tok-number">8</span>] * <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">256</span>) + p[<span class="tok-number">9</span>];</span>
-<span class="line" id="L1700">        <span class="tok-kw">if</span> (<span class="tok-builtin">@ptrToInt</span>(p) + len &gt; <span class="tok-builtin">@ptrToInt</span>(r.ptr) + r.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
-<span class="line" id="L1701">        <span class="tok-kw">try</span> callback(ctx, p[<span class="tok-number">1</span>], p[<span class="tok-number">10</span> .. <span class="tok-number">10</span> + len], r);</span>
-<span class="line" id="L1702">        p += <span class="tok-number">10</span> + len;</span>
-<span class="line" id="L1703">    }</span>
-<span class="line" id="L1704">}</span>
-<span class="line" id="L1705"></span>
-<span class="line" id="L1706"><span class="tok-kw">fn</span> <span class="tok-fn">dnsParseCallback</span>(ctx: dpc_ctx, rr: <span class="tok-type">u8</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, packet: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1707">    <span class="tok-kw">switch</span> (rr) {</span>
-<span class="line" id="L1708">        os.RR.A =&gt; {</span>
-<span class="line" id="L1709">            <span class="tok-kw">if</span> (data.len != <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsARecord;</span>
-<span class="line" id="L1710">            <span class="tok-kw">const</span> new_addr = <span class="tok-kw">try</span> ctx.addrs.addOne();</span>
-<span class="line" id="L1711">            new_addr.* = LookupAddr{</span>
-<span class="line" id="L1712">                .addr = Address.initIp4(data[<span class="tok-number">0</span>..<span class="tok-number">4</span>].*, ctx.port),</span>
-<span class="line" id="L1713">            };</span>
-<span class="line" id="L1714">        },</span>
-<span class="line" id="L1715">        os.RR.AAAA =&gt; {</span>
-<span class="line" id="L1716">            <span class="tok-kw">if</span> (data.len != <span class="tok-number">16</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsAAAARecord;</span>
-<span class="line" id="L1717">            <span class="tok-kw">const</span> new_addr = <span class="tok-kw">try</span> ctx.addrs.addOne();</span>
-<span class="line" id="L1718">            new_addr.* = LookupAddr{</span>
-<span class="line" id="L1719">                .addr = Address.initIp6(data[<span class="tok-number">0</span>..<span class="tok-number">16</span>].*, ctx.port, <span class="tok-number">0</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L1720">            };</span>
-<span class="line" id="L1721">        },</span>
-<span class="line" id="L1722">        os.RR.CNAME =&gt; {</span>
-<span class="line" id="L1723">            <span class="tok-kw">var</span> tmp: [<span class="tok-number">256</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1724">            <span class="tok-comment">// Returns len of compressed name. strlen to get canon name.</span>
+<span class="line" id="L1683">    <span class="tok-kw">if</span> (r.len &lt; <span class="tok-number">12</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
+<span class="line" id="L1684">    <span class="tok-kw">if</span> ((r[<span class="tok-number">3</span>] &amp; <span class="tok-number">15</span>) != <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1685">    <span class="tok-kw">var</span> p = r.ptr + <span class="tok-number">12</span>;</span>
+<span class="line" id="L1686">    <span class="tok-kw">var</span> qdcount = r[<span class="tok-number">4</span>] * <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">256</span>) + r[<span class="tok-number">5</span>];</span>
+<span class="line" id="L1687">    <span class="tok-kw">var</span> ancount = r[<span class="tok-number">6</span>] * <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">256</span>) + r[<span class="tok-number">7</span>];</span>
+<span class="line" id="L1688">    <span class="tok-kw">if</span> (qdcount + ancount &gt; <span class="tok-number">64</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
+<span class="line" id="L1689">    <span class="tok-kw">while</span> (qdcount != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1690">        qdcount -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L1691">        <span class="tok-kw">while</span> (<span class="tok-builtin">@ptrToInt</span>(p) - <span class="tok-builtin">@ptrToInt</span>(r.ptr) &lt; r.len <span class="tok-kw">and</span> p[<span class="tok-number">0</span>] -% <span class="tok-number">1</span> &lt; <span class="tok-number">127</span>) p += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1692">        <span class="tok-kw">if</span> (p[<span class="tok-number">0</span>] &gt; <span class="tok-number">193</span> <span class="tok-kw">or</span> (p[<span class="tok-number">0</span>] == <span class="tok-number">193</span> <span class="tok-kw">and</span> p[<span class="tok-number">1</span>] &gt; <span class="tok-number">254</span>) <span class="tok-kw">or</span> <span class="tok-builtin">@ptrToInt</span>(p) &gt; <span class="tok-builtin">@ptrToInt</span>(r.ptr) + r.len - <span class="tok-number">6</span>)</span>
+<span class="line" id="L1693">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
+<span class="line" id="L1694">        p += <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>) + <span class="tok-builtin">@boolToInt</span>(p[<span class="tok-number">0</span>] != <span class="tok-number">0</span>);</span>
+<span class="line" id="L1695">    }</span>
+<span class="line" id="L1696">    <span class="tok-kw">while</span> (ancount != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1697">        ancount -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L1698">        <span class="tok-kw">while</span> (<span class="tok-builtin">@ptrToInt</span>(p) - <span class="tok-builtin">@ptrToInt</span>(r.ptr) &lt; r.len <span class="tok-kw">and</span> p[<span class="tok-number">0</span>] -% <span class="tok-number">1</span> &lt; <span class="tok-number">127</span>) p += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1699">        <span class="tok-kw">if</span> (p[<span class="tok-number">0</span>] &gt; <span class="tok-number">193</span> <span class="tok-kw">or</span> (p[<span class="tok-number">0</span>] == <span class="tok-number">193</span> <span class="tok-kw">and</span> p[<span class="tok-number">1</span>] &gt; <span class="tok-number">254</span>) <span class="tok-kw">or</span> <span class="tok-builtin">@ptrToInt</span>(p) &gt; <span class="tok-builtin">@ptrToInt</span>(r.ptr) + r.len - <span class="tok-number">6</span>)</span>
+<span class="line" id="L1700">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
+<span class="line" id="L1701">        p += <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) + <span class="tok-builtin">@boolToInt</span>(p[<span class="tok-number">0</span>] != <span class="tok-number">0</span>);</span>
+<span class="line" id="L1702">        <span class="tok-kw">const</span> len = p[<span class="tok-number">8</span>] * <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">256</span>) + p[<span class="tok-number">9</span>];</span>
+<span class="line" id="L1703">        <span class="tok-kw">if</span> (<span class="tok-builtin">@ptrToInt</span>(p) + len &gt; <span class="tok-builtin">@ptrToInt</span>(r.ptr) + r.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsPacket;</span>
+<span class="line" id="L1704">        <span class="tok-kw">try</span> callback(ctx, p[<span class="tok-number">1</span>], p[<span class="tok-number">10</span> .. <span class="tok-number">10</span> + len], r);</span>
+<span class="line" id="L1705">        p += <span class="tok-number">10</span> + len;</span>
+<span class="line" id="L1706">    }</span>
+<span class="line" id="L1707">}</span>
+<span class="line" id="L1708"></span>
+<span class="line" id="L1709"><span class="tok-kw">fn</span> <span class="tok-fn">dnsParseCallback</span>(ctx: dpc_ctx, rr: <span class="tok-type">u8</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, packet: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1710">    <span class="tok-kw">switch</span> (rr) {</span>
+<span class="line" id="L1711">        os.RR.A =&gt; {</span>
+<span class="line" id="L1712">            <span class="tok-kw">if</span> (data.len != <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsARecord;</span>
+<span class="line" id="L1713">            <span class="tok-kw">const</span> new_addr = <span class="tok-kw">try</span> ctx.addrs.addOne();</span>
+<span class="line" id="L1714">            new_addr.* = LookupAddr{</span>
+<span class="line" id="L1715">                .addr = Address.initIp4(data[<span class="tok-number">0</span>..<span class="tok-number">4</span>].*, ctx.port),</span>
+<span class="line" id="L1716">            };</span>
+<span class="line" id="L1717">        },</span>
+<span class="line" id="L1718">        os.RR.AAAA =&gt; {</span>
+<span class="line" id="L1719">            <span class="tok-kw">if</span> (data.len != <span class="tok-number">16</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDnsAAAARecord;</span>
+<span class="line" id="L1720">            <span class="tok-kw">const</span> new_addr = <span class="tok-kw">try</span> ctx.addrs.addOne();</span>
+<span class="line" id="L1721">            new_addr.* = LookupAddr{</span>
+<span class="line" id="L1722">                .addr = Address.initIp6(data[<span class="tok-number">0</span>..<span class="tok-number">16</span>].*, ctx.port, <span class="tok-number">0</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L1723">            };</span>
+<span class="line" id="L1724">        },</span>
+<span class="line" id="L1725">        os.RR.CNAME =&gt; {</span>
+<span class="line" id="L1726">            <span class="tok-kw">var</span> tmp: [<span class="tok-number">256</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1727">            <span class="tok-comment">// Returns len of compressed name. strlen to get canon name.</span>
 </span>
-<span class="line" id="L1725">            _ = <span class="tok-kw">try</span> os.dn_expand(packet, data, &amp;tmp);</span>
-<span class="line" id="L1726">            <span class="tok-kw">const</span> canon_name = mem.sliceTo(&amp;tmp, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1727">            <span class="tok-kw">if</span> (isValidHostName(canon_name)) {</span>
-<span class="line" id="L1728">                ctx.canon.items.len = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1729">                <span class="tok-kw">try</span> ctx.canon.appendSlice(canon_name);</span>
-<span class="line" id="L1730">            }</span>
-<span class="line" id="L1731">        },</span>
-<span class="line" id="L1732">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span>,</span>
-<span class="line" id="L1733">    }</span>
-<span class="line" id="L1734">}</span>
-<span class="line" id="L1735"></span>
-<span class="line" id="L1736"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Stream = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1737">    <span class="tok-comment">// Underlying socket descriptor.</span>
+<span class="line" id="L1728">            _ = <span class="tok-kw">try</span> os.dn_expand(packet, data, &amp;tmp);</span>
+<span class="line" id="L1729">            <span class="tok-kw">const</span> canon_name = mem.sliceTo(&amp;tmp, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1730">            <span class="tok-kw">if</span> (isValidHostName(canon_name)) {</span>
+<span class="line" id="L1731">                ctx.canon.items.len = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1732">                <span class="tok-kw">try</span> ctx.canon.appendSlice(canon_name);</span>
+<span class="line" id="L1733">            }</span>
+<span class="line" id="L1734">        },</span>
+<span class="line" id="L1735">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span>,</span>
+<span class="line" id="L1736">    }</span>
+<span class="line" id="L1737">}</span>
+<span class="line" id="L1738"></span>
+<span class="line" id="L1739"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Stream = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1740">    <span class="tok-comment">// Underlying socket descriptor.</span>
 </span>
-<span class="line" id="L1738">    <span class="tok-comment">// Note that on some platforms this may not be interchangeable with a</span>
+<span class="line" id="L1741">    <span class="tok-comment">// Note that on some platforms this may not be interchangeable with a</span>
 </span>
-<span class="line" id="L1739">    <span class="tok-comment">// regular files descriptor.</span>
+<span class="line" id="L1742">    <span class="tok-comment">// regular files descriptor.</span>
 </span>
-<span class="line" id="L1740">    handle: os.socket_t,</span>
-<span class="line" id="L1741"></span>
-<span class="line" id="L1742">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: Stream) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1743">        os.closeSocket(self.handle);</span>
-<span class="line" id="L1744">    }</span>
-<span class="line" id="L1745"></span>
-<span class="line" id="L1746">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadError = os.ReadError;</span>
-<span class="line" id="L1747">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = os.WriteError;</span>
+<span class="line" id="L1743">    handle: os.socket_t,</span>
+<span class="line" id="L1744"></span>
+<span class="line" id="L1745">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: Stream) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1746">        os.closeSocket(self.handle);</span>
+<span class="line" id="L1747">    }</span>
 <span class="line" id="L1748"></span>
-<span class="line" id="L1749">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = io.Reader(Stream, ReadError, read);</span>
-<span class="line" id="L1750">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = io.Writer(Stream, WriteError, write);</span>
+<span class="line" id="L1749">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadError = os.ReadError;</span>
+<span class="line" id="L1750">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = os.WriteError;</span>
 <span class="line" id="L1751"></span>
-<span class="line" id="L1752">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(self: Stream) Reader {</span>
-<span class="line" id="L1753">        <span class="tok-kw">return</span> .{ .context = self };</span>
-<span class="line" id="L1754">    }</span>
-<span class="line" id="L1755"></span>
-<span class="line" id="L1756">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(self: Stream) Writer {</span>
-<span class="line" id="L1757">        <span class="tok-kw">return</span> .{ .context = self };</span>
-<span class="line" id="L1758">    }</span>
-<span class="line" id="L1759"></span>
-<span class="line" id="L1760">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(self: Stream, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1761">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L1762">            <span class="tok-kw">return</span> os.windows.ReadFile(self.handle, buffer, <span class="tok-null">null</span>, io.default_mode);</span>
-<span class="line" id="L1763">        }</span>
-<span class="line" id="L1764"></span>
-<span class="line" id="L1765">        <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1766">            <span class="tok-kw">return</span> std.event.Loop.instance.?.read(self.handle, buffer, <span class="tok-null">false</span>);</span>
-<span class="line" id="L1767">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1768">            <span class="tok-kw">return</span> os.read(self.handle, buffer);</span>
-<span class="line" id="L1769">        }</span>
-<span class="line" id="L1770">    }</span>
-<span class="line" id="L1771"></span>
-<span class="line" id="L1772">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readv</span>(s: Stream, iovecs: []<span class="tok-kw">const</span> os.iovec) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1773">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L1774">            <span class="tok-comment">// TODO improve this to use ReadFileScatter</span>
+<span class="line" id="L1752">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = io.Reader(Stream, ReadError, read);</span>
+<span class="line" id="L1753">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = io.Writer(Stream, WriteError, write);</span>
+<span class="line" id="L1754"></span>
+<span class="line" id="L1755">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(self: Stream) Reader {</span>
+<span class="line" id="L1756">        <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L1757">    }</span>
+<span class="line" id="L1758"></span>
+<span class="line" id="L1759">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(self: Stream) Writer {</span>
+<span class="line" id="L1760">        <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L1761">    }</span>
+<span class="line" id="L1762"></span>
+<span class="line" id="L1763">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(self: Stream, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1764">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L1765">            <span class="tok-kw">return</span> os.windows.ReadFile(self.handle, buffer, <span class="tok-null">null</span>, io.default_mode);</span>
+<span class="line" id="L1766">        }</span>
+<span class="line" id="L1767"></span>
+<span class="line" id="L1768">        <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L1769">            <span class="tok-kw">return</span> std.event.Loop.instance.?.read(self.handle, buffer, <span class="tok-null">false</span>);</span>
+<span class="line" id="L1770">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1771">            <span class="tok-kw">return</span> os.read(self.handle, buffer);</span>
+<span class="line" id="L1772">        }</span>
+<span class="line" id="L1773">    }</span>
+<span class="line" id="L1774"></span>
+<span class="line" id="L1775">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readv</span>(s: Stream, iovecs: []<span class="tok-kw">const</span> os.iovec) ReadError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1776">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L1777">            <span class="tok-comment">// TODO improve this to use ReadFileScatter</span>
 </span>
-<span class="line" id="L1775">            <span class="tok-kw">if</span> (iovecs.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1776">            <span class="tok-kw">const</span> first = iovecs[<span class="tok-number">0</span>];</span>
-<span class="line" id="L1777">            <span class="tok-kw">return</span> os.windows.ReadFile(s.handle, first.iov_base[<span class="tok-number">0</span>..first.iov_len], <span class="tok-null">null</span>, io.default_mode);</span>
-<span class="line" id="L1778">        }</span>
-<span class="line" id="L1779"></span>
-<span class="line" id="L1780">        <span class="tok-kw">return</span> os.readv(s.handle, iovecs);</span>
-<span class="line" id="L1781">    }</span>
+<span class="line" id="L1778">            <span class="tok-kw">if</span> (iovecs.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1779">            <span class="tok-kw">const</span> first = iovecs[<span class="tok-number">0</span>];</span>
+<span class="line" id="L1780">            <span class="tok-kw">return</span> os.windows.ReadFile(s.handle, first.iov_base[<span class="tok-number">0</span>..first.iov_len], <span class="tok-null">null</span>, io.default_mode);</span>
+<span class="line" id="L1781">        }</span>
 <span class="line" id="L1782"></span>
-<span class="line" id="L1783">    <span class="tok-comment">/// Returns the number of bytes read. If the number read is smaller than</span></span>
-<span class="line" id="L1784">    <span class="tok-comment">/// `buffer.len`, it means the stream reached the end. Reaching the end of</span></span>
-<span class="line" id="L1785">    <span class="tok-comment">/// a stream is not an error condition.</span></span>
-<span class="line" id="L1786">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAll</span>(s: Stream, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1787">        <span class="tok-kw">return</span> readAtLeast(s, buffer, buffer.len);</span>
-<span class="line" id="L1788">    }</span>
-<span class="line" id="L1789"></span>
-<span class="line" id="L1790">    <span class="tok-comment">/// Returns the number of bytes read, calling the underlying read function</span></span>
-<span class="line" id="L1791">    <span class="tok-comment">/// the minimal number of times until the buffer has at least `len` bytes</span></span>
-<span class="line" id="L1792">    <span class="tok-comment">/// filled. If the number read is less than `len` it means the stream</span></span>
-<span class="line" id="L1793">    <span class="tok-comment">/// reached the end. Reaching the end of the stream is not an error</span></span>
-<span class="line" id="L1794">    <span class="tok-comment">/// condition.</span></span>
-<span class="line" id="L1795">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(s: Stream, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1796">        assert(len &lt;= buffer.len);</span>
-<span class="line" id="L1797">        <span class="tok-kw">var</span> index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1798">        <span class="tok-kw">while</span> (index &lt; len) {</span>
-<span class="line" id="L1799">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> s.read(buffer[index..]);</span>
-<span class="line" id="L1800">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1801">            index += amt;</span>
-<span class="line" id="L1802">        }</span>
-<span class="line" id="L1803">        <span class="tok-kw">return</span> index;</span>
-<span class="line" id="L1804">    }</span>
-<span class="line" id="L1805"></span>
-<span class="line" id="L1806">    <span class="tok-comment">/// TODO in evented I/O mode, this implementation incorrectly uses the event loop's</span></span>
-<span class="line" id="L1807">    <span class="tok-comment">/// file system thread instead of non-blocking. It needs to be reworked to properly</span></span>
-<span class="line" id="L1808">    <span class="tok-comment">/// use non-blocking I/O.</span></span>
-<span class="line" id="L1809">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(self: Stream, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1810">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L1811">            <span class="tok-kw">return</span> os.windows.WriteFile(self.handle, buffer, <span class="tok-null">null</span>, io.default_mode);</span>
-<span class="line" id="L1812">        }</span>
-<span class="line" id="L1813"></span>
-<span class="line" id="L1814">        <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1815">            <span class="tok-kw">return</span> std.event.Loop.instance.?.write(self.handle, buffer, <span class="tok-null">false</span>);</span>
-<span class="line" id="L1816">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1817">            <span class="tok-kw">return</span> os.write(self.handle, buffer);</span>
-<span class="line" id="L1818">        }</span>
-<span class="line" id="L1819">    }</span>
-<span class="line" id="L1820"></span>
-<span class="line" id="L1821">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeAll</span>(self: Stream, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L1822">        <span class="tok-kw">var</span> index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1823">        <span class="tok-kw">while</span> (index &lt; bytes.len) {</span>
-<span class="line" id="L1824">            index += <span class="tok-kw">try</span> self.write(bytes[index..]);</span>
-<span class="line" id="L1825">        }</span>
-<span class="line" id="L1826">    }</span>
-<span class="line" id="L1827"></span>
-<span class="line" id="L1828">    <span class="tok-comment">/// See https://github.com/ziglang/zig/issues/7699</span></span>
-<span class="line" id="L1829">    <span class="tok-comment">/// See equivalent function: `std.fs.File.writev`.</span></span>
-<span class="line" id="L1830">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writev</span>(self: Stream, iovecs: []<span class="tok-kw">const</span> os.iovec_const) WriteError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1831">        <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1832">            <span class="tok-comment">// TODO improve to actually take advantage of writev syscall, if available.</span>
+<span class="line" id="L1783">        <span class="tok-kw">return</span> os.readv(s.handle, iovecs);</span>
+<span class="line" id="L1784">    }</span>
+<span class="line" id="L1785"></span>
+<span class="line" id="L1786">    <span class="tok-comment">/// Returns the number of bytes read. If the number read is smaller than</span></span>
+<span class="line" id="L1787">    <span class="tok-comment">/// `buffer.len`, it means the stream reached the end. Reaching the end of</span></span>
+<span class="line" id="L1788">    <span class="tok-comment">/// a stream is not an error condition.</span></span>
+<span class="line" id="L1789">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAll</span>(s: Stream, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1790">        <span class="tok-kw">return</span> readAtLeast(s, buffer, buffer.len);</span>
+<span class="line" id="L1791">    }</span>
+<span class="line" id="L1792"></span>
+<span class="line" id="L1793">    <span class="tok-comment">/// Returns the number of bytes read, calling the underlying read function</span></span>
+<span class="line" id="L1794">    <span class="tok-comment">/// the minimal number of times until the buffer has at least `len` bytes</span></span>
+<span class="line" id="L1795">    <span class="tok-comment">/// filled. If the number read is less than `len` it means the stream</span></span>
+<span class="line" id="L1796">    <span class="tok-comment">/// reached the end. Reaching the end of the stream is not an error</span></span>
+<span class="line" id="L1797">    <span class="tok-comment">/// condition.</span></span>
+<span class="line" id="L1798">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(s: Stream, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) ReadError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1799">        assert(len &lt;= buffer.len);</span>
+<span class="line" id="L1800">        <span class="tok-kw">var</span> index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1801">        <span class="tok-kw">while</span> (index &lt; len) {</span>
+<span class="line" id="L1802">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> s.read(buffer[index..]);</span>
+<span class="line" id="L1803">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1804">            index += amt;</span>
+<span class="line" id="L1805">        }</span>
+<span class="line" id="L1806">        <span class="tok-kw">return</span> index;</span>
+<span class="line" id="L1807">    }</span>
+<span class="line" id="L1808"></span>
+<span class="line" id="L1809">    <span class="tok-comment">/// TODO in evented I/O mode, this implementation incorrectly uses the event loop's</span></span>
+<span class="line" id="L1810">    <span class="tok-comment">/// file system thread instead of non-blocking. It needs to be reworked to properly</span></span>
+<span class="line" id="L1811">    <span class="tok-comment">/// use non-blocking I/O.</span></span>
+<span class="line" id="L1812">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(self: Stream, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1813">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L1814">            <span class="tok-kw">return</span> os.windows.WriteFile(self.handle, buffer, <span class="tok-null">null</span>, io.default_mode);</span>
+<span class="line" id="L1815">        }</span>
+<span class="line" id="L1816"></span>
+<span class="line" id="L1817">        <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L1818">            <span class="tok-kw">return</span> std.event.Loop.instance.?.write(self.handle, buffer, <span class="tok-null">false</span>);</span>
+<span class="line" id="L1819">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1820">            <span class="tok-kw">return</span> os.write(self.handle, buffer);</span>
+<span class="line" id="L1821">        }</span>
+<span class="line" id="L1822">    }</span>
+<span class="line" id="L1823"></span>
+<span class="line" id="L1824">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeAll</span>(self: Stream, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L1825">        <span class="tok-kw">var</span> index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1826">        <span class="tok-kw">while</span> (index &lt; bytes.len) {</span>
+<span class="line" id="L1827">            index += <span class="tok-kw">try</span> self.write(bytes[index..]);</span>
+<span class="line" id="L1828">        }</span>
+<span class="line" id="L1829">    }</span>
+<span class="line" id="L1830"></span>
+<span class="line" id="L1831">    <span class="tok-comment">/// See https://github.com/ziglang/zig/issues/7699</span></span>
+<span class="line" id="L1832">    <span class="tok-comment">/// See equivalent function: `std.fs.File.writev`.</span></span>
+<span class="line" id="L1833">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writev</span>(self: Stream, iovecs: []<span class="tok-kw">const</span> os.iovec_const) WriteError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1834">        <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L1835">            <span class="tok-comment">// TODO improve to actually take advantage of writev syscall, if available.</span>
 </span>
-<span class="line" id="L1833">            <span class="tok-kw">if</span> (iovecs.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L1834">            <span class="tok-kw">const</span> first_buffer = iovecs[<span class="tok-number">0</span>].iov_base[<span class="tok-number">0</span>..iovecs[<span class="tok-number">0</span>].iov_len];</span>
-<span class="line" id="L1835">            <span class="tok-kw">try</span> self.write(first_buffer);</span>
-<span class="line" id="L1836">            <span class="tok-kw">return</span> first_buffer.len;</span>
-<span class="line" id="L1837">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1838">            <span class="tok-kw">return</span> os.writev(self.handle, iovecs);</span>
-<span class="line" id="L1839">        }</span>
-<span class="line" id="L1840">    }</span>
-<span class="line" id="L1841"></span>
-<span class="line" id="L1842">    <span class="tok-comment">/// The `iovecs` parameter is mutable because this function needs to mutate the fields in</span></span>
-<span class="line" id="L1843">    <span class="tok-comment">/// order to handle partial writes from the underlying OS layer.</span></span>
-<span class="line" id="L1844">    <span class="tok-comment">/// See https://github.com/ziglang/zig/issues/7699</span></span>
-<span class="line" id="L1845">    <span class="tok-comment">/// See equivalent function: `std.fs.File.writevAll`.</span></span>
-<span class="line" id="L1846">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writevAll</span>(self: Stream, iovecs: []os.iovec_const) WriteError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L1847">        <span class="tok-kw">if</span> (iovecs.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1848"></span>
-<span class="line" id="L1849">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1850">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1851">            <span class="tok-kw">var</span> amt = <span class="tok-kw">try</span> self.writev(iovecs[i..]);</span>
-<span class="line" id="L1852">            <span class="tok-kw">while</span> (amt &gt;= iovecs[i].iov_len) {</span>
-<span class="line" id="L1853">                amt -= iovecs[i].iov_len;</span>
-<span class="line" id="L1854">                i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1855">                <span class="tok-kw">if</span> (i &gt;= iovecs.len) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1856">            }</span>
-<span class="line" id="L1857">            iovecs[i].iov_base += amt;</span>
-<span class="line" id="L1858">            iovecs[i].iov_len -= amt;</span>
-<span class="line" id="L1859">        }</span>
-<span class="line" id="L1860">    }</span>
-<span class="line" id="L1861">};</span>
-<span class="line" id="L1862"></span>
-<span class="line" id="L1863"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StreamServer = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1864">    <span class="tok-comment">/// Copied from `Options` on `init`.</span></span>
-<span class="line" id="L1865">    kernel_backlog: <span class="tok-type">u31</span>,</span>
-<span class="line" id="L1866">    reuse_address: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L1867"></span>
-<span class="line" id="L1868">    <span class="tok-comment">/// `undefined` until `listen` returns successfully.</span></span>
-<span class="line" id="L1869">    listen_address: Address,</span>
+<span class="line" id="L1836">            <span class="tok-kw">if</span> (iovecs.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L1837">            <span class="tok-kw">const</span> first_buffer = iovecs[<span class="tok-number">0</span>].iov_base[<span class="tok-number">0</span>..iovecs[<span class="tok-number">0</span>].iov_len];</span>
+<span class="line" id="L1838">            <span class="tok-kw">try</span> self.write(first_buffer);</span>
+<span class="line" id="L1839">            <span class="tok-kw">return</span> first_buffer.len;</span>
+<span class="line" id="L1840">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1841">            <span class="tok-kw">return</span> os.writev(self.handle, iovecs);</span>
+<span class="line" id="L1842">        }</span>
+<span class="line" id="L1843">    }</span>
+<span class="line" id="L1844"></span>
+<span class="line" id="L1845">    <span class="tok-comment">/// The `iovecs` parameter is mutable because this function needs to mutate the fields in</span></span>
+<span class="line" id="L1846">    <span class="tok-comment">/// order to handle partial writes from the underlying OS layer.</span></span>
+<span class="line" id="L1847">    <span class="tok-comment">/// See https://github.com/ziglang/zig/issues/7699</span></span>
+<span class="line" id="L1848">    <span class="tok-comment">/// See equivalent function: `std.fs.File.writevAll`.</span></span>
+<span class="line" id="L1849">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writevAll</span>(self: Stream, iovecs: []os.iovec_const) WriteError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L1850">        <span class="tok-kw">if</span> (iovecs.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1851"></span>
+<span class="line" id="L1852">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1853">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1854">            <span class="tok-kw">var</span> amt = <span class="tok-kw">try</span> self.writev(iovecs[i..]);</span>
+<span class="line" id="L1855">            <span class="tok-kw">while</span> (amt &gt;= iovecs[i].iov_len) {</span>
+<span class="line" id="L1856">                amt -= iovecs[i].iov_len;</span>
+<span class="line" id="L1857">                i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1858">                <span class="tok-kw">if</span> (i &gt;= iovecs.len) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1859">            }</span>
+<span class="line" id="L1860">            iovecs[i].iov_base += amt;</span>
+<span class="line" id="L1861">            iovecs[i].iov_len -= amt;</span>
+<span class="line" id="L1862">        }</span>
+<span class="line" id="L1863">    }</span>
+<span class="line" id="L1864">};</span>
+<span class="line" id="L1865"></span>
+<span class="line" id="L1866"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StreamServer = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1867">    <span class="tok-comment">/// Copied from `Options` on `init`.</span></span>
+<span class="line" id="L1868">    kernel_backlog: <span class="tok-type">u31</span>,</span>
+<span class="line" id="L1869">    reuse_address: <span class="tok-type">bool</span>,</span>
 <span class="line" id="L1870"></span>
-<span class="line" id="L1871">    sockfd: ?os.socket_t,</span>
-<span class="line" id="L1872"></span>
-<span class="line" id="L1873">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1874">        <span class="tok-comment">/// How many connections the kernel will accept on the application's behalf.</span></span>
-<span class="line" id="L1875">        <span class="tok-comment">/// If more than this many connections pool in the kernel, clients will start</span></span>
-<span class="line" id="L1876">        <span class="tok-comment">/// seeing &quot;Connection refused&quot;.</span></span>
-<span class="line" id="L1877">        kernel_backlog: <span class="tok-type">u31</span> = <span class="tok-number">128</span>,</span>
-<span class="line" id="L1878"></span>
-<span class="line" id="L1879">        <span class="tok-comment">/// Enable SO.REUSEADDR on the socket.</span></span>
-<span class="line" id="L1880">        reuse_address: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L1881">    };</span>
-<span class="line" id="L1882"></span>
-<span class="line" id="L1883">    <span class="tok-comment">/// After this call succeeds, resources have been acquired and must</span></span>
-<span class="line" id="L1884">    <span class="tok-comment">/// be released with `deinit`.</span></span>
-<span class="line" id="L1885">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(options: Options) StreamServer {</span>
-<span class="line" id="L1886">        <span class="tok-kw">return</span> StreamServer{</span>
-<span class="line" id="L1887">            .sockfd = <span class="tok-null">null</span>,</span>
-<span class="line" id="L1888">            .kernel_backlog = options.kernel_backlog,</span>
-<span class="line" id="L1889">            .reuse_address = options.reuse_address,</span>
-<span class="line" id="L1890">            .listen_address = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1891">        };</span>
-<span class="line" id="L1892">    }</span>
-<span class="line" id="L1893"></span>
-<span class="line" id="L1894">    <span class="tok-comment">/// Release all resources. The `StreamServer` memory becomes `undefined`.</span></span>
-<span class="line" id="L1895">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1896">        self.close();</span>
-<span class="line" id="L1897">        self.* = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1898">    }</span>
-<span class="line" id="L1899"></span>
-<span class="line" id="L1900">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">listen</span>(self: *StreamServer, address: Address) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1901">        <span class="tok-kw">const</span> nonblock = <span class="tok-kw">if</span> (std.io.is_async) os.SOCK.NONBLOCK <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L1902">        <span class="tok-kw">const</span> sock_flags = os.SOCK.STREAM | os.SOCK.CLOEXEC | nonblock;</span>
-<span class="line" id="L1903">        <span class="tok-kw">const</span> proto = <span class="tok-kw">if</span> (address.any.family == os.AF.UNIX) <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>) <span class="tok-kw">else</span> os.IPPROTO.TCP;</span>
-<span class="line" id="L1904"></span>
-<span class="line" id="L1905">        <span class="tok-kw">const</span> sockfd = <span class="tok-kw">try</span> os.socket(address.any.family, sock_flags, proto);</span>
-<span class="line" id="L1906">        self.sockfd = sockfd;</span>
-<span class="line" id="L1907">        <span class="tok-kw">errdefer</span> {</span>
-<span class="line" id="L1908">            os.closeSocket(sockfd);</span>
-<span class="line" id="L1909">            self.sockfd = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1910">        }</span>
-<span class="line" id="L1911"></span>
-<span class="line" id="L1912">        <span class="tok-kw">if</span> (self.reuse_address) {</span>
-<span class="line" id="L1913">            <span class="tok-kw">try</span> os.setsockopt(</span>
-<span class="line" id="L1914">                sockfd,</span>
-<span class="line" id="L1915">                os.SOL.SOCKET,</span>
-<span class="line" id="L1916">                os.SO.REUSEADDR,</span>
-<span class="line" id="L1917">                &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">1</span>)),</span>
-<span class="line" id="L1918">            );</span>
-<span class="line" id="L1919">        }</span>
-<span class="line" id="L1920"></span>
-<span class="line" id="L1921">        <span class="tok-kw">var</span> socklen = address.getOsSockLen();</span>
-<span class="line" id="L1922">        <span class="tok-kw">try</span> os.bind(sockfd, &amp;address.any, socklen);</span>
-<span class="line" id="L1923">        <span class="tok-kw">try</span> os.listen(sockfd, self.kernel_backlog);</span>
-<span class="line" id="L1924">        <span class="tok-kw">try</span> os.getsockname(sockfd, &amp;self.listen_address.any, &amp;socklen);</span>
-<span class="line" id="L1925">    }</span>
-<span class="line" id="L1926"></span>
-<span class="line" id="L1927">    <span class="tok-comment">/// Stop listening. It is still necessary to call `deinit` after stopping listening.</span></span>
-<span class="line" id="L1928">    <span class="tok-comment">/// Calling `deinit` will automatically call `close`. It is safe to call `close` when</span></span>
-<span class="line" id="L1929">    <span class="tok-comment">/// not listening.</span></span>
-<span class="line" id="L1930">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1931">        <span class="tok-kw">if</span> (self.sockfd) |fd| {</span>
-<span class="line" id="L1932">            os.closeSocket(fd);</span>
-<span class="line" id="L1933">            self.sockfd = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1934">            self.listen_address = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1935">        }</span>
-<span class="line" id="L1936">    }</span>
-<span class="line" id="L1937"></span>
-<span class="line" id="L1938">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AcceptError = <span class="tok-kw">error</span>{</span>
-<span class="line" id="L1939">        ConnectionAborted,</span>
+<span class="line" id="L1871">    <span class="tok-comment">/// `undefined` until `listen` returns successfully.</span></span>
+<span class="line" id="L1872">    listen_address: Address,</span>
+<span class="line" id="L1873"></span>
+<span class="line" id="L1874">    sockfd: ?os.socket_t,</span>
+<span class="line" id="L1875"></span>
+<span class="line" id="L1876">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1877">        <span class="tok-comment">/// How many connections the kernel will accept on the application's behalf.</span></span>
+<span class="line" id="L1878">        <span class="tok-comment">/// If more than this many connections pool in the kernel, clients will start</span></span>
+<span class="line" id="L1879">        <span class="tok-comment">/// seeing &quot;Connection refused&quot;.</span></span>
+<span class="line" id="L1880">        kernel_backlog: <span class="tok-type">u31</span> = <span class="tok-number">128</span>,</span>
+<span class="line" id="L1881"></span>
+<span class="line" id="L1882">        <span class="tok-comment">/// Enable SO.REUSEADDR on the socket.</span></span>
+<span class="line" id="L1883">        reuse_address: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1884">    };</span>
+<span class="line" id="L1885"></span>
+<span class="line" id="L1886">    <span class="tok-comment">/// After this call succeeds, resources have been acquired and must</span></span>
+<span class="line" id="L1887">    <span class="tok-comment">/// be released with `deinit`.</span></span>
+<span class="line" id="L1888">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(options: Options) StreamServer {</span>
+<span class="line" id="L1889">        <span class="tok-kw">return</span> StreamServer{</span>
+<span class="line" id="L1890">            .sockfd = <span class="tok-null">null</span>,</span>
+<span class="line" id="L1891">            .kernel_backlog = options.kernel_backlog,</span>
+<span class="line" id="L1892">            .reuse_address = options.reuse_address,</span>
+<span class="line" id="L1893">            .listen_address = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1894">        };</span>
+<span class="line" id="L1895">    }</span>
+<span class="line" id="L1896"></span>
+<span class="line" id="L1897">    <span class="tok-comment">/// Release all resources. The `StreamServer` memory becomes `undefined`.</span></span>
+<span class="line" id="L1898">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1899">        self.close();</span>
+<span class="line" id="L1900">        self.* = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1901">    }</span>
+<span class="line" id="L1902"></span>
+<span class="line" id="L1903">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">listen</span>(self: *StreamServer, address: Address) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1904">        <span class="tok-kw">const</span> nonblock = <span class="tok-kw">if</span> (std.io.is_async) os.SOCK.NONBLOCK <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L1905">        <span class="tok-kw">const</span> sock_flags = os.SOCK.STREAM | os.SOCK.CLOEXEC | nonblock;</span>
+<span class="line" id="L1906">        <span class="tok-kw">const</span> proto = <span class="tok-kw">if</span> (address.any.family == os.AF.UNIX) <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>) <span class="tok-kw">else</span> os.IPPROTO.TCP;</span>
+<span class="line" id="L1907"></span>
+<span class="line" id="L1908">        <span class="tok-kw">const</span> sockfd = <span class="tok-kw">try</span> os.socket(address.any.family, sock_flags, proto);</span>
+<span class="line" id="L1909">        self.sockfd = sockfd;</span>
+<span class="line" id="L1910">        <span class="tok-kw">errdefer</span> {</span>
+<span class="line" id="L1911">            os.closeSocket(sockfd);</span>
+<span class="line" id="L1912">            self.sockfd = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1913">        }</span>
+<span class="line" id="L1914"></span>
+<span class="line" id="L1915">        <span class="tok-kw">if</span> (self.reuse_address) {</span>
+<span class="line" id="L1916">            <span class="tok-kw">try</span> os.setsockopt(</span>
+<span class="line" id="L1917">                sockfd,</span>
+<span class="line" id="L1918">                os.SOL.SOCKET,</span>
+<span class="line" id="L1919">                os.SO.REUSEADDR,</span>
+<span class="line" id="L1920">                &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">1</span>)),</span>
+<span class="line" id="L1921">            );</span>
+<span class="line" id="L1922">        }</span>
+<span class="line" id="L1923"></span>
+<span class="line" id="L1924">        <span class="tok-kw">var</span> socklen = address.getOsSockLen();</span>
+<span class="line" id="L1925">        <span class="tok-kw">try</span> os.bind(sockfd, &amp;address.any, socklen);</span>
+<span class="line" id="L1926">        <span class="tok-kw">try</span> os.listen(sockfd, self.kernel_backlog);</span>
+<span class="line" id="L1927">        <span class="tok-kw">try</span> os.getsockname(sockfd, &amp;self.listen_address.any, &amp;socklen);</span>
+<span class="line" id="L1928">    }</span>
+<span class="line" id="L1929"></span>
+<span class="line" id="L1930">    <span class="tok-comment">/// Stop listening. It is still necessary to call `deinit` after stopping listening.</span></span>
+<span class="line" id="L1931">    <span class="tok-comment">/// Calling `deinit` will automatically call `close`. It is safe to call `close` when</span></span>
+<span class="line" id="L1932">    <span class="tok-comment">/// not listening.</span></span>
+<span class="line" id="L1933">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1934">        <span class="tok-kw">if</span> (self.sockfd) |fd| {</span>
+<span class="line" id="L1935">            os.closeSocket(fd);</span>
+<span class="line" id="L1936">            self.sockfd = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1937">            self.listen_address = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1938">        }</span>
+<span class="line" id="L1939">    }</span>
 <span class="line" id="L1940"></span>
-<span class="line" id="L1941">        <span class="tok-comment">/// The per-process limit on the number of open file descriptors has been reached.</span></span>
-<span class="line" id="L1942">        ProcessFdQuotaExceeded,</span>
+<span class="line" id="L1941">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AcceptError = <span class="tok-kw">error</span>{</span>
+<span class="line" id="L1942">        ConnectionAborted,</span>
 <span class="line" id="L1943"></span>
-<span class="line" id="L1944">        <span class="tok-comment">/// The system-wide limit on the total number of open files has been reached.</span></span>
-<span class="line" id="L1945">        SystemFdQuotaExceeded,</span>
+<span class="line" id="L1944">        <span class="tok-comment">/// The per-process limit on the number of open file descriptors has been reached.</span></span>
+<span class="line" id="L1945">        ProcessFdQuotaExceeded,</span>
 <span class="line" id="L1946"></span>
-<span class="line" id="L1947">        <span class="tok-comment">/// Not enough free memory.  This often means that the memory allocation  is  limited</span></span>
-<span class="line" id="L1948">        <span class="tok-comment">/// by the socket buffer limits, not by the system memory.</span></span>
-<span class="line" id="L1949">        SystemResources,</span>
-<span class="line" id="L1950"></span>
-<span class="line" id="L1951">        <span class="tok-comment">/// Socket is not listening for new connections.</span></span>
-<span class="line" id="L1952">        SocketNotListening,</span>
+<span class="line" id="L1947">        <span class="tok-comment">/// The system-wide limit on the total number of open files has been reached.</span></span>
+<span class="line" id="L1948">        SystemFdQuotaExceeded,</span>
+<span class="line" id="L1949"></span>
+<span class="line" id="L1950">        <span class="tok-comment">/// Not enough free memory.  This often means that the memory allocation  is  limited</span></span>
+<span class="line" id="L1951">        <span class="tok-comment">/// by the socket buffer limits, not by the system memory.</span></span>
+<span class="line" id="L1952">        SystemResources,</span>
 <span class="line" id="L1953"></span>
-<span class="line" id="L1954">        ProtocolFailure,</span>
-<span class="line" id="L1955"></span>
-<span class="line" id="L1956">        <span class="tok-comment">/// Firewall rules forbid connection.</span></span>
-<span class="line" id="L1957">        BlockedByFirewall,</span>
+<span class="line" id="L1954">        <span class="tok-comment">/// Socket is not listening for new connections.</span></span>
+<span class="line" id="L1955">        SocketNotListening,</span>
+<span class="line" id="L1956"></span>
+<span class="line" id="L1957">        ProtocolFailure,</span>
 <span class="line" id="L1958"></span>
-<span class="line" id="L1959">        FileDescriptorNotASocket,</span>
-<span class="line" id="L1960"></span>
-<span class="line" id="L1961">        ConnectionResetByPeer,</span>
-<span class="line" id="L1962"></span>
-<span class="line" id="L1963">        NetworkSubsystemFailed,</span>
-<span class="line" id="L1964"></span>
-<span class="line" id="L1965">        OperationNotSupported,</span>
-<span class="line" id="L1966">    } || os.UnexpectedError;</span>
+<span class="line" id="L1959">        <span class="tok-comment">/// Firewall rules forbid connection.</span></span>
+<span class="line" id="L1960">        BlockedByFirewall,</span>
+<span class="line" id="L1961"></span>
+<span class="line" id="L1962">        FileDescriptorNotASocket,</span>
+<span class="line" id="L1963"></span>
+<span class="line" id="L1964">        ConnectionResetByPeer,</span>
+<span class="line" id="L1965"></span>
+<span class="line" id="L1966">        NetworkSubsystemFailed,</span>
 <span class="line" id="L1967"></span>
-<span class="line" id="L1968">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Connection = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1969">        stream: Stream,</span>
-<span class="line" id="L1970">        address: Address,</span>
-<span class="line" id="L1971">    };</span>
-<span class="line" id="L1972"></span>
-<span class="line" id="L1973">    <span class="tok-comment">/// If this function succeeds, the returned `Connection` is a caller-managed resource.</span></span>
-<span class="line" id="L1974">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accept</span>(self: *StreamServer) AcceptError!Connection {</span>
-<span class="line" id="L1975">        <span class="tok-kw">var</span> accepted_addr: Address = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1976">        <span class="tok-kw">var</span> adr_len: os.socklen_t = <span class="tok-builtin">@sizeOf</span>(Address);</span>
-<span class="line" id="L1977">        <span class="tok-kw">const</span> accept_result = blk: {</span>
-<span class="line" id="L1978">            <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1979">                <span class="tok-kw">const</span> loop = std.event.Loop.instance <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedError;</span>
-<span class="line" id="L1980">                <span class="tok-kw">break</span> :blk loop.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
-<span class="line" id="L1981">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1982">                <span class="tok-kw">break</span> :blk os.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
-<span class="line" id="L1983">            }</span>
-<span class="line" id="L1984">        };</span>
-<span class="line" id="L1985"></span>
-<span class="line" id="L1986">        <span class="tok-kw">if</span> (accept_result) |fd| {</span>
-<span class="line" id="L1987">            <span class="tok-kw">return</span> Connection{</span>
-<span class="line" id="L1988">                .stream = Stream{ .handle = fd },</span>
-<span class="line" id="L1989">                .address = accepted_addr,</span>
-<span class="line" id="L1990">            };</span>
-<span class="line" id="L1991">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L1992">            <span class="tok-kw">error</span>.WouldBlock =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1993">            <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
-<span class="line" id="L1994">        }</span>
-<span class="line" id="L1995">    }</span>
-<span class="line" id="L1996">};</span>
-<span class="line" id="L1997"></span>
-<span class="line" id="L1998"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L1999">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;net/test.zig&quot;</span>);</span>
-<span class="line" id="L2000">}</span>
-<span class="line" id="L2001"></span>
+<span class="line" id="L1968">        OperationNotSupported,</span>
+<span class="line" id="L1969">    } || os.UnexpectedError;</span>
+<span class="line" id="L1970"></span>
+<span class="line" id="L1971">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Connection = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1972">        stream: Stream,</span>
+<span class="line" id="L1973">        address: Address,</span>
+<span class="line" id="L1974">    };</span>
+<span class="line" id="L1975"></span>
+<span class="line" id="L1976">    <span class="tok-comment">/// If this function succeeds, the returned `Connection` is a caller-managed resource.</span></span>
+<span class="line" id="L1977">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accept</span>(self: *StreamServer) AcceptError!Connection {</span>
+<span class="line" id="L1978">        <span class="tok-kw">var</span> accepted_addr: Address = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1979">        <span class="tok-kw">var</span> adr_len: os.socklen_t = <span class="tok-builtin">@sizeOf</span>(Address);</span>
+<span class="line" id="L1980">        <span class="tok-kw">const</span> accept_result = blk: {</span>
+<span class="line" id="L1981">            <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L1982">                <span class="tok-kw">const</span> loop = std.event.Loop.instance <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedError;</span>
+<span class="line" id="L1983">                <span class="tok-kw">break</span> :blk loop.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
+<span class="line" id="L1984">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1985">                <span class="tok-kw">break</span> :blk os.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
+<span class="line" id="L1986">            }</span>
+<span class="line" id="L1987">        };</span>
+<span class="line" id="L1988"></span>
+<span class="line" id="L1989">        <span class="tok-kw">if</span> (accept_result) |fd| {</span>
+<span class="line" id="L1990">            <span class="tok-kw">return</span> Connection{</span>
+<span class="line" id="L1991">                .stream = Stream{ .handle = fd },</span>
+<span class="line" id="L1992">                .address = accepted_addr,</span>
+<span class="line" id="L1993">            };</span>
+<span class="line" id="L1994">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1995">            <span class="tok-kw">error</span>.WouldBlock =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1996">            <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L1997">        }</span>
+<span class="line" id="L1998">    }</span>
+<span class="line" id="L1999">};</span>
+<span class="line" id="L2000"></span>
+<span class="line" id="L2001"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L2002">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;net/test.zig&quot;</span>);</span>
+<span class="line" id="L2003">}</span>
+<span class="line" id="L2004"></span>
 </code></pre></body>
 </html>

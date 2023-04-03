@@ -124,123 +124,131 @@
 <span class="line" id="L11"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .translate_c;</span>
 <span class="line" id="L12"></span>
 <span class="line" id="L13">step: Step,</span>
-<span class="line" id="L14">builder: *std.Build,</span>
-<span class="line" id="L15">source: std.Build.FileSource,</span>
-<span class="line" id="L16">include_dirs: std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
-<span class="line" id="L17">c_macros: std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
-<span class="line" id="L18">out_basename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L19">target: CrossTarget,</span>
-<span class="line" id="L20">optimize: std.builtin.OptimizeMode,</span>
-<span class="line" id="L21">output_file: std.Build.GeneratedFile,</span>
-<span class="line" id="L22"></span>
-<span class="line" id="L23"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L24">    source_file: std.Build.FileSource,</span>
-<span class="line" id="L25">    target: CrossTarget,</span>
-<span class="line" id="L26">    optimize: std.builtin.OptimizeMode,</span>
-<span class="line" id="L27">};</span>
-<span class="line" id="L28"></span>
-<span class="line" id="L29"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(builder: *std.Build, options: Options) *TranslateCStep {</span>
-<span class="line" id="L30">    <span class="tok-kw">const</span> self = builder.allocator.create(TranslateCStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L31">    <span class="tok-kw">const</span> source = options.source_file.dupe(builder);</span>
-<span class="line" id="L32">    self.* = TranslateCStep{</span>
-<span class="line" id="L33">        .step = Step.init(.translate_c, <span class="tok-str">&quot;translate-c&quot;</span>, builder.allocator, make),</span>
-<span class="line" id="L34">        .builder = builder,</span>
-<span class="line" id="L35">        .source = source,</span>
-<span class="line" id="L36">        .include_dirs = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(builder.allocator),</span>
-<span class="line" id="L37">        .c_macros = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(builder.allocator),</span>
-<span class="line" id="L38">        .out_basename = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L39">        .target = options.target,</span>
-<span class="line" id="L40">        .optimize = options.optimize,</span>
-<span class="line" id="L41">        .output_file = std.Build.GeneratedFile{ .step = &amp;self.step },</span>
-<span class="line" id="L42">    };</span>
-<span class="line" id="L43">    source.addStepDependencies(&amp;self.step);</span>
-<span class="line" id="L44">    <span class="tok-kw">return</span> self;</span>
-<span class="line" id="L45">}</span>
-<span class="line" id="L46"></span>
-<span class="line" id="L47"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> AddExecutableOptions = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L48">    name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L49">    version: ?std.builtin.Version = <span class="tok-null">null</span>,</span>
-<span class="line" id="L50">    target: ?CrossTarget = <span class="tok-null">null</span>,</span>
-<span class="line" id="L51">    optimize: ?std.builtin.Mode = <span class="tok-null">null</span>,</span>
-<span class="line" id="L52">    linkage: ?CompileStep.Linkage = <span class="tok-null">null</span>,</span>
-<span class="line" id="L53">};</span>
-<span class="line" id="L54"></span>
-<span class="line" id="L55"><span class="tok-comment">/// Creates a step to build an executable from the translated source.</span></span>
-<span class="line" id="L56"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addExecutable</span>(self: *TranslateCStep, options: AddExecutableOptions) *CompileStep {</span>
-<span class="line" id="L57">    <span class="tok-kw">return</span> self.builder.addExecutable(.{</span>
-<span class="line" id="L58">        .root_source_file = .{ .generated = &amp;self.output_file },</span>
-<span class="line" id="L59">        .name = options.name <span class="tok-kw">orelse</span> <span class="tok-str">&quot;translated_c&quot;</span>,</span>
-<span class="line" id="L60">        .version = options.version,</span>
-<span class="line" id="L61">        .target = options.target <span class="tok-kw">orelse</span> self.target,</span>
-<span class="line" id="L62">        .optimize = options.optimize <span class="tok-kw">orelse</span> self.optimize,</span>
-<span class="line" id="L63">        .linkage = options.linkage,</span>
-<span class="line" id="L64">    });</span>
-<span class="line" id="L65">}</span>
-<span class="line" id="L66"></span>
-<span class="line" id="L67"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addIncludeDir</span>(self: *TranslateCStep, include_dir: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L68">    self.include_dirs.append(self.builder.dupePath(include_dir)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L69">}</span>
-<span class="line" id="L70"></span>
-<span class="line" id="L71"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addCheckFile</span>(self: *TranslateCStep, expected_matches: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *CheckFileStep {</span>
-<span class="line" id="L72">    <span class="tok-kw">return</span> CheckFileStep.create(self.builder, .{ .generated = &amp;self.output_file }, self.builder.dupeStrings(expected_matches));</span>
-<span class="line" id="L73">}</span>
-<span class="line" id="L74"></span>
-<span class="line" id="L75"><span class="tok-comment">/// If the value is omitted, it is set to 1.</span></span>
-<span class="line" id="L76"><span class="tok-comment">/// `name` and `value` need not live longer than the function call.</span></span>
-<span class="line" id="L77"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">defineCMacro</span>(self: *TranslateCStep, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L78">    <span class="tok-kw">const</span> macro = std.Build.constructCMacro(self.builder.allocator, name, value);</span>
-<span class="line" id="L79">    self.c_macros.append(macro) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L14">source: std.Build.FileSource,</span>
+<span class="line" id="L15">include_dirs: std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
+<span class="line" id="L16">c_macros: std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
+<span class="line" id="L17">out_basename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L18">target: CrossTarget,</span>
+<span class="line" id="L19">optimize: std.builtin.OptimizeMode,</span>
+<span class="line" id="L20">output_file: std.Build.GeneratedFile,</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L23">    source_file: std.Build.FileSource,</span>
+<span class="line" id="L24">    target: CrossTarget,</span>
+<span class="line" id="L25">    optimize: std.builtin.OptimizeMode,</span>
+<span class="line" id="L26">};</span>
+<span class="line" id="L27"></span>
+<span class="line" id="L28"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(owner: *std.Build, options: Options) *TranslateCStep {</span>
+<span class="line" id="L29">    <span class="tok-kw">const</span> self = owner.allocator.create(TranslateCStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L30">    <span class="tok-kw">const</span> source = options.source_file.dupe(owner);</span>
+<span class="line" id="L31">    self.* = TranslateCStep{</span>
+<span class="line" id="L32">        .step = Step.init(.{</span>
+<span class="line" id="L33">            .id = .translate_c,</span>
+<span class="line" id="L34">            .name = <span class="tok-str">&quot;translate-c&quot;</span>,</span>
+<span class="line" id="L35">            .owner = owner,</span>
+<span class="line" id="L36">            .makeFn = make,</span>
+<span class="line" id="L37">        }),</span>
+<span class="line" id="L38">        .source = source,</span>
+<span class="line" id="L39">        .include_dirs = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(owner.allocator),</span>
+<span class="line" id="L40">        .c_macros = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(owner.allocator),</span>
+<span class="line" id="L41">        .out_basename = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L42">        .target = options.target,</span>
+<span class="line" id="L43">        .optimize = options.optimize,</span>
+<span class="line" id="L44">        .output_file = std.Build.GeneratedFile{ .step = &amp;self.step },</span>
+<span class="line" id="L45">    };</span>
+<span class="line" id="L46">    source.addStepDependencies(&amp;self.step);</span>
+<span class="line" id="L47">    <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L48">}</span>
+<span class="line" id="L49"></span>
+<span class="line" id="L50"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> AddExecutableOptions = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L51">    name: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L52">    version: ?std.builtin.Version = <span class="tok-null">null</span>,</span>
+<span class="line" id="L53">    target: ?CrossTarget = <span class="tok-null">null</span>,</span>
+<span class="line" id="L54">    optimize: ?std.builtin.Mode = <span class="tok-null">null</span>,</span>
+<span class="line" id="L55">    linkage: ?CompileStep.Linkage = <span class="tok-null">null</span>,</span>
+<span class="line" id="L56">};</span>
+<span class="line" id="L57"></span>
+<span class="line" id="L58"><span class="tok-comment">/// Creates a step to build an executable from the translated source.</span></span>
+<span class="line" id="L59"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addExecutable</span>(self: *TranslateCStep, options: AddExecutableOptions) *CompileStep {</span>
+<span class="line" id="L60">    <span class="tok-kw">return</span> self.step.owner.addExecutable(.{</span>
+<span class="line" id="L61">        .root_source_file = .{ .generated = &amp;self.output_file },</span>
+<span class="line" id="L62">        .name = options.name <span class="tok-kw">orelse</span> <span class="tok-str">&quot;translated_c&quot;</span>,</span>
+<span class="line" id="L63">        .version = options.version,</span>
+<span class="line" id="L64">        .target = options.target <span class="tok-kw">orelse</span> self.target,</span>
+<span class="line" id="L65">        .optimize = options.optimize <span class="tok-kw">orelse</span> self.optimize,</span>
+<span class="line" id="L66">        .linkage = options.linkage,</span>
+<span class="line" id="L67">    });</span>
+<span class="line" id="L68">}</span>
+<span class="line" id="L69"></span>
+<span class="line" id="L70"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addIncludeDir</span>(self: *TranslateCStep, include_dir: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L71">    self.include_dirs.append(self.step.owner.dupePath(include_dir)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L72">}</span>
+<span class="line" id="L73"></span>
+<span class="line" id="L74"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addCheckFile</span>(self: *TranslateCStep, expected_matches: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *CheckFileStep {</span>
+<span class="line" id="L75">    <span class="tok-kw">return</span> CheckFileStep.create(</span>
+<span class="line" id="L76">        self.step.owner,</span>
+<span class="line" id="L77">        .{ .generated = &amp;self.output_file },</span>
+<span class="line" id="L78">        .{ .expected_matches = expected_matches },</span>
+<span class="line" id="L79">    );</span>
 <span class="line" id="L80">}</span>
 <span class="line" id="L81"></span>
-<span class="line" id="L82"><span class="tok-comment">/// name_and_value looks like [name]=[value]. If the value is omitted, it is set to 1.</span></span>
-<span class="line" id="L83"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">defineCMacroRaw</span>(self: *TranslateCStep, name_and_value: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L84">    self.c_macros.append(self.builder.dupe(name_and_value)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L85">}</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L88">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(TranslateCStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">    <span class="tok-kw">var</span> argv_list = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(self.builder.allocator);</span>
-<span class="line" id="L91">    <span class="tok-kw">try</span> argv_list.append(self.builder.zig_exe);</span>
-<span class="line" id="L92">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;translate-c&quot;</span>);</span>
-<span class="line" id="L93">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-lc&quot;</span>);</span>
-<span class="line" id="L94"></span>
-<span class="line" id="L95">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;--enable-cache&quot;</span>);</span>
-<span class="line" id="L96"></span>
-<span class="line" id="L97">    <span class="tok-kw">if</span> (!self.target.isNative()) {</span>
-<span class="line" id="L98">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-target&quot;</span>);</span>
-<span class="line" id="L99">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-kw">try</span> self.target.zigTriple(self.builder.allocator));</span>
-<span class="line" id="L100">    }</span>
-<span class="line" id="L101"></span>
-<span class="line" id="L102">    <span class="tok-kw">switch</span> (self.optimize) {</span>
-<span class="line" id="L103">        .Debug =&gt; {}, <span class="tok-comment">// Skip since it's the default.</span>
+<span class="line" id="L82"><span class="tok-comment">/// If the value is omitted, it is set to 1.</span></span>
+<span class="line" id="L83"><span class="tok-comment">/// `name` and `value` need not live longer than the function call.</span></span>
+<span class="line" id="L84"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">defineCMacro</span>(self: *TranslateCStep, name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L85">    <span class="tok-kw">const</span> macro = std.Build.constructCMacro(self.step.owner.allocator, name, value);</span>
+<span class="line" id="L86">    self.c_macros.append(macro) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L87">}</span>
+<span class="line" id="L88"></span>
+<span class="line" id="L89"><span class="tok-comment">/// name_and_value looks like [name]=[value]. If the value is omitted, it is set to 1.</span></span>
+<span class="line" id="L90"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">defineCMacroRaw</span>(self: *TranslateCStep, name_and_value: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L91">    self.c_macros.append(self.step.owner.dupe(name_and_value)) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L92">}</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step, prog_node: *std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L95">    <span class="tok-kw">const</span> b = step.owner;</span>
+<span class="line" id="L96">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(TranslateCStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L97"></span>
+<span class="line" id="L98">    <span class="tok-kw">var</span> argv_list = std.ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(b.allocator);</span>
+<span class="line" id="L99">    <span class="tok-kw">try</span> argv_list.append(b.zig_exe);</span>
+<span class="line" id="L100">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;translate-c&quot;</span>);</span>
+<span class="line" id="L101">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-lc&quot;</span>);</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;--enable-cache&quot;</span>);</span>
+<span class="line" id="L104">    <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;--listen=-&quot;</span>);</span>
+<span class="line" id="L105"></span>
+<span class="line" id="L106">    <span class="tok-kw">if</span> (!self.target.isNative()) {</span>
+<span class="line" id="L107">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-target&quot;</span>);</span>
+<span class="line" id="L108">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-kw">try</span> self.target.zigTriple(b.allocator));</span>
+<span class="line" id="L109">    }</span>
+<span class="line" id="L110"></span>
+<span class="line" id="L111">    <span class="tok-kw">switch</span> (self.optimize) {</span>
+<span class="line" id="L112">        .Debug =&gt; {}, <span class="tok-comment">// Skip since it's the default.</span>
 </span>
-<span class="line" id="L104">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> argv_list.append(self.builder.fmt(<span class="tok-str">&quot;-O{s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(self.optimize)})),</span>
-<span class="line" id="L105">    }</span>
-<span class="line" id="L106"></span>
-<span class="line" id="L107">    <span class="tok-kw">for</span> (self.include_dirs.items) |include_dir| {</span>
-<span class="line" id="L108">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-I&quot;</span>);</span>
-<span class="line" id="L109">        <span class="tok-kw">try</span> argv_list.append(include_dir);</span>
-<span class="line" id="L110">    }</span>
-<span class="line" id="L111"></span>
-<span class="line" id="L112">    <span class="tok-kw">for</span> (self.c_macros.items) |c_macro| {</span>
-<span class="line" id="L113">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-D&quot;</span>);</span>
-<span class="line" id="L114">        <span class="tok-kw">try</span> argv_list.append(c_macro);</span>
-<span class="line" id="L115">    }</span>
-<span class="line" id="L116"></span>
-<span class="line" id="L117">    <span class="tok-kw">try</span> argv_list.append(self.source.getPath(self.builder));</span>
-<span class="line" id="L118"></span>
-<span class="line" id="L119">    <span class="tok-kw">const</span> output_path_nl = <span class="tok-kw">try</span> self.builder.execFromStep(argv_list.items, &amp;self.step);</span>
-<span class="line" id="L120">    <span class="tok-kw">const</span> output_path = mem.trimRight(<span class="tok-type">u8</span>, output_path_nl, <span class="tok-str">&quot;\r\n&quot;</span>);</span>
-<span class="line" id="L121"></span>
-<span class="line" id="L122">    self.out_basename = fs.path.basename(output_path);</span>
-<span class="line" id="L123">    <span class="tok-kw">const</span> output_dir = fs.path.dirname(output_path).?;</span>
-<span class="line" id="L124"></span>
-<span class="line" id="L125">    self.output_file.path = <span class="tok-kw">try</span> fs.path.join(</span>
-<span class="line" id="L126">        self.builder.allocator,</span>
-<span class="line" id="L127">        &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ output_dir, self.out_basename },</span>
-<span class="line" id="L128">    );</span>
-<span class="line" id="L129">}</span>
-<span class="line" id="L130"></span>
+<span class="line" id="L113">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> argv_list.append(b.fmt(<span class="tok-str">&quot;-O{s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(self.optimize)})),</span>
+<span class="line" id="L114">    }</span>
+<span class="line" id="L115"></span>
+<span class="line" id="L116">    <span class="tok-kw">for</span> (self.include_dirs.items) |include_dir| {</span>
+<span class="line" id="L117">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-I&quot;</span>);</span>
+<span class="line" id="L118">        <span class="tok-kw">try</span> argv_list.append(include_dir);</span>
+<span class="line" id="L119">    }</span>
+<span class="line" id="L120"></span>
+<span class="line" id="L121">    <span class="tok-kw">for</span> (self.c_macros.items) |c_macro| {</span>
+<span class="line" id="L122">        <span class="tok-kw">try</span> argv_list.append(<span class="tok-str">&quot;-D&quot;</span>);</span>
+<span class="line" id="L123">        <span class="tok-kw">try</span> argv_list.append(c_macro);</span>
+<span class="line" id="L124">    }</span>
+<span class="line" id="L125"></span>
+<span class="line" id="L126">    <span class="tok-kw">try</span> argv_list.append(self.source.getPath(b));</span>
+<span class="line" id="L127"></span>
+<span class="line" id="L128">    <span class="tok-kw">const</span> output_path = <span class="tok-kw">try</span> step.evalZigProcess(argv_list.items, prog_node);</span>
+<span class="line" id="L129"></span>
+<span class="line" id="L130">    self.out_basename = fs.path.basename(output_path);</span>
+<span class="line" id="L131">    <span class="tok-kw">const</span> output_dir = fs.path.dirname(output_path).?;</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">    self.output_file.path = <span class="tok-kw">try</span> fs.path.join(</span>
+<span class="line" id="L134">        b.allocator,</span>
+<span class="line" id="L135">        &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ output_dir, self.out_basename },</span>
+<span class="line" id="L136">    );</span>
+<span class="line" id="L137">}</span>
+<span class="line" id="L138"></span>
 </code></pre></body>
 </html>

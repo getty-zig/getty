@@ -116,41 +116,58 @@
 <span class="line" id="L3"><span class="tok-kw">const</span> FileSource = std.Build.FileSource;</span>
 <span class="line" id="L4"><span class="tok-kw">const</span> InstallDir = std.Build.InstallDir;</span>
 <span class="line" id="L5"><span class="tok-kw">const</span> InstallFileStep = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .install_file;</span>
-<span class="line" id="L8"></span>
-<span class="line" id="L9">step: Step,</span>
-<span class="line" id="L10">builder: *std.Build,</span>
+<span class="line" id="L6"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .install_file;</span>
+<span class="line" id="L9"></span>
+<span class="line" id="L10">step: Step,</span>
 <span class="line" id="L11">source: FileSource,</span>
 <span class="line" id="L12">dir: InstallDir,</span>
 <span class="line" id="L13">dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L14"><span class="tok-comment">/// This is used by the build system when a file being installed comes from one</span></span>
 <span class="line" id="L15"><span class="tok-comment">/// package but is being installed by another.</span></span>
-<span class="line" id="L16">override_source_builder: ?*std.Build = <span class="tok-null">null</span>,</span>
+<span class="line" id="L16">dest_builder: *std.Build,</span>
 <span class="line" id="L17"></span>
-<span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(</span>
-<span class="line" id="L19">    builder: *std.Build,</span>
+<span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(</span>
+<span class="line" id="L19">    owner: *std.Build,</span>
 <span class="line" id="L20">    source: FileSource,</span>
 <span class="line" id="L21">    dir: InstallDir,</span>
 <span class="line" id="L22">    dest_rel_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L23">) InstallFileStep {</span>
-<span class="line" id="L24">    builder.pushInstalledFile(dir, dest_rel_path);</span>
-<span class="line" id="L25">    <span class="tok-kw">return</span> InstallFileStep{</span>
-<span class="line" id="L26">        .builder = builder,</span>
-<span class="line" id="L27">        .step = Step.init(.install_file, builder.fmt(<span class="tok-str">&quot;install {s} to {s}&quot;</span>, .{ source.getDisplayName(), dest_rel_path }), builder.allocator, make),</span>
-<span class="line" id="L28">        .source = source.dupe(builder),</span>
-<span class="line" id="L29">        .dir = dir.dupe(builder),</span>
-<span class="line" id="L30">        .dest_rel_path = builder.dupePath(dest_rel_path),</span>
-<span class="line" id="L31">    };</span>
-<span class="line" id="L32">}</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L35">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(InstallFileStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L36">    <span class="tok-kw">const</span> src_builder = self.override_source_builder <span class="tok-kw">orelse</span> self.builder;</span>
-<span class="line" id="L37">    <span class="tok-kw">const</span> full_src_path = self.source.getPath(src_builder);</span>
-<span class="line" id="L38">    <span class="tok-kw">const</span> full_dest_path = self.builder.getInstallPath(self.dir, self.dest_rel_path);</span>
-<span class="line" id="L39">    <span class="tok-kw">try</span> self.builder.updateFile(full_src_path, full_dest_path);</span>
-<span class="line" id="L40">}</span>
-<span class="line" id="L41"></span>
+<span class="line" id="L23">) *InstallFileStep {</span>
+<span class="line" id="L24">    assert(dest_rel_path.len != <span class="tok-number">0</span>);</span>
+<span class="line" id="L25">    owner.pushInstalledFile(dir, dest_rel_path);</span>
+<span class="line" id="L26">    <span class="tok-kw">const</span> self = owner.allocator.create(InstallFileStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L27">    self.* = .{</span>
+<span class="line" id="L28">        .step = Step.init(.{</span>
+<span class="line" id="L29">            .id = base_id,</span>
+<span class="line" id="L30">            .name = owner.fmt(<span class="tok-str">&quot;install {s} to {s}&quot;</span>, .{ source.getDisplayName(), dest_rel_path }),</span>
+<span class="line" id="L31">            .owner = owner,</span>
+<span class="line" id="L32">            .makeFn = make,</span>
+<span class="line" id="L33">        }),</span>
+<span class="line" id="L34">        .source = source.dupe(owner),</span>
+<span class="line" id="L35">        .dir = dir.dupe(owner),</span>
+<span class="line" id="L36">        .dest_rel_path = owner.dupePath(dest_rel_path),</span>
+<span class="line" id="L37">        .dest_builder = owner,</span>
+<span class="line" id="L38">    };</span>
+<span class="line" id="L39">    source.addStepDependencies(&amp;self.step);</span>
+<span class="line" id="L40">    <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L41">}</span>
+<span class="line" id="L42"></span>
+<span class="line" id="L43"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step, prog_node: *std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L44">    _ = prog_node;</span>
+<span class="line" id="L45">    <span class="tok-kw">const</span> src_builder = step.owner;</span>
+<span class="line" id="L46">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(InstallFileStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L47">    <span class="tok-kw">const</span> dest_builder = self.dest_builder;</span>
+<span class="line" id="L48">    <span class="tok-kw">const</span> full_src_path = self.source.getPath2(src_builder, step);</span>
+<span class="line" id="L49">    <span class="tok-kw">const</span> full_dest_path = dest_builder.getInstallPath(self.dir, self.dest_rel_path);</span>
+<span class="line" id="L50">    <span class="tok-kw">const</span> cwd = std.fs.cwd();</span>
+<span class="line" id="L51">    <span class="tok-kw">const</span> prev = std.fs.Dir.updateFile(cwd, full_src_path, cwd, full_dest_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L52">        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L53">            full_src_path, full_dest_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L54">        });</span>
+<span class="line" id="L55">    };</span>
+<span class="line" id="L56">    step.result_cached = prev == .fresh;</span>
+<span class="line" id="L57">}</span>
+<span class="line" id="L58"></span>
 </code></pre></body>
 </html>

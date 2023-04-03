@@ -228,209 +228,212 @@
 <span class="line" id="L107">    tryParseDigits(MantissaT, stream, &amp;mantissa, info.base);</span>
 <span class="line" id="L108">    <span class="tok-kw">var</span> int_end = stream.offsetTrue();</span>
 <span class="line" id="L109">    <span class="tok-kw">var</span> n_digits = <span class="tok-builtin">@intCast</span>(<span class="tok-type">isize</span>, stream.offsetTrue());</span>
-<span class="line" id="L110"></span>
-<span class="line" id="L111">    <span class="tok-comment">// handle dot with the following digits</span>
+<span class="line" id="L110">    <span class="tok-comment">// the base being 16 implies a 0x prefix, which shouldn't be included in the digit count</span>
 </span>
-<span class="line" id="L112">    <span class="tok-kw">var</span> exponent: <span class="tok-type">i64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L113">    <span class="tok-kw">if</span> (stream.firstIs(<span class="tok-str">'.'</span>)) {</span>
-<span class="line" id="L114">        stream.advance(<span class="tok-number">1</span>);</span>
-<span class="line" id="L115">        <span class="tok-kw">const</span> marker = stream.offsetTrue();</span>
-<span class="line" id="L116">        tryParseDigits(MantissaT, stream, &amp;mantissa, info.base);</span>
-<span class="line" id="L117">        <span class="tok-kw">const</span> n_after_dot = stream.offsetTrue() - marker;</span>
-<span class="line" id="L118">        exponent = -<span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, n_after_dot);</span>
-<span class="line" id="L119">        n_digits += <span class="tok-builtin">@intCast</span>(<span class="tok-type">isize</span>, n_after_dot);</span>
-<span class="line" id="L120">    }</span>
-<span class="line" id="L121"></span>
-<span class="line" id="L122">    <span class="tok-comment">// adjust required shift to offset mantissa for base-16 (2^4)</span>
+<span class="line" id="L111">    <span class="tok-kw">if</span> (info.base == <span class="tok-number">16</span>) n_digits -= <span class="tok-number">2</span>;</span>
+<span class="line" id="L112"></span>
+<span class="line" id="L113">    <span class="tok-comment">// handle dot with the following digits</span>
 </span>
-<span class="line" id="L123">    <span class="tok-kw">if</span> (info.base == <span class="tok-number">16</span>) {</span>
-<span class="line" id="L124">        exponent *= <span class="tok-number">4</span>;</span>
-<span class="line" id="L125">    }</span>
-<span class="line" id="L126"></span>
-<span class="line" id="L127">    <span class="tok-kw">if</span> (n_digits == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L128">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L129">    }</span>
-<span class="line" id="L130"></span>
-<span class="line" id="L131">    <span class="tok-comment">// handle scientific format</span>
+<span class="line" id="L114">    <span class="tok-kw">var</span> exponent: <span class="tok-type">i64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L115">    <span class="tok-kw">if</span> (stream.firstIs(<span class="tok-str">'.'</span>)) {</span>
+<span class="line" id="L116">        stream.advance(<span class="tok-number">1</span>);</span>
+<span class="line" id="L117">        <span class="tok-kw">const</span> marker = stream.offsetTrue();</span>
+<span class="line" id="L118">        tryParseDigits(MantissaT, stream, &amp;mantissa, info.base);</span>
+<span class="line" id="L119">        <span class="tok-kw">const</span> n_after_dot = stream.offsetTrue() - marker;</span>
+<span class="line" id="L120">        exponent = -<span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, n_after_dot);</span>
+<span class="line" id="L121">        n_digits += <span class="tok-builtin">@intCast</span>(<span class="tok-type">isize</span>, n_after_dot);</span>
+<span class="line" id="L122">    }</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124">    <span class="tok-comment">// adjust required shift to offset mantissa for base-16 (2^4)</span>
 </span>
-<span class="line" id="L132">    <span class="tok-kw">var</span> exp_number: <span class="tok-type">i64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L133">    <span class="tok-kw">if</span> (stream.firstIsLower(info.exp_char_lower)) {</span>
-<span class="line" id="L134">        stream.advance(<span class="tok-number">1</span>);</span>
-<span class="line" id="L135">        exp_number = parseScientific(stream) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L136">        exponent += exp_number;</span>
-<span class="line" id="L137">    }</span>
-<span class="line" id="L138"></span>
-<span class="line" id="L139">    <span class="tok-kw">const</span> len = stream.offset; <span class="tok-comment">// length must be complete parsed length</span>
+<span class="line" id="L125">    <span class="tok-kw">if</span> (info.base == <span class="tok-number">16</span>) {</span>
+<span class="line" id="L126">        exponent *= <span class="tok-number">4</span>;</span>
+<span class="line" id="L127">    }</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">    <span class="tok-kw">if</span> (n_digits == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L130">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L131">    }</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">    <span class="tok-comment">// handle scientific format</span>
 </span>
-<span class="line" id="L140">    n.* = len;</span>
-<span class="line" id="L141"></span>
-<span class="line" id="L142">    <span class="tok-kw">if</span> (stream.underscore_count &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> !validUnderscores(stream.slice, info.base)) {</span>
-<span class="line" id="L143">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L144">    }</span>
-<span class="line" id="L145"></span>
-<span class="line" id="L146">    <span class="tok-comment">// common case with not many digits</span>
+<span class="line" id="L134">    <span class="tok-kw">var</span> exp_number: <span class="tok-type">i64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L135">    <span class="tok-kw">if</span> (stream.firstIsLower(info.exp_char_lower)) {</span>
+<span class="line" id="L136">        stream.advance(<span class="tok-number">1</span>);</span>
+<span class="line" id="L137">        exp_number = parseScientific(stream) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L138">        exponent += exp_number;</span>
+<span class="line" id="L139">    }</span>
+<span class="line" id="L140"></span>
+<span class="line" id="L141">    <span class="tok-kw">const</span> len = stream.offset; <span class="tok-comment">// length must be complete parsed length</span>
 </span>
-<span class="line" id="L147">    <span class="tok-kw">if</span> (n_digits &lt;= info.max_mantissa_digits) {</span>
-<span class="line" id="L148">        <span class="tok-kw">return</span> Number(T){</span>
-<span class="line" id="L149">            .exponent = exponent,</span>
-<span class="line" id="L150">            .mantissa = mantissa,</span>
-<span class="line" id="L151">            .negative = negative,</span>
-<span class="line" id="L152">            .many_digits = <span class="tok-null">false</span>,</span>
-<span class="line" id="L153">            .hex = info.base == <span class="tok-number">16</span>,</span>
-<span class="line" id="L154">        };</span>
-<span class="line" id="L155">    }</span>
-<span class="line" id="L156"></span>
-<span class="line" id="L157">    n_digits -= info.max_mantissa_digits;</span>
-<span class="line" id="L158">    <span class="tok-kw">var</span> many_digits = <span class="tok-null">false</span>;</span>
-<span class="line" id="L159">    stream.reset(); <span class="tok-comment">// re-parse from beginning</span>
+<span class="line" id="L142">    n.* = len;</span>
+<span class="line" id="L143"></span>
+<span class="line" id="L144">    <span class="tok-kw">if</span> (stream.underscore_count &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> !validUnderscores(stream.slice, info.base)) {</span>
+<span class="line" id="L145">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L146">    }</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">    <span class="tok-comment">// common case with not many digits</span>
 </span>
-<span class="line" id="L160">    <span class="tok-kw">while</span> (stream.firstIs3(<span class="tok-str">'0'</span>, <span class="tok-str">'.'</span>, <span class="tok-str">'_'</span>)) {</span>
-<span class="line" id="L161">        <span class="tok-comment">// '0' = '.' + 2</span>
+<span class="line" id="L149">    <span class="tok-kw">if</span> (n_digits &lt;= info.max_mantissa_digits) {</span>
+<span class="line" id="L150">        <span class="tok-kw">return</span> Number(T){</span>
+<span class="line" id="L151">            .exponent = exponent,</span>
+<span class="line" id="L152">            .mantissa = mantissa,</span>
+<span class="line" id="L153">            .negative = negative,</span>
+<span class="line" id="L154">            .many_digits = <span class="tok-null">false</span>,</span>
+<span class="line" id="L155">            .hex = info.base == <span class="tok-number">16</span>,</span>
+<span class="line" id="L156">        };</span>
+<span class="line" id="L157">    }</span>
+<span class="line" id="L158"></span>
+<span class="line" id="L159">    n_digits -= info.max_mantissa_digits;</span>
+<span class="line" id="L160">    <span class="tok-kw">var</span> many_digits = <span class="tok-null">false</span>;</span>
+<span class="line" id="L161">    stream.reset(); <span class="tok-comment">// re-parse from beginning</span>
 </span>
-<span class="line" id="L162">        <span class="tok-kw">const</span> next = stream.firstUnchecked();</span>
-<span class="line" id="L163">        <span class="tok-kw">if</span> (next != <span class="tok-str">'_'</span>) {</span>
-<span class="line" id="L164">            n_digits -= <span class="tok-builtin">@intCast</span>(<span class="tok-type">isize</span>, next -| (<span class="tok-str">'0'</span> - <span class="tok-number">1</span>));</span>
-<span class="line" id="L165">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L166">            stream.underscore_count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L167">        }</span>
-<span class="line" id="L168">        stream.advance(<span class="tok-number">1</span>);</span>
-<span class="line" id="L169">    }</span>
-<span class="line" id="L170">    <span class="tok-kw">if</span> (n_digits &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L171">        <span class="tok-comment">// at this point we have more than max_mantissa_digits significant digits, let's try again</span>
+<span class="line" id="L162">    <span class="tok-kw">while</span> (stream.firstIs3(<span class="tok-str">'0'</span>, <span class="tok-str">'.'</span>, <span class="tok-str">'_'</span>)) {</span>
+<span class="line" id="L163">        <span class="tok-comment">// '0' = '.' + 2</span>
 </span>
-<span class="line" id="L172">        many_digits = <span class="tok-null">true</span>;</span>
-<span class="line" id="L173">        mantissa = <span class="tok-number">0</span>;</span>
-<span class="line" id="L174">        stream.reset();</span>
-<span class="line" id="L175">        tryParseNDigits(MantissaT, stream, &amp;mantissa, info.base, info.max_mantissa_digits);</span>
-<span class="line" id="L176"></span>
-<span class="line" id="L177">        exponent = blk: {</span>
-<span class="line" id="L178">            <span class="tok-kw">if</span> (mantissa &gt;= min_n_digit_int(MantissaT, info.max_mantissa_digits)) {</span>
-<span class="line" id="L179">                <span class="tok-comment">// big int</span>
+<span class="line" id="L164">        <span class="tok-kw">const</span> next = stream.firstUnchecked();</span>
+<span class="line" id="L165">        <span class="tok-kw">if</span> (next != <span class="tok-str">'_'</span>) {</span>
+<span class="line" id="L166">            n_digits -= <span class="tok-builtin">@intCast</span>(<span class="tok-type">isize</span>, next -| (<span class="tok-str">'0'</span> - <span class="tok-number">1</span>));</span>
+<span class="line" id="L167">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L168">            stream.underscore_count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L169">        }</span>
+<span class="line" id="L170">        stream.advance(<span class="tok-number">1</span>);</span>
+<span class="line" id="L171">    }</span>
+<span class="line" id="L172">    <span class="tok-kw">if</span> (n_digits &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L173">        <span class="tok-comment">// at this point we have more than max_mantissa_digits significant digits, let's try again</span>
 </span>
-<span class="line" id="L180">                <span class="tok-kw">break</span> :blk <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, int_end) - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, stream.offsetTrue());</span>
-<span class="line" id="L181">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L182">                <span class="tok-comment">// the next byte must be present and be '.'</span>
+<span class="line" id="L174">        many_digits = <span class="tok-null">true</span>;</span>
+<span class="line" id="L175">        mantissa = <span class="tok-number">0</span>;</span>
+<span class="line" id="L176">        stream.reset();</span>
+<span class="line" id="L177">        tryParseNDigits(MantissaT, stream, &amp;mantissa, info.base, info.max_mantissa_digits);</span>
+<span class="line" id="L178"></span>
+<span class="line" id="L179">        exponent = blk: {</span>
+<span class="line" id="L180">            <span class="tok-kw">if</span> (mantissa &gt;= min_n_digit_int(MantissaT, info.max_mantissa_digits)) {</span>
+<span class="line" id="L181">                <span class="tok-comment">// big int</span>
 </span>
-<span class="line" id="L183">                <span class="tok-comment">// We know this is true because we had more than 19</span>
+<span class="line" id="L182">                <span class="tok-kw">break</span> :blk <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, int_end) - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, stream.offsetTrue());</span>
+<span class="line" id="L183">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L184">                <span class="tok-comment">// the next byte must be present and be '.'</span>
 </span>
-<span class="line" id="L184">                <span class="tok-comment">// digits previously, so we overflowed a 64-bit integer,</span>
+<span class="line" id="L185">                <span class="tok-comment">// We know this is true because we had more than 19</span>
 </span>
-<span class="line" id="L185">                <span class="tok-comment">// but parsing only the integral digits produced less</span>
+<span class="line" id="L186">                <span class="tok-comment">// digits previously, so we overflowed a 64-bit integer,</span>
 </span>
-<span class="line" id="L186">                <span class="tok-comment">// than 19 digits. That means we must have a decimal</span>
+<span class="line" id="L187">                <span class="tok-comment">// but parsing only the integral digits produced less</span>
 </span>
-<span class="line" id="L187">                <span class="tok-comment">// point, and at least 1 fractional digit.</span>
+<span class="line" id="L188">                <span class="tok-comment">// than 19 digits. That means we must have a decimal</span>
 </span>
-<span class="line" id="L188">                stream.advance(<span class="tok-number">1</span>);</span>
-<span class="line" id="L189">                <span class="tok-kw">var</span> marker = stream.offsetTrue();</span>
-<span class="line" id="L190">                tryParseNDigits(MantissaT, stream, &amp;mantissa, info.base, info.max_mantissa_digits);</span>
-<span class="line" id="L191">                <span class="tok-kw">break</span> :blk <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, marker) - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, stream.offsetTrue());</span>
-<span class="line" id="L192">            }</span>
-<span class="line" id="L193">        };</span>
-<span class="line" id="L194">        <span class="tok-comment">// add back the explicit part</span>
+<span class="line" id="L189">                <span class="tok-comment">// point, and at least 1 fractional digit.</span>
 </span>
-<span class="line" id="L195">        exponent += exp_number;</span>
-<span class="line" id="L196">    }</span>
-<span class="line" id="L197"></span>
-<span class="line" id="L198">    <span class="tok-kw">return</span> Number(T){</span>
-<span class="line" id="L199">        .exponent = exponent,</span>
-<span class="line" id="L200">        .mantissa = mantissa,</span>
-<span class="line" id="L201">        .negative = negative,</span>
-<span class="line" id="L202">        .many_digits = many_digits,</span>
-<span class="line" id="L203">        .hex = info.base == <span class="tok-number">16</span>,</span>
-<span class="line" id="L204">    };</span>
-<span class="line" id="L205">}</span>
-<span class="line" id="L206"></span>
-<span class="line" id="L207"><span class="tok-comment">/// Parse a partial, non-special floating point number.</span></span>
-<span class="line" id="L208"><span class="tok-comment">///</span></span>
-<span class="line" id="L209"><span class="tok-comment">/// This creates a representation of the float as the</span></span>
-<span class="line" id="L210"><span class="tok-comment">/// significant digits and the decimal exponent.</span></span>
-<span class="line" id="L211"><span class="tok-kw">fn</span> <span class="tok-fn">parsePartialNumber</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>, n: *<span class="tok-type">usize</span>) ?Number(T) {</span>
-<span class="line" id="L212">    std.debug.assert(s.len != <span class="tok-number">0</span>);</span>
-<span class="line" id="L213">    <span class="tok-kw">var</span> stream = FloatStream.init(s);</span>
-<span class="line" id="L214">    <span class="tok-kw">const</span> MantissaT = common.mantissaType(T);</span>
-<span class="line" id="L215"></span>
-<span class="line" id="L216">    <span class="tok-kw">if</span> (stream.hasLen(<span class="tok-number">2</span>) <span class="tok-kw">and</span> stream.atUnchecked(<span class="tok-number">0</span>) == <span class="tok-str">'0'</span> <span class="tok-kw">and</span> std.ascii.toLower(stream.atUnchecked(<span class="tok-number">1</span>)) == <span class="tok-str">'x'</span>) {</span>
-<span class="line" id="L217">        stream.advance(<span class="tok-number">2</span>);</span>
-<span class="line" id="L218">        <span class="tok-kw">return</span> parsePartialNumberBase(T, &amp;stream, negative, n, .{</span>
-<span class="line" id="L219">            .base = <span class="tok-number">16</span>,</span>
-<span class="line" id="L220">            .max_mantissa_digits = <span class="tok-kw">if</span> (MantissaT == <span class="tok-type">u64</span>) <span class="tok-number">16</span> <span class="tok-kw">else</span> <span class="tok-number">32</span>,</span>
-<span class="line" id="L221">            .exp_char_lower = <span class="tok-str">'p'</span>,</span>
-<span class="line" id="L222">        });</span>
-<span class="line" id="L223">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L224">        <span class="tok-kw">return</span> parsePartialNumberBase(T, &amp;stream, negative, n, .{</span>
-<span class="line" id="L225">            .base = <span class="tok-number">10</span>,</span>
-<span class="line" id="L226">            .max_mantissa_digits = <span class="tok-kw">if</span> (MantissaT == <span class="tok-type">u64</span>) <span class="tok-number">19</span> <span class="tok-kw">else</span> <span class="tok-number">38</span>,</span>
-<span class="line" id="L227">            .exp_char_lower = <span class="tok-str">'e'</span>,</span>
-<span class="line" id="L228">        });</span>
-<span class="line" id="L229">    }</span>
-<span class="line" id="L230">}</span>
-<span class="line" id="L231"></span>
-<span class="line" id="L232"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseNumber</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>) ?Number(T) {</span>
-<span class="line" id="L233">    <span class="tok-kw">var</span> consumed: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L234">    <span class="tok-kw">if</span> (parsePartialNumber(T, s, negative, &amp;consumed)) |number| {</span>
-<span class="line" id="L235">        <span class="tok-comment">// must consume entire float (no trailing data)</span>
+<span class="line" id="L190">                stream.advance(<span class="tok-number">1</span>);</span>
+<span class="line" id="L191">                <span class="tok-kw">var</span> marker = stream.offsetTrue();</span>
+<span class="line" id="L192">                tryParseNDigits(MantissaT, stream, &amp;mantissa, info.base, info.max_mantissa_digits);</span>
+<span class="line" id="L193">                <span class="tok-kw">break</span> :blk <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, marker) - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, stream.offsetTrue());</span>
+<span class="line" id="L194">            }</span>
+<span class="line" id="L195">        };</span>
+<span class="line" id="L196">        <span class="tok-comment">// add back the explicit part</span>
 </span>
-<span class="line" id="L236">        <span class="tok-kw">if</span> (s.len == consumed) {</span>
-<span class="line" id="L237">            <span class="tok-kw">return</span> number;</span>
-<span class="line" id="L238">        }</span>
-<span class="line" id="L239">    }</span>
-<span class="line" id="L240">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L241">}</span>
-<span class="line" id="L242"></span>
-<span class="line" id="L243"><span class="tok-kw">fn</span> <span class="tok-fn">parsePartialInfOrNan</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>, n: *<span class="tok-type">usize</span>) ?T {</span>
-<span class="line" id="L244">    <span class="tok-comment">// inf/infinity; infxxx should only consume inf.</span>
+<span class="line" id="L197">        exponent += exp_number;</span>
+<span class="line" id="L198">    }</span>
+<span class="line" id="L199"></span>
+<span class="line" id="L200">    <span class="tok-kw">return</span> Number(T){</span>
+<span class="line" id="L201">        .exponent = exponent,</span>
+<span class="line" id="L202">        .mantissa = mantissa,</span>
+<span class="line" id="L203">        .negative = negative,</span>
+<span class="line" id="L204">        .many_digits = many_digits,</span>
+<span class="line" id="L205">        .hex = info.base == <span class="tok-number">16</span>,</span>
+<span class="line" id="L206">    };</span>
+<span class="line" id="L207">}</span>
+<span class="line" id="L208"></span>
+<span class="line" id="L209"><span class="tok-comment">/// Parse a partial, non-special floating point number.</span></span>
+<span class="line" id="L210"><span class="tok-comment">///</span></span>
+<span class="line" id="L211"><span class="tok-comment">/// This creates a representation of the float as the</span></span>
+<span class="line" id="L212"><span class="tok-comment">/// significant digits and the decimal exponent.</span></span>
+<span class="line" id="L213"><span class="tok-kw">fn</span> <span class="tok-fn">parsePartialNumber</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>, n: *<span class="tok-type">usize</span>) ?Number(T) {</span>
+<span class="line" id="L214">    std.debug.assert(s.len != <span class="tok-number">0</span>);</span>
+<span class="line" id="L215">    <span class="tok-kw">var</span> stream = FloatStream.init(s);</span>
+<span class="line" id="L216">    <span class="tok-kw">const</span> MantissaT = common.mantissaType(T);</span>
+<span class="line" id="L217"></span>
+<span class="line" id="L218">    <span class="tok-kw">if</span> (stream.hasLen(<span class="tok-number">2</span>) <span class="tok-kw">and</span> stream.atUnchecked(<span class="tok-number">0</span>) == <span class="tok-str">'0'</span> <span class="tok-kw">and</span> std.ascii.toLower(stream.atUnchecked(<span class="tok-number">1</span>)) == <span class="tok-str">'x'</span>) {</span>
+<span class="line" id="L219">        stream.advance(<span class="tok-number">2</span>);</span>
+<span class="line" id="L220">        <span class="tok-kw">return</span> parsePartialNumberBase(T, &amp;stream, negative, n, .{</span>
+<span class="line" id="L221">            .base = <span class="tok-number">16</span>,</span>
+<span class="line" id="L222">            .max_mantissa_digits = <span class="tok-kw">if</span> (MantissaT == <span class="tok-type">u64</span>) <span class="tok-number">16</span> <span class="tok-kw">else</span> <span class="tok-number">32</span>,</span>
+<span class="line" id="L223">            .exp_char_lower = <span class="tok-str">'p'</span>,</span>
+<span class="line" id="L224">        });</span>
+<span class="line" id="L225">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L226">        <span class="tok-kw">return</span> parsePartialNumberBase(T, &amp;stream, negative, n, .{</span>
+<span class="line" id="L227">            .base = <span class="tok-number">10</span>,</span>
+<span class="line" id="L228">            .max_mantissa_digits = <span class="tok-kw">if</span> (MantissaT == <span class="tok-type">u64</span>) <span class="tok-number">19</span> <span class="tok-kw">else</span> <span class="tok-number">38</span>,</span>
+<span class="line" id="L229">            .exp_char_lower = <span class="tok-str">'e'</span>,</span>
+<span class="line" id="L230">        });</span>
+<span class="line" id="L231">    }</span>
+<span class="line" id="L232">}</span>
+<span class="line" id="L233"></span>
+<span class="line" id="L234"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseNumber</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>) ?Number(T) {</span>
+<span class="line" id="L235">    <span class="tok-kw">var</span> consumed: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L236">    <span class="tok-kw">if</span> (parsePartialNumber(T, s, negative, &amp;consumed)) |number| {</span>
+<span class="line" id="L237">        <span class="tok-comment">// must consume entire float (no trailing data)</span>
 </span>
-<span class="line" id="L245">    <span class="tok-kw">if</span> (std.ascii.startsWithIgnoreCase(s, <span class="tok-str">&quot;inf&quot;</span>)) {</span>
-<span class="line" id="L246">        n.* = <span class="tok-number">3</span>;</span>
-<span class="line" id="L247">        <span class="tok-kw">if</span> (std.ascii.startsWithIgnoreCase(s[<span class="tok-number">3</span>..], <span class="tok-str">&quot;inity&quot;</span>)) {</span>
-<span class="line" id="L248">            n.* = <span class="tok-number">8</span>;</span>
-<span class="line" id="L249">        }</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251">        <span class="tok-kw">return</span> <span class="tok-kw">if</span> (!negative) std.math.inf(T) <span class="tok-kw">else</span> -std.math.inf(T);</span>
-<span class="line" id="L252">    }</span>
-<span class="line" id="L253"></span>
-<span class="line" id="L254">    <span class="tok-kw">if</span> (std.ascii.startsWithIgnoreCase(s, <span class="tok-str">&quot;nan&quot;</span>)) {</span>
-<span class="line" id="L255">        n.* = <span class="tok-number">3</span>;</span>
-<span class="line" id="L256">        <span class="tok-kw">return</span> std.math.nan(T);</span>
-<span class="line" id="L257">    }</span>
-<span class="line" id="L258"></span>
-<span class="line" id="L259">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L260">}</span>
-<span class="line" id="L261"></span>
-<span class="line" id="L262"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseInfOrNan</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>) ?T {</span>
-<span class="line" id="L263">    <span class="tok-kw">var</span> consumed: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L264">    <span class="tok-kw">if</span> (parsePartialInfOrNan(T, s, negative, &amp;consumed)) |special| {</span>
-<span class="line" id="L265">        <span class="tok-kw">if</span> (s.len == consumed) {</span>
-<span class="line" id="L266">            <span class="tok-kw">return</span> special;</span>
-<span class="line" id="L267">        }</span>
-<span class="line" id="L268">    }</span>
-<span class="line" id="L269">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L270">}</span>
-<span class="line" id="L271"></span>
-<span class="line" id="L272"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validUnderscores</span>(s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> base: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L273">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L274">    <span class="tok-kw">while</span> (i &lt; s.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L275">        <span class="tok-kw">if</span> (s[i] == <span class="tok-str">'_'</span>) {</span>
-<span class="line" id="L276">            <span class="tok-comment">// underscore at start of end</span>
+<span class="line" id="L238">        <span class="tok-kw">if</span> (s.len == consumed) {</span>
+<span class="line" id="L239">            <span class="tok-kw">return</span> number;</span>
+<span class="line" id="L240">        }</span>
+<span class="line" id="L241">    }</span>
+<span class="line" id="L242">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L243">}</span>
+<span class="line" id="L244"></span>
+<span class="line" id="L245"><span class="tok-kw">fn</span> <span class="tok-fn">parsePartialInfOrNan</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>, n: *<span class="tok-type">usize</span>) ?T {</span>
+<span class="line" id="L246">    <span class="tok-comment">// inf/infinity; infxxx should only consume inf.</span>
 </span>
-<span class="line" id="L277">            <span class="tok-kw">if</span> (i == <span class="tok-number">0</span> <span class="tok-kw">or</span> i + <span class="tok-number">1</span> == s.len) {</span>
-<span class="line" id="L278">                <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L279">            }</span>
-<span class="line" id="L280">            <span class="tok-comment">// consecutive underscores</span>
+<span class="line" id="L247">    <span class="tok-kw">if</span> (std.ascii.startsWithIgnoreCase(s, <span class="tok-str">&quot;inf&quot;</span>)) {</span>
+<span class="line" id="L248">        n.* = <span class="tok-number">3</span>;</span>
+<span class="line" id="L249">        <span class="tok-kw">if</span> (std.ascii.startsWithIgnoreCase(s[<span class="tok-number">3</span>..], <span class="tok-str">&quot;inity&quot;</span>)) {</span>
+<span class="line" id="L250">            n.* = <span class="tok-number">8</span>;</span>
+<span class="line" id="L251">        }</span>
+<span class="line" id="L252"></span>
+<span class="line" id="L253">        <span class="tok-kw">return</span> <span class="tok-kw">if</span> (!negative) std.math.inf(T) <span class="tok-kw">else</span> -std.math.inf(T);</span>
+<span class="line" id="L254">    }</span>
+<span class="line" id="L255"></span>
+<span class="line" id="L256">    <span class="tok-kw">if</span> (std.ascii.startsWithIgnoreCase(s, <span class="tok-str">&quot;nan&quot;</span>)) {</span>
+<span class="line" id="L257">        n.* = <span class="tok-number">3</span>;</span>
+<span class="line" id="L258">        <span class="tok-kw">return</span> std.math.nan(T);</span>
+<span class="line" id="L259">    }</span>
+<span class="line" id="L260"></span>
+<span class="line" id="L261">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L262">}</span>
+<span class="line" id="L263"></span>
+<span class="line" id="L264"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseInfOrNan</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, negative: <span class="tok-type">bool</span>) ?T {</span>
+<span class="line" id="L265">    <span class="tok-kw">var</span> consumed: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L266">    <span class="tok-kw">if</span> (parsePartialInfOrNan(T, s, negative, &amp;consumed)) |special| {</span>
+<span class="line" id="L267">        <span class="tok-kw">if</span> (s.len == consumed) {</span>
+<span class="line" id="L268">            <span class="tok-kw">return</span> special;</span>
+<span class="line" id="L269">        }</span>
+<span class="line" id="L270">    }</span>
+<span class="line" id="L271">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L272">}</span>
+<span class="line" id="L273"></span>
+<span class="line" id="L274"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">validUnderscores</span>(s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> base: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L275">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L276">    <span class="tok-kw">while</span> (i &lt; s.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L277">        <span class="tok-kw">if</span> (s[i] == <span class="tok-str">'_'</span>) {</span>
+<span class="line" id="L278">            <span class="tok-comment">// underscore at start of end</span>
 </span>
-<span class="line" id="L281">            <span class="tok-kw">if</span> (!common.isDigit(s[i - <span class="tok-number">1</span>], base) <span class="tok-kw">or</span> !common.isDigit(s[i + <span class="tok-number">1</span>], base)) {</span>
-<span class="line" id="L282">                <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L283">            }</span>
-<span class="line" id="L284"></span>
-<span class="line" id="L285">            <span class="tok-comment">// next is guaranteed a digit, skip an extra</span>
+<span class="line" id="L279">            <span class="tok-kw">if</span> (i == <span class="tok-number">0</span> <span class="tok-kw">or</span> i + <span class="tok-number">1</span> == s.len) {</span>
+<span class="line" id="L280">                <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L281">            }</span>
+<span class="line" id="L282">            <span class="tok-comment">// consecutive underscores</span>
 </span>
-<span class="line" id="L286">            i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L287">        }</span>
-<span class="line" id="L288">    }</span>
-<span class="line" id="L289"></span>
-<span class="line" id="L290">    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L291">}</span>
-<span class="line" id="L292"></span>
+<span class="line" id="L283">            <span class="tok-kw">if</span> (!common.isDigit(s[i - <span class="tok-number">1</span>], base) <span class="tok-kw">or</span> !common.isDigit(s[i + <span class="tok-number">1</span>], base)) {</span>
+<span class="line" id="L284">                <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L285">            }</span>
+<span class="line" id="L286"></span>
+<span class="line" id="L287">            <span class="tok-comment">// next is guaranteed a digit, skip an extra</span>
+</span>
+<span class="line" id="L288">            i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L289">        }</span>
+<span class="line" id="L290">    }</span>
+<span class="line" id="L291"></span>
+<span class="line" id="L292">    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L293">}</span>
+<span class="line" id="L294"></span>
 </code></pre></body>
 </html>

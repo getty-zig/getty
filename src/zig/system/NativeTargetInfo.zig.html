@@ -1329,41 +1329,48 @@
 <span class="line" id="L1090">    <span class="tok-kw">switch</span> (candidate.target.os.tag) {</span>
 <span class="line" id="L1091">        .windows =&gt; {</span>
 <span class="line" id="L1092">            <span class="tok-kw">if</span> (options.allow_wine) {</span>
-<span class="line" id="L1093">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
-<span class="line" id="L1094">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine&quot;</span> },</span>
-<span class="line" id="L1095">                    <span class="tok-number">64</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine64&quot;</span> },</span>
-<span class="line" id="L1096">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1093">                <span class="tok-comment">// x86_64 wine does not support emulating aarch64-windows and</span>
+</span>
+<span class="line" id="L1094">                <span class="tok-comment">// vice versa.</span>
+</span>
+<span class="line" id="L1095">                <span class="tok-kw">if</span> (candidate.target.cpu.arch != builtin.cpu.arch) {</span>
+<span class="line" id="L1096">                    <span class="tok-kw">return</span> bad_result;</span>
 <span class="line" id="L1097">                }</span>
-<span class="line" id="L1098">            }</span>
-<span class="line" id="L1099">            <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1100">        },</span>
-<span class="line" id="L1101">        .wasi =&gt; {</span>
-<span class="line" id="L1102">            <span class="tok-kw">if</span> (options.allow_wasmtime) {</span>
-<span class="line" id="L1103">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
-<span class="line" id="L1104">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wasmtime = <span class="tok-str">&quot;wasmtime&quot;</span> },</span>
-<span class="line" id="L1105">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1106">                }</span>
-<span class="line" id="L1107">            }</span>
-<span class="line" id="L1108">            <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1109">        },</span>
-<span class="line" id="L1110">        .macos =&gt; {</span>
-<span class="line" id="L1111">            <span class="tok-kw">if</span> (options.allow_darling) {</span>
-<span class="line" id="L1112">                <span class="tok-comment">// This check can be loosened once darling adds a QEMU-based emulation</span>
+<span class="line" id="L1098">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
+<span class="line" id="L1099">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine&quot;</span> },</span>
+<span class="line" id="L1100">                    <span class="tok-number">64</span> =&gt; <span class="tok-kw">return</span> Executor{ .wine = <span class="tok-str">&quot;wine64&quot;</span> },</span>
+<span class="line" id="L1101">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1102">                }</span>
+<span class="line" id="L1103">            }</span>
+<span class="line" id="L1104">            <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1105">        },</span>
+<span class="line" id="L1106">        .wasi =&gt; {</span>
+<span class="line" id="L1107">            <span class="tok-kw">if</span> (options.allow_wasmtime) {</span>
+<span class="line" id="L1108">                <span class="tok-kw">switch</span> (candidate.target.cpu.arch.ptrBitWidth()) {</span>
+<span class="line" id="L1109">                    <span class="tok-number">32</span> =&gt; <span class="tok-kw">return</span> Executor{ .wasmtime = <span class="tok-str">&quot;wasmtime&quot;</span> },</span>
+<span class="line" id="L1110">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1111">                }</span>
+<span class="line" id="L1112">            }</span>
+<span class="line" id="L1113">            <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1114">        },</span>
+<span class="line" id="L1115">        .macos =&gt; {</span>
+<span class="line" id="L1116">            <span class="tok-kw">if</span> (options.allow_darling) {</span>
+<span class="line" id="L1117">                <span class="tok-comment">// This check can be loosened once darling adds a QEMU-based emulation</span>
 </span>
-<span class="line" id="L1113">                <span class="tok-comment">// layer for non-host architectures:</span>
+<span class="line" id="L1118">                <span class="tok-comment">// layer for non-host architectures:</span>
 </span>
-<span class="line" id="L1114">                <span class="tok-comment">// https://github.com/darlinghq/darling/issues/863</span>
+<span class="line" id="L1119">                <span class="tok-comment">// https://github.com/darlinghq/darling/issues/863</span>
 </span>
-<span class="line" id="L1115">                <span class="tok-kw">if</span> (candidate.target.cpu.arch != builtin.cpu.arch) {</span>
-<span class="line" id="L1116">                    <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1117">                }</span>
-<span class="line" id="L1118">                <span class="tok-kw">return</span> Executor{ .darling = <span class="tok-str">&quot;darling&quot;</span> };</span>
-<span class="line" id="L1119">            }</span>
-<span class="line" id="L1120">            <span class="tok-kw">return</span> bad_result;</span>
-<span class="line" id="L1121">        },</span>
-<span class="line" id="L1122">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
-<span class="line" id="L1123">    }</span>
-<span class="line" id="L1124">}</span>
-<span class="line" id="L1125"></span>
+<span class="line" id="L1120">                <span class="tok-kw">if</span> (candidate.target.cpu.arch != builtin.cpu.arch) {</span>
+<span class="line" id="L1121">                    <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1122">                }</span>
+<span class="line" id="L1123">                <span class="tok-kw">return</span> Executor{ .darling = <span class="tok-str">&quot;darling&quot;</span> };</span>
+<span class="line" id="L1124">            }</span>
+<span class="line" id="L1125">            <span class="tok-kw">return</span> bad_result;</span>
+<span class="line" id="L1126">        },</span>
+<span class="line" id="L1127">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> bad_result,</span>
+<span class="line" id="L1128">    }</span>
+<span class="line" id="L1129">}</span>
+<span class="line" id="L1130"></span>
 </code></pre></body>
 </html>

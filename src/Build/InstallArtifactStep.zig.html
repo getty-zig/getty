@@ -116,86 +116,136 @@
 <span class="line" id="L3"><span class="tok-kw">const</span> CompileStep = std.Build.CompileStep;</span>
 <span class="line" id="L4"><span class="tok-kw">const</span> InstallDir = std.Build.InstallDir;</span>
 <span class="line" id="L5"><span class="tok-kw">const</span> InstallArtifactStep = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .install_artifact;</span>
-<span class="line" id="L8"></span>
-<span class="line" id="L9">step: Step,</span>
-<span class="line" id="L10">builder: *std.Build,</span>
-<span class="line" id="L11">artifact: *CompileStep,</span>
-<span class="line" id="L12">dest_dir: InstallDir,</span>
-<span class="line" id="L13">pdb_dir: ?InstallDir,</span>
-<span class="line" id="L14">h_dir: ?InstallDir,</span>
-<span class="line" id="L15"></span>
-<span class="line" id="L16"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(builder: *std.Build, artifact: *CompileStep) *InstallArtifactStep {</span>
-<span class="line" id="L17">    <span class="tok-kw">if</span> (artifact.install_step) |s| <span class="tok-kw">return</span> s;</span>
-<span class="line" id="L18"></span>
-<span class="line" id="L19">    <span class="tok-kw">const</span> self = builder.allocator.create(InstallArtifactStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L20">    self.* = InstallArtifactStep{</span>
-<span class="line" id="L21">        .builder = builder,</span>
-<span class="line" id="L22">        .step = Step.init(.install_artifact, builder.fmt(<span class="tok-str">&quot;install {s}&quot;</span>, .{artifact.step.name}), builder.allocator, make),</span>
-<span class="line" id="L23">        .artifact = artifact,</span>
-<span class="line" id="L24">        .dest_dir = artifact.override_dest_dir <span class="tok-kw">orelse</span> <span class="tok-kw">switch</span> (artifact.kind) {</span>
-<span class="line" id="L25">            .obj =&gt; <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;Cannot install a .obj build artifact.&quot;</span>),</span>
-<span class="line" id="L26">            .@&quot;test&quot; =&gt; <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;Cannot install a .test build artifact, use .test_exe instead.&quot;</span>),</span>
-<span class="line" id="L27">            .exe, .test_exe =&gt; InstallDir{ .bin = {} },</span>
-<span class="line" id="L28">            .lib =&gt; InstallDir{ .lib = {} },</span>
-<span class="line" id="L29">        },</span>
-<span class="line" id="L30">        .pdb_dir = <span class="tok-kw">if</span> (artifact.producesPdbFile()) blk: {</span>
-<span class="line" id="L31">            <span class="tok-kw">if</span> (artifact.kind == .exe <span class="tok-kw">or</span> artifact.kind == .test_exe) {</span>
-<span class="line" id="L32">                <span class="tok-kw">break</span> :blk InstallDir{ .bin = {} };</span>
-<span class="line" id="L33">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L34">                <span class="tok-kw">break</span> :blk InstallDir{ .lib = {} };</span>
-<span class="line" id="L35">            }</span>
-<span class="line" id="L36">        } <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L37">        .h_dir = <span class="tok-kw">if</span> (artifact.kind == .lib <span class="tok-kw">and</span> artifact.emit_h) .header <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L38">    };</span>
-<span class="line" id="L39">    self.step.dependOn(&amp;artifact.step);</span>
-<span class="line" id="L40">    artifact.install_step = self;</span>
-<span class="line" id="L41"></span>
-<span class="line" id="L42">    builder.pushInstalledFile(self.dest_dir, artifact.out_filename);</span>
-<span class="line" id="L43">    <span class="tok-kw">if</span> (self.artifact.isDynamicLibrary()) {</span>
-<span class="line" id="L44">        <span class="tok-kw">if</span> (artifact.major_only_filename) |name| {</span>
-<span class="line" id="L45">            builder.pushInstalledFile(.lib, name);</span>
-<span class="line" id="L46">        }</span>
-<span class="line" id="L47">        <span class="tok-kw">if</span> (artifact.name_only_filename) |name| {</span>
-<span class="line" id="L48">            builder.pushInstalledFile(.lib, name);</span>
-<span class="line" id="L49">        }</span>
-<span class="line" id="L50">        <span class="tok-kw">if</span> (self.artifact.target.isWindows()) {</span>
-<span class="line" id="L51">            builder.pushInstalledFile(.lib, artifact.out_lib_filename);</span>
-<span class="line" id="L52">        }</span>
-<span class="line" id="L53">    }</span>
-<span class="line" id="L54">    <span class="tok-kw">if</span> (self.pdb_dir) |pdb_dir| {</span>
-<span class="line" id="L55">        builder.pushInstalledFile(pdb_dir, artifact.out_pdb_filename);</span>
-<span class="line" id="L56">    }</span>
-<span class="line" id="L57">    <span class="tok-kw">if</span> (self.h_dir) |h_dir| {</span>
-<span class="line" id="L58">        builder.pushInstalledFile(h_dir, artifact.out_h_filename);</span>
-<span class="line" id="L59">    }</span>
-<span class="line" id="L60">    <span class="tok-kw">return</span> self;</span>
-<span class="line" id="L61">}</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L64">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(InstallArtifactStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L65">    <span class="tok-kw">const</span> builder = self.builder;</span>
-<span class="line" id="L66"></span>
-<span class="line" id="L67">    <span class="tok-kw">const</span> full_dest_path = builder.getInstallPath(self.dest_dir, self.artifact.out_filename);</span>
-<span class="line" id="L68">    <span class="tok-kw">try</span> builder.updateFile(self.artifact.getOutputSource().getPath(builder), full_dest_path);</span>
-<span class="line" id="L69">    <span class="tok-kw">if</span> (self.artifact.isDynamicLibrary() <span class="tok-kw">and</span> self.artifact.version != <span class="tok-null">null</span> <span class="tok-kw">and</span> self.artifact.target.wantSharedLibSymLinks()) {</span>
-<span class="line" id="L70">        <span class="tok-kw">try</span> CompileStep.doAtomicSymLinks(builder.allocator, full_dest_path, self.artifact.major_only_filename.?, self.artifact.name_only_filename.?);</span>
-<span class="line" id="L71">    }</span>
-<span class="line" id="L72">    <span class="tok-kw">if</span> (self.artifact.isDynamicLibrary() <span class="tok-kw">and</span> self.artifact.target.isWindows() <span class="tok-kw">and</span> self.artifact.emit_implib != .no_emit) {</span>
-<span class="line" id="L73">        <span class="tok-kw">const</span> full_implib_path = builder.getInstallPath(self.dest_dir, self.artifact.out_lib_filename);</span>
-<span class="line" id="L74">        <span class="tok-kw">try</span> builder.updateFile(self.artifact.getOutputLibSource().getPath(builder), full_implib_path);</span>
-<span class="line" id="L75">    }</span>
-<span class="line" id="L76">    <span class="tok-kw">if</span> (self.pdb_dir) |pdb_dir| {</span>
-<span class="line" id="L77">        <span class="tok-kw">const</span> full_pdb_path = builder.getInstallPath(pdb_dir, self.artifact.out_pdb_filename);</span>
-<span class="line" id="L78">        <span class="tok-kw">try</span> builder.updateFile(self.artifact.getOutputPdbSource().getPath(builder), full_pdb_path);</span>
-<span class="line" id="L79">    }</span>
-<span class="line" id="L80">    <span class="tok-kw">if</span> (self.h_dir) |h_dir| {</span>
-<span class="line" id="L81">        <span class="tok-kw">const</span> full_h_path = builder.getInstallPath(h_dir, self.artifact.out_h_filename);</span>
-<span class="line" id="L82">        <span class="tok-kw">try</span> builder.updateFile(self.artifact.getOutputHSource().getPath(builder), full_h_path);</span>
-<span class="line" id="L83">    }</span>
-<span class="line" id="L84">    self.artifact.installed_path = full_dest_path;</span>
-<span class="line" id="L85">}</span>
-<span class="line" id="L86"></span>
+<span class="line" id="L6"><span class="tok-kw">const</span> fs = std.fs;</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .install_artifact;</span>
+<span class="line" id="L9"></span>
+<span class="line" id="L10">step: Step,</span>
+<span class="line" id="L11">dest_builder: *std.Build,</span>
+<span class="line" id="L12">artifact: *CompileStep,</span>
+<span class="line" id="L13">dest_dir: InstallDir,</span>
+<span class="line" id="L14">pdb_dir: ?InstallDir,</span>
+<span class="line" id="L15">h_dir: ?InstallDir,</span>
+<span class="line" id="L16"><span class="tok-comment">/// If non-null, adds additional path components relative to dest_dir, and</span></span>
+<span class="line" id="L17"><span class="tok-comment">/// overrides the basename of the CompileStep.</span></span>
+<span class="line" id="L18">dest_sub_path: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(owner: *std.Build, artifact: *CompileStep) *InstallArtifactStep {</span>
+<span class="line" id="L21">    <span class="tok-kw">if</span> (artifact.install_step) |s| <span class="tok-kw">return</span> s;</span>
+<span class="line" id="L22"></span>
+<span class="line" id="L23">    <span class="tok-kw">const</span> self = owner.allocator.create(InstallArtifactStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L24">    self.* = InstallArtifactStep{</span>
+<span class="line" id="L25">        .step = Step.init(.{</span>
+<span class="line" id="L26">            .id = base_id,</span>
+<span class="line" id="L27">            .name = owner.fmt(<span class="tok-str">&quot;install {s}&quot;</span>, .{artifact.name}),</span>
+<span class="line" id="L28">            .owner = owner,</span>
+<span class="line" id="L29">            .makeFn = make,</span>
+<span class="line" id="L30">        }),</span>
+<span class="line" id="L31">        .dest_builder = owner,</span>
+<span class="line" id="L32">        .artifact = artifact,</span>
+<span class="line" id="L33">        .dest_dir = artifact.override_dest_dir <span class="tok-kw">orelse</span> <span class="tok-kw">switch</span> (artifact.kind) {</span>
+<span class="line" id="L34">            .obj =&gt; <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;Cannot install a .obj build artifact.&quot;</span>),</span>
+<span class="line" id="L35">            .exe, .@&quot;test&quot; =&gt; InstallDir{ .bin = {} },</span>
+<span class="line" id="L36">            .lib =&gt; InstallDir{ .lib = {} },</span>
+<span class="line" id="L37">        },</span>
+<span class="line" id="L38">        .pdb_dir = <span class="tok-kw">if</span> (artifact.producesPdbFile()) blk: {</span>
+<span class="line" id="L39">            <span class="tok-kw">if</span> (artifact.kind == .exe <span class="tok-kw">or</span> artifact.kind == .@&quot;test&quot;) {</span>
+<span class="line" id="L40">                <span class="tok-kw">break</span> :blk InstallDir{ .bin = {} };</span>
+<span class="line" id="L41">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L42">                <span class="tok-kw">break</span> :blk InstallDir{ .lib = {} };</span>
+<span class="line" id="L43">            }</span>
+<span class="line" id="L44">        } <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L45">        .h_dir = <span class="tok-kw">if</span> (artifact.kind == .lib <span class="tok-kw">and</span> artifact.emit_h) .header <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L46">        .dest_sub_path = <span class="tok-null">null</span>,</span>
+<span class="line" id="L47">    };</span>
+<span class="line" id="L48">    self.step.dependOn(&amp;artifact.step);</span>
+<span class="line" id="L49">    artifact.install_step = self;</span>
+<span class="line" id="L50"></span>
+<span class="line" id="L51">    owner.pushInstalledFile(self.dest_dir, artifact.out_filename);</span>
+<span class="line" id="L52">    <span class="tok-kw">if</span> (self.artifact.isDynamicLibrary()) {</span>
+<span class="line" id="L53">        <span class="tok-kw">if</span> (artifact.major_only_filename) |name| {</span>
+<span class="line" id="L54">            owner.pushInstalledFile(.lib, name);</span>
+<span class="line" id="L55">        }</span>
+<span class="line" id="L56">        <span class="tok-kw">if</span> (artifact.name_only_filename) |name| {</span>
+<span class="line" id="L57">            owner.pushInstalledFile(.lib, name);</span>
+<span class="line" id="L58">        }</span>
+<span class="line" id="L59">        <span class="tok-kw">if</span> (self.artifact.target.isWindows()) {</span>
+<span class="line" id="L60">            owner.pushInstalledFile(.lib, artifact.out_lib_filename);</span>
+<span class="line" id="L61">        }</span>
+<span class="line" id="L62">    }</span>
+<span class="line" id="L63">    <span class="tok-kw">if</span> (self.pdb_dir) |pdb_dir| {</span>
+<span class="line" id="L64">        owner.pushInstalledFile(pdb_dir, artifact.out_pdb_filename);</span>
+<span class="line" id="L65">    }</span>
+<span class="line" id="L66">    <span class="tok-kw">if</span> (self.h_dir) |h_dir| {</span>
+<span class="line" id="L67">        owner.pushInstalledFile(h_dir, artifact.out_h_filename);</span>
+<span class="line" id="L68">    }</span>
+<span class="line" id="L69">    <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L70">}</span>
+<span class="line" id="L71"></span>
+<span class="line" id="L72"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step, prog_node: *std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L73">    _ = prog_node;</span>
+<span class="line" id="L74">    <span class="tok-kw">const</span> src_builder = step.owner;</span>
+<span class="line" id="L75">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(InstallArtifactStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L76">    <span class="tok-kw">const</span> dest_builder = self.dest_builder;</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78">    <span class="tok-kw">const</span> dest_sub_path = <span class="tok-kw">if</span> (self.dest_sub_path) |sub_path| sub_path <span class="tok-kw">else</span> self.artifact.out_filename;</span>
+<span class="line" id="L79">    <span class="tok-kw">const</span> full_dest_path = dest_builder.getInstallPath(self.dest_dir, dest_sub_path);</span>
+<span class="line" id="L80">    <span class="tok-kw">const</span> cwd = fs.cwd();</span>
+<span class="line" id="L81"></span>
+<span class="line" id="L82">    <span class="tok-kw">var</span> all_cached = <span class="tok-null">true</span>;</span>
+<span class="line" id="L83"></span>
+<span class="line" id="L84">    {</span>
+<span class="line" id="L85">        <span class="tok-kw">const</span> full_src_path = self.artifact.getOutputSource().getPath(src_builder);</span>
+<span class="line" id="L86">        <span class="tok-kw">const</span> p = fs.Dir.updateFile(cwd, full_src_path, cwd, full_dest_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L87">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L88">                full_src_path, full_dest_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L89">            });</span>
+<span class="line" id="L90">        };</span>
+<span class="line" id="L91">        all_cached = all_cached <span class="tok-kw">and</span> p == .fresh;</span>
+<span class="line" id="L92">    }</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94">    <span class="tok-kw">if</span> (self.artifact.isDynamicLibrary() <span class="tok-kw">and</span></span>
+<span class="line" id="L95">        self.artifact.version != <span class="tok-null">null</span> <span class="tok-kw">and</span></span>
+<span class="line" id="L96">        self.artifact.target.wantSharedLibSymLinks())</span>
+<span class="line" id="L97">    {</span>
+<span class="line" id="L98">        <span class="tok-kw">try</span> CompileStep.doAtomicSymLinks(step, full_dest_path, self.artifact.major_only_filename.?, self.artifact.name_only_filename.?);</span>
+<span class="line" id="L99">    }</span>
+<span class="line" id="L100">    <span class="tok-kw">if</span> (self.artifact.isDynamicLibrary() <span class="tok-kw">and</span></span>
+<span class="line" id="L101">        self.artifact.target.isWindows() <span class="tok-kw">and</span></span>
+<span class="line" id="L102">        self.artifact.emit_implib != .no_emit)</span>
+<span class="line" id="L103">    {</span>
+<span class="line" id="L104">        <span class="tok-kw">const</span> full_src_path = self.artifact.getOutputLibSource().getPath(src_builder);</span>
+<span class="line" id="L105">        <span class="tok-kw">const</span> full_implib_path = dest_builder.getInstallPath(self.dest_dir, self.artifact.out_lib_filename);</span>
+<span class="line" id="L106">        <span class="tok-kw">const</span> p = fs.Dir.updateFile(cwd, full_src_path, cwd, full_implib_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L107">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L108">                full_src_path, full_implib_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L109">            });</span>
+<span class="line" id="L110">        };</span>
+<span class="line" id="L111">        all_cached = all_cached <span class="tok-kw">and</span> p == .fresh;</span>
+<span class="line" id="L112">    }</span>
+<span class="line" id="L113">    <span class="tok-kw">if</span> (self.pdb_dir) |pdb_dir| {</span>
+<span class="line" id="L114">        <span class="tok-kw">const</span> full_src_path = self.artifact.getOutputPdbSource().getPath(src_builder);</span>
+<span class="line" id="L115">        <span class="tok-kw">const</span> full_pdb_path = dest_builder.getInstallPath(pdb_dir, self.artifact.out_pdb_filename);</span>
+<span class="line" id="L116">        <span class="tok-kw">const</span> p = fs.Dir.updateFile(cwd, full_src_path, cwd, full_pdb_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L117">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L118">                full_src_path, full_pdb_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L119">            });</span>
+<span class="line" id="L120">        };</span>
+<span class="line" id="L121">        all_cached = all_cached <span class="tok-kw">and</span> p == .fresh;</span>
+<span class="line" id="L122">    }</span>
+<span class="line" id="L123">    <span class="tok-kw">if</span> (self.h_dir) |h_dir| {</span>
+<span class="line" id="L124">        <span class="tok-kw">const</span> full_src_path = self.artifact.getOutputHSource().getPath(src_builder);</span>
+<span class="line" id="L125">        <span class="tok-kw">const</span> full_h_path = dest_builder.getInstallPath(h_dir, self.artifact.out_h_filename);</span>
+<span class="line" id="L126">        <span class="tok-kw">const</span> p = fs.Dir.updateFile(cwd, full_src_path, cwd, full_h_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L127">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L128">                full_src_path, full_h_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L129">            });</span>
+<span class="line" id="L130">        };</span>
+<span class="line" id="L131">        all_cached = all_cached <span class="tok-kw">and</span> p == .fresh;</span>
+<span class="line" id="L132">    }</span>
+<span class="line" id="L133">    self.artifact.installed_path = full_dest_path;</span>
+<span class="line" id="L134">    step.result_cached = all_cached;</span>
+<span class="line" id="L135">}</span>
+<span class="line" id="L136"></span>
 </code></pre></body>
 </html>

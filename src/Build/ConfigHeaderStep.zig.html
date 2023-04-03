@@ -111,229 +111,220 @@
     </style>
 </head>
 <body>
-<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> ConfigHeaderStep = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L3"><span class="tok-kw">const</span> Step = std.Build.Step;</span>
-<span class="line" id="L4"></span>
-<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id: Step.Id = .config_header;</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Style = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L8">    <span class="tok-comment">/// The configure format supported by autotools. It uses `#undef foo` to</span></span>
-<span class="line" id="L9">    <span class="tok-comment">/// mark lines that can be substituted with different values.</span></span>
-<span class="line" id="L10">    autoconf: std.Build.FileSource,</span>
-<span class="line" id="L11">    <span class="tok-comment">/// The configure format supported by CMake. It uses `@@FOO@@` and</span></span>
-<span class="line" id="L12">    <span class="tok-comment">/// `#cmakedefine` for template substitution.</span></span>
-<span class="line" id="L13">    cmake: std.Build.FileSource,</span>
-<span class="line" id="L14">    <span class="tok-comment">/// Instead of starting with an input file, start with nothing.</span></span>
-<span class="line" id="L15">    blank,</span>
-<span class="line" id="L16">    <span class="tok-comment">/// Start with nothing, like blank, and output a nasm .asm file.</span></span>
-<span class="line" id="L17">    nasm,</span>
-<span class="line" id="L18"></span>
-<span class="line" id="L19">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getFileSource</span>(style: Style) ?std.Build.FileSource {</span>
-<span class="line" id="L20">        <span class="tok-kw">switch</span> (style) {</span>
-<span class="line" id="L21">            .autoconf, .cmake =&gt; |s| <span class="tok-kw">return</span> s,</span>
-<span class="line" id="L22">            .blank, .nasm =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L23">        }</span>
-<span class="line" id="L24">    }</span>
-<span class="line" id="L25">};</span>
-<span class="line" id="L26"></span>
-<span class="line" id="L27"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Value = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L28">    undef,</span>
-<span class="line" id="L29">    defined,</span>
-<span class="line" id="L30">    boolean: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L31">    int: <span class="tok-type">i64</span>,</span>
-<span class="line" id="L32">    ident: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L33">    string: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L34">};</span>
-<span class="line" id="L35"></span>
-<span class="line" id="L36">step: Step,</span>
-<span class="line" id="L37">builder: *std.Build,</span>
-<span class="line" id="L38">values: std.StringArrayHashMap(Value),</span>
-<span class="line" id="L39">output_file: std.Build.GeneratedFile,</span>
-<span class="line" id="L40"></span>
-<span class="line" id="L41">style: Style,</span>
-<span class="line" id="L42">max_bytes: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L43">include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L44"></span>
-<span class="line" id="L45"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L46">    style: Style = .blank,</span>
-<span class="line" id="L47">    max_bytes: <span class="tok-type">usize</span> = <span class="tok-number">2</span> * <span class="tok-number">1024</span> * <span class="tok-number">1024</span>,</span>
-<span class="line" id="L48">    include_path: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L49">};</span>
-<span class="line" id="L50"></span>
-<span class="line" id="L51"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(builder: *std.Build, options: Options) *ConfigHeaderStep {</span>
-<span class="line" id="L52">    <span class="tok-kw">const</span> self = builder.allocator.create(ConfigHeaderStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L53">    <span class="tok-kw">const</span> name = <span class="tok-kw">if</span> (options.style.getFileSource()) |s|</span>
-<span class="line" id="L54">        builder.fmt(<span class="tok-str">&quot;configure {s} header {s}&quot;</span>, .{ <span class="tok-builtin">@tagName</span>(options.style), s.getDisplayName() })</span>
-<span class="line" id="L55">    <span class="tok-kw">else</span></span>
-<span class="line" id="L56">        builder.fmt(<span class="tok-str">&quot;configure {s} header&quot;</span>, .{<span class="tok-builtin">@tagName</span>(options.style)});</span>
-<span class="line" id="L57">    self.* = .{</span>
-<span class="line" id="L58">        .builder = builder,</span>
-<span class="line" id="L59">        .step = Step.init(base_id, name, builder.allocator, make),</span>
-<span class="line" id="L60">        .style = options.style,</span>
-<span class="line" id="L61">        .values = std.StringArrayHashMap(Value).init(builder.allocator),</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63">        .max_bytes = options.max_bytes,</span>
-<span class="line" id="L64">        .include_path = <span class="tok-str">&quot;config.h&quot;</span>,</span>
-<span class="line" id="L65">        .output_file = .{ .step = &amp;self.step },</span>
-<span class="line" id="L66">    };</span>
-<span class="line" id="L67"></span>
-<span class="line" id="L68">    <span class="tok-kw">if</span> (options.style.getFileSource()) |s| <span class="tok-kw">switch</span> (s) {</span>
-<span class="line" id="L69">        .path =&gt; |p| {</span>
-<span class="line" id="L70">            <span class="tok-kw">const</span> basename = std.fs.path.basename(p);</span>
-<span class="line" id="L71">            <span class="tok-kw">if</span> (std.mem.endsWith(<span class="tok-type">u8</span>, basename, <span class="tok-str">&quot;.h.in&quot;</span>)) {</span>
-<span class="line" id="L72">                self.include_path = basename[<span class="tok-number">0</span> .. basename.len - <span class="tok-number">3</span>];</span>
-<span class="line" id="L73">            }</span>
-<span class="line" id="L74">        },</span>
-<span class="line" id="L75">        <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L76">    };</span>
-<span class="line" id="L77"></span>
-<span class="line" id="L78">    <span class="tok-kw">if</span> (options.include_path) |include_path| {</span>
-<span class="line" id="L79">        self.include_path = include_path;</span>
-<span class="line" id="L80">    }</span>
-<span class="line" id="L81"></span>
-<span class="line" id="L82">    <span class="tok-kw">return</span> self;</span>
-<span class="line" id="L83">}</span>
-<span class="line" id="L84"></span>
-<span class="line" id="L85"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addValues</span>(self: *ConfigHeaderStep, values: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L86">    <span class="tok-kw">return</span> addValuesInner(self, values) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L87">}</span>
+<pre><code><span class="line" id="L1"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Style = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L2">    <span class="tok-comment">/// The configure format supported by autotools. It uses `#undef foo` to</span></span>
+<span class="line" id="L3">    <span class="tok-comment">/// mark lines that can be substituted with different values.</span></span>
+<span class="line" id="L4">    autoconf: std.Build.FileSource,</span>
+<span class="line" id="L5">    <span class="tok-comment">/// The configure format supported by CMake. It uses `@@FOO@@` and</span></span>
+<span class="line" id="L6">    <span class="tok-comment">/// `#cmakedefine` for template substitution.</span></span>
+<span class="line" id="L7">    cmake: std.Build.FileSource,</span>
+<span class="line" id="L8">    <span class="tok-comment">/// Instead of starting with an input file, start with nothing.</span></span>
+<span class="line" id="L9">    blank,</span>
+<span class="line" id="L10">    <span class="tok-comment">/// Start with nothing, like blank, and output a nasm .asm file.</span></span>
+<span class="line" id="L11">    nasm,</span>
+<span class="line" id="L12"></span>
+<span class="line" id="L13">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getFileSource</span>(style: Style) ?std.Build.FileSource {</span>
+<span class="line" id="L14">        <span class="tok-kw">switch</span> (style) {</span>
+<span class="line" id="L15">            .autoconf, .cmake =&gt; |s| <span class="tok-kw">return</span> s,</span>
+<span class="line" id="L16">            .blank, .nasm =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L17">        }</span>
+<span class="line" id="L18">    }</span>
+<span class="line" id="L19">};</span>
+<span class="line" id="L20"></span>
+<span class="line" id="L21"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Value = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L22">    undef,</span>
+<span class="line" id="L23">    defined,</span>
+<span class="line" id="L24">    boolean: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L25">    int: <span class="tok-type">i64</span>,</span>
+<span class="line" id="L26">    ident: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L27">    string: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L28">};</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30">step: Step,</span>
+<span class="line" id="L31">values: std.StringArrayHashMap(Value),</span>
+<span class="line" id="L32">output_file: std.Build.GeneratedFile,</span>
+<span class="line" id="L33"></span>
+<span class="line" id="L34">style: Style,</span>
+<span class="line" id="L35">max_bytes: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L36">include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L37"></span>
+<span class="line" id="L38"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id: Step.Id = .config_header;</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L41">    style: Style = .blank,</span>
+<span class="line" id="L42">    max_bytes: <span class="tok-type">usize</span> = <span class="tok-number">2</span> * <span class="tok-number">1024</span> * <span class="tok-number">1024</span>,</span>
+<span class="line" id="L43">    include_path: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L44">    first_ret_addr: ?<span class="tok-type">usize</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L45">};</span>
+<span class="line" id="L46"></span>
+<span class="line" id="L47"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(owner: *std.Build, options: Options) *ConfigHeaderStep {</span>
+<span class="line" id="L48">    <span class="tok-kw">const</span> self = owner.allocator.create(ConfigHeaderStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L49"></span>
+<span class="line" id="L50">    <span class="tok-kw">var</span> include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;config.h&quot;</span>;</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52">    <span class="tok-kw">if</span> (options.style.getFileSource()) |s| <span class="tok-kw">switch</span> (s) {</span>
+<span class="line" id="L53">        .path =&gt; |p| {</span>
+<span class="line" id="L54">            <span class="tok-kw">const</span> basename = std.fs.path.basename(p);</span>
+<span class="line" id="L55">            <span class="tok-kw">if</span> (std.mem.endsWith(<span class="tok-type">u8</span>, basename, <span class="tok-str">&quot;.h.in&quot;</span>)) {</span>
+<span class="line" id="L56">                include_path = basename[<span class="tok-number">0</span> .. basename.len - <span class="tok-number">3</span>];</span>
+<span class="line" id="L57">            }</span>
+<span class="line" id="L58">        },</span>
+<span class="line" id="L59">        <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L60">    };</span>
+<span class="line" id="L61"></span>
+<span class="line" id="L62">    <span class="tok-kw">if</span> (options.include_path) |p| {</span>
+<span class="line" id="L63">        include_path = p;</span>
+<span class="line" id="L64">    }</span>
+<span class="line" id="L65"></span>
+<span class="line" id="L66">    <span class="tok-kw">const</span> name = <span class="tok-kw">if</span> (options.style.getFileSource()) |s|</span>
+<span class="line" id="L67">        owner.fmt(<span class="tok-str">&quot;configure {s} header {s} to {s}&quot;</span>, .{</span>
+<span class="line" id="L68">            <span class="tok-builtin">@tagName</span>(options.style), s.getDisplayName(), include_path,</span>
+<span class="line" id="L69">        })</span>
+<span class="line" id="L70">    <span class="tok-kw">else</span></span>
+<span class="line" id="L71">        owner.fmt(<span class="tok-str">&quot;configure {s} header to {s}&quot;</span>, .{ <span class="tok-builtin">@tagName</span>(options.style), include_path });</span>
+<span class="line" id="L72"></span>
+<span class="line" id="L73">    self.* = .{</span>
+<span class="line" id="L74">        .step = Step.init(.{</span>
+<span class="line" id="L75">            .id = base_id,</span>
+<span class="line" id="L76">            .name = name,</span>
+<span class="line" id="L77">            .owner = owner,</span>
+<span class="line" id="L78">            .makeFn = make,</span>
+<span class="line" id="L79">            .first_ret_addr = options.first_ret_addr <span class="tok-kw">orelse</span> <span class="tok-builtin">@returnAddress</span>(),</span>
+<span class="line" id="L80">        }),</span>
+<span class="line" id="L81">        .style = options.style,</span>
+<span class="line" id="L82">        .values = std.StringArrayHashMap(Value).init(owner.allocator),</span>
+<span class="line" id="L83"></span>
+<span class="line" id="L84">        .max_bytes = options.max_bytes,</span>
+<span class="line" id="L85">        .include_path = include_path,</span>
+<span class="line" id="L86">        .output_file = .{ .step = &amp;self.step },</span>
+<span class="line" id="L87">    };</span>
 <span class="line" id="L88"></span>
-<span class="line" id="L89"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getFileSource</span>(self: *ConfigHeaderStep) std.Build.FileSource {</span>
-<span class="line" id="L90">    <span class="tok-kw">return</span> .{ .generated = &amp;self.output_file };</span>
-<span class="line" id="L91">}</span>
-<span class="line" id="L92"></span>
-<span class="line" id="L93"><span class="tok-kw">fn</span> <span class="tok-fn">addValuesInner</span>(self: *ConfigHeaderStep, values: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L94">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(values)).Struct.fields) |field| {</span>
-<span class="line" id="L95">        <span class="tok-kw">try</span> putValue(self, field.name, field.<span class="tok-type">type</span>, <span class="tok-builtin">@field</span>(values, field.name));</span>
-<span class="line" id="L96">    }</span>
-<span class="line" id="L97">}</span>
-<span class="line" id="L98"></span>
-<span class="line" id="L99"><span class="tok-kw">fn</span> <span class="tok-fn">putValue</span>(self: *ConfigHeaderStep, field_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, v: T) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L100">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L101">        .Null =&gt; {</span>
-<span class="line" id="L102">            <span class="tok-kw">try</span> self.values.put(field_name, .undef);</span>
-<span class="line" id="L103">        },</span>
-<span class="line" id="L104">        .Void =&gt; {</span>
-<span class="line" id="L105">            <span class="tok-kw">try</span> self.values.put(field_name, .defined);</span>
-<span class="line" id="L106">        },</span>
-<span class="line" id="L107">        .Bool =&gt; {</span>
-<span class="line" id="L108">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .boolean = v });</span>
-<span class="line" id="L109">        },</span>
-<span class="line" id="L110">        .Int =&gt; {</span>
-<span class="line" id="L111">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .int = v });</span>
-<span class="line" id="L112">        },</span>
-<span class="line" id="L113">        .ComptimeInt =&gt; {</span>
-<span class="line" id="L114">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .int = v });</span>
-<span class="line" id="L115">        },</span>
-<span class="line" id="L116">        .EnumLiteral =&gt; {</span>
-<span class="line" id="L117">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .ident = <span class="tok-builtin">@tagName</span>(v) });</span>
-<span class="line" id="L118">        },</span>
-<span class="line" id="L119">        .Optional =&gt; {</span>
-<span class="line" id="L120">            <span class="tok-kw">if</span> (v) |x| {</span>
-<span class="line" id="L121">                <span class="tok-kw">return</span> putValue(self, field_name, <span class="tok-builtin">@TypeOf</span>(x), x);</span>
-<span class="line" id="L122">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L123">                <span class="tok-kw">try</span> self.values.put(field_name, .undef);</span>
-<span class="line" id="L124">            }</span>
+<span class="line" id="L89">    <span class="tok-kw">return</span> self;</span>
+<span class="line" id="L90">}</span>
+<span class="line" id="L91"></span>
+<span class="line" id="L92"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addValues</span>(self: *ConfigHeaderStep, values: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L93">    <span class="tok-kw">return</span> addValuesInner(self, values) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L94">}</span>
+<span class="line" id="L95"></span>
+<span class="line" id="L96"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getFileSource</span>(self: *ConfigHeaderStep) std.Build.FileSource {</span>
+<span class="line" id="L97">    <span class="tok-kw">return</span> .{ .generated = &amp;self.output_file };</span>
+<span class="line" id="L98">}</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100"><span class="tok-kw">fn</span> <span class="tok-fn">addValuesInner</span>(self: *ConfigHeaderStep, values: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L101">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(values)).Struct.fields) |field| {</span>
+<span class="line" id="L102">        <span class="tok-kw">try</span> putValue(self, field.name, field.<span class="tok-type">type</span>, <span class="tok-builtin">@field</span>(values, field.name));</span>
+<span class="line" id="L103">    }</span>
+<span class="line" id="L104">}</span>
+<span class="line" id="L105"></span>
+<span class="line" id="L106"><span class="tok-kw">fn</span> <span class="tok-fn">putValue</span>(self: *ConfigHeaderStep, field_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, v: T) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L107">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L108">        .Null =&gt; {</span>
+<span class="line" id="L109">            <span class="tok-kw">try</span> self.values.put(field_name, .undef);</span>
+<span class="line" id="L110">        },</span>
+<span class="line" id="L111">        .Void =&gt; {</span>
+<span class="line" id="L112">            <span class="tok-kw">try</span> self.values.put(field_name, .defined);</span>
+<span class="line" id="L113">        },</span>
+<span class="line" id="L114">        .Bool =&gt; {</span>
+<span class="line" id="L115">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .boolean = v });</span>
+<span class="line" id="L116">        },</span>
+<span class="line" id="L117">        .Int =&gt; {</span>
+<span class="line" id="L118">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .int = v });</span>
+<span class="line" id="L119">        },</span>
+<span class="line" id="L120">        .ComptimeInt =&gt; {</span>
+<span class="line" id="L121">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .int = v });</span>
+<span class="line" id="L122">        },</span>
+<span class="line" id="L123">        .EnumLiteral =&gt; {</span>
+<span class="line" id="L124">            <span class="tok-kw">try</span> self.values.put(field_name, .{ .ident = <span class="tok-builtin">@tagName</span>(v) });</span>
 <span class="line" id="L125">        },</span>
-<span class="line" id="L126">        .Pointer =&gt; |ptr| {</span>
-<span class="line" id="L127">            <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(ptr.child)) {</span>
-<span class="line" id="L128">                .Array =&gt; |array| {</span>
-<span class="line" id="L129">                    <span class="tok-kw">if</span> (ptr.size == .One <span class="tok-kw">and</span> array.child == <span class="tok-type">u8</span>) {</span>
-<span class="line" id="L130">                        <span class="tok-kw">try</span> self.values.put(field_name, .{ .string = v });</span>
-<span class="line" id="L131">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L132">                    }</span>
-<span class="line" id="L133">                },</span>
-<span class="line" id="L134">                .Int =&gt; {</span>
-<span class="line" id="L135">                    <span class="tok-kw">if</span> (ptr.size == .Slice <span class="tok-kw">and</span> ptr.child == <span class="tok-type">u8</span>) {</span>
-<span class="line" id="L136">                        <span class="tok-kw">try</span> self.values.put(field_name, .{ .string = v });</span>
-<span class="line" id="L137">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L138">                    }</span>
-<span class="line" id="L139">                },</span>
-<span class="line" id="L140">                <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L141">            }</span>
-<span class="line" id="L142"></span>
-<span class="line" id="L143">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported ConfigHeaderStep value type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T));</span>
-<span class="line" id="L144">        },</span>
-<span class="line" id="L145">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported ConfigHeaderStep value type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L146">    }</span>
-<span class="line" id="L147">}</span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L150">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(ConfigHeaderStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L151">    <span class="tok-kw">const</span> gpa = self.builder.allocator;</span>
-<span class="line" id="L152"></span>
-<span class="line" id="L153">    <span class="tok-comment">// The cache is used here not really as a way to speed things up - because writing</span>
+<span class="line" id="L126">        .Optional =&gt; {</span>
+<span class="line" id="L127">            <span class="tok-kw">if</span> (v) |x| {</span>
+<span class="line" id="L128">                <span class="tok-kw">return</span> putValue(self, field_name, <span class="tok-builtin">@TypeOf</span>(x), x);</span>
+<span class="line" id="L129">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L130">                <span class="tok-kw">try</span> self.values.put(field_name, .undef);</span>
+<span class="line" id="L131">            }</span>
+<span class="line" id="L132">        },</span>
+<span class="line" id="L133">        .Pointer =&gt; |ptr| {</span>
+<span class="line" id="L134">            <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(ptr.child)) {</span>
+<span class="line" id="L135">                .Array =&gt; |array| {</span>
+<span class="line" id="L136">                    <span class="tok-kw">if</span> (ptr.size == .One <span class="tok-kw">and</span> array.child == <span class="tok-type">u8</span>) {</span>
+<span class="line" id="L137">                        <span class="tok-kw">try</span> self.values.put(field_name, .{ .string = v });</span>
+<span class="line" id="L138">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L139">                    }</span>
+<span class="line" id="L140">                },</span>
+<span class="line" id="L141">                .Int =&gt; {</span>
+<span class="line" id="L142">                    <span class="tok-kw">if</span> (ptr.size == .Slice <span class="tok-kw">and</span> ptr.child == <span class="tok-type">u8</span>) {</span>
+<span class="line" id="L143">                        <span class="tok-kw">try</span> self.values.put(field_name, .{ .string = v });</span>
+<span class="line" id="L144">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L145">                    }</span>
+<span class="line" id="L146">                },</span>
+<span class="line" id="L147">                <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L148">            }</span>
+<span class="line" id="L149"></span>
+<span class="line" id="L150">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported ConfigHeaderStep value type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T));</span>
+<span class="line" id="L151">        },</span>
+<span class="line" id="L152">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported ConfigHeaderStep value type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L153">    }</span>
+<span class="line" id="L154">}</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step, prog_node: *std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L157">    _ = prog_node;</span>
+<span class="line" id="L158">    <span class="tok-kw">const</span> b = step.owner;</span>
+<span class="line" id="L159">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(ConfigHeaderStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L160">    <span class="tok-kw">const</span> gpa = b.allocator;</span>
+<span class="line" id="L161">    <span class="tok-kw">const</span> arena = b.allocator;</span>
+<span class="line" id="L162"></span>
+<span class="line" id="L163">    <span class="tok-kw">var</span> man = b.cache.obtain();</span>
+<span class="line" id="L164">    <span class="tok-kw">defer</span> man.deinit();</span>
+<span class="line" id="L165"></span>
+<span class="line" id="L166">    <span class="tok-comment">// Random bytes to make ConfigHeaderStep unique. Refresh this with new</span>
 </span>
-<span class="line" id="L154">    <span class="tok-comment">// the data to a file would probably be very fast - but as a way to find a canonical</span>
+<span class="line" id="L167">    <span class="tok-comment">// random bytes when ConfigHeaderStep implementation is modified in a</span>
 </span>
-<span class="line" id="L155">    <span class="tok-comment">// location to put build artifacts.</span>
+<span class="line" id="L168">    <span class="tok-comment">// non-backwards-compatible way.</span>
 </span>
-<span class="line" id="L156"></span>
-<span class="line" id="L157">    <span class="tok-comment">// If, for example, a hard-coded path was used as the location to put ConfigHeaderStep</span>
-</span>
-<span class="line" id="L158">    <span class="tok-comment">// files, then two ConfigHeaderStep executing in parallel might clobber each other.</span>
-</span>
-<span class="line" id="L159"></span>
-<span class="line" id="L160">    <span class="tok-comment">// TODO port the cache system from the compiler to zig std lib. Until then</span>
-</span>
-<span class="line" id="L161">    <span class="tok-comment">// we construct the path directly, and no &quot;cache hit&quot; detection happens;</span>
-</span>
-<span class="line" id="L162">    <span class="tok-comment">// the files are always written.</span>
-</span>
-<span class="line" id="L163">    <span class="tok-comment">// Note there is very similar code over in WriteFileStep</span>
-</span>
-<span class="line" id="L164">    <span class="tok-kw">const</span> Hasher = std.crypto.auth.siphash.SipHash128(<span class="tok-number">1</span>, <span class="tok-number">3</span>);</span>
-<span class="line" id="L165">    <span class="tok-comment">// Random bytes to make ConfigHeaderStep unique. Refresh this with new</span>
-</span>
-<span class="line" id="L166">    <span class="tok-comment">// random bytes when ConfigHeaderStep implementation is modified in a</span>
-</span>
-<span class="line" id="L167">    <span class="tok-comment">// non-backwards-compatible way.</span>
-</span>
-<span class="line" id="L168">    <span class="tok-kw">var</span> hash = Hasher.init(<span class="tok-str">&quot;PGuDTpidxyMqnkGM&quot;</span>);</span>
-<span class="line" id="L169"></span>
-<span class="line" id="L170">    <span class="tok-kw">var</span> output = std.ArrayList(<span class="tok-type">u8</span>).init(gpa);</span>
-<span class="line" id="L171">    <span class="tok-kw">defer</span> output.deinit();</span>
-<span class="line" id="L172"></span>
-<span class="line" id="L173">    <span class="tok-kw">const</span> header_text = <span class="tok-str">&quot;This file was generated by ConfigHeaderStep using the Zig Build System.&quot;</span>;</span>
-<span class="line" id="L174">    <span class="tok-kw">const</span> c_generated_line = <span class="tok-str">&quot;/* &quot;</span> ++ header_text ++ <span class="tok-str">&quot; */\n&quot;</span>;</span>
-<span class="line" id="L175">    <span class="tok-kw">const</span> asm_generated_line = <span class="tok-str">&quot;; &quot;</span> ++ header_text ++ <span class="tok-str">&quot;\n&quot;</span>;</span>
-<span class="line" id="L176"></span>
-<span class="line" id="L177">    <span class="tok-kw">switch</span> (self.style) {</span>
-<span class="line" id="L178">        .autoconf =&gt; |file_source| {</span>
-<span class="line" id="L179">            <span class="tok-kw">try</span> output.appendSlice(c_generated_line);</span>
-<span class="line" id="L180">            <span class="tok-kw">const</span> src_path = file_source.getPath(self.builder);</span>
-<span class="line" id="L181">            <span class="tok-kw">const</span> contents = <span class="tok-kw">try</span> std.fs.cwd().readFileAlloc(gpa, src_path, self.max_bytes);</span>
-<span class="line" id="L182">            <span class="tok-kw">try</span> render_autoconf(contents, &amp;output, self.values, src_path);</span>
-<span class="line" id="L183">        },</span>
-<span class="line" id="L184">        .cmake =&gt; |file_source| {</span>
-<span class="line" id="L185">            <span class="tok-kw">try</span> output.appendSlice(c_generated_line);</span>
-<span class="line" id="L186">            <span class="tok-kw">const</span> src_path = file_source.getPath(self.builder);</span>
-<span class="line" id="L187">            <span class="tok-kw">const</span> contents = <span class="tok-kw">try</span> std.fs.cwd().readFileAlloc(gpa, src_path, self.max_bytes);</span>
-<span class="line" id="L188">            <span class="tok-kw">try</span> render_cmake(contents, &amp;output, self.values, src_path);</span>
-<span class="line" id="L189">        },</span>
-<span class="line" id="L190">        .blank =&gt; {</span>
-<span class="line" id="L191">            <span class="tok-kw">try</span> output.appendSlice(c_generated_line);</span>
-<span class="line" id="L192">            <span class="tok-kw">try</span> render_blank(&amp;output, self.values, self.include_path);</span>
-<span class="line" id="L193">        },</span>
-<span class="line" id="L194">        .nasm =&gt; {</span>
-<span class="line" id="L195">            <span class="tok-kw">try</span> output.appendSlice(asm_generated_line);</span>
-<span class="line" id="L196">            <span class="tok-kw">try</span> render_nasm(&amp;output, self.values);</span>
-<span class="line" id="L197">        },</span>
-<span class="line" id="L198">    }</span>
-<span class="line" id="L199"></span>
-<span class="line" id="L200">    hash.update(output.items);</span>
-<span class="line" id="L201"></span>
-<span class="line" id="L202">    <span class="tok-kw">var</span> digest: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L203">    hash.final(&amp;digest);</span>
-<span class="line" id="L204">    <span class="tok-kw">var</span> hash_basename: [digest.len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L205">    _ = std.fmt.bufPrint(</span>
-<span class="line" id="L206">        &amp;hash_basename,</span>
-<span class="line" id="L207">        <span class="tok-str">&quot;{s}&quot;</span>,</span>
-<span class="line" id="L208">        .{std.fmt.fmtSliceHexLower(&amp;digest)},</span>
-<span class="line" id="L209">    ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L169">    man.hash.add(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0xdef08d23</span>));</span>
+<span class="line" id="L170"></span>
+<span class="line" id="L171">    <span class="tok-kw">var</span> output = std.ArrayList(<span class="tok-type">u8</span>).init(gpa);</span>
+<span class="line" id="L172">    <span class="tok-kw">defer</span> output.deinit();</span>
+<span class="line" id="L173"></span>
+<span class="line" id="L174">    <span class="tok-kw">const</span> header_text = <span class="tok-str">&quot;This file was generated by ConfigHeaderStep using the Zig Build System.&quot;</span>;</span>
+<span class="line" id="L175">    <span class="tok-kw">const</span> c_generated_line = <span class="tok-str">&quot;/* &quot;</span> ++ header_text ++ <span class="tok-str">&quot; */\n&quot;</span>;</span>
+<span class="line" id="L176">    <span class="tok-kw">const</span> asm_generated_line = <span class="tok-str">&quot;; &quot;</span> ++ header_text ++ <span class="tok-str">&quot;\n&quot;</span>;</span>
+<span class="line" id="L177"></span>
+<span class="line" id="L178">    <span class="tok-kw">switch</span> (self.style) {</span>
+<span class="line" id="L179">        .autoconf =&gt; |file_source| {</span>
+<span class="line" id="L180">            <span class="tok-kw">try</span> output.appendSlice(c_generated_line);</span>
+<span class="line" id="L181">            <span class="tok-kw">const</span> src_path = file_source.getPath(b);</span>
+<span class="line" id="L182">            <span class="tok-kw">const</span> contents = <span class="tok-kw">try</span> std.fs.cwd().readFileAlloc(arena, src_path, self.max_bytes);</span>
+<span class="line" id="L183">            <span class="tok-kw">try</span> render_autoconf(step, contents, &amp;output, self.values, src_path);</span>
+<span class="line" id="L184">        },</span>
+<span class="line" id="L185">        .cmake =&gt; |file_source| {</span>
+<span class="line" id="L186">            <span class="tok-kw">try</span> output.appendSlice(c_generated_line);</span>
+<span class="line" id="L187">            <span class="tok-kw">const</span> src_path = file_source.getPath(b);</span>
+<span class="line" id="L188">            <span class="tok-kw">const</span> contents = <span class="tok-kw">try</span> std.fs.cwd().readFileAlloc(arena, src_path, self.max_bytes);</span>
+<span class="line" id="L189">            <span class="tok-kw">try</span> render_cmake(step, contents, &amp;output, self.values, src_path);</span>
+<span class="line" id="L190">        },</span>
+<span class="line" id="L191">        .blank =&gt; {</span>
+<span class="line" id="L192">            <span class="tok-kw">try</span> output.appendSlice(c_generated_line);</span>
+<span class="line" id="L193">            <span class="tok-kw">try</span> render_blank(&amp;output, self.values, self.include_path);</span>
+<span class="line" id="L194">        },</span>
+<span class="line" id="L195">        .nasm =&gt; {</span>
+<span class="line" id="L196">            <span class="tok-kw">try</span> output.appendSlice(asm_generated_line);</span>
+<span class="line" id="L197">            <span class="tok-kw">try</span> render_nasm(&amp;output, self.values);</span>
+<span class="line" id="L198">        },</span>
+<span class="line" id="L199">    }</span>
+<span class="line" id="L200"></span>
+<span class="line" id="L201">    man.hash.addBytes(output.items);</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">    <span class="tok-kw">if</span> (<span class="tok-kw">try</span> step.cacheHit(&amp;man)) {</span>
+<span class="line" id="L204">        <span class="tok-kw">const</span> digest = man.final();</span>
+<span class="line" id="L205">        self.output_file.path = <span class="tok-kw">try</span> b.cache_root.join(arena, &amp;.{</span>
+<span class="line" id="L206">            <span class="tok-str">&quot;o&quot;</span>, &amp;digest, self.include_path,</span>
+<span class="line" id="L207">        });</span>
+<span class="line" id="L208">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L209">    }</span>
 <span class="line" id="L210"></span>
-<span class="line" id="L211">    <span class="tok-kw">const</span> output_dir = <span class="tok-kw">try</span> self.builder.cache_root.join(gpa, &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;hash_basename });</span>
+<span class="line" id="L211">    <span class="tok-kw">const</span> digest = man.final();</span>
 <span class="line" id="L212"></span>
 <span class="line" id="L213">    <span class="tok-comment">// If output_path has directory parts, deal with them.  Example:</span>
 </span>
@@ -345,219 +336,228 @@
 </span>
 <span class="line" id="L217">    <span class="tok-comment">// but keep output_dir as zig-cache/o/HASH for -I include</span>
 </span>
-<span class="line" id="L218">    <span class="tok-kw">const</span> sub_dir_path = <span class="tok-kw">if</span> (std.fs.path.dirname(self.include_path)) |d|</span>
-<span class="line" id="L219">        <span class="tok-kw">try</span> std.fs.path.join(gpa, &amp;.{ output_dir, d })</span>
-<span class="line" id="L220">    <span class="tok-kw">else</span></span>
-<span class="line" id="L221">        output_dir;</span>
-<span class="line" id="L222"></span>
-<span class="line" id="L223">    <span class="tok-kw">var</span> dir = std.fs.cwd().makeOpenPath(sub_dir_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L224">        std.debug.print(<span class="tok-str">&quot;unable to make path {s}: {s}\n&quot;</span>, .{ output_dir, <span class="tok-builtin">@errorName</span>(err) });</span>
-<span class="line" id="L225">        <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L226">    };</span>
-<span class="line" id="L227">    <span class="tok-kw">defer</span> dir.close();</span>
-<span class="line" id="L228"></span>
-<span class="line" id="L229">    <span class="tok-kw">try</span> dir.writeFile(std.fs.path.basename(self.include_path), output.items);</span>
-<span class="line" id="L230"></span>
-<span class="line" id="L231">    self.output_file.path = <span class="tok-kw">try</span> std.fs.path.join(self.builder.allocator, &amp;.{</span>
-<span class="line" id="L232">        output_dir, self.include_path,</span>
-<span class="line" id="L233">    });</span>
-<span class="line" id="L234">}</span>
-<span class="line" id="L235"></span>
-<span class="line" id="L236"><span class="tok-kw">fn</span> <span class="tok-fn">render_autoconf</span>(</span>
-<span class="line" id="L237">    contents: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L238">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
-<span class="line" id="L239">    values: std.StringArrayHashMap(Value),</span>
-<span class="line" id="L240">    src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L241">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L242">    <span class="tok-kw">var</span> values_copy = <span class="tok-kw">try</span> values.clone();</span>
-<span class="line" id="L243">    <span class="tok-kw">defer</span> values_copy.deinit();</span>
-<span class="line" id="L244"></span>
-<span class="line" id="L245">    <span class="tok-kw">var</span> any_errors = <span class="tok-null">false</span>;</span>
-<span class="line" id="L246">    <span class="tok-kw">var</span> line_index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L247">    <span class="tok-kw">var</span> line_it = std.mem.split(<span class="tok-type">u8</span>, contents, <span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L248">    <span class="tok-kw">while</span> (line_it.next()) |line| : (line_index += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L249">        <span class="tok-kw">if</span> (!std.mem.startsWith(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot;#&quot;</span>)) {</span>
-<span class="line" id="L250">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
-<span class="line" id="L251">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L252">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L253">        }</span>
-<span class="line" id="L254">        <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, line[<span class="tok-number">1</span>..], <span class="tok-str">&quot; \t\r&quot;</span>);</span>
-<span class="line" id="L255">        <span class="tok-kw">const</span> undef = it.next().?;</span>
-<span class="line" id="L256">        <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, undef, <span class="tok-str">&quot;undef&quot;</span>)) {</span>
-<span class="line" id="L257">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
-<span class="line" id="L258">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L259">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L260">        }</span>
-<span class="line" id="L261">        <span class="tok-kw">const</span> name = it.rest();</span>
-<span class="line" id="L262">        <span class="tok-kw">const</span> kv = values_copy.fetchSwapRemove(name) <span class="tok-kw">orelse</span> {</span>
-<span class="line" id="L263">            std.debug.print(<span class="tok-str">&quot;{s}:{d}: error: unspecified config header value: '{s}'\n&quot;</span>, .{</span>
-<span class="line" id="L264">                src_path, line_index + <span class="tok-number">1</span>, name,</span>
-<span class="line" id="L265">            });</span>
-<span class="line" id="L266">            any_errors = <span class="tok-null">true</span>;</span>
-<span class="line" id="L267">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L268">        };</span>
-<span class="line" id="L269">        <span class="tok-kw">try</span> renderValueC(output, name, kv.value);</span>
-<span class="line" id="L270">    }</span>
-<span class="line" id="L271"></span>
-<span class="line" id="L272">    <span class="tok-kw">for</span> (values_copy.keys()) |name| {</span>
-<span class="line" id="L273">        std.debug.print(<span class="tok-str">&quot;{s}: error: config header value unused: '{s}'\n&quot;</span>, .{ src_path, name });</span>
-<span class="line" id="L274">    }</span>
-<span class="line" id="L275"></span>
-<span class="line" id="L276">    <span class="tok-kw">if</span> (any_errors) {</span>
-<span class="line" id="L277">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HeaderConfigFailed;</span>
-<span class="line" id="L278">    }</span>
-<span class="line" id="L279">}</span>
-<span class="line" id="L280"></span>
-<span class="line" id="L281"><span class="tok-kw">fn</span> <span class="tok-fn">render_cmake</span>(</span>
-<span class="line" id="L282">    contents: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L283">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
-<span class="line" id="L284">    values: std.StringArrayHashMap(Value),</span>
-<span class="line" id="L285">    src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L286">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L287">    <span class="tok-kw">var</span> values_copy = <span class="tok-kw">try</span> values.clone();</span>
-<span class="line" id="L288">    <span class="tok-kw">defer</span> values_copy.deinit();</span>
-<span class="line" id="L289"></span>
-<span class="line" id="L290">    <span class="tok-kw">var</span> any_errors = <span class="tok-null">false</span>;</span>
-<span class="line" id="L291">    <span class="tok-kw">var</span> line_index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L292">    <span class="tok-kw">var</span> line_it = std.mem.split(<span class="tok-type">u8</span>, contents, <span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L293">    <span class="tok-kw">while</span> (line_it.next()) |line| : (line_index += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L294">        <span class="tok-kw">if</span> (!std.mem.startsWith(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot;#&quot;</span>)) {</span>
-<span class="line" id="L295">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
-<span class="line" id="L296">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L297">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L298">        }</span>
-<span class="line" id="L299">        <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, line[<span class="tok-number">1</span>..], <span class="tok-str">&quot; \t\r&quot;</span>);</span>
-<span class="line" id="L300">        <span class="tok-kw">const</span> cmakedefine = it.next().?;</span>
-<span class="line" id="L301">        <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, cmakedefine, <span class="tok-str">&quot;cmakedefine&quot;</span>)) {</span>
-<span class="line" id="L302">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
-<span class="line" id="L303">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L304">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L305">        }</span>
-<span class="line" id="L306">        <span class="tok-kw">const</span> name = it.next() <span class="tok-kw">orelse</span> {</span>
-<span class="line" id="L307">            std.debug.print(<span class="tok-str">&quot;{s}:{d}: error: missing define name\n&quot;</span>, .{</span>
-<span class="line" id="L308">                src_path, line_index + <span class="tok-number">1</span>,</span>
-<span class="line" id="L309">            });</span>
-<span class="line" id="L310">            any_errors = <span class="tok-null">true</span>;</span>
-<span class="line" id="L311">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L312">        };</span>
-<span class="line" id="L313">        <span class="tok-kw">const</span> kv = values_copy.fetchSwapRemove(name) <span class="tok-kw">orelse</span> {</span>
-<span class="line" id="L314">            std.debug.print(<span class="tok-str">&quot;{s}:{d}: error: unspecified config header value: '{s}'\n&quot;</span>, .{</span>
-<span class="line" id="L315">                src_path, line_index + <span class="tok-number">1</span>, name,</span>
-<span class="line" id="L316">            });</span>
-<span class="line" id="L317">            any_errors = <span class="tok-null">true</span>;</span>
-<span class="line" id="L318">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L319">        };</span>
-<span class="line" id="L320">        <span class="tok-kw">try</span> renderValueC(output, name, kv.value);</span>
-<span class="line" id="L321">    }</span>
-<span class="line" id="L322"></span>
-<span class="line" id="L323">    <span class="tok-kw">for</span> (values_copy.keys()) |name| {</span>
-<span class="line" id="L324">        std.debug.print(<span class="tok-str">&quot;{s}: error: config header value unused: '{s}'\n&quot;</span>, .{ src_path, name });</span>
+<span class="line" id="L218">    <span class="tok-kw">const</span> sub_path = <span class="tok-kw">try</span> std.fs.path.join(arena, &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;digest, self.include_path });</span>
+<span class="line" id="L219">    <span class="tok-kw">const</span> sub_path_dirname = std.fs.path.dirname(sub_path).?;</span>
+<span class="line" id="L220"></span>
+<span class="line" id="L221">    b.cache_root.handle.makePath(sub_path_dirname) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L222">        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to make path '{}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L223">            b.cache_root, sub_path_dirname, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L224">        });</span>
+<span class="line" id="L225">    };</span>
+<span class="line" id="L226"></span>
+<span class="line" id="L227">    b.cache_root.handle.writeFile(sub_path, output.items) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L228">        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to write file '{}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L229">            b.cache_root, sub_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L230">        });</span>
+<span class="line" id="L231">    };</span>
+<span class="line" id="L232"></span>
+<span class="line" id="L233">    self.output_file.path = <span class="tok-kw">try</span> b.cache_root.join(arena, &amp;.{sub_path});</span>
+<span class="line" id="L234">    <span class="tok-kw">try</span> man.writeManifest();</span>
+<span class="line" id="L235">}</span>
+<span class="line" id="L236"></span>
+<span class="line" id="L237"><span class="tok-kw">fn</span> <span class="tok-fn">render_autoconf</span>(</span>
+<span class="line" id="L238">    step: *Step,</span>
+<span class="line" id="L239">    contents: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L240">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
+<span class="line" id="L241">    values: std.StringArrayHashMap(Value),</span>
+<span class="line" id="L242">    src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L243">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L244">    <span class="tok-kw">var</span> values_copy = <span class="tok-kw">try</span> values.clone();</span>
+<span class="line" id="L245">    <span class="tok-kw">defer</span> values_copy.deinit();</span>
+<span class="line" id="L246"></span>
+<span class="line" id="L247">    <span class="tok-kw">var</span> any_errors = <span class="tok-null">false</span>;</span>
+<span class="line" id="L248">    <span class="tok-kw">var</span> line_index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L249">    <span class="tok-kw">var</span> line_it = std.mem.split(<span class="tok-type">u8</span>, contents, <span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L250">    <span class="tok-kw">while</span> (line_it.next()) |line| : (line_index += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L251">        <span class="tok-kw">if</span> (!std.mem.startsWith(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot;#&quot;</span>)) {</span>
+<span class="line" id="L252">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
+<span class="line" id="L253">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L254">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L255">        }</span>
+<span class="line" id="L256">        <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, line[<span class="tok-number">1</span>..], <span class="tok-str">&quot; \t\r&quot;</span>);</span>
+<span class="line" id="L257">        <span class="tok-kw">const</span> undef = it.next().?;</span>
+<span class="line" id="L258">        <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, undef, <span class="tok-str">&quot;undef&quot;</span>)) {</span>
+<span class="line" id="L259">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
+<span class="line" id="L260">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L261">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L262">        }</span>
+<span class="line" id="L263">        <span class="tok-kw">const</span> name = it.rest();</span>
+<span class="line" id="L264">        <span class="tok-kw">const</span> kv = values_copy.fetchSwapRemove(name) <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L265">            <span class="tok-kw">try</span> step.addError(<span class="tok-str">&quot;{s}:{d}: error: unspecified config header value: '{s}'&quot;</span>, .{</span>
+<span class="line" id="L266">                src_path, line_index + <span class="tok-number">1</span>, name,</span>
+<span class="line" id="L267">            });</span>
+<span class="line" id="L268">            any_errors = <span class="tok-null">true</span>;</span>
+<span class="line" id="L269">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L270">        };</span>
+<span class="line" id="L271">        <span class="tok-kw">try</span> renderValueC(output, name, kv.value);</span>
+<span class="line" id="L272">    }</span>
+<span class="line" id="L273"></span>
+<span class="line" id="L274">    <span class="tok-kw">for</span> (values_copy.keys()) |name| {</span>
+<span class="line" id="L275">        <span class="tok-kw">try</span> step.addError(<span class="tok-str">&quot;{s}: error: config header value unused: '{s}'&quot;</span>, .{ src_path, name });</span>
+<span class="line" id="L276">        any_errors = <span class="tok-null">true</span>;</span>
+<span class="line" id="L277">    }</span>
+<span class="line" id="L278"></span>
+<span class="line" id="L279">    <span class="tok-kw">if</span> (any_errors) {</span>
+<span class="line" id="L280">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MakeFailed;</span>
+<span class="line" id="L281">    }</span>
+<span class="line" id="L282">}</span>
+<span class="line" id="L283"></span>
+<span class="line" id="L284"><span class="tok-kw">fn</span> <span class="tok-fn">render_cmake</span>(</span>
+<span class="line" id="L285">    step: *Step,</span>
+<span class="line" id="L286">    contents: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L287">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
+<span class="line" id="L288">    values: std.StringArrayHashMap(Value),</span>
+<span class="line" id="L289">    src_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L290">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L291">    <span class="tok-kw">var</span> values_copy = <span class="tok-kw">try</span> values.clone();</span>
+<span class="line" id="L292">    <span class="tok-kw">defer</span> values_copy.deinit();</span>
+<span class="line" id="L293"></span>
+<span class="line" id="L294">    <span class="tok-kw">var</span> any_errors = <span class="tok-null">false</span>;</span>
+<span class="line" id="L295">    <span class="tok-kw">var</span> line_index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L296">    <span class="tok-kw">var</span> line_it = std.mem.split(<span class="tok-type">u8</span>, contents, <span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L297">    <span class="tok-kw">while</span> (line_it.next()) |line| : (line_index += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L298">        <span class="tok-kw">if</span> (!std.mem.startsWith(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot;#&quot;</span>)) {</span>
+<span class="line" id="L299">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
+<span class="line" id="L300">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L301">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L302">        }</span>
+<span class="line" id="L303">        <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, line[<span class="tok-number">1</span>..], <span class="tok-str">&quot; \t\r&quot;</span>);</span>
+<span class="line" id="L304">        <span class="tok-kw">const</span> cmakedefine = it.next().?;</span>
+<span class="line" id="L305">        <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, cmakedefine, <span class="tok-str">&quot;cmakedefine&quot;</span>)) {</span>
+<span class="line" id="L306">            <span class="tok-kw">try</span> output.appendSlice(line);</span>
+<span class="line" id="L307">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L308">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L309">        }</span>
+<span class="line" id="L310">        <span class="tok-kw">const</span> name = it.next() <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L311">            <span class="tok-kw">try</span> step.addError(<span class="tok-str">&quot;{s}:{d}: error: missing define name&quot;</span>, .{</span>
+<span class="line" id="L312">                src_path, line_index + <span class="tok-number">1</span>,</span>
+<span class="line" id="L313">            });</span>
+<span class="line" id="L314">            any_errors = <span class="tok-null">true</span>;</span>
+<span class="line" id="L315">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L316">        };</span>
+<span class="line" id="L317">        <span class="tok-kw">const</span> kv = values_copy.fetchSwapRemove(name) <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L318">            <span class="tok-kw">try</span> step.addError(<span class="tok-str">&quot;{s}:{d}: error: unspecified config header value: '{s}'&quot;</span>, .{</span>
+<span class="line" id="L319">                src_path, line_index + <span class="tok-number">1</span>, name,</span>
+<span class="line" id="L320">            });</span>
+<span class="line" id="L321">            any_errors = <span class="tok-null">true</span>;</span>
+<span class="line" id="L322">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L323">        };</span>
+<span class="line" id="L324">        <span class="tok-kw">try</span> renderValueC(output, name, kv.value);</span>
 <span class="line" id="L325">    }</span>
 <span class="line" id="L326"></span>
-<span class="line" id="L327">    <span class="tok-kw">if</span> (any_errors) {</span>
-<span class="line" id="L328">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HeaderConfigFailed;</span>
-<span class="line" id="L329">    }</span>
-<span class="line" id="L330">}</span>
+<span class="line" id="L327">    <span class="tok-kw">for</span> (values_copy.keys()) |name| {</span>
+<span class="line" id="L328">        <span class="tok-kw">try</span> step.addError(<span class="tok-str">&quot;{s}: error: config header value unused: '{s}'&quot;</span>, .{ src_path, name });</span>
+<span class="line" id="L329">        any_errors = <span class="tok-null">true</span>;</span>
+<span class="line" id="L330">    }</span>
 <span class="line" id="L331"></span>
-<span class="line" id="L332"><span class="tok-kw">fn</span> <span class="tok-fn">render_blank</span>(</span>
-<span class="line" id="L333">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
-<span class="line" id="L334">    defines: std.StringArrayHashMap(Value),</span>
-<span class="line" id="L335">    include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L336">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L337">    <span class="tok-kw">const</span> include_guard_name = <span class="tok-kw">try</span> output.allocator.dupe(<span class="tok-type">u8</span>, include_path);</span>
-<span class="line" id="L338">    <span class="tok-kw">for</span> (include_guard_name) |*byte| {</span>
-<span class="line" id="L339">        <span class="tok-kw">switch</span> (byte.*) {</span>
-<span class="line" id="L340">            <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span> =&gt; byte.* = byte.* - <span class="tok-str">'a'</span> + <span class="tok-str">'A'</span>,</span>
-<span class="line" id="L341">            <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L342">            <span class="tok-kw">else</span> =&gt; byte.* = <span class="tok-str">'_'</span>,</span>
-<span class="line" id="L343">        }</span>
-<span class="line" id="L344">    }</span>
-<span class="line" id="L345"></span>
-<span class="line" id="L346">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#ifndef &quot;</span>);</span>
-<span class="line" id="L347">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
-<span class="line" id="L348">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n#define &quot;</span>);</span>
-<span class="line" id="L349">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
-<span class="line" id="L350">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L351"></span>
-<span class="line" id="L352">    <span class="tok-kw">const</span> values = defines.values();</span>
-<span class="line" id="L353">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
-<span class="line" id="L354">        <span class="tok-kw">try</span> renderValueC(output, name, values[i]);</span>
-<span class="line" id="L355">    }</span>
+<span class="line" id="L332">    <span class="tok-kw">if</span> (any_errors) {</span>
+<span class="line" id="L333">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HeaderConfigFailed;</span>
+<span class="line" id="L334">    }</span>
+<span class="line" id="L335">}</span>
+<span class="line" id="L336"></span>
+<span class="line" id="L337"><span class="tok-kw">fn</span> <span class="tok-fn">render_blank</span>(</span>
+<span class="line" id="L338">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
+<span class="line" id="L339">    defines: std.StringArrayHashMap(Value),</span>
+<span class="line" id="L340">    include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L341">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L342">    <span class="tok-kw">const</span> include_guard_name = <span class="tok-kw">try</span> output.allocator.dupe(<span class="tok-type">u8</span>, include_path);</span>
+<span class="line" id="L343">    <span class="tok-kw">for</span> (include_guard_name) |*byte| {</span>
+<span class="line" id="L344">        <span class="tok-kw">switch</span> (byte.*) {</span>
+<span class="line" id="L345">            <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span> =&gt; byte.* = byte.* - <span class="tok-str">'a'</span> + <span class="tok-str">'A'</span>,</span>
+<span class="line" id="L346">            <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L347">            <span class="tok-kw">else</span> =&gt; byte.* = <span class="tok-str">'_'</span>,</span>
+<span class="line" id="L348">        }</span>
+<span class="line" id="L349">    }</span>
+<span class="line" id="L350"></span>
+<span class="line" id="L351">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#ifndef &quot;</span>);</span>
+<span class="line" id="L352">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
+<span class="line" id="L353">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n#define &quot;</span>);</span>
+<span class="line" id="L354">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
+<span class="line" id="L355">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
 <span class="line" id="L356"></span>
-<span class="line" id="L357">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#endif /* &quot;</span>);</span>
-<span class="line" id="L358">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
-<span class="line" id="L359">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
-<span class="line" id="L360">}</span>
+<span class="line" id="L357">    <span class="tok-kw">const</span> values = defines.values();</span>
+<span class="line" id="L358">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
+<span class="line" id="L359">        <span class="tok-kw">try</span> renderValueC(output, name, values[i]);</span>
+<span class="line" id="L360">    }</span>
 <span class="line" id="L361"></span>
-<span class="line" id="L362"><span class="tok-kw">fn</span> <span class="tok-fn">render_nasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), defines: std.StringArrayHashMap(Value)) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L363">    <span class="tok-kw">const</span> values = defines.values();</span>
-<span class="line" id="L364">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
-<span class="line" id="L365">        <span class="tok-kw">try</span> renderValueNasm(output, name, values[i]);</span>
-<span class="line" id="L366">    }</span>
-<span class="line" id="L367">}</span>
-<span class="line" id="L368"></span>
-<span class="line" id="L369"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueC</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L370">    <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L371">        .undef =&gt; {</span>
-<span class="line" id="L372">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;/* #undef &quot;</span>);</span>
-<span class="line" id="L373">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L374">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
-<span class="line" id="L375">        },</span>
-<span class="line" id="L376">        .defined =&gt; {</span>
-<span class="line" id="L377">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
+<span class="line" id="L362">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#endif /* &quot;</span>);</span>
+<span class="line" id="L363">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
+<span class="line" id="L364">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
+<span class="line" id="L365">}</span>
+<span class="line" id="L366"></span>
+<span class="line" id="L367"><span class="tok-kw">fn</span> <span class="tok-fn">render_nasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), defines: std.StringArrayHashMap(Value)) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L368">    <span class="tok-kw">const</span> values = defines.values();</span>
+<span class="line" id="L369">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
+<span class="line" id="L370">        <span class="tok-kw">try</span> renderValueNasm(output, name, values[i]);</span>
+<span class="line" id="L371">    }</span>
+<span class="line" id="L372">}</span>
+<span class="line" id="L373"></span>
+<span class="line" id="L374"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueC</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L375">    <span class="tok-kw">switch</span> (value) {</span>
+<span class="line" id="L376">        .undef =&gt; {</span>
+<span class="line" id="L377">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;/* #undef &quot;</span>);</span>
 <span class="line" id="L378">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L379">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L379">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
 <span class="line" id="L380">        },</span>
-<span class="line" id="L381">        .boolean =&gt; |b| {</span>
+<span class="line" id="L381">        .defined =&gt; {</span>
 <span class="line" id="L382">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
 <span class="line" id="L383">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L384">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L385">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot;true\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;false\n&quot;</span>);</span>
-<span class="line" id="L386">        },</span>
-<span class="line" id="L387">        .int =&gt; |i| {</span>
-<span class="line" id="L388">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {d}\n&quot;</span>, .{ name, i });</span>
-<span class="line" id="L389">        },</span>
-<span class="line" id="L390">        .ident =&gt; |ident| {</span>
-<span class="line" id="L391">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {s}\n&quot;</span>, .{ name, ident });</span>
-<span class="line" id="L392">        },</span>
-<span class="line" id="L393">        .string =&gt; |string| {</span>
-<span class="line" id="L394">            <span class="tok-comment">// TODO: use C-specific escaping instead of zig string literals</span>
+<span class="line" id="L384">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L385">        },</span>
+<span class="line" id="L386">        .boolean =&gt; |b| {</span>
+<span class="line" id="L387">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
+<span class="line" id="L388">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L389">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L390">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot;true\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;false\n&quot;</span>);</span>
+<span class="line" id="L391">        },</span>
+<span class="line" id="L392">        .int =&gt; |i| {</span>
+<span class="line" id="L393">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {d}\n&quot;</span>, .{ name, i });</span>
+<span class="line" id="L394">        },</span>
+<span class="line" id="L395">        .ident =&gt; |ident| {</span>
+<span class="line" id="L396">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {s}\n&quot;</span>, .{ name, ident });</span>
+<span class="line" id="L397">        },</span>
+<span class="line" id="L398">        .string =&gt; |string| {</span>
+<span class="line" id="L399">            <span class="tok-comment">// TODO: use C-specific escaping instead of zig string literals</span>
 </span>
-<span class="line" id="L395">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
-<span class="line" id="L396">        },</span>
-<span class="line" id="L397">    }</span>
-<span class="line" id="L398">}</span>
-<span class="line" id="L399"></span>
-<span class="line" id="L400"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueNasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L401">    <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L402">        .undef =&gt; {</span>
-<span class="line" id="L403">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;; %undef &quot;</span>);</span>
-<span class="line" id="L404">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L405">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L406">        },</span>
-<span class="line" id="L407">        .defined =&gt; {</span>
-<span class="line" id="L408">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
+<span class="line" id="L400">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
+<span class="line" id="L401">        },</span>
+<span class="line" id="L402">    }</span>
+<span class="line" id="L403">}</span>
+<span class="line" id="L404"></span>
+<span class="line" id="L405"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueNasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L406">    <span class="tok-kw">switch</span> (value) {</span>
+<span class="line" id="L407">        .undef =&gt; {</span>
+<span class="line" id="L408">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;; %undef &quot;</span>);</span>
 <span class="line" id="L409">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
 <span class="line" id="L410">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
 <span class="line" id="L411">        },</span>
-<span class="line" id="L412">        .boolean =&gt; |b| {</span>
+<span class="line" id="L412">        .defined =&gt; {</span>
 <span class="line" id="L413">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
 <span class="line" id="L414">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L415">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot; 1\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot; 0\n&quot;</span>);</span>
+<span class="line" id="L415">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
 <span class="line" id="L416">        },</span>
-<span class="line" id="L417">        .int =&gt; |i| {</span>
-<span class="line" id="L418">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {d}\n&quot;</span>, .{ name, i });</span>
-<span class="line" id="L419">        },</span>
-<span class="line" id="L420">        .ident =&gt; |ident| {</span>
-<span class="line" id="L421">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {s}\n&quot;</span>, .{ name, ident });</span>
-<span class="line" id="L422">        },</span>
-<span class="line" id="L423">        .string =&gt; |string| {</span>
-<span class="line" id="L424">            <span class="tok-comment">// TODO: use nasm-specific escaping instead of zig string literals</span>
+<span class="line" id="L417">        .boolean =&gt; |b| {</span>
+<span class="line" id="L418">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
+<span class="line" id="L419">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L420">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot; 1\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot; 0\n&quot;</span>);</span>
+<span class="line" id="L421">        },</span>
+<span class="line" id="L422">        .int =&gt; |i| {</span>
+<span class="line" id="L423">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {d}\n&quot;</span>, .{ name, i });</span>
+<span class="line" id="L424">        },</span>
+<span class="line" id="L425">        .ident =&gt; |ident| {</span>
+<span class="line" id="L426">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {s}\n&quot;</span>, .{ name, ident });</span>
+<span class="line" id="L427">        },</span>
+<span class="line" id="L428">        .string =&gt; |string| {</span>
+<span class="line" id="L429">            <span class="tok-comment">// TODO: use nasm-specific escaping instead of zig string literals</span>
 </span>
-<span class="line" id="L425">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
-<span class="line" id="L426">        },</span>
-<span class="line" id="L427">    }</span>
-<span class="line" id="L428">}</span>
-<span class="line" id="L429"></span>
+<span class="line" id="L430">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
+<span class="line" id="L431">        },</span>
+<span class="line" id="L432">    }</span>
+<span class="line" id="L433">}</span>
+<span class="line" id="L434"></span>
+<span class="line" id="L435"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
+<span class="line" id="L436"><span class="tok-kw">const</span> ConfigHeaderStep = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L437"><span class="tok-kw">const</span> Step = std.Build.Step;</span>
+<span class="line" id="L438"></span>
 </code></pre></body>
 </html>

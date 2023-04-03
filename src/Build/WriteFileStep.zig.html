@@ -123,11 +123,11 @@
 <span class="line" id="L10"><span class="tok-comment">//! control.</span></span>
 <span class="line" id="L11"></span>
 <span class="line" id="L12">step: Step,</span>
-<span class="line" id="L13">builder: *std.Build,</span>
-<span class="line" id="L14"><span class="tok-comment">/// The elements here are pointers because we need stable pointers for the</span></span>
-<span class="line" id="L15"><span class="tok-comment">/// GeneratedFile field.</span></span>
-<span class="line" id="L16">files: std.ArrayListUnmanaged(*File),</span>
-<span class="line" id="L17">output_source_files: std.ArrayListUnmanaged(OutputSourceFile),</span>
+<span class="line" id="L13"><span class="tok-comment">/// The elements here are pointers because we need stable pointers for the</span></span>
+<span class="line" id="L14"><span class="tok-comment">/// GeneratedFile field.</span></span>
+<span class="line" id="L15">files: std.ArrayListUnmanaged(*File),</span>
+<span class="line" id="L16">output_source_files: std.ArrayListUnmanaged(OutputSourceFile),</span>
+<span class="line" id="L17">generated_directory: std.Build.GeneratedFile,</span>
 <span class="line" id="L18"></span>
 <span class="line" id="L19"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .write_file;</span>
 <span class="line" id="L20"></span>
@@ -147,200 +147,280 @@
 <span class="line" id="L34">    copy: std.Build.FileSource,</span>
 <span class="line" id="L35">};</span>
 <span class="line" id="L36"></span>
-<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(builder: *std.Build) WriteFileStep {</span>
-<span class="line" id="L38">    <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L39">        .builder = builder,</span>
-<span class="line" id="L40">        .step = Step.init(.write_file, <span class="tok-str">&quot;writefile&quot;</span>, builder.allocator, make),</span>
-<span class="line" id="L41">        .files = .{},</span>
-<span class="line" id="L42">        .output_source_files = .{},</span>
-<span class="line" id="L43">    };</span>
-<span class="line" id="L44">}</span>
-<span class="line" id="L45"></span>
-<span class="line" id="L46"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">add</span>(wf: *WriteFileStep, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L47">    <span class="tok-kw">const</span> gpa = wf.builder.allocator;</span>
-<span class="line" id="L48">    <span class="tok-kw">const</span> file = gpa.create(File) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L49">    file.* = .{</span>
-<span class="line" id="L50">        .generated_file = .{ .step = &amp;wf.step },</span>
-<span class="line" id="L51">        .sub_path = wf.builder.dupePath(sub_path),</span>
-<span class="line" id="L52">        .contents = .{ .bytes = wf.builder.dupe(bytes) },</span>
-<span class="line" id="L53">    };</span>
-<span class="line" id="L54">    wf.files.append(gpa, file) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L55">}</span>
-<span class="line" id="L56"></span>
-<span class="line" id="L57"><span class="tok-comment">/// Place the file into the generated directory within the local cache,</span></span>
-<span class="line" id="L58"><span class="tok-comment">/// along with all the rest of the files added to this step. The parameter</span></span>
-<span class="line" id="L59"><span class="tok-comment">/// here is the destination path relative to the local cache directory</span></span>
-<span class="line" id="L60"><span class="tok-comment">/// associated with this WriteFileStep. It may be a basename, or it may</span></span>
-<span class="line" id="L61"><span class="tok-comment">/// include sub-directories, in which case this step will ensure the</span></span>
-<span class="line" id="L62"><span class="tok-comment">/// required sub-path exists.</span></span>
-<span class="line" id="L63"><span class="tok-comment">/// This is the option expected to be used most commonly with `addCopyFile`.</span></span>
-<span class="line" id="L64"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addCopyFile</span>(wf: *WriteFileStep, source: std.Build.FileSource, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L65">    <span class="tok-kw">const</span> gpa = wf.builder.allocator;</span>
-<span class="line" id="L66">    <span class="tok-kw">const</span> file = gpa.create(File) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L67">    file.* = .{</span>
-<span class="line" id="L68">        .generated_file = .{ .step = &amp;wf.step },</span>
-<span class="line" id="L69">        .sub_path = wf.builder.dupePath(sub_path),</span>
-<span class="line" id="L70">        .contents = .{ .copy = source },</span>
-<span class="line" id="L71">    };</span>
-<span class="line" id="L72">    wf.files.append(gpa, file) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L73">}</span>
-<span class="line" id="L74"></span>
-<span class="line" id="L75"><span class="tok-comment">/// A path relative to the package root.</span></span>
-<span class="line" id="L76"><span class="tok-comment">/// Be careful with this because it updates source files. This should not be</span></span>
-<span class="line" id="L77"><span class="tok-comment">/// used as part of the normal build process, but as a utility occasionally</span></span>
-<span class="line" id="L78"><span class="tok-comment">/// run by a developer with intent to modify source files and then commit</span></span>
-<span class="line" id="L79"><span class="tok-comment">/// those changes to version control.</span></span>
-<span class="line" id="L80"><span class="tok-comment">/// A file added this way is not available with `getFileSource`.</span></span>
-<span class="line" id="L81"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addCopyFileToSource</span>(wf: *WriteFileStep, source: std.Build.FileSource, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L82">    wf.output_source_files.append(wf.builder.allocator, .{</span>
-<span class="line" id="L83">        .contents = .{ .copy = source },</span>
-<span class="line" id="L84">        .sub_path = sub_path,</span>
-<span class="line" id="L85">    }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L86">}</span>
-<span class="line" id="L87"></span>
-<span class="line" id="L88"><span class="tok-comment">/// Gets a file source for the given sub_path. If the file does not exist, returns `null`.</span></span>
-<span class="line" id="L89"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getFileSource</span>(wf: *WriteFileStep, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?std.Build.FileSource {</span>
-<span class="line" id="L90">    <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
-<span class="line" id="L91">        <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, file.sub_path, sub_path)) {</span>
-<span class="line" id="L92">            <span class="tok-kw">return</span> .{ .generated = &amp;file.generated_file };</span>
-<span class="line" id="L93">        }</span>
-<span class="line" id="L94">    }</span>
-<span class="line" id="L95">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L96">}</span>
-<span class="line" id="L97"></span>
-<span class="line" id="L98"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L99">    <span class="tok-kw">const</span> wf = <span class="tok-builtin">@fieldParentPtr</span>(WriteFileStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101">    <span class="tok-comment">// Writing to source files is kind of an extra capability of this</span>
+<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create</span>(owner: *std.Build) *WriteFileStep {</span>
+<span class="line" id="L38">    <span class="tok-kw">const</span> wf = owner.allocator.create(WriteFileStep) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L39">    wf.* = .{</span>
+<span class="line" id="L40">        .step = Step.init(.{</span>
+<span class="line" id="L41">            .id = .write_file,</span>
+<span class="line" id="L42">            .name = <span class="tok-str">&quot;WriteFile&quot;</span>,</span>
+<span class="line" id="L43">            .owner = owner,</span>
+<span class="line" id="L44">            .makeFn = make,</span>
+<span class="line" id="L45">        }),</span>
+<span class="line" id="L46">        .files = .{},</span>
+<span class="line" id="L47">        .output_source_files = .{},</span>
+<span class="line" id="L48">        .generated_directory = .{ .step = &amp;wf.step },</span>
+<span class="line" id="L49">    };</span>
+<span class="line" id="L50">    <span class="tok-kw">return</span> wf;</span>
+<span class="line" id="L51">}</span>
+<span class="line" id="L52"></span>
+<span class="line" id="L53"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">add</span>(wf: *WriteFileStep, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L54">    <span class="tok-kw">const</span> b = wf.step.owner;</span>
+<span class="line" id="L55">    <span class="tok-kw">const</span> gpa = b.allocator;</span>
+<span class="line" id="L56">    <span class="tok-kw">const</span> file = gpa.create(File) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L57">    file.* = .{</span>
+<span class="line" id="L58">        .generated_file = .{ .step = &amp;wf.step },</span>
+<span class="line" id="L59">        .sub_path = b.dupePath(sub_path),</span>
+<span class="line" id="L60">        .contents = .{ .bytes = b.dupe(bytes) },</span>
+<span class="line" id="L61">    };</span>
+<span class="line" id="L62">    wf.files.append(gpa, file) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64">    wf.maybeUpdateName();</span>
+<span class="line" id="L65">}</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67"><span class="tok-comment">/// Place the file into the generated directory within the local cache,</span></span>
+<span class="line" id="L68"><span class="tok-comment">/// along with all the rest of the files added to this step. The parameter</span></span>
+<span class="line" id="L69"><span class="tok-comment">/// here is the destination path relative to the local cache directory</span></span>
+<span class="line" id="L70"><span class="tok-comment">/// associated with this WriteFileStep. It may be a basename, or it may</span></span>
+<span class="line" id="L71"><span class="tok-comment">/// include sub-directories, in which case this step will ensure the</span></span>
+<span class="line" id="L72"><span class="tok-comment">/// required sub-path exists.</span></span>
+<span class="line" id="L73"><span class="tok-comment">/// This is the option expected to be used most commonly with `addCopyFile`.</span></span>
+<span class="line" id="L74"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addCopyFile</span>(wf: *WriteFileStep, source: std.Build.FileSource, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L75">    <span class="tok-kw">const</span> b = wf.step.owner;</span>
+<span class="line" id="L76">    <span class="tok-kw">const</span> gpa = b.allocator;</span>
+<span class="line" id="L77">    <span class="tok-kw">const</span> file = gpa.create(File) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L78">    file.* = .{</span>
+<span class="line" id="L79">        .generated_file = .{ .step = &amp;wf.step },</span>
+<span class="line" id="L80">        .sub_path = b.dupePath(sub_path),</span>
+<span class="line" id="L81">        .contents = .{ .copy = source },</span>
+<span class="line" id="L82">    };</span>
+<span class="line" id="L83">    wf.files.append(gpa, file) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L84"></span>
+<span class="line" id="L85">    wf.maybeUpdateName();</span>
+<span class="line" id="L86">    source.addStepDependencies(&amp;wf.step);</span>
+<span class="line" id="L87">}</span>
+<span class="line" id="L88"></span>
+<span class="line" id="L89"><span class="tok-comment">/// A path relative to the package root.</span></span>
+<span class="line" id="L90"><span class="tok-comment">/// Be careful with this because it updates source files. This should not be</span></span>
+<span class="line" id="L91"><span class="tok-comment">/// used as part of the normal build process, but as a utility occasionally</span></span>
+<span class="line" id="L92"><span class="tok-comment">/// run by a developer with intent to modify source files and then commit</span></span>
+<span class="line" id="L93"><span class="tok-comment">/// those changes to version control.</span></span>
+<span class="line" id="L94"><span class="tok-comment">/// A file added this way is not available with `getFileSource`.</span></span>
+<span class="line" id="L95"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addCopyFileToSource</span>(wf: *WriteFileStep, source: std.Build.FileSource, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L96">    <span class="tok-kw">const</span> b = wf.step.owner;</span>
+<span class="line" id="L97">    wf.output_source_files.append(b.allocator, .{</span>
+<span class="line" id="L98">        .contents = .{ .copy = source },</span>
+<span class="line" id="L99">        .sub_path = sub_path,</span>
+<span class="line" id="L100">    }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L101">    source.addStepDependencies(&amp;wf.step);</span>
+<span class="line" id="L102">}</span>
+<span class="line" id="L103"></span>
+<span class="line" id="L104"><span class="tok-comment">/// A path relative to the package root.</span></span>
+<span class="line" id="L105"><span class="tok-comment">/// Be careful with this because it updates source files. This should not be</span></span>
+<span class="line" id="L106"><span class="tok-comment">/// used as part of the normal build process, but as a utility occasionally</span></span>
+<span class="line" id="L107"><span class="tok-comment">/// run by a developer with intent to modify source files and then commit</span></span>
+<span class="line" id="L108"><span class="tok-comment">/// those changes to version control.</span></span>
+<span class="line" id="L109"><span class="tok-comment">/// A file added this way is not available with `getFileSource`.</span></span>
+<span class="line" id="L110"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addBytesToSource</span>(wf: *WriteFileStep, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L111">    <span class="tok-kw">const</span> b = wf.step.owner;</span>
+<span class="line" id="L112">    wf.output_source_files.append(b.allocator, .{</span>
+<span class="line" id="L113">        .contents = .{ .bytes = bytes },</span>
+<span class="line" id="L114">        .sub_path = sub_path,</span>
+<span class="line" id="L115">    }) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L116">}</span>
+<span class="line" id="L117"></span>
+<span class="line" id="L118"><span class="tok-comment">/// Gets a file source for the given sub_path. If the file does not exist, returns `null`.</span></span>
+<span class="line" id="L119"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getFileSource</span>(wf: *WriteFileStep, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?std.Build.FileSource {</span>
+<span class="line" id="L120">    <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
+<span class="line" id="L121">        <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, file.sub_path, sub_path)) {</span>
+<span class="line" id="L122">            <span class="tok-kw">return</span> .{ .generated = &amp;file.generated_file };</span>
+<span class="line" id="L123">        }</span>
+<span class="line" id="L124">    }</span>
+<span class="line" id="L125">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L126">}</span>
+<span class="line" id="L127"></span>
+<span class="line" id="L128"><span class="tok-comment">/// Returns a `FileSource` representing the base directory that contains all the</span></span>
+<span class="line" id="L129"><span class="tok-comment">/// files from this `WriteFileStep`.</span></span>
+<span class="line" id="L130"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getDirectorySource</span>(wf: *WriteFileStep) std.Build.FileSource {</span>
+<span class="line" id="L131">    <span class="tok-kw">return</span> .{ .generated = &amp;wf.generated_directory };</span>
+<span class="line" id="L132">}</span>
+<span class="line" id="L133"></span>
+<span class="line" id="L134"><span class="tok-kw">fn</span> <span class="tok-fn">maybeUpdateName</span>(wf: *WriteFileStep) <span class="tok-type">void</span> {</span>
+<span class="line" id="L135">    <span class="tok-kw">if</span> (wf.files.items.len == <span class="tok-number">1</span>) {</span>
+<span class="line" id="L136">        <span class="tok-comment">// First time adding a file; update name.</span>
 </span>
-<span class="line" id="L102">    <span class="tok-comment">// WriteFileStep - arguably it should be a different step. But anyway here</span>
-</span>
-<span class="line" id="L103">    <span class="tok-comment">// it is, it happens unconditionally and does not interact with the other</span>
-</span>
-<span class="line" id="L104">    <span class="tok-comment">// files here.</span>
-</span>
-<span class="line" id="L105">    <span class="tok-kw">for</span> (wf.output_source_files.items) |output_source_file| {</span>
-<span class="line" id="L106">        <span class="tok-kw">const</span> basename = fs.path.basename(output_source_file.sub_path);</span>
-<span class="line" id="L107">        <span class="tok-kw">if</span> (fs.path.dirname(output_source_file.sub_path)) |dirname| {</span>
-<span class="line" id="L108">            <span class="tok-kw">var</span> dir = <span class="tok-kw">try</span> wf.builder.build_root.handle.makeOpenPath(dirname, .{});</span>
-<span class="line" id="L109">            <span class="tok-kw">defer</span> dir.close();</span>
-<span class="line" id="L110">            <span class="tok-kw">try</span> writeFile(wf, dir, output_source_file.contents, basename);</span>
-<span class="line" id="L111">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L112">            <span class="tok-kw">try</span> writeFile(wf, wf.builder.build_root.handle, output_source_file.contents, basename);</span>
-<span class="line" id="L113">        }</span>
-<span class="line" id="L114">    }</span>
-<span class="line" id="L115"></span>
-<span class="line" id="L116">    <span class="tok-comment">// The cache is used here not really as a way to speed things up - because writing</span>
-</span>
-<span class="line" id="L117">    <span class="tok-comment">// the data to a file would probably be very fast - but as a way to find a canonical</span>
-</span>
-<span class="line" id="L118">    <span class="tok-comment">// location to put build artifacts.</span>
-</span>
-<span class="line" id="L119"></span>
-<span class="line" id="L120">    <span class="tok-comment">// If, for example, a hard-coded path was used as the location to put WriteFileStep</span>
-</span>
-<span class="line" id="L121">    <span class="tok-comment">// files, then two WriteFileSteps executing in parallel might clobber each other.</span>
-</span>
-<span class="line" id="L122"></span>
-<span class="line" id="L123">    <span class="tok-kw">var</span> man = wf.builder.cache.obtain();</span>
-<span class="line" id="L124">    <span class="tok-kw">defer</span> man.deinit();</span>
-<span class="line" id="L125"></span>
-<span class="line" id="L126">    <span class="tok-comment">// Random bytes to make WriteFileStep unique. Refresh this with</span>
-</span>
-<span class="line" id="L127">    <span class="tok-comment">// new random bytes when WriteFileStep implementation is modified</span>
-</span>
-<span class="line" id="L128">    <span class="tok-comment">// in a non-backwards-compatible way.</span>
-</span>
-<span class="line" id="L129">    man.hash.add(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0xd767ee59</span>));</span>
-<span class="line" id="L130"></span>
-<span class="line" id="L131">    <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
-<span class="line" id="L132">        man.hash.addBytes(file.sub_path);</span>
-<span class="line" id="L133">        <span class="tok-kw">switch</span> (file.contents) {</span>
-<span class="line" id="L134">            .bytes =&gt; |bytes| {</span>
-<span class="line" id="L135">                man.hash.addBytes(bytes);</span>
-<span class="line" id="L136">            },</span>
-<span class="line" id="L137">            .copy =&gt; |file_source| {</span>
-<span class="line" id="L138">                _ = <span class="tok-kw">try</span> man.addFile(file_source.getPath(wf.builder), <span class="tok-null">null</span>);</span>
-<span class="line" id="L139">            },</span>
-<span class="line" id="L140">        }</span>
-<span class="line" id="L141">    }</span>
+<span class="line" id="L137">        <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, wf.step.name, <span class="tok-str">&quot;WriteFile&quot;</span>)) {</span>
+<span class="line" id="L138">            wf.step.name = wf.step.owner.fmt(<span class="tok-str">&quot;WriteFile {s}&quot;</span>, .{wf.files.items[<span class="tok-number">0</span>].sub_path});</span>
+<span class="line" id="L139">        }</span>
+<span class="line" id="L140">    }</span>
+<span class="line" id="L141">}</span>
 <span class="line" id="L142"></span>
-<span class="line" id="L143">    <span class="tok-kw">if</span> (man.hit() <span class="tok-kw">catch</span> |err| failWithCacheError(man, err)) {</span>
-<span class="line" id="L144">        <span class="tok-comment">// Cache hit, skip writing file data.</span>
+<span class="line" id="L143"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step, prog_node: *std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L144">    _ = prog_node;</span>
+<span class="line" id="L145">    <span class="tok-kw">const</span> b = step.owner;</span>
+<span class="line" id="L146">    <span class="tok-kw">const</span> wf = <span class="tok-builtin">@fieldParentPtr</span>(WriteFileStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">    <span class="tok-comment">// Writing to source files is kind of an extra capability of this</span>
 </span>
-<span class="line" id="L145">        <span class="tok-kw">const</span> digest = man.final();</span>
-<span class="line" id="L146">        <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
-<span class="line" id="L147">            file.generated_file.path = <span class="tok-kw">try</span> wf.builder.cache_root.join(</span>
-<span class="line" id="L148">                wf.builder.allocator,</span>
-<span class="line" id="L149">                &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;digest, file.sub_path },</span>
-<span class="line" id="L150">            );</span>
-<span class="line" id="L151">        }</span>
-<span class="line" id="L152">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L153">    }</span>
-<span class="line" id="L154"></span>
-<span class="line" id="L155">    <span class="tok-kw">const</span> digest = man.final();</span>
-<span class="line" id="L156">    <span class="tok-kw">const</span> cache_path = <span class="tok-str">&quot;o&quot;</span> ++ fs.path.sep_str ++ digest;</span>
-<span class="line" id="L157"></span>
-<span class="line" id="L158">    <span class="tok-kw">var</span> cache_dir = wf.builder.cache_root.handle.makeOpenPath(cache_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L159">        std.debug.print(<span class="tok-str">&quot;unable to make path {s}: {s}\n&quot;</span>, .{ cache_path, <span class="tok-builtin">@errorName</span>(err) });</span>
-<span class="line" id="L160">        <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L161">    };</span>
-<span class="line" id="L162">    <span class="tok-kw">defer</span> cache_dir.close();</span>
-<span class="line" id="L163"></span>
-<span class="line" id="L164">    <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
-<span class="line" id="L165">        <span class="tok-kw">const</span> basename = fs.path.basename(file.sub_path);</span>
-<span class="line" id="L166">        <span class="tok-kw">if</span> (fs.path.dirname(file.sub_path)) |dirname| {</span>
-<span class="line" id="L167">            <span class="tok-kw">var</span> dir = <span class="tok-kw">try</span> wf.builder.cache_root.handle.makeOpenPath(dirname, .{});</span>
-<span class="line" id="L168">            <span class="tok-kw">defer</span> dir.close();</span>
-<span class="line" id="L169">            <span class="tok-kw">try</span> writeFile(wf, dir, file.contents, basename);</span>
-<span class="line" id="L170">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L171">            <span class="tok-kw">try</span> writeFile(wf, cache_dir, file.contents, basename);</span>
-<span class="line" id="L172">        }</span>
-<span class="line" id="L173"></span>
-<span class="line" id="L174">        file.generated_file.path = <span class="tok-kw">try</span> wf.builder.cache_root.join(</span>
-<span class="line" id="L175">            wf.builder.allocator,</span>
-<span class="line" id="L176">            &amp;.{ cache_path, file.sub_path },</span>
-<span class="line" id="L177">        );</span>
-<span class="line" id="L178">    }</span>
-<span class="line" id="L179"></span>
-<span class="line" id="L180">    <span class="tok-kw">try</span> man.writeManifest();</span>
-<span class="line" id="L181">}</span>
-<span class="line" id="L182"></span>
-<span class="line" id="L183"><span class="tok-kw">fn</span> <span class="tok-fn">writeFile</span>(wf: *WriteFileStep, dir: fs.Dir, contents: Contents, basename: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L184">    <span class="tok-comment">// TODO after landing concurrency PR, improve error reporting here</span>
+<span class="line" id="L149">    <span class="tok-comment">// WriteFileStep - arguably it should be a different step. But anyway here</span>
 </span>
-<span class="line" id="L185">    <span class="tok-kw">switch</span> (contents) {</span>
-<span class="line" id="L186">        .bytes =&gt; |bytes| <span class="tok-kw">return</span> dir.writeFile(basename, bytes),</span>
-<span class="line" id="L187">        .copy =&gt; |file_source| {</span>
-<span class="line" id="L188">            <span class="tok-kw">const</span> source_path = file_source.getPath(wf.builder);</span>
-<span class="line" id="L189">            <span class="tok-kw">const</span> prev_status = <span class="tok-kw">try</span> fs.Dir.updateFile(fs.cwd(), source_path, dir, basename, .{});</span>
-<span class="line" id="L190">            _ = prev_status; <span class="tok-comment">// TODO logging (affected by open PR regarding concurrency)</span>
+<span class="line" id="L150">    <span class="tok-comment">// it is, it happens unconditionally and does not interact with the other</span>
 </span>
-<span class="line" id="L191">        },</span>
-<span class="line" id="L192">    }</span>
-<span class="line" id="L193">}</span>
+<span class="line" id="L151">    <span class="tok-comment">// files here.</span>
+</span>
+<span class="line" id="L152">    <span class="tok-kw">var</span> any_miss = <span class="tok-null">false</span>;</span>
+<span class="line" id="L153">    <span class="tok-kw">for</span> (wf.output_source_files.items) |output_source_file| {</span>
+<span class="line" id="L154">        <span class="tok-kw">if</span> (fs.path.dirname(output_source_file.sub_path)) |dirname| {</span>
+<span class="line" id="L155">            b.build_root.handle.makePath(dirname) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L156">                <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to make path '{}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L157">                    b.build_root, dirname, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L158">                });</span>
+<span class="line" id="L159">            };</span>
+<span class="line" id="L160">        }</span>
+<span class="line" id="L161">        <span class="tok-kw">switch</span> (output_source_file.contents) {</span>
+<span class="line" id="L162">            .bytes =&gt; |bytes| {</span>
+<span class="line" id="L163">                b.build_root.handle.writeFile(output_source_file.sub_path, bytes) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L164">                    <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to write file '{}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L165">                        b.build_root, output_source_file.sub_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L166">                    });</span>
+<span class="line" id="L167">                };</span>
+<span class="line" id="L168">                any_miss = <span class="tok-null">true</span>;</span>
+<span class="line" id="L169">            },</span>
+<span class="line" id="L170">            .copy =&gt; |file_source| {</span>
+<span class="line" id="L171">                <span class="tok-kw">const</span> source_path = file_source.getPath(b);</span>
+<span class="line" id="L172">                <span class="tok-kw">const</span> prev_status = fs.Dir.updateFile(</span>
+<span class="line" id="L173">                    fs.cwd(),</span>
+<span class="line" id="L174">                    source_path,</span>
+<span class="line" id="L175">                    b.build_root.handle,</span>
+<span class="line" id="L176">                    output_source_file.sub_path,</span>
+<span class="line" id="L177">                    .{},</span>
+<span class="line" id="L178">                ) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L179">                    <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L180">                        source_path, b.build_root, output_source_file.sub_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L181">                    });</span>
+<span class="line" id="L182">                };</span>
+<span class="line" id="L183">                any_miss = any_miss <span class="tok-kw">or</span> prev_status == .stale;</span>
+<span class="line" id="L184">            },</span>
+<span class="line" id="L185">        }</span>
+<span class="line" id="L186">    }</span>
+<span class="line" id="L187"></span>
+<span class="line" id="L188">    <span class="tok-comment">// The cache is used here not really as a way to speed things up - because writing</span>
+</span>
+<span class="line" id="L189">    <span class="tok-comment">// the data to a file would probably be very fast - but as a way to find a canonical</span>
+</span>
+<span class="line" id="L190">    <span class="tok-comment">// location to put build artifacts.</span>
+</span>
+<span class="line" id="L191"></span>
+<span class="line" id="L192">    <span class="tok-comment">// If, for example, a hard-coded path was used as the location to put WriteFileStep</span>
+</span>
+<span class="line" id="L193">    <span class="tok-comment">// files, then two WriteFileSteps executing in parallel might clobber each other.</span>
+</span>
 <span class="line" id="L194"></span>
-<span class="line" id="L195"><span class="tok-comment">/// TODO consolidate this with the same function in RunStep?</span></span>
-<span class="line" id="L196"><span class="tok-comment">/// Also properly deal with concurrency (see open PR)</span></span>
-<span class="line" id="L197"><span class="tok-kw">fn</span> <span class="tok-fn">failWithCacheError</span>(man: std.Build.Cache.Manifest, err: <span class="tok-type">anyerror</span>) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L198">    <span class="tok-kw">const</span> i = man.failed_file_index <span class="tok-kw">orelse</span> failWithSimpleError(err);</span>
-<span class="line" id="L199">    <span class="tok-kw">const</span> pp = man.files.items[i].prefixed_path <span class="tok-kw">orelse</span> failWithSimpleError(err);</span>
-<span class="line" id="L200">    <span class="tok-kw">const</span> prefix = man.cache.prefixes()[pp.prefix].path <span class="tok-kw">orelse</span> <span class="tok-str">&quot;&quot;</span>;</span>
-<span class="line" id="L201">    std.debug.print(<span class="tok-str">&quot;{s}: {s}/{s}\n&quot;</span>, .{ <span class="tok-builtin">@errorName</span>(err), prefix, pp.sub_path });</span>
-<span class="line" id="L202">    std.process.exit(<span class="tok-number">1</span>);</span>
-<span class="line" id="L203">}</span>
-<span class="line" id="L204"></span>
-<span class="line" id="L205"><span class="tok-kw">fn</span> <span class="tok-fn">failWithSimpleError</span>(err: <span class="tok-type">anyerror</span>) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L206">    std.debug.print(<span class="tok-str">&quot;{s}\n&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L207">    std.process.exit(<span class="tok-number">1</span>);</span>
-<span class="line" id="L208">}</span>
-<span class="line" id="L209"></span>
-<span class="line" id="L210"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L211"><span class="tok-kw">const</span> Step = std.Build.Step;</span>
-<span class="line" id="L212"><span class="tok-kw">const</span> fs = std.fs;</span>
-<span class="line" id="L213"><span class="tok-kw">const</span> ArrayList = std.ArrayList;</span>
+<span class="line" id="L195">    <span class="tok-kw">var</span> man = b.cache.obtain();</span>
+<span class="line" id="L196">    <span class="tok-kw">defer</span> man.deinit();</span>
+<span class="line" id="L197"></span>
+<span class="line" id="L198">    <span class="tok-comment">// Random bytes to make WriteFileStep unique. Refresh this with</span>
+</span>
+<span class="line" id="L199">    <span class="tok-comment">// new random bytes when WriteFileStep implementation is modified</span>
+</span>
+<span class="line" id="L200">    <span class="tok-comment">// in a non-backwards-compatible way.</span>
+</span>
+<span class="line" id="L201">    man.hash.add(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0xd767ee59</span>));</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">    <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
+<span class="line" id="L204">        man.hash.addBytes(file.sub_path);</span>
+<span class="line" id="L205">        <span class="tok-kw">switch</span> (file.contents) {</span>
+<span class="line" id="L206">            .bytes =&gt; |bytes| {</span>
+<span class="line" id="L207">                man.hash.addBytes(bytes);</span>
+<span class="line" id="L208">            },</span>
+<span class="line" id="L209">            .copy =&gt; |file_source| {</span>
+<span class="line" id="L210">                _ = <span class="tok-kw">try</span> man.addFile(file_source.getPath(b), <span class="tok-null">null</span>);</span>
+<span class="line" id="L211">            },</span>
+<span class="line" id="L212">        }</span>
+<span class="line" id="L213">    }</span>
 <span class="line" id="L214"></span>
-<span class="line" id="L215"><span class="tok-kw">const</span> WriteFileStep = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L216"></span>
+<span class="line" id="L215">    <span class="tok-kw">if</span> (<span class="tok-kw">try</span> step.cacheHit(&amp;man)) {</span>
+<span class="line" id="L216">        <span class="tok-kw">const</span> digest = man.final();</span>
+<span class="line" id="L217">        <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
+<span class="line" id="L218">            file.generated_file.path = <span class="tok-kw">try</span> b.cache_root.join(b.allocator, &amp;.{</span>
+<span class="line" id="L219">                <span class="tok-str">&quot;o&quot;</span>, &amp;digest, file.sub_path,</span>
+<span class="line" id="L220">            });</span>
+<span class="line" id="L221">        }</span>
+<span class="line" id="L222">        wf.generated_directory.path = <span class="tok-kw">try</span> b.cache_root.join(b.allocator, &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;digest });</span>
+<span class="line" id="L223">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L224">    }</span>
+<span class="line" id="L225"></span>
+<span class="line" id="L226">    <span class="tok-kw">const</span> digest = man.final();</span>
+<span class="line" id="L227">    <span class="tok-kw">const</span> cache_path = <span class="tok-str">&quot;o&quot;</span> ++ fs.path.sep_str ++ digest;</span>
+<span class="line" id="L228"></span>
+<span class="line" id="L229">    wf.generated_directory.path = <span class="tok-kw">try</span> b.cache_root.join(b.allocator, &amp;.{ <span class="tok-str">&quot;o&quot;</span>, &amp;digest });</span>
+<span class="line" id="L230"></span>
+<span class="line" id="L231">    <span class="tok-kw">var</span> cache_dir = b.cache_root.handle.makeOpenPath(cache_path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L232">        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to make path '{}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L233">            b.cache_root, cache_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L234">        });</span>
+<span class="line" id="L235">    };</span>
+<span class="line" id="L236">    <span class="tok-kw">defer</span> cache_dir.close();</span>
+<span class="line" id="L237"></span>
+<span class="line" id="L238">    <span class="tok-kw">for</span> (wf.files.items) |file| {</span>
+<span class="line" id="L239">        <span class="tok-kw">if</span> (fs.path.dirname(file.sub_path)) |dirname| {</span>
+<span class="line" id="L240">            cache_dir.makePath(dirname) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L241">                <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to make path '{}{s}{c}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L242">                    b.cache_root, cache_path, fs.path.sep, dirname, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L243">                });</span>
+<span class="line" id="L244">            };</span>
+<span class="line" id="L245">        }</span>
+<span class="line" id="L246">        <span class="tok-kw">switch</span> (file.contents) {</span>
+<span class="line" id="L247">            .bytes =&gt; |bytes| {</span>
+<span class="line" id="L248">                cache_dir.writeFile(file.sub_path, bytes) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L249">                    <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to write file '{}{s}{c}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L250">                        b.cache_root, cache_path, fs.path.sep, file.sub_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L251">                    });</span>
+<span class="line" id="L252">                };</span>
+<span class="line" id="L253">            },</span>
+<span class="line" id="L254">            .copy =&gt; |file_source| {</span>
+<span class="line" id="L255">                <span class="tok-kw">const</span> source_path = file_source.getPath(b);</span>
+<span class="line" id="L256">                <span class="tok-kw">const</span> prev_status = fs.Dir.updateFile(</span>
+<span class="line" id="L257">                    fs.cwd(),</span>
+<span class="line" id="L258">                    source_path,</span>
+<span class="line" id="L259">                    cache_dir,</span>
+<span class="line" id="L260">                    file.sub_path,</span>
+<span class="line" id="L261">                    .{},</span>
+<span class="line" id="L262">                ) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L263">                    <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to update file from '{s}' to '{}{s}{c}{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L264">                        source_path,</span>
+<span class="line" id="L265">                        b.cache_root,</span>
+<span class="line" id="L266">                        cache_path,</span>
+<span class="line" id="L267">                        fs.path.sep,</span>
+<span class="line" id="L268">                        file.sub_path,</span>
+<span class="line" id="L269">                        <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L270">                    });</span>
+<span class="line" id="L271">                };</span>
+<span class="line" id="L272">                <span class="tok-comment">// At this point we already will mark the step as a cache miss.</span>
+</span>
+<span class="line" id="L273">                <span class="tok-comment">// But this is kind of a partial cache hit since individual</span>
+</span>
+<span class="line" id="L274">                <span class="tok-comment">// file copies may be avoided. Oh well, this information is</span>
+</span>
+<span class="line" id="L275">                <span class="tok-comment">// discarded.</span>
+</span>
+<span class="line" id="L276">                _ = prev_status;</span>
+<span class="line" id="L277">            },</span>
+<span class="line" id="L278">        }</span>
+<span class="line" id="L279"></span>
+<span class="line" id="L280">        file.generated_file.path = <span class="tok-kw">try</span> b.cache_root.join(b.allocator, &amp;.{</span>
+<span class="line" id="L281">            cache_path, file.sub_path,</span>
+<span class="line" id="L282">        });</span>
+<span class="line" id="L283">    }</span>
+<span class="line" id="L284"></span>
+<span class="line" id="L285">    <span class="tok-kw">try</span> step.writeManifest(&amp;man);</span>
+<span class="line" id="L286">}</span>
+<span class="line" id="L287"></span>
+<span class="line" id="L288"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
+<span class="line" id="L289"><span class="tok-kw">const</span> Step = std.Build.Step;</span>
+<span class="line" id="L290"><span class="tok-kw">const</span> fs = std.fs;</span>
+<span class="line" id="L291"><span class="tok-kw">const</span> ArrayList = std.ArrayList;</span>
+<span class="line" id="L292"></span>
+<span class="line" id="L293"><span class="tok-kw">const</span> WriteFileStep = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L294"></span>
 </code></pre></body>
 </html>

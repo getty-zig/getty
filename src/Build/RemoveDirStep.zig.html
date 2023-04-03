@@ -112,34 +112,49 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> log = std.log;</span>
-<span class="line" id="L3"><span class="tok-kw">const</span> fs = std.fs;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> Step = std.Build.Step;</span>
-<span class="line" id="L5"><span class="tok-kw">const</span> RemoveDirStep = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .remove_dir;</span>
-<span class="line" id="L8"></span>
-<span class="line" id="L9">step: Step,</span>
-<span class="line" id="L10">builder: *std.Build,</span>
-<span class="line" id="L11">dir_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L12"></span>
-<span class="line" id="L13"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(builder: *std.Build, dir_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) RemoveDirStep {</span>
-<span class="line" id="L14">    <span class="tok-kw">return</span> RemoveDirStep{</span>
-<span class="line" id="L15">        .builder = builder,</span>
-<span class="line" id="L16">        .step = Step.init(.remove_dir, builder.fmt(<span class="tok-str">&quot;RemoveDir {s}&quot;</span>, .{dir_path}), builder.allocator, make),</span>
-<span class="line" id="L17">        .dir_path = builder.dupePath(dir_path),</span>
-<span class="line" id="L18">    };</span>
-<span class="line" id="L19">}</span>
-<span class="line" id="L20"></span>
-<span class="line" id="L21"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L22">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(RemoveDirStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
-<span class="line" id="L23"></span>
-<span class="line" id="L24">    <span class="tok-kw">const</span> full_path = self.builder.pathFromRoot(self.dir_path);</span>
-<span class="line" id="L25">    fs.cwd().deleteTree(full_path) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L26">        log.err(<span class="tok-str">&quot;Unable to remove {s}: {s}&quot;</span>, .{ full_path, <span class="tok-builtin">@errorName</span>(err) });</span>
-<span class="line" id="L27">        <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L28">    };</span>
-<span class="line" id="L29">}</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> fs = std.fs;</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> Step = std.Build.Step;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> RemoveDirStep = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L5"></span>
+<span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> base_id = .remove_dir;</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8">step: Step,</span>
+<span class="line" id="L9">dir_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L10"></span>
+<span class="line" id="L11"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(owner: *std.Build, dir_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) RemoveDirStep {</span>
+<span class="line" id="L12">    <span class="tok-kw">return</span> RemoveDirStep{</span>
+<span class="line" id="L13">        .step = Step.init(.{</span>
+<span class="line" id="L14">            .id = .remove_dir,</span>
+<span class="line" id="L15">            .name = owner.fmt(<span class="tok-str">&quot;RemoveDir {s}&quot;</span>, .{dir_path}),</span>
+<span class="line" id="L16">            .owner = owner,</span>
+<span class="line" id="L17">            .makeFn = make,</span>
+<span class="line" id="L18">        }),</span>
+<span class="line" id="L19">        .dir_path = owner.dupePath(dir_path),</span>
+<span class="line" id="L20">    };</span>
+<span class="line" id="L21">}</span>
+<span class="line" id="L22"></span>
+<span class="line" id="L23"><span class="tok-kw">fn</span> <span class="tok-fn">make</span>(step: *Step, prog_node: *std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L24">    <span class="tok-comment">// TODO update progress node while walking file system.</span>
+</span>
+<span class="line" id="L25">    <span class="tok-comment">// Should the standard library support this use case??</span>
+</span>
+<span class="line" id="L26">    _ = prog_node;</span>
+<span class="line" id="L27"></span>
+<span class="line" id="L28">    <span class="tok-kw">const</span> b = step.owner;</span>
+<span class="line" id="L29">    <span class="tok-kw">const</span> self = <span class="tok-builtin">@fieldParentPtr</span>(RemoveDirStep, <span class="tok-str">&quot;step&quot;</span>, step);</span>
 <span class="line" id="L30"></span>
+<span class="line" id="L31">    b.build_root.handle.deleteTree(self.dir_path) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L32">        <span class="tok-kw">if</span> (b.build_root.path) |base| {</span>
+<span class="line" id="L33">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to recursively delete path '{s}/{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L34">                base, self.dir_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L35">            });</span>
+<span class="line" id="L36">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L37">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;unable to recursively delete path '{s}': {s}&quot;</span>, .{</span>
+<span class="line" id="L38">                self.dir_path, <span class="tok-builtin">@errorName</span>(err),</span>
+<span class="line" id="L39">            });</span>
+<span class="line" id="L40">        }</span>
+<span class="line" id="L41">    };</span>
+<span class="line" id="L42">}</span>
+<span class="line" id="L43"></span>
 </code></pre></body>
 </html>
