@@ -71,13 +71,13 @@ test "getAttributes - fail" {
 
     const expected: ?void = null;
 
-    try expectEqual(expected, getAttributes(bool, De));
-    try expectEqual(expected, getAttributes(i32, De));
-    try expectEqual(expected, getAttributes([5]i32, De));
-    try expectEqual(expected, getAttributes(struct {}, De));
-    try expectEqual(expected, getAttributes(union(enum) { foo, bar }, De));
-    try expectEqual(expected, getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), De));
-    try expectEqual(expected, getAttributes(struct {
+    try expectEqual(expected, comptime getAttributes(bool, De));
+    try expectEqual(expected, comptime getAttributes(i32, De));
+    try expectEqual(expected, comptime getAttributes([5]i32, De));
+    try expectEqual(expected, comptime getAttributes(struct {}, De));
+    try expectEqual(expected, comptime getAttributes(union(enum) { foo, bar }, De));
+    try expectEqual(expected, comptime getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), De));
+    try expectEqual(expected, comptime getAttributes(struct {
         pub fn is(comptime _: bool) type {
             return true;
         }
@@ -86,7 +86,7 @@ test "getAttributes - fail" {
     }, De));
 
     inline for (tuples.default) |block| {
-        try expectEqual(expected, getAttributes(block, De));
+        try expectEqual(expected, comptime getAttributes(block, De));
     }
 }
 
@@ -114,7 +114,7 @@ test "getAttributes - success" {
         const D = t.Deserializer(block, null);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, getAttributes(Point, De));
+        try expectEqual(expected, comptime getAttributes(Point, De));
     }
 
     // Deserializer DB
@@ -122,7 +122,7 @@ test "getAttributes - success" {
         const D = t.Deserializer(null, block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, getAttributes(Point, De));
+        try expectEqual(expected, comptime getAttributes(Point, De));
     }
 
     // Type DB
@@ -138,7 +138,7 @@ test "getAttributes - success" {
             };
         };
 
-        try expectEqual(expected, getAttributes(PointCustom, De));
+        try expectEqual(expected, comptime getAttributes(PointCustom, De));
     }
 }
 
@@ -187,7 +187,7 @@ test "getAttributes - priority" {
         const D = t.Deserializer(user_block, null);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, getAttributes(PointInvalidCustom, De));
+        try expectEqual(expected, comptime getAttributes(PointInvalidCustom, De));
     }
 
     // User DB > Deserializer DB
@@ -210,7 +210,7 @@ test "getAttributes - priority" {
         const D = t.Deserializer(user_block, serializer_block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, getAttributes(Point, De));
+        try expectEqual(expected, comptime getAttributes(Point, De));
     }
 
     // Type DB > Deserializer DB
@@ -226,6 +226,6 @@ test "getAttributes - priority" {
         const D = t.Deserializer(null, serializer_block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, getAttributes(PointCustom, De));
+        try expectEqual(expected, comptime getAttributes(PointCustom, De));
     }
 }
