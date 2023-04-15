@@ -53,7 +53,7 @@ pub const default = .{
     blocks.HashMap,
 
     blocks.IntegerBitSet,
-    blocks.MultiArrayList,
+    //blocks.MultiArrayList,
     blocks.NetAddress,
 
     // Covers the following types:
