@@ -1080,501 +1080,504 @@
 <span class="line" id="L923">    <span class="tok-kw">if</span> (partial_cleartext.len &gt; <span class="tok-number">0</span>) {</span>
 <span class="line" id="L924">        <span class="tok-kw">const</span> amt = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u15</span>, vp.put(partial_cleartext));</span>
 <span class="line" id="L925">        c.partial_cleartext_idx += amt;</span>
-<span class="line" id="L926">        <span class="tok-kw">if</span> (amt &lt; partial_cleartext.len) {</span>
-<span class="line" id="L927">            <span class="tok-comment">// We still have cleartext left so we cannot issue another read() call yet.</span>
+<span class="line" id="L926"></span>
+<span class="line" id="L927">        <span class="tok-kw">if</span> (c.partial_ciphertext_end == c.partial_ciphertext_idx) {</span>
+<span class="line" id="L928">            <span class="tok-comment">// The buffer is now empty.</span>
 </span>
-<span class="line" id="L928">            assert(vp.total == amt);</span>
-<span class="line" id="L929">            <span class="tok-kw">return</span> amt;</span>
-<span class="line" id="L930">        }</span>
-<span class="line" id="L931">        <span class="tok-kw">if</span> (c.received_close_notify) {</span>
-<span class="line" id="L932">            c.partial_ciphertext_end = <span class="tok-number">0</span>;</span>
-<span class="line" id="L933">            assert(vp.total == amt);</span>
-<span class="line" id="L934">            <span class="tok-kw">return</span> amt;</span>
-<span class="line" id="L935">        }</span>
-<span class="line" id="L936">        <span class="tok-kw">if</span> (c.partial_ciphertext_end == c.partial_ciphertext_idx) {</span>
-<span class="line" id="L937">            c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L938">            c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L939">            c.partial_ciphertext_end = <span class="tok-number">0</span>;</span>
-<span class="line" id="L940">        }</span>
-<span class="line" id="L941">    }</span>
-<span class="line" id="L942"></span>
-<span class="line" id="L943">    assert(!c.received_close_notify);</span>
+<span class="line" id="L929">            c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L930">            c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L931">            c.partial_ciphertext_end = <span class="tok-number">0</span>;</span>
+<span class="line" id="L932">        }</span>
+<span class="line" id="L933"></span>
+<span class="line" id="L934">        <span class="tok-kw">if</span> (c.received_close_notify) {</span>
+<span class="line" id="L935">            c.partial_ciphertext_end = <span class="tok-number">0</span>;</span>
+<span class="line" id="L936">            assert(vp.total == amt);</span>
+<span class="line" id="L937">            <span class="tok-kw">return</span> amt;</span>
+<span class="line" id="L938">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (amt &lt;= partial_cleartext.len) {</span>
+<span class="line" id="L939">            <span class="tok-comment">// We don't need more data, so don't call read.</span>
+</span>
+<span class="line" id="L940">            assert(vp.total == amt);</span>
+<span class="line" id="L941">            <span class="tok-kw">return</span> amt;</span>
+<span class="line" id="L942">        }</span>
+<span class="line" id="L943">    }</span>
 <span class="line" id="L944"></span>
-<span class="line" id="L945">    <span class="tok-comment">// Ideally, this buffer would never be used. It is needed when `iovecs` are</span>
+<span class="line" id="L945">    assert(!c.received_close_notify);</span>
+<span class="line" id="L946"></span>
+<span class="line" id="L947">    <span class="tok-comment">// Ideally, this buffer would never be used. It is needed when `iovecs` are</span>
 </span>
-<span class="line" id="L946">    <span class="tok-comment">// too small to fit the cleartext, which may be as large as `max_ciphertext_len`.</span>
+<span class="line" id="L948">    <span class="tok-comment">// too small to fit the cleartext, which may be as large as `max_ciphertext_len`.</span>
 </span>
-<span class="line" id="L947">    <span class="tok-kw">var</span> cleartext_stack_buffer: [max_ciphertext_len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L948">    <span class="tok-comment">// Temporarily stores ciphertext before decrypting it and giving it to `iovecs`.</span>
+<span class="line" id="L949">    <span class="tok-kw">var</span> cleartext_stack_buffer: [max_ciphertext_len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L950">    <span class="tok-comment">// Temporarily stores ciphertext before decrypting it and giving it to `iovecs`.</span>
 </span>
-<span class="line" id="L949">    <span class="tok-kw">var</span> in_stack_buffer: [max_ciphertext_len * <span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L950">    <span class="tok-comment">// How many bytes left in the user's buffer.</span>
+<span class="line" id="L951">    <span class="tok-kw">var</span> in_stack_buffer: [max_ciphertext_len * <span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L952">    <span class="tok-comment">// How many bytes left in the user's buffer.</span>
 </span>
-<span class="line" id="L951">    <span class="tok-kw">const</span> free_size = vp.freeSize();</span>
-<span class="line" id="L952">    <span class="tok-comment">// The amount of the user's buffer that we need to repurpose for storing</span>
+<span class="line" id="L953">    <span class="tok-kw">const</span> free_size = vp.freeSize();</span>
+<span class="line" id="L954">    <span class="tok-comment">// The amount of the user's buffer that we need to repurpose for storing</span>
 </span>
-<span class="line" id="L953">    <span class="tok-comment">// ciphertext. The end of the buffer will be used for such purposes.</span>
+<span class="line" id="L955">    <span class="tok-comment">// ciphertext. The end of the buffer will be used for such purposes.</span>
 </span>
-<span class="line" id="L954">    <span class="tok-kw">const</span> ciphertext_buf_len = (free_size / <span class="tok-number">2</span>) -| in_stack_buffer.len;</span>
-<span class="line" id="L955">    <span class="tok-comment">// The amount of the user's buffer that will be used to give cleartext. The</span>
+<span class="line" id="L956">    <span class="tok-kw">const</span> ciphertext_buf_len = (free_size / <span class="tok-number">2</span>) -| in_stack_buffer.len;</span>
+<span class="line" id="L957">    <span class="tok-comment">// The amount of the user's buffer that will be used to give cleartext. The</span>
 </span>
-<span class="line" id="L956">    <span class="tok-comment">// beginning of the buffer will be used for such purposes.</span>
+<span class="line" id="L958">    <span class="tok-comment">// beginning of the buffer will be used for such purposes.</span>
 </span>
-<span class="line" id="L957">    <span class="tok-kw">const</span> cleartext_buf_len = free_size - ciphertext_buf_len;</span>
-<span class="line" id="L958">    <span class="tok-kw">const</span> first_iov = c.partially_read_buffer[c.partial_ciphertext_end..];</span>
-<span class="line" id="L959"></span>
-<span class="line" id="L960">    <span class="tok-kw">var</span> ask_iovecs_buf: [<span class="tok-number">2</span>]std.os.iovec = .{</span>
-<span class="line" id="L961">        .{</span>
-<span class="line" id="L962">            .iov_base = first_iov.ptr,</span>
-<span class="line" id="L963">            .iov_len = first_iov.len,</span>
-<span class="line" id="L964">        },</span>
-<span class="line" id="L965">        .{</span>
-<span class="line" id="L966">            .iov_base = &amp;in_stack_buffer,</span>
-<span class="line" id="L967">            .iov_len = in_stack_buffer.len,</span>
-<span class="line" id="L968">        },</span>
-<span class="line" id="L969">    };</span>
-<span class="line" id="L970"></span>
-<span class="line" id="L971">    <span class="tok-comment">// Cleartext capacity of output buffer, in records, rounded up.</span>
+<span class="line" id="L959">    <span class="tok-kw">const</span> cleartext_buf_len = free_size - ciphertext_buf_len;</span>
+<span class="line" id="L960">    <span class="tok-kw">const</span> first_iov = c.partially_read_buffer[c.partial_ciphertext_end..];</span>
+<span class="line" id="L961"></span>
+<span class="line" id="L962">    <span class="tok-kw">var</span> ask_iovecs_buf: [<span class="tok-number">2</span>]std.os.iovec = .{</span>
+<span class="line" id="L963">        .{</span>
+<span class="line" id="L964">            .iov_base = first_iov.ptr,</span>
+<span class="line" id="L965">            .iov_len = first_iov.len,</span>
+<span class="line" id="L966">        },</span>
+<span class="line" id="L967">        .{</span>
+<span class="line" id="L968">            .iov_base = &amp;in_stack_buffer,</span>
+<span class="line" id="L969">            .iov_len = in_stack_buffer.len,</span>
+<span class="line" id="L970">        },</span>
+<span class="line" id="L971">    };</span>
+<span class="line" id="L972"></span>
+<span class="line" id="L973">    <span class="tok-comment">// Cleartext capacity of output buffer, in records, rounded up.</span>
 </span>
-<span class="line" id="L972">    <span class="tok-kw">const</span> buf_cap = (cleartext_buf_len +| (max_ciphertext_len - <span class="tok-number">1</span>)) / max_ciphertext_len;</span>
-<span class="line" id="L973">    <span class="tok-kw">const</span> wanted_read_len = buf_cap * (max_ciphertext_len + tls.record_header_len);</span>
-<span class="line" id="L974">    <span class="tok-kw">const</span> ask_len = <span class="tok-builtin">@max</span>(wanted_read_len, cleartext_stack_buffer.len);</span>
-<span class="line" id="L975">    <span class="tok-kw">const</span> ask_iovecs = limitVecs(&amp;ask_iovecs_buf, ask_len);</span>
-<span class="line" id="L976">    <span class="tok-kw">const</span> actual_read_len = <span class="tok-kw">try</span> stream.readv(ask_iovecs);</span>
-<span class="line" id="L977">    <span class="tok-kw">if</span> (actual_read_len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L978">        <span class="tok-comment">// This is either a truncation attack, a bug in the server, or an</span>
+<span class="line" id="L974">    <span class="tok-kw">const</span> buf_cap = (cleartext_buf_len +| (max_ciphertext_len - <span class="tok-number">1</span>)) / max_ciphertext_len;</span>
+<span class="line" id="L975">    <span class="tok-kw">const</span> wanted_read_len = buf_cap * (max_ciphertext_len + tls.record_header_len);</span>
+<span class="line" id="L976">    <span class="tok-kw">const</span> ask_len = <span class="tok-builtin">@max</span>(wanted_read_len, cleartext_stack_buffer.len);</span>
+<span class="line" id="L977">    <span class="tok-kw">const</span> ask_iovecs = limitVecs(&amp;ask_iovecs_buf, ask_len);</span>
+<span class="line" id="L978">    <span class="tok-kw">const</span> actual_read_len = <span class="tok-kw">try</span> stream.readv(ask_iovecs);</span>
+<span class="line" id="L979">    <span class="tok-kw">if</span> (actual_read_len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L980">        <span class="tok-comment">// This is either a truncation attack, a bug in the server, or an</span>
 </span>
-<span class="line" id="L979">        <span class="tok-comment">// intentional omission of the close_notify message due to truncation</span>
+<span class="line" id="L981">        <span class="tok-comment">// intentional omission of the close_notify message due to truncation</span>
 </span>
-<span class="line" id="L980">        <span class="tok-comment">// detection handled above the TLS layer.</span>
+<span class="line" id="L982">        <span class="tok-comment">// detection handled above the TLS layer.</span>
 </span>
-<span class="line" id="L981">        <span class="tok-kw">if</span> (c.allow_truncation_attacks) {</span>
-<span class="line" id="L982">            c.received_close_notify = <span class="tok-null">true</span>;</span>
-<span class="line" id="L983">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L984">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsConnectionTruncated;</span>
-<span class="line" id="L985">        }</span>
-<span class="line" id="L986">    }</span>
-<span class="line" id="L987"></span>
-<span class="line" id="L988">    <span class="tok-comment">// There might be more bytes inside `in_stack_buffer` that need to be processed,</span>
+<span class="line" id="L983">        <span class="tok-kw">if</span> (c.allow_truncation_attacks) {</span>
+<span class="line" id="L984">            c.received_close_notify = <span class="tok-null">true</span>;</span>
+<span class="line" id="L985">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L986">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsConnectionTruncated;</span>
+<span class="line" id="L987">        }</span>
+<span class="line" id="L988">    }</span>
+<span class="line" id="L989"></span>
+<span class="line" id="L990">    <span class="tok-comment">// There might be more bytes inside `in_stack_buffer` that need to be processed,</span>
 </span>
-<span class="line" id="L989">    <span class="tok-comment">// but at least frag0 will have one complete ciphertext record.</span>
+<span class="line" id="L991">    <span class="tok-comment">// but at least frag0 will have one complete ciphertext record.</span>
 </span>
-<span class="line" id="L990">    <span class="tok-kw">const</span> frag0_end = <span class="tok-builtin">@min</span>(c.partially_read_buffer.len, c.partial_ciphertext_end + actual_read_len);</span>
-<span class="line" id="L991">    <span class="tok-kw">const</span> frag0 = c.partially_read_buffer[c.partial_ciphertext_idx..frag0_end];</span>
-<span class="line" id="L992">    <span class="tok-kw">var</span> frag1 = in_stack_buffer[<span class="tok-number">0</span>..actual_read_len -| first_iov.len];</span>
-<span class="line" id="L993">    <span class="tok-comment">// We need to decipher frag0 and frag1 but there may be a ciphertext record</span>
+<span class="line" id="L992">    <span class="tok-kw">const</span> frag0_end = <span class="tok-builtin">@min</span>(c.partially_read_buffer.len, c.partial_ciphertext_end + actual_read_len);</span>
+<span class="line" id="L993">    <span class="tok-kw">const</span> frag0 = c.partially_read_buffer[c.partial_ciphertext_idx..frag0_end];</span>
+<span class="line" id="L994">    <span class="tok-kw">var</span> frag1 = in_stack_buffer[<span class="tok-number">0</span>..actual_read_len -| first_iov.len];</span>
+<span class="line" id="L995">    <span class="tok-comment">// We need to decipher frag0 and frag1 but there may be a ciphertext record</span>
 </span>
-<span class="line" id="L994">    <span class="tok-comment">// straddling the boundary. We can handle this with two memcpy() calls to</span>
+<span class="line" id="L996">    <span class="tok-comment">// straddling the boundary. We can handle this with two memcpy() calls to</span>
 </span>
-<span class="line" id="L995">    <span class="tok-comment">// assemble the straddling record in between handling the two sides.</span>
+<span class="line" id="L997">    <span class="tok-comment">// assemble the straddling record in between handling the two sides.</span>
 </span>
-<span class="line" id="L996">    <span class="tok-kw">var</span> frag = frag0;</span>
-<span class="line" id="L997">    <span class="tok-kw">var</span> in: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L998">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L999">        <span class="tok-kw">if</span> (in == frag.len) {</span>
-<span class="line" id="L1000">            <span class="tok-comment">// Perfect split.</span>
+<span class="line" id="L998">    <span class="tok-kw">var</span> frag = frag0;</span>
+<span class="line" id="L999">    <span class="tok-kw">var</span> in: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1000">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1001">        <span class="tok-kw">if</span> (in == frag.len) {</span>
+<span class="line" id="L1002">            <span class="tok-comment">// Perfect split.</span>
 </span>
-<span class="line" id="L1001">            <span class="tok-kw">if</span> (frag.ptr == frag1.ptr) {</span>
-<span class="line" id="L1002">                c.partial_ciphertext_end = c.partial_ciphertext_idx;</span>
-<span class="line" id="L1003">                <span class="tok-kw">return</span> vp.total;</span>
-<span class="line" id="L1004">            }</span>
-<span class="line" id="L1005">            frag = frag1;</span>
-<span class="line" id="L1006">            in = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1007">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1008">        }</span>
-<span class="line" id="L1009"></span>
-<span class="line" id="L1010">        <span class="tok-kw">if</span> (in + tls.record_header_len &gt; frag.len) {</span>
-<span class="line" id="L1011">            <span class="tok-kw">if</span> (frag.ptr == frag1.ptr)</span>
-<span class="line" id="L1012">                <span class="tok-kw">return</span> finishRead(c, frag, in, vp.total);</span>
-<span class="line" id="L1013"></span>
-<span class="line" id="L1014">            <span class="tok-kw">const</span> first = frag[in..];</span>
+<span class="line" id="L1003">            <span class="tok-kw">if</span> (frag.ptr == frag1.ptr) {</span>
+<span class="line" id="L1004">                c.partial_ciphertext_end = c.partial_ciphertext_idx;</span>
+<span class="line" id="L1005">                <span class="tok-kw">return</span> vp.total;</span>
+<span class="line" id="L1006">            }</span>
+<span class="line" id="L1007">            frag = frag1;</span>
+<span class="line" id="L1008">            in = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1009">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1010">        }</span>
+<span class="line" id="L1011"></span>
+<span class="line" id="L1012">        <span class="tok-kw">if</span> (in + tls.record_header_len &gt; frag.len) {</span>
+<span class="line" id="L1013">            <span class="tok-kw">if</span> (frag.ptr == frag1.ptr)</span>
+<span class="line" id="L1014">                <span class="tok-kw">return</span> finishRead(c, frag, in, vp.total);</span>
 <span class="line" id="L1015"></span>
-<span class="line" id="L1016">            <span class="tok-kw">if</span> (frag1.len &lt; tls.record_header_len)</span>
-<span class="line" id="L1017">                <span class="tok-kw">return</span> finishRead2(c, first, frag1, vp.total);</span>
-<span class="line" id="L1018"></span>
-<span class="line" id="L1019">            <span class="tok-comment">// A record straddles the two fragments. Copy into the now-empty first fragment.</span>
+<span class="line" id="L1016">            <span class="tok-kw">const</span> first = frag[in..];</span>
+<span class="line" id="L1017"></span>
+<span class="line" id="L1018">            <span class="tok-kw">if</span> (frag1.len &lt; tls.record_header_len)</span>
+<span class="line" id="L1019">                <span class="tok-kw">return</span> finishRead2(c, first, frag1, vp.total);</span>
+<span class="line" id="L1020"></span>
+<span class="line" id="L1021">            <span class="tok-comment">// A record straddles the two fragments. Copy into the now-empty first fragment.</span>
 </span>
-<span class="line" id="L1020">            <span class="tok-kw">const</span> record_len_byte_0: <span class="tok-type">u16</span> = straddleByte(frag, frag1, in + <span class="tok-number">3</span>);</span>
-<span class="line" id="L1021">            <span class="tok-kw">const</span> record_len_byte_1: <span class="tok-type">u16</span> = straddleByte(frag, frag1, in + <span class="tok-number">4</span>);</span>
-<span class="line" id="L1022">            <span class="tok-kw">const</span> record_len = (record_len_byte_0 &lt;&lt; <span class="tok-number">8</span>) | record_len_byte_1;</span>
-<span class="line" id="L1023">            <span class="tok-kw">if</span> (record_len &gt; max_ciphertext_len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsRecordOverflow;</span>
-<span class="line" id="L1024"></span>
-<span class="line" id="L1025">            <span class="tok-kw">const</span> full_record_len = record_len + tls.record_header_len;</span>
-<span class="line" id="L1026">            <span class="tok-kw">const</span> second_len = full_record_len - first.len;</span>
-<span class="line" id="L1027">            <span class="tok-kw">if</span> (frag1.len &lt; second_len)</span>
-<span class="line" id="L1028">                <span class="tok-kw">return</span> finishRead2(c, first, frag1, vp.total);</span>
-<span class="line" id="L1029"></span>
-<span class="line" id="L1030">            mem.copy(<span class="tok-type">u8</span>, frag[<span class="tok-number">0</span>..in], first);</span>
-<span class="line" id="L1031">            mem.copy(<span class="tok-type">u8</span>, frag[first.len..], frag1[<span class="tok-number">0</span>..second_len]);</span>
-<span class="line" id="L1032">            frag = frag[<span class="tok-number">0</span>..full_record_len];</span>
-<span class="line" id="L1033">            frag1 = frag1[second_len..];</span>
-<span class="line" id="L1034">            in = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1035">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1036">        }</span>
-<span class="line" id="L1037">        <span class="tok-kw">const</span> ct = <span class="tok-builtin">@intToEnum</span>(tls.ContentType, frag[in]);</span>
-<span class="line" id="L1038">        in += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1039">        <span class="tok-kw">const</span> legacy_version = mem.readIntBig(<span class="tok-type">u16</span>, frag[in..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]);</span>
-<span class="line" id="L1040">        in += <span class="tok-number">2</span>;</span>
-<span class="line" id="L1041">        _ = legacy_version;</span>
-<span class="line" id="L1042">        <span class="tok-kw">const</span> record_len = mem.readIntBig(<span class="tok-type">u16</span>, frag[in..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]);</span>
-<span class="line" id="L1043">        <span class="tok-kw">if</span> (record_len &gt; max_ciphertext_len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsRecordOverflow;</span>
-<span class="line" id="L1044">        in += <span class="tok-number">2</span>;</span>
-<span class="line" id="L1045">        <span class="tok-kw">const</span> end = in + record_len;</span>
-<span class="line" id="L1046">        <span class="tok-kw">if</span> (end &gt; frag.len) {</span>
-<span class="line" id="L1047">            <span class="tok-comment">// We need the record header on the next iteration of the loop.</span>
+<span class="line" id="L1022">            <span class="tok-kw">const</span> record_len_byte_0: <span class="tok-type">u16</span> = straddleByte(frag, frag1, in + <span class="tok-number">3</span>);</span>
+<span class="line" id="L1023">            <span class="tok-kw">const</span> record_len_byte_1: <span class="tok-type">u16</span> = straddleByte(frag, frag1, in + <span class="tok-number">4</span>);</span>
+<span class="line" id="L1024">            <span class="tok-kw">const</span> record_len = (record_len_byte_0 &lt;&lt; <span class="tok-number">8</span>) | record_len_byte_1;</span>
+<span class="line" id="L1025">            <span class="tok-kw">if</span> (record_len &gt; max_ciphertext_len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsRecordOverflow;</span>
+<span class="line" id="L1026"></span>
+<span class="line" id="L1027">            <span class="tok-kw">const</span> full_record_len = record_len + tls.record_header_len;</span>
+<span class="line" id="L1028">            <span class="tok-kw">const</span> second_len = full_record_len - first.len;</span>
+<span class="line" id="L1029">            <span class="tok-kw">if</span> (frag1.len &lt; second_len)</span>
+<span class="line" id="L1030">                <span class="tok-kw">return</span> finishRead2(c, first, frag1, vp.total);</span>
+<span class="line" id="L1031"></span>
+<span class="line" id="L1032">            mem.copy(<span class="tok-type">u8</span>, frag[<span class="tok-number">0</span>..in], first);</span>
+<span class="line" id="L1033">            mem.copy(<span class="tok-type">u8</span>, frag[first.len..], frag1[<span class="tok-number">0</span>..second_len]);</span>
+<span class="line" id="L1034">            frag = frag[<span class="tok-number">0</span>..full_record_len];</span>
+<span class="line" id="L1035">            frag1 = frag1[second_len..];</span>
+<span class="line" id="L1036">            in = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1037">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1038">        }</span>
+<span class="line" id="L1039">        <span class="tok-kw">const</span> ct = <span class="tok-builtin">@intToEnum</span>(tls.ContentType, frag[in]);</span>
+<span class="line" id="L1040">        in += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1041">        <span class="tok-kw">const</span> legacy_version = mem.readIntBig(<span class="tok-type">u16</span>, frag[in..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]);</span>
+<span class="line" id="L1042">        in += <span class="tok-number">2</span>;</span>
+<span class="line" id="L1043">        _ = legacy_version;</span>
+<span class="line" id="L1044">        <span class="tok-kw">const</span> record_len = mem.readIntBig(<span class="tok-type">u16</span>, frag[in..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]);</span>
+<span class="line" id="L1045">        <span class="tok-kw">if</span> (record_len &gt; max_ciphertext_len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsRecordOverflow;</span>
+<span class="line" id="L1046">        in += <span class="tok-number">2</span>;</span>
+<span class="line" id="L1047">        <span class="tok-kw">const</span> end = in + record_len;</span>
+<span class="line" id="L1048">        <span class="tok-kw">if</span> (end &gt; frag.len) {</span>
+<span class="line" id="L1049">            <span class="tok-comment">// We need the record header on the next iteration of the loop.</span>
 </span>
-<span class="line" id="L1048">            in -= tls.record_header_len;</span>
-<span class="line" id="L1049"></span>
-<span class="line" id="L1050">            <span class="tok-kw">if</span> (frag.ptr == frag1.ptr)</span>
-<span class="line" id="L1051">                <span class="tok-kw">return</span> finishRead(c, frag, in, vp.total);</span>
-<span class="line" id="L1052"></span>
-<span class="line" id="L1053">            <span class="tok-comment">// A record straddles the two fragments. Copy into the now-empty first fragment.</span>
+<span class="line" id="L1050">            in -= tls.record_header_len;</span>
+<span class="line" id="L1051"></span>
+<span class="line" id="L1052">            <span class="tok-kw">if</span> (frag.ptr == frag1.ptr)</span>
+<span class="line" id="L1053">                <span class="tok-kw">return</span> finishRead(c, frag, in, vp.total);</span>
+<span class="line" id="L1054"></span>
+<span class="line" id="L1055">            <span class="tok-comment">// A record straddles the two fragments. Copy into the now-empty first fragment.</span>
 </span>
-<span class="line" id="L1054">            <span class="tok-kw">const</span> first = frag[in..];</span>
-<span class="line" id="L1055">            <span class="tok-kw">const</span> full_record_len = record_len + tls.record_header_len;</span>
-<span class="line" id="L1056">            <span class="tok-kw">const</span> second_len = full_record_len - first.len;</span>
-<span class="line" id="L1057">            <span class="tok-kw">if</span> (frag1.len &lt; second_len)</span>
-<span class="line" id="L1058">                <span class="tok-kw">return</span> finishRead2(c, first, frag1, vp.total);</span>
-<span class="line" id="L1059"></span>
-<span class="line" id="L1060">            mem.copy(<span class="tok-type">u8</span>, frag[<span class="tok-number">0</span>..in], first);</span>
-<span class="line" id="L1061">            mem.copy(<span class="tok-type">u8</span>, frag[first.len..], frag1[<span class="tok-number">0</span>..second_len]);</span>
-<span class="line" id="L1062">            frag = frag[<span class="tok-number">0</span>..full_record_len];</span>
-<span class="line" id="L1063">            frag1 = frag1[second_len..];</span>
-<span class="line" id="L1064">            in = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1065">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1066">        }</span>
-<span class="line" id="L1067">        <span class="tok-kw">switch</span> (ct) {</span>
-<span class="line" id="L1068">            .alert =&gt; {</span>
-<span class="line" id="L1069">                <span class="tok-kw">if</span> (in + <span class="tok-number">2</span> &gt; frag.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
-<span class="line" id="L1070">                <span class="tok-kw">const</span> level = <span class="tok-builtin">@intToEnum</span>(tls.AlertLevel, frag[in]);</span>
-<span class="line" id="L1071">                <span class="tok-kw">const</span> desc = <span class="tok-builtin">@intToEnum</span>(tls.AlertDescription, frag[in + <span class="tok-number">1</span>]);</span>
-<span class="line" id="L1072">                _ = level;</span>
-<span class="line" id="L1073">                _ = desc;</span>
-<span class="line" id="L1074">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsAlert;</span>
-<span class="line" id="L1075">            },</span>
-<span class="line" id="L1076">            .application_data =&gt; {</span>
-<span class="line" id="L1077">                <span class="tok-kw">const</span> cleartext = <span class="tok-kw">switch</span> (c.application_cipher) {</span>
-<span class="line" id="L1078">                    <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| c: {</span>
-<span class="line" id="L1079">                        <span class="tok-kw">const</span> P = <span class="tok-builtin">@TypeOf</span>(p.*);</span>
-<span class="line" id="L1080">                        <span class="tok-kw">const</span> V = <span class="tok-builtin">@Vector</span>(P.AEAD.nonce_length, <span class="tok-type">u8</span>);</span>
-<span class="line" id="L1081">                        <span class="tok-kw">const</span> ad = frag[in - <span class="tok-number">5</span> ..][<span class="tok-number">0</span>..<span class="tok-number">5</span>];</span>
-<span class="line" id="L1082">                        <span class="tok-kw">const</span> ciphertext_len = record_len - P.AEAD.tag_length;</span>
-<span class="line" id="L1083">                        <span class="tok-kw">const</span> ciphertext = frag[in..][<span class="tok-number">0</span>..ciphertext_len];</span>
-<span class="line" id="L1084">                        in += ciphertext_len;</span>
-<span class="line" id="L1085">                        <span class="tok-kw">const</span> auth_tag = frag[in..][<span class="tok-number">0</span>..P.AEAD.tag_length].*;</span>
-<span class="line" id="L1086">                        <span class="tok-kw">const</span> pad = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** (P.AEAD.nonce_length - <span class="tok-number">8</span>);</span>
-<span class="line" id="L1087">                        <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@bitCast</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, big(c.read_seq));</span>
-<span class="line" id="L1088">                        <span class="tok-kw">const</span> nonce: [P.AEAD.nonce_length]<span class="tok-type">u8</span> = <span class="tok-builtin">@as</span>(V, p.server_iv) ^ operand;</span>
-<span class="line" id="L1089">                        <span class="tok-kw">const</span> out_buf = vp.peek();</span>
-<span class="line" id="L1090">                        <span class="tok-kw">const</span> cleartext_buf = <span class="tok-kw">if</span> (ciphertext.len &lt;= out_buf.len)</span>
-<span class="line" id="L1091">                            out_buf</span>
-<span class="line" id="L1092">                        <span class="tok-kw">else</span></span>
-<span class="line" id="L1093">                            &amp;cleartext_stack_buffer;</span>
-<span class="line" id="L1094">                        <span class="tok-kw">const</span> cleartext = cleartext_buf[<span class="tok-number">0</span>..ciphertext.len];</span>
-<span class="line" id="L1095">                        P.AEAD.decrypt(cleartext, ciphertext, auth_tag, ad, nonce, p.server_key) <span class="tok-kw">catch</span></span>
-<span class="line" id="L1096">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsBadRecordMac;</span>
-<span class="line" id="L1097">                        <span class="tok-kw">break</span> :c cleartext;</span>
-<span class="line" id="L1098">                    },</span>
-<span class="line" id="L1099">                };</span>
-<span class="line" id="L1100"></span>
-<span class="line" id="L1101">                c.read_seq = <span class="tok-kw">try</span> std.math.add(<span class="tok-type">u64</span>, c.read_seq, <span class="tok-number">1</span>);</span>
+<span class="line" id="L1056">            <span class="tok-kw">const</span> first = frag[in..];</span>
+<span class="line" id="L1057">            <span class="tok-kw">const</span> full_record_len = record_len + tls.record_header_len;</span>
+<span class="line" id="L1058">            <span class="tok-kw">const</span> second_len = full_record_len - first.len;</span>
+<span class="line" id="L1059">            <span class="tok-kw">if</span> (frag1.len &lt; second_len)</span>
+<span class="line" id="L1060">                <span class="tok-kw">return</span> finishRead2(c, first, frag1, vp.total);</span>
+<span class="line" id="L1061"></span>
+<span class="line" id="L1062">            mem.copy(<span class="tok-type">u8</span>, frag[<span class="tok-number">0</span>..in], first);</span>
+<span class="line" id="L1063">            mem.copy(<span class="tok-type">u8</span>, frag[first.len..], frag1[<span class="tok-number">0</span>..second_len]);</span>
+<span class="line" id="L1064">            frag = frag[<span class="tok-number">0</span>..full_record_len];</span>
+<span class="line" id="L1065">            frag1 = frag1[second_len..];</span>
+<span class="line" id="L1066">            in = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1067">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1068">        }</span>
+<span class="line" id="L1069">        <span class="tok-kw">switch</span> (ct) {</span>
+<span class="line" id="L1070">            .alert =&gt; {</span>
+<span class="line" id="L1071">                <span class="tok-kw">if</span> (in + <span class="tok-number">2</span> &gt; frag.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
+<span class="line" id="L1072">                <span class="tok-kw">const</span> level = <span class="tok-builtin">@intToEnum</span>(tls.AlertLevel, frag[in]);</span>
+<span class="line" id="L1073">                <span class="tok-kw">const</span> desc = <span class="tok-builtin">@intToEnum</span>(tls.AlertDescription, frag[in + <span class="tok-number">1</span>]);</span>
+<span class="line" id="L1074">                _ = level;</span>
+<span class="line" id="L1075">                _ = desc;</span>
+<span class="line" id="L1076">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsAlert;</span>
+<span class="line" id="L1077">            },</span>
+<span class="line" id="L1078">            .application_data =&gt; {</span>
+<span class="line" id="L1079">                <span class="tok-kw">const</span> cleartext = <span class="tok-kw">switch</span> (c.application_cipher) {</span>
+<span class="line" id="L1080">                    <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| c: {</span>
+<span class="line" id="L1081">                        <span class="tok-kw">const</span> P = <span class="tok-builtin">@TypeOf</span>(p.*);</span>
+<span class="line" id="L1082">                        <span class="tok-kw">const</span> V = <span class="tok-builtin">@Vector</span>(P.AEAD.nonce_length, <span class="tok-type">u8</span>);</span>
+<span class="line" id="L1083">                        <span class="tok-kw">const</span> ad = frag[in - <span class="tok-number">5</span> ..][<span class="tok-number">0</span>..<span class="tok-number">5</span>];</span>
+<span class="line" id="L1084">                        <span class="tok-kw">const</span> ciphertext_len = record_len - P.AEAD.tag_length;</span>
+<span class="line" id="L1085">                        <span class="tok-kw">const</span> ciphertext = frag[in..][<span class="tok-number">0</span>..ciphertext_len];</span>
+<span class="line" id="L1086">                        in += ciphertext_len;</span>
+<span class="line" id="L1087">                        <span class="tok-kw">const</span> auth_tag = frag[in..][<span class="tok-number">0</span>..P.AEAD.tag_length].*;</span>
+<span class="line" id="L1088">                        <span class="tok-kw">const</span> pad = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** (P.AEAD.nonce_length - <span class="tok-number">8</span>);</span>
+<span class="line" id="L1089">                        <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@bitCast</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, big(c.read_seq));</span>
+<span class="line" id="L1090">                        <span class="tok-kw">const</span> nonce: [P.AEAD.nonce_length]<span class="tok-type">u8</span> = <span class="tok-builtin">@as</span>(V, p.server_iv) ^ operand;</span>
+<span class="line" id="L1091">                        <span class="tok-kw">const</span> out_buf = vp.peek();</span>
+<span class="line" id="L1092">                        <span class="tok-kw">const</span> cleartext_buf = <span class="tok-kw">if</span> (ciphertext.len &lt;= out_buf.len)</span>
+<span class="line" id="L1093">                            out_buf</span>
+<span class="line" id="L1094">                        <span class="tok-kw">else</span></span>
+<span class="line" id="L1095">                            &amp;cleartext_stack_buffer;</span>
+<span class="line" id="L1096">                        <span class="tok-kw">const</span> cleartext = cleartext_buf[<span class="tok-number">0</span>..ciphertext.len];</span>
+<span class="line" id="L1097">                        P.AEAD.decrypt(cleartext, ciphertext, auth_tag, ad, nonce, p.server_key) <span class="tok-kw">catch</span></span>
+<span class="line" id="L1098">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsBadRecordMac;</span>
+<span class="line" id="L1099">                        <span class="tok-kw">break</span> :c cleartext;</span>
+<span class="line" id="L1100">                    },</span>
+<span class="line" id="L1101">                };</span>
 <span class="line" id="L1102"></span>
-<span class="line" id="L1103">                <span class="tok-kw">const</span> inner_ct = <span class="tok-builtin">@intToEnum</span>(tls.ContentType, cleartext[cleartext.len - <span class="tok-number">1</span>]);</span>
-<span class="line" id="L1104">                <span class="tok-kw">switch</span> (inner_ct) {</span>
-<span class="line" id="L1105">                    .alert =&gt; {</span>
-<span class="line" id="L1106">                        <span class="tok-kw">const</span> level = <span class="tok-builtin">@intToEnum</span>(tls.AlertLevel, cleartext[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L1107">                        <span class="tok-kw">const</span> desc = <span class="tok-builtin">@intToEnum</span>(tls.AlertDescription, cleartext[<span class="tok-number">1</span>]);</span>
-<span class="line" id="L1108">                        <span class="tok-kw">if</span> (desc == .close_notify) {</span>
-<span class="line" id="L1109">                            c.received_close_notify = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1110">                            c.partial_ciphertext_end = c.partial_ciphertext_idx;</span>
-<span class="line" id="L1111">                            <span class="tok-kw">return</span> vp.total;</span>
-<span class="line" id="L1112">                        }</span>
-<span class="line" id="L1113">                        _ = level;</span>
-<span class="line" id="L1114">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsAlert;</span>
-<span class="line" id="L1115">                    },</span>
-<span class="line" id="L1116">                    .handshake =&gt; {</span>
-<span class="line" id="L1117">                        <span class="tok-kw">var</span> ct_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1118">                        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1119">                            <span class="tok-kw">const</span> handshake_type = <span class="tok-builtin">@intToEnum</span>(tls.HandshakeType, cleartext[ct_i]);</span>
-<span class="line" id="L1120">                            ct_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1121">                            <span class="tok-kw">const</span> handshake_len = mem.readIntBig(<span class="tok-type">u24</span>, cleartext[ct_i..][<span class="tok-number">0</span>..<span class="tok-number">3</span>]);</span>
-<span class="line" id="L1122">                            ct_i += <span class="tok-number">3</span>;</span>
-<span class="line" id="L1123">                            <span class="tok-kw">const</span> next_handshake_i = ct_i + handshake_len;</span>
-<span class="line" id="L1124">                            <span class="tok-kw">if</span> (next_handshake_i &gt; cleartext.len - <span class="tok-number">1</span>)</span>
-<span class="line" id="L1125">                                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsBadLength;</span>
-<span class="line" id="L1126">                            <span class="tok-kw">const</span> handshake = cleartext[ct_i..next_handshake_i];</span>
-<span class="line" id="L1127">                            <span class="tok-kw">switch</span> (handshake_type) {</span>
-<span class="line" id="L1128">                                .new_session_ticket =&gt; {</span>
-<span class="line" id="L1129">                                    <span class="tok-comment">// This client implementation ignores new session tickets.</span>
+<span class="line" id="L1103">                c.read_seq = <span class="tok-kw">try</span> std.math.add(<span class="tok-type">u64</span>, c.read_seq, <span class="tok-number">1</span>);</span>
+<span class="line" id="L1104"></span>
+<span class="line" id="L1105">                <span class="tok-kw">const</span> inner_ct = <span class="tok-builtin">@intToEnum</span>(tls.ContentType, cleartext[cleartext.len - <span class="tok-number">1</span>]);</span>
+<span class="line" id="L1106">                <span class="tok-kw">switch</span> (inner_ct) {</span>
+<span class="line" id="L1107">                    .alert =&gt; {</span>
+<span class="line" id="L1108">                        <span class="tok-kw">const</span> level = <span class="tok-builtin">@intToEnum</span>(tls.AlertLevel, cleartext[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L1109">                        <span class="tok-kw">const</span> desc = <span class="tok-builtin">@intToEnum</span>(tls.AlertDescription, cleartext[<span class="tok-number">1</span>]);</span>
+<span class="line" id="L1110">                        <span class="tok-kw">if</span> (desc == .close_notify) {</span>
+<span class="line" id="L1111">                            c.received_close_notify = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1112">                            c.partial_ciphertext_end = c.partial_ciphertext_idx;</span>
+<span class="line" id="L1113">                            <span class="tok-kw">return</span> vp.total;</span>
+<span class="line" id="L1114">                        }</span>
+<span class="line" id="L1115">                        _ = level;</span>
+<span class="line" id="L1116">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsAlert;</span>
+<span class="line" id="L1117">                    },</span>
+<span class="line" id="L1118">                    .handshake =&gt; {</span>
+<span class="line" id="L1119">                        <span class="tok-kw">var</span> ct_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1120">                        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1121">                            <span class="tok-kw">const</span> handshake_type = <span class="tok-builtin">@intToEnum</span>(tls.HandshakeType, cleartext[ct_i]);</span>
+<span class="line" id="L1122">                            ct_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1123">                            <span class="tok-kw">const</span> handshake_len = mem.readIntBig(<span class="tok-type">u24</span>, cleartext[ct_i..][<span class="tok-number">0</span>..<span class="tok-number">3</span>]);</span>
+<span class="line" id="L1124">                            ct_i += <span class="tok-number">3</span>;</span>
+<span class="line" id="L1125">                            <span class="tok-kw">const</span> next_handshake_i = ct_i + handshake_len;</span>
+<span class="line" id="L1126">                            <span class="tok-kw">if</span> (next_handshake_i &gt; cleartext.len - <span class="tok-number">1</span>)</span>
+<span class="line" id="L1127">                                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsBadLength;</span>
+<span class="line" id="L1128">                            <span class="tok-kw">const</span> handshake = cleartext[ct_i..next_handshake_i];</span>
+<span class="line" id="L1129">                            <span class="tok-kw">switch</span> (handshake_type) {</span>
+<span class="line" id="L1130">                                .new_session_ticket =&gt; {</span>
+<span class="line" id="L1131">                                    <span class="tok-comment">// This client implementation ignores new session tickets.</span>
 </span>
-<span class="line" id="L1130">                                },</span>
-<span class="line" id="L1131">                                .key_update =&gt; {</span>
-<span class="line" id="L1132">                                    <span class="tok-kw">switch</span> (c.application_cipher) {</span>
-<span class="line" id="L1133">                                        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| {</span>
-<span class="line" id="L1134">                                            <span class="tok-kw">const</span> P = <span class="tok-builtin">@TypeOf</span>(p.*);</span>
-<span class="line" id="L1135">                                            <span class="tok-kw">const</span> server_secret = hkdfExpandLabel(P.Hkdf, p.server_secret, <span class="tok-str">&quot;traffic upd&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.Hash.digest_length);</span>
-<span class="line" id="L1136">                                            p.server_secret = server_secret;</span>
-<span class="line" id="L1137">                                            p.server_key = hkdfExpandLabel(P.Hkdf, server_secret, <span class="tok-str">&quot;key&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.key_length);</span>
-<span class="line" id="L1138">                                            p.server_iv = hkdfExpandLabel(P.Hkdf, server_secret, <span class="tok-str">&quot;iv&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.nonce_length);</span>
-<span class="line" id="L1139">                                        },</span>
-<span class="line" id="L1140">                                    }</span>
-<span class="line" id="L1141">                                    c.read_seq = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1142"></span>
-<span class="line" id="L1143">                                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@intToEnum</span>(tls.KeyUpdateRequest, handshake[<span class="tok-number">0</span>])) {</span>
-<span class="line" id="L1144">                                        .update_requested =&gt; {</span>
-<span class="line" id="L1145">                                            <span class="tok-kw">switch</span> (c.application_cipher) {</span>
-<span class="line" id="L1146">                                                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| {</span>
-<span class="line" id="L1147">                                                    <span class="tok-kw">const</span> P = <span class="tok-builtin">@TypeOf</span>(p.*);</span>
-<span class="line" id="L1148">                                                    <span class="tok-kw">const</span> client_secret = hkdfExpandLabel(P.Hkdf, p.client_secret, <span class="tok-str">&quot;traffic upd&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.Hash.digest_length);</span>
-<span class="line" id="L1149">                                                    p.client_secret = client_secret;</span>
-<span class="line" id="L1150">                                                    p.client_key = hkdfExpandLabel(P.Hkdf, client_secret, <span class="tok-str">&quot;key&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.key_length);</span>
-<span class="line" id="L1151">                                                    p.client_iv = hkdfExpandLabel(P.Hkdf, client_secret, <span class="tok-str">&quot;iv&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.nonce_length);</span>
-<span class="line" id="L1152">                                                },</span>
-<span class="line" id="L1153">                                            }</span>
-<span class="line" id="L1154">                                            c.write_seq = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1155">                                        },</span>
-<span class="line" id="L1156">                                        .update_not_requested =&gt; {},</span>
-<span class="line" id="L1157">                                        _ =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsIllegalParameter,</span>
-<span class="line" id="L1158">                                    }</span>
-<span class="line" id="L1159">                                },</span>
-<span class="line" id="L1160">                                <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1161">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
-<span class="line" id="L1162">                                },</span>
-<span class="line" id="L1163">                            }</span>
-<span class="line" id="L1164">                            ct_i = next_handshake_i;</span>
-<span class="line" id="L1165">                            <span class="tok-kw">if</span> (ct_i &gt;= cleartext.len - <span class="tok-number">1</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1166">                        }</span>
-<span class="line" id="L1167">                    },</span>
-<span class="line" id="L1168">                    .application_data =&gt; {</span>
-<span class="line" id="L1169">                        <span class="tok-comment">// Determine whether the output buffer or a stack</span>
+<span class="line" id="L1132">                                },</span>
+<span class="line" id="L1133">                                .key_update =&gt; {</span>
+<span class="line" id="L1134">                                    <span class="tok-kw">switch</span> (c.application_cipher) {</span>
+<span class="line" id="L1135">                                        <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| {</span>
+<span class="line" id="L1136">                                            <span class="tok-kw">const</span> P = <span class="tok-builtin">@TypeOf</span>(p.*);</span>
+<span class="line" id="L1137">                                            <span class="tok-kw">const</span> server_secret = hkdfExpandLabel(P.Hkdf, p.server_secret, <span class="tok-str">&quot;traffic upd&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.Hash.digest_length);</span>
+<span class="line" id="L1138">                                            p.server_secret = server_secret;</span>
+<span class="line" id="L1139">                                            p.server_key = hkdfExpandLabel(P.Hkdf, server_secret, <span class="tok-str">&quot;key&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.key_length);</span>
+<span class="line" id="L1140">                                            p.server_iv = hkdfExpandLabel(P.Hkdf, server_secret, <span class="tok-str">&quot;iv&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.nonce_length);</span>
+<span class="line" id="L1141">                                        },</span>
+<span class="line" id="L1142">                                    }</span>
+<span class="line" id="L1143">                                    c.read_seq = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1144"></span>
+<span class="line" id="L1145">                                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@intToEnum</span>(tls.KeyUpdateRequest, handshake[<span class="tok-number">0</span>])) {</span>
+<span class="line" id="L1146">                                        .update_requested =&gt; {</span>
+<span class="line" id="L1147">                                            <span class="tok-kw">switch</span> (c.application_cipher) {</span>
+<span class="line" id="L1148">                                                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| {</span>
+<span class="line" id="L1149">                                                    <span class="tok-kw">const</span> P = <span class="tok-builtin">@TypeOf</span>(p.*);</span>
+<span class="line" id="L1150">                                                    <span class="tok-kw">const</span> client_secret = hkdfExpandLabel(P.Hkdf, p.client_secret, <span class="tok-str">&quot;traffic upd&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.Hash.digest_length);</span>
+<span class="line" id="L1151">                                                    p.client_secret = client_secret;</span>
+<span class="line" id="L1152">                                                    p.client_key = hkdfExpandLabel(P.Hkdf, client_secret, <span class="tok-str">&quot;key&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.key_length);</span>
+<span class="line" id="L1153">                                                    p.client_iv = hkdfExpandLabel(P.Hkdf, client_secret, <span class="tok-str">&quot;iv&quot;</span>, <span class="tok-str">&quot;&quot;</span>, P.AEAD.nonce_length);</span>
+<span class="line" id="L1154">                                                },</span>
+<span class="line" id="L1155">                                            }</span>
+<span class="line" id="L1156">                                            c.write_seq = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1157">                                        },</span>
+<span class="line" id="L1158">                                        .update_not_requested =&gt; {},</span>
+<span class="line" id="L1159">                                        _ =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsIllegalParameter,</span>
+<span class="line" id="L1160">                                    }</span>
+<span class="line" id="L1161">                                },</span>
+<span class="line" id="L1162">                                <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1163">                                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
+<span class="line" id="L1164">                                },</span>
+<span class="line" id="L1165">                            }</span>
+<span class="line" id="L1166">                            ct_i = next_handshake_i;</span>
+<span class="line" id="L1167">                            <span class="tok-kw">if</span> (ct_i &gt;= cleartext.len - <span class="tok-number">1</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1168">                        }</span>
+<span class="line" id="L1169">                    },</span>
+<span class="line" id="L1170">                    .application_data =&gt; {</span>
+<span class="line" id="L1171">                        <span class="tok-comment">// Determine whether the output buffer or a stack</span>
 </span>
-<span class="line" id="L1170">                        <span class="tok-comment">// buffer was used for storing the cleartext.</span>
+<span class="line" id="L1172">                        <span class="tok-comment">// buffer was used for storing the cleartext.</span>
 </span>
-<span class="line" id="L1171">                        <span class="tok-kw">if</span> (cleartext.ptr == &amp;cleartext_stack_buffer) {</span>
-<span class="line" id="L1172">                            <span class="tok-comment">// Stack buffer was used, so we must copy to the output buffer.</span>
+<span class="line" id="L1173">                        <span class="tok-kw">if</span> (cleartext.ptr == &amp;cleartext_stack_buffer) {</span>
+<span class="line" id="L1174">                            <span class="tok-comment">// Stack buffer was used, so we must copy to the output buffer.</span>
 </span>
-<span class="line" id="L1173">                            <span class="tok-kw">const</span> msg = cleartext[<span class="tok-number">0</span> .. cleartext.len - <span class="tok-number">1</span>];</span>
-<span class="line" id="L1174">                            <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
-<span class="line" id="L1175">                                <span class="tok-comment">// We have already run out of room in iovecs. Continue</span>
+<span class="line" id="L1175">                            <span class="tok-kw">const</span> msg = cleartext[<span class="tok-number">0</span> .. cleartext.len - <span class="tok-number">1</span>];</span>
+<span class="line" id="L1176">                            <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
+<span class="line" id="L1177">                                <span class="tok-comment">// We have already run out of room in iovecs. Continue</span>
 </span>
-<span class="line" id="L1176">                                <span class="tok-comment">// appending to `partially_read_buffer`.</span>
+<span class="line" id="L1178">                                <span class="tok-comment">// appending to `partially_read_buffer`.</span>
 </span>
-<span class="line" id="L1177">                                <span class="tok-kw">const</span> dest = c.partially_read_buffer[c.partial_ciphertext_idx..];</span>
-<span class="line" id="L1178">                                mem.copy(<span class="tok-type">u8</span>, dest, msg);</span>
-<span class="line" id="L1179">                                c.partial_ciphertext_idx = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), c.partial_ciphertext_idx + msg.len);</span>
-<span class="line" id="L1180">                            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1181">                                <span class="tok-kw">const</span> amt = vp.put(msg);</span>
-<span class="line" id="L1182">                                <span class="tok-kw">if</span> (amt &lt; msg.len) {</span>
-<span class="line" id="L1183">                                    <span class="tok-kw">const</span> rest = msg[amt..];</span>
-<span class="line" id="L1184">                                    c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1185">                                    c.partial_ciphertext_idx = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), rest.len);</span>
-<span class="line" id="L1186">                                    mem.copy(<span class="tok-type">u8</span>, &amp;c.partially_read_buffer, rest);</span>
-<span class="line" id="L1187">                                }</span>
-<span class="line" id="L1188">                            }</span>
-<span class="line" id="L1189">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1190">                            <span class="tok-comment">// Output buffer was used directly which means no</span>
+<span class="line" id="L1179">                                <span class="tok-kw">const</span> dest = c.partially_read_buffer[c.partial_ciphertext_idx..];</span>
+<span class="line" id="L1180">                                mem.copy(<span class="tok-type">u8</span>, dest, msg);</span>
+<span class="line" id="L1181">                                c.partial_ciphertext_idx = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), c.partial_ciphertext_idx + msg.len);</span>
+<span class="line" id="L1182">                            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1183">                                <span class="tok-kw">const</span> amt = vp.put(msg);</span>
+<span class="line" id="L1184">                                <span class="tok-kw">if</span> (amt &lt; msg.len) {</span>
+<span class="line" id="L1185">                                    <span class="tok-kw">const</span> rest = msg[amt..];</span>
+<span class="line" id="L1186">                                    c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1187">                                    c.partial_ciphertext_idx = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), rest.len);</span>
+<span class="line" id="L1188">                                    mem.copy(<span class="tok-type">u8</span>, &amp;c.partially_read_buffer, rest);</span>
+<span class="line" id="L1189">                                }</span>
+<span class="line" id="L1190">                            }</span>
+<span class="line" id="L1191">                        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1192">                            <span class="tok-comment">// Output buffer was used directly which means no</span>
 </span>
-<span class="line" id="L1191">                            <span class="tok-comment">// memory copying needs to occur, and we can move</span>
+<span class="line" id="L1193">                            <span class="tok-comment">// memory copying needs to occur, and we can move</span>
 </span>
-<span class="line" id="L1192">                            <span class="tok-comment">// on to the next ciphertext record.</span>
+<span class="line" id="L1194">                            <span class="tok-comment">// on to the next ciphertext record.</span>
 </span>
-<span class="line" id="L1193">                            vp.next(cleartext.len - <span class="tok-number">1</span>);</span>
-<span class="line" id="L1194">                        }</span>
-<span class="line" id="L1195">                    },</span>
-<span class="line" id="L1196">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1197">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
-<span class="line" id="L1198">                    },</span>
-<span class="line" id="L1199">                }</span>
-<span class="line" id="L1200">            },</span>
-<span class="line" id="L1201">            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1202">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
-<span class="line" id="L1203">            },</span>
-<span class="line" id="L1204">        }</span>
-<span class="line" id="L1205">        in = end;</span>
-<span class="line" id="L1206">    }</span>
-<span class="line" id="L1207">}</span>
-<span class="line" id="L1208"></span>
-<span class="line" id="L1209"><span class="tok-kw">fn</span> <span class="tok-fn">finishRead</span>(c: *Client, frag: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, in: <span class="tok-type">usize</span>, out: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1210">    <span class="tok-kw">const</span> saved_buf = frag[in..];</span>
-<span class="line" id="L1211">    <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
-<span class="line" id="L1212">        <span class="tok-comment">// There is cleartext at the beginning already which we need to preserve.</span>
+<span class="line" id="L1195">                            vp.next(cleartext.len - <span class="tok-number">1</span>);</span>
+<span class="line" id="L1196">                        }</span>
+<span class="line" id="L1197">                    },</span>
+<span class="line" id="L1198">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1199">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
+<span class="line" id="L1200">                    },</span>
+<span class="line" id="L1201">                }</span>
+<span class="line" id="L1202">            },</span>
+<span class="line" id="L1203">            <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1204">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
+<span class="line" id="L1205">            },</span>
+<span class="line" id="L1206">        }</span>
+<span class="line" id="L1207">        in = end;</span>
+<span class="line" id="L1208">    }</span>
+<span class="line" id="L1209">}</span>
+<span class="line" id="L1210"></span>
+<span class="line" id="L1211"><span class="tok-kw">fn</span> <span class="tok-fn">finishRead</span>(c: *Client, frag: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, in: <span class="tok-type">usize</span>, out: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1212">    <span class="tok-kw">const</span> saved_buf = frag[in..];</span>
+<span class="line" id="L1213">    <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
+<span class="line" id="L1214">        <span class="tok-comment">// There is cleartext at the beginning already which we need to preserve.</span>
 </span>
-<span class="line" id="L1213">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), c.partial_ciphertext_idx + saved_buf.len);</span>
-<span class="line" id="L1214">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx..], saved_buf);</span>
-<span class="line" id="L1215">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1216">        c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1217">        c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1218">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), saved_buf.len);</span>
-<span class="line" id="L1219">        mem.copy(<span class="tok-type">u8</span>, &amp;c.partially_read_buffer, saved_buf);</span>
-<span class="line" id="L1220">    }</span>
-<span class="line" id="L1221">    <span class="tok-kw">return</span> out;</span>
-<span class="line" id="L1222">}</span>
-<span class="line" id="L1223"></span>
-<span class="line" id="L1224"><span class="tok-kw">fn</span> <span class="tok-fn">finishRead2</span>(c: *Client, first: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, frag1: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, out: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1225">    <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
-<span class="line" id="L1226">        <span class="tok-comment">// There is cleartext at the beginning already which we need to preserve.</span>
+<span class="line" id="L1215">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), c.partial_ciphertext_idx + saved_buf.len);</span>
+<span class="line" id="L1216">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx..], saved_buf);</span>
+<span class="line" id="L1217">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1218">        c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1219">        c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1220">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), saved_buf.len);</span>
+<span class="line" id="L1221">        mem.copy(<span class="tok-type">u8</span>, &amp;c.partially_read_buffer, saved_buf);</span>
+<span class="line" id="L1222">    }</span>
+<span class="line" id="L1223">    <span class="tok-kw">return</span> out;</span>
+<span class="line" id="L1224">}</span>
+<span class="line" id="L1225"></span>
+<span class="line" id="L1226"><span class="tok-kw">fn</span> <span class="tok-fn">finishRead2</span>(c: *Client, first: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, frag1: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, out: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1227">    <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
+<span class="line" id="L1228">        <span class="tok-comment">// There is cleartext at the beginning already which we need to preserve.</span>
 </span>
-<span class="line" id="L1227">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), c.partial_ciphertext_idx + first.len + frag1.len);</span>
-<span class="line" id="L1228">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx..], first);</span>
-<span class="line" id="L1229">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx + first.len ..], frag1);</span>
-<span class="line" id="L1230">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1231">        c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1232">        c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1233">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), first.len + frag1.len);</span>
-<span class="line" id="L1234">        mem.copy(<span class="tok-type">u8</span>, &amp;c.partially_read_buffer, first);</span>
-<span class="line" id="L1235">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[first.len..], frag1);</span>
-<span class="line" id="L1236">    }</span>
-<span class="line" id="L1237">    <span class="tok-kw">return</span> out;</span>
-<span class="line" id="L1238">}</span>
-<span class="line" id="L1239"></span>
-<span class="line" id="L1240"><span class="tok-kw">fn</span> <span class="tok-fn">straddleByte</span>(s1: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, s2: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, index: <span class="tok-type">usize</span>) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1241">    <span class="tok-kw">if</span> (index &lt; s1.len) {</span>
-<span class="line" id="L1242">        <span class="tok-kw">return</span> s1[index];</span>
-<span class="line" id="L1243">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1244">        <span class="tok-kw">return</span> s2[index - s1.len];</span>
-<span class="line" id="L1245">    }</span>
-<span class="line" id="L1246">}</span>
-<span class="line" id="L1247"></span>
-<span class="line" id="L1248"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
-<span class="line" id="L1249"><span class="tok-kw">const</span> native_endian = builtin.cpu.arch.endian();</span>
-<span class="line" id="L1250"></span>
-<span class="line" id="L1251"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">big</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(x) {</span>
-<span class="line" id="L1252">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (native_endian) {</span>
-<span class="line" id="L1253">        .Big =&gt; x,</span>
-<span class="line" id="L1254">        .Little =&gt; <span class="tok-builtin">@byteSwap</span>(x),</span>
-<span class="line" id="L1255">    };</span>
-<span class="line" id="L1256">}</span>
-<span class="line" id="L1257"></span>
-<span class="line" id="L1258"><span class="tok-kw">fn</span> <span class="tok-fn">SchemeEcdsa</span>(<span class="tok-kw">comptime</span> scheme: tls.SignatureScheme) <span class="tok-type">type</span> {</span>
-<span class="line" id="L1259">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (scheme) {</span>
-<span class="line" id="L1260">        .ecdsa_secp256r1_sha256 =&gt; crypto.sign.ecdsa.EcdsaP256Sha256,</span>
-<span class="line" id="L1261">        .ecdsa_secp384r1_sha384 =&gt; crypto.sign.ecdsa.EcdsaP384Sha384,</span>
-<span class="line" id="L1262">        .ecdsa_secp521r1_sha512 =&gt; crypto.sign.ecdsa.EcdsaP512Sha512,</span>
-<span class="line" id="L1263">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;bad scheme&quot;</span>),</span>
-<span class="line" id="L1264">    };</span>
-<span class="line" id="L1265">}</span>
-<span class="line" id="L1266"></span>
-<span class="line" id="L1267"><span class="tok-comment">/// Abstraction for sending multiple byte buffers to a slice of iovecs.</span></span>
-<span class="line" id="L1268"><span class="tok-kw">const</span> VecPut = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1269">    iovecs: []<span class="tok-kw">const</span> std.os.iovec,</span>
-<span class="line" id="L1270">    idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1271">    off: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1272">    total: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1273"></span>
-<span class="line" id="L1274">    <span class="tok-comment">/// Returns the amount actually put which is always equal to bytes.len</span></span>
-<span class="line" id="L1275">    <span class="tok-comment">/// unless the vectors ran out of space.</span></span>
-<span class="line" id="L1276">    <span class="tok-kw">fn</span> <span class="tok-fn">put</span>(vp: *VecPut, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1277">        <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L1278">        <span class="tok-kw">var</span> bytes_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1279">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1280">            <span class="tok-kw">const</span> v = vp.iovecs[vp.idx];</span>
-<span class="line" id="L1281">            <span class="tok-kw">const</span> dest = v.iov_base[vp.off..v.iov_len];</span>
-<span class="line" id="L1282">            <span class="tok-kw">const</span> src = bytes[bytes_i..][<span class="tok-number">0</span>..<span class="tok-builtin">@min</span>(dest.len, bytes.len - bytes_i)];</span>
-<span class="line" id="L1283">            mem.copy(<span class="tok-type">u8</span>, dest, src);</span>
-<span class="line" id="L1284">            bytes_i += src.len;</span>
-<span class="line" id="L1285">            vp.off += src.len;</span>
-<span class="line" id="L1286">            <span class="tok-kw">if</span> (vp.off &gt;= v.iov_len) {</span>
-<span class="line" id="L1287">                vp.off = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1288">                vp.idx += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1289">                <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) {</span>
-<span class="line" id="L1290">                    vp.total += bytes_i;</span>
-<span class="line" id="L1291">                    <span class="tok-kw">return</span> bytes_i;</span>
-<span class="line" id="L1292">                }</span>
-<span class="line" id="L1293">            }</span>
-<span class="line" id="L1294">            <span class="tok-kw">if</span> (bytes_i &gt;= bytes.len) {</span>
-<span class="line" id="L1295">                vp.total += bytes_i;</span>
-<span class="line" id="L1296">                <span class="tok-kw">return</span> bytes_i;</span>
-<span class="line" id="L1297">            }</span>
-<span class="line" id="L1298">        }</span>
-<span class="line" id="L1299">    }</span>
-<span class="line" id="L1300"></span>
-<span class="line" id="L1301">    <span class="tok-comment">/// Returns the next buffer that consecutive bytes can go into.</span></span>
-<span class="line" id="L1302">    <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(vp: VecPut) []<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1303">        <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) <span class="tok-kw">return</span> &amp;.{};</span>
-<span class="line" id="L1304">        <span class="tok-kw">const</span> v = vp.iovecs[vp.idx];</span>
-<span class="line" id="L1305">        <span class="tok-kw">return</span> v.iov_base[vp.off..v.iov_len];</span>
-<span class="line" id="L1306">    }</span>
-<span class="line" id="L1307"></span>
-<span class="line" id="L1308">    <span class="tok-comment">// After writing to the result of peek(), one can call next() to</span>
+<span class="line" id="L1229">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), c.partial_ciphertext_idx + first.len + frag1.len);</span>
+<span class="line" id="L1230">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx..], first);</span>
+<span class="line" id="L1231">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx + first.len ..], frag1);</span>
+<span class="line" id="L1232">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1233">        c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1234">        c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1235">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), first.len + frag1.len);</span>
+<span class="line" id="L1236">        mem.copy(<span class="tok-type">u8</span>, &amp;c.partially_read_buffer, first);</span>
+<span class="line" id="L1237">        mem.copy(<span class="tok-type">u8</span>, c.partially_read_buffer[first.len..], frag1);</span>
+<span class="line" id="L1238">    }</span>
+<span class="line" id="L1239">    <span class="tok-kw">return</span> out;</span>
+<span class="line" id="L1240">}</span>
+<span class="line" id="L1241"></span>
+<span class="line" id="L1242"><span class="tok-kw">fn</span> <span class="tok-fn">straddleByte</span>(s1: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, s2: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, index: <span class="tok-type">usize</span>) <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1243">    <span class="tok-kw">if</span> (index &lt; s1.len) {</span>
+<span class="line" id="L1244">        <span class="tok-kw">return</span> s1[index];</span>
+<span class="line" id="L1245">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1246">        <span class="tok-kw">return</span> s2[index - s1.len];</span>
+<span class="line" id="L1247">    }</span>
+<span class="line" id="L1248">}</span>
+<span class="line" id="L1249"></span>
+<span class="line" id="L1250"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L1251"><span class="tok-kw">const</span> native_endian = builtin.cpu.arch.endian();</span>
+<span class="line" id="L1252"></span>
+<span class="line" id="L1253"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">big</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(x) {</span>
+<span class="line" id="L1254">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (native_endian) {</span>
+<span class="line" id="L1255">        .Big =&gt; x,</span>
+<span class="line" id="L1256">        .Little =&gt; <span class="tok-builtin">@byteSwap</span>(x),</span>
+<span class="line" id="L1257">    };</span>
+<span class="line" id="L1258">}</span>
+<span class="line" id="L1259"></span>
+<span class="line" id="L1260"><span class="tok-kw">fn</span> <span class="tok-fn">SchemeEcdsa</span>(<span class="tok-kw">comptime</span> scheme: tls.SignatureScheme) <span class="tok-type">type</span> {</span>
+<span class="line" id="L1261">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (scheme) {</span>
+<span class="line" id="L1262">        .ecdsa_secp256r1_sha256 =&gt; crypto.sign.ecdsa.EcdsaP256Sha256,</span>
+<span class="line" id="L1263">        .ecdsa_secp384r1_sha384 =&gt; crypto.sign.ecdsa.EcdsaP384Sha384,</span>
+<span class="line" id="L1264">        .ecdsa_secp521r1_sha512 =&gt; crypto.sign.ecdsa.EcdsaP512Sha512,</span>
+<span class="line" id="L1265">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;bad scheme&quot;</span>),</span>
+<span class="line" id="L1266">    };</span>
+<span class="line" id="L1267">}</span>
+<span class="line" id="L1268"></span>
+<span class="line" id="L1269"><span class="tok-comment">/// Abstraction for sending multiple byte buffers to a slice of iovecs.</span></span>
+<span class="line" id="L1270"><span class="tok-kw">const</span> VecPut = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1271">    iovecs: []<span class="tok-kw">const</span> std.os.iovec,</span>
+<span class="line" id="L1272">    idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1273">    off: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1274">    total: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1275"></span>
+<span class="line" id="L1276">    <span class="tok-comment">/// Returns the amount actually put which is always equal to bytes.len</span></span>
+<span class="line" id="L1277">    <span class="tok-comment">/// unless the vectors ran out of space.</span></span>
+<span class="line" id="L1278">    <span class="tok-kw">fn</span> <span class="tok-fn">put</span>(vp: *VecPut, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1279">        <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L1280">        <span class="tok-kw">var</span> bytes_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1281">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1282">            <span class="tok-kw">const</span> v = vp.iovecs[vp.idx];</span>
+<span class="line" id="L1283">            <span class="tok-kw">const</span> dest = v.iov_base[vp.off..v.iov_len];</span>
+<span class="line" id="L1284">            <span class="tok-kw">const</span> src = bytes[bytes_i..][<span class="tok-number">0</span>..<span class="tok-builtin">@min</span>(dest.len, bytes.len - bytes_i)];</span>
+<span class="line" id="L1285">            mem.copy(<span class="tok-type">u8</span>, dest, src);</span>
+<span class="line" id="L1286">            bytes_i += src.len;</span>
+<span class="line" id="L1287">            vp.off += src.len;</span>
+<span class="line" id="L1288">            <span class="tok-kw">if</span> (vp.off &gt;= v.iov_len) {</span>
+<span class="line" id="L1289">                vp.off = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1290">                vp.idx += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1291">                <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) {</span>
+<span class="line" id="L1292">                    vp.total += bytes_i;</span>
+<span class="line" id="L1293">                    <span class="tok-kw">return</span> bytes_i;</span>
+<span class="line" id="L1294">                }</span>
+<span class="line" id="L1295">            }</span>
+<span class="line" id="L1296">            <span class="tok-kw">if</span> (bytes_i &gt;= bytes.len) {</span>
+<span class="line" id="L1297">                vp.total += bytes_i;</span>
+<span class="line" id="L1298">                <span class="tok-kw">return</span> bytes_i;</span>
+<span class="line" id="L1299">            }</span>
+<span class="line" id="L1300">        }</span>
+<span class="line" id="L1301">    }</span>
+<span class="line" id="L1302"></span>
+<span class="line" id="L1303">    <span class="tok-comment">/// Returns the next buffer that consecutive bytes can go into.</span></span>
+<span class="line" id="L1304">    <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(vp: VecPut) []<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1305">        <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) <span class="tok-kw">return</span> &amp;.{};</span>
+<span class="line" id="L1306">        <span class="tok-kw">const</span> v = vp.iovecs[vp.idx];</span>
+<span class="line" id="L1307">        <span class="tok-kw">return</span> v.iov_base[vp.off..v.iov_len];</span>
+<span class="line" id="L1308">    }</span>
+<span class="line" id="L1309"></span>
+<span class="line" id="L1310">    <span class="tok-comment">// After writing to the result of peek(), one can call next() to</span>
 </span>
-<span class="line" id="L1309">    <span class="tok-comment">// advance the cursor.</span>
+<span class="line" id="L1311">    <span class="tok-comment">// advance the cursor.</span>
 </span>
-<span class="line" id="L1310">    <span class="tok-kw">fn</span> <span class="tok-fn">next</span>(vp: *VecPut, len: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1311">        vp.total += len;</span>
-<span class="line" id="L1312">        vp.off += len;</span>
-<span class="line" id="L1313">        <span class="tok-kw">if</span> (vp.off &gt;= vp.iovecs[vp.idx].iov_len) {</span>
-<span class="line" id="L1314">            vp.off = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1315">            vp.idx += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1316">        }</span>
-<span class="line" id="L1317">    }</span>
-<span class="line" id="L1318"></span>
-<span class="line" id="L1319">    <span class="tok-kw">fn</span> <span class="tok-fn">freeSize</span>(vp: VecPut) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1320">        <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L1321">        <span class="tok-kw">var</span> total: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1322">        total += vp.iovecs[vp.idx].iov_len - vp.off;</span>
-<span class="line" id="L1323">        <span class="tok-kw">if</span> (vp.idx + <span class="tok-number">1</span> &gt;= vp.iovecs.len) <span class="tok-kw">return</span> total;</span>
-<span class="line" id="L1324">        <span class="tok-kw">for</span> (vp.iovecs[vp.idx + <span class="tok-number">1</span> ..]) |v| total += v.iov_len;</span>
-<span class="line" id="L1325">        <span class="tok-kw">return</span> total;</span>
-<span class="line" id="L1326">    }</span>
-<span class="line" id="L1327">};</span>
-<span class="line" id="L1328"></span>
-<span class="line" id="L1329"><span class="tok-comment">/// Limit iovecs to a specific byte size.</span></span>
-<span class="line" id="L1330"><span class="tok-kw">fn</span> <span class="tok-fn">limitVecs</span>(iovecs: []std.os.iovec, len: <span class="tok-type">usize</span>) []std.os.iovec {</span>
-<span class="line" id="L1331">    <span class="tok-kw">var</span> vec_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1332">    <span class="tok-kw">var</span> bytes_left: <span class="tok-type">usize</span> = len;</span>
-<span class="line" id="L1333">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1334">        <span class="tok-kw">if</span> (bytes_left &gt;= iovecs[vec_i].iov_len) {</span>
-<span class="line" id="L1335">            bytes_left -= iovecs[vec_i].iov_len;</span>
-<span class="line" id="L1336">            vec_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1337">            <span class="tok-kw">if</span> (vec_i == iovecs.len <span class="tok-kw">or</span> bytes_left == <span class="tok-number">0</span>) <span class="tok-kw">return</span> iovecs[<span class="tok-number">0</span>..vec_i];</span>
-<span class="line" id="L1338">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1339">        }</span>
-<span class="line" id="L1340">        iovecs[vec_i].iov_len = bytes_left;</span>
-<span class="line" id="L1341">        <span class="tok-kw">return</span> iovecs[<span class="tok-number">0</span>..vec_i];</span>
-<span class="line" id="L1342">    }</span>
-<span class="line" id="L1343">}</span>
-<span class="line" id="L1344"></span>
-<span class="line" id="L1345"><span class="tok-comment">/// The priority order here is chosen based on what crypto algorithms Zig has</span></span>
-<span class="line" id="L1346"><span class="tok-comment">/// available in the standard library as well as what is faster. Following are</span></span>
-<span class="line" id="L1347"><span class="tok-comment">/// a few data points on the relative performance of these algorithms.</span></span>
-<span class="line" id="L1348"><span class="tok-comment">///</span></span>
-<span class="line" id="L1349"><span class="tok-comment">/// Measurement taken with 0.11.0-dev.810+c2f5848fe</span></span>
-<span class="line" id="L1350"><span class="tok-comment">/// on x86_64-linux Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz:</span></span>
-<span class="line" id="L1351"><span class="tok-comment">/// zig run .lib/std/crypto/benchmark.zig -OReleaseFast</span></span>
-<span class="line" id="L1352"><span class="tok-comment">///       aegis-128l:      15382 MiB/s</span></span>
-<span class="line" id="L1353"><span class="tok-comment">///        aegis-256:       9553 MiB/s</span></span>
-<span class="line" id="L1354"><span class="tok-comment">///       aes128-gcm:       3721 MiB/s</span></span>
-<span class="line" id="L1355"><span class="tok-comment">///       aes256-gcm:       3010 MiB/s</span></span>
-<span class="line" id="L1356"><span class="tok-comment">/// chacha20Poly1305:        597 MiB/s</span></span>
-<span class="line" id="L1357"><span class="tok-comment">///</span></span>
-<span class="line" id="L1358"><span class="tok-comment">/// Measurement taken with 0.11.0-dev.810+c2f5848fe</span></span>
-<span class="line" id="L1359"><span class="tok-comment">/// on x86_64-linux Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz:</span></span>
-<span class="line" id="L1360"><span class="tok-comment">/// zig run .lib/std/crypto/benchmark.zig -OReleaseFast -mcpu=baseline</span></span>
-<span class="line" id="L1361"><span class="tok-comment">///       aegis-128l:        629 MiB/s</span></span>
-<span class="line" id="L1362"><span class="tok-comment">/// chacha20Poly1305:        529 MiB/s</span></span>
-<span class="line" id="L1363"><span class="tok-comment">///        aegis-256:        461 MiB/s</span></span>
-<span class="line" id="L1364"><span class="tok-comment">///       aes128-gcm:        138 MiB/s</span></span>
-<span class="line" id="L1365"><span class="tok-comment">///       aes256-gcm:        120 MiB/s</span></span>
-<span class="line" id="L1366"><span class="tok-kw">const</span> cipher_suites = <span class="tok-kw">if</span> (crypto.core.aes.has_hardware_support)</span>
-<span class="line" id="L1367">    enum_array(tls.CipherSuite, &amp;.{</span>
-<span class="line" id="L1368">        .AEGIS_128L_SHA256,</span>
-<span class="line" id="L1369">        .AEGIS_256_SHA384,</span>
-<span class="line" id="L1370">        .AES_128_GCM_SHA256,</span>
-<span class="line" id="L1371">        .AES_256_GCM_SHA384,</span>
-<span class="line" id="L1372">        .CHACHA20_POLY1305_SHA256,</span>
-<span class="line" id="L1373">    })</span>
-<span class="line" id="L1374"><span class="tok-kw">else</span></span>
-<span class="line" id="L1375">    enum_array(tls.CipherSuite, &amp;.{</span>
-<span class="line" id="L1376">        .CHACHA20_POLY1305_SHA256,</span>
-<span class="line" id="L1377">        .AEGIS_128L_SHA256,</span>
-<span class="line" id="L1378">        .AEGIS_256_SHA384,</span>
-<span class="line" id="L1379">        .AES_128_GCM_SHA256,</span>
-<span class="line" id="L1380">        .AES_256_GCM_SHA384,</span>
-<span class="line" id="L1381">    });</span>
-<span class="line" id="L1382"></span>
-<span class="line" id="L1383"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L1384">    _ = StreamInterface;</span>
-<span class="line" id="L1385">}</span>
-<span class="line" id="L1386"></span>
+<span class="line" id="L1312">    <span class="tok-kw">fn</span> <span class="tok-fn">next</span>(vp: *VecPut, len: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1313">        vp.total += len;</span>
+<span class="line" id="L1314">        vp.off += len;</span>
+<span class="line" id="L1315">        <span class="tok-kw">if</span> (vp.off &gt;= vp.iovecs[vp.idx].iov_len) {</span>
+<span class="line" id="L1316">            vp.off = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1317">            vp.idx += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1318">        }</span>
+<span class="line" id="L1319">    }</span>
+<span class="line" id="L1320"></span>
+<span class="line" id="L1321">    <span class="tok-kw">fn</span> <span class="tok-fn">freeSize</span>(vp: VecPut) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1322">        <span class="tok-kw">if</span> (vp.idx &gt;= vp.iovecs.len) <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L1323">        <span class="tok-kw">var</span> total: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1324">        total += vp.iovecs[vp.idx].iov_len - vp.off;</span>
+<span class="line" id="L1325">        <span class="tok-kw">if</span> (vp.idx + <span class="tok-number">1</span> &gt;= vp.iovecs.len) <span class="tok-kw">return</span> total;</span>
+<span class="line" id="L1326">        <span class="tok-kw">for</span> (vp.iovecs[vp.idx + <span class="tok-number">1</span> ..]) |v| total += v.iov_len;</span>
+<span class="line" id="L1327">        <span class="tok-kw">return</span> total;</span>
+<span class="line" id="L1328">    }</span>
+<span class="line" id="L1329">};</span>
+<span class="line" id="L1330"></span>
+<span class="line" id="L1331"><span class="tok-comment">/// Limit iovecs to a specific byte size.</span></span>
+<span class="line" id="L1332"><span class="tok-kw">fn</span> <span class="tok-fn">limitVecs</span>(iovecs: []std.os.iovec, len: <span class="tok-type">usize</span>) []std.os.iovec {</span>
+<span class="line" id="L1333">    <span class="tok-kw">var</span> vec_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1334">    <span class="tok-kw">var</span> bytes_left: <span class="tok-type">usize</span> = len;</span>
+<span class="line" id="L1335">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1336">        <span class="tok-kw">if</span> (bytes_left &gt;= iovecs[vec_i].iov_len) {</span>
+<span class="line" id="L1337">            bytes_left -= iovecs[vec_i].iov_len;</span>
+<span class="line" id="L1338">            vec_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1339">            <span class="tok-kw">if</span> (vec_i == iovecs.len <span class="tok-kw">or</span> bytes_left == <span class="tok-number">0</span>) <span class="tok-kw">return</span> iovecs[<span class="tok-number">0</span>..vec_i];</span>
+<span class="line" id="L1340">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1341">        }</span>
+<span class="line" id="L1342">        iovecs[vec_i].iov_len = bytes_left;</span>
+<span class="line" id="L1343">        <span class="tok-kw">return</span> iovecs[<span class="tok-number">0</span>..vec_i];</span>
+<span class="line" id="L1344">    }</span>
+<span class="line" id="L1345">}</span>
+<span class="line" id="L1346"></span>
+<span class="line" id="L1347"><span class="tok-comment">/// The priority order here is chosen based on what crypto algorithms Zig has</span></span>
+<span class="line" id="L1348"><span class="tok-comment">/// available in the standard library as well as what is faster. Following are</span></span>
+<span class="line" id="L1349"><span class="tok-comment">/// a few data points on the relative performance of these algorithms.</span></span>
+<span class="line" id="L1350"><span class="tok-comment">///</span></span>
+<span class="line" id="L1351"><span class="tok-comment">/// Measurement taken with 0.11.0-dev.810+c2f5848fe</span></span>
+<span class="line" id="L1352"><span class="tok-comment">/// on x86_64-linux Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz:</span></span>
+<span class="line" id="L1353"><span class="tok-comment">/// zig run .lib/std/crypto/benchmark.zig -OReleaseFast</span></span>
+<span class="line" id="L1354"><span class="tok-comment">///       aegis-128l:      15382 MiB/s</span></span>
+<span class="line" id="L1355"><span class="tok-comment">///        aegis-256:       9553 MiB/s</span></span>
+<span class="line" id="L1356"><span class="tok-comment">///       aes128-gcm:       3721 MiB/s</span></span>
+<span class="line" id="L1357"><span class="tok-comment">///       aes256-gcm:       3010 MiB/s</span></span>
+<span class="line" id="L1358"><span class="tok-comment">/// chacha20Poly1305:        597 MiB/s</span></span>
+<span class="line" id="L1359"><span class="tok-comment">///</span></span>
+<span class="line" id="L1360"><span class="tok-comment">/// Measurement taken with 0.11.0-dev.810+c2f5848fe</span></span>
+<span class="line" id="L1361"><span class="tok-comment">/// on x86_64-linux Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz:</span></span>
+<span class="line" id="L1362"><span class="tok-comment">/// zig run .lib/std/crypto/benchmark.zig -OReleaseFast -mcpu=baseline</span></span>
+<span class="line" id="L1363"><span class="tok-comment">///       aegis-128l:        629 MiB/s</span></span>
+<span class="line" id="L1364"><span class="tok-comment">/// chacha20Poly1305:        529 MiB/s</span></span>
+<span class="line" id="L1365"><span class="tok-comment">///        aegis-256:        461 MiB/s</span></span>
+<span class="line" id="L1366"><span class="tok-comment">///       aes128-gcm:        138 MiB/s</span></span>
+<span class="line" id="L1367"><span class="tok-comment">///       aes256-gcm:        120 MiB/s</span></span>
+<span class="line" id="L1368"><span class="tok-kw">const</span> cipher_suites = <span class="tok-kw">if</span> (crypto.core.aes.has_hardware_support)</span>
+<span class="line" id="L1369">    enum_array(tls.CipherSuite, &amp;.{</span>
+<span class="line" id="L1370">        .AEGIS_128L_SHA256,</span>
+<span class="line" id="L1371">        .AEGIS_256_SHA384,</span>
+<span class="line" id="L1372">        .AES_128_GCM_SHA256,</span>
+<span class="line" id="L1373">        .AES_256_GCM_SHA384,</span>
+<span class="line" id="L1374">        .CHACHA20_POLY1305_SHA256,</span>
+<span class="line" id="L1375">    })</span>
+<span class="line" id="L1376"><span class="tok-kw">else</span></span>
+<span class="line" id="L1377">    enum_array(tls.CipherSuite, &amp;.{</span>
+<span class="line" id="L1378">        .CHACHA20_POLY1305_SHA256,</span>
+<span class="line" id="L1379">        .AEGIS_128L_SHA256,</span>
+<span class="line" id="L1380">        .AEGIS_256_SHA384,</span>
+<span class="line" id="L1381">        .AES_128_GCM_SHA256,</span>
+<span class="line" id="L1382">        .AES_256_GCM_SHA384,</span>
+<span class="line" id="L1383">    });</span>
+<span class="line" id="L1384"></span>
+<span class="line" id="L1385"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L1386">    _ = StreamInterface;</span>
+<span class="line" id="L1387">}</span>
+<span class="line" id="L1388"></span>
 </code></pre></body>
 </html>

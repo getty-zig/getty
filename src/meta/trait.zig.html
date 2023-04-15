@@ -517,21 +517,21 @@
 <span class="line" id="L400"><span class="tok-comment">/// *const u8, ?[]const u8, ?*const [N]u8.</span></span>
 <span class="line" id="L401"><span class="tok-comment">/// ```</span></span>
 <span class="line" id="L402"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isZigString</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L403">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L403">    <span class="tok-kw">return</span> <span class="tok-kw">comptime</span> blk: {</span>
 <span class="line" id="L404">        <span class="tok-comment">// Only pointer types can be strings, no optionals</span>
 </span>
 <span class="line" id="L405">        <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(T);</span>
-<span class="line" id="L406">        <span class="tok-kw">if</span> (info != .Pointer) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L406">        <span class="tok-kw">if</span> (info != .Pointer) <span class="tok-kw">break</span> :blk <span class="tok-null">false</span>;</span>
 <span class="line" id="L407"></span>
 <span class="line" id="L408">        <span class="tok-kw">const</span> ptr = &amp;info.Pointer;</span>
 <span class="line" id="L409">        <span class="tok-comment">// Check for CV qualifiers that would prevent coerction to []const u8</span>
 </span>
-<span class="line" id="L410">        <span class="tok-kw">if</span> (ptr.is_volatile <span class="tok-kw">or</span> ptr.is_allowzero) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L410">        <span class="tok-kw">if</span> (ptr.is_volatile <span class="tok-kw">or</span> ptr.is_allowzero) <span class="tok-kw">break</span> :blk <span class="tok-null">false</span>;</span>
 <span class="line" id="L411"></span>
 <span class="line" id="L412">        <span class="tok-comment">// If it's already a slice, simple check.</span>
 </span>
 <span class="line" id="L413">        <span class="tok-kw">if</span> (ptr.size == .Slice) {</span>
-<span class="line" id="L414">            <span class="tok-kw">return</span> ptr.child == <span class="tok-type">u8</span>;</span>
+<span class="line" id="L414">            <span class="tok-kw">break</span> :blk ptr.child == <span class="tok-type">u8</span>;</span>
 <span class="line" id="L415">        }</span>
 <span class="line" id="L416"></span>
 <span class="line" id="L417">        <span class="tok-comment">// Otherwise check if it's an array type that coerces to slice.</span>
@@ -540,12 +540,12 @@
 <span class="line" id="L419">            <span class="tok-kw">const</span> child = <span class="tok-builtin">@typeInfo</span>(ptr.child);</span>
 <span class="line" id="L420">            <span class="tok-kw">if</span> (child == .Array) {</span>
 <span class="line" id="L421">                <span class="tok-kw">const</span> arr = &amp;child.Array;</span>
-<span class="line" id="L422">                <span class="tok-kw">return</span> arr.child == <span class="tok-type">u8</span>;</span>
+<span class="line" id="L422">                <span class="tok-kw">break</span> :blk arr.child == <span class="tok-type">u8</span>;</span>
 <span class="line" id="L423">            }</span>
 <span class="line" id="L424">        }</span>
 <span class="line" id="L425"></span>
-<span class="line" id="L426">        <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L427">    }</span>
+<span class="line" id="L426">        <span class="tok-kw">break</span> :blk <span class="tok-null">false</span>;</span>
+<span class="line" id="L427">    };</span>
 <span class="line" id="L428">}</span>
 <span class="line" id="L429"></span>
 <span class="line" id="L430"><span class="tok-kw">test</span> <span class="tok-str">&quot;isZigString&quot;</span> {</span>

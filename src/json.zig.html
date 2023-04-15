@@ -2475,7 +2475,7 @@
 <span class="line" id="L2268">    value: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L2269">    options: StringifyOptions,</span>
 <span class="line" id="L2270">    out_stream: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L2271">) <span class="tok-builtin">@TypeOf</span>(out_stream).Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2271">) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L2272">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
 <span class="line" id="L2273">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
 <span class="line" id="L2274">        .Float, .ComptimeFloat =&gt; {</span>
@@ -3013,5 +3013,22 @@
 <span class="line" id="L2768">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, result, <span class="tok-str">&quot;\n&quot;</span>));</span>
 <span class="line" id="L2769">}</span>
 <span class="line" id="L2770"></span>
+<span class="line" id="L2771"><span class="tok-kw">test</span> <span class="tok-str">&quot;stringify struct with custom stringify that returns a custom error&quot;</span> {</span>
+<span class="line" id="L2772">    <span class="tok-kw">var</span> ret = std.json.stringify(<span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2773">        field: Field = .{},</span>
+<span class="line" id="L2774"></span>
+<span class="line" id="L2775">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Field = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2776">            field: ?[]*Field = <span class="tok-null">null</span>,</span>
+<span class="line" id="L2777"></span>
+<span class="line" id="L2778">            <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L2779">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonStringify</span>(_: Self, _: StringifyOptions, _: <span class="tok-kw">anytype</span>) <span class="tok-kw">error</span>{CustomError}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2780">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CustomError;</span>
+<span class="line" id="L2781">            }</span>
+<span class="line" id="L2782">        };</span>
+<span class="line" id="L2783">    }{}, StringifyOptions{}, std.io.null_writer);</span>
+<span class="line" id="L2784"></span>
+<span class="line" id="L2785">    <span class="tok-kw">try</span> std.testing.expectError(<span class="tok-kw">error</span>.CustomError, ret);</span>
+<span class="line" id="L2786">}</span>
+<span class="line" id="L2787"></span>
 </code></pre></body>
 </html>

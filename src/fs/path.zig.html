@@ -1215,240 +1215,237 @@
 <span class="line" id="L1088">            <span class="tok-kw">if</span> (ascii.eqlIgnoreCase(from_component, to_component))</span>
 <span class="line" id="L1089">                <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L1090">        }</span>
-<span class="line" id="L1091">        <span class="tok-kw">var</span> up_count: <span class="tok-type">usize</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L1091">        <span class="tok-kw">var</span> up_index_end = <span class="tok-str">&quot;..&quot;</span>.len;</span>
 <span class="line" id="L1092">        <span class="tok-kw">while</span> (from_it.next()) |_| {</span>
-<span class="line" id="L1093">            up_count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1093">            up_index_end += <span class="tok-str">&quot;\\..&quot;</span>.len;</span>
 <span class="line" id="L1094">        }</span>
-<span class="line" id="L1095">        <span class="tok-kw">const</span> up_index_end = up_count * <span class="tok-str">&quot;..\\&quot;</span>.len;</span>
-<span class="line" id="L1096">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, up_index_end + to_rest.len);</span>
-<span class="line" id="L1097">        <span class="tok-kw">errdefer</span> allocator.free(result);</span>
-<span class="line" id="L1098"></span>
-<span class="line" id="L1099">        <span class="tok-kw">var</span> result_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1095">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, up_index_end + <span class="tok-builtin">@boolToInt</span>(to_rest.len &gt; <span class="tok-number">0</span>) + to_rest.len);</span>
+<span class="line" id="L1096">        <span class="tok-kw">errdefer</span> allocator.free(result);</span>
+<span class="line" id="L1097"></span>
+<span class="line" id="L1098">        result[<span class="tok-number">0</span>..<span class="tok-number">2</span>].* = <span class="tok-str">&quot;..&quot;</span>.*;</span>
+<span class="line" id="L1099">        <span class="tok-kw">var</span> result_index: <span class="tok-type">usize</span> = <span class="tok-number">2</span>;</span>
 <span class="line" id="L1100">        <span class="tok-kw">while</span> (result_index &lt; up_index_end) {</span>
-<span class="line" id="L1101">            result[result_index..][<span class="tok-number">0</span>..<span class="tok-number">3</span>].* = <span class="tok-str">&quot;..\\&quot;</span>.*;</span>
+<span class="line" id="L1101">            result[result_index..][<span class="tok-number">0</span>..<span class="tok-number">3</span>].* = <span class="tok-str">&quot;\\..&quot;</span>.*;</span>
 <span class="line" id="L1102">            result_index += <span class="tok-number">3</span>;</span>
 <span class="line" id="L1103">        }</span>
-<span class="line" id="L1104">        <span class="tok-comment">// shave off the trailing slash</span>
+<span class="line" id="L1104"></span>
+<span class="line" id="L1105">        <span class="tok-kw">var</span> rest_it = mem.tokenize(<span class="tok-type">u8</span>, to_rest, <span class="tok-str">&quot;/\\&quot;</span>);</span>
+<span class="line" id="L1106">        <span class="tok-kw">while</span> (rest_it.next()) |to_component| {</span>
+<span class="line" id="L1107">            result[result_index] = <span class="tok-str">'\\'</span>;</span>
+<span class="line" id="L1108">            result_index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1109">            mem.copy(<span class="tok-type">u8</span>, result[result_index..], to_component);</span>
+<span class="line" id="L1110">            result_index += to_component.len;</span>
+<span class="line" id="L1111">        }</span>
+<span class="line" id="L1112"></span>
+<span class="line" id="L1113">        <span class="tok-kw">return</span> allocator.realloc(result, result_index);</span>
+<span class="line" id="L1114">    }</span>
+<span class="line" id="L1115"></span>
+<span class="line" id="L1116">    <span class="tok-kw">return</span> [_]<span class="tok-type">u8</span>{};</span>
+<span class="line" id="L1117">}</span>
+<span class="line" id="L1118"></span>
+<span class="line" id="L1119"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">relativePosix</span>(allocator: Allocator, from: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, to: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1120">    <span class="tok-kw">const</span> cwd = <span class="tok-kw">try</span> process.getCwdAlloc(allocator);</span>
+<span class="line" id="L1121">    <span class="tok-kw">defer</span> allocator.free(cwd);</span>
+<span class="line" id="L1122">    <span class="tok-kw">const</span> resolved_from = <span class="tok-kw">try</span> resolvePosix(allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ cwd, from });</span>
+<span class="line" id="L1123">    <span class="tok-kw">defer</span> allocator.free(resolved_from);</span>
+<span class="line" id="L1124">    <span class="tok-kw">const</span> resolved_to = <span class="tok-kw">try</span> resolvePosix(allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ cwd, to });</span>
+<span class="line" id="L1125">    <span class="tok-kw">defer</span> allocator.free(resolved_to);</span>
+<span class="line" id="L1126"></span>
+<span class="line" id="L1127">    <span class="tok-kw">var</span> from_it = mem.tokenize(<span class="tok-type">u8</span>, resolved_from, <span class="tok-str">&quot;/&quot;</span>);</span>
+<span class="line" id="L1128">    <span class="tok-kw">var</span> to_it = mem.tokenize(<span class="tok-type">u8</span>, resolved_to, <span class="tok-str">&quot;/&quot;</span>);</span>
+<span class="line" id="L1129">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1130">        <span class="tok-kw">const</span> from_component = from_it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, to_it.rest());</span>
+<span class="line" id="L1131">        <span class="tok-kw">const</span> to_rest = to_it.rest();</span>
+<span class="line" id="L1132">        <span class="tok-kw">if</span> (to_it.next()) |to_component| {</span>
+<span class="line" id="L1133">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, from_component, to_component))</span>
+<span class="line" id="L1134">                <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1135">        }</span>
+<span class="line" id="L1136">        <span class="tok-kw">var</span> up_count: <span class="tok-type">usize</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L1137">        <span class="tok-kw">while</span> (from_it.next()) |_| {</span>
+<span class="line" id="L1138">            up_count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1139">        }</span>
+<span class="line" id="L1140">        <span class="tok-kw">const</span> up_index_end = up_count * <span class="tok-str">&quot;../&quot;</span>.len;</span>
+<span class="line" id="L1141">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, up_index_end + to_rest.len);</span>
+<span class="line" id="L1142">        <span class="tok-kw">errdefer</span> allocator.free(result);</span>
+<span class="line" id="L1143"></span>
+<span class="line" id="L1144">        <span class="tok-kw">var</span> result_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1145">        <span class="tok-kw">while</span> (result_index &lt; up_index_end) {</span>
+<span class="line" id="L1146">            result[result_index..][<span class="tok-number">0</span>..<span class="tok-number">3</span>].* = <span class="tok-str">&quot;../&quot;</span>.*;</span>
+<span class="line" id="L1147">            result_index += <span class="tok-number">3</span>;</span>
+<span class="line" id="L1148">        }</span>
+<span class="line" id="L1149">        <span class="tok-kw">if</span> (to_rest.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1150">            <span class="tok-comment">// shave off the trailing slash</span>
 </span>
-<span class="line" id="L1105">        result_index -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L1106"></span>
-<span class="line" id="L1107">        <span class="tok-kw">var</span> rest_it = mem.tokenize(<span class="tok-type">u8</span>, to_rest, <span class="tok-str">&quot;/\\&quot;</span>);</span>
-<span class="line" id="L1108">        <span class="tok-kw">while</span> (rest_it.next()) |to_component| {</span>
-<span class="line" id="L1109">            result[result_index] = <span class="tok-str">'\\'</span>;</span>
-<span class="line" id="L1110">            result_index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1111">            mem.copy(<span class="tok-type">u8</span>, result[result_index..], to_component);</span>
-<span class="line" id="L1112">            result_index += to_component.len;</span>
-<span class="line" id="L1113">        }</span>
-<span class="line" id="L1114"></span>
-<span class="line" id="L1115">        <span class="tok-kw">return</span> result[<span class="tok-number">0</span>..result_index];</span>
-<span class="line" id="L1116">    }</span>
-<span class="line" id="L1117"></span>
-<span class="line" id="L1118">    <span class="tok-kw">return</span> [_]<span class="tok-type">u8</span>{};</span>
-<span class="line" id="L1119">}</span>
-<span class="line" id="L1120"></span>
-<span class="line" id="L1121"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">relativePosix</span>(allocator: Allocator, from: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, to: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1122">    <span class="tok-kw">const</span> cwd = <span class="tok-kw">try</span> process.getCwdAlloc(allocator);</span>
-<span class="line" id="L1123">    <span class="tok-kw">defer</span> allocator.free(cwd);</span>
-<span class="line" id="L1124">    <span class="tok-kw">const</span> resolved_from = <span class="tok-kw">try</span> resolvePosix(allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ cwd, from });</span>
-<span class="line" id="L1125">    <span class="tok-kw">defer</span> allocator.free(resolved_from);</span>
-<span class="line" id="L1126">    <span class="tok-kw">const</span> resolved_to = <span class="tok-kw">try</span> resolvePosix(allocator, &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ cwd, to });</span>
-<span class="line" id="L1127">    <span class="tok-kw">defer</span> allocator.free(resolved_to);</span>
-<span class="line" id="L1128"></span>
-<span class="line" id="L1129">    <span class="tok-kw">var</span> from_it = mem.tokenize(<span class="tok-type">u8</span>, resolved_from, <span class="tok-str">&quot;/&quot;</span>);</span>
-<span class="line" id="L1130">    <span class="tok-kw">var</span> to_it = mem.tokenize(<span class="tok-type">u8</span>, resolved_to, <span class="tok-str">&quot;/&quot;</span>);</span>
-<span class="line" id="L1131">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1132">        <span class="tok-kw">const</span> from_component = from_it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, to_it.rest());</span>
-<span class="line" id="L1133">        <span class="tok-kw">const</span> to_rest = to_it.rest();</span>
-<span class="line" id="L1134">        <span class="tok-kw">if</span> (to_it.next()) |to_component| {</span>
-<span class="line" id="L1135">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, from_component, to_component))</span>
-<span class="line" id="L1136">                <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1137">        }</span>
-<span class="line" id="L1138">        <span class="tok-kw">var</span> up_count: <span class="tok-type">usize</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L1139">        <span class="tok-kw">while</span> (from_it.next()) |_| {</span>
-<span class="line" id="L1140">            up_count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1141">        }</span>
-<span class="line" id="L1142">        <span class="tok-kw">const</span> up_index_end = up_count * <span class="tok-str">&quot;../&quot;</span>.len;</span>
-<span class="line" id="L1143">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, up_index_end + to_rest.len);</span>
-<span class="line" id="L1144">        <span class="tok-kw">errdefer</span> allocator.free(result);</span>
-<span class="line" id="L1145"></span>
-<span class="line" id="L1146">        <span class="tok-kw">var</span> result_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1147">        <span class="tok-kw">while</span> (result_index &lt; up_index_end) {</span>
-<span class="line" id="L1148">            result[result_index..][<span class="tok-number">0</span>..<span class="tok-number">3</span>].* = <span class="tok-str">&quot;../&quot;</span>.*;</span>
-<span class="line" id="L1149">            result_index += <span class="tok-number">3</span>;</span>
-<span class="line" id="L1150">        }</span>
-<span class="line" id="L1151">        <span class="tok-kw">if</span> (to_rest.len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1152">            <span class="tok-comment">// shave off the trailing slash</span>
-</span>
-<span class="line" id="L1153">            <span class="tok-kw">return</span> allocator.realloc(result, result_index - <span class="tok-number">1</span>);</span>
-<span class="line" id="L1154">        }</span>
-<span class="line" id="L1155"></span>
-<span class="line" id="L1156">        mem.copy(<span class="tok-type">u8</span>, result[result_index..], to_rest);</span>
-<span class="line" id="L1157">        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L1158">    }</span>
-<span class="line" id="L1159"></span>
-<span class="line" id="L1160">    <span class="tok-kw">return</span> [_]<span class="tok-type">u8</span>{};</span>
-<span class="line" id="L1161">}</span>
-<span class="line" id="L1162"></span>
-<span class="line" id="L1163"><span class="tok-kw">test</span> <span class="tok-str">&quot;relative&quot;</span> {</span>
-<span class="line" id="L1164">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/blah\\blah&quot;</span>, <span class="tok-str">&quot;d:/games&quot;</span>, <span class="tok-str">&quot;D:\\games&quot;</span>);</span>
-<span class="line" id="L1165">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
-<span class="line" id="L1166">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/cccc&quot;</span>, <span class="tok-str">&quot;..\\..\\cccc&quot;</span>);</span>
-<span class="line" id="L1167">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1168">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa/cccc&quot;</span>, <span class="tok-str">&quot;..\\cccc&quot;</span>);</span>
-<span class="line" id="L1169">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/&quot;</span>, <span class="tok-str">&quot;c:/aaaa/cccc&quot;</span>, <span class="tok-str">&quot;cccc&quot;</span>);</span>
-<span class="line" id="L1170">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/&quot;</span>, <span class="tok-str">&quot;c:\\aaaa\\bbbb&quot;</span>, <span class="tok-str">&quot;aaaa\\bbbb&quot;</span>);</span>
-<span class="line" id="L1171">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;d:\\&quot;</span>, <span class="tok-str">&quot;D:\\&quot;</span>);</span>
-<span class="line" id="L1172">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/AaAa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1173">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaaa/&quot;</span>, <span class="tok-str">&quot;c:/aaaa/cccc&quot;</span>, <span class="tok-str">&quot;..\\aaaa\\cccc&quot;</span>);</span>
-<span class="line" id="L1174">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\bar\\baz\\quux&quot;</span>, <span class="tok-str">&quot;C:\\&quot;</span>, <span class="tok-str">&quot;..\\..\\..\\..&quot;</span>);</span>
-<span class="line" id="L1175">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\test&quot;</span>, <span class="tok-str">&quot;C:\\foo\\test\\bar\\package.json&quot;</span>, <span class="tok-str">&quot;bar\\package.json&quot;</span>);</span>
-<span class="line" id="L1176">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;C:\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
-<span class="line" id="L1177">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;C:\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
-<span class="line" id="L1178">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;baz&quot;</span>);</span>
-<span class="line" id="L1179">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
-<span class="line" id="L1180">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
-<span class="line" id="L1181">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
-<span class="line" id="L1182">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\baz-quux&quot;</span>, <span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
-<span class="line" id="L1183">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;C:\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
-<span class="line" id="L1184">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\baz-quux&quot;</span>, <span class="tok-str">&quot;\\\\foo\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
-<span class="line" id="L1185">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
-<span class="line" id="L1186">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>);</span>
-<span class="line" id="L1187">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;C:\\baz&quot;</span>);</span>
-<span class="line" id="L1188"></span>
-<span class="line" id="L1189">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-str">&quot;a\\b&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
-<span class="line" id="L1190">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;..\\..&quot;</span>);</span>
-<span class="line" id="L1191">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-str">&quot;a\\b\\c\\d&quot;</span>, <span class="tok-str">&quot;d&quot;</span>);</span>
-<span class="line" id="L1192"></span>
-<span class="line" id="L1193">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/var&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
-<span class="line" id="L1194">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/bin&quot;</span>, <span class="tok-str">&quot;../../bin&quot;</span>);</span>
-<span class="line" id="L1195">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1196">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/var/apache&quot;</span>, <span class="tok-str">&quot;../apache&quot;</span>);</span>
-<span class="line" id="L1197">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/&quot;</span>, <span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
-<span class="line" id="L1198">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/&quot;</span>, <span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;var/lib&quot;</span>);</span>
-<span class="line" id="L1199">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/foo/test&quot;</span>, <span class="tok-str">&quot;/foo/test/bar/package.json&quot;</span>, <span class="tok-str">&quot;bar/package.json&quot;</span>);</span>
-<span class="line" id="L1200">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/Users/a/web/b/test/mails&quot;</span>, <span class="tok-str">&quot;/Users/a/web/b&quot;</span>, <span class="tok-str">&quot;../..&quot;</span>);</span>
-<span class="line" id="L1201">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/foo/bar/baz-quux&quot;</span>, <span class="tok-str">&quot;/foo/bar/baz&quot;</span>, <span class="tok-str">&quot;../baz&quot;</span>);</span>
-<span class="line" id="L1202">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/foo/bar/baz&quot;</span>, <span class="tok-str">&quot;/foo/bar/baz-quux&quot;</span>, <span class="tok-str">&quot;../baz-quux&quot;</span>);</span>
-<span class="line" id="L1203">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/baz-quux&quot;</span>, <span class="tok-str">&quot;/baz&quot;</span>, <span class="tok-str">&quot;../baz&quot;</span>);</span>
-<span class="line" id="L1204">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/baz&quot;</span>, <span class="tok-str">&quot;/baz-quux&quot;</span>, <span class="tok-str">&quot;../baz-quux&quot;</span>);</span>
-<span class="line" id="L1205">}</span>
-<span class="line" id="L1206"></span>
-<span class="line" id="L1207"><span class="tok-kw">fn</span> <span class="tok-fn">testRelativePosix</span>(from: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, to: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_output: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1208">    <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> relativePosix(testing.allocator, from, to);</span>
-<span class="line" id="L1209">    <span class="tok-kw">defer</span> testing.allocator.free(result);</span>
-<span class="line" id="L1210">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected_output, result);</span>
-<span class="line" id="L1211">}</span>
-<span class="line" id="L1212"></span>
-<span class="line" id="L1213"><span class="tok-kw">fn</span> <span class="tok-fn">testRelativeWindows</span>(from: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, to: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_output: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1214">    <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> relativeWindows(testing.allocator, from, to);</span>
-<span class="line" id="L1215">    <span class="tok-kw">defer</span> testing.allocator.free(result);</span>
-<span class="line" id="L1216">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected_output, result);</span>
-<span class="line" id="L1217">}</span>
-<span class="line" id="L1218"></span>
-<span class="line" id="L1219"><span class="tok-comment">/// Returns the extension of the file name (if any).</span></span>
-<span class="line" id="L1220"><span class="tok-comment">/// This function will search for the file extension (separated by a `.`) and will return the text after the `.`.</span></span>
-<span class="line" id="L1221"><span class="tok-comment">/// Files that end with `.`, or that start with `.` and have no other `.` in their name,</span></span>
-<span class="line" id="L1222"><span class="tok-comment">/// are considered to have no extension.</span></span>
-<span class="line" id="L1223"><span class="tok-comment">/// Examples:</span></span>
-<span class="line" id="L1224"><span class="tok-comment">/// - `&quot;main.zig&quot;`      ⇒ `&quot;.zig&quot;`</span></span>
-<span class="line" id="L1225"><span class="tok-comment">/// - `&quot;src/main.zig&quot;`  ⇒ `&quot;.zig&quot;`</span></span>
-<span class="line" id="L1226"><span class="tok-comment">/// - `&quot;.gitignore&quot;`    ⇒ `&quot;&quot;`</span></span>
-<span class="line" id="L1227"><span class="tok-comment">/// - `&quot;.image.png&quot;`    ⇒ `&quot;.png&quot;`</span></span>
-<span class="line" id="L1228"><span class="tok-comment">/// - `&quot;keep.&quot;`         ⇒ `&quot;.&quot;`</span></span>
-<span class="line" id="L1229"><span class="tok-comment">/// - `&quot;src.keep.me&quot;`   ⇒ `&quot;.me&quot;`</span></span>
-<span class="line" id="L1230"><span class="tok-comment">/// - `&quot;/src/keep.me&quot;`  ⇒ `&quot;.me&quot;`</span></span>
-<span class="line" id="L1231"><span class="tok-comment">/// - `&quot;/src/keep.me/&quot;` ⇒ `&quot;.me&quot;`</span></span>
-<span class="line" id="L1232"><span class="tok-comment">/// The returned slice is guaranteed to have its pointer within the start and end</span></span>
-<span class="line" id="L1233"><span class="tok-comment">/// pointer address range of `path`, even if it is length zero.</span></span>
-<span class="line" id="L1234"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">extension</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1235">    <span class="tok-kw">const</span> filename = basename(path);</span>
-<span class="line" id="L1236">    <span class="tok-kw">const</span> index = mem.lastIndexOfScalar(<span class="tok-type">u8</span>, filename, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> path[path.len..];</span>
-<span class="line" id="L1237">    <span class="tok-kw">if</span> (index == <span class="tok-number">0</span>) <span class="tok-kw">return</span> path[path.len..];</span>
-<span class="line" id="L1238">    <span class="tok-kw">return</span> filename[index..];</span>
-<span class="line" id="L1239">}</span>
-<span class="line" id="L1240"></span>
-<span class="line" id="L1241"><span class="tok-kw">fn</span> <span class="tok-fn">testExtension</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1242">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected, extension(path));</span>
-<span class="line" id="L1243">}</span>
-<span class="line" id="L1244"></span>
-<span class="line" id="L1245"><span class="tok-kw">test</span> <span class="tok-str">&quot;extension&quot;</span> {</span>
-<span class="line" id="L1246">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1247">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1248">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;a.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1249">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;abc.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1250">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.a&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1251">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.file&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1252">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.gitignore&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1253">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.image.png&quot;</span>, <span class="tok-str">&quot;.png&quot;</span>);</span>
-<span class="line" id="L1254">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;file.ext&quot;</span>, <span class="tok-str">&quot;.ext&quot;</span>);</span>
-<span class="line" id="L1255">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;file.ext.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1256">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;very-long-file.bruh&quot;</span>, <span class="tok-str">&quot;.bruh&quot;</span>);</span>
-<span class="line" id="L1257">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;a.b.c&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
-<span class="line" id="L1258">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;a.b.c/&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
-<span class="line" id="L1259"></span>
-<span class="line" id="L1260">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1261">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1262">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/a.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1263">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/abc.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1264">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.a&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1265">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.file&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1266">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.gitignore&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1267">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/file.ext&quot;</span>, <span class="tok-str">&quot;.ext&quot;</span>);</span>
-<span class="line" id="L1268">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/file.ext.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1269">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/very-long-file.bruh&quot;</span>, <span class="tok-str">&quot;.bruh&quot;</span>);</span>
-<span class="line" id="L1270">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/a.b.c&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
-<span class="line" id="L1271">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/a.b.c/&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
-<span class="line" id="L1272"></span>
-<span class="line" id="L1273">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1274">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1275">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/a.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1276">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/abc.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1277">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.a&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1278">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.file&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1279">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.gitignore&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1280">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/file.ext&quot;</span>, <span class="tok-str">&quot;.ext&quot;</span>);</span>
-<span class="line" id="L1281">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/file.ext.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1282">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/very-long-file.bruh&quot;</span>, <span class="tok-str">&quot;.bruh&quot;</span>);</span>
-<span class="line" id="L1283">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/a.b.c&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
-<span class="line" id="L1284">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/a.b.c/&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
-<span class="line" id="L1285">}</span>
-<span class="line" id="L1286"></span>
-<span class="line" id="L1287"><span class="tok-comment">/// Returns the last component of this path without its extension (if any):</span></span>
-<span class="line" id="L1288"><span class="tok-comment">/// - &quot;hello/world/lib.tar.gz&quot; ⇒ &quot;lib.tar&quot;</span></span>
-<span class="line" id="L1289"><span class="tok-comment">/// - &quot;hello/world/lib.tar&quot;    ⇒ &quot;lib&quot;</span></span>
-<span class="line" id="L1290"><span class="tok-comment">/// - &quot;hello/world/lib&quot;        ⇒ &quot;lib&quot;</span></span>
-<span class="line" id="L1291"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">stem</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1292">    <span class="tok-kw">const</span> filename = basename(path);</span>
-<span class="line" id="L1293">    <span class="tok-kw">const</span> index = mem.lastIndexOfScalar(<span class="tok-type">u8</span>, filename, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> filename[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L1294">    <span class="tok-kw">if</span> (index == <span class="tok-number">0</span>) <span class="tok-kw">return</span> path;</span>
-<span class="line" id="L1295">    <span class="tok-kw">return</span> filename[<span class="tok-number">0</span>..index];</span>
-<span class="line" id="L1296">}</span>
-<span class="line" id="L1297"></span>
-<span class="line" id="L1298"><span class="tok-kw">fn</span> <span class="tok-fn">testStem</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1299">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected, stem(path));</span>
-<span class="line" id="L1300">}</span>
-<span class="line" id="L1301"></span>
-<span class="line" id="L1302"><span class="tok-kw">test</span> <span class="tok-str">&quot;stem&quot;</span> {</span>
-<span class="line" id="L1303">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/world/lib.tar.gz&quot;</span>, <span class="tok-str">&quot;lib.tar&quot;</span>);</span>
-<span class="line" id="L1304">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/world/lib.tar&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
-<span class="line" id="L1305">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/world/lib&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
-<span class="line" id="L1306">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/lib/&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
-<span class="line" id="L1307">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello...&quot;</span>, <span class="tok-str">&quot;hello..&quot;</span>);</span>
-<span class="line" id="L1308">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello.&quot;</span>, <span class="tok-str">&quot;hello&quot;</span>);</span>
-<span class="line" id="L1309">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;/hello.&quot;</span>, <span class="tok-str">&quot;hello&quot;</span>);</span>
-<span class="line" id="L1310">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.gitignore&quot;</span>, <span class="tok-str">&quot;.gitignore&quot;</span>);</span>
-<span class="line" id="L1311">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.image.png&quot;</span>, <span class="tok-str">&quot;.image&quot;</span>);</span>
-<span class="line" id="L1312">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;file.ext&quot;</span>, <span class="tok-str">&quot;file&quot;</span>);</span>
-<span class="line" id="L1313">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;file.ext.&quot;</span>, <span class="tok-str">&quot;file.ext&quot;</span>);</span>
-<span class="line" id="L1314">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;a.b.c&quot;</span>, <span class="tok-str">&quot;a.b&quot;</span>);</span>
-<span class="line" id="L1315">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;a.b.c/&quot;</span>, <span class="tok-str">&quot;a.b&quot;</span>);</span>
-<span class="line" id="L1316">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.a&quot;</span>, <span class="tok-str">&quot;.a&quot;</span>);</span>
-<span class="line" id="L1317">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;///&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1318">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;..&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1319">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L1320">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot; &quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L1321">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L1322">}</span>
-<span class="line" id="L1323"></span>
+<span class="line" id="L1151">            <span class="tok-kw">return</span> allocator.realloc(result, result_index - <span class="tok-number">1</span>);</span>
+<span class="line" id="L1152">        }</span>
+<span class="line" id="L1153"></span>
+<span class="line" id="L1154">        mem.copy(<span class="tok-type">u8</span>, result[result_index..], to_rest);</span>
+<span class="line" id="L1155">        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L1156">    }</span>
+<span class="line" id="L1157"></span>
+<span class="line" id="L1158">    <span class="tok-kw">return</span> [_]<span class="tok-type">u8</span>{};</span>
+<span class="line" id="L1159">}</span>
+<span class="line" id="L1160"></span>
+<span class="line" id="L1161"><span class="tok-kw">test</span> <span class="tok-str">&quot;relative&quot;</span> {</span>
+<span class="line" id="L1162">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/blah\\blah&quot;</span>, <span class="tok-str">&quot;d:/games&quot;</span>, <span class="tok-str">&quot;D:\\games&quot;</span>);</span>
+<span class="line" id="L1163">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
+<span class="line" id="L1164">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/cccc&quot;</span>, <span class="tok-str">&quot;..\\..\\cccc&quot;</span>);</span>
+<span class="line" id="L1165">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1166">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa/cccc&quot;</span>, <span class="tok-str">&quot;..\\cccc&quot;</span>);</span>
+<span class="line" id="L1167">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/&quot;</span>, <span class="tok-str">&quot;c:/aaaa/cccc&quot;</span>, <span class="tok-str">&quot;cccc&quot;</span>);</span>
+<span class="line" id="L1168">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/&quot;</span>, <span class="tok-str">&quot;c:\\aaaa\\bbbb&quot;</span>, <span class="tok-str">&quot;aaaa\\bbbb&quot;</span>);</span>
+<span class="line" id="L1169">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;d:\\&quot;</span>, <span class="tok-str">&quot;D:\\&quot;</span>);</span>
+<span class="line" id="L1170">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/AaAa/bbbb&quot;</span>, <span class="tok-str">&quot;c:/aaaa/bbbb&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1171">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;c:/aaaaa/&quot;</span>, <span class="tok-str">&quot;c:/aaaa/cccc&quot;</span>, <span class="tok-str">&quot;..\\aaaa\\cccc&quot;</span>);</span>
+<span class="line" id="L1172">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\bar\\baz\\quux&quot;</span>, <span class="tok-str">&quot;C:\\&quot;</span>, <span class="tok-str">&quot;..\\..\\..\\..&quot;</span>);</span>
+<span class="line" id="L1173">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\test&quot;</span>, <span class="tok-str">&quot;C:\\foo\\test\\bar\\package.json&quot;</span>, <span class="tok-str">&quot;bar\\package.json&quot;</span>);</span>
+<span class="line" id="L1174">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;C:\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
+<span class="line" id="L1175">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;C:\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
+<span class="line" id="L1176">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;baz&quot;</span>);</span>
+<span class="line" id="L1177">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
+<span class="line" id="L1178">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
+<span class="line" id="L1179">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
+<span class="line" id="L1180">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\baz-quux&quot;</span>, <span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
+<span class="line" id="L1181">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;C:\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
+<span class="line" id="L1182">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\baz-quux&quot;</span>, <span class="tok-str">&quot;\\\\foo\\baz&quot;</span>, <span class="tok-str">&quot;..\\baz&quot;</span>);</span>
+<span class="line" id="L1183">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\baz-quux&quot;</span>, <span class="tok-str">&quot;..\\baz-quux&quot;</span>);</span>
+<span class="line" id="L1184">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>);</span>
+<span class="line" id="L1185">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;\\\\foo\\bar\\baz&quot;</span>, <span class="tok-str">&quot;C:\\baz&quot;</span>, <span class="tok-str">&quot;C:\\baz&quot;</span>);</span>
+<span class="line" id="L1186"></span>
+<span class="line" id="L1187">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-str">&quot;a\\b&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
+<span class="line" id="L1188">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-str">&quot;a&quot;</span>, <span class="tok-str">&quot;..\\..&quot;</span>);</span>
+<span class="line" id="L1189">    <span class="tok-kw">try</span> testRelativeWindows(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-str">&quot;a\\b\\c\\d&quot;</span>, <span class="tok-str">&quot;d&quot;</span>);</span>
+<span class="line" id="L1190"></span>
+<span class="line" id="L1191">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/var&quot;</span>, <span class="tok-str">&quot;..&quot;</span>);</span>
+<span class="line" id="L1192">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/bin&quot;</span>, <span class="tok-str">&quot;../../bin&quot;</span>);</span>
+<span class="line" id="L1193">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1194">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;/var/apache&quot;</span>, <span class="tok-str">&quot;../apache&quot;</span>);</span>
+<span class="line" id="L1195">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/var/&quot;</span>, <span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
+<span class="line" id="L1196">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/&quot;</span>, <span class="tok-str">&quot;/var/lib&quot;</span>, <span class="tok-str">&quot;var/lib&quot;</span>);</span>
+<span class="line" id="L1197">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/foo/test&quot;</span>, <span class="tok-str">&quot;/foo/test/bar/package.json&quot;</span>, <span class="tok-str">&quot;bar/package.json&quot;</span>);</span>
+<span class="line" id="L1198">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/Users/a/web/b/test/mails&quot;</span>, <span class="tok-str">&quot;/Users/a/web/b&quot;</span>, <span class="tok-str">&quot;../..&quot;</span>);</span>
+<span class="line" id="L1199">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/foo/bar/baz-quux&quot;</span>, <span class="tok-str">&quot;/foo/bar/baz&quot;</span>, <span class="tok-str">&quot;../baz&quot;</span>);</span>
+<span class="line" id="L1200">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/foo/bar/baz&quot;</span>, <span class="tok-str">&quot;/foo/bar/baz-quux&quot;</span>, <span class="tok-str">&quot;../baz-quux&quot;</span>);</span>
+<span class="line" id="L1201">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/baz-quux&quot;</span>, <span class="tok-str">&quot;/baz&quot;</span>, <span class="tok-str">&quot;../baz&quot;</span>);</span>
+<span class="line" id="L1202">    <span class="tok-kw">try</span> testRelativePosix(<span class="tok-str">&quot;/baz&quot;</span>, <span class="tok-str">&quot;/baz-quux&quot;</span>, <span class="tok-str">&quot;../baz-quux&quot;</span>);</span>
+<span class="line" id="L1203">}</span>
+<span class="line" id="L1204"></span>
+<span class="line" id="L1205"><span class="tok-kw">fn</span> <span class="tok-fn">testRelativePosix</span>(from: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, to: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_output: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1206">    <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> relativePosix(testing.allocator, from, to);</span>
+<span class="line" id="L1207">    <span class="tok-kw">defer</span> testing.allocator.free(result);</span>
+<span class="line" id="L1208">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected_output, result);</span>
+<span class="line" id="L1209">}</span>
+<span class="line" id="L1210"></span>
+<span class="line" id="L1211"><span class="tok-kw">fn</span> <span class="tok-fn">testRelativeWindows</span>(from: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, to: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_output: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1212">    <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> relativeWindows(testing.allocator, from, to);</span>
+<span class="line" id="L1213">    <span class="tok-kw">defer</span> testing.allocator.free(result);</span>
+<span class="line" id="L1214">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected_output, result);</span>
+<span class="line" id="L1215">}</span>
+<span class="line" id="L1216"></span>
+<span class="line" id="L1217"><span class="tok-comment">/// Returns the extension of the file name (if any).</span></span>
+<span class="line" id="L1218"><span class="tok-comment">/// This function will search for the file extension (separated by a `.`) and will return the text after the `.`.</span></span>
+<span class="line" id="L1219"><span class="tok-comment">/// Files that end with `.`, or that start with `.` and have no other `.` in their name,</span></span>
+<span class="line" id="L1220"><span class="tok-comment">/// are considered to have no extension.</span></span>
+<span class="line" id="L1221"><span class="tok-comment">/// Examples:</span></span>
+<span class="line" id="L1222"><span class="tok-comment">/// - `&quot;main.zig&quot;`      ⇒ `&quot;.zig&quot;`</span></span>
+<span class="line" id="L1223"><span class="tok-comment">/// - `&quot;src/main.zig&quot;`  ⇒ `&quot;.zig&quot;`</span></span>
+<span class="line" id="L1224"><span class="tok-comment">/// - `&quot;.gitignore&quot;`    ⇒ `&quot;&quot;`</span></span>
+<span class="line" id="L1225"><span class="tok-comment">/// - `&quot;.image.png&quot;`    ⇒ `&quot;.png&quot;`</span></span>
+<span class="line" id="L1226"><span class="tok-comment">/// - `&quot;keep.&quot;`         ⇒ `&quot;.&quot;`</span></span>
+<span class="line" id="L1227"><span class="tok-comment">/// - `&quot;src.keep.me&quot;`   ⇒ `&quot;.me&quot;`</span></span>
+<span class="line" id="L1228"><span class="tok-comment">/// - `&quot;/src/keep.me&quot;`  ⇒ `&quot;.me&quot;`</span></span>
+<span class="line" id="L1229"><span class="tok-comment">/// - `&quot;/src/keep.me/&quot;` ⇒ `&quot;.me&quot;`</span></span>
+<span class="line" id="L1230"><span class="tok-comment">/// The returned slice is guaranteed to have its pointer within the start and end</span></span>
+<span class="line" id="L1231"><span class="tok-comment">/// pointer address range of `path`, even if it is length zero.</span></span>
+<span class="line" id="L1232"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">extension</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1233">    <span class="tok-kw">const</span> filename = basename(path);</span>
+<span class="line" id="L1234">    <span class="tok-kw">const</span> index = mem.lastIndexOfScalar(<span class="tok-type">u8</span>, filename, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> path[path.len..];</span>
+<span class="line" id="L1235">    <span class="tok-kw">if</span> (index == <span class="tok-number">0</span>) <span class="tok-kw">return</span> path[path.len..];</span>
+<span class="line" id="L1236">    <span class="tok-kw">return</span> filename[index..];</span>
+<span class="line" id="L1237">}</span>
+<span class="line" id="L1238"></span>
+<span class="line" id="L1239"><span class="tok-kw">fn</span> <span class="tok-fn">testExtension</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1240">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected, extension(path));</span>
+<span class="line" id="L1241">}</span>
+<span class="line" id="L1242"></span>
+<span class="line" id="L1243"><span class="tok-kw">test</span> <span class="tok-str">&quot;extension&quot;</span> {</span>
+<span class="line" id="L1244">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1245">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1246">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;a.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1247">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;abc.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1248">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.a&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1249">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.file&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1250">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.gitignore&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1251">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;.image.png&quot;</span>, <span class="tok-str">&quot;.png&quot;</span>);</span>
+<span class="line" id="L1252">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;file.ext&quot;</span>, <span class="tok-str">&quot;.ext&quot;</span>);</span>
+<span class="line" id="L1253">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;file.ext.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1254">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;very-long-file.bruh&quot;</span>, <span class="tok-str">&quot;.bruh&quot;</span>);</span>
+<span class="line" id="L1255">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;a.b.c&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
+<span class="line" id="L1256">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;a.b.c/&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
+<span class="line" id="L1257"></span>
+<span class="line" id="L1258">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1259">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1260">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/a.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1261">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/abc.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1262">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.a&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1263">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.file&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1264">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/.gitignore&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1265">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/file.ext&quot;</span>, <span class="tok-str">&quot;.ext&quot;</span>);</span>
+<span class="line" id="L1266">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/file.ext.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1267">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/very-long-file.bruh&quot;</span>, <span class="tok-str">&quot;.bruh&quot;</span>);</span>
+<span class="line" id="L1268">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/a.b.c&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
+<span class="line" id="L1269">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/a.b.c/&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
+<span class="line" id="L1270"></span>
+<span class="line" id="L1271">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1272">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1273">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/a.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1274">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/abc.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1275">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.a&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1276">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.file&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1277">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/.gitignore&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1278">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/file.ext&quot;</span>, <span class="tok-str">&quot;.ext&quot;</span>);</span>
+<span class="line" id="L1279">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/file.ext.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1280">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/very-long-file.bruh&quot;</span>, <span class="tok-str">&quot;.bruh&quot;</span>);</span>
+<span class="line" id="L1281">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/a.b.c&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
+<span class="line" id="L1282">    <span class="tok-kw">try</span> testExtension(<span class="tok-str">&quot;/foo/bar/bam/a.b.c/&quot;</span>, <span class="tok-str">&quot;.c&quot;</span>);</span>
+<span class="line" id="L1283">}</span>
+<span class="line" id="L1284"></span>
+<span class="line" id="L1285"><span class="tok-comment">/// Returns the last component of this path without its extension (if any):</span></span>
+<span class="line" id="L1286"><span class="tok-comment">/// - &quot;hello/world/lib.tar.gz&quot; ⇒ &quot;lib.tar&quot;</span></span>
+<span class="line" id="L1287"><span class="tok-comment">/// - &quot;hello/world/lib.tar&quot;    ⇒ &quot;lib&quot;</span></span>
+<span class="line" id="L1288"><span class="tok-comment">/// - &quot;hello/world/lib&quot;        ⇒ &quot;lib&quot;</span></span>
+<span class="line" id="L1289"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">stem</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1290">    <span class="tok-kw">const</span> filename = basename(path);</span>
+<span class="line" id="L1291">    <span class="tok-kw">const</span> index = mem.lastIndexOfScalar(<span class="tok-type">u8</span>, filename, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> filename[<span class="tok-number">0</span>..];</span>
+<span class="line" id="L1292">    <span class="tok-kw">if</span> (index == <span class="tok-number">0</span>) <span class="tok-kw">return</span> path;</span>
+<span class="line" id="L1293">    <span class="tok-kw">return</span> filename[<span class="tok-number">0</span>..index];</span>
+<span class="line" id="L1294">}</span>
+<span class="line" id="L1295"></span>
+<span class="line" id="L1296"><span class="tok-kw">fn</span> <span class="tok-fn">testStem</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1297">    <span class="tok-kw">try</span> testing.expectEqualStrings(expected, stem(path));</span>
+<span class="line" id="L1298">}</span>
+<span class="line" id="L1299"></span>
+<span class="line" id="L1300"><span class="tok-kw">test</span> <span class="tok-str">&quot;stem&quot;</span> {</span>
+<span class="line" id="L1301">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/world/lib.tar.gz&quot;</span>, <span class="tok-str">&quot;lib.tar&quot;</span>);</span>
+<span class="line" id="L1302">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/world/lib.tar&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
+<span class="line" id="L1303">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/world/lib&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
+<span class="line" id="L1304">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello/lib/&quot;</span>, <span class="tok-str">&quot;lib&quot;</span>);</span>
+<span class="line" id="L1305">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello...&quot;</span>, <span class="tok-str">&quot;hello..&quot;</span>);</span>
+<span class="line" id="L1306">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;hello.&quot;</span>, <span class="tok-str">&quot;hello&quot;</span>);</span>
+<span class="line" id="L1307">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;/hello.&quot;</span>, <span class="tok-str">&quot;hello&quot;</span>);</span>
+<span class="line" id="L1308">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.gitignore&quot;</span>, <span class="tok-str">&quot;.gitignore&quot;</span>);</span>
+<span class="line" id="L1309">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.image.png&quot;</span>, <span class="tok-str">&quot;.image&quot;</span>);</span>
+<span class="line" id="L1310">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;file.ext&quot;</span>, <span class="tok-str">&quot;file&quot;</span>);</span>
+<span class="line" id="L1311">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;file.ext.&quot;</span>, <span class="tok-str">&quot;file.ext&quot;</span>);</span>
+<span class="line" id="L1312">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;a.b.c&quot;</span>, <span class="tok-str">&quot;a.b&quot;</span>);</span>
+<span class="line" id="L1313">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;a.b.c/&quot;</span>, <span class="tok-str">&quot;a.b&quot;</span>);</span>
+<span class="line" id="L1314">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.a&quot;</span>, <span class="tok-str">&quot;.a&quot;</span>);</span>
+<span class="line" id="L1315">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;///&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1316">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;..&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1317">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;.&quot;</span>, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L1318">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot; &quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L1319">    <span class="tok-kw">try</span> testStem(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1320">}</span>
+<span class="line" id="L1321"></span>
 </code></pre></body>
 </html>

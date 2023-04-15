@@ -1312,41 +1312,42 @@
 <span class="line" id="L1164">        },</span>
 <span class="line" id="L1165">        .windows =&gt; {</span>
 <span class="line" id="L1166">            <span class="tok-kw">var</span> kilobytes: std.os.windows.ULONGLONG = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1167">            assert(std.os.windows.kernel32.GetPhysicallyInstalledSystemMemory(&amp;kilobytes) == std.os.windows.TRUE);</span>
-<span class="line" id="L1168">            <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
-<span class="line" id="L1169">        },</span>
-<span class="line" id="L1170">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
-<span class="line" id="L1171">    }</span>
-<span class="line" id="L1172">}</span>
-<span class="line" id="L1173"></span>
-<span class="line" id="L1174"><span class="tok-kw">fn</span> <span class="tok-fn">totalSystemMemoryLinux</span>() !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1175">    <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsoluteZ(<span class="tok-str">&quot;/proc/meminfo&quot;</span>, .{});</span>
-<span class="line" id="L1176">    <span class="tok-kw">defer</span> file.close();</span>
-<span class="line" id="L1177">    <span class="tok-kw">var</span> buf: [<span class="tok-number">50</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1178">    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> file.read(&amp;buf);</span>
-<span class="line" id="L1179">    <span class="tok-kw">if</span> (amt != <span class="tok-number">50</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1180">    <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..amt], <span class="tok-str">&quot; \n&quot;</span>);</span>
-<span class="line" id="L1181">    <span class="tok-kw">const</span> label = it.next().?;</span>
-<span class="line" id="L1182">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, label, <span class="tok-str">&quot;MemTotal:&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1183">    <span class="tok-kw">const</span> int_text = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1184">    <span class="tok-kw">const</span> units = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1185">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, units, <span class="tok-str">&quot;kB&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1186">    <span class="tok-kw">const</span> kilobytes = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">usize</span>, int_text, <span class="tok-number">10</span>);</span>
-<span class="line" id="L1187">    <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
-<span class="line" id="L1188">}</span>
-<span class="line" id="L1189"></span>
-<span class="line" id="L1190"><span class="tok-comment">/// Indicate that we are now terminating with a successful exit code.</span></span>
-<span class="line" id="L1191"><span class="tok-comment">/// In debug builds, this is a no-op, so that the calling code's</span></span>
-<span class="line" id="L1192"><span class="tok-comment">/// cleanup mechanisms are tested and so that external tools that</span></span>
-<span class="line" id="L1193"><span class="tok-comment">/// check for resource leaks can be accurate. In release builds, this</span></span>
-<span class="line" id="L1194"><span class="tok-comment">/// calls exit(0), and does not return.</span></span>
-<span class="line" id="L1195"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cleanExit</span>() <span class="tok-type">void</span> {</span>
-<span class="line" id="L1196">    <span class="tok-kw">if</span> (builtin.mode == .Debug) {</span>
-<span class="line" id="L1197">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1198">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1199">        exit(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1200">    }</span>
-<span class="line" id="L1201">}</span>
-<span class="line" id="L1202"></span>
+<span class="line" id="L1167">            <span class="tok-kw">if</span> (std.os.windows.kernel32.GetPhysicallyInstalledSystemMemory(&amp;kilobytes) != std.os.windows.TRUE)</span>
+<span class="line" id="L1168">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory;</span>
+<span class="line" id="L1169">            <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
+<span class="line" id="L1170">        },</span>
+<span class="line" id="L1171">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
+<span class="line" id="L1172">    }</span>
+<span class="line" id="L1173">}</span>
+<span class="line" id="L1174"></span>
+<span class="line" id="L1175"><span class="tok-kw">fn</span> <span class="tok-fn">totalSystemMemoryLinux</span>() !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1176">    <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsoluteZ(<span class="tok-str">&quot;/proc/meminfo&quot;</span>, .{});</span>
+<span class="line" id="L1177">    <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L1178">    <span class="tok-kw">var</span> buf: [<span class="tok-number">50</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1179">    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> file.read(&amp;buf);</span>
+<span class="line" id="L1180">    <span class="tok-kw">if</span> (amt != <span class="tok-number">50</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1181">    <span class="tok-kw">var</span> it = std.mem.tokenize(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..amt], <span class="tok-str">&quot; \n&quot;</span>);</span>
+<span class="line" id="L1182">    <span class="tok-kw">const</span> label = it.next().?;</span>
+<span class="line" id="L1183">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, label, <span class="tok-str">&quot;MemTotal:&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1184">    <span class="tok-kw">const</span> int_text = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1185">    <span class="tok-kw">const</span> units = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1186">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, units, <span class="tok-str">&quot;kB&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1187">    <span class="tok-kw">const</span> kilobytes = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">usize</span>, int_text, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1188">    <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
+<span class="line" id="L1189">}</span>
+<span class="line" id="L1190"></span>
+<span class="line" id="L1191"><span class="tok-comment">/// Indicate that we are now terminating with a successful exit code.</span></span>
+<span class="line" id="L1192"><span class="tok-comment">/// In debug builds, this is a no-op, so that the calling code's</span></span>
+<span class="line" id="L1193"><span class="tok-comment">/// cleanup mechanisms are tested and so that external tools that</span></span>
+<span class="line" id="L1194"><span class="tok-comment">/// check for resource leaks can be accurate. In release builds, this</span></span>
+<span class="line" id="L1195"><span class="tok-comment">/// calls exit(0), and does not return.</span></span>
+<span class="line" id="L1196"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cleanExit</span>() <span class="tok-type">void</span> {</span>
+<span class="line" id="L1197">    <span class="tok-kw">if</span> (builtin.mode == .Debug) {</span>
+<span class="line" id="L1198">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1199">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1200">        exit(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1201">    }</span>
+<span class="line" id="L1202">}</span>
+<span class="line" id="L1203"></span>
 </code></pre></body>
 </html>

@@ -623,7 +623,7 @@ const NAV_MODES = {
   function typeIsStructWithNoFields(typeIndex) {
     let typeObj = getType(typeIndex);
     if (typeObj.kind !== typeKinds.Struct) return false;
-    return typeObj.fields.length == 0;
+    return typeObj.field_types.length == 0;
   }
 
   function typeIsGenericFn(typeIndex) {
@@ -2586,7 +2586,8 @@ const NAV_MODES = {
     fnsList,
     varsList,
     valsList,
-    testsList
+    testsList,
+    unsList
   ) {
     for (let i = 0; i < decls.length; i += 1) {
       let decl = getDecl(decls[i]);
@@ -2644,6 +2645,10 @@ const NAV_MODES = {
           valsList.push(decl);
         }
       }
+
+      if (decl.is_uns) {
+        unsList.push(decl);
+      }
     }
   }
 
@@ -2669,6 +2674,8 @@ const NAV_MODES = {
 
     let testsList = [];
 
+    let unsList = [];
+
     categorizeDecls(
       container.pubDecls,
       typesList,
@@ -2677,7 +2684,8 @@ const NAV_MODES = {
       fnsList,
       varsList,
       valsList,
-      testsList
+      testsList,
+      unsList
     );
     if (curNav.showPrivDecls)
       categorizeDecls(
@@ -2688,8 +2696,40 @@ const NAV_MODES = {
         fnsList,
         varsList,
         valsList,
-        testsList
+        testsList,
+        unsList
       );
+
+    while (unsList.length > 0) {
+      let uns = unsList.shift();
+      let declValue = resolveValue(uns.value);
+      if (!("type" in declValue.expr)) continue;
+      let uns_container = getType(declValue.expr.type);
+      if (!isContainerType(uns_container)) continue;
+      categorizeDecls(
+        uns_container.pubDecls,
+        typesList,
+        namespacesList,
+        errSetsList,
+        fnsList,
+        varsList,
+        valsList,
+        testsList,
+        unsList
+      );
+      if (curNav.showPrivDecls)
+        categorizeDecls(
+          uns_container.privDecls,
+          typesList,
+          namespacesList,
+          errSetsList,
+          fnsList,
+          varsList,
+          valsList,
+          testsList,
+          unsList
+        );
+    }
 
     typesList.sort(byNameProperty);
     namespacesList.sort(byNameProperty);
@@ -2819,9 +2859,12 @@ const NAV_MODES = {
           escapeHtml(fieldName);
 
         if (container.kind === typeKinds.Enum) {
-          html += ' = <span class="tok-number">' + fieldName + "</span>";
+          let value = container.values[i];
+          if (value !== null) {
+            html += " = " + exprName(value, { wantHtml: true, wantLink: true });
+          }
         } else {
-          let fieldTypeExpr = container.fields[i];
+          let fieldTypeExpr = container.field_types[i];
           if (container.kind !== typeKinds.Struct || !container.is_tuple) {
             html += ": ";
           }
@@ -2829,6 +2872,12 @@ const NAV_MODES = {
           let tsn = typeShorthandName(fieldTypeExpr);
           if (tsn) {
             html += "<span> (" + tsn + ")</span>";
+          }
+          if (container.kind === typeKinds.Struct && !container.is_tuple) {
+            let defaultInitExpr = container.field_defaults[i];
+            if (defaultInitExpr !== null) {
+              html += " = " + exprName(defaultInitExpr, { wantHtml: true, wantLink: true });
+            }
           }
         }
 
@@ -3090,7 +3139,7 @@ const NAV_MODES = {
   function findSubDecl(parentTypeOrDecl, childName) {
     let parentType = parentTypeOrDecl;
     {
-      // Generic functions / resorlving decls
+      // Generic functions / resolving decls
       if ("value" in parentType) {
         const rv = resolveValue(parentType.value);
         if ("type" in rv.expr) {
@@ -3116,20 +3165,35 @@ const NAV_MODES = {
       }
     }
 
-    if (!parentType.pubDecls) return null;
-    for (let i = 0; i < parentType.pubDecls.length; i += 1) {
-      let declIndex = parentType.pubDecls[i];
-      let childDecl = getDecl(declIndex);
-      if (childDecl.name === childName) {
-        return childDecl;
+    if (parentType.pubDecls) {
+      for (let i = 0; i < parentType.pubDecls.length; i += 1) {
+        let declIndex = parentType.pubDecls[i];
+        let childDecl = getDecl(declIndex);
+        if (childDecl.name === childName) {
+          return childDecl;
+        } else if (childDecl.is_uns) {
+          let declValue = resolveValue(childDecl.value);
+          if (!("type" in declValue.expr)) continue;
+          let uns_container = getType(declValue.expr.type);
+          let uns_res = findSubDecl(uns_container, childName);
+          if (uns_res !== null) return uns_res;
+        }
       }
     }
-    if (!parentType.privDecls) return null;
-    for (let i = 0; i < parentType.privDecls.length; i += 1) {
-      let declIndex = parentType.privDecls[i];
-      let childDecl = getDecl(declIndex);
-      if (childDecl.name === childName) {
-        return childDecl;
+
+    if (parentType.privDecls) {
+      for (let i = 0; i < parentType.privDecls.length; i += 1) {
+        let declIndex = parentType.privDecls[i];
+        let childDecl = getDecl(declIndex);
+        if (childDecl.name === childName) {
+          return childDecl;
+        } else if (childDecl.is_uns) {
+          let declValue = resolveValue(childDecl.value);
+          if (!("type" in declValue.expr)) continue;
+          let uns_container = getType(declValue.expr.type);
+          let uns_res = findSubDecl(uns_container, childName);
+          if (uns_res !== null) return uns_res;
+        }
       }
     }
     return null;
@@ -3188,42 +3252,33 @@ const NAV_MODES = {
 
           let len = t.pubDecls ? t.pubDecls.length : 0;
           for (let declI = 0; declI < len; declI += 1) {
-            let mainDeclIndex = t.pubDecls[declI];
-            if (list[mainDeclIndex] != null) continue;
+            let declIndex = t.pubDecls[declI];
+            if (list[declIndex] != null) continue;
 
-            let decl = getDecl(mainDeclIndex);
-            let declVal = resolveValue(decl.value);
-            let declNames = item.declNames.concat([decl.name]);
-            list[mainDeclIndex] = {
-              pkgNames: pkgNames,
-              declNames: declNames,
-            };
-            if ("type" in declVal.expr) {
-              let value = getType(declVal.expr.type);
-              if (declCanRepresentTypeKind(value.kind)) {
-                canonTypeDecls[declVal.type] = mainDeclIndex;
-              }
-
-              if (isContainerType(value)) {
-                stack.push({
-                  declNames: declNames,
-                  type: value,
-                });
-              }
-
-              // Generic function
-              if (value.kind == typeKinds.Fn && value.generic_ret != null) {
-                let resolvedVal = resolveValue({ expr: value.generic_ret });
-                if ("type" in resolvedVal.expr) {
-                  let generic_type = getType(resolvedVal.expr.type);
-                  if (isContainerType(generic_type)) {
-                    stack.push({
-                      declNames: declNames,
-                      type: generic_type,
-                    });
+            let decl = getDecl(declIndex);
+              
+            if (decl.is_uns) {
+              let unsDeclList = [decl];
+              while(unsDeclList.length != 0) {
+                let unsDecl = unsDeclList.pop();
+                let unsDeclVal = resolveValue(unsDecl.value);
+                if (!("type" in unsDeclVal.expr)) continue;
+                let unsType = getType(unsDeclVal.expr.type);
+                if (!isContainerType(unsType)) continue;
+                let unsPubDeclLen = unsType.pubDecls ? unsType.pubDecls.length : 0;
+                for (let unsDeclI = 0; unsDeclI < unsPubDeclLen; unsDeclI += 1) {
+                  let childDeclIndex = unsType.pubDecls[unsDeclI];
+                  let childDecl = getDecl(childDeclIndex);
+                  
+                  if (childDecl.is_uns) {
+                    unsDeclList.push(childDecl);
+                  } else {
+                    addDeclToSearchResults(childDecl, childDeclIndex, pkgNames, item, list, stack);
                   }
                 }
               }
+            } else {
+              addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack);
             }
           }
         }
@@ -3231,6 +3286,45 @@ const NAV_MODES = {
     }
     return list;
   }
+
+function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
+  let declVal = resolveValue(decl.value);
+  let declNames = item.declNames.concat([decl.name]);
+
+  if (list[declIndex] != null) return;
+  list[declIndex] = {
+    pkgNames: pkgNames,
+    declNames: declNames,
+  };
+  
+  if ("type" in declVal.expr) {
+    let value = getType(declVal.expr.type);
+    if (declCanRepresentTypeKind(value.kind)) {
+      canonTypeDecls[declVal.type] = declIndex;
+    }
+
+    if (isContainerType(value)) {
+      stack.push({
+        declNames: declNames,
+        type: value,
+      });
+    }
+
+    // Generic function
+    if (value.kind == typeKinds.Fn && value.generic_ret != null) {
+      let resolvedVal = resolveValue({ expr: value.generic_ret });
+      if ("type" in resolvedVal.expr) {
+        let generic_type = getType(resolvedVal.expr.type);
+        if (isContainerType(generic_type)) {
+          stack.push({
+            declNames: declNames,
+            type: generic_type,
+          });
+        }
+      }
+    }
+  }
+}
 
   function getCanonDeclPath(index) {
     if (canonDeclPaths == null) {
@@ -3908,6 +4002,7 @@ const NAV_MODES = {
       src: decl[2],
       value: decl[3],
       decltest: decl[4],
+      is_uns: decl[5],
     };
   }
 
@@ -3972,10 +4067,11 @@ const NAV_MODES = {
           src: ty[2],
           privDecls: ty[3],
           pubDecls: ty[4],
-          fields: ty[5],
-          is_tuple: ty[6],
-          line_number: ty[7],
-          outer_decl: ty[8],
+          field_types: ty[5],
+          field_defaults: ty[6],
+          is_tuple: ty[7],
+          line_number: ty[8],
+          outer_decl: ty[9],
         };
       case 10: // ComptimeExpr
       case 11: // ComptimeFloat
@@ -4014,7 +4110,8 @@ const NAV_MODES = {
           privDecls: ty[3],
           pubDecls: ty[4],
           tag: ty[5],
-          nonexhaustive: ty[6],
+          values: ty[6],
+          nonexhaustive: ty[7],
         };
       case 20: // Union
         return {
@@ -4023,7 +4120,7 @@ const NAV_MODES = {
           src: ty[2],
           privDecls: ty[3],
           pubDecls: ty[4],
-          fields: ty[5],
+          field_types: ty[5],
           tag: ty[6],
           auto_tag: ty[7],
         };

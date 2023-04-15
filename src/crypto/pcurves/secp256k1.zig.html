@@ -164,7 +164,7 @@
 <span class="line" id="L51">        };</span>
 <span class="line" id="L52"></span>
 <span class="line" id="L53">        <span class="tok-comment">/// Compute r1 and r2 so that k = r1 + r2*lambda (mod L).</span></span>
-<span class="line" id="L54">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">splitScalar</span>(s: [<span class="tok-number">32</span>]<span class="tok-type">u8</span>, endian: std.builtin.Endian) SplitScalar {</span>
+<span class="line" id="L54">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">splitScalar</span>(s: [<span class="tok-number">32</span>]<span class="tok-type">u8</span>, endian: std.builtin.Endian) NonCanonicalError!SplitScalar {</span>
 <span class="line" id="L55">            <span class="tok-kw">const</span> b1_neg_s = <span class="tok-kw">comptime</span> s: {</span>
 <span class="line" id="L56">                <span class="tok-kw">var</span> buf: [<span class="tok-number">32</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L57">                mem.writeIntLittle(<span class="tok-type">u256</span>, &amp;buf, <span class="tok-number">303414439467246543595250775667605759171</span>);</span>
@@ -186,15 +186,15 @@
 <span class="line" id="L73">            <span class="tok-kw">var</span> buf: [<span class="tok-number">32</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L74"></span>
 <span class="line" id="L75">            mem.writeIntLittle(<span class="tok-type">u256</span>, &amp;buf, c1);</span>
-<span class="line" id="L76">            <span class="tok-kw">const</span> c1x = scalar.mul(buf, b1_neg_s, .Little) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L76">            <span class="tok-kw">const</span> c1x = <span class="tok-kw">try</span> scalar.mul(buf, b1_neg_s, .Little);</span>
 <span class="line" id="L77"></span>
 <span class="line" id="L78">            mem.writeIntLittle(<span class="tok-type">u256</span>, &amp;buf, c2);</span>
-<span class="line" id="L79">            <span class="tok-kw">const</span> c2x = scalar.mul(buf, b2_neg_s, .Little) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L79">            <span class="tok-kw">const</span> c2x = <span class="tok-kw">try</span> scalar.mul(buf, b2_neg_s, .Little);</span>
 <span class="line" id="L80"></span>
-<span class="line" id="L81">            <span class="tok-kw">const</span> r2 = scalar.add(c1x, c2x, .Little) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L81">            <span class="tok-kw">const</span> r2 = <span class="tok-kw">try</span> scalar.add(c1x, c2x, .Little);</span>
 <span class="line" id="L82"></span>
-<span class="line" id="L83">            <span class="tok-kw">var</span> r1 = scalar.mul(r2, lambda_s, .Little) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L84">            r1 = scalar.sub(s, r1, .Little) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L83">            <span class="tok-kw">var</span> r1 = <span class="tok-kw">try</span> scalar.mul(r2, lambda_s, .Little);</span>
+<span class="line" id="L84">            r1 = <span class="tok-kw">try</span> scalar.sub(s, r1, .Little);</span>
 <span class="line" id="L85"></span>
 <span class="line" id="L86">            <span class="tok-kw">return</span> SplitScalar{ .r1 = r1, .r2 = r2 };</span>
 <span class="line" id="L87">        }</span>
@@ -556,7 +556,7 @@
 <span class="line" id="L435"></span>
 <span class="line" id="L436">    <span class="tok-comment">/// Multiply an elliptic curve point by a *PUBLIC* scalar *IN VARIABLE TIME*</span></span>
 <span class="line" id="L437">    <span class="tok-comment">/// This can be used for signature verification.</span></span>
-<span class="line" id="L438">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">mulPublic</span>(p: Secp256k1, s_: [<span class="tok-number">32</span>]<span class="tok-type">u8</span>, endian: std.builtin.Endian) IdentityElementError!Secp256k1 {</span>
+<span class="line" id="L438">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">mulPublic</span>(p: Secp256k1, s_: [<span class="tok-number">32</span>]<span class="tok-type">u8</span>, endian: std.builtin.Endian) (IdentityElementError || NonCanonicalError)!Secp256k1 {</span>
 <span class="line" id="L439">        <span class="tok-kw">const</span> s = <span class="tok-kw">if</span> (endian == .Little) s_ <span class="tok-kw">else</span> Fe.orderSwap(s_);</span>
 <span class="line" id="L440">        <span class="tok-kw">const</span> zero = <span class="tok-kw">comptime</span> scalar.Scalar.zero.toBytes(.Little);</span>
 <span class="line" id="L441">        <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, &amp;zero, &amp;s)) {</span>
@@ -564,7 +564,7 @@
 <span class="line" id="L443">        }</span>
 <span class="line" id="L444">        <span class="tok-kw">const</span> pc = precompute(p, <span class="tok-number">8</span>);</span>
 <span class="line" id="L445">        <span class="tok-kw">var</span> lambda_p = <span class="tok-kw">try</span> pcMul(&amp;pc, Endormorphism.lambda_s, <span class="tok-null">true</span>);</span>
-<span class="line" id="L446">        <span class="tok-kw">var</span> split_scalar = Endormorphism.splitScalar(s, .Little);</span>
+<span class="line" id="L446">        <span class="tok-kw">var</span> split_scalar = <span class="tok-kw">try</span> Endormorphism.splitScalar(s, .Little);</span>
 <span class="line" id="L447">        <span class="tok-kw">var</span> px = p;</span>
 <span class="line" id="L448"></span>
 <span class="line" id="L449">        <span class="tok-comment">// If a key is negative, flip the sign to keep it half-sized,</span>
