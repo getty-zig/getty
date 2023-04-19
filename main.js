@@ -405,26 +405,45 @@ const NAV_MODES = {
     domApiMenu.classList.add("hidden");
 
     // sidebar guides list
-    const list = Object.keys(zigAnalysis.guides);
-    resizeDomList(domGuidesList, list.length, '<li><a href="#"></a></li>');
-    for (let i = 0; i < list.length; i += 1) {
-      let liDom = domGuidesList.children[i];
-      let aDom = liDom.children[0];
-      aDom.textContent = list[i];
-      aDom.setAttribute("href", NAV_MODES.GUIDES + list[i]);
-      if (list[i] === curNav.activeGuide) {
-        aDom.classList.add("active");
-      } else {
-        aDom.classList.remove("active");
-      }
+    const section_list = zigAnalysis.guide_sections;
+    resizeDomList(domGuidesList, section_list.length, '<div><h2><span></span></h2><ul class="packages"></ul></div>');
+    for (let j = 0; j < section_list.length; j += 1) {
+        const section = section_list[j];
+        const domSectionName = domGuidesList.children[j].children[0].children[0];
+        const domGuides = domGuidesList.children[j].children[1];
+        domSectionName.textContent = section.name;
+        resizeDomList(domGuides, section.guides.length, '<li><a href="#"></a></li>');
+        for (let i = 0; i < section.guides.length; i += 1) {
+          const guide = section.guides[i];
+          let liDom = domGuides.children[i];
+          let aDom = liDom.children[0];
+          aDom.textContent = guide.name;
+          aDom.setAttribute("href", NAV_MODES.GUIDES + guide.name);
+          if (guide.name === curNav.activeGuide) {
+            aDom.classList.add("active");
+          } else {
+            aDom.classList.remove("active");
+          }
+        }
     }
-
-    if (list.length > 0) {
+  
+    if (section_list.length > 0) {
       domGuidesMenu.classList.remove("hidden");
     }
 
     // main content
-    const activeGuide = zigAnalysis.guides[curNav.activeGuide];
+    let activeGuide = undefined;
+    outer: for (let i = 0; i < zigAnalysis.guide_sections.length; i += 1) {
+      const section = zigAnalysis.guide_sections[i];
+      for (let j = 0; j < section.guides.length; j += 1) {
+        const guide = section.guides[j];
+        if (guide.name == curNav.activeGuide) {
+          activeGuide = guide;
+          break outer;
+        }
+      }
+    }        
+    
     if (activeGuide == undefined) {
       const root_file_idx = zigAnalysis.packages[zigAnalysis.rootPkg].file;
       const root_file_name = zigAnalysis.files[root_file_idx];
@@ -446,6 +465,7 @@ const NAV_MODES = {
           \`\`\`
           //!zig-autodoc-guide: intro.md
           //!zig-autodoc-guide: quickstart.md
+          //!zig-autodoc-section: Advanced topics
           //!zig-autodoc-guide: ../advanced-docs/advanced-stuff.md
           \`\`\`
         
@@ -455,7 +475,7 @@ const NAV_MODES = {
           Happy writing!
         `);
     } else {
-      domGuides.innerHTML = markdown(activeGuide);
+      domGuides.innerHTML = markdown(activeGuide.body);
     }
   }
 
@@ -739,7 +759,7 @@ const NAV_MODES = {
       docsSource = protoSrcNode.docs;
     }
     if (docsSource != null) {
-      domTldDocs.innerHTML = markdown(docsSource);
+      domTldDocs.innerHTML = markdown(docsSource, fnDecl);
       domTldDocs.classList.remove("hidden");
     }
     domFnProto.classList.remove("hidden");
@@ -1796,23 +1816,23 @@ const NAV_MODES = {
                 name = "struct { ";
               }
             }
-            if (structObj.fields.length > 1 && opts.wantHtml) { name += "</br>"; }
+            if (structObj.field_types.length > 1 && opts.wantHtml) { name += "</br>"; }
             let indent = "";
-            if (structObj.fields.length > 1 && opts.wantHtml) {
+            if (structObj.field_types.length > 1 && opts.wantHtml) {
               indent = "&nbsp;&nbsp;&nbsp;&nbsp;"
             }
-            if (opts.indent && structObj.fields.length > 1) {
+            if (opts.indent && structObj.field_types.length > 1) {
               indent = opts.indent + indent;
             }
             let structNode = getAstNode(structObj.src);
             let field_end = ",";
-            if (structObj.fields.length > 1 && opts.wantHtml) {
+            if (structObj.field_types.length > 1 && opts.wantHtml) {
               field_end += "</br>";
             } else {
               field_end += " ";
             }
 
-            for (let i = 0; i < structObj.fields.length; i += 1) {
+            for (let i = 0; i < structObj.field_types.length; i += 1) {
               let fieldNode = getAstNode(structNode.fields[i]);
               let fieldName = fieldNode.name;
               let html = indent;
@@ -1820,18 +1840,22 @@ const NAV_MODES = {
                 html += escapeHtml(fieldName);
               }
 
-              let fieldTypeExpr = structObj.fields[i];
+              let fieldTypeExpr = structObj.field_types[i];
               if (!structObj.is_tuple) {
                 html += ": ";
               }
 
               html += exprName(fieldTypeExpr, { ...opts, indent: indent });
 
+              if (structObj.field_defaults[i] !== null) {
+                html += " = " + exprName(structObj.field_defaults[i], opts);
+              }
+
               html += field_end;
 
               name += html;
             }
-            if (opts.indent && structObj.fields.length > 1) {
+            if (opts.indent && structObj.field_types.length > 1) {
               name += opts.indent;
             }
             name += "}";
@@ -1876,6 +1900,10 @@ const NAV_MODES = {
               let fieldNode = getAstNode(enumNode.fields[i]);
               let fieldName = fieldNode.name;
               let html = indent + escapeHtml(fieldName);
+
+              if (enumObj.values[i] !== null) {
+                html += " = " + exprName(enumObj.values[i], opts);
+              }
 
               html += field_end;
 
@@ -2517,7 +2545,10 @@ const NAV_MODES = {
 
     let docs = getAstNode(decl.src).docs;
     if (docs != null) {
-      domTldDocs.innerHTML = markdown(docs);
+      // TODO: it shouldn't just be decl.parent_container, but rather 
+      //       the type that the decl holds (if the value is a type)
+      domTldDocs.innerHTML = markdown(docs, getType(decl.parent_container));
+      
       domTldDocs.classList.remove("hidden");
     }
 
@@ -2742,7 +2773,7 @@ const NAV_MODES = {
     if (container.src != null) {
       let docs = getAstNode(container.src).docs;
       if (docs != null) {
-        domTldDocs.innerHTML = markdown(docs);
+        domTldDocs.innerHTML = markdown(docs, container);
         domTldDocs.classList.remove("hidden");
       }
     }
@@ -2825,13 +2856,13 @@ const NAV_MODES = {
           docs = docs.trim();
           var short = shortDesc(docs);
           if (short != docs) {
-            short = markdown(short);
-            var long = markdown(docs);
+            short = markdown(short, container);
+            var long = markdown(docs, container); // TODO: this needs to be the file top lvl struct
             tdDesc.innerHTML =
               "<div class=\"expand\" ><span class=\"button\" onclick=\"toggleExpand(event)\"></span><div class=\"sum-less\">" + short + "</div>" + "<div class=\"sum-more\">" + long + "</div></details>";
           }
           else {
-            tdDesc.innerHTML = markdown(short);
+            tdDesc.innerHTML = markdown(short, container);
           }
         } else {
           tdDesc.innerHTML = "<p><i>No documentation provided.</i><p>";
@@ -3104,9 +3135,9 @@ const NAV_MODES = {
 
         return;
       case NAV_MODES.GUIDES:
-        const guides = Object.keys(zigAnalysis.guides);
-        if (guides.length != 0 && query == "") {
-          location.hash = NAV_MODES.GUIDES + guides[0];
+        const sections = zigAnalysis.guide_sections;
+        if (sections.length != 0 && sections[0].guides.length != 0 && query == "") {
+          location.hash = NAV_MODES.GUIDES + sections[0].guides[0].name;
           return;
         }
 
@@ -3170,6 +3201,7 @@ const NAV_MODES = {
         let declIndex = parentType.pubDecls[i];
         let childDecl = getDecl(declIndex);
         if (childDecl.name === childName) {
+          childDecl.find_subdecl_idx = declIndex;
           return childDecl;
         } else if (childDecl.is_uns) {
           let declValue = resolveValue(childDecl.value);
@@ -3186,6 +3218,7 @@ const NAV_MODES = {
         let declIndex = parentType.privDecls[i];
         let childDecl = getDecl(declIndex);
         if (childDecl.name === childName) {
+          childDecl.find_subdecl_idx = declIndex;
           return childDecl;
         } else if (childDecl.is_uns) {
           let declValue = resolveValue(childDecl.value);
@@ -3369,7 +3402,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
     return markdown(shortDesc(docs));
   }
 
-  function markdown(input) {
+  function markdown(input, contextType) {
     const raw_lines = input.split("\n"); // zig allows no '\r', so we don't need to split on CR
 
     const lines = [];
@@ -3454,7 +3487,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
     // Render HTML from markdown lines.
     // Look at each line and emit fitting HTML code
 
-    function markdownInlines(innerText) {
+    function markdownInlines(innerText, contextType) {
       // inline types:
       // **{INLINE}**       : <strong>
       // __{INLINE}__       : <u>
@@ -3501,6 +3534,10 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
       let codetag = "";
       let in_code = false;
 
+      // state used to link decl references
+      let quote_start = undefined;
+      let quote_start_html = undefined;
+
       for (let i = 0; i < innerText.length; i++) {
         if (parsing_code && in_code) {
           if (innerText.substr(i, codetag.length) == codetag) {
@@ -3517,6 +3554,16 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
             parsing_code = false;
             innerHTML += "</code>";
             codetag = "";
+
+            // find out if this is a decl that should be linked
+            const maybe_decl_path = innerText.substr(quote_start, i-quote_start);
+            const decl_hash = detectDeclPath(maybe_decl_path, contextType);
+            if (decl_hash) {
+              const anchor_opening_tag = "<a href='"+ decl_hash +"'>";
+              innerHTML = innerHTML.slice(0, quote_start_html) 
+                + anchor_opening_tag
+                + innerHTML.slice(quote_start_html) + "</a>";
+            }
           } else {
             currentRun += innerText[i];
           }
@@ -3526,6 +3573,8 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
         if (innerText[i] == "`") {
           flushRun();
           if (!parsing_code) {
+            quote_start = i + 1;
+            quote_start_html = innerHTML.length;
             innerHTML += "<code>";
           }
           parsing_code = true;
@@ -3580,6 +3629,71 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
       return innerHTML;
     }
 
+    function detectDeclPath(text, context) {
+      let result = "";
+      let separator = ":";
+      const components = text.split(".");
+      let curDeclOrType = undefined;
+      
+      let curContext = context;
+      let limit = 10000;
+      while (curContext) {
+        limit -= 1;
+        
+        if (limit == 0) {
+          throw "too many iterations";
+        }
+        
+        curDeclOrType = findSubDecl(curContext, components[0]);
+        
+        if (!curDeclOrType) {
+          if (curContext.parent_container == null) break;
+          curContext = getType(curContext.parent_container);
+          continue;
+        }
+
+        if (curContext == context) {
+          separator = '.';
+          result = location.hash + separator + components[0];
+        } else {
+          // We had to go up, which means we need a new path!
+          const canonPath = getCanonDeclPath(curDeclOrType.find_subdecl_idx);
+          if (!canonPath) return;
+          
+          let lastPkgName = canonPath.pkgNames[canonPath.pkgNames.length - 1];
+          let fullPath = lastPkgName + ":" + canonPath.declNames.join(".");
+        
+          separator = '.';
+          result = "#A;" + fullPath;
+        }
+
+        break;
+      } 
+
+      if (!curDeclOrType) {
+        for (let i = 0; i < zigAnalysis.packages.length; i += 1){
+          const p = zigAnalysis.packages[i];
+          if (p.name == components[0]) {
+            curDeclOrType = getType(p.main);
+            result += "#A;" + components[0];
+            break;
+          }
+        }
+      }
+
+      if (!curDeclOrType) return null;
+      
+      for (let i = 1; i < components.length; i += 1) {
+        curDeclOrType = findSubDecl(curDeclOrType, components[i]);
+        if (!curDeclOrType) return null;
+        result += separator + components[i];
+        separator = '.';
+      }
+
+      return result;
+      
+    }
+
     function previousLineIs(type, line_no) {
       if (line_no > 0) {
         return lines[line_no - 1].type == type;
@@ -3627,7 +3741,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
             "<" +
             line.type +
             ">" +
-            markdownInlines(line.text) +
+            markdownInlines(line.text, contextType) +
             "</" +
             line.type +
             ">\n";
@@ -3642,7 +3756,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
             html += "<" + line.type + ">\n";
           }
 
-          html += "<li>" + markdownInlines(line.text) + "</li>\n";
+          html += "<li>" + markdownInlines(line.text, contextType) + "</li>\n";
 
           if (
             !nextLineIs(line.type, line_no) ||
@@ -3656,7 +3770,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
           if (!previousLineIs("p", line_no)) {
             html += "<p>\n";
           }
-          html += markdownInlines(line.text) + "\n";
+          html += markdownInlines(line.text, contextType) + "\n";
           if (!nextLineIs("p", line_no)) {
             html += "</p>\n";
           }
@@ -4003,6 +4117,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
       value: decl[3],
       decltest: decl[4],
       is_uns: decl[5],
+      parent_container: decl[6],
     };
   }
 
@@ -4071,7 +4186,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
           field_defaults: ty[6],
           is_tuple: ty[7],
           line_number: ty[8],
-          outer_decl: ty[9],
+          parent_container: ty[9],
         };
       case 10: // ComptimeExpr
       case 11: // ComptimeFloat
@@ -4112,6 +4227,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
           tag: ty[5],
           values: ty[6],
           nonexhaustive: ty[7],
+          parent_container: ty[8],
         };
       case 20: // Union
         return {
@@ -4123,6 +4239,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
           field_types: ty[5],
           tag: ty[6],
           auto_tag: ty[7],
+          parent_container: ty[8],
         };
       case 21: // Fn
         return {
@@ -4152,6 +4269,7 @@ function addDeclToSearchResults(decl, declIndex, pkgNames, item, list, stack) {
           src: ty[2],
           privDecls: ty[3],
           pubDecls: ty[4],
+          parent_container: ty[5],
         };
       case 24: // Frame
       case 25: // AnyFrame
