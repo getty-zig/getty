@@ -69,8 +69,8 @@ pub fn build(b: *std.Build) void {
     .version = "0.0.0",
     .dependencies = .{
         .json = .{
-            .url = "https://github.com/getty-zig/json/archive/0.4.0.tar.gz",
-            .hash = "12204b92aae2f3985ce16cee6d0adbc26a13a258fea0a21d13894c8b8af38a081a3b",
+            .url = "https://github.com/getty-zig/json/archive/5a64449.tar.gz",
+            .hash = "122087fe6d2b141548103e98e4324ac0ab889e7d50d82e186f396d90f55a942aef61",
         },
     },
 }
