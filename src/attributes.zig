@@ -2,7 +2,7 @@ const std = @import("std");
 const comptimePrint = std.fmt.comptimePrint;
 const Type = std.builtin.Type;
 
-/// Case conventions for the `rename_all` attribute.
+/// Case conventions.
 pub const Case = enum {
     // foobar
     lower,
@@ -29,6 +29,7 @@ pub const Case = enum {
     screaming_kebab,
 };
 
+/// Tag representations for union variants.
 pub const Tag = enum {
     external,
     internal,
