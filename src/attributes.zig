@@ -29,6 +29,12 @@ pub const Case = enum {
     screaming_kebab,
 };
 
+pub const Tag = enum {
+    external,
+    internal,
+    untagged,
+};
+
 /// Returns an attribute map type.
 pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
     const type_name = @typeName(T);
@@ -171,9 +177,8 @@ const ContainerAttributes = struct {
     // convention.
     //rename_all: ?Case = null,
 
-    // Use the internally tagged enum representation for this enum, with
-    // the given tag.
-    //tag: ?[]const u8 = null,
+    // Use the specified representation for this union.
+    tag: Tag = .external,
 
     // Deserialize this type by deserializing into the given type, then
     // converting fallibly.
