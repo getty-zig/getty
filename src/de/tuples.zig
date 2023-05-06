@@ -54,7 +54,7 @@ pub const default = .{
 
     blocks.IntegerBitSet,
     //blocks.MultiArrayList,
-    blocks.NetAddress,
+    //blocks.NetAddress,
 
     // Covers the following types:
     //
