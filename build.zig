@@ -14,7 +14,6 @@ pub fn build(b: *std.build.Builder) void {
 
     tests(b, target, mode);
     docs(b, target, mode);
-    clean(b);
 }
 
 fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.OptimizeMode) void {
@@ -101,18 +100,4 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Op
     const docs_step = b.step("docs", "Generate project documentation");
     docs_step.dependOn(clean_step);
     docs_step.dependOn(&docs_obj.step);
-}
-
-fn clean(b: *std.build.Builder) void {
-    const cmd = b.addSystemCommand(&[_][]const u8{
-        "rm",
-        "-rf",
-        "docs",
-        "getty.o",
-        "getty.o.o",
-        "zig-cache",
-    });
-
-    const clean_step = b.step("clean", "Remove project artifacts");
-    clean_step.dependOn(&cmd.step);
 }
