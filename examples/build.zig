@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const pkg_name = "getty";
-const pkg_path = "../src/getty.zig";
+const module_name = "getty";
+const module_path = "../src/getty.zig";
 
 const examples = .{
     "bool-serializer",
@@ -12,7 +12,7 @@ const examples = .{
 
 pub fn build(b: *std.build.Builder) void {
     const target = b.standardTargetOptions(.{});
-    const mode = b.standardReleaseOptions();
+    const optimize = b.standardOptimizeOption(.{});
 
     inline for (examples) |e| {
         const example_path = e ++ "/main.zig";
@@ -20,13 +20,19 @@ pub fn build(b: *std.build.Builder) void {
         const run_name = "run-" ++ e;
         const run_desc = "Run the " ++ e ++ " example";
 
-        const exe = b.addExecutable(exe_name, example_path);
-        exe.setTarget(target);
-        exe.setBuildMode(mode);
-        exe.addPackagePath(pkg_name, pkg_path);
-        exe.install();
+        const exe = b.addExecutable(.{
+            .name = exe_name,
+            .root_source_file = .{ .path = example_path },
+            .target = target,
+            .optimize = optimize,
+        });
+        const module = b.addModule(module_name, .{
+            .source_file = .{ .path = module_path },
+        });
 
-        const run_cmd = exe.run();
+        exe.addModule(module_name, module);
+
+        const run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(b.getInstallStep());
         const run_step = b.step(run_name, run_desc);
         run_step.dependOn(&run_cmd.step);
