@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>io.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -271,299 +271,301 @@
 <span class="line" id="L155"></span>
 <span class="line" id="L156"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> StreamSource = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/stream_source.zig&quot;</span>).StreamSource;</span>
 <span class="line" id="L157"></span>
-<span class="line" id="L158"><span class="tok-comment">/// A Writer that doesn't write to anything.</span></span>
-<span class="line" id="L159"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> null_writer = <span class="tok-builtin">@as</span>(NullWriter, .{ .context = {} });</span>
-<span class="line" id="L160"></span>
-<span class="line" id="L161"><span class="tok-kw">const</span> NullWriter = Writer(<span class="tok-type">void</span>, <span class="tok-kw">error</span>{}, dummyWrite);</span>
-<span class="line" id="L162"><span class="tok-kw">fn</span> <span class="tok-fn">dummyWrite</span>(context: <span class="tok-type">void</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{}!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L163">    _ = context;</span>
-<span class="line" id="L164">    <span class="tok-kw">return</span> data.len;</span>
-<span class="line" id="L165">}</span>
-<span class="line" id="L166"></span>
-<span class="line" id="L167"><span class="tok-kw">test</span> <span class="tok-str">&quot;null_writer&quot;</span> {</span>
-<span class="line" id="L168">    null_writer.writeAll(<span class="tok-str">&quot;yay&quot;</span> ** <span class="tok-number">10</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {};</span>
-<span class="line" id="L169">}</span>
-<span class="line" id="L170"></span>
-<span class="line" id="L171"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">poll</span>(</span>
-<span class="line" id="L172">    allocator: std.mem.Allocator,</span>
-<span class="line" id="L173">    <span class="tok-kw">comptime</span> StreamEnum: <span class="tok-type">type</span>,</span>
-<span class="line" id="L174">    files: PollFiles(StreamEnum),</span>
-<span class="line" id="L175">) Poller(StreamEnum) {</span>
-<span class="line" id="L176">    <span class="tok-kw">const</span> enum_fields = <span class="tok-builtin">@typeInfo</span>(StreamEnum).Enum.fields;</span>
-<span class="line" id="L177">    <span class="tok-kw">var</span> result: Poller(StreamEnum) = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L178"></span>
-<span class="line" id="L179">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) result.windows = .{</span>
-<span class="line" id="L180">        .first_read_done = <span class="tok-null">false</span>,</span>
-<span class="line" id="L181">        .overlapped = [<span class="tok-number">1</span>]os.windows.OVERLAPPED{</span>
-<span class="line" id="L182">            mem.zeroes(os.windows.OVERLAPPED),</span>
-<span class="line" id="L183">        } ** enum_fields.len,</span>
-<span class="line" id="L184">        .active = .{</span>
-<span class="line" id="L185">            .count = <span class="tok-number">0</span>,</span>
-<span class="line" id="L186">            .handles_buf = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L187">            .stream_map = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L188">        },</span>
-<span class="line" id="L189">    };</span>
-<span class="line" id="L190"></span>
-<span class="line" id="L191">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-number">0</span>..enum_fields.len) |i| {</span>
-<span class="line" id="L192">        result.fifos[i] = .{</span>
-<span class="line" id="L193">            .allocator = allocator,</span>
-<span class="line" id="L194">            .buf = &amp;.{},</span>
-<span class="line" id="L195">            .head = <span class="tok-number">0</span>,</span>
-<span class="line" id="L196">            .count = <span class="tok-number">0</span>,</span>
-<span class="line" id="L197">        };</span>
-<span class="line" id="L198">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L199">            result.windows.active.handles_buf[i] = <span class="tok-builtin">@field</span>(files, enum_fields[i].name).handle;</span>
-<span class="line" id="L200">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L201">            result.poll_fds[i] = .{</span>
-<span class="line" id="L202">                .fd = <span class="tok-builtin">@field</span>(files, enum_fields[i].name).handle,</span>
-<span class="line" id="L203">                .events = os.POLL.IN,</span>
-<span class="line" id="L204">                .revents = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L205">            };</span>
-<span class="line" id="L206">        }</span>
-<span class="line" id="L207">    }</span>
-<span class="line" id="L208">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L209">}</span>
-<span class="line" id="L210"></span>
-<span class="line" id="L211"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> PollFifo = std.fifo.LinearFifo(<span class="tok-type">u8</span>, .Dynamic);</span>
+<span class="line" id="L158"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> tty = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/tty.zig&quot;</span>);</span>
+<span class="line" id="L159"></span>
+<span class="line" id="L160"><span class="tok-comment">/// A Writer that doesn't write to anything.</span></span>
+<span class="line" id="L161"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> null_writer = <span class="tok-builtin">@as</span>(NullWriter, .{ .context = {} });</span>
+<span class="line" id="L162"></span>
+<span class="line" id="L163"><span class="tok-kw">const</span> NullWriter = Writer(<span class="tok-type">void</span>, <span class="tok-kw">error</span>{}, dummyWrite);</span>
+<span class="line" id="L164"><span class="tok-kw">fn</span> <span class="tok-fn">dummyWrite</span>(context: <span class="tok-type">void</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-kw">error</span>{}!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L165">    _ = context;</span>
+<span class="line" id="L166">    <span class="tok-kw">return</span> data.len;</span>
+<span class="line" id="L167">}</span>
+<span class="line" id="L168"></span>
+<span class="line" id="L169"><span class="tok-kw">test</span> <span class="tok-str">&quot;null_writer&quot;</span> {</span>
+<span class="line" id="L170">    null_writer.writeAll(<span class="tok-str">&quot;yay&quot;</span> ** <span class="tok-number">10</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {};</span>
+<span class="line" id="L171">}</span>
+<span class="line" id="L172"></span>
+<span class="line" id="L173"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">poll</span>(</span>
+<span class="line" id="L174">    allocator: std.mem.Allocator,</span>
+<span class="line" id="L175">    <span class="tok-kw">comptime</span> StreamEnum: <span class="tok-type">type</span>,</span>
+<span class="line" id="L176">    files: PollFiles(StreamEnum),</span>
+<span class="line" id="L177">) Poller(StreamEnum) {</span>
+<span class="line" id="L178">    <span class="tok-kw">const</span> enum_fields = <span class="tok-builtin">@typeInfo</span>(StreamEnum).Enum.fields;</span>
+<span class="line" id="L179">    <span class="tok-kw">var</span> result: Poller(StreamEnum) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L180"></span>
+<span class="line" id="L181">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) result.windows = .{</span>
+<span class="line" id="L182">        .first_read_done = <span class="tok-null">false</span>,</span>
+<span class="line" id="L183">        .overlapped = [<span class="tok-number">1</span>]os.windows.OVERLAPPED{</span>
+<span class="line" id="L184">            mem.zeroes(os.windows.OVERLAPPED),</span>
+<span class="line" id="L185">        } ** enum_fields.len,</span>
+<span class="line" id="L186">        .active = .{</span>
+<span class="line" id="L187">            .count = <span class="tok-number">0</span>,</span>
+<span class="line" id="L188">            .handles_buf = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L189">            .stream_map = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L190">        },</span>
+<span class="line" id="L191">    };</span>
+<span class="line" id="L192"></span>
+<span class="line" id="L193">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (<span class="tok-number">0</span>..enum_fields.len) |i| {</span>
+<span class="line" id="L194">        result.fifos[i] = .{</span>
+<span class="line" id="L195">            .allocator = allocator,</span>
+<span class="line" id="L196">            .buf = &amp;.{},</span>
+<span class="line" id="L197">            .head = <span class="tok-number">0</span>,</span>
+<span class="line" id="L198">            .count = <span class="tok-number">0</span>,</span>
+<span class="line" id="L199">        };</span>
+<span class="line" id="L200">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L201">            result.windows.active.handles_buf[i] = <span class="tok-builtin">@field</span>(files, enum_fields[i].name).handle;</span>
+<span class="line" id="L202">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L203">            result.poll_fds[i] = .{</span>
+<span class="line" id="L204">                .fd = <span class="tok-builtin">@field</span>(files, enum_fields[i].name).handle,</span>
+<span class="line" id="L205">                .events = os.POLL.IN,</span>
+<span class="line" id="L206">                .revents = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L207">            };</span>
+<span class="line" id="L208">        }</span>
+<span class="line" id="L209">    }</span>
+<span class="line" id="L210">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L211">}</span>
 <span class="line" id="L212"></span>
-<span class="line" id="L213"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Poller</span>(<span class="tok-kw">comptime</span> StreamEnum: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L214">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L215">        <span class="tok-kw">const</span> enum_fields = <span class="tok-builtin">@typeInfo</span>(StreamEnum).Enum.fields;</span>
-<span class="line" id="L216">        <span class="tok-kw">const</span> PollFd = <span class="tok-kw">if</span> (builtin.os.tag == .windows) <span class="tok-type">void</span> <span class="tok-kw">else</span> std.os.pollfd;</span>
-<span class="line" id="L217"></span>
-<span class="line" id="L218">        fifos: [enum_fields.len]PollFifo,</span>
-<span class="line" id="L219">        poll_fds: [enum_fields.len]PollFd,</span>
-<span class="line" id="L220">        windows: <span class="tok-kw">if</span> (builtin.os.tag == .windows) <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L221">            first_read_done: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L222">            overlapped: [enum_fields.len]os.windows.OVERLAPPED,</span>
-<span class="line" id="L223">            active: <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L224">                count: math.IntFittingRange(<span class="tok-number">0</span>, enum_fields.len),</span>
-<span class="line" id="L225">                handles_buf: [enum_fields.len]os.windows.HANDLE,</span>
-<span class="line" id="L226">                stream_map: [enum_fields.len]StreamEnum,</span>
-<span class="line" id="L227"></span>
-<span class="line" id="L228">                <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">removeAt</span>(self: *<span class="tok-builtin">@This</span>(), index: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L229">                    std.debug.assert(index &lt; self.count);</span>
-<span class="line" id="L230">                    <span class="tok-kw">for</span> (index + <span class="tok-number">1</span>..self.count) |i| {</span>
-<span class="line" id="L231">                        self.handles_buf[i - <span class="tok-number">1</span>] = self.handles_buf[i];</span>
-<span class="line" id="L232">                        self.stream_map[i - <span class="tok-number">1</span>] = self.stream_map[i];</span>
-<span class="line" id="L233">                    }</span>
-<span class="line" id="L234">                    self.count -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L235">                }</span>
-<span class="line" id="L236">            },</span>
-<span class="line" id="L237">        } <span class="tok-kw">else</span> <span class="tok-type">void</span>,</span>
-<span class="line" id="L238"></span>
-<span class="line" id="L239">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L213"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> PollFifo = std.fifo.LinearFifo(<span class="tok-type">u8</span>, .Dynamic);</span>
+<span class="line" id="L214"></span>
+<span class="line" id="L215"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Poller</span>(<span class="tok-kw">comptime</span> StreamEnum: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L216">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L217">        <span class="tok-kw">const</span> enum_fields = <span class="tok-builtin">@typeInfo</span>(StreamEnum).Enum.fields;</span>
+<span class="line" id="L218">        <span class="tok-kw">const</span> PollFd = <span class="tok-kw">if</span> (builtin.os.tag == .windows) <span class="tok-type">void</span> <span class="tok-kw">else</span> std.os.pollfd;</span>
+<span class="line" id="L219"></span>
+<span class="line" id="L220">        fifos: [enum_fields.len]PollFifo,</span>
+<span class="line" id="L221">        poll_fds: [enum_fields.len]PollFd,</span>
+<span class="line" id="L222">        windows: <span class="tok-kw">if</span> (builtin.os.tag == .windows) <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L223">            first_read_done: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L224">            overlapped: [enum_fields.len]os.windows.OVERLAPPED,</span>
+<span class="line" id="L225">            active: <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L226">                count: math.IntFittingRange(<span class="tok-number">0</span>, enum_fields.len),</span>
+<span class="line" id="L227">                handles_buf: [enum_fields.len]os.windows.HANDLE,</span>
+<span class="line" id="L228">                stream_map: [enum_fields.len]StreamEnum,</span>
+<span class="line" id="L229"></span>
+<span class="line" id="L230">                <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">removeAt</span>(self: *<span class="tok-builtin">@This</span>(), index: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L231">                    std.debug.assert(index &lt; self.count);</span>
+<span class="line" id="L232">                    <span class="tok-kw">for</span> (index + <span class="tok-number">1</span>..self.count) |i| {</span>
+<span class="line" id="L233">                        self.handles_buf[i - <span class="tok-number">1</span>] = self.handles_buf[i];</span>
+<span class="line" id="L234">                        self.stream_map[i - <span class="tok-number">1</span>] = self.stream_map[i];</span>
+<span class="line" id="L235">                    }</span>
+<span class="line" id="L236">                    self.count -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L237">                }</span>
+<span class="line" id="L238">            },</span>
+<span class="line" id="L239">        } <span class="tok-kw">else</span> <span class="tok-type">void</span>,</span>
 <span class="line" id="L240"></span>
-<span class="line" id="L241">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L242">            <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L243">                <span class="tok-comment">// cancel any pending IO to prevent clobbering OVERLAPPED value</span>
+<span class="line" id="L241">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L242"></span>
+<span class="line" id="L243">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L244">            <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L245">                <span class="tok-comment">// cancel any pending IO to prevent clobbering OVERLAPPED value</span>
 </span>
-<span class="line" id="L244">                <span class="tok-kw">for</span> (self.windows.active.handles_buf[<span class="tok-number">0</span>..self.windows.active.count]) |h| {</span>
-<span class="line" id="L245">                    _ = os.windows.kernel32.CancelIo(h);</span>
-<span class="line" id="L246">                }</span>
-<span class="line" id="L247">            }</span>
-<span class="line" id="L248">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (&amp;self.fifos) |*q| q.deinit();</span>
-<span class="line" id="L249">            self.* = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L250">        }</span>
-<span class="line" id="L251"></span>
-<span class="line" id="L252">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">poll</span>(self: *Self) !<span class="tok-type">bool</span> {</span>
-<span class="line" id="L253">            <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L254">                <span class="tok-kw">return</span> pollWindows(self);</span>
-<span class="line" id="L255">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L256">                <span class="tok-kw">return</span> pollPosix(self);</span>
-<span class="line" id="L257">            }</span>
-<span class="line" id="L258">        }</span>
-<span class="line" id="L259"></span>
-<span class="line" id="L260">        <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">fifo</span>(self: *Self, <span class="tok-kw">comptime</span> which: StreamEnum) *PollFifo {</span>
-<span class="line" id="L261">            <span class="tok-kw">return</span> &amp;self.fifos[<span class="tok-builtin">@enumToInt</span>(which)];</span>
-<span class="line" id="L262">        }</span>
-<span class="line" id="L263"></span>
-<span class="line" id="L264">        <span class="tok-kw">fn</span> <span class="tok-fn">pollWindows</span>(self: *Self) !<span class="tok-type">bool</span> {</span>
-<span class="line" id="L265">            <span class="tok-kw">const</span> bump_amt = <span class="tok-number">512</span>;</span>
-<span class="line" id="L266"></span>
-<span class="line" id="L267">            <span class="tok-kw">if</span> (!self.windows.first_read_done) {</span>
-<span class="line" id="L268">                <span class="tok-comment">// Windows Async IO requires an initial call to ReadFile before waiting on the handle</span>
+<span class="line" id="L246">                <span class="tok-kw">for</span> (self.windows.active.handles_buf[<span class="tok-number">0</span>..self.windows.active.count]) |h| {</span>
+<span class="line" id="L247">                    _ = os.windows.kernel32.CancelIo(h);</span>
+<span class="line" id="L248">                }</span>
+<span class="line" id="L249">            }</span>
+<span class="line" id="L250">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (&amp;self.fifos) |*q| q.deinit();</span>
+<span class="line" id="L251">            self.* = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L252">        }</span>
+<span class="line" id="L253"></span>
+<span class="line" id="L254">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">poll</span>(self: *Self) !<span class="tok-type">bool</span> {</span>
+<span class="line" id="L255">            <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L256">                <span class="tok-kw">return</span> pollWindows(self);</span>
+<span class="line" id="L257">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L258">                <span class="tok-kw">return</span> pollPosix(self);</span>
+<span class="line" id="L259">            }</span>
+<span class="line" id="L260">        }</span>
+<span class="line" id="L261"></span>
+<span class="line" id="L262">        <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">fifo</span>(self: *Self, <span class="tok-kw">comptime</span> which: StreamEnum) *PollFifo {</span>
+<span class="line" id="L263">            <span class="tok-kw">return</span> &amp;self.fifos[<span class="tok-builtin">@enumToInt</span>(which)];</span>
+<span class="line" id="L264">        }</span>
+<span class="line" id="L265"></span>
+<span class="line" id="L266">        <span class="tok-kw">fn</span> <span class="tok-fn">pollWindows</span>(self: *Self) !<span class="tok-type">bool</span> {</span>
+<span class="line" id="L267">            <span class="tok-kw">const</span> bump_amt = <span class="tok-number">512</span>;</span>
+<span class="line" id="L268"></span>
+<span class="line" id="L269">            <span class="tok-kw">if</span> (!self.windows.first_read_done) {</span>
+<span class="line" id="L270">                <span class="tok-comment">// Windows Async IO requires an initial call to ReadFile before waiting on the handle</span>
 </span>
-<span class="line" id="L269">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..enum_fields.len) |i| {</span>
-<span class="line" id="L270">                    <span class="tok-kw">const</span> handle = self.windows.active.handles_buf[i];</span>
-<span class="line" id="L271">                    <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> windowsAsyncRead(</span>
-<span class="line" id="L272">                        handle,</span>
-<span class="line" id="L273">                        &amp;self.windows.overlapped[i],</span>
-<span class="line" id="L274">                        &amp;self.fifos[i],</span>
-<span class="line" id="L275">                        bump_amt,</span>
-<span class="line" id="L276">                    )) {</span>
-<span class="line" id="L277">                        .pending =&gt; {</span>
-<span class="line" id="L278">                            self.windows.active.handles_buf[self.windows.active.count] = handle;</span>
-<span class="line" id="L279">                            self.windows.active.stream_map[self.windows.active.count] = <span class="tok-builtin">@intToEnum</span>(StreamEnum, i);</span>
-<span class="line" id="L280">                            self.windows.active.count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L281">                        },</span>
-<span class="line" id="L282">                        .closed =&gt; {}, <span class="tok-comment">// don't add to the wait_objects list</span>
+<span class="line" id="L271">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..enum_fields.len) |i| {</span>
+<span class="line" id="L272">                    <span class="tok-kw">const</span> handle = self.windows.active.handles_buf[i];</span>
+<span class="line" id="L273">                    <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> windowsAsyncRead(</span>
+<span class="line" id="L274">                        handle,</span>
+<span class="line" id="L275">                        &amp;self.windows.overlapped[i],</span>
+<span class="line" id="L276">                        &amp;self.fifos[i],</span>
+<span class="line" id="L277">                        bump_amt,</span>
+<span class="line" id="L278">                    )) {</span>
+<span class="line" id="L279">                        .pending =&gt; {</span>
+<span class="line" id="L280">                            self.windows.active.handles_buf[self.windows.active.count] = handle;</span>
+<span class="line" id="L281">                            self.windows.active.stream_map[self.windows.active.count] = <span class="tok-builtin">@intToEnum</span>(StreamEnum, i);</span>
+<span class="line" id="L282">                            self.windows.active.count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L283">                        },</span>
+<span class="line" id="L284">                        .closed =&gt; {}, <span class="tok-comment">// don't add to the wait_objects list</span>
 </span>
-<span class="line" id="L283">                    }</span>
-<span class="line" id="L284">                }</span>
-<span class="line" id="L285">                self.windows.first_read_done = <span class="tok-null">true</span>;</span>
-<span class="line" id="L286">            }</span>
-<span class="line" id="L287"></span>
-<span class="line" id="L288">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L289">                <span class="tok-kw">if</span> (self.windows.active.count == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L290"></span>
-<span class="line" id="L291">                <span class="tok-kw">const</span> status = os.windows.kernel32.WaitForMultipleObjects(</span>
-<span class="line" id="L292">                    self.windows.active.count,</span>
-<span class="line" id="L293">                    &amp;self.windows.active.handles_buf,</span>
-<span class="line" id="L294">                    <span class="tok-number">0</span>,</span>
-<span class="line" id="L295">                    os.windows.INFINITE,</span>
-<span class="line" id="L296">                );</span>
-<span class="line" id="L297">                <span class="tok-kw">if</span> (status == os.windows.WAIT_FAILED)</span>
-<span class="line" id="L298">                    <span class="tok-kw">return</span> os.windows.unexpectedError(os.windows.kernel32.GetLastError());</span>
-<span class="line" id="L299"></span>
-<span class="line" id="L300">                <span class="tok-kw">if</span> (status &lt; os.windows.WAIT_OBJECT_0 <span class="tok-kw">or</span> status &gt; os.windows.WAIT_OBJECT_0 + enum_fields.len - <span class="tok-number">1</span>)</span>
-<span class="line" id="L301">                    <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L302"></span>
-<span class="line" id="L303">                <span class="tok-kw">const</span> active_idx = status - os.windows.WAIT_OBJECT_0;</span>
+<span class="line" id="L285">                    }</span>
+<span class="line" id="L286">                }</span>
+<span class="line" id="L287">                self.windows.first_read_done = <span class="tok-null">true</span>;</span>
+<span class="line" id="L288">            }</span>
+<span class="line" id="L289"></span>
+<span class="line" id="L290">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L291">                <span class="tok-kw">if</span> (self.windows.active.count == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L292"></span>
+<span class="line" id="L293">                <span class="tok-kw">const</span> status = os.windows.kernel32.WaitForMultipleObjects(</span>
+<span class="line" id="L294">                    self.windows.active.count,</span>
+<span class="line" id="L295">                    &amp;self.windows.active.handles_buf,</span>
+<span class="line" id="L296">                    <span class="tok-number">0</span>,</span>
+<span class="line" id="L297">                    os.windows.INFINITE,</span>
+<span class="line" id="L298">                );</span>
+<span class="line" id="L299">                <span class="tok-kw">if</span> (status == os.windows.WAIT_FAILED)</span>
+<span class="line" id="L300">                    <span class="tok-kw">return</span> os.windows.unexpectedError(os.windows.kernel32.GetLastError());</span>
+<span class="line" id="L301"></span>
+<span class="line" id="L302">                <span class="tok-kw">if</span> (status &lt; os.windows.WAIT_OBJECT_0 <span class="tok-kw">or</span> status &gt; os.windows.WAIT_OBJECT_0 + enum_fields.len - <span class="tok-number">1</span>)</span>
+<span class="line" id="L303">                    <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L304"></span>
-<span class="line" id="L305">                <span class="tok-kw">const</span> handle = self.windows.active.handles_buf[active_idx];</span>
-<span class="line" id="L306">                <span class="tok-kw">const</span> stream_idx = <span class="tok-builtin">@enumToInt</span>(self.windows.active.stream_map[active_idx]);</span>
-<span class="line" id="L307">                <span class="tok-kw">var</span> read_bytes: <span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L308">                <span class="tok-kw">if</span> (<span class="tok-number">0</span> == os.windows.kernel32.GetOverlappedResult(</span>
-<span class="line" id="L309">                    handle,</span>
-<span class="line" id="L310">                    &amp;self.windows.overlapped[stream_idx],</span>
-<span class="line" id="L311">                    &amp;read_bytes,</span>
-<span class="line" id="L312">                    <span class="tok-number">0</span>,</span>
-<span class="line" id="L313">                )) <span class="tok-kw">switch</span> (os.windows.kernel32.GetLastError()) {</span>
-<span class="line" id="L314">                    .BROKEN_PIPE =&gt; {</span>
-<span class="line" id="L315">                        self.windows.active.removeAt(active_idx);</span>
-<span class="line" id="L316">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L317">                    },</span>
-<span class="line" id="L318">                    <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.windows.unexpectedError(err),</span>
-<span class="line" id="L319">                };</span>
-<span class="line" id="L320"></span>
-<span class="line" id="L321">                self.fifos[stream_idx].update(read_bytes);</span>
+<span class="line" id="L305">                <span class="tok-kw">const</span> active_idx = status - os.windows.WAIT_OBJECT_0;</span>
+<span class="line" id="L306"></span>
+<span class="line" id="L307">                <span class="tok-kw">const</span> handle = self.windows.active.handles_buf[active_idx];</span>
+<span class="line" id="L308">                <span class="tok-kw">const</span> stream_idx = <span class="tok-builtin">@enumToInt</span>(self.windows.active.stream_map[active_idx]);</span>
+<span class="line" id="L309">                <span class="tok-kw">var</span> read_bytes: <span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L310">                <span class="tok-kw">if</span> (<span class="tok-number">0</span> == os.windows.kernel32.GetOverlappedResult(</span>
+<span class="line" id="L311">                    handle,</span>
+<span class="line" id="L312">                    &amp;self.windows.overlapped[stream_idx],</span>
+<span class="line" id="L313">                    &amp;read_bytes,</span>
+<span class="line" id="L314">                    <span class="tok-number">0</span>,</span>
+<span class="line" id="L315">                )) <span class="tok-kw">switch</span> (os.windows.kernel32.GetLastError()) {</span>
+<span class="line" id="L316">                    .BROKEN_PIPE =&gt; {</span>
+<span class="line" id="L317">                        self.windows.active.removeAt(active_idx);</span>
+<span class="line" id="L318">                        <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L319">                    },</span>
+<span class="line" id="L320">                    <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.windows.unexpectedError(err),</span>
+<span class="line" id="L321">                };</span>
 <span class="line" id="L322"></span>
-<span class="line" id="L323">                <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> windowsAsyncRead(</span>
-<span class="line" id="L324">                    handle,</span>
-<span class="line" id="L325">                    &amp;self.windows.overlapped[stream_idx],</span>
-<span class="line" id="L326">                    &amp;self.fifos[stream_idx],</span>
-<span class="line" id="L327">                    bump_amt,</span>
-<span class="line" id="L328">                )) {</span>
-<span class="line" id="L329">                    .pending =&gt; {},</span>
-<span class="line" id="L330">                    .closed =&gt; self.windows.active.removeAt(active_idx),</span>
-<span class="line" id="L331">                }</span>
-<span class="line" id="L332">                <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L333">            }</span>
-<span class="line" id="L334">        }</span>
-<span class="line" id="L335"></span>
-<span class="line" id="L336">        <span class="tok-kw">fn</span> <span class="tok-fn">pollPosix</span>(self: *Self) !<span class="tok-type">bool</span> {</span>
-<span class="line" id="L337">            <span class="tok-comment">// We ask for ensureUnusedCapacity with this much extra space. This</span>
+<span class="line" id="L323">                self.fifos[stream_idx].update(read_bytes);</span>
+<span class="line" id="L324"></span>
+<span class="line" id="L325">                <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> windowsAsyncRead(</span>
+<span class="line" id="L326">                    handle,</span>
+<span class="line" id="L327">                    &amp;self.windows.overlapped[stream_idx],</span>
+<span class="line" id="L328">                    &amp;self.fifos[stream_idx],</span>
+<span class="line" id="L329">                    bump_amt,</span>
+<span class="line" id="L330">                )) {</span>
+<span class="line" id="L331">                    .pending =&gt; {},</span>
+<span class="line" id="L332">                    .closed =&gt; self.windows.active.removeAt(active_idx),</span>
+<span class="line" id="L333">                }</span>
+<span class="line" id="L334">                <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L335">            }</span>
+<span class="line" id="L336">        }</span>
+<span class="line" id="L337"></span>
+<span class="line" id="L338">        <span class="tok-kw">fn</span> <span class="tok-fn">pollPosix</span>(self: *Self) !<span class="tok-type">bool</span> {</span>
+<span class="line" id="L339">            <span class="tok-comment">// We ask for ensureUnusedCapacity with this much extra space. This</span>
 </span>
-<span class="line" id="L338">            <span class="tok-comment">// has more of an effect on small reads because once the reads</span>
+<span class="line" id="L340">            <span class="tok-comment">// has more of an effect on small reads because once the reads</span>
 </span>
-<span class="line" id="L339">            <span class="tok-comment">// start to get larger the amount of space an ArrayList will</span>
+<span class="line" id="L341">            <span class="tok-comment">// start to get larger the amount of space an ArrayList will</span>
 </span>
-<span class="line" id="L340">            <span class="tok-comment">// allocate grows exponentially.</span>
+<span class="line" id="L342">            <span class="tok-comment">// allocate grows exponentially.</span>
 </span>
-<span class="line" id="L341">            <span class="tok-kw">const</span> bump_amt = <span class="tok-number">512</span>;</span>
-<span class="line" id="L342"></span>
-<span class="line" id="L343">            <span class="tok-kw">const</span> err_mask = os.POLL.ERR | os.POLL.NVAL | os.POLL.HUP;</span>
+<span class="line" id="L343">            <span class="tok-kw">const</span> bump_amt = <span class="tok-number">512</span>;</span>
 <span class="line" id="L344"></span>
-<span class="line" id="L345">            <span class="tok-kw">const</span> events_len = <span class="tok-kw">try</span> os.poll(&amp;self.poll_fds, std.math.maxInt(<span class="tok-type">i32</span>));</span>
-<span class="line" id="L346">            <span class="tok-kw">if</span> (events_len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L347">                <span class="tok-kw">for</span> (self.poll_fds) |poll_fd| {</span>
-<span class="line" id="L348">                    <span class="tok-kw">if</span> (poll_fd.fd != -<span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L349">                } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L350">            }</span>
-<span class="line" id="L351"></span>
-<span class="line" id="L352">            <span class="tok-kw">var</span> keep_polling = <span class="tok-null">false</span>;</span>
-<span class="line" id="L353">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (&amp;self.poll_fds, &amp;self.fifos) |*poll_fd, *q| {</span>
-<span class="line" id="L354">                <span class="tok-comment">// Try reading whatever is available before checking the error</span>
+<span class="line" id="L345">            <span class="tok-kw">const</span> err_mask = os.POLL.ERR | os.POLL.NVAL | os.POLL.HUP;</span>
+<span class="line" id="L346"></span>
+<span class="line" id="L347">            <span class="tok-kw">const</span> events_len = <span class="tok-kw">try</span> os.poll(&amp;self.poll_fds, std.math.maxInt(<span class="tok-type">i32</span>));</span>
+<span class="line" id="L348">            <span class="tok-kw">if</span> (events_len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L349">                <span class="tok-kw">for</span> (self.poll_fds) |poll_fd| {</span>
+<span class="line" id="L350">                    <span class="tok-kw">if</span> (poll_fd.fd != -<span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L351">                } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L352">            }</span>
+<span class="line" id="L353"></span>
+<span class="line" id="L354">            <span class="tok-kw">var</span> keep_polling = <span class="tok-null">false</span>;</span>
+<span class="line" id="L355">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (&amp;self.poll_fds, &amp;self.fifos) |*poll_fd, *q| {</span>
+<span class="line" id="L356">                <span class="tok-comment">// Try reading whatever is available before checking the error</span>
 </span>
-<span class="line" id="L355">                <span class="tok-comment">// conditions.</span>
+<span class="line" id="L357">                <span class="tok-comment">// conditions.</span>
 </span>
-<span class="line" id="L356">                <span class="tok-comment">// It's still possible to read after a POLL.HUP is received,</span>
+<span class="line" id="L358">                <span class="tok-comment">// It's still possible to read after a POLL.HUP is received,</span>
 </span>
-<span class="line" id="L357">                <span class="tok-comment">// always check if there's some data waiting to be read first.</span>
+<span class="line" id="L359">                <span class="tok-comment">// always check if there's some data waiting to be read first.</span>
 </span>
-<span class="line" id="L358">                <span class="tok-kw">if</span> (poll_fd.revents &amp; os.POLL.IN != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L359">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> q.writableWithSize(bump_amt);</span>
-<span class="line" id="L360">                    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.read(poll_fd.fd, buf);</span>
-<span class="line" id="L361">                    q.update(amt);</span>
-<span class="line" id="L362">                    <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L363">                        <span class="tok-comment">// Remove the fd when the EOF condition is met.</span>
+<span class="line" id="L360">                <span class="tok-kw">if</span> (poll_fd.revents &amp; os.POLL.IN != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L361">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> q.writableWithSize(bump_amt);</span>
+<span class="line" id="L362">                    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.read(poll_fd.fd, buf);</span>
+<span class="line" id="L363">                    q.update(amt);</span>
+<span class="line" id="L364">                    <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L365">                        <span class="tok-comment">// Remove the fd when the EOF condition is met.</span>
 </span>
-<span class="line" id="L364">                        poll_fd.fd = -<span class="tok-number">1</span>;</span>
-<span class="line" id="L365">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L366">                        keep_polling = <span class="tok-null">true</span>;</span>
-<span class="line" id="L367">                    }</span>
-<span class="line" id="L368">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (poll_fd.revents &amp; err_mask != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L369">                    <span class="tok-comment">// Exclude the fds that signaled an error.</span>
+<span class="line" id="L366">                        poll_fd.fd = -<span class="tok-number">1</span>;</span>
+<span class="line" id="L367">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L368">                        keep_polling = <span class="tok-null">true</span>;</span>
+<span class="line" id="L369">                    }</span>
+<span class="line" id="L370">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (poll_fd.revents &amp; err_mask != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L371">                    <span class="tok-comment">// Exclude the fds that signaled an error.</span>
 </span>
-<span class="line" id="L370">                    poll_fd.fd = -<span class="tok-number">1</span>;</span>
-<span class="line" id="L371">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (poll_fd.fd != -<span class="tok-number">1</span>) {</span>
-<span class="line" id="L372">                    keep_polling = <span class="tok-null">true</span>;</span>
-<span class="line" id="L373">                }</span>
-<span class="line" id="L374">            }</span>
-<span class="line" id="L375">            <span class="tok-kw">return</span> keep_polling;</span>
-<span class="line" id="L376">        }</span>
-<span class="line" id="L377">    };</span>
-<span class="line" id="L378">}</span>
-<span class="line" id="L379"></span>
-<span class="line" id="L380"><span class="tok-kw">fn</span> <span class="tok-fn">windowsAsyncRead</span>(</span>
-<span class="line" id="L381">    handle: os.windows.HANDLE,</span>
-<span class="line" id="L382">    overlapped: *os.windows.OVERLAPPED,</span>
-<span class="line" id="L383">    fifo: *PollFifo,</span>
-<span class="line" id="L384">    bump_amt: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L385">) !<span class="tok-kw">enum</span> { pending, closed } {</span>
-<span class="line" id="L386">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L387">        <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> fifo.writableWithSize(bump_amt);</span>
-<span class="line" id="L388">        <span class="tok-kw">var</span> read_bytes: <span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L389">        <span class="tok-kw">const</span> read_result = os.windows.kernel32.ReadFile(handle, buf.ptr, math.cast(<span class="tok-type">u32</span>, buf.len) <span class="tok-kw">orelse</span> math.maxInt(<span class="tok-type">u32</span>), &amp;read_bytes, overlapped);</span>
-<span class="line" id="L390">        <span class="tok-kw">if</span> (read_result == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (os.windows.kernel32.GetLastError()) {</span>
-<span class="line" id="L391">            .IO_PENDING =&gt; .pending,</span>
-<span class="line" id="L392">            .BROKEN_PIPE =&gt; .closed,</span>
-<span class="line" id="L393">            <span class="tok-kw">else</span> =&gt; |err| os.windows.unexpectedError(err),</span>
-<span class="line" id="L394">        };</span>
-<span class="line" id="L395">        fifo.update(read_bytes);</span>
-<span class="line" id="L396">    }</span>
-<span class="line" id="L397">}</span>
-<span class="line" id="L398"></span>
-<span class="line" id="L399"><span class="tok-comment">/// Given an enum, returns a struct with fields of that enum, each field</span></span>
-<span class="line" id="L400"><span class="tok-comment">/// representing an I/O stream for polling.</span></span>
-<span class="line" id="L401"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">PollFiles</span>(<span class="tok-kw">comptime</span> StreamEnum: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L402">    <span class="tok-kw">const</span> enum_fields = <span class="tok-builtin">@typeInfo</span>(StreamEnum).Enum.fields;</span>
-<span class="line" id="L403">    <span class="tok-kw">var</span> struct_fields: [enum_fields.len]std.builtin.Type.StructField = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L404">    <span class="tok-kw">for</span> (&amp;struct_fields, enum_fields) |*struct_field, enum_field| {</span>
-<span class="line" id="L405">        struct_field.* = .{</span>
-<span class="line" id="L406">            .name = enum_field.name,</span>
-<span class="line" id="L407">            .<span class="tok-type">type</span> = fs.File,</span>
-<span class="line" id="L408">            .default_value = <span class="tok-null">null</span>,</span>
-<span class="line" id="L409">            .is_comptime = <span class="tok-null">false</span>,</span>
-<span class="line" id="L410">            .alignment = <span class="tok-builtin">@alignOf</span>(fs.File),</span>
-<span class="line" id="L411">        };</span>
-<span class="line" id="L412">    }</span>
-<span class="line" id="L413">    <span class="tok-kw">return</span> <span class="tok-builtin">@Type</span>(.{ .Struct = .{</span>
-<span class="line" id="L414">        .layout = .Auto,</span>
-<span class="line" id="L415">        .fields = &amp;struct_fields,</span>
-<span class="line" id="L416">        .decls = &amp;.{},</span>
-<span class="line" id="L417">        .is_tuple = <span class="tok-null">false</span>,</span>
-<span class="line" id="L418">    } });</span>
-<span class="line" id="L419">}</span>
-<span class="line" id="L420"></span>
-<span class="line" id="L421"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L422">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/bit_reader.zig&quot;</span>);</span>
-<span class="line" id="L423">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/bit_writer.zig&quot;</span>);</span>
-<span class="line" id="L424">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/buffered_atomic_file.zig&quot;</span>);</span>
-<span class="line" id="L425">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/buffered_reader.zig&quot;</span>);</span>
-<span class="line" id="L426">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/buffered_writer.zig&quot;</span>);</span>
-<span class="line" id="L427">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/c_writer.zig&quot;</span>);</span>
-<span class="line" id="L428">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/counting_writer.zig&quot;</span>);</span>
-<span class="line" id="L429">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/counting_reader.zig&quot;</span>);</span>
-<span class="line" id="L430">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/fixed_buffer_stream.zig&quot;</span>);</span>
-<span class="line" id="L431">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/reader.zig&quot;</span>);</span>
-<span class="line" id="L432">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/writer.zig&quot;</span>);</span>
-<span class="line" id="L433">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/peek_stream.zig&quot;</span>);</span>
-<span class="line" id="L434">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/seekable_stream.zig&quot;</span>);</span>
-<span class="line" id="L435">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/stream_source.zig&quot;</span>);</span>
-<span class="line" id="L436">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/test.zig&quot;</span>);</span>
-<span class="line" id="L437">}</span>
-<span class="line" id="L438"></span>
+<span class="line" id="L372">                    poll_fd.fd = -<span class="tok-number">1</span>;</span>
+<span class="line" id="L373">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (poll_fd.fd != -<span class="tok-number">1</span>) {</span>
+<span class="line" id="L374">                    keep_polling = <span class="tok-null">true</span>;</span>
+<span class="line" id="L375">                }</span>
+<span class="line" id="L376">            }</span>
+<span class="line" id="L377">            <span class="tok-kw">return</span> keep_polling;</span>
+<span class="line" id="L378">        }</span>
+<span class="line" id="L379">    };</span>
+<span class="line" id="L380">}</span>
+<span class="line" id="L381"></span>
+<span class="line" id="L382"><span class="tok-kw">fn</span> <span class="tok-fn">windowsAsyncRead</span>(</span>
+<span class="line" id="L383">    handle: os.windows.HANDLE,</span>
+<span class="line" id="L384">    overlapped: *os.windows.OVERLAPPED,</span>
+<span class="line" id="L385">    fifo: *PollFifo,</span>
+<span class="line" id="L386">    bump_amt: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L387">) !<span class="tok-kw">enum</span> { pending, closed } {</span>
+<span class="line" id="L388">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L389">        <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> fifo.writableWithSize(bump_amt);</span>
+<span class="line" id="L390">        <span class="tok-kw">var</span> read_bytes: <span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L391">        <span class="tok-kw">const</span> read_result = os.windows.kernel32.ReadFile(handle, buf.ptr, math.cast(<span class="tok-type">u32</span>, buf.len) <span class="tok-kw">orelse</span> math.maxInt(<span class="tok-type">u32</span>), &amp;read_bytes, overlapped);</span>
+<span class="line" id="L392">        <span class="tok-kw">if</span> (read_result == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (os.windows.kernel32.GetLastError()) {</span>
+<span class="line" id="L393">            .IO_PENDING =&gt; .pending,</span>
+<span class="line" id="L394">            .BROKEN_PIPE =&gt; .closed,</span>
+<span class="line" id="L395">            <span class="tok-kw">else</span> =&gt; |err| os.windows.unexpectedError(err),</span>
+<span class="line" id="L396">        };</span>
+<span class="line" id="L397">        fifo.update(read_bytes);</span>
+<span class="line" id="L398">    }</span>
+<span class="line" id="L399">}</span>
+<span class="line" id="L400"></span>
+<span class="line" id="L401"><span class="tok-comment">/// Given an enum, returns a struct with fields of that enum, each field</span></span>
+<span class="line" id="L402"><span class="tok-comment">/// representing an I/O stream for polling.</span></span>
+<span class="line" id="L403"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">PollFiles</span>(<span class="tok-kw">comptime</span> StreamEnum: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L404">    <span class="tok-kw">const</span> enum_fields = <span class="tok-builtin">@typeInfo</span>(StreamEnum).Enum.fields;</span>
+<span class="line" id="L405">    <span class="tok-kw">var</span> struct_fields: [enum_fields.len]std.builtin.Type.StructField = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L406">    <span class="tok-kw">for</span> (&amp;struct_fields, enum_fields) |*struct_field, enum_field| {</span>
+<span class="line" id="L407">        struct_field.* = .{</span>
+<span class="line" id="L408">            .name = enum_field.name,</span>
+<span class="line" id="L409">            .<span class="tok-type">type</span> = fs.File,</span>
+<span class="line" id="L410">            .default_value = <span class="tok-null">null</span>,</span>
+<span class="line" id="L411">            .is_comptime = <span class="tok-null">false</span>,</span>
+<span class="line" id="L412">            .alignment = <span class="tok-builtin">@alignOf</span>(fs.File),</span>
+<span class="line" id="L413">        };</span>
+<span class="line" id="L414">    }</span>
+<span class="line" id="L415">    <span class="tok-kw">return</span> <span class="tok-builtin">@Type</span>(.{ .Struct = .{</span>
+<span class="line" id="L416">        .layout = .Auto,</span>
+<span class="line" id="L417">        .fields = &amp;struct_fields,</span>
+<span class="line" id="L418">        .decls = &amp;.{},</span>
+<span class="line" id="L419">        .is_tuple = <span class="tok-null">false</span>,</span>
+<span class="line" id="L420">    } });</span>
+<span class="line" id="L421">}</span>
+<span class="line" id="L422"></span>
+<span class="line" id="L423"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L424">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/bit_reader.zig&quot;</span>);</span>
+<span class="line" id="L425">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/bit_writer.zig&quot;</span>);</span>
+<span class="line" id="L426">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/buffered_atomic_file.zig&quot;</span>);</span>
+<span class="line" id="L427">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/buffered_reader.zig&quot;</span>);</span>
+<span class="line" id="L428">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/buffered_writer.zig&quot;</span>);</span>
+<span class="line" id="L429">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/c_writer.zig&quot;</span>);</span>
+<span class="line" id="L430">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/counting_writer.zig&quot;</span>);</span>
+<span class="line" id="L431">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/counting_reader.zig&quot;</span>);</span>
+<span class="line" id="L432">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/fixed_buffer_stream.zig&quot;</span>);</span>
+<span class="line" id="L433">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/reader.zig&quot;</span>);</span>
+<span class="line" id="L434">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/writer.zig&quot;</span>);</span>
+<span class="line" id="L435">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/peek_stream.zig&quot;</span>);</span>
+<span class="line" id="L436">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/seekable_stream.zig&quot;</span>);</span>
+<span class="line" id="L437">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/stream_source.zig&quot;</span>);</span>
+<span class="line" id="L438">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;io/test.zig&quot;</span>);</span>
+<span class="line" id="L439">}</span>
+<span class="line" id="L440"></span>
 </code></pre></body>
 </html>

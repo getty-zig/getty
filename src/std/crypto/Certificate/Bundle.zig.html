@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>crypto/Certificate/Bundle.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -295,7 +295,7 @@
 <span class="line" id="L169">    <span class="tok-kw">var</span> it = iterable_dir.iterate();</span>
 <span class="line" id="L170">    <span class="tok-kw">while</span> (<span class="tok-kw">try</span> it.next()) |entry| {</span>
 <span class="line" id="L171">        <span class="tok-kw">switch</span> (entry.kind) {</span>
-<span class="line" id="L172">            .File, .SymLink =&gt; {},</span>
+<span class="line" id="L172">            .file, .sym_link =&gt; {},</span>
 <span class="line" id="L173">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
 <span class="line" id="L174">        }</span>
 <span class="line" id="L175"></span>
@@ -377,62 +377,68 @@
 </span>
 <span class="line" id="L246">    <span class="tok-comment">// use `catch unreachable` later.</span>
 </span>
-<span class="line" id="L247">    <span class="tok-kw">const</span> parsed_cert = <span class="tok-kw">try</span> Certificate.parse(.{</span>
+<span class="line" id="L247">    <span class="tok-kw">const</span> parsed_cert = Certificate.parse(.{</span>
 <span class="line" id="L248">        .buffer = cb.bytes.items,</span>
 <span class="line" id="L249">        .index = decoded_start,</span>
-<span class="line" id="L250">    });</span>
-<span class="line" id="L251">    <span class="tok-kw">if</span> (now_sec &gt; parsed_cert.validity.not_after) {</span>
-<span class="line" id="L252">        <span class="tok-comment">// Ignore expired cert.</span>
+<span class="line" id="L250">    }) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L251">        <span class="tok-kw">error</span>.CertificateHasUnrecognizedObjectId =&gt; {</span>
+<span class="line" id="L252">            cb.bytes.items.len = decoded_start;</span>
+<span class="line" id="L253">            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L254">        },</span>
+<span class="line" id="L255">        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L256">    };</span>
+<span class="line" id="L257">    <span class="tok-kw">if</span> (now_sec &gt; parsed_cert.validity.not_after) {</span>
+<span class="line" id="L258">        <span class="tok-comment">// Ignore expired cert.</span>
 </span>
-<span class="line" id="L253">        cb.bytes.items.len = decoded_start;</span>
-<span class="line" id="L254">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L255">    }</span>
-<span class="line" id="L256">    <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> cb.map.getOrPutContext(gpa, parsed_cert.subject_slice, .{ .cb = cb });</span>
-<span class="line" id="L257">    <span class="tok-kw">if</span> (gop.found_existing) {</span>
-<span class="line" id="L258">        cb.bytes.items.len = decoded_start;</span>
-<span class="line" id="L259">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L260">        gop.value_ptr.* = decoded_start;</span>
+<span class="line" id="L259">        cb.bytes.items.len = decoded_start;</span>
+<span class="line" id="L260">        <span class="tok-kw">return</span>;</span>
 <span class="line" id="L261">    }</span>
-<span class="line" id="L262">}</span>
-<span class="line" id="L263"></span>
-<span class="line" id="L264"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
-<span class="line" id="L265"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../std.zig&quot;</span>);</span>
-<span class="line" id="L266"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
-<span class="line" id="L267"><span class="tok-kw">const</span> fs = std.fs;</span>
-<span class="line" id="L268"><span class="tok-kw">const</span> mem = std.mem;</span>
-<span class="line" id="L269"><span class="tok-kw">const</span> crypto = std.crypto;</span>
-<span class="line" id="L270"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
-<span class="line" id="L271"><span class="tok-kw">const</span> Certificate = std.crypto.Certificate;</span>
-<span class="line" id="L272"><span class="tok-kw">const</span> der = Certificate.der;</span>
-<span class="line" id="L273"><span class="tok-kw">const</span> Bundle = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L274"></span>
-<span class="line" id="L275"><span class="tok-kw">const</span> base64 = std.base64.standard.decoderWithIgnore(<span class="tok-str">&quot; \t\r\n&quot;</span>);</span>
-<span class="line" id="L276"></span>
-<span class="line" id="L277"><span class="tok-kw">const</span> MapContext = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L278">    cb: *<span class="tok-kw">const</span> Bundle,</span>
-<span class="line" id="L279"></span>
-<span class="line" id="L280">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: MapContext, k: der.Element.Slice) <span class="tok-type">u64</span> {</span>
-<span class="line" id="L281">        <span class="tok-kw">return</span> std.hash_map.hashString(ctx.cb.bytes.items[k.start..k.end]);</span>
-<span class="line" id="L282">    }</span>
-<span class="line" id="L283"></span>
-<span class="line" id="L284">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">eql</span>(ctx: MapContext, a: der.Element.Slice, b: der.Element.Slice) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L285">        <span class="tok-kw">const</span> bytes = ctx.cb.bytes.items;</span>
-<span class="line" id="L286">        <span class="tok-kw">return</span> mem.eql(</span>
-<span class="line" id="L287">            <span class="tok-type">u8</span>,</span>
-<span class="line" id="L288">            bytes[a.start..a.end],</span>
-<span class="line" id="L289">            bytes[b.start..b.end],</span>
-<span class="line" id="L290">        );</span>
-<span class="line" id="L291">    }</span>
-<span class="line" id="L292">};</span>
-<span class="line" id="L293"></span>
-<span class="line" id="L294"><span class="tok-kw">test</span> <span class="tok-str">&quot;scan for OS-provided certificates&quot;</span> {</span>
-<span class="line" id="L295">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L296"></span>
-<span class="line" id="L297">    <span class="tok-kw">var</span> bundle: Bundle = .{};</span>
-<span class="line" id="L298">    <span class="tok-kw">defer</span> bundle.deinit(std.testing.allocator);</span>
+<span class="line" id="L262">    <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> cb.map.getOrPutContext(gpa, parsed_cert.subject_slice, .{ .cb = cb });</span>
+<span class="line" id="L263">    <span class="tok-kw">if</span> (gop.found_existing) {</span>
+<span class="line" id="L264">        cb.bytes.items.len = decoded_start;</span>
+<span class="line" id="L265">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L266">        gop.value_ptr.* = decoded_start;</span>
+<span class="line" id="L267">    }</span>
+<span class="line" id="L268">}</span>
+<span class="line" id="L269"></span>
+<span class="line" id="L270"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L271"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../std.zig&quot;</span>);</span>
+<span class="line" id="L272"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
+<span class="line" id="L273"><span class="tok-kw">const</span> fs = std.fs;</span>
+<span class="line" id="L274"><span class="tok-kw">const</span> mem = std.mem;</span>
+<span class="line" id="L275"><span class="tok-kw">const</span> crypto = std.crypto;</span>
+<span class="line" id="L276"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
+<span class="line" id="L277"><span class="tok-kw">const</span> Certificate = std.crypto.Certificate;</span>
+<span class="line" id="L278"><span class="tok-kw">const</span> der = Certificate.der;</span>
+<span class="line" id="L279"><span class="tok-kw">const</span> Bundle = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L280"></span>
+<span class="line" id="L281"><span class="tok-kw">const</span> base64 = std.base64.standard.decoderWithIgnore(<span class="tok-str">&quot; \t\r\n&quot;</span>);</span>
+<span class="line" id="L282"></span>
+<span class="line" id="L283"><span class="tok-kw">const</span> MapContext = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L284">    cb: *<span class="tok-kw">const</span> Bundle,</span>
+<span class="line" id="L285"></span>
+<span class="line" id="L286">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: MapContext, k: der.Element.Slice) <span class="tok-type">u64</span> {</span>
+<span class="line" id="L287">        <span class="tok-kw">return</span> std.hash_map.hashString(ctx.cb.bytes.items[k.start..k.end]);</span>
+<span class="line" id="L288">    }</span>
+<span class="line" id="L289"></span>
+<span class="line" id="L290">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">eql</span>(ctx: MapContext, a: der.Element.Slice, b: der.Element.Slice) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L291">        <span class="tok-kw">const</span> bytes = ctx.cb.bytes.items;</span>
+<span class="line" id="L292">        <span class="tok-kw">return</span> mem.eql(</span>
+<span class="line" id="L293">            <span class="tok-type">u8</span>,</span>
+<span class="line" id="L294">            bytes[a.start..a.end],</span>
+<span class="line" id="L295">            bytes[b.start..b.end],</span>
+<span class="line" id="L296">        );</span>
+<span class="line" id="L297">    }</span>
+<span class="line" id="L298">};</span>
 <span class="line" id="L299"></span>
-<span class="line" id="L300">    <span class="tok-kw">try</span> bundle.rescan(std.testing.allocator);</span>
-<span class="line" id="L301">}</span>
+<span class="line" id="L300"><span class="tok-kw">test</span> <span class="tok-str">&quot;scan for OS-provided certificates&quot;</span> {</span>
+<span class="line" id="L301">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L302"></span>
+<span class="line" id="L303">    <span class="tok-kw">var</span> bundle: Bundle = .{};</span>
+<span class="line" id="L304">    <span class="tok-kw">defer</span> bundle.deinit(std.testing.allocator);</span>
+<span class="line" id="L305"></span>
+<span class="line" id="L306">    <span class="tok-kw">try</span> bundle.rescan(std.testing.allocator);</span>
+<span class="line" id="L307">}</span>
+<span class="line" id="L308"></span>
 </code></pre></body>
 </html>

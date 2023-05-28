@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Thread/Mutex.zig - source view</title>
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR4AWMYWuD7EllJIM4G4g4g5oIJ/odhOJ8wToOxSTXgNxDHoeiBMfA4+wGShjyYOCkG/IGqWQziEzYAoUAeiF9D5U+DxEg14DRU7jWIT5IBIOdCxf+A+CQZAAoopEB7QJwBCBwHiip8UYmRdrAlDpIMgApwQZNnNii5Dq0MBgCxxycBnwEd+wAAAABJRU5ErkJggg=="/>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAPNJREFUeNpi/P//PwMlgOXHUjly9E0G4hwgZmQiQZMqEK8H4v9QzUEgQSaoADK+zhH9iAGL+C0gDoAaNg9mGLoLfgA1awK9hS9gzgJxA9RQBmQDrgMxJzRMGKE4HYj/Ial5A8QmQLwCJoBsgBYW2+TR1ChDaWt4LOBxKsi/VUh8XiD+gq4IVyzwQAMJBoKwacZlAB8Qf0bi96IZhtOAe1D6LpqaEiz6rmEzQAeIzwGxCJpieFqApo/vQKyJboAaEBsAsSEupwI1MwKjGBTVHOhegMX5UajYRqiBjMgYmj400cVh0XgTiKdC0zhJgJHS7AwQYABm9EAdCKrEfAAAAABJRU5ErkJggg=="/>
     <style>
       body{
         font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
@@ -290,7 +290,7 @@
 <span class="line" id="L169">        }</span>
 <span class="line" id="L170">    }</span>
 <span class="line" id="L171"></span>
-<span class="line" id="L172">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">lockFast</span>(self: *<span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> casFn: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L172">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">lockFast</span>(self: *<span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> cas_fn_name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L173">        <span class="tok-comment">// On x86, use `lock bts` instead of `lock cmpxchg` as:</span>
 </span>
 <span class="line" id="L174">        <span class="tok-comment">// - they both seem to mark the cache-line as modified regardless: https://stackoverflow.com/a/63350048</span>
@@ -306,166 +306,167 @@
 </span>
 <span class="line" id="L182">        <span class="tok-comment">// and that the previous lock holder's critical section happens before we grab the lock.</span>
 </span>
-<span class="line" id="L183">        <span class="tok-kw">return</span> <span class="tok-builtin">@field</span>(self.state, casFn)(unlocked, locked, .Acquire, .Monotonic) == <span class="tok-null">null</span>;</span>
-<span class="line" id="L184">    }</span>
-<span class="line" id="L185"></span>
-<span class="line" id="L186">    <span class="tok-kw">fn</span> <span class="tok-fn">lockSlow</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L187">        <span class="tok-builtin">@setCold</span>(<span class="tok-null">true</span>);</span>
-<span class="line" id="L188"></span>
-<span class="line" id="L189">        <span class="tok-comment">// Avoid doing an atomic swap below if we already know the state is contended.</span>
+<span class="line" id="L183">        <span class="tok-kw">const</span> casFn = <span class="tok-builtin">@field</span>(<span class="tok-builtin">@TypeOf</span>(self.state), cas_fn_name);</span>
+<span class="line" id="L184">        <span class="tok-kw">return</span> casFn(&amp;self.state, unlocked, locked, .Acquire, .Monotonic) == <span class="tok-null">null</span>;</span>
+<span class="line" id="L185">    }</span>
+<span class="line" id="L186"></span>
+<span class="line" id="L187">    <span class="tok-kw">fn</span> <span class="tok-fn">lockSlow</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L188">        <span class="tok-builtin">@setCold</span>(<span class="tok-null">true</span>);</span>
+<span class="line" id="L189"></span>
+<span class="line" id="L190">        <span class="tok-comment">// Avoid doing an atomic swap below if we already know the state is contended.</span>
 </span>
-<span class="line" id="L190">        <span class="tok-comment">// An atomic swap unconditionally stores which marks the cache-line as modified unnecessarily.</span>
+<span class="line" id="L191">        <span class="tok-comment">// An atomic swap unconditionally stores which marks the cache-line as modified unnecessarily.</span>
 </span>
-<span class="line" id="L191">        <span class="tok-kw">if</span> (self.state.load(.Monotonic) == contended) {</span>
-<span class="line" id="L192">            Futex.wait(&amp;self.state, contended);</span>
-<span class="line" id="L193">        }</span>
-<span class="line" id="L194"></span>
-<span class="line" id="L195">        <span class="tok-comment">// Try to acquire the lock while also telling the existing lock holder that there are threads waiting.</span>
+<span class="line" id="L192">        <span class="tok-kw">if</span> (self.state.load(.Monotonic) == contended) {</span>
+<span class="line" id="L193">            Futex.wait(&amp;self.state, contended);</span>
+<span class="line" id="L194">        }</span>
+<span class="line" id="L195"></span>
+<span class="line" id="L196">        <span class="tok-comment">// Try to acquire the lock while also telling the existing lock holder that there are threads waiting.</span>
 </span>
-<span class="line" id="L196">        <span class="tok-comment">//</span>
+<span class="line" id="L197">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L197">        <span class="tok-comment">// Once we sleep on the Futex, we must acquire the mutex using `contended` rather than `locked`.</span>
+<span class="line" id="L198">        <span class="tok-comment">// Once we sleep on the Futex, we must acquire the mutex using `contended` rather than `locked`.</span>
 </span>
-<span class="line" id="L198">        <span class="tok-comment">// If not, threads sleeping on the Futex wouldn't see the state change in unlock and potentially deadlock.</span>
+<span class="line" id="L199">        <span class="tok-comment">// If not, threads sleeping on the Futex wouldn't see the state change in unlock and potentially deadlock.</span>
 </span>
-<span class="line" id="L199">        <span class="tok-comment">// The downside is that the last mutex unlocker will see `contended` and do an unnecessary Futex wake</span>
+<span class="line" id="L200">        <span class="tok-comment">// The downside is that the last mutex unlocker will see `contended` and do an unnecessary Futex wake</span>
 </span>
-<span class="line" id="L200">        <span class="tok-comment">// but this is better than having to wake all waiting threads on mutex unlock.</span>
+<span class="line" id="L201">        <span class="tok-comment">// but this is better than having to wake all waiting threads on mutex unlock.</span>
 </span>
-<span class="line" id="L201">        <span class="tok-comment">//</span>
+<span class="line" id="L202">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L202">        <span class="tok-comment">// Acquire barrier ensures grabbing the lock happens before the critical section</span>
+<span class="line" id="L203">        <span class="tok-comment">// Acquire barrier ensures grabbing the lock happens before the critical section</span>
 </span>
-<span class="line" id="L203">        <span class="tok-comment">// and that the previous lock holder's critical section happens before we grab the lock.</span>
+<span class="line" id="L204">        <span class="tok-comment">// and that the previous lock holder's critical section happens before we grab the lock.</span>
 </span>
-<span class="line" id="L204">        <span class="tok-kw">while</span> (self.state.swap(contended, .Acquire) != unlocked) {</span>
-<span class="line" id="L205">            Futex.wait(&amp;self.state, contended);</span>
-<span class="line" id="L206">        }</span>
-<span class="line" id="L207">    }</span>
-<span class="line" id="L208"></span>
-<span class="line" id="L209">    <span class="tok-kw">fn</span> <span class="tok-fn">unlock</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L210">        <span class="tok-comment">// Unlock the mutex and wake up a waiting thread if any.</span>
+<span class="line" id="L205">        <span class="tok-kw">while</span> (self.state.swap(contended, .Acquire) != unlocked) {</span>
+<span class="line" id="L206">            Futex.wait(&amp;self.state, contended);</span>
+<span class="line" id="L207">        }</span>
+<span class="line" id="L208">    }</span>
+<span class="line" id="L209"></span>
+<span class="line" id="L210">    <span class="tok-kw">fn</span> <span class="tok-fn">unlock</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L211">        <span class="tok-comment">// Unlock the mutex and wake up a waiting thread if any.</span>
 </span>
-<span class="line" id="L211">        <span class="tok-comment">//</span>
+<span class="line" id="L212">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L212">        <span class="tok-comment">// A waiting thread will acquire with `contended` instead of `locked`</span>
+<span class="line" id="L213">        <span class="tok-comment">// A waiting thread will acquire with `contended` instead of `locked`</span>
 </span>
-<span class="line" id="L213">        <span class="tok-comment">// which ensures that it wakes up another thread on the next unlock().</span>
+<span class="line" id="L214">        <span class="tok-comment">// which ensures that it wakes up another thread on the next unlock().</span>
 </span>
-<span class="line" id="L214">        <span class="tok-comment">//</span>
+<span class="line" id="L215">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L215">        <span class="tok-comment">// Release barrier ensures the critical section happens before we let go of the lock</span>
+<span class="line" id="L216">        <span class="tok-comment">// Release barrier ensures the critical section happens before we let go of the lock</span>
 </span>
-<span class="line" id="L216">        <span class="tok-comment">// and that our critical section happens before the next lock holder grabs the lock.</span>
+<span class="line" id="L217">        <span class="tok-comment">// and that our critical section happens before the next lock holder grabs the lock.</span>
 </span>
-<span class="line" id="L217">        <span class="tok-kw">const</span> state = self.state.swap(unlocked, .Release);</span>
-<span class="line" id="L218">        assert(state != unlocked);</span>
-<span class="line" id="L219"></span>
-<span class="line" id="L220">        <span class="tok-kw">if</span> (state == contended) {</span>
-<span class="line" id="L221">            Futex.wake(&amp;self.state, <span class="tok-number">1</span>);</span>
-<span class="line" id="L222">        }</span>
-<span class="line" id="L223">    }</span>
-<span class="line" id="L224">};</span>
-<span class="line" id="L225"></span>
-<span class="line" id="L226"><span class="tok-kw">test</span> <span class="tok-str">&quot;Mutex - smoke test&quot;</span> {</span>
-<span class="line" id="L227">    <span class="tok-kw">var</span> mutex = Mutex{};</span>
-<span class="line" id="L228"></span>
-<span class="line" id="L229">    <span class="tok-kw">try</span> testing.expect(mutex.tryLock());</span>
-<span class="line" id="L230">    <span class="tok-kw">try</span> testing.expect(!mutex.tryLock());</span>
-<span class="line" id="L231">    mutex.unlock();</span>
-<span class="line" id="L232"></span>
-<span class="line" id="L233">    mutex.lock();</span>
-<span class="line" id="L234">    <span class="tok-kw">try</span> testing.expect(!mutex.tryLock());</span>
-<span class="line" id="L235">    mutex.unlock();</span>
-<span class="line" id="L236">}</span>
-<span class="line" id="L237"></span>
-<span class="line" id="L238"><span class="tok-comment">// A counter which is incremented without atomic instructions</span>
+<span class="line" id="L218">        <span class="tok-kw">const</span> state = self.state.swap(unlocked, .Release);</span>
+<span class="line" id="L219">        assert(state != unlocked);</span>
+<span class="line" id="L220"></span>
+<span class="line" id="L221">        <span class="tok-kw">if</span> (state == contended) {</span>
+<span class="line" id="L222">            Futex.wake(&amp;self.state, <span class="tok-number">1</span>);</span>
+<span class="line" id="L223">        }</span>
+<span class="line" id="L224">    }</span>
+<span class="line" id="L225">};</span>
+<span class="line" id="L226"></span>
+<span class="line" id="L227"><span class="tok-kw">test</span> <span class="tok-str">&quot;Mutex - smoke test&quot;</span> {</span>
+<span class="line" id="L228">    <span class="tok-kw">var</span> mutex = Mutex{};</span>
+<span class="line" id="L229"></span>
+<span class="line" id="L230">    <span class="tok-kw">try</span> testing.expect(mutex.tryLock());</span>
+<span class="line" id="L231">    <span class="tok-kw">try</span> testing.expect(!mutex.tryLock());</span>
+<span class="line" id="L232">    mutex.unlock();</span>
+<span class="line" id="L233"></span>
+<span class="line" id="L234">    mutex.lock();</span>
+<span class="line" id="L235">    <span class="tok-kw">try</span> testing.expect(!mutex.tryLock());</span>
+<span class="line" id="L236">    mutex.unlock();</span>
+<span class="line" id="L237">}</span>
+<span class="line" id="L238"></span>
+<span class="line" id="L239"><span class="tok-comment">// A counter which is incremented without atomic instructions</span>
 </span>
-<span class="line" id="L239"><span class="tok-kw">const</span> NonAtomicCounter = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L240">    <span class="tok-comment">// direct u128 could maybe use xmm ops on x86 which are atomic</span>
+<span class="line" id="L240"><span class="tok-kw">const</span> NonAtomicCounter = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L241">    <span class="tok-comment">// direct u128 could maybe use xmm ops on x86 which are atomic</span>
 </span>
-<span class="line" id="L241">    value: [<span class="tok-number">2</span>]<span class="tok-type">u64</span> = [_]<span class="tok-type">u64</span>{ <span class="tok-number">0</span>, <span class="tok-number">0</span> },</span>
-<span class="line" id="L242"></span>
-<span class="line" id="L243">    <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: NonAtomicCounter) <span class="tok-type">u128</span> {</span>
-<span class="line" id="L244">        <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u128</span>, self.value);</span>
-<span class="line" id="L245">    }</span>
-<span class="line" id="L246"></span>
-<span class="line" id="L247">    <span class="tok-kw">fn</span> <span class="tok-fn">inc</span>(self: *NonAtomicCounter) <span class="tok-type">void</span> {</span>
-<span class="line" id="L248">        <span class="tok-kw">for</span> (<span class="tok-builtin">@bitCast</span>([<span class="tok-number">2</span>]<span class="tok-type">u64</span>, self.get() + <span class="tok-number">1</span>), <span class="tok-number">0</span>..) |v, i| {</span>
-<span class="line" id="L249">            <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">volatile</span> <span class="tok-type">u64</span>, &amp;self.value[i]).* = v;</span>
-<span class="line" id="L250">        }</span>
-<span class="line" id="L251">    }</span>
-<span class="line" id="L252">};</span>
-<span class="line" id="L253"></span>
-<span class="line" id="L254"><span class="tok-kw">test</span> <span class="tok-str">&quot;Mutex - many uncontended&quot;</span> {</span>
-<span class="line" id="L255">    <span class="tok-comment">// This test requires spawning threads.</span>
+<span class="line" id="L242">    value: [<span class="tok-number">2</span>]<span class="tok-type">u64</span> = [_]<span class="tok-type">u64</span>{ <span class="tok-number">0</span>, <span class="tok-number">0</span> },</span>
+<span class="line" id="L243"></span>
+<span class="line" id="L244">    <span class="tok-kw">fn</span> <span class="tok-fn">get</span>(self: NonAtomicCounter) <span class="tok-type">u128</span> {</span>
+<span class="line" id="L245">        <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u128</span>, self.value);</span>
+<span class="line" id="L246">    }</span>
+<span class="line" id="L247"></span>
+<span class="line" id="L248">    <span class="tok-kw">fn</span> <span class="tok-fn">inc</span>(self: *NonAtomicCounter) <span class="tok-type">void</span> {</span>
+<span class="line" id="L249">        <span class="tok-kw">for</span> (<span class="tok-builtin">@bitCast</span>([<span class="tok-number">2</span>]<span class="tok-type">u64</span>, self.get() + <span class="tok-number">1</span>), <span class="tok-number">0</span>..) |v, i| {</span>
+<span class="line" id="L250">            <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">volatile</span> <span class="tok-type">u64</span>, &amp;self.value[i]).* = v;</span>
+<span class="line" id="L251">        }</span>
+<span class="line" id="L252">    }</span>
+<span class="line" id="L253">};</span>
+<span class="line" id="L254"></span>
+<span class="line" id="L255"><span class="tok-kw">test</span> <span class="tok-str">&quot;Mutex - many uncontended&quot;</span> {</span>
+<span class="line" id="L256">    <span class="tok-comment">// This test requires spawning threads.</span>
 </span>
-<span class="line" id="L256">    <span class="tok-kw">if</span> (builtin.single_threaded) {</span>
-<span class="line" id="L257">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L258">    }</span>
-<span class="line" id="L259"></span>
-<span class="line" id="L260">    <span class="tok-kw">const</span> num_threads = <span class="tok-number">4</span>;</span>
-<span class="line" id="L261">    <span class="tok-kw">const</span> num_increments = <span class="tok-number">1000</span>;</span>
-<span class="line" id="L262"></span>
-<span class="line" id="L263">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L264">        mutex: Mutex = .{},</span>
-<span class="line" id="L265">        thread: Thread = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L266">        counter: NonAtomicCounter = .{},</span>
-<span class="line" id="L267"></span>
-<span class="line" id="L268">        <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L269">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = num_increments;</span>
-<span class="line" id="L270">            <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L271">                self.mutex.lock();</span>
-<span class="line" id="L272">                <span class="tok-kw">defer</span> self.mutex.unlock();</span>
-<span class="line" id="L273"></span>
-<span class="line" id="L274">                self.counter.inc();</span>
-<span class="line" id="L275">            }</span>
-<span class="line" id="L276">        }</span>
-<span class="line" id="L277">    };</span>
-<span class="line" id="L278"></span>
-<span class="line" id="L279">    <span class="tok-kw">var</span> runners = [_]Runner{.{}} ** num_threads;</span>
-<span class="line" id="L280">    <span class="tok-kw">for</span> (&amp;runners) |*r| r.thread = <span class="tok-kw">try</span> Thread.spawn(.{}, Runner.run, .{r});</span>
-<span class="line" id="L281">    <span class="tok-kw">for</span> (runners) |r| r.thread.join();</span>
-<span class="line" id="L282">    <span class="tok-kw">for</span> (runners) |r| <span class="tok-kw">try</span> testing.expectEqual(r.counter.get(), num_increments);</span>
-<span class="line" id="L283">}</span>
-<span class="line" id="L284"></span>
-<span class="line" id="L285"><span class="tok-kw">test</span> <span class="tok-str">&quot;Mutex - many contended&quot;</span> {</span>
-<span class="line" id="L286">    <span class="tok-comment">// This test requires spawning threads.</span>
+<span class="line" id="L257">    <span class="tok-kw">if</span> (builtin.single_threaded) {</span>
+<span class="line" id="L258">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L259">    }</span>
+<span class="line" id="L260"></span>
+<span class="line" id="L261">    <span class="tok-kw">const</span> num_threads = <span class="tok-number">4</span>;</span>
+<span class="line" id="L262">    <span class="tok-kw">const</span> num_increments = <span class="tok-number">1000</span>;</span>
+<span class="line" id="L263"></span>
+<span class="line" id="L264">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L265">        mutex: Mutex = .{},</span>
+<span class="line" id="L266">        thread: Thread = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L267">        counter: NonAtomicCounter = .{},</span>
+<span class="line" id="L268"></span>
+<span class="line" id="L269">        <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L270">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = num_increments;</span>
+<span class="line" id="L271">            <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L272">                self.mutex.lock();</span>
+<span class="line" id="L273">                <span class="tok-kw">defer</span> self.mutex.unlock();</span>
+<span class="line" id="L274"></span>
+<span class="line" id="L275">                self.counter.inc();</span>
+<span class="line" id="L276">            }</span>
+<span class="line" id="L277">        }</span>
+<span class="line" id="L278">    };</span>
+<span class="line" id="L279"></span>
+<span class="line" id="L280">    <span class="tok-kw">var</span> runners = [_]Runner{.{}} ** num_threads;</span>
+<span class="line" id="L281">    <span class="tok-kw">for</span> (&amp;runners) |*r| r.thread = <span class="tok-kw">try</span> Thread.spawn(.{}, Runner.run, .{r});</span>
+<span class="line" id="L282">    <span class="tok-kw">for</span> (runners) |r| r.thread.join();</span>
+<span class="line" id="L283">    <span class="tok-kw">for</span> (runners) |r| <span class="tok-kw">try</span> testing.expectEqual(r.counter.get(), num_increments);</span>
+<span class="line" id="L284">}</span>
+<span class="line" id="L285"></span>
+<span class="line" id="L286"><span class="tok-kw">test</span> <span class="tok-str">&quot;Mutex - many contended&quot;</span> {</span>
+<span class="line" id="L287">    <span class="tok-comment">// This test requires spawning threads.</span>
 </span>
-<span class="line" id="L287">    <span class="tok-kw">if</span> (builtin.single_threaded) {</span>
-<span class="line" id="L288">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L289">    }</span>
-<span class="line" id="L290"></span>
-<span class="line" id="L291">    <span class="tok-kw">const</span> num_threads = <span class="tok-number">4</span>;</span>
-<span class="line" id="L292">    <span class="tok-kw">const</span> num_increments = <span class="tok-number">1000</span>;</span>
-<span class="line" id="L293"></span>
-<span class="line" id="L294">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L295">        mutex: Mutex = .{},</span>
-<span class="line" id="L296">        counter: NonAtomicCounter = .{},</span>
-<span class="line" id="L297"></span>
-<span class="line" id="L298">        <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L299">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = num_increments;</span>
-<span class="line" id="L300">            <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L301">                <span class="tok-comment">// Occasionally hint to let another thread run.</span>
+<span class="line" id="L288">    <span class="tok-kw">if</span> (builtin.single_threaded) {</span>
+<span class="line" id="L289">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L290">    }</span>
+<span class="line" id="L291"></span>
+<span class="line" id="L292">    <span class="tok-kw">const</span> num_threads = <span class="tok-number">4</span>;</span>
+<span class="line" id="L293">    <span class="tok-kw">const</span> num_increments = <span class="tok-number">1000</span>;</span>
+<span class="line" id="L294"></span>
+<span class="line" id="L295">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L296">        mutex: Mutex = .{},</span>
+<span class="line" id="L297">        counter: NonAtomicCounter = .{},</span>
+<span class="line" id="L298"></span>
+<span class="line" id="L299">        <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L300">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = num_increments;</span>
+<span class="line" id="L301">            <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L302">                <span class="tok-comment">// Occasionally hint to let another thread run.</span>
 </span>
-<span class="line" id="L302">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (i % <span class="tok-number">100</span> == <span class="tok-number">0</span>) Thread.yield() <span class="tok-kw">catch</span> {};</span>
-<span class="line" id="L303"></span>
-<span class="line" id="L304">                self.mutex.lock();</span>
-<span class="line" id="L305">                <span class="tok-kw">defer</span> self.mutex.unlock();</span>
-<span class="line" id="L306"></span>
-<span class="line" id="L307">                self.counter.inc();</span>
-<span class="line" id="L308">            }</span>
-<span class="line" id="L309">        }</span>
-<span class="line" id="L310">    };</span>
-<span class="line" id="L311"></span>
-<span class="line" id="L312">    <span class="tok-kw">var</span> runner = Runner{};</span>
-<span class="line" id="L313"></span>
-<span class="line" id="L314">    <span class="tok-kw">var</span> threads: [num_threads]Thread = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L315">    <span class="tok-kw">for</span> (&amp;threads) |*t| t.* = <span class="tok-kw">try</span> Thread.spawn(.{}, Runner.run, .{&amp;runner});</span>
-<span class="line" id="L316">    <span class="tok-kw">for</span> (threads) |t| t.join();</span>
-<span class="line" id="L317"></span>
-<span class="line" id="L318">    <span class="tok-kw">try</span> testing.expectEqual(runner.counter.get(), num_increments * num_threads);</span>
-<span class="line" id="L319">}</span>
-<span class="line" id="L320"></span>
+<span class="line" id="L303">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (i % <span class="tok-number">100</span> == <span class="tok-number">0</span>) Thread.yield() <span class="tok-kw">catch</span> {};</span>
+<span class="line" id="L304"></span>
+<span class="line" id="L305">                self.mutex.lock();</span>
+<span class="line" id="L306">                <span class="tok-kw">defer</span> self.mutex.unlock();</span>
+<span class="line" id="L307"></span>
+<span class="line" id="L308">                self.counter.inc();</span>
+<span class="line" id="L309">            }</span>
+<span class="line" id="L310">        }</span>
+<span class="line" id="L311">    };</span>
+<span class="line" id="L312"></span>
+<span class="line" id="L313">    <span class="tok-kw">var</span> runner = Runner{};</span>
+<span class="line" id="L314"></span>
+<span class="line" id="L315">    <span class="tok-kw">var</span> threads: [num_threads]Thread = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L316">    <span class="tok-kw">for</span> (&amp;threads) |*t| t.* = <span class="tok-kw">try</span> Thread.spawn(.{}, Runner.run, .{&amp;runner});</span>
+<span class="line" id="L317">    <span class="tok-kw">for</span> (threads) |t| t.join();</span>
+<span class="line" id="L318"></span>
+<span class="line" id="L319">    <span class="tok-kw">try</span> testing.expectEqual(runner.counter.get(), num_increments * num_threads);</span>
+<span class="line" id="L320">}</span>
+<span class="line" id="L321"></span>
 </code></pre></body>
 </html>
