@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const free = @import("../../free.zig").free;
 const getAttributes = @import("../../attributes.zig").getAttributes;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
@@ -21,6 +22,16 @@ pub fn Visitor(comptime Union: type) type {
             const attributes = comptime getAttributes(Value, Deserializer);
 
             var variant = try ua.variant(allocator, []const u8);
+            const variant_is_allocated = ua.isVariantAllocated(@TypeOf(variant));
+
+            if (variant_is_allocated and allocator == null) {
+                return error.MissingAllocator;
+            }
+
+            defer if (variant_is_allocated) {
+                std.debug.assert(allocator != null);
+                free(allocator.?, Deserializer, variant);
+            };
 
             inline for (std.meta.fields(Value)) |f| {
                 const attrs = comptime blk: {

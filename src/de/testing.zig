@@ -344,7 +344,10 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             pub usingnamespace UnionAccessInterface(
                 *Union,
                 Error,
-                .{ .variantSeed = variantSeed },
+                .{
+                    .variantSeed = variantSeed,
+                    .isVariantAllocated = isVariantAllocated,
+                },
             );
 
             pub usingnamespace VariantAccessInterface(
@@ -371,6 +374,10 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 if (self.de.nextToken() != .Void) {
                     return error.UnknownVariant;
                 }
+            }
+
+            fn isVariantAllocated(_: *Union, comptime _: type) bool {
+                return false;
             }
         };
     };

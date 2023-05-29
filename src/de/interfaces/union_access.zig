@@ -16,12 +16,19 @@ pub fn UnionAccess(
             }
         }.f) = null,
 
-        // Provided method.
+        ////////////////////////////////////////////////////////////////////////
+        // Provided methods.
+        ////////////////////////////////////////////////////////////////////////
+
         variant: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime T: type) E!T {
                 unreachable;
             }
         }.f) = null,
+
+        /// Returns true if the variant deserialized by variantSeed was
+        /// allocated on the heap. Otherwise, false is returned.
+        isVariantAllocated: ?fn (Context, comptime V: type) bool = null,
     },
 ) type {
     return struct {
@@ -50,6 +57,14 @@ pub fn UnionAccess(
 
                     return try self.variantSeed(allocator, seed);
                 }
+            }
+
+            pub fn isVariantAllocated(self: Self, comptime V: type) bool {
+                if (methods.isVariantAllocated) |f| {
+                    return f(self.context, V);
+                }
+
+                return @typeInfo(V) == .Pointer;
             }
         };
 
