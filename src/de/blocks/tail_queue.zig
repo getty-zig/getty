@@ -124,16 +124,20 @@ test "deserialize - std.TailQueue (recursive)" {
     var b = Child{};
     var c = Child{};
 
-    var one = Child.Node{ .data = 1 };
-    var two = Child.Node{ .data = 2 };
-    var three = Child.Node{ .data = 3 };
-    b.append(&one);
-    c.append(&two);
-    c.append(&three);
+    var child_one = Child.Node{ .data = 1 };
+    var child_two = Child.Node{ .data = 2 };
+    var child_three = Child.Node{ .data = 3 };
+    b.append(&child_one);
+    c.append(&child_two);
+    c.append(&child_three);
 
-    expected.append(&Parent.Node{ .data = a });
-    expected.append(&Parent.Node{ .data = b });
-    expected.append(&Parent.Node{ .data = c });
+    var parent_one = Parent.Node{ .data = a };
+    var parent_two = Parent.Node{ .data = b };
+    var parent_three = Parent.Node{ .data = c };
+
+    expected.append(&parent_one);
+    expected.append(&parent_two);
+    expected.append(&parent_three);
 
     const tokens = &.{
         .{ .Seq = .{ .len = 3 } },

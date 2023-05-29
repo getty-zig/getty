@@ -124,16 +124,20 @@ test "deserialize - linked list (recursive)" {
     var b = Child{};
     var c = Child{};
 
-    var one = Child.Node{ .data = 1 };
-    var two = Child.Node{ .data = 2 };
-    var three = Child.Node{ .data = 3 };
-    b.prepend(&one);
-    c.prepend(&three);
-    c.prepend(&two);
+    var child_one = Child.Node{ .data = 1 };
+    var child_two = Child.Node{ .data = 2 };
+    var child_three = Child.Node{ .data = 3 };
+    b.prepend(&child_one);
+    c.prepend(&child_three);
+    c.prepend(&child_two);
 
-    expected.prepend(&Parent.Node{ .data = c });
-    expected.prepend(&Parent.Node{ .data = b });
-    expected.prepend(&Parent.Node{ .data = a });
+    var parent_one = Parent.Node{ .data = a };
+    var parent_two = Parent.Node{ .data = b };
+    var parent_three = Parent.Node{ .data = c };
+
+    expected.prepend(&parent_three);
+    expected.prepend(&parent_two);
+    expected.prepend(&parent_one);
 
     const tokens = &.{
         .{ .Seq = .{ .len = 3 } },
