@@ -103,7 +103,7 @@ pub fn main() !void {
     defer allocator.free(serialized);
 
     // Deserialize JSON data into a Point value.
-    const deserialized = try json.fromSlice(null, Point, serialized);
+    const deserialized = try json.fromSlice(allocator, Point, serialized);
 
     // Print results.
     std.debug.print("{s}\n", .{serialized});
