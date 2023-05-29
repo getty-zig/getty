@@ -8,7 +8,7 @@
   <br>
   <br>
   <a href="https://github.com/getty-zig/getty/releases/latest"><img alt="Version" src="https://img.shields.io/github/v/release/getty-zig/getty?include_prereleases&label=version"></a>
-  <a href="https://github.com/getty-zig/getty/actions/workflows/test.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/getty-zig/getty/test.yml?branch=develop" /></a>
+  <a href="https://github.com/getty-zig/getty/actions/workflows/test.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/getty-zig/getty/test.yml?branch=main" /></a>
   <a href="https://discord.gg/njDA67U5ph"><img alt="Discord" src="https://img.shields.io/discord/1016029822172024955?color=7289da&label=discord" /></a>
   <a href="https://github.com/getty-zig/getty/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
