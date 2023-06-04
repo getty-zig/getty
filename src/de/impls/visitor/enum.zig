@@ -11,17 +11,12 @@ pub fn Visitor(comptime Enum: type) type {
             Self,
             Value,
             .{
-                .visitEnum = visitEnum,
                 .visitInt = visitInt,
                 .visitString = visitString,
             },
         );
 
         const Value = Enum;
-
-        fn visitEnum(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            return try visitString(@tagName(input));
-        }
 
         fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
             @setEvalBranchQuota(10_000);

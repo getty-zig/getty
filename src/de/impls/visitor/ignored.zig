@@ -11,7 +11,6 @@ pub fn Visitor(comptime Ignored: type) type {
             Value,
             .{
                 .visitBool = visitBool,
-                .visitEnum = visitAny,
                 .visitFloat = visitAny,
                 .visitInt = visitAny,
                 .visitMap = visitMap,

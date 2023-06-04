@@ -19,7 +19,6 @@ pub fn Visitor(comptime Pointer: type) type {
             Value,
             .{
                 .visitBool = visitBool,
-                .visitEnum = visitEnum,
                 .visitFloat = visitFloat,
                 .visitInt = visitInt,
                 .visitMap = visitMap,
@@ -42,20 +41,6 @@ pub fn Visitor(comptime Pointer: type) type {
 
                 var cv = ChildVisitor(Deserializer){};
                 value.* = try cv.visitor().visitBool(a, Deserializer, input);
-
-                return value;
-            }
-
-            return error.MissingAllocator;
-        }
-
-        fn visitEnum(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
-                const value = try a.create(Child);
-                errdefer a.destroy(value);
-
-                var cv = ChildVisitor(Deserializer){};
-                value.* = try cv.visitor().visitEnum(a, Deserializer, input);
 
                 return value;
             }

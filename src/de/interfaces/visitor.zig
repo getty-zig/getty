@@ -14,11 +14,6 @@ pub fn Visitor(
                 unreachable;
             }
         }.f) = null,
-        visitEnum: ?@TypeOf(struct {
-            fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
-                unreachable;
-            }
-        }.f) = null,
         visitFloat: ?@TypeOf(struct {
             fn f(_: Context, _: ?std.mem.Allocator, comptime Deserializer: type, _: anytype) Deserializer.Error!V {
                 unreachable;
@@ -77,21 +72,6 @@ pub fn Visitor(
 
             pub fn visitBool(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
                 if (methods.visitBool) |f| {
-                    return try f(self.context, allocator, Deserializer, input);
-                }
-
-                return error.Unsupported;
-            }
-
-            pub fn visitEnum(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-                if (methods.visitEnum) |f| {
-                    comptime {
-                        switch (@typeInfo(@TypeOf(input))) {
-                            .Enum, .EnumLiteral => {},
-                            else => @compileError("expected enum or enum literal, found: " ++ @typeName(@TypeOf(input))),
-                        }
-                    }
-
                     return try f(self.context, allocator, Deserializer, input);
                 }
 
