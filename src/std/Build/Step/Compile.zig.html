@@ -810,7 +810,7 @@
 <span class="line" id="L691"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">producesPdbFile</span>(self: *Compile) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L692">    <span class="tok-kw">if</span> (!self.target.isWindows() <span class="tok-kw">and</span> !self.target.isUefi()) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
 <span class="line" id="L693">    <span class="tok-kw">if</span> (self.target.getObjectFormat() == .c) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L694">    <span class="tok-kw">if</span> (self.strip == <span class="tok-null">true</span>) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L694">    <span class="tok-kw">if</span> (self.strip == <span class="tok-null">true</span> <span class="tok-kw">or</span> (self.strip == <span class="tok-null">null</span> <span class="tok-kw">and</span> self.optimize == .ReleaseSmall)) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
 <span class="line" id="L695">    <span class="tok-kw">return</span> self.isDynamicLibrary() <span class="tok-kw">or</span> self.kind == .exe <span class="tok-kw">or</span> self.kind == .@&quot;test&quot;;</span>
 <span class="line" id="L696">}</span>
 <span class="line" id="L697"></span>
@@ -981,7 +981,7 @@
 <span class="line" id="L853">    <span class="tok-kw">var</span> zig_args = ArrayList([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).init(b.allocator);</span>
 <span class="line" id="L854">    <span class="tok-kw">defer</span> zig_args.deinit();</span>
 <span class="line" id="L855"></span>
-<span class="line" id="L856">    <span class="tok-kw">var</span> it = mem.tokenize(<span class="tok-type">u8</span>, stdout, <span class="tok-str">&quot; \r\n\t&quot;</span>);</span>
+<span class="line" id="L856">    <span class="tok-kw">var</span> it = mem.tokenizeAny(<span class="tok-type">u8</span>, stdout, <span class="tok-str">&quot; \r\n\t&quot;</span>);</span>
 <span class="line" id="L857">    <span class="tok-kw">while</span> (it.next()) |tok| {</span>
 <span class="line" id="L858">        <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, tok, <span class="tok-str">&quot;-I&quot;</span>)) {</span>
 <span class="line" id="L859">            <span class="tok-kw">const</span> dir = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.PkgConfigInvalidOutput;</span>
@@ -2275,10 +2275,10 @@
 <span class="line" id="L2101">    <span class="tok-kw">const</span> stdout = <span class="tok-kw">try</span> self.execAllowFail(&amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ <span class="tok-str">&quot;pkg-config&quot;</span>, <span class="tok-str">&quot;--list-all&quot;</span> }, out_code, .Ignore);</span>
 <span class="line" id="L2102">    <span class="tok-kw">var</span> list = ArrayList(PkgConfigPkg).init(self.allocator);</span>
 <span class="line" id="L2103">    <span class="tok-kw">errdefer</span> list.deinit();</span>
-<span class="line" id="L2104">    <span class="tok-kw">var</span> line_it = mem.tokenize(<span class="tok-type">u8</span>, stdout, <span class="tok-str">&quot;\r\n&quot;</span>);</span>
+<span class="line" id="L2104">    <span class="tok-kw">var</span> line_it = mem.tokenizeAny(<span class="tok-type">u8</span>, stdout, <span class="tok-str">&quot;\r\n&quot;</span>);</span>
 <span class="line" id="L2105">    <span class="tok-kw">while</span> (line_it.next()) |line| {</span>
 <span class="line" id="L2106">        <span class="tok-kw">if</span> (mem.trim(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot; \t&quot;</span>).len == <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L2107">        <span class="tok-kw">var</span> tok_it = mem.tokenize(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot; \t&quot;</span>);</span>
+<span class="line" id="L2107">        <span class="tok-kw">var</span> tok_it = mem.tokenizeAny(<span class="tok-type">u8</span>, line, <span class="tok-str">&quot; \t&quot;</span>);</span>
 <span class="line" id="L2108">        <span class="tok-kw">try</span> list.append(PkgConfigPkg{</span>
 <span class="line" id="L2109">            .name = tok_it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.PkgConfigInvalidOutput,</span>
 <span class="line" id="L2110">            .desc = tok_it.rest(),</span>
@@ -2403,7 +2403,7 @@
 </span>
 <span class="line" id="L2225">    <span class="tok-kw">var</span> expected_generated = std.ArrayList(<span class="tok-type">u8</span>).init(arena);</span>
 <span class="line" id="L2226"></span>
-<span class="line" id="L2227">    <span class="tok-kw">var</span> actual_line_it = mem.split(<span class="tok-type">u8</span>, actual_stderr, <span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L2227">    <span class="tok-kw">var</span> actual_line_it = mem.splitScalar(<span class="tok-type">u8</span>, actual_stderr, <span class="tok-str">'\n'</span>);</span>
 <span class="line" id="L2228">    <span class="tok-kw">for</span> (self.expect_errors) |expect_line| {</span>
 <span class="line" id="L2229">        <span class="tok-kw">const</span> actual_line = actual_line_it.next() <span class="tok-kw">orelse</span> {</span>
 <span class="line" id="L2230">            <span class="tok-kw">try</span> expected_generated.appendSlice(expect_line);</span>

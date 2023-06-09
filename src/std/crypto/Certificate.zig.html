@@ -463,8 +463,8 @@
 </span>
 <span class="line" id="L338">        }</span>
 <span class="line" id="L339"></span>
-<span class="line" id="L340">        <span class="tok-kw">var</span> it_host = std.mem.split(<span class="tok-type">u8</span>, host_name, <span class="tok-str">&quot;.&quot;</span>);</span>
-<span class="line" id="L341">        <span class="tok-kw">var</span> it_dns = std.mem.split(<span class="tok-type">u8</span>, dns_name, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L340">        <span class="tok-kw">var</span> it_host = std.mem.splitScalar(<span class="tok-type">u8</span>, host_name, <span class="tok-str">'.'</span>);</span>
+<span class="line" id="L341">        <span class="tok-kw">var</span> it_dns = std.mem.splitScalar(<span class="tok-type">u8</span>, dns_name, <span class="tok-str">'.'</span>);</span>
 <span class="line" id="L342"></span>
 <span class="line" id="L343">        <span class="tok-kw">const</span> len_match = <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
 <span class="line" id="L344">            <span class="tok-kw">const</span> host = it_host.next();</span>
@@ -1062,239 +1062,248 @@
 <span class="line" id="L917">            <span class="tok-kw">return</span> result;</span>
 <span class="line" id="L918">        }</span>
 <span class="line" id="L919"></span>
-<span class="line" id="L920">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">verify</span>(<span class="tok-kw">comptime</span> modulus_len: <span class="tok-type">usize</span>, sig: [modulus_len]<span class="tok-type">u8</span>, msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, public_key: PublicKey, <span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>, allocator: std.mem.Allocator) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L920">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">verify</span>(<span class="tok-kw">comptime</span> modulus_len: <span class="tok-type">usize</span>, sig: [modulus_len]<span class="tok-type">u8</span>, msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, public_key: PublicKey, <span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L921">            <span class="tok-kw">const</span> mod_bits = public_key.n.bits();</span>
 <span class="line" id="L922">            <span class="tok-kw">const</span> em_dec = <span class="tok-kw">try</span> encrypt(modulus_len, sig, public_key);</span>
 <span class="line" id="L923"></span>
-<span class="line" id="L924">            EMSA_PSS_VERIFY(msg, &amp;em_dec, mod_bits - <span class="tok-number">1</span>, Hash.digest_length, Hash, allocator) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L924">            EMSA_PSS_VERIFY(msg, &amp;em_dec, mod_bits - <span class="tok-number">1</span>, Hash.digest_length, Hash) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L925">        }</span>
 <span class="line" id="L926"></span>
-<span class="line" id="L927">        <span class="tok-kw">fn</span> <span class="tok-fn">EMSA_PSS_VERIFY</span>(msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, em: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, emBit: <span class="tok-type">usize</span>, sLen: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>, allocator: std.mem.Allocator) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L928">            <span class="tok-comment">// TODO</span>
+<span class="line" id="L927">        <span class="tok-kw">fn</span> <span class="tok-fn">EMSA_PSS_VERIFY</span>(msg: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, em: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, emBit: <span class="tok-type">usize</span>, sLen: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L928">            <span class="tok-comment">// 1.   If the length of M is greater than the input limitation for</span>
 </span>
-<span class="line" id="L929">            <span class="tok-comment">// 1.   If the length of M is greater than the input limitation for</span>
+<span class="line" id="L929">            <span class="tok-comment">//      the hash function (2^61 - 1 octets for SHA-1), output</span>
 </span>
-<span class="line" id="L930">            <span class="tok-comment">//      the hash function (2^61 - 1 octets for SHA-1), output</span>
+<span class="line" id="L930">            <span class="tok-comment">//      &quot;inconsistent&quot; and stop.</span>
 </span>
-<span class="line" id="L931">            <span class="tok-comment">//      &quot;inconsistent&quot; and stop.</span>
+<span class="line" id="L931">            <span class="tok-comment">// All the cryptographic hash functions in the standard library have a limit of &gt;= 2^61 - 1.</span>
 </span>
-<span class="line" id="L932"></span>
-<span class="line" id="L933">            <span class="tok-comment">// emLen = \ceil(emBits/8)</span>
+<span class="line" id="L932">            <span class="tok-comment">// Even then, this check is only there for paranoia. In the context of TLS certifcates, emBit cannot exceed 4096.</span>
 </span>
-<span class="line" id="L934">            <span class="tok-kw">const</span> emLen = ((emBit - <span class="tok-number">1</span>) / <span class="tok-number">8</span>) + <span class="tok-number">1</span>;</span>
-<span class="line" id="L935">            std.debug.assert(emLen == em.len);</span>
-<span class="line" id="L936"></span>
-<span class="line" id="L937">            <span class="tok-comment">// 2.   Let mHash = Hash(M), an octet string of length hLen.</span>
+<span class="line" id="L933">            <span class="tok-kw">if</span> (emBit &gt;= <span class="tok-number">1</span> &lt;&lt; <span class="tok-number">61</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L934"></span>
+<span class="line" id="L935">            <span class="tok-comment">// emLen = \ceil(emBits/8)</span>
 </span>
-<span class="line" id="L938">            <span class="tok-kw">var</span> mHash: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L939">            Hash.hash(msg, &amp;mHash, .{});</span>
-<span class="line" id="L940"></span>
-<span class="line" id="L941">            <span class="tok-comment">// 3.   If emLen &lt; hLen + sLen + 2, output &quot;inconsistent&quot; and stop.</span>
+<span class="line" id="L936">            <span class="tok-kw">const</span> emLen = ((emBit - <span class="tok-number">1</span>) / <span class="tok-number">8</span>) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L937">            std.debug.assert(emLen == em.len);</span>
+<span class="line" id="L938"></span>
+<span class="line" id="L939">            <span class="tok-comment">// 2.   Let mHash = Hash(M), an octet string of length hLen.</span>
 </span>
-<span class="line" id="L942">            <span class="tok-kw">if</span> (emLen &lt; Hash.digest_length + sLen + <span class="tok-number">2</span>) {</span>
-<span class="line" id="L943">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
-<span class="line" id="L944">            }</span>
-<span class="line" id="L945"></span>
-<span class="line" id="L946">            <span class="tok-comment">// 4.   If the rightmost octet of EM does not have hexadecimal value</span>
+<span class="line" id="L940">            <span class="tok-kw">var</span> mHash: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L941">            Hash.hash(msg, &amp;mHash, .{});</span>
+<span class="line" id="L942"></span>
+<span class="line" id="L943">            <span class="tok-comment">// 3.   If emLen &lt; hLen + sLen + 2, output &quot;inconsistent&quot; and stop.</span>
 </span>
-<span class="line" id="L947">            <span class="tok-comment">//      0xbc, output &quot;inconsistent&quot; and stop.</span>
+<span class="line" id="L944">            <span class="tok-kw">if</span> (emLen &lt; Hash.digest_length + sLen + <span class="tok-number">2</span>) {</span>
+<span class="line" id="L945">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L946">            }</span>
+<span class="line" id="L947"></span>
+<span class="line" id="L948">            <span class="tok-comment">// 4.   If the rightmost octet of EM does not have hexadecimal value</span>
 </span>
-<span class="line" id="L948">            <span class="tok-kw">if</span> (em[em.len - <span class="tok-number">1</span>] != <span class="tok-number">0xbc</span>) {</span>
-<span class="line" id="L949">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
-<span class="line" id="L950">            }</span>
-<span class="line" id="L951"></span>
-<span class="line" id="L952">            <span class="tok-comment">// 5.   Let maskedDB be the leftmost emLen - hLen - 1 octets of EM,</span>
+<span class="line" id="L949">            <span class="tok-comment">//      0xbc, output &quot;inconsistent&quot; and stop.</span>
 </span>
-<span class="line" id="L953">            <span class="tok-comment">//      and let H be the next hLen octets.</span>
+<span class="line" id="L950">            <span class="tok-kw">if</span> (em[em.len - <span class="tok-number">1</span>] != <span class="tok-number">0xbc</span>) {</span>
+<span class="line" id="L951">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L952">            }</span>
+<span class="line" id="L953"></span>
+<span class="line" id="L954">            <span class="tok-comment">// 5.   Let maskedDB be the leftmost emLen - hLen - 1 octets of EM,</span>
 </span>
-<span class="line" id="L954">            <span class="tok-kw">const</span> maskedDB = em[<span class="tok-number">0</span>..(emLen - Hash.digest_length - <span class="tok-number">1</span>)];</span>
-<span class="line" id="L955">            <span class="tok-kw">const</span> h = em[(emLen - Hash.digest_length - <span class="tok-number">1</span>)..(emLen - <span class="tok-number">1</span>)];</span>
-<span class="line" id="L956"></span>
-<span class="line" id="L957">            <span class="tok-comment">// 6.   If the leftmost 8emLen - emBits bits of the leftmost octet in</span>
+<span class="line" id="L955">            <span class="tok-comment">//      and let H be the next hLen octets.</span>
 </span>
-<span class="line" id="L958">            <span class="tok-comment">//      maskedDB are not all equal to zero, output &quot;inconsistent&quot; and</span>
+<span class="line" id="L956">            <span class="tok-kw">const</span> maskedDB = em[<span class="tok-number">0</span>..(emLen - Hash.digest_length - <span class="tok-number">1</span>)];</span>
+<span class="line" id="L957">            <span class="tok-kw">const</span> h = em[(emLen - Hash.digest_length - <span class="tok-number">1</span>)..(emLen - <span class="tok-number">1</span>)][<span class="tok-number">0</span>..Hash.digest_length];</span>
+<span class="line" id="L958"></span>
+<span class="line" id="L959">            <span class="tok-comment">// 6.   If the leftmost 8emLen - emBits bits of the leftmost octet in</span>
 </span>
-<span class="line" id="L959">            <span class="tok-comment">//      stop.</span>
+<span class="line" id="L960">            <span class="tok-comment">//      maskedDB are not all equal to zero, output &quot;inconsistent&quot; and</span>
 </span>
-<span class="line" id="L960">            <span class="tok-kw">const</span> zero_bits = emLen * <span class="tok-number">8</span> - emBit;</span>
-<span class="line" id="L961">            <span class="tok-kw">var</span> mask: <span class="tok-type">u8</span> = maskedDB[<span class="tok-number">0</span>];</span>
-<span class="line" id="L962">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L963">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span> - zero_bits) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L964">                mask = mask &gt;&gt; <span class="tok-number">1</span>;</span>
-<span class="line" id="L965">            }</span>
-<span class="line" id="L966">            <span class="tok-kw">if</span> (mask != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L967">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
-<span class="line" id="L968">            }</span>
-<span class="line" id="L969"></span>
-<span class="line" id="L970">            <span class="tok-comment">// 7.   Let dbMask = MGF(H, emLen - hLen - 1).</span>
+<span class="line" id="L961">            <span class="tok-comment">//      stop.</span>
 </span>
-<span class="line" id="L971">            <span class="tok-kw">const</span> mgf_len = emLen - Hash.digest_length - <span class="tok-number">1</span>;</span>
-<span class="line" id="L972">            <span class="tok-kw">var</span> mgf_out = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, ((mgf_len - <span class="tok-number">1</span>) / Hash.digest_length + <span class="tok-number">1</span>) * Hash.digest_length);</span>
-<span class="line" id="L973">            <span class="tok-kw">defer</span> allocator.free(mgf_out);</span>
-<span class="line" id="L974">            <span class="tok-kw">var</span> dbMask = <span class="tok-kw">try</span> MGF1(mgf_out, h, mgf_len, Hash, allocator);</span>
-<span class="line" id="L975"></span>
-<span class="line" id="L976">            <span class="tok-comment">// 8.   Let DB = maskedDB \xor dbMask.</span>
+<span class="line" id="L962">            <span class="tok-kw">const</span> zero_bits = emLen * <span class="tok-number">8</span> - emBit;</span>
+<span class="line" id="L963">            <span class="tok-kw">var</span> mask: <span class="tok-type">u8</span> = maskedDB[<span class="tok-number">0</span>];</span>
+<span class="line" id="L964">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L965">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span> - zero_bits) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L966">                mask = mask &gt;&gt; <span class="tok-number">1</span>;</span>
+<span class="line" id="L967">            }</span>
+<span class="line" id="L968">            <span class="tok-kw">if</span> (mask != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L969">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L970">            }</span>
+<span class="line" id="L971"></span>
+<span class="line" id="L972">            <span class="tok-comment">// 7.   Let dbMask = MGF(H, emLen - hLen - 1).</span>
 </span>
-<span class="line" id="L977">            i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L978">            <span class="tok-kw">while</span> (i &lt; dbMask.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L979">                dbMask[i] = maskedDB[i] ^ dbMask[i];</span>
-<span class="line" id="L980">            }</span>
-<span class="line" id="L981"></span>
-<span class="line" id="L982">            <span class="tok-comment">// 9.   Set the leftmost 8emLen - emBits bits of the leftmost octet</span>
+<span class="line" id="L973">            <span class="tok-kw">const</span> mgf_len = emLen - Hash.digest_length - <span class="tok-number">1</span>;</span>
+<span class="line" id="L974">            <span class="tok-kw">var</span> mgf_out_buf: [<span class="tok-number">512</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L975">            <span class="tok-kw">if</span> (mgf_len &gt; mgf_out_buf.len) { <span class="tok-comment">// Modulus &gt; 4096 bits</span>
 </span>
-<span class="line" id="L983">            <span class="tok-comment">//      in DB to zero.</span>
+<span class="line" id="L976">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L977">            }</span>
+<span class="line" id="L978">            <span class="tok-kw">var</span> mgf_out = mgf_out_buf[<span class="tok-number">0</span> .. ((mgf_len - <span class="tok-number">1</span>) / Hash.digest_length + <span class="tok-number">1</span>) * Hash.digest_length];</span>
+<span class="line" id="L979">            <span class="tok-kw">var</span> dbMask = <span class="tok-kw">try</span> MGF1(Hash, mgf_out, h, mgf_len);</span>
+<span class="line" id="L980"></span>
+<span class="line" id="L981">            <span class="tok-comment">// 8.   Let DB = maskedDB \xor dbMask.</span>
 </span>
-<span class="line" id="L984">            i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L985">            mask = <span class="tok-number">0</span>;</span>
-<span class="line" id="L986">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span> - zero_bits) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L987">                mask = mask &lt;&lt; <span class="tok-number">1</span>;</span>
-<span class="line" id="L988">                mask += <span class="tok-number">1</span>;</span>
-<span class="line" id="L989">            }</span>
-<span class="line" id="L990">            dbMask[<span class="tok-number">0</span>] = dbMask[<span class="tok-number">0</span>] &amp; mask;</span>
-<span class="line" id="L991"></span>
-<span class="line" id="L992">            <span class="tok-comment">// 10.  If the emLen - hLen - sLen - 2 leftmost octets of DB are not</span>
+<span class="line" id="L982">            i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L983">            <span class="tok-kw">while</span> (i &lt; dbMask.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L984">                dbMask[i] = maskedDB[i] ^ dbMask[i];</span>
+<span class="line" id="L985">            }</span>
+<span class="line" id="L986"></span>
+<span class="line" id="L987">            <span class="tok-comment">// 9.   Set the leftmost 8emLen - emBits bits of the leftmost octet</span>
 </span>
-<span class="line" id="L993">            <span class="tok-comment">//      zero or if the octet at position emLen - hLen - sLen - 1 (the</span>
+<span class="line" id="L988">            <span class="tok-comment">//      in DB to zero.</span>
 </span>
-<span class="line" id="L994">            <span class="tok-comment">//      leftmost position is &quot;position 1&quot;) does not have hexadecimal</span>
+<span class="line" id="L989">            i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L990">            mask = <span class="tok-number">0</span>;</span>
+<span class="line" id="L991">            <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span> - zero_bits) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L992">                mask = mask &lt;&lt; <span class="tok-number">1</span>;</span>
+<span class="line" id="L993">                mask += <span class="tok-number">1</span>;</span>
+<span class="line" id="L994">            }</span>
+<span class="line" id="L995">            dbMask[<span class="tok-number">0</span>] = dbMask[<span class="tok-number">0</span>] &amp; mask;</span>
+<span class="line" id="L996"></span>
+<span class="line" id="L997">            <span class="tok-comment">// 10.  If the emLen - hLen - sLen - 2 leftmost octets of DB are not</span>
 </span>
-<span class="line" id="L995">            <span class="tok-comment">//      value 0x01, output &quot;inconsistent&quot; and stop.</span>
+<span class="line" id="L998">            <span class="tok-comment">//      zero or if the octet at position emLen - hLen - sLen - 1 (the</span>
 </span>
-<span class="line" id="L996">            <span class="tok-kw">if</span> (dbMask[mgf_len - sLen - <span class="tok-number">2</span>] != <span class="tok-number">0x00</span>) {</span>
-<span class="line" id="L997">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
-<span class="line" id="L998">            }</span>
-<span class="line" id="L999"></span>
-<span class="line" id="L1000">            <span class="tok-kw">if</span> (dbMask[mgf_len - sLen - <span class="tok-number">1</span>] != <span class="tok-number">0x01</span>) {</span>
-<span class="line" id="L1001">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
-<span class="line" id="L1002">            }</span>
-<span class="line" id="L1003"></span>
-<span class="line" id="L1004">            <span class="tok-comment">// 11.  Let salt be the last sLen octets of DB.</span>
+<span class="line" id="L999">            <span class="tok-comment">//      leftmost position is &quot;position 1&quot;) does not have hexadecimal</span>
 </span>
-<span class="line" id="L1005">            <span class="tok-kw">const</span> salt = dbMask[(mgf_len - sLen)..];</span>
-<span class="line" id="L1006"></span>
-<span class="line" id="L1007">            <span class="tok-comment">// 12.  Let</span>
+<span class="line" id="L1000">            <span class="tok-comment">//      value 0x01, output &quot;inconsistent&quot; and stop.</span>
 </span>
-<span class="line" id="L1008">            <span class="tok-comment">//         M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt ;</span>
+<span class="line" id="L1001">            <span class="tok-kw">if</span> (dbMask[mgf_len - sLen - <span class="tok-number">2</span>] != <span class="tok-number">0x00</span>) {</span>
+<span class="line" id="L1002">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L1003">            }</span>
+<span class="line" id="L1004"></span>
+<span class="line" id="L1005">            <span class="tok-kw">if</span> (dbMask[mgf_len - sLen - <span class="tok-number">1</span>] != <span class="tok-number">0x01</span>) {</span>
+<span class="line" id="L1006">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L1007">            }</span>
+<span class="line" id="L1008"></span>
+<span class="line" id="L1009">            <span class="tok-comment">// 11.  Let salt be the last sLen octets of DB.</span>
 </span>
-<span class="line" id="L1009">            <span class="tok-comment">//      M' is an octet string of length 8 + hLen + sLen with eight</span>
+<span class="line" id="L1010">            <span class="tok-kw">const</span> salt = dbMask[(mgf_len - sLen)..];</span>
+<span class="line" id="L1011"></span>
+<span class="line" id="L1012">            <span class="tok-comment">// 12.  Let</span>
 </span>
-<span class="line" id="L1010">            <span class="tok-comment">//      initial zero octets.</span>
+<span class="line" id="L1013">            <span class="tok-comment">//         M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt ;</span>
 </span>
-<span class="line" id="L1011">            <span class="tok-kw">var</span> m_p = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, <span class="tok-number">8</span> + Hash.digest_length + sLen);</span>
-<span class="line" id="L1012">            <span class="tok-kw">defer</span> allocator.free(m_p);</span>
-<span class="line" id="L1013">            std.mem.copyForwards(<span class="tok-type">u8</span>, m_p, &amp;([_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">8</span>));</span>
-<span class="line" id="L1014">            std.mem.copyForwards(<span class="tok-type">u8</span>, m_p[<span class="tok-number">8</span>..], &amp;mHash);</span>
-<span class="line" id="L1015">            std.mem.copyForwards(<span class="tok-type">u8</span>, m_p[(<span class="tok-number">8</span> + Hash.digest_length)..], salt);</span>
-<span class="line" id="L1016"></span>
-<span class="line" id="L1017">            <span class="tok-comment">// 13.  Let H' = Hash(M'), an octet string of length hLen.</span>
+<span class="line" id="L1014">            <span class="tok-comment">//      M' is an octet string of length 8 + hLen + sLen with eight</span>
 </span>
-<span class="line" id="L1018">            <span class="tok-kw">var</span> h_p: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1019">            Hash.hash(m_p, &amp;h_p, .{});</span>
-<span class="line" id="L1020"></span>
-<span class="line" id="L1021">            <span class="tok-comment">// 14.  If H = H', output &quot;consistent&quot;.  Otherwise, output</span>
+<span class="line" id="L1015">            <span class="tok-comment">//      initial zero octets.</span>
 </span>
-<span class="line" id="L1022">            <span class="tok-comment">//      &quot;inconsistent&quot;.</span>
+<span class="line" id="L1016">            <span class="tok-kw">if</span> (sLen &gt; Hash.digest_length) { <span class="tok-comment">// A seed larger than the hash length would be useless</span>
 </span>
-<span class="line" id="L1023">            <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, h, &amp;h_p)) {</span>
-<span class="line" id="L1024">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
-<span class="line" id="L1025">            }</span>
-<span class="line" id="L1026">        }</span>
-<span class="line" id="L1027"></span>
-<span class="line" id="L1028">        <span class="tok-kw">fn</span> <span class="tok-fn">MGF1</span>(out: []<span class="tok-type">u8</span>, seed: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>, allocator: std.mem.Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1029">            <span class="tok-kw">var</span> counter: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1030">            <span class="tok-kw">var</span> idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1031">            <span class="tok-kw">var</span> c: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1032"></span>
-<span class="line" id="L1033">            <span class="tok-kw">var</span> hash = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, seed.len + c.len);</span>
-<span class="line" id="L1034">            <span class="tok-kw">defer</span> allocator.free(hash);</span>
-<span class="line" id="L1035">            std.mem.copyForwards(<span class="tok-type">u8</span>, hash, seed);</span>
-<span class="line" id="L1036">            <span class="tok-kw">var</span> hashed: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1037"></span>
-<span class="line" id="L1038">            <span class="tok-kw">while</span> (idx &lt; len) {</span>
-<span class="line" id="L1039">                c[<span class="tok-number">0</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (counter &gt;&gt; <span class="tok-number">24</span>) &amp; <span class="tok-number">0xFF</span>);</span>
-<span class="line" id="L1040">                c[<span class="tok-number">1</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (counter &gt;&gt; <span class="tok-number">16</span>) &amp; <span class="tok-number">0xFF</span>);</span>
-<span class="line" id="L1041">                c[<span class="tok-number">2</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (counter &gt;&gt; <span class="tok-number">8</span>) &amp; <span class="tok-number">0xFF</span>);</span>
-<span class="line" id="L1042">                c[<span class="tok-number">3</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, counter &amp; <span class="tok-number">0xFF</span>);</span>
+<span class="line" id="L1017">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L1018">            }</span>
+<span class="line" id="L1019">            <span class="tok-kw">var</span> m_p_buf: [<span class="tok-number">8</span> + Hash.digest_length + Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1020">            <span class="tok-kw">var</span> m_p = m_p_buf[<span class="tok-number">0</span> .. <span class="tok-number">8</span> + Hash.digest_length + sLen];</span>
+<span class="line" id="L1021">            std.mem.copyForwards(<span class="tok-type">u8</span>, m_p, &amp;([_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">8</span>));</span>
+<span class="line" id="L1022">            std.mem.copyForwards(<span class="tok-type">u8</span>, m_p[<span class="tok-number">8</span>..], &amp;mHash);</span>
+<span class="line" id="L1023">            std.mem.copyForwards(<span class="tok-type">u8</span>, m_p[(<span class="tok-number">8</span> + Hash.digest_length)..], salt);</span>
+<span class="line" id="L1024"></span>
+<span class="line" id="L1025">            <span class="tok-comment">// 13.  Let H' = Hash(M'), an octet string of length hLen.</span>
+</span>
+<span class="line" id="L1026">            <span class="tok-kw">var</span> h_p: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1027">            Hash.hash(m_p, &amp;h_p, .{});</span>
+<span class="line" id="L1028"></span>
+<span class="line" id="L1029">            <span class="tok-comment">// 14.  If H = H', output &quot;consistent&quot;.  Otherwise, output</span>
+</span>
+<span class="line" id="L1030">            <span class="tok-comment">//      &quot;inconsistent&quot;.</span>
+</span>
+<span class="line" id="L1031">            <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, h, &amp;h_p)) {</span>
+<span class="line" id="L1032">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidSignature;</span>
+<span class="line" id="L1033">            }</span>
+<span class="line" id="L1034">        }</span>
+<span class="line" id="L1035"></span>
+<span class="line" id="L1036">        <span class="tok-kw">fn</span> <span class="tok-fn">MGF1</span>(<span class="tok-kw">comptime</span> Hash: <span class="tok-type">type</span>, out: []<span class="tok-type">u8</span>, seed: *<span class="tok-kw">const</span> [Hash.digest_length]<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1037">            <span class="tok-kw">var</span> counter: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1038">            <span class="tok-kw">var</span> idx: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1039">            <span class="tok-kw">var</span> c: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1040">            <span class="tok-kw">var</span> hash: [Hash.digest_length + c.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1041">            <span class="tok-builtin">@memcpy</span>(hash[<span class="tok-number">0</span>..Hash.digest_length], seed);</span>
+<span class="line" id="L1042">            <span class="tok-kw">var</span> hashed: [Hash.digest_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L1043"></span>
-<span class="line" id="L1044">                std.mem.copyForwards(<span class="tok-type">u8</span>, hash[seed.len..], &amp;c);</span>
-<span class="line" id="L1045">                Hash.hash(hash, &amp;hashed, .{});</span>
-<span class="line" id="L1046"></span>
-<span class="line" id="L1047">                std.mem.copyForwards(<span class="tok-type">u8</span>, out[idx..], &amp;hashed);</span>
-<span class="line" id="L1048">                idx += hashed.len;</span>
+<span class="line" id="L1044">            <span class="tok-kw">while</span> (idx &lt; len) {</span>
+<span class="line" id="L1045">                c[<span class="tok-number">0</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (counter &gt;&gt; <span class="tok-number">24</span>) &amp; <span class="tok-number">0xFF</span>);</span>
+<span class="line" id="L1046">                c[<span class="tok-number">1</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (counter &gt;&gt; <span class="tok-number">16</span>) &amp; <span class="tok-number">0xFF</span>);</span>
+<span class="line" id="L1047">                c[<span class="tok-number">2</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (counter &gt;&gt; <span class="tok-number">8</span>) &amp; <span class="tok-number">0xFF</span>);</span>
+<span class="line" id="L1048">                c[<span class="tok-number">3</span>] = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, counter &amp; <span class="tok-number">0xFF</span>);</span>
 <span class="line" id="L1049"></span>
-<span class="line" id="L1050">                counter += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1051">            }</span>
+<span class="line" id="L1050">                std.mem.copyForwards(<span class="tok-type">u8</span>, hash[seed.len..], &amp;c);</span>
+<span class="line" id="L1051">                Hash.hash(&amp;hash, &amp;hashed, .{});</span>
 <span class="line" id="L1052"></span>
-<span class="line" id="L1053">            <span class="tok-kw">return</span> out[<span class="tok-number">0</span>..len];</span>
-<span class="line" id="L1054">        }</span>
-<span class="line" id="L1055">    };</span>
-<span class="line" id="L1056"></span>
-<span class="line" id="L1057">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PublicKey = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1058">        n: Modulus,</span>
-<span class="line" id="L1059">        e: Fe,</span>
-<span class="line" id="L1060"></span>
-<span class="line" id="L1061">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fromBytes</span>(pub_bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, modulus_bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !PublicKey {</span>
-<span class="line" id="L1062">            <span class="tok-comment">// Reject modulus below 512 bits.</span>
+<span class="line" id="L1053">                std.mem.copyForwards(<span class="tok-type">u8</span>, out[idx..], &amp;hashed);</span>
+<span class="line" id="L1054">                idx += hashed.len;</span>
+<span class="line" id="L1055"></span>
+<span class="line" id="L1056">                counter += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1057">            }</span>
+<span class="line" id="L1058"></span>
+<span class="line" id="L1059">            <span class="tok-kw">return</span> out[<span class="tok-number">0</span>..len];</span>
+<span class="line" id="L1060">        }</span>
+<span class="line" id="L1061">    };</span>
+<span class="line" id="L1062"></span>
+<span class="line" id="L1063">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> PublicKey = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1064">        n: Modulus,</span>
+<span class="line" id="L1065">        e: Fe,</span>
+<span class="line" id="L1066"></span>
+<span class="line" id="L1067">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fromBytes</span>(pub_bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, modulus_bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !PublicKey {</span>
+<span class="line" id="L1068">            <span class="tok-comment">// Reject modulus below 512 bits.</span>
 </span>
-<span class="line" id="L1063">            <span class="tok-comment">// 512-bit RSA was factored in 1999, so this limit barely means anything,</span>
+<span class="line" id="L1069">            <span class="tok-comment">// 512-bit RSA was factored in 1999, so this limit barely means anything,</span>
 </span>
-<span class="line" id="L1064">            <span class="tok-comment">// but establish some limit now to ratchet in what we can.</span>
+<span class="line" id="L1070">            <span class="tok-comment">// but establish some limit now to ratchet in what we can.</span>
 </span>
-<span class="line" id="L1065">            <span class="tok-kw">const</span> _n = Modulus.fromBytes(modulus_bytes, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1066">            <span class="tok-kw">if</span> (_n.bits() &lt; <span class="tok-number">512</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1067"></span>
-<span class="line" id="L1068">            <span class="tok-comment">// Exponent must be odd and greater than 2.</span>
+<span class="line" id="L1071">            <span class="tok-kw">const</span> _n = Modulus.fromBytes(modulus_bytes, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
+<span class="line" id="L1072">            <span class="tok-kw">if</span> (_n.bits() &lt; <span class="tok-number">512</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
+<span class="line" id="L1073"></span>
+<span class="line" id="L1074">            <span class="tok-comment">// Exponent must be odd and greater than 2.</span>
 </span>
-<span class="line" id="L1069">            <span class="tok-comment">// Also, it must be less than 2^32 to mitigate DoS attacks.</span>
+<span class="line" id="L1075">            <span class="tok-comment">// Also, it must be less than 2^32 to mitigate DoS attacks.</span>
 </span>
-<span class="line" id="L1070">            <span class="tok-comment">// Windows CryptoAPI doesn't support values larger than 32 bits [1], so it is</span>
+<span class="line" id="L1076">            <span class="tok-comment">// Windows CryptoAPI doesn't support values larger than 32 bits [1], so it is</span>
 </span>
-<span class="line" id="L1071">            <span class="tok-comment">// unlikely that exponents larger than 32 bits are being used for anything</span>
+<span class="line" id="L1077">            <span class="tok-comment">// unlikely that exponents larger than 32 bits are being used for anything</span>
 </span>
-<span class="line" id="L1072">            <span class="tok-comment">// Windows commonly does.</span>
+<span class="line" id="L1078">            <span class="tok-comment">// Windows commonly does.</span>
 </span>
-<span class="line" id="L1073">            <span class="tok-comment">// [1] https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-rsapubkey</span>
+<span class="line" id="L1079">            <span class="tok-comment">// [1] https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-rsapubkey</span>
 </span>
-<span class="line" id="L1074">            <span class="tok-kw">if</span> (pub_bytes.len &gt; <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1075">            <span class="tok-kw">const</span> _e = Fe.fromBytes(_n, pub_bytes, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1076">            <span class="tok-kw">if</span> (!_e.isOdd()) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1077">            <span class="tok-kw">const</span> e_v = _e.toPrimitive(<span class="tok-type">u32</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1078">            <span class="tok-kw">if</span> (e_v &lt; <span class="tok-number">2</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
-<span class="line" id="L1079"></span>
-<span class="line" id="L1080">            <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1081">                .n = _n,</span>
-<span class="line" id="L1082">                .e = _e,</span>
-<span class="line" id="L1083">            };</span>
-<span class="line" id="L1084">        }</span>
+<span class="line" id="L1080">            <span class="tok-kw">if</span> (pub_bytes.len &gt; <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
+<span class="line" id="L1081">            <span class="tok-kw">const</span> _e = Fe.fromBytes(_n, pub_bytes, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
+<span class="line" id="L1082">            <span class="tok-kw">if</span> (!_e.isOdd()) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
+<span class="line" id="L1083">            <span class="tok-kw">const</span> e_v = _e.toPrimitive(<span class="tok-type">u32</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
+<span class="line" id="L1084">            <span class="tok-kw">if</span> (e_v &lt; <span class="tok-number">2</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
 <span class="line" id="L1085"></span>
-<span class="line" id="L1086">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseDer</span>(pub_key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-kw">struct</span> { modulus: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, exponent: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> } {</span>
-<span class="line" id="L1087">            <span class="tok-kw">const</span> pub_key_seq = <span class="tok-kw">try</span> der.Element.parse(pub_key, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1088">            <span class="tok-kw">if</span> (pub_key_seq.identifier.tag != .sequence) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateFieldHasWrongDataType;</span>
-<span class="line" id="L1089">            <span class="tok-kw">const</span> modulus_elem = <span class="tok-kw">try</span> der.Element.parse(pub_key, pub_key_seq.slice.start);</span>
-<span class="line" id="L1090">            <span class="tok-kw">if</span> (modulus_elem.identifier.tag != .integer) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateFieldHasWrongDataType;</span>
-<span class="line" id="L1091">            <span class="tok-kw">const</span> exponent_elem = <span class="tok-kw">try</span> der.Element.parse(pub_key, modulus_elem.slice.end);</span>
-<span class="line" id="L1092">            <span class="tok-kw">if</span> (exponent_elem.identifier.tag != .integer) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateFieldHasWrongDataType;</span>
-<span class="line" id="L1093">            <span class="tok-comment">// Skip over meaningless zeroes in the modulus.</span>
+<span class="line" id="L1086">            <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1087">                .n = _n,</span>
+<span class="line" id="L1088">                .e = _e,</span>
+<span class="line" id="L1089">            };</span>
+<span class="line" id="L1090">        }</span>
+<span class="line" id="L1091"></span>
+<span class="line" id="L1092">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseDer</span>(pub_key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-kw">struct</span> { modulus: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, exponent: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> } {</span>
+<span class="line" id="L1093">            <span class="tok-kw">const</span> pub_key_seq = <span class="tok-kw">try</span> der.Element.parse(pub_key, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1094">            <span class="tok-kw">if</span> (pub_key_seq.identifier.tag != .sequence) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateFieldHasWrongDataType;</span>
+<span class="line" id="L1095">            <span class="tok-kw">const</span> modulus_elem = <span class="tok-kw">try</span> der.Element.parse(pub_key, pub_key_seq.slice.start);</span>
+<span class="line" id="L1096">            <span class="tok-kw">if</span> (modulus_elem.identifier.tag != .integer) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateFieldHasWrongDataType;</span>
+<span class="line" id="L1097">            <span class="tok-kw">const</span> exponent_elem = <span class="tok-kw">try</span> der.Element.parse(pub_key, modulus_elem.slice.end);</span>
+<span class="line" id="L1098">            <span class="tok-kw">if</span> (exponent_elem.identifier.tag != .integer) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateFieldHasWrongDataType;</span>
+<span class="line" id="L1099">            <span class="tok-comment">// Skip over meaningless zeroes in the modulus.</span>
 </span>
-<span class="line" id="L1094">            <span class="tok-kw">const</span> modulus_raw = pub_key[modulus_elem.slice.start..modulus_elem.slice.end];</span>
-<span class="line" id="L1095">            <span class="tok-kw">const</span> modulus_offset = <span class="tok-kw">for</span> (modulus_raw, <span class="tok-number">0</span>..) |byte, i| {</span>
-<span class="line" id="L1096">                <span class="tok-kw">if</span> (byte != <span class="tok-number">0</span>) <span class="tok-kw">break</span> i;</span>
-<span class="line" id="L1097">            } <span class="tok-kw">else</span> modulus_raw.len;</span>
-<span class="line" id="L1098">            <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1099">                .modulus = modulus_raw[modulus_offset..],</span>
-<span class="line" id="L1100">                .exponent = pub_key[exponent_elem.slice.start..exponent_elem.slice.end],</span>
-<span class="line" id="L1101">            };</span>
-<span class="line" id="L1102">        }</span>
-<span class="line" id="L1103">    };</span>
-<span class="line" id="L1104"></span>
-<span class="line" id="L1105">    <span class="tok-kw">fn</span> <span class="tok-fn">encrypt</span>(<span class="tok-kw">comptime</span> modulus_len: <span class="tok-type">usize</span>, msg: [modulus_len]<span class="tok-type">u8</span>, public_key: PublicKey) ![modulus_len]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1106">        <span class="tok-kw">const</span> m = Fe.fromBytes(public_key.n, &amp;msg, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MessageTooLong;</span>
-<span class="line" id="L1107">        <span class="tok-kw">const</span> e = public_key.n.powPublic(m, public_key.e) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1108">        <span class="tok-kw">var</span> res: [modulus_len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1109">        e.toBytes(&amp;res, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1110">        <span class="tok-kw">return</span> res;</span>
-<span class="line" id="L1111">    }</span>
-<span class="line" id="L1112">};</span>
-<span class="line" id="L1113"></span>
+<span class="line" id="L1100">            <span class="tok-kw">const</span> modulus_raw = pub_key[modulus_elem.slice.start..modulus_elem.slice.end];</span>
+<span class="line" id="L1101">            <span class="tok-kw">const</span> modulus_offset = <span class="tok-kw">for</span> (modulus_raw, <span class="tok-number">0</span>..) |byte, i| {</span>
+<span class="line" id="L1102">                <span class="tok-kw">if</span> (byte != <span class="tok-number">0</span>) <span class="tok-kw">break</span> i;</span>
+<span class="line" id="L1103">            } <span class="tok-kw">else</span> modulus_raw.len;</span>
+<span class="line" id="L1104">            <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1105">                .modulus = modulus_raw[modulus_offset..],</span>
+<span class="line" id="L1106">                .exponent = pub_key[exponent_elem.slice.start..exponent_elem.slice.end],</span>
+<span class="line" id="L1107">            };</span>
+<span class="line" id="L1108">        }</span>
+<span class="line" id="L1109">    };</span>
+<span class="line" id="L1110"></span>
+<span class="line" id="L1111">    <span class="tok-kw">fn</span> <span class="tok-fn">encrypt</span>(<span class="tok-kw">comptime</span> modulus_len: <span class="tok-type">usize</span>, msg: [modulus_len]<span class="tok-type">u8</span>, public_key: PublicKey) ![modulus_len]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1112">        <span class="tok-kw">const</span> m = Fe.fromBytes(public_key.n, &amp;msg, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MessageTooLong;</span>
+<span class="line" id="L1113">        <span class="tok-kw">const</span> e = public_key.n.powPublic(m, public_key.e) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1114">        <span class="tok-kw">var</span> res: [modulus_len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1115">        e.toBytes(&amp;res, .Big) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1116">        <span class="tok-kw">return</span> res;</span>
+<span class="line" id="L1117">    }</span>
+<span class="line" id="L1118">};</span>
+<span class="line" id="L1119"></span>
 </code></pre></body>
 </html>
