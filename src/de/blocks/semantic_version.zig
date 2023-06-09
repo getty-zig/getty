@@ -39,6 +39,19 @@ pub fn Visitor(
     return SemanticVersionVisitor;
 }
 
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    allocator: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime _: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    if (value.pre) |pre| allocator.free(pre);
+    if (value.build) |build| allocator.free(build);
+}
+
 test "deserialize - std.SemanticVersion" {
     const tests = .{
         .{
@@ -105,10 +118,14 @@ test "deserialize - std.SemanticVersion" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(null, Self, std.SemanticVersion, t.tokens),
+                testing.deserializeErr(std.testing.allocator, Self, std.SemanticVersion, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(null, t.name, Self, @TypeOf(t.want), t.tokens);
+            const got = try testing.deserialize(std.testing.allocator, t.name, Self, @TypeOf(t.want), t.tokens);
+            defer {
+                if (got.pre) |pre| std.testing.allocator.free(pre);
+                if (got.build) |build| std.testing.allocator.free(build);
+            }
 
             try testing.expectEqual(t.name, t.want.major, got.major);
             try testing.expectEqual(t.name, t.want.minor, got.minor);
