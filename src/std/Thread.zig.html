@@ -179,8 +179,8 @@
 <span class="line" id="L66">            <span class="tok-kw">if</span> (self.getHandle() == std.c.pthread_self()) {</span>
 <span class="line" id="L67">                <span class="tok-comment">// Set the name of the calling thread (no thread id required).</span>
 </span>
-<span class="line" id="L68">                <span class="tok-kw">const</span> err = <span class="tok-kw">try</span> os.prctl(.SET_NAME, .{<span class="tok-builtin">@ptrToInt</span>(name_with_terminator.ptr)});</span>
-<span class="line" id="L69">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@intToEnum</span>(os.E, err)) {</span>
+<span class="line" id="L68">                <span class="tok-kw">const</span> err = <span class="tok-kw">try</span> os.prctl(.SET_NAME, .{<span class="tok-builtin">@intFromPtr</span>(name_with_terminator.ptr)});</span>
+<span class="line" id="L69">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@enumFromInt</span>(os.E, err)) {</span>
 <span class="line" id="L70">                    .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
 <span class="line" id="L71">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> os.unexpectedErrno(e),</span>
 <span class="line" id="L72">                }</span>
@@ -297,8 +297,8 @@
 <span class="line" id="L176">            <span class="tok-kw">if</span> (self.getHandle() == std.c.pthread_self()) {</span>
 <span class="line" id="L177">                <span class="tok-comment">// Get the name of the calling thread (no thread id required).</span>
 </span>
-<span class="line" id="L178">                <span class="tok-kw">const</span> err = <span class="tok-kw">try</span> os.prctl(.GET_NAME, .{<span class="tok-builtin">@ptrToInt</span>(buffer.ptr)});</span>
-<span class="line" id="L179">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@intToEnum</span>(os.E, err)) {</span>
+<span class="line" id="L178">                <span class="tok-kw">const</span> err = <span class="tok-kw">try</span> os.prctl(.GET_NAME, .{<span class="tok-builtin">@intFromPtr</span>(buffer.ptr)});</span>
+<span class="line" id="L179">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@enumFromInt</span>(os.E, err)) {</span>
 <span class="line" id="L180">                    .SUCCESS =&gt; <span class="tok-kw">return</span> std.mem.sliceTo(buffer, <span class="tok-number">0</span>),</span>
 <span class="line" id="L181">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> os.unexpectedErrno(e),</span>
 <span class="line" id="L182">                }</span>
@@ -674,7 +674,7 @@
 <span class="line" id="L542">        <span class="tok-comment">// Its also fine if the limit here is incorrect as stack size is only a hint.</span>
 </span>
 <span class="line" id="L543">        <span class="tok-kw">var</span> stack_size = std.math.cast(<span class="tok-type">u32</span>, config.stack_size) <span class="tok-kw">orelse</span> std.math.maxInt(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L544">        stack_size = std.math.max(<span class="tok-number">64</span> * <span class="tok-number">1024</span>, stack_size);</span>
+<span class="line" id="L544">        stack_size = <span class="tok-builtin">@max</span>(<span class="tok-number">64</span> * <span class="tok-number">1024</span>, stack_size);</span>
 <span class="line" id="L545"></span>
 <span class="line" id="L546">        instance.thread.thread_handle = windows.kernel32.CreateThread(</span>
 <span class="line" id="L547">            <span class="tok-null">null</span>,</span>
@@ -745,7 +745,7 @@
 <span class="line" id="L611">                <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, c.find_thread(<span class="tok-null">null</span>));</span>
 <span class="line" id="L612">            },</span>
 <span class="line" id="L613">            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L614">                <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(c.pthread_self());</span>
+<span class="line" id="L614">                <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(c.pthread_self());</span>
 <span class="line" id="L615">            },</span>
 <span class="line" id="L616">        }</span>
 <span class="line" id="L617">    }</span>
@@ -758,7 +758,7 @@
 <span class="line" id="L624">            .openbsd =&gt; {</span>
 <span class="line" id="L625">                <span class="tok-kw">var</span> count: <span class="tok-type">c_int</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L626">                <span class="tok-kw">var</span> count_size: <span class="tok-type">usize</span> = <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">c_int</span>);</span>
-<span class="line" id="L627">                <span class="tok-kw">const</span> mib = [_]<span class="tok-type">c_int</span>{ os.CTL.HW, os.system.HW_NCPUONLINE };</span>
+<span class="line" id="L627">                <span class="tok-kw">const</span> mib = [_]<span class="tok-type">c_int</span>{ os.CTL.HW, os.system.HW.NCPUONLINE };</span>
 <span class="line" id="L628">                os.sysctl(&amp;mib, &amp;count, &amp;count_size, <span class="tok-null">null</span>, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L629">                    <span class="tok-kw">error</span>.NameTooLong, <span class="tok-kw">error</span>.UnknownName =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L630">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
@@ -830,7 +830,7 @@
 <span class="line" id="L691"></span>
 <span class="line" id="L692">        <span class="tok-comment">// Use the same set of parameters used by the libc-less impl.</span>
 </span>
-<span class="line" id="L693">        <span class="tok-kw">const</span> stack_size = std.math.max(config.stack_size, c.PTHREAD_STACK_MIN);</span>
+<span class="line" id="L693">        <span class="tok-kw">const</span> stack_size = <span class="tok-builtin">@max</span>(config.stack_size, c.PTHREAD_STACK_MIN);</span>
 <span class="line" id="L694">        assert(c.pthread_attr_setstacksize(&amp;attr, stack_size) == .SUCCESS);</span>
 <span class="line" id="L695">        assert(c.pthread_attr_setguardsize(&amp;attr, std.mem.page_size) == .SUCCESS);</span>
 <span class="line" id="L696"></span>
@@ -929,7 +929,7 @@
 <span class="line" id="L777">                    <span class="tok-str">\\  int $128</span></span>
 
 <span class="line" id="L778">                    :</span>
-<span class="line" id="L779">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L779">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L780">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L781">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L782">                ),</span>
@@ -945,7 +945,7 @@
 <span class="line" id="L788">                    <span class="tok-str">\\  syscall</span></span>
 
 <span class="line" id="L789">                    :</span>
-<span class="line" id="L790">                    : [ptr] <span class="tok-str">&quot;{rdi}&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L790">                    : [ptr] <span class="tok-str">&quot;{rdi}&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L791">                      [len] <span class="tok-str">&quot;{rsi}&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L792">                ),</span>
 <span class="line" id="L793">                .arm, .armeb, .thumb, .thumbeb =&gt; <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (</span>
@@ -964,7 +964,7 @@
 <span class="line" id="L800">                    <span class="tok-str">\\  svc 0</span></span>
 
 <span class="line" id="L801">                    :</span>
-<span class="line" id="L802">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L802">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L803">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L804">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L805">                ),</span>
@@ -984,7 +984,7 @@
 <span class="line" id="L813">                    <span class="tok-str">\\  svc 0</span></span>
 
 <span class="line" id="L814">                    :</span>
-<span class="line" id="L815">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L815">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L816">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L817">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L818">                ),</span>
@@ -1006,7 +1006,7 @@
 <span class="line" id="L827">                    <span class="tok-str">\\  syscall</span></span>
 
 <span class="line" id="L828">                    :</span>
-<span class="line" id="L829">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L829">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L830">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L831">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L832">                ),</span>
@@ -1026,7 +1026,7 @@
 <span class="line" id="L840">                    <span class="tok-str">\\  syscall</span></span>
 
 <span class="line" id="L841">                    :</span>
-<span class="line" id="L842">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L842">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L843">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L844">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L845">                ),</span>
@@ -1048,7 +1048,7 @@
 <span class="line" id="L854">                    <span class="tok-str">\\  blr</span></span>
 
 <span class="line" id="L855">                    :</span>
-<span class="line" id="L856">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L856">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L857">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L858">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L859">                ),</span>
@@ -1068,7 +1068,7 @@
 <span class="line" id="L867">                    <span class="tok-str">\\  ecall</span></span>
 
 <span class="line" id="L868">                    :</span>
-<span class="line" id="L869">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L869">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L870">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L871">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L872">                ),</span>
@@ -1116,7 +1116,7 @@
 <span class="line" id="L894">                    <span class="tok-str">\\  t 0x6d</span></span>
 
 <span class="line" id="L895">                    :</span>
-<span class="line" id="L896">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@ptrToInt</span>(self.mapped.ptr)),</span>
+<span class="line" id="L896">                    : [ptr] <span class="tok-str">&quot;r&quot;</span> (<span class="tok-builtin">@intFromPtr</span>(self.mapped.ptr)),</span>
 <span class="line" id="L897">                      [len] <span class="tok-str">&quot;r&quot;</span> (self.mapped.len),</span>
 <span class="line" id="L898">                    : <span class="tok-str">&quot;memory&quot;</span></span>
 <span class="line" id="L899">                ),</span>
@@ -1134,7 +1134,7 @@
 <span class="line" id="L911">            thread: ThreadCompletion,</span>
 <span class="line" id="L912"></span>
 <span class="line" id="L913">            <span class="tok-kw">fn</span> <span class="tok-fn">entryFn</span>(raw_arg: <span class="tok-type">usize</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L914">                <span class="tok-kw">const</span> self = <span class="tok-builtin">@intToPtr</span>(*<span class="tok-builtin">@This</span>(), raw_arg);</span>
+<span class="line" id="L914">                <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-builtin">@This</span>(), raw_arg);</span>
 <span class="line" id="L915">                <span class="tok-kw">defer</span> <span class="tok-kw">switch</span> (self.thread.completion.swap(.completed, .SeqCst)) {</span>
 <span class="line" id="L916">                    .running =&gt; {},</span>
 <span class="line" id="L917">                    .completed =&gt; <span class="tok-kw">unreachable</span>,</span>
@@ -1153,19 +1153,19 @@
 <span class="line" id="L930">            <span class="tok-kw">var</span> bytes: <span class="tok-type">usize</span> = page_size;</span>
 <span class="line" id="L931">            guard_offset = bytes;</span>
 <span class="line" id="L932"></span>
-<span class="line" id="L933">            bytes += std.math.max(page_size, config.stack_size);</span>
-<span class="line" id="L934">            bytes = std.mem.alignForward(bytes, page_size);</span>
+<span class="line" id="L933">            bytes += <span class="tok-builtin">@max</span>(page_size, config.stack_size);</span>
+<span class="line" id="L934">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, page_size);</span>
 <span class="line" id="L935">            stack_offset = bytes;</span>
 <span class="line" id="L936"></span>
-<span class="line" id="L937">            bytes = std.mem.alignForward(bytes, linux.tls.tls_image.alloc_align);</span>
+<span class="line" id="L937">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, linux.tls.tls_image.alloc_align);</span>
 <span class="line" id="L938">            tls_offset = bytes;</span>
 <span class="line" id="L939">            bytes += linux.tls.tls_image.alloc_size;</span>
 <span class="line" id="L940"></span>
-<span class="line" id="L941">            bytes = std.mem.alignForward(bytes, <span class="tok-builtin">@alignOf</span>(Instance));</span>
+<span class="line" id="L941">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, <span class="tok-builtin">@alignOf</span>(Instance));</span>
 <span class="line" id="L942">            instance_offset = bytes;</span>
 <span class="line" id="L943">            bytes += <span class="tok-builtin">@sizeOf</span>(Instance);</span>
 <span class="line" id="L944"></span>
-<span class="line" id="L945">            bytes = std.mem.alignForward(bytes, page_size);</span>
+<span class="line" id="L945">            bytes = std.mem.alignForward(<span class="tok-type">usize</span>, bytes, page_size);</span>
 <span class="line" id="L946">            <span class="tok-kw">break</span> :blk bytes;</span>
 <span class="line" id="L947">        };</span>
 <span class="line" id="L948"></span>
@@ -1208,7 +1208,7 @@
 <span class="line" id="L980">        <span class="tok-kw">var</span> tls_ptr = os.linux.tls.prepareTLS(mapped[tls_offset..]);</span>
 <span class="line" id="L981">        <span class="tok-kw">var</span> user_desc: <span class="tok-kw">if</span> (target.cpu.arch == .x86) os.linux.user_desc <span class="tok-kw">else</span> <span class="tok-type">void</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L982">        <span class="tok-kw">if</span> (target.cpu.arch == .x86) {</span>
-<span class="line" id="L983">            <span class="tok-kw">defer</span> tls_ptr = <span class="tok-builtin">@ptrToInt</span>(&amp;user_desc);</span>
+<span class="line" id="L983">            <span class="tok-kw">defer</span> tls_ptr = <span class="tok-builtin">@intFromPtr</span>(&amp;user_desc);</span>
 <span class="line" id="L984">            user_desc = .{</span>
 <span class="line" id="L985">                .entry_number = os.linux.tls.tls_image.gdt_entry_number,</span>
 <span class="line" id="L986">                .base_addr = tls_ptr,</span>
@@ -1236,9 +1236,9 @@
 <span class="line" id="L1007"></span>
 <span class="line" id="L1008">        <span class="tok-kw">switch</span> (linux.getErrno(linux.clone(</span>
 <span class="line" id="L1009">            Instance.entryFn,</span>
-<span class="line" id="L1010">            <span class="tok-builtin">@ptrToInt</span>(&amp;mapped[stack_offset]),</span>
+<span class="line" id="L1010">            <span class="tok-builtin">@intFromPtr</span>(&amp;mapped[stack_offset]),</span>
 <span class="line" id="L1011">            flags,</span>
-<span class="line" id="L1012">            <span class="tok-builtin">@ptrToInt</span>(instance),</span>
+<span class="line" id="L1012">            <span class="tok-builtin">@intFromPtr</span>(instance),</span>
 <span class="line" id="L1013">            &amp;instance.thread.parent_tid,</span>
 <span class="line" id="L1014">            tls_ptr,</span>
 <span class="line" id="L1015">            &amp;instance.thread.child_tid.value,</span>

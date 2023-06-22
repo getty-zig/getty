@@ -343,7 +343,7 @@
 <span class="line" id="L227">                    .Toggle =&gt; self.fetchXor(mask, ordering),</span>
 <span class="line" id="L228">                };</span>
 <span class="line" id="L229"></span>
-<span class="line" id="L230">                <span class="tok-kw">return</span> <span class="tok-builtin">@boolToInt</span>(value &amp; mask != <span class="tok-number">0</span>);</span>
+<span class="line" id="L230">                <span class="tok-kw">return</span> <span class="tok-builtin">@intFromBool</span>(value &amp; mask != <span class="tok-number">0</span>);</span>
 <span class="line" id="L231">            }</span>
 <span class="line" id="L232"></span>
 <span class="line" id="L233">            <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">x86BitRmw</span>(self: *Self, <span class="tok-kw">comptime</span> op: BitRmwOp, bit: Bit, <span class="tok-kw">comptime</span> ordering: Ordering) <span class="tok-type">u1</span> {</span>
@@ -500,277 +500,268 @@
 <span class="line" id="L374">};</span>
 <span class="line" id="L375"></span>
 <span class="line" id="L376"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.swap&quot;</span> {</span>
-<span class="line" id="L377">    <span class="tok-comment">// TODO: Re-enable when LLVM is released with a bugfix for isel of</span>
-</span>
-<span class="line" id="L378">    <span class="tok-comment">//       atomic load (currently fixed on trunk, broken on 15.0.2)</span>
-</span>
-<span class="line" id="L379">    <span class="tok-kw">if</span> (builtin.cpu.arch == .powerpc64le) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L380"></span>
-<span class="line" id="L381">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L382">        <span class="tok-kw">var</span> x = Atomic(<span class="tok-type">usize</span>).init(<span class="tok-number">5</span>);</span>
-<span class="line" id="L383">        <span class="tok-kw">try</span> testing.expectEqual(x.swap(<span class="tok-number">10</span>, ordering), <span class="tok-number">5</span>);</span>
-<span class="line" id="L384">        <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
+<span class="line" id="L377">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L378">        <span class="tok-kw">var</span> x = Atomic(<span class="tok-type">usize</span>).init(<span class="tok-number">5</span>);</span>
+<span class="line" id="L379">        <span class="tok-kw">try</span> testing.expectEqual(x.swap(<span class="tok-number">10</span>, ordering), <span class="tok-number">5</span>);</span>
+<span class="line" id="L380">        <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
+<span class="line" id="L381"></span>
+<span class="line" id="L382">        <span class="tok-kw">var</span> y = Atomic(<span class="tok-kw">enum</span>(<span class="tok-type">usize</span>) { a, b, c }).init(.c);</span>
+<span class="line" id="L383">        <span class="tok-kw">try</span> testing.expectEqual(y.swap(.a, ordering), .c);</span>
+<span class="line" id="L384">        <span class="tok-kw">try</span> testing.expectEqual(y.load(.SeqCst), .a);</span>
 <span class="line" id="L385"></span>
-<span class="line" id="L386">        <span class="tok-kw">var</span> y = Atomic(<span class="tok-kw">enum</span>(<span class="tok-type">usize</span>) { a, b, c }).init(.c);</span>
-<span class="line" id="L387">        <span class="tok-kw">try</span> testing.expectEqual(y.swap(.a, ordering), .c);</span>
-<span class="line" id="L388">        <span class="tok-kw">try</span> testing.expectEqual(y.load(.SeqCst), .a);</span>
+<span class="line" id="L386">        <span class="tok-kw">var</span> z = Atomic(<span class="tok-type">f32</span>).init(<span class="tok-number">5.0</span>);</span>
+<span class="line" id="L387">        <span class="tok-kw">try</span> testing.expectEqual(z.swap(<span class="tok-number">10.0</span>, ordering), <span class="tok-number">5.0</span>);</span>
+<span class="line" id="L388">        <span class="tok-kw">try</span> testing.expectEqual(z.load(.SeqCst), <span class="tok-number">10.0</span>);</span>
 <span class="line" id="L389"></span>
-<span class="line" id="L390">        <span class="tok-kw">var</span> z = Atomic(<span class="tok-type">f32</span>).init(<span class="tok-number">5.0</span>);</span>
-<span class="line" id="L391">        <span class="tok-kw">try</span> testing.expectEqual(z.swap(<span class="tok-number">10.0</span>, ordering), <span class="tok-number">5.0</span>);</span>
-<span class="line" id="L392">        <span class="tok-kw">try</span> testing.expectEqual(z.load(.SeqCst), <span class="tok-number">10.0</span>);</span>
+<span class="line" id="L390">        <span class="tok-kw">var</span> a = Atomic(<span class="tok-type">bool</span>).init(<span class="tok-null">false</span>);</span>
+<span class="line" id="L391">        <span class="tok-kw">try</span> testing.expectEqual(a.swap(<span class="tok-null">true</span>, ordering), <span class="tok-null">false</span>);</span>
+<span class="line" id="L392">        <span class="tok-kw">try</span> testing.expectEqual(a.load(.SeqCst), <span class="tok-null">true</span>);</span>
 <span class="line" id="L393"></span>
-<span class="line" id="L394">        <span class="tok-kw">var</span> a = Atomic(<span class="tok-type">bool</span>).init(<span class="tok-null">false</span>);</span>
-<span class="line" id="L395">        <span class="tok-kw">try</span> testing.expectEqual(a.swap(<span class="tok-null">true</span>, ordering), <span class="tok-null">false</span>);</span>
-<span class="line" id="L396">        <span class="tok-kw">try</span> testing.expectEqual(a.load(.SeqCst), <span class="tok-null">true</span>);</span>
-<span class="line" id="L397"></span>
-<span class="line" id="L398">        <span class="tok-kw">var</span> b = Atomic(?*<span class="tok-type">u8</span>).init(<span class="tok-null">null</span>);</span>
-<span class="line" id="L399">        <span class="tok-kw">try</span> testing.expectEqual(b.swap(<span class="tok-builtin">@intToPtr</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>)), ordering), <span class="tok-null">null</span>);</span>
-<span class="line" id="L400">        <span class="tok-kw">try</span> testing.expectEqual(b.load(.SeqCst), <span class="tok-builtin">@intToPtr</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>)));</span>
-<span class="line" id="L401">    }</span>
-<span class="line" id="L402">}</span>
-<span class="line" id="L403"></span>
-<span class="line" id="L404"><span class="tok-kw">const</span> atomic_cmpxchg_orderings = [_][<span class="tok-number">2</span>]Ordering{</span>
-<span class="line" id="L405">    .{ .Monotonic, .Monotonic },</span>
-<span class="line" id="L406">    .{ .Acquire, .Monotonic },</span>
-<span class="line" id="L407">    .{ .Acquire, .Acquire },</span>
-<span class="line" id="L408">    .{ .Release, .Monotonic },</span>
-<span class="line" id="L409">    <span class="tok-comment">// Although accepted by LLVM, acquire failure implies AcqRel success</span>
+<span class="line" id="L394">        <span class="tok-kw">var</span> b = Atomic(?*<span class="tok-type">u8</span>).init(<span class="tok-null">null</span>);</span>
+<span class="line" id="L395">        <span class="tok-kw">try</span> testing.expectEqual(b.swap(<span class="tok-builtin">@ptrFromInt</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>)), ordering), <span class="tok-null">null</span>);</span>
+<span class="line" id="L396">        <span class="tok-kw">try</span> testing.expectEqual(b.load(.SeqCst), <span class="tok-builtin">@ptrFromInt</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>)));</span>
+<span class="line" id="L397">    }</span>
+<span class="line" id="L398">}</span>
+<span class="line" id="L399"></span>
+<span class="line" id="L400"><span class="tok-kw">const</span> atomic_cmpxchg_orderings = [_][<span class="tok-number">2</span>]Ordering{</span>
+<span class="line" id="L401">    .{ .Monotonic, .Monotonic },</span>
+<span class="line" id="L402">    .{ .Acquire, .Monotonic },</span>
+<span class="line" id="L403">    .{ .Acquire, .Acquire },</span>
+<span class="line" id="L404">    .{ .Release, .Monotonic },</span>
+<span class="line" id="L405">    <span class="tok-comment">// Although accepted by LLVM, acquire failure implies AcqRel success</span>
 </span>
-<span class="line" id="L410">    <span class="tok-comment">// .{ .Release, .Acquire },</span>
+<span class="line" id="L406">    <span class="tok-comment">// .{ .Release, .Acquire },</span>
 </span>
-<span class="line" id="L411">    .{ .AcqRel, .Monotonic },</span>
-<span class="line" id="L412">    .{ .AcqRel, .Acquire },</span>
-<span class="line" id="L413">    .{ .SeqCst, .Monotonic },</span>
-<span class="line" id="L414">    .{ .SeqCst, .Acquire },</span>
-<span class="line" id="L415">    .{ .SeqCst, .SeqCst },</span>
-<span class="line" id="L416">};</span>
-<span class="line" id="L417"></span>
-<span class="line" id="L418"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.compareAndSwap&quot;</span> {</span>
-<span class="line" id="L419">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L420">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_cmpxchg_orderings) |ordering| {</span>
-<span class="line" id="L421">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L422">            <span class="tok-kw">try</span> testing.expectEqual(x.compareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-number">0</span>);</span>
+<span class="line" id="L407">    .{ .AcqRel, .Monotonic },</span>
+<span class="line" id="L408">    .{ .AcqRel, .Acquire },</span>
+<span class="line" id="L409">    .{ .SeqCst, .Monotonic },</span>
+<span class="line" id="L410">    .{ .SeqCst, .Acquire },</span>
+<span class="line" id="L411">    .{ .SeqCst, .SeqCst },</span>
+<span class="line" id="L412">};</span>
+<span class="line" id="L413"></span>
+<span class="line" id="L414"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.compareAndSwap&quot;</span> {</span>
+<span class="line" id="L415">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L416">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_cmpxchg_orderings) |ordering| {</span>
+<span class="line" id="L417">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L418">            <span class="tok-kw">try</span> testing.expectEqual(x.compareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-number">0</span>);</span>
+<span class="line" id="L419">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
+<span class="line" id="L420">            <span class="tok-kw">try</span> testing.expectEqual(x.compareAndSwap(<span class="tok-number">0</span>, <span class="tok-number">1</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-null">null</span>);</span>
+<span class="line" id="L421">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">1</span>);</span>
+<span class="line" id="L422">            <span class="tok-kw">try</span> testing.expectEqual(x.compareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-null">null</span>);</span>
 <span class="line" id="L423">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L424">            <span class="tok-kw">try</span> testing.expectEqual(x.compareAndSwap(<span class="tok-number">0</span>, <span class="tok-number">1</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-null">null</span>);</span>
-<span class="line" id="L425">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">1</span>);</span>
-<span class="line" id="L426">            <span class="tok-kw">try</span> testing.expectEqual(x.compareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-null">null</span>);</span>
-<span class="line" id="L427">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L428">        }</span>
-<span class="line" id="L429">    }</span>
-<span class="line" id="L430">}</span>
-<span class="line" id="L431"></span>
-<span class="line" id="L432"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.tryCompareAndSwap&quot;</span> {</span>
-<span class="line" id="L433">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L434">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_cmpxchg_orderings) |ordering| {</span>
-<span class="line" id="L435">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L436"></span>
-<span class="line" id="L437">            <span class="tok-kw">try</span> testing.expectEqual(x.tryCompareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-number">0</span>);</span>
-<span class="line" id="L438">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L439"></span>
-<span class="line" id="L440">            <span class="tok-kw">while</span> (x.tryCompareAndSwap(<span class="tok-number">0</span>, <span class="tok-number">1</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>])) |_| {}</span>
-<span class="line" id="L441">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">1</span>);</span>
-<span class="line" id="L442"></span>
-<span class="line" id="L443">            <span class="tok-kw">while</span> (x.tryCompareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>])) |_| {}</span>
-<span class="line" id="L444">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L445">        }</span>
-<span class="line" id="L446">    }</span>
-<span class="line" id="L447">}</span>
-<span class="line" id="L448"></span>
-<span class="line" id="L449"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchAdd&quot;</span> {</span>
-<span class="line" id="L450">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L451">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L452">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
-<span class="line" id="L453">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAdd(<span class="tok-number">5</span>, ordering), <span class="tok-number">5</span>);</span>
-<span class="line" id="L454">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
-<span class="line" id="L455">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAdd(std.math.maxInt(Int), ordering), <span class="tok-number">10</span>);</span>
-<span class="line" id="L456">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">9</span>);</span>
-<span class="line" id="L457">        }</span>
-<span class="line" id="L458">    }</span>
-<span class="line" id="L459">}</span>
-<span class="line" id="L460"></span>
-<span class="line" id="L461"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchSub&quot;</span> {</span>
-<span class="line" id="L462">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L463">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L464">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
-<span class="line" id="L465">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchSub(<span class="tok-number">5</span>, ordering), <span class="tok-number">5</span>);</span>
-<span class="line" id="L466">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L467">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchSub(<span class="tok-number">1</span>, ordering), <span class="tok-number">0</span>);</span>
-<span class="line" id="L468">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), std.math.maxInt(Int));</span>
-<span class="line" id="L469">        }</span>
-<span class="line" id="L470">    }</span>
-<span class="line" id="L471">}</span>
-<span class="line" id="L472"></span>
-<span class="line" id="L473"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchMin&quot;</span> {</span>
-<span class="line" id="L474">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L475">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L476">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
-<span class="line" id="L477">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMin(<span class="tok-number">0</span>, ordering), <span class="tok-number">5</span>);</span>
-<span class="line" id="L478">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L479">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMin(<span class="tok-number">10</span>, ordering), <span class="tok-number">0</span>);</span>
-<span class="line" id="L480">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
-<span class="line" id="L481">        }</span>
-<span class="line" id="L482">    }</span>
-<span class="line" id="L483">}</span>
-<span class="line" id="L484"></span>
-<span class="line" id="L485"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchMax&quot;</span> {</span>
-<span class="line" id="L486">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L487">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L488">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
-<span class="line" id="L489">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMax(<span class="tok-number">10</span>, ordering), <span class="tok-number">5</span>);</span>
-<span class="line" id="L490">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
-<span class="line" id="L491">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMax(<span class="tok-number">5</span>, ordering), <span class="tok-number">10</span>);</span>
-<span class="line" id="L492">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
-<span class="line" id="L493">        }</span>
-<span class="line" id="L494">    }</span>
-<span class="line" id="L495">}</span>
-<span class="line" id="L496"></span>
-<span class="line" id="L497"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchAnd&quot;</span> {</span>
-<span class="line" id="L498">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L499">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L500">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
-<span class="line" id="L501">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAnd(<span class="tok-number">0b10</span>, ordering), <span class="tok-number">0b11</span>);</span>
-<span class="line" id="L502">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b10</span>);</span>
-<span class="line" id="L503">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAnd(<span class="tok-number">0b00</span>, ordering), <span class="tok-number">0b10</span>);</span>
-<span class="line" id="L504">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b00</span>);</span>
-<span class="line" id="L505">        }</span>
-<span class="line" id="L506">    }</span>
-<span class="line" id="L507">}</span>
-<span class="line" id="L508"></span>
-<span class="line" id="L509"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchNand&quot;</span> {</span>
-<span class="line" id="L510">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L511">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L512">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
-<span class="line" id="L513">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchNand(<span class="tok-number">0b10</span>, ordering), <span class="tok-number">0b11</span>);</span>
-<span class="line" id="L514">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), ~<span class="tok-builtin">@as</span>(Int, <span class="tok-number">0b10</span>));</span>
-<span class="line" id="L515">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchNand(<span class="tok-number">0b00</span>, ordering), ~<span class="tok-builtin">@as</span>(Int, <span class="tok-number">0b10</span>));</span>
-<span class="line" id="L516">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), ~<span class="tok-builtin">@as</span>(Int, <span class="tok-number">0b00</span>));</span>
-<span class="line" id="L517">        }</span>
-<span class="line" id="L518">    }</span>
-<span class="line" id="L519">}</span>
-<span class="line" id="L520"></span>
-<span class="line" id="L521"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchOr&quot;</span> {</span>
-<span class="line" id="L522">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L523">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L524">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
-<span class="line" id="L525">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchOr(<span class="tok-number">0b100</span>, ordering), <span class="tok-number">0b11</span>);</span>
-<span class="line" id="L526">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b111</span>);</span>
-<span class="line" id="L527">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchOr(<span class="tok-number">0b010</span>, ordering), <span class="tok-number">0b111</span>);</span>
-<span class="line" id="L528">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b111</span>);</span>
-<span class="line" id="L529">        }</span>
-<span class="line" id="L530">    }</span>
-<span class="line" id="L531">}</span>
-<span class="line" id="L532"></span>
-<span class="line" id="L533"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchXor&quot;</span> {</span>
-<span class="line" id="L534">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L535">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L536">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
-<span class="line" id="L537">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchXor(<span class="tok-number">0b10</span>, ordering), <span class="tok-number">0b11</span>);</span>
-<span class="line" id="L538">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b01</span>);</span>
-<span class="line" id="L539">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchXor(<span class="tok-number">0b01</span>, ordering), <span class="tok-number">0b01</span>);</span>
-<span class="line" id="L540">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b00</span>);</span>
-<span class="line" id="L541">        }</span>
-<span class="line" id="L542">    }</span>
-<span class="line" id="L543">}</span>
-<span class="line" id="L544"></span>
-<span class="line" id="L545"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.bitSet&quot;</span> {</span>
-<span class="line" id="L546">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L547">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L548">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L549">            <span class="tok-kw">const</span> bit_array = <span class="tok-builtin">@as</span>([<span class="tok-builtin">@bitSizeOf</span>(Int)]<span class="tok-type">void</span>, <span class="tok-null">undefined</span>);</span>
-<span class="line" id="L550"></span>
-<span class="line" id="L551">            <span class="tok-kw">for</span> (bit_array, <span class="tok-number">0</span>..) |_, bit_index| {</span>
-<span class="line" id="L552">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
-<span class="line" id="L553">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
+<span class="line" id="L424">        }</span>
+<span class="line" id="L425">    }</span>
+<span class="line" id="L426">}</span>
+<span class="line" id="L427"></span>
+<span class="line" id="L428"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.tryCompareAndSwap&quot;</span> {</span>
+<span class="line" id="L429">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L430">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_cmpxchg_orderings) |ordering| {</span>
+<span class="line" id="L431">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L432"></span>
+<span class="line" id="L433">            <span class="tok-kw">try</span> testing.expectEqual(x.tryCompareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>]), <span class="tok-number">0</span>);</span>
+<span class="line" id="L434">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
+<span class="line" id="L435"></span>
+<span class="line" id="L436">            <span class="tok-kw">while</span> (x.tryCompareAndSwap(<span class="tok-number">0</span>, <span class="tok-number">1</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>])) |_| {}</span>
+<span class="line" id="L437">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">1</span>);</span>
+<span class="line" id="L438"></span>
+<span class="line" id="L439">            <span class="tok-kw">while</span> (x.tryCompareAndSwap(<span class="tok-number">1</span>, <span class="tok-number">0</span>, ordering[<span class="tok-number">0</span>], ordering[<span class="tok-number">1</span>])) |_| {}</span>
+<span class="line" id="L440">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
+<span class="line" id="L441">        }</span>
+<span class="line" id="L442">    }</span>
+<span class="line" id="L443">}</span>
+<span class="line" id="L444"></span>
+<span class="line" id="L445"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchAdd&quot;</span> {</span>
+<span class="line" id="L446">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L447">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L448">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
+<span class="line" id="L449">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAdd(<span class="tok-number">5</span>, ordering), <span class="tok-number">5</span>);</span>
+<span class="line" id="L450">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
+<span class="line" id="L451">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAdd(std.math.maxInt(Int), ordering), <span class="tok-number">10</span>);</span>
+<span class="line" id="L452">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">9</span>);</span>
+<span class="line" id="L453">        }</span>
+<span class="line" id="L454">    }</span>
+<span class="line" id="L455">}</span>
+<span class="line" id="L456"></span>
+<span class="line" id="L457"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchSub&quot;</span> {</span>
+<span class="line" id="L458">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L459">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L460">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
+<span class="line" id="L461">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchSub(<span class="tok-number">5</span>, ordering), <span class="tok-number">5</span>);</span>
+<span class="line" id="L462">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
+<span class="line" id="L463">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchSub(<span class="tok-number">1</span>, ordering), <span class="tok-number">0</span>);</span>
+<span class="line" id="L464">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), std.math.maxInt(Int));</span>
+<span class="line" id="L465">        }</span>
+<span class="line" id="L466">    }</span>
+<span class="line" id="L467">}</span>
+<span class="line" id="L468"></span>
+<span class="line" id="L469"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchMin&quot;</span> {</span>
+<span class="line" id="L470">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L471">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L472">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
+<span class="line" id="L473">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMin(<span class="tok-number">0</span>, ordering), <span class="tok-number">5</span>);</span>
+<span class="line" id="L474">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
+<span class="line" id="L475">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMin(<span class="tok-number">10</span>, ordering), <span class="tok-number">0</span>);</span>
+<span class="line" id="L476">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0</span>);</span>
+<span class="line" id="L477">        }</span>
+<span class="line" id="L478">    }</span>
+<span class="line" id="L479">}</span>
+<span class="line" id="L480"></span>
+<span class="line" id="L481"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchMax&quot;</span> {</span>
+<span class="line" id="L482">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L483">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L484">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">5</span>);</span>
+<span class="line" id="L485">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMax(<span class="tok-number">10</span>, ordering), <span class="tok-number">5</span>);</span>
+<span class="line" id="L486">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
+<span class="line" id="L487">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchMax(<span class="tok-number">5</span>, ordering), <span class="tok-number">10</span>);</span>
+<span class="line" id="L488">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">10</span>);</span>
+<span class="line" id="L489">        }</span>
+<span class="line" id="L490">    }</span>
+<span class="line" id="L491">}</span>
+<span class="line" id="L492"></span>
+<span class="line" id="L493"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchAnd&quot;</span> {</span>
+<span class="line" id="L494">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L495">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L496">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
+<span class="line" id="L497">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAnd(<span class="tok-number">0b10</span>, ordering), <span class="tok-number">0b11</span>);</span>
+<span class="line" id="L498">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b10</span>);</span>
+<span class="line" id="L499">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchAnd(<span class="tok-number">0b00</span>, ordering), <span class="tok-number">0b10</span>);</span>
+<span class="line" id="L500">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b00</span>);</span>
+<span class="line" id="L501">        }</span>
+<span class="line" id="L502">    }</span>
+<span class="line" id="L503">}</span>
+<span class="line" id="L504"></span>
+<span class="line" id="L505"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchNand&quot;</span> {</span>
+<span class="line" id="L506">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L507">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L508">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
+<span class="line" id="L509">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchNand(<span class="tok-number">0b10</span>, ordering), <span class="tok-number">0b11</span>);</span>
+<span class="line" id="L510">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), ~<span class="tok-builtin">@as</span>(Int, <span class="tok-number">0b10</span>));</span>
+<span class="line" id="L511">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchNand(<span class="tok-number">0b00</span>, ordering), ~<span class="tok-builtin">@as</span>(Int, <span class="tok-number">0b10</span>));</span>
+<span class="line" id="L512">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), ~<span class="tok-builtin">@as</span>(Int, <span class="tok-number">0b00</span>));</span>
+<span class="line" id="L513">        }</span>
+<span class="line" id="L514">    }</span>
+<span class="line" id="L515">}</span>
+<span class="line" id="L516"></span>
+<span class="line" id="L517"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchOr&quot;</span> {</span>
+<span class="line" id="L518">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L519">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L520">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
+<span class="line" id="L521">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchOr(<span class="tok-number">0b100</span>, ordering), <span class="tok-number">0b11</span>);</span>
+<span class="line" id="L522">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b111</span>);</span>
+<span class="line" id="L523">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchOr(<span class="tok-number">0b010</span>, ordering), <span class="tok-number">0b111</span>);</span>
+<span class="line" id="L524">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b111</span>);</span>
+<span class="line" id="L525">        }</span>
+<span class="line" id="L526">    }</span>
+<span class="line" id="L527">}</span>
+<span class="line" id="L528"></span>
+<span class="line" id="L529"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.fetchXor&quot;</span> {</span>
+<span class="line" id="L530">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L531">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L532">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0b11</span>);</span>
+<span class="line" id="L533">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchXor(<span class="tok-number">0b10</span>, ordering), <span class="tok-number">0b11</span>);</span>
+<span class="line" id="L534">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b01</span>);</span>
+<span class="line" id="L535">            <span class="tok-kw">try</span> testing.expectEqual(x.fetchXor(<span class="tok-number">0b01</span>, ordering), <span class="tok-number">0b01</span>);</span>
+<span class="line" id="L536">            <span class="tok-kw">try</span> testing.expectEqual(x.load(.SeqCst), <span class="tok-number">0b00</span>);</span>
+<span class="line" id="L537">        }</span>
+<span class="line" id="L538">    }</span>
+<span class="line" id="L539">}</span>
+<span class="line" id="L540"></span>
+<span class="line" id="L541"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.bitSet&quot;</span> {</span>
+<span class="line" id="L542">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L543">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L544">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L545"></span>
+<span class="line" id="L546">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-builtin">@bitSizeOf</span>(Int)) |bit_index| {</span>
+<span class="line" id="L547">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
+<span class="line" id="L548">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
+<span class="line" id="L549"></span>
+<span class="line" id="L550">                <span class="tok-comment">// setting the bit should change the bit</span>
+</span>
+<span class="line" id="L551">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L552">                <span class="tok-kw">try</span> testing.expectEqual(x.bitSet(bit, ordering), <span class="tok-number">0</span>);</span>
+<span class="line" id="L553">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
 <span class="line" id="L554"></span>
-<span class="line" id="L555">                <span class="tok-comment">// setting the bit should change the bit</span>
+<span class="line" id="L555">                <span class="tok-comment">// setting it again shouldn't change the bit</span>
 </span>
-<span class="line" id="L556">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L557">                <span class="tok-kw">try</span> testing.expectEqual(x.bitSet(bit, ordering), <span class="tok-number">0</span>);</span>
-<span class="line" id="L558">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
-<span class="line" id="L559"></span>
-<span class="line" id="L560">                <span class="tok-comment">// setting it again shouldn't change the bit</span>
+<span class="line" id="L556">                <span class="tok-kw">try</span> testing.expectEqual(x.bitSet(bit, ordering), <span class="tok-number">1</span>);</span>
+<span class="line" id="L557">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
+<span class="line" id="L558"></span>
+<span class="line" id="L559">                <span class="tok-comment">// all the previous bits should have not changed (still be set)</span>
 </span>
-<span class="line" id="L561">                <span class="tok-kw">try</span> testing.expectEqual(x.bitSet(bit, ordering), <span class="tok-number">1</span>);</span>
-<span class="line" id="L562">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
-<span class="line" id="L563"></span>
-<span class="line" id="L564">                <span class="tok-comment">// all the previous bits should have not changed (still be set)</span>
-</span>
-<span class="line" id="L565">                <span class="tok-kw">for</span> (bit_array[<span class="tok-number">0</span>..bit_index], <span class="tok-number">0</span>..) |_, prev_bit_index| {</span>
-<span class="line" id="L566">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
-<span class="line" id="L567">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
-<span class="line" id="L568">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask != <span class="tok-number">0</span>);</span>
-<span class="line" id="L569">                }</span>
-<span class="line" id="L570">            }</span>
-<span class="line" id="L571">        }</span>
-<span class="line" id="L572">    }</span>
-<span class="line" id="L573">}</span>
+<span class="line" id="L560">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..bit_index) |prev_bit_index| {</span>
+<span class="line" id="L561">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
+<span class="line" id="L562">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
+<span class="line" id="L563">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask != <span class="tok-number">0</span>);</span>
+<span class="line" id="L564">                }</span>
+<span class="line" id="L565">            }</span>
+<span class="line" id="L566">        }</span>
+<span class="line" id="L567">    }</span>
+<span class="line" id="L568">}</span>
+<span class="line" id="L569"></span>
+<span class="line" id="L570"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.bitReset&quot;</span> {</span>
+<span class="line" id="L571">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L572">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L573">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
 <span class="line" id="L574"></span>
-<span class="line" id="L575"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.bitReset&quot;</span> {</span>
-<span class="line" id="L576">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L577">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L578">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L579">            <span class="tok-kw">const</span> bit_array = <span class="tok-builtin">@as</span>([<span class="tok-builtin">@bitSizeOf</span>(Int)]<span class="tok-type">void</span>, <span class="tok-null">undefined</span>);</span>
-<span class="line" id="L580"></span>
-<span class="line" id="L581">            <span class="tok-kw">for</span> (bit_array, <span class="tok-number">0</span>..) |_, bit_index| {</span>
-<span class="line" id="L582">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
-<span class="line" id="L583">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
-<span class="line" id="L584">                x.storeUnchecked(x.loadUnchecked() | mask);</span>
-<span class="line" id="L585"></span>
-<span class="line" id="L586">                <span class="tok-comment">// unsetting the bit should change the bit</span>
+<span class="line" id="L575">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-builtin">@bitSizeOf</span>(Int)) |bit_index| {</span>
+<span class="line" id="L576">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
+<span class="line" id="L577">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
+<span class="line" id="L578">                x.storeUnchecked(x.loadUnchecked() | mask);</span>
+<span class="line" id="L579"></span>
+<span class="line" id="L580">                <span class="tok-comment">// unsetting the bit should change the bit</span>
 </span>
-<span class="line" id="L587">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
-<span class="line" id="L588">                <span class="tok-kw">try</span> testing.expectEqual(x.bitReset(bit, ordering), <span class="tok-number">1</span>);</span>
-<span class="line" id="L589">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L590"></span>
-<span class="line" id="L591">                <span class="tok-comment">// unsetting it again shouldn't change the bit</span>
+<span class="line" id="L581">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
+<span class="line" id="L582">                <span class="tok-kw">try</span> testing.expectEqual(x.bitReset(bit, ordering), <span class="tok-number">1</span>);</span>
+<span class="line" id="L583">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L584"></span>
+<span class="line" id="L585">                <span class="tok-comment">// unsetting it again shouldn't change the bit</span>
 </span>
-<span class="line" id="L592">                <span class="tok-kw">try</span> testing.expectEqual(x.bitReset(bit, ordering), <span class="tok-number">0</span>);</span>
-<span class="line" id="L593">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L594"></span>
-<span class="line" id="L595">                <span class="tok-comment">// all the previous bits should have not changed (still be reset)</span>
+<span class="line" id="L586">                <span class="tok-kw">try</span> testing.expectEqual(x.bitReset(bit, ordering), <span class="tok-number">0</span>);</span>
+<span class="line" id="L587">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L588"></span>
+<span class="line" id="L589">                <span class="tok-comment">// all the previous bits should have not changed (still be reset)</span>
 </span>
-<span class="line" id="L596">                <span class="tok-kw">for</span> (bit_array[<span class="tok-number">0</span>..bit_index], <span class="tok-number">0</span>..) |_, prev_bit_index| {</span>
-<span class="line" id="L597">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
-<span class="line" id="L598">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
-<span class="line" id="L599">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L600">                }</span>
-<span class="line" id="L601">            }</span>
-<span class="line" id="L602">        }</span>
-<span class="line" id="L603">    }</span>
-<span class="line" id="L604">}</span>
-<span class="line" id="L605"></span>
-<span class="line" id="L606"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.bitToggle&quot;</span> {</span>
-<span class="line" id="L607">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
-<span class="line" id="L608">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
-<span class="line" id="L609">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L610">            <span class="tok-kw">const</span> bit_array = <span class="tok-builtin">@as</span>([<span class="tok-builtin">@bitSizeOf</span>(Int)]<span class="tok-type">void</span>, <span class="tok-null">undefined</span>);</span>
-<span class="line" id="L611"></span>
-<span class="line" id="L612">            <span class="tok-kw">for</span> (bit_array, <span class="tok-number">0</span>..) |_, bit_index| {</span>
-<span class="line" id="L613">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
-<span class="line" id="L614">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
-<span class="line" id="L615"></span>
-<span class="line" id="L616">                <span class="tok-comment">// toggling the bit should change the bit</span>
+<span class="line" id="L590">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..bit_index) |prev_bit_index| {</span>
+<span class="line" id="L591">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
+<span class="line" id="L592">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
+<span class="line" id="L593">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L594">                }</span>
+<span class="line" id="L595">            }</span>
+<span class="line" id="L596">        }</span>
+<span class="line" id="L597">    }</span>
+<span class="line" id="L598">}</span>
+<span class="line" id="L599"></span>
+<span class="line" id="L600"><span class="tok-kw">test</span> <span class="tok-str">&quot;Atomic.bitToggle&quot;</span> {</span>
+<span class="line" id="L601">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomicIntTypes()) |Int| {</span>
+<span class="line" id="L602">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (atomic_rmw_orderings) |ordering| {</span>
+<span class="line" id="L603">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L604"></span>
+<span class="line" id="L605">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-builtin">@bitSizeOf</span>(Int)) |bit_index| {</span>
+<span class="line" id="L606">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
+<span class="line" id="L607">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
+<span class="line" id="L608"></span>
+<span class="line" id="L609">                <span class="tok-comment">// toggling the bit should change the bit</span>
 </span>
-<span class="line" id="L617">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L618">                <span class="tok-kw">try</span> testing.expectEqual(x.bitToggle(bit, ordering), <span class="tok-number">0</span>);</span>
-<span class="line" id="L619">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
-<span class="line" id="L620"></span>
-<span class="line" id="L621">                <span class="tok-comment">// toggling it again *should* change the bit</span>
+<span class="line" id="L610">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L611">                <span class="tok-kw">try</span> testing.expectEqual(x.bitToggle(bit, ordering), <span class="tok-number">0</span>);</span>
+<span class="line" id="L612">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask != <span class="tok-number">0</span>);</span>
+<span class="line" id="L613"></span>
+<span class="line" id="L614">                <span class="tok-comment">// toggling it again *should* change the bit</span>
 </span>
-<span class="line" id="L622">                <span class="tok-kw">try</span> testing.expectEqual(x.bitToggle(bit, ordering), <span class="tok-number">1</span>);</span>
-<span class="line" id="L623">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L624"></span>
-<span class="line" id="L625">                <span class="tok-comment">// all the previous bits should have not changed (still be toggled back)</span>
+<span class="line" id="L615">                <span class="tok-kw">try</span> testing.expectEqual(x.bitToggle(bit, ordering), <span class="tok-number">1</span>);</span>
+<span class="line" id="L616">                <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L617"></span>
+<span class="line" id="L618">                <span class="tok-comment">// all the previous bits should have not changed (still be toggled back)</span>
 </span>
-<span class="line" id="L626">                <span class="tok-kw">for</span> (bit_array[<span class="tok-number">0</span>..bit_index], <span class="tok-number">0</span>..) |_, prev_bit_index| {</span>
-<span class="line" id="L627">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
-<span class="line" id="L628">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
-<span class="line" id="L629">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask == <span class="tok-number">0</span>);</span>
-<span class="line" id="L630">                }</span>
-<span class="line" id="L631">            }</span>
-<span class="line" id="L632">        }</span>
-<span class="line" id="L633">    }</span>
-<span class="line" id="L634">}</span>
-<span class="line" id="L635"></span>
+<span class="line" id="L619">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..bit_index) |prev_bit_index| {</span>
+<span class="line" id="L620">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
+<span class="line" id="L621">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
+<span class="line" id="L622">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L623">                }</span>
+<span class="line" id="L624">            }</span>
+<span class="line" id="L625">        }</span>
+<span class="line" id="L626">    }</span>
+<span class="line" id="L627">}</span>
+<span class="line" id="L628"></span>
 </code></pre></body>
 </html>

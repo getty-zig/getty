@@ -174,7 +174,7 @@
 <span class="line" id="L61">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> supports_posix_memalign = <span class="tok-builtin">@hasDecl</span>(c, <span class="tok-str">&quot;posix_memalign&quot;</span>);</span>
 <span class="line" id="L62"></span>
 <span class="line" id="L63">    <span class="tok-kw">fn</span> <span class="tok-fn">getHeader</span>(ptr: [*]<span class="tok-type">u8</span>) *[*]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L64">        <span class="tok-kw">return</span> <span class="tok-builtin">@intToPtr</span>(*[*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrToInt</span>(ptr) - <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>));</span>
+<span class="line" id="L64">        <span class="tok-kw">return</span> <span class="tok-builtin">@ptrFromInt</span>(*[*]<span class="tok-type">u8</span>, <span class="tok-builtin">@intFromPtr</span>(ptr) - <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>));</span>
 <span class="line" id="L65">    }</span>
 <span class="line" id="L66"></span>
 <span class="line" id="L67">    <span class="tok-kw">fn</span> <span class="tok-fn">alignedAlloc</span>(len: <span class="tok-type">usize</span>, log2_align: <span class="tok-type">u8</span>) ?[*]<span class="tok-type">u8</span> {</span>
@@ -200,8 +200,8 @@
 <span class="line" id="L83">        <span class="tok-comment">// the aligned address.</span>
 </span>
 <span class="line" id="L84">        <span class="tok-kw">var</span> unaligned_ptr = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, c.malloc(len + alignment - <span class="tok-number">1</span> + <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>)) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>);</span>
-<span class="line" id="L85">        <span class="tok-kw">const</span> unaligned_addr = <span class="tok-builtin">@ptrToInt</span>(unaligned_ptr);</span>
-<span class="line" id="L86">        <span class="tok-kw">const</span> aligned_addr = mem.alignForward(unaligned_addr + <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>), alignment);</span>
+<span class="line" id="L85">        <span class="tok-kw">const</span> unaligned_addr = <span class="tok-builtin">@intFromPtr</span>(unaligned_ptr);</span>
+<span class="line" id="L86">        <span class="tok-kw">const</span> aligned_addr = mem.alignForward(<span class="tok-type">usize</span>, unaligned_addr + <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>), alignment);</span>
 <span class="line" id="L87">        <span class="tok-kw">var</span> aligned_ptr = unaligned_ptr + (aligned_addr - unaligned_addr);</span>
 <span class="line" id="L88">        getHeader(aligned_ptr).* = unaligned_ptr;</span>
 <span class="line" id="L89"></span>
@@ -223,7 +223,7 @@
 <span class="line" id="L105">        }</span>
 <span class="line" id="L106"></span>
 <span class="line" id="L107">        <span class="tok-kw">const</span> unaligned_ptr = getHeader(ptr).*;</span>
-<span class="line" id="L108">        <span class="tok-kw">const</span> delta = <span class="tok-builtin">@ptrToInt</span>(ptr) - <span class="tok-builtin">@ptrToInt</span>(unaligned_ptr);</span>
+<span class="line" id="L108">        <span class="tok-kw">const</span> delta = <span class="tok-builtin">@intFromPtr</span>(ptr) - <span class="tok-builtin">@intFromPtr</span>(unaligned_ptr);</span>
 <span class="line" id="L109">        <span class="tok-kw">return</span> CAllocator.malloc_size(unaligned_ptr) - delta;</span>
 <span class="line" id="L110">    }</span>
 <span class="line" id="L111"></span>
@@ -373,7 +373,7 @@
 <span class="line" id="L249"><span class="tok-comment">/// Verifies that the adjusted length will still map to the full length</span></span>
 <span class="line" id="L250"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignPageAllocLen</span>(full_len: <span class="tok-type">usize</span>, len: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
 <span class="line" id="L251">    <span class="tok-kw">const</span> aligned_len = mem.alignAllocLen(full_len, len);</span>
-<span class="line" id="L252">    assert(mem.alignForward(aligned_len, mem.page_size) == full_len);</span>
+<span class="line" id="L252">    assert(mem.alignForward(<span class="tok-type">usize</span>, aligned_len, mem.page_size) == full_len);</span>
 <span class="line" id="L253">    <span class="tok-kw">return</span> aligned_len;</span>
 <span class="line" id="L254">}</span>
 <span class="line" id="L255"></span>
@@ -407,7 +407,7 @@
 <span class="line" id="L283">        }</span>
 <span class="line" id="L284"></span>
 <span class="line" id="L285">        <span class="tok-kw">fn</span> <span class="tok-fn">getRecordPtr</span>(buf: []<span class="tok-type">u8</span>) *<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L286">            <span class="tok-kw">return</span> <span class="tok-builtin">@intToPtr</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-type">usize</span>, <span class="tok-builtin">@ptrToInt</span>(buf.ptr) + buf.len);</span>
+<span class="line" id="L286">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-type">usize</span>, <span class="tok-builtin">@intFromPtr</span>(buf.ptr) + buf.len);</span>
 <span class="line" id="L287">        }</span>
 <span class="line" id="L288"></span>
 <span class="line" id="L289">        <span class="tok-kw">fn</span> <span class="tok-fn">alloc</span>(</span>
@@ -431,9 +431,9 @@
 </span>
 <span class="line" id="L307">            };</span>
 <span class="line" id="L308">            <span class="tok-kw">const</span> ptr = os.windows.kernel32.HeapAlloc(heap_handle, <span class="tok-number">0</span>, amt) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L309">            <span class="tok-kw">const</span> root_addr = <span class="tok-builtin">@ptrToInt</span>(ptr);</span>
-<span class="line" id="L310">            <span class="tok-kw">const</span> aligned_addr = mem.alignForward(root_addr, ptr_align);</span>
-<span class="line" id="L311">            <span class="tok-kw">const</span> buf = <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-type">u8</span>, aligned_addr)[<span class="tok-number">0</span>..n];</span>
+<span class="line" id="L309">            <span class="tok-kw">const</span> root_addr = <span class="tok-builtin">@intFromPtr</span>(ptr);</span>
+<span class="line" id="L310">            <span class="tok-kw">const</span> aligned_addr = mem.alignForward(<span class="tok-type">usize</span>, root_addr, ptr_align);</span>
+<span class="line" id="L311">            <span class="tok-kw">const</span> buf = <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-type">u8</span>, aligned_addr)[<span class="tok-number">0</span>..n];</span>
 <span class="line" id="L312">            getRecordPtr(buf).* = root_addr;</span>
 <span class="line" id="L313">            <span class="tok-kw">return</span> buf.ptr;</span>
 <span class="line" id="L314">        }</span>
@@ -450,15 +450,15 @@
 <span class="line" id="L325">            <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*HeapAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(HeapAllocator), ctx));</span>
 <span class="line" id="L326"></span>
 <span class="line" id="L327">            <span class="tok-kw">const</span> root_addr = getRecordPtr(buf).*;</span>
-<span class="line" id="L328">            <span class="tok-kw">const</span> align_offset = <span class="tok-builtin">@ptrToInt</span>(buf.ptr) - root_addr;</span>
+<span class="line" id="L328">            <span class="tok-kw">const</span> align_offset = <span class="tok-builtin">@intFromPtr</span>(buf.ptr) - root_addr;</span>
 <span class="line" id="L329">            <span class="tok-kw">const</span> amt = align_offset + new_size + <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>);</span>
 <span class="line" id="L330">            <span class="tok-kw">const</span> new_ptr = os.windows.kernel32.HeapReAlloc(</span>
 <span class="line" id="L331">                self.heap_handle.?,</span>
 <span class="line" id="L332">                os.windows.HEAP_REALLOC_IN_PLACE_ONLY,</span>
-<span class="line" id="L333">                <span class="tok-builtin">@intToPtr</span>(*<span class="tok-type">anyopaque</span>, root_addr),</span>
+<span class="line" id="L333">                <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-type">anyopaque</span>, root_addr),</span>
 <span class="line" id="L334">                amt,</span>
 <span class="line" id="L335">            ) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L336">            assert(new_ptr == <span class="tok-builtin">@intToPtr</span>(*<span class="tok-type">anyopaque</span>, root_addr));</span>
+<span class="line" id="L336">            assert(new_ptr == <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-type">anyopaque</span>, root_addr));</span>
 <span class="line" id="L337">            getRecordPtr(buf.ptr[<span class="tok-number">0</span>..new_size]).* = root_addr;</span>
 <span class="line" id="L338">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
 <span class="line" id="L339">        }</span>
@@ -472,20 +472,20 @@
 <span class="line" id="L347">            _ = log2_buf_align;</span>
 <span class="line" id="L348">            _ = return_address;</span>
 <span class="line" id="L349">            <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*HeapAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(HeapAllocator), ctx));</span>
-<span class="line" id="L350">            os.windows.HeapFree(self.heap_handle.?, <span class="tok-number">0</span>, <span class="tok-builtin">@intToPtr</span>(*<span class="tok-type">anyopaque</span>, getRecordPtr(buf).*));</span>
+<span class="line" id="L350">            os.windows.HeapFree(self.heap_handle.?, <span class="tok-number">0</span>, <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-type">anyopaque</span>, getRecordPtr(buf).*));</span>
 <span class="line" id="L351">        }</span>
 <span class="line" id="L352">    },</span>
 <span class="line" id="L353">    <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported OS&quot;</span>),</span>
 <span class="line" id="L354">};</span>
 <span class="line" id="L355"></span>
 <span class="line" id="L356"><span class="tok-kw">fn</span> <span class="tok-fn">sliceContainsPtr</span>(container: []<span class="tok-type">u8</span>, ptr: [*]<span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L357">    <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(ptr) &gt;= <span class="tok-builtin">@ptrToInt</span>(container.ptr) <span class="tok-kw">and</span></span>
-<span class="line" id="L358">        <span class="tok-builtin">@ptrToInt</span>(ptr) &lt; (<span class="tok-builtin">@ptrToInt</span>(container.ptr) + container.len);</span>
+<span class="line" id="L357">    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(ptr) &gt;= <span class="tok-builtin">@intFromPtr</span>(container.ptr) <span class="tok-kw">and</span></span>
+<span class="line" id="L358">        <span class="tok-builtin">@intFromPtr</span>(ptr) &lt; (<span class="tok-builtin">@intFromPtr</span>(container.ptr) + container.len);</span>
 <span class="line" id="L359">}</span>
 <span class="line" id="L360"></span>
 <span class="line" id="L361"><span class="tok-kw">fn</span> <span class="tok-fn">sliceContainsSlice</span>(container: []<span class="tok-type">u8</span>, slice: []<span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L362">    <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(slice.ptr) &gt;= <span class="tok-builtin">@ptrToInt</span>(container.ptr) <span class="tok-kw">and</span></span>
-<span class="line" id="L363">        (<span class="tok-builtin">@ptrToInt</span>(slice.ptr) + slice.len) &lt;= (<span class="tok-builtin">@ptrToInt</span>(container.ptr) + container.len);</span>
+<span class="line" id="L362">    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(slice.ptr) &gt;= <span class="tok-builtin">@intFromPtr</span>(container.ptr) <span class="tok-kw">and</span></span>
+<span class="line" id="L363">        (<span class="tok-builtin">@intFromPtr</span>(slice.ptr) + slice.len) &lt;= (<span class="tok-builtin">@intFromPtr</span>(container.ptr) + container.len);</span>
 <span class="line" id="L364">}</span>
 <span class="line" id="L365"></span>
 <span class="line" id="L366"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> FixedBufferAllocator = <span class="tok-kw">struct</span> {</span>
@@ -942,21 +942,21 @@
 <span class="line" id="L804">    align_mask = <span class="tok-builtin">@shlWithOverflow</span>(~<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), <span class="tok-builtin">@as</span>(Allocator.Log2Align, <span class="tok-builtin">@ctz</span>(large_align)))[<span class="tok-number">0</span>];</span>
 <span class="line" id="L805"></span>
 <span class="line" id="L806">    <span class="tok-kw">var</span> slice = <span class="tok-kw">try</span> allocator.alignedAlloc(<span class="tok-type">u8</span>, large_align, <span class="tok-number">500</span>);</span>
-<span class="line" id="L807">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@ptrToInt</span>(slice.ptr) &amp; align_mask == <span class="tok-builtin">@ptrToInt</span>(slice.ptr));</span>
+<span class="line" id="L807">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@intFromPtr</span>(slice.ptr) &amp; align_mask == <span class="tok-builtin">@intFromPtr</span>(slice.ptr));</span>
 <span class="line" id="L808"></span>
 <span class="line" id="L809">    <span class="tok-kw">if</span> (allocator.resize(slice, <span class="tok-number">100</span>)) {</span>
 <span class="line" id="L810">        slice = slice[<span class="tok-number">0</span>..<span class="tok-number">100</span>];</span>
 <span class="line" id="L811">    }</span>
 <span class="line" id="L812"></span>
 <span class="line" id="L813">    slice = <span class="tok-kw">try</span> allocator.realloc(slice, <span class="tok-number">5000</span>);</span>
-<span class="line" id="L814">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@ptrToInt</span>(slice.ptr) &amp; align_mask == <span class="tok-builtin">@ptrToInt</span>(slice.ptr));</span>
+<span class="line" id="L814">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@intFromPtr</span>(slice.ptr) &amp; align_mask == <span class="tok-builtin">@intFromPtr</span>(slice.ptr));</span>
 <span class="line" id="L815"></span>
 <span class="line" id="L816">    <span class="tok-kw">if</span> (allocator.resize(slice, <span class="tok-number">10</span>)) {</span>
 <span class="line" id="L817">        slice = slice[<span class="tok-number">0</span>..<span class="tok-number">10</span>];</span>
 <span class="line" id="L818">    }</span>
 <span class="line" id="L819"></span>
 <span class="line" id="L820">    slice = <span class="tok-kw">try</span> allocator.realloc(slice, <span class="tok-number">20000</span>);</span>
-<span class="line" id="L821">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@ptrToInt</span>(slice.ptr) &amp; align_mask == <span class="tok-builtin">@ptrToInt</span>(slice.ptr));</span>
+<span class="line" id="L821">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@intFromPtr</span>(slice.ptr) &amp; align_mask == <span class="tok-builtin">@intFromPtr</span>(slice.ptr));</span>
 <span class="line" id="L822"></span>
 <span class="line" id="L823">    allocator.free(slice);</span>
 <span class="line" id="L824">}</span>
@@ -982,7 +982,7 @@
 </span>
 <span class="line" id="L842">    <span class="tok-comment">// fail, because of this high over-alignment we want to have.</span>
 </span>
-<span class="line" id="L843">    <span class="tok-kw">while</span> (<span class="tok-builtin">@ptrToInt</span>(slice.ptr) == mem.alignForward(<span class="tok-builtin">@ptrToInt</span>(slice.ptr), mem.page_size * <span class="tok-number">32</span>)) {</span>
+<span class="line" id="L843">    <span class="tok-kw">while</span> (<span class="tok-builtin">@intFromPtr</span>(slice.ptr) == mem.alignForward(<span class="tok-type">usize</span>, <span class="tok-builtin">@intFromPtr</span>(slice.ptr), mem.page_size * <span class="tok-number">32</span>)) {</span>
 <span class="line" id="L844">        <span class="tok-kw">try</span> stuff_to_free.append(slice);</span>
 <span class="line" id="L845">        slice = <span class="tok-kw">try</span> allocator.alignedAlloc(<span class="tok-type">u8</span>, <span class="tok-number">16</span>, alloc_size);</span>
 <span class="line" id="L846">    }</span>

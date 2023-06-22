@@ -431,7 +431,7 @@
 <span class="line" id="L277">    <span class="tok-kw">fn</span> <span class="tok-fn">copy_cqes_ready</span>(self: *IO_Uring, cqes: []linux.io_uring_cqe, wait_nr: <span class="tok-type">u32</span>) <span class="tok-type">u32</span> {</span>
 <span class="line" id="L278">        _ = wait_nr;</span>
 <span class="line" id="L279">        <span class="tok-kw">const</span> ready = self.cq_ready();</span>
-<span class="line" id="L280">        <span class="tok-kw">const</span> count = std.math.min(cqes.len, ready);</span>
+<span class="line" id="L280">        <span class="tok-kw">const</span> count = <span class="tok-builtin">@min</span>(cqes.len, ready);</span>
 <span class="line" id="L281">        <span class="tok-kw">var</span> head = self.cq.head.*;</span>
 <span class="line" id="L282">        <span class="tok-kw">var</span> tail = head +% count;</span>
 <span class="line" id="L283">        <span class="tok-comment">// TODO Optimize this by using 1 or 2 memcpy's (if the tail wraps) rather than a loop.</span>
@@ -1120,7 +1120,7 @@
 <span class="line" id="L962">        <span class="tok-kw">var</span> update = FilesUpdate{</span>
 <span class="line" id="L963">            .offset = offset,</span>
 <span class="line" id="L964">            .resv = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L965">            .fds = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@ptrToInt</span>(fds.ptr)),</span>
+<span class="line" id="L965">            .fds = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@intFromPtr</span>(fds.ptr)),</span>
 <span class="line" id="L966">        };</span>
 <span class="line" id="L967"></span>
 <span class="line" id="L968">        <span class="tok-kw">const</span> res = linux.io_uring_register(</span>
@@ -1264,7 +1264,7 @@
 <span class="line" id="L1093">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(fd: os.fd_t, p: linux.io_uring_params) !SubmissionQueue {</span>
 <span class="line" id="L1094">        assert(fd &gt;= <span class="tok-number">0</span>);</span>
 <span class="line" id="L1095">        assert((p.features &amp; linux.IORING_FEAT_SINGLE_MMAP) != <span class="tok-number">0</span>);</span>
-<span class="line" id="L1096">        <span class="tok-kw">const</span> size = std.math.max(</span>
+<span class="line" id="L1096">        <span class="tok-kw">const</span> size = <span class="tok-builtin">@max</span>(</span>
 <span class="line" id="L1097">            p.sq_off.array + p.sq_entries * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>),</span>
 <span class="line" id="L1098">            p.cq_off.cqes + p.cq_entries * <span class="tok-builtin">@sizeOf</span>(linux.io_uring_cqe),</span>
 <span class="line" id="L1099">        );</span>
@@ -1421,11 +1421,11 @@
 <span class="line" id="L1244">}</span>
 <span class="line" id="L1245"></span>
 <span class="line" id="L1246"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_read</span>(sqe: *linux.io_uring_sqe, fd: os.fd_t, buffer: []<span class="tok-type">u8</span>, offset: <span class="tok-type">u64</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1247">    io_uring_prep_rw(.READ, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(buffer.ptr), buffer.len, offset);</span>
+<span class="line" id="L1247">    io_uring_prep_rw(.READ, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(buffer.ptr), buffer.len, offset);</span>
 <span class="line" id="L1248">}</span>
 <span class="line" id="L1249"></span>
 <span class="line" id="L1250"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_write</span>(sqe: *linux.io_uring_sqe, fd: os.fd_t, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, offset: <span class="tok-type">u64</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1251">    io_uring_prep_rw(.WRITE, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(buffer.ptr), buffer.len, offset);</span>
+<span class="line" id="L1251">    io_uring_prep_rw(.WRITE, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(buffer.ptr), buffer.len, offset);</span>
 <span class="line" id="L1252">}</span>
 <span class="line" id="L1253"></span>
 <span class="line" id="L1254"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_readv</span>(</span>
@@ -1434,7 +1434,7 @@
 <span class="line" id="L1257">    iovecs: []<span class="tok-kw">const</span> os.iovec,</span>
 <span class="line" id="L1258">    offset: <span class="tok-type">u64</span>,</span>
 <span class="line" id="L1259">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1260">    io_uring_prep_rw(.READV, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(iovecs.ptr), iovecs.len, offset);</span>
+<span class="line" id="L1260">    io_uring_prep_rw(.READV, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(iovecs.ptr), iovecs.len, offset);</span>
 <span class="line" id="L1261">}</span>
 <span class="line" id="L1262"></span>
 <span class="line" id="L1263"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_writev</span>(</span>
@@ -1443,16 +1443,16 @@
 <span class="line" id="L1266">    iovecs: []<span class="tok-kw">const</span> os.iovec_const,</span>
 <span class="line" id="L1267">    offset: <span class="tok-type">u64</span>,</span>
 <span class="line" id="L1268">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1269">    io_uring_prep_rw(.WRITEV, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(iovecs.ptr), iovecs.len, offset);</span>
+<span class="line" id="L1269">    io_uring_prep_rw(.WRITEV, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(iovecs.ptr), iovecs.len, offset);</span>
 <span class="line" id="L1270">}</span>
 <span class="line" id="L1271"></span>
 <span class="line" id="L1272"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_read_fixed</span>(sqe: *linux.io_uring_sqe, fd: os.fd_t, buffer: *os.iovec, offset: <span class="tok-type">u64</span>, buffer_index: <span class="tok-type">u16</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1273">    io_uring_prep_rw(.READ_FIXED, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(buffer.iov_base), buffer.iov_len, offset);</span>
+<span class="line" id="L1273">    io_uring_prep_rw(.READ_FIXED, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(buffer.iov_base), buffer.iov_len, offset);</span>
 <span class="line" id="L1274">    sqe.buf_index = buffer_index;</span>
 <span class="line" id="L1275">}</span>
 <span class="line" id="L1276"></span>
 <span class="line" id="L1277"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_write_fixed</span>(sqe: *linux.io_uring_sqe, fd: os.fd_t, buffer: *os.iovec, offset: <span class="tok-type">u64</span>, buffer_index: <span class="tok-type">u16</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1278">    io_uring_prep_rw(.WRITE_FIXED, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(buffer.iov_base), buffer.iov_len, offset);</span>
+<span class="line" id="L1278">    io_uring_prep_rw(.WRITE_FIXED, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(buffer.iov_base), buffer.iov_len, offset);</span>
 <span class="line" id="L1279">    sqe.buf_index = buffer_index;</span>
 <span class="line" id="L1280">}</span>
 <span class="line" id="L1281"></span>
@@ -1477,7 +1477,7 @@
 </span>
 <span class="line" id="L1300">    <span class="tok-comment">// `addr2` maps to `sqe.off` (u64) instead of `sqe.len` (which is only a u32).</span>
 </span>
-<span class="line" id="L1301">    io_uring_prep_rw(.ACCEPT, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(addr), <span class="tok-number">0</span>, <span class="tok-builtin">@ptrToInt</span>(addrlen));</span>
+<span class="line" id="L1301">    io_uring_prep_rw(.ACCEPT, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(addr), <span class="tok-number">0</span>, <span class="tok-builtin">@intFromPtr</span>(addrlen));</span>
 <span class="line" id="L1302">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1303">}</span>
 <span class="line" id="L1304"></span>
@@ -1489,7 +1489,7 @@
 <span class="line" id="L1310">) <span class="tok-type">void</span> {</span>
 <span class="line" id="L1311">    <span class="tok-comment">// `addrlen` maps to `sqe.off` (u64) instead of `sqe.len` (which is only a u32).</span>
 </span>
-<span class="line" id="L1312">    io_uring_prep_rw(.CONNECT, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(addr), <span class="tok-number">0</span>, addrlen);</span>
+<span class="line" id="L1312">    io_uring_prep_rw(.CONNECT, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(addr), <span class="tok-number">0</span>, addrlen);</span>
 <span class="line" id="L1313">}</span>
 <span class="line" id="L1314"></span>
 <span class="line" id="L1315"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_epoll_ctl</span>(</span>
@@ -1499,16 +1499,16 @@
 <span class="line" id="L1319">    op: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1320">    ev: ?*linux.epoll_event,</span>
 <span class="line" id="L1321">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1322">    io_uring_prep_rw(.EPOLL_CTL, sqe, epfd, <span class="tok-builtin">@ptrToInt</span>(ev), op, <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, fd));</span>
+<span class="line" id="L1322">    io_uring_prep_rw(.EPOLL_CTL, sqe, epfd, <span class="tok-builtin">@intFromPtr</span>(ev), op, <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, fd));</span>
 <span class="line" id="L1323">}</span>
 <span class="line" id="L1324"></span>
 <span class="line" id="L1325"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_recv</span>(sqe: *linux.io_uring_sqe, fd: os.fd_t, buffer: []<span class="tok-type">u8</span>, flags: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1326">    io_uring_prep_rw(.RECV, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(buffer.ptr), buffer.len, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1326">    io_uring_prep_rw(.RECV, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(buffer.ptr), buffer.len, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1327">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1328">}</span>
 <span class="line" id="L1329"></span>
 <span class="line" id="L1330"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_send</span>(sqe: *linux.io_uring_sqe, fd: os.fd_t, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1331">    io_uring_prep_rw(.SEND, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(buffer.ptr), buffer.len, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1331">    io_uring_prep_rw(.SEND, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(buffer.ptr), buffer.len, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1332">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1333">}</span>
 <span class="line" id="L1334"></span>
@@ -1518,7 +1518,7 @@
 <span class="line" id="L1338">    msg: *os.msghdr,</span>
 <span class="line" id="L1339">    flags: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1340">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1341">    linux.io_uring_prep_rw(.RECVMSG, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(msg), <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1341">    linux.io_uring_prep_rw(.RECVMSG, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(msg), <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1342">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1343">}</span>
 <span class="line" id="L1344"></span>
@@ -1528,7 +1528,7 @@
 <span class="line" id="L1348">    msg: *<span class="tok-kw">const</span> os.msghdr_const,</span>
 <span class="line" id="L1349">    flags: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1350">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1351">    linux.io_uring_prep_rw(.SENDMSG, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(msg), <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1351">    linux.io_uring_prep_rw(.SENDMSG, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(msg), <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1352">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1353">}</span>
 <span class="line" id="L1354"></span>
@@ -1539,7 +1539,7 @@
 <span class="line" id="L1359">    flags: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1360">    mode: os.mode_t,</span>
 <span class="line" id="L1361">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1362">    io_uring_prep_rw(.OPENAT, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(path), mode, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1362">    io_uring_prep_rw(.OPENAT, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(path), mode, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1363">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1364">}</span>
 <span class="line" id="L1365"></span>
@@ -1567,7 +1567,7 @@
 <span class="line" id="L1387">    count: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1388">    flags: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1389">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1390">    io_uring_prep_rw(.TIMEOUT, sqe, -<span class="tok-number">1</span>, <span class="tok-builtin">@ptrToInt</span>(ts), <span class="tok-number">1</span>, count);</span>
+<span class="line" id="L1390">    io_uring_prep_rw(.TIMEOUT, sqe, -<span class="tok-number">1</span>, <span class="tok-builtin">@intFromPtr</span>(ts), <span class="tok-number">1</span>, count);</span>
 <span class="line" id="L1391">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1392">}</span>
 <span class="line" id="L1393"></span>
@@ -1594,7 +1594,7 @@
 <span class="line" id="L1414">    ts: *<span class="tok-kw">const</span> os.linux.kernel_timespec,</span>
 <span class="line" id="L1415">    flags: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1416">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1417">    linux.io_uring_prep_rw(.LINK_TIMEOUT, sqe, -<span class="tok-number">1</span>, <span class="tok-builtin">@ptrToInt</span>(ts), <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1417">    linux.io_uring_prep_rw(.LINK_TIMEOUT, sqe, -<span class="tok-number">1</span>, <span class="tok-builtin">@intFromPtr</span>(ts), <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1418">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1419">}</span>
 <span class="line" id="L1420"></span>
@@ -1603,7 +1603,7 @@
 <span class="line" id="L1423">    fd: os.fd_t,</span>
 <span class="line" id="L1424">    poll_mask: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1425">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1426">    io_uring_prep_rw(.POLL_ADD, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(<span class="tok-builtin">@as</span>(?*<span class="tok-type">anyopaque</span>, <span class="tok-null">null</span>)), <span class="tok-number">0</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1426">    io_uring_prep_rw(.POLL_ADD, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(<span class="tok-builtin">@as</span>(?*<span class="tok-type">anyopaque</span>, <span class="tok-null">null</span>)), <span class="tok-number">0</span>, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1427">    sqe.rw_flags = __io_uring_prep_poll_mask(poll_mask);</span>
 <span class="line" id="L1428">}</span>
 <span class="line" id="L1429"></span>
@@ -1657,7 +1657,7 @@
 <span class="line" id="L1477">    mask: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1478">    buf: *linux.Statx,</span>
 <span class="line" id="L1479">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1480">    io_uring_prep_rw(.STATX, sqe, fd, <span class="tok-builtin">@ptrToInt</span>(path), mask, <span class="tok-builtin">@ptrToInt</span>(buf));</span>
+<span class="line" id="L1480">    io_uring_prep_rw(.STATX, sqe, fd, <span class="tok-builtin">@intFromPtr</span>(path), mask, <span class="tok-builtin">@intFromPtr</span>(buf));</span>
 <span class="line" id="L1481">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1482">}</span>
 <span class="line" id="L1483"></span>
@@ -1690,9 +1690,9 @@
 <span class="line" id="L1510">        .RENAMEAT,</span>
 <span class="line" id="L1511">        sqe,</span>
 <span class="line" id="L1512">        old_dir_fd,</span>
-<span class="line" id="L1513">        <span class="tok-builtin">@ptrToInt</span>(old_path),</span>
+<span class="line" id="L1513">        <span class="tok-builtin">@intFromPtr</span>(old_path),</span>
 <span class="line" id="L1514">        <span class="tok-number">0</span>,</span>
-<span class="line" id="L1515">        <span class="tok-builtin">@ptrToInt</span>(new_path),</span>
+<span class="line" id="L1515">        <span class="tok-builtin">@intFromPtr</span>(new_path),</span>
 <span class="line" id="L1516">    );</span>
 <span class="line" id="L1517">    sqe.len = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, new_dir_fd);</span>
 <span class="line" id="L1518">    sqe.rw_flags = flags;</span>
@@ -1704,7 +1704,7 @@
 <span class="line" id="L1524">    path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L1525">    flags: <span class="tok-type">u32</span>,</span>
 <span class="line" id="L1526">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1527">    io_uring_prep_rw(.UNLINKAT, sqe, dir_fd, <span class="tok-builtin">@ptrToInt</span>(path), <span class="tok-number">0</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1527">    io_uring_prep_rw(.UNLINKAT, sqe, dir_fd, <span class="tok-builtin">@intFromPtr</span>(path), <span class="tok-number">0</span>, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1528">    sqe.rw_flags = flags;</span>
 <span class="line" id="L1529">}</span>
 <span class="line" id="L1530"></span>
@@ -1714,7 +1714,7 @@
 <span class="line" id="L1534">    path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L1535">    mode: os.mode_t,</span>
 <span class="line" id="L1536">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1537">    io_uring_prep_rw(.MKDIRAT, sqe, dir_fd, <span class="tok-builtin">@ptrToInt</span>(path), mode, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1537">    io_uring_prep_rw(.MKDIRAT, sqe, dir_fd, <span class="tok-builtin">@intFromPtr</span>(path), mode, <span class="tok-number">0</span>);</span>
 <span class="line" id="L1538">}</span>
 <span class="line" id="L1539"></span>
 <span class="line" id="L1540"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">io_uring_prep_symlinkat</span>(</span>
@@ -1727,9 +1727,9 @@
 <span class="line" id="L1547">        .SYMLINKAT,</span>
 <span class="line" id="L1548">        sqe,</span>
 <span class="line" id="L1549">        new_dir_fd,</span>
-<span class="line" id="L1550">        <span class="tok-builtin">@ptrToInt</span>(target),</span>
+<span class="line" id="L1550">        <span class="tok-builtin">@intFromPtr</span>(target),</span>
 <span class="line" id="L1551">        <span class="tok-number">0</span>,</span>
-<span class="line" id="L1552">        <span class="tok-builtin">@ptrToInt</span>(link_path),</span>
+<span class="line" id="L1552">        <span class="tok-builtin">@intFromPtr</span>(link_path),</span>
 <span class="line" id="L1553">    );</span>
 <span class="line" id="L1554">}</span>
 <span class="line" id="L1555"></span>
@@ -1745,9 +1745,9 @@
 <span class="line" id="L1565">        .LINKAT,</span>
 <span class="line" id="L1566">        sqe,</span>
 <span class="line" id="L1567">        old_dir_fd,</span>
-<span class="line" id="L1568">        <span class="tok-builtin">@ptrToInt</span>(old_path),</span>
+<span class="line" id="L1568">        <span class="tok-builtin">@intFromPtr</span>(old_path),</span>
 <span class="line" id="L1569">        <span class="tok-number">0</span>,</span>
-<span class="line" id="L1570">        <span class="tok-builtin">@ptrToInt</span>(new_path),</span>
+<span class="line" id="L1570">        <span class="tok-builtin">@intFromPtr</span>(new_path),</span>
 <span class="line" id="L1571">    );</span>
 <span class="line" id="L1572">    sqe.len = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, new_dir_fd);</span>
 <span class="line" id="L1573">    sqe.rw_flags = flags;</span>
@@ -1761,7 +1761,7 @@
 <span class="line" id="L1581">    group_id: <span class="tok-type">usize</span>,</span>
 <span class="line" id="L1582">    buffer_id: <span class="tok-type">usize</span>,</span>
 <span class="line" id="L1583">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1584">    <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@ptrToInt</span>(buffers);</span>
+<span class="line" id="L1584">    <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@intFromPtr</span>(buffers);</span>
 <span class="line" id="L1585">    io_uring_prep_rw(.PROVIDE_BUFFERS, sqe, <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, num), ptr, buffer_len, buffer_id);</span>
 <span class="line" id="L1586">    sqe.buf_index = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, group_id);</span>
 <span class="line" id="L1587">}</span>
@@ -2109,8 +2109,8 @@
 </span>
 <span class="line" id="L1919">    <span class="tok-kw">const</span> path_addr = <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_llvm) p: {</span>
 <span class="line" id="L1920">        <span class="tok-kw">var</span> workaround = path;</span>
-<span class="line" id="L1921">        <span class="tok-kw">break</span> :p <span class="tok-builtin">@ptrToInt</span>(workaround);</span>
-<span class="line" id="L1922">    } <span class="tok-kw">else</span> <span class="tok-builtin">@ptrToInt</span>(path);</span>
+<span class="line" id="L1921">        <span class="tok-kw">break</span> :p <span class="tok-builtin">@intFromPtr</span>(workaround);</span>
+<span class="line" id="L1922">    } <span class="tok-kw">else</span> <span class="tok-builtin">@intFromPtr</span>(path);</span>
 <span class="line" id="L1923"></span>
 <span class="line" id="L1924">    <span class="tok-kw">const</span> flags: <span class="tok-type">u32</span> = os.O.CLOEXEC | os.O.RDWR | os.O.CREAT;</span>
 <span class="line" id="L1925">    <span class="tok-kw">const</span> mode: os.mode_t = <span class="tok-number">0o666</span>;</span>
@@ -2293,7 +2293,7 @@
 <span class="line" id="L2098">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>), ring.cq_ready());</span>
 <span class="line" id="L2099"></span>
 <span class="line" id="L2100">    <span class="tok-kw">const</span> cqe_sendmsg = <span class="tok-kw">try</span> ring.copy_cqe();</span>
-<span class="line" id="L2101">    <span class="tok-kw">if</span> (cqe_sendmsg.res == -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.INVAL))) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L2101">    <span class="tok-kw">if</span> (cqe_sendmsg.res == -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.INVAL))) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L2102">    <span class="tok-kw">try</span> testing.expectEqual(linux.io_uring_cqe{</span>
 <span class="line" id="L2103">        .user_data = <span class="tok-number">0x11111111</span>,</span>
 <span class="line" id="L2104">        .res = buffer_send.len,</span>
@@ -2301,7 +2301,7 @@
 <span class="line" id="L2106">    }, cqe_sendmsg);</span>
 <span class="line" id="L2107"></span>
 <span class="line" id="L2108">    <span class="tok-kw">const</span> cqe_recvmsg = <span class="tok-kw">try</span> ring.copy_cqe();</span>
-<span class="line" id="L2109">    <span class="tok-kw">if</span> (cqe_recvmsg.res == -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.INVAL))) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L2109">    <span class="tok-kw">if</span> (cqe_recvmsg.res == -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.INVAL))) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L2110">    <span class="tok-kw">try</span> testing.expectEqual(linux.io_uring_cqe{</span>
 <span class="line" id="L2111">        .user_data = <span class="tok-number">0x22222222</span>,</span>
 <span class="line" id="L2112">        .res = buffer_recv.len,</span>
@@ -2336,13 +2336,13 @@
 <span class="line" id="L2140"></span>
 <span class="line" id="L2141">    <span class="tok-kw">try</span> testing.expectEqual(linux.io_uring_cqe{</span>
 <span class="line" id="L2142">        .user_data = <span class="tok-number">0x55555555</span>,</span>
-<span class="line" id="L2143">        .res = -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.TIME)),</span>
+<span class="line" id="L2143">        .res = -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.TIME)),</span>
 <span class="line" id="L2144">        .flags = <span class="tok-number">0</span>,</span>
 <span class="line" id="L2145">    }, cqe);</span>
 <span class="line" id="L2146"></span>
 <span class="line" id="L2147">    <span class="tok-comment">// Tests should not depend on timings: skip test if outside margin.</span>
 </span>
-<span class="line" id="L2148">    <span class="tok-kw">if</span> (!std.math.approxEqAbs(<span class="tok-type">f64</span>, ms, <span class="tok-builtin">@intToFloat</span>(<span class="tok-type">f64</span>, stopped - started), margin)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L2148">    <span class="tok-kw">if</span> (!std.math.approxEqAbs(<span class="tok-type">f64</span>, ms, <span class="tok-builtin">@floatFromInt</span>(<span class="tok-type">f64</span>, stopped - started), margin)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L2149">}</span>
 <span class="line" id="L2150"></span>
 <span class="line" id="L2151"><span class="tok-kw">test</span> <span class="tok-str">&quot;timeout (after a number of completions)&quot;</span> {</span>
@@ -2431,7 +2431,7 @@
 <span class="line" id="L2227">        <span class="tok-kw">if</span> (cqe.user_data == <span class="tok-number">0x88888888</span>) {</span>
 <span class="line" id="L2228">            <span class="tok-kw">try</span> testing.expectEqual(linux.io_uring_cqe{</span>
 <span class="line" id="L2229">                .user_data = <span class="tok-number">0x88888888</span>,</span>
-<span class="line" id="L2230">                .res = -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.CANCELED)),</span>
+<span class="line" id="L2230">                .res = -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.CANCELED)),</span>
 <span class="line" id="L2231">                .flags = <span class="tok-number">0</span>,</span>
 <span class="line" id="L2232">            }, cqe);</span>
 <span class="line" id="L2233">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (cqe.user_data == <span class="tok-number">0x99999999</span>) {</span>
@@ -2479,16 +2479,16 @@
 <span class="line" id="L2274">        <span class="tok-kw">const</span> cqe = <span class="tok-kw">try</span> ring.copy_cqe();</span>
 <span class="line" id="L2275">        <span class="tok-kw">switch</span> (cqe.user_data) {</span>
 <span class="line" id="L2276">            <span class="tok-number">0xffffffff</span> =&gt; {</span>
-<span class="line" id="L2277">                <span class="tok-kw">if</span> (cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.INTR)) <span class="tok-kw">and</span></span>
-<span class="line" id="L2278">                    cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.CANCELED)))</span>
+<span class="line" id="L2277">                <span class="tok-kw">if</span> (cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.INTR)) <span class="tok-kw">and</span></span>
+<span class="line" id="L2278">                    cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.CANCELED)))</span>
 <span class="line" id="L2279">                {</span>
 <span class="line" id="L2280">                    std.debug.print(<span class="tok-str">&quot;Req 0x{x} got {d}\n&quot;</span>, .{ cqe.user_data, cqe.res });</span>
 <span class="line" id="L2281">                    <span class="tok-kw">try</span> testing.expect(<span class="tok-null">false</span>);</span>
 <span class="line" id="L2282">                }</span>
 <span class="line" id="L2283">            },</span>
 <span class="line" id="L2284">            <span class="tok-number">0x22222222</span> =&gt; {</span>
-<span class="line" id="L2285">                <span class="tok-kw">if</span> (cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.ALREADY)) <span class="tok-kw">and</span></span>
-<span class="line" id="L2286">                    cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.TIME)))</span>
+<span class="line" id="L2285">                <span class="tok-kw">if</span> (cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.ALREADY)) <span class="tok-kw">and</span></span>
+<span class="line" id="L2286">                    cqe.res != -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.TIME)))</span>
 <span class="line" id="L2287">                {</span>
 <span class="line" id="L2288">                    std.debug.print(<span class="tok-str">&quot;Req 0x{x} got {d}\n&quot;</span>, .{ cqe.user_data, cqe.res });</span>
 <span class="line" id="L2289">                    <span class="tok-kw">try</span> testing.expect(<span class="tok-null">false</span>);</span>
@@ -2654,7 +2654,7 @@
 <span class="line" id="L2439"></span>
 <span class="line" id="L2440">    <span class="tok-kw">try</span> testing.expectEqual(linux.io_uring_cqe{</span>
 <span class="line" id="L2441">        .user_data = <span class="tok-number">0xffffffff</span>,</span>
-<span class="line" id="L2442">        .res = -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@enumToInt</span>(linux.E.CANCELED)),</span>
+<span class="line" id="L2442">        .res = -<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intFromEnum</span>(linux.E.CANCELED)),</span>
 <span class="line" id="L2443">        .flags = <span class="tok-number">0</span>,</span>
 <span class="line" id="L2444">    }, cqe_recv);</span>
 <span class="line" id="L2445"></span>

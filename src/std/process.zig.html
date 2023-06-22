@@ -640,10 +640,10 @@
 <span class="line" id="L514">    <span class="tok-comment">/// Call to free the internal buffer of the iterator.</span></span>
 <span class="line" id="L515">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *ArgIteratorWasi) <span class="tok-type">void</span> {</span>
 <span class="line" id="L516">        <span class="tok-kw">const</span> last_item = self.args[self.args.len - <span class="tok-number">1</span>];</span>
-<span class="line" id="L517">        <span class="tok-kw">const</span> last_byte_addr = <span class="tok-builtin">@ptrToInt</span>(last_item.ptr) + last_item.len + <span class="tok-number">1</span>; <span class="tok-comment">// null terminated</span>
+<span class="line" id="L517">        <span class="tok-kw">const</span> last_byte_addr = <span class="tok-builtin">@intFromPtr</span>(last_item.ptr) + last_item.len + <span class="tok-number">1</span>; <span class="tok-comment">// null terminated</span>
 </span>
 <span class="line" id="L518">        <span class="tok-kw">const</span> first_item_ptr = self.args[<span class="tok-number">0</span>].ptr;</span>
-<span class="line" id="L519">        <span class="tok-kw">const</span> len = last_byte_addr - <span class="tok-builtin">@ptrToInt</span>(first_item_ptr);</span>
+<span class="line" id="L519">        <span class="tok-kw">const</span> len = last_byte_addr - <span class="tok-builtin">@intFromPtr</span>(first_item_ptr);</span>
 <span class="line" id="L520">        self.allocator.free(first_item_ptr[<span class="tok-number">0</span>..len]);</span>
 <span class="line" id="L521">        self.allocator.free(self.args);</span>
 <span class="line" id="L522">    }</span>
@@ -1224,9 +1224,9 @@
 <span class="line" id="L1079">            <span class="tok-kw">return</span> phdr - <span class="tok-builtin">@sizeOf</span>(std.elf.Ehdr);</span>
 <span class="line" id="L1080">        },</span>
 <span class="line" id="L1081">        .macos, .freebsd, .netbsd =&gt; {</span>
-<span class="line" id="L1082">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(&amp;std.c._mh_execute_header);</span>
+<span class="line" id="L1082">            <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(&amp;std.c._mh_execute_header);</span>
 <span class="line" id="L1083">        },</span>
-<span class="line" id="L1084">        .windows =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>)),</span>
+<span class="line" id="L1084">        .windows =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>)),</span>
 <span class="line" id="L1085">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unsupported OS&quot;</span>),</span>
 <span class="line" id="L1086">    }</span>
 <span class="line" id="L1087">}</span>
@@ -1276,7 +1276,7 @@
 <span class="line" id="L1131">    <span class="tok-kw">defer</span> arena_allocator.deinit();</span>
 <span class="line" id="L1132">    <span class="tok-kw">const</span> arena = arena_allocator.allocator();</span>
 <span class="line" id="L1133"></span>
-<span class="line" id="L1134">    <span class="tok-kw">const</span> argv_buf = <span class="tok-kw">try</span> arena.allocSentinel(?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, argv.len, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1134">    <span class="tok-kw">const</span> argv_buf = <span class="tok-kw">try</span> arena.allocSentinel(?[*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, argv.len, <span class="tok-null">null</span>);</span>
 <span class="line" id="L1135">    <span class="tok-kw">for</span> (argv, <span class="tok-number">0</span>..) |arg, i| argv_buf[i] = (<span class="tok-kw">try</span> arena.dupeZ(<span class="tok-type">u8</span>, arg)).ptr;</span>
 <span class="line" id="L1136"></span>
 <span class="line" id="L1137">    <span class="tok-kw">const</span> envp = m: {</span>
@@ -1290,7 +1290,7 @@
 </span>
 <span class="line" id="L1145">            <span class="tok-comment">// TODO type-safety for null-termination of `os.environ`.</span>
 </span>
-<span class="line" id="L1146">            <span class="tok-kw">break</span> :m <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, os.environ.ptr);</span>
+<span class="line" id="L1146">            <span class="tok-kw">break</span> :m <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-null">null</span>]<span class="tok-kw">const</span> ?[*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, os.environ.ptr);</span>
 <span class="line" id="L1147">        } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L1148">            <span class="tok-comment">// TODO come up with a solution for this.</span>
 </span>
@@ -1311,7 +1311,7 @@
 <span class="line" id="L1163">        .linux =&gt; {</span>
 <span class="line" id="L1164">            <span class="tok-kw">return</span> totalSystemMemoryLinux() <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory;</span>
 <span class="line" id="L1165">        },</span>
-<span class="line" id="L1166">        .freebsd, .netbsd, .openbsd, .dragonfly, .macos =&gt; {</span>
+<span class="line" id="L1166">        .freebsd, .netbsd, .dragonfly, .macos =&gt; {</span>
 <span class="line" id="L1167">            <span class="tok-kw">var</span> physmem: <span class="tok-type">c_ulong</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L1168">            <span class="tok-kw">var</span> len: <span class="tok-type">usize</span> = <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">c_ulong</span>);</span>
 <span class="line" id="L1169">            <span class="tok-kw">const</span> name = <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
@@ -1325,51 +1325,72 @@
 <span class="line" id="L1177">            };</span>
 <span class="line" id="L1178">            <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, physmem);</span>
 <span class="line" id="L1179">        },</span>
-<span class="line" id="L1180">        .windows =&gt; {</span>
-<span class="line" id="L1181">            <span class="tok-kw">var</span> sbi: std.os.windows.SYSTEM_BASIC_INFORMATION = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1182">            <span class="tok-kw">const</span> rc = std.os.windows.ntdll.NtQuerySystemInformation(</span>
-<span class="line" id="L1183">                .SystemBasicInformation,</span>
-<span class="line" id="L1184">                &amp;sbi,</span>
-<span class="line" id="L1185">                <span class="tok-builtin">@sizeOf</span>(std.os.windows.SYSTEM_BASIC_INFORMATION),</span>
-<span class="line" id="L1186">                <span class="tok-null">null</span>,</span>
-<span class="line" id="L1187">            );</span>
-<span class="line" id="L1188">            <span class="tok-kw">if</span> (rc != .SUCCESS) {</span>
-<span class="line" id="L1189">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory;</span>
-<span class="line" id="L1190">            }</span>
-<span class="line" id="L1191">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, sbi.NumberOfPhysicalPages) * sbi.PageSize;</span>
-<span class="line" id="L1192">        },</span>
-<span class="line" id="L1193">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
-<span class="line" id="L1194">    }</span>
-<span class="line" id="L1195">}</span>
-<span class="line" id="L1196"></span>
-<span class="line" id="L1197"><span class="tok-kw">fn</span> <span class="tok-fn">totalSystemMemoryLinux</span>() !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1198">    <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsoluteZ(<span class="tok-str">&quot;/proc/meminfo&quot;</span>, .{});</span>
-<span class="line" id="L1199">    <span class="tok-kw">defer</span> file.close();</span>
-<span class="line" id="L1200">    <span class="tok-kw">var</span> buf: [<span class="tok-number">50</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1201">    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> file.read(&amp;buf);</span>
-<span class="line" id="L1202">    <span class="tok-kw">if</span> (amt != <span class="tok-number">50</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1203">    <span class="tok-kw">var</span> it = std.mem.tokenizeAny(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..amt], <span class="tok-str">&quot; \n&quot;</span>);</span>
-<span class="line" id="L1204">    <span class="tok-kw">const</span> label = it.next().?;</span>
-<span class="line" id="L1205">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, label, <span class="tok-str">&quot;MemTotal:&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1206">    <span class="tok-kw">const</span> int_text = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1207">    <span class="tok-kw">const</span> units = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1208">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, units, <span class="tok-str">&quot;kB&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
-<span class="line" id="L1209">    <span class="tok-kw">const</span> kilobytes = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">usize</span>, int_text, <span class="tok-number">10</span>);</span>
-<span class="line" id="L1210">    <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
-<span class="line" id="L1211">}</span>
-<span class="line" id="L1212"></span>
-<span class="line" id="L1213"><span class="tok-comment">/// Indicate that we are now terminating with a successful exit code.</span></span>
-<span class="line" id="L1214"><span class="tok-comment">/// In debug builds, this is a no-op, so that the calling code's</span></span>
-<span class="line" id="L1215"><span class="tok-comment">/// cleanup mechanisms are tested and so that external tools that</span></span>
-<span class="line" id="L1216"><span class="tok-comment">/// check for resource leaks can be accurate. In release builds, this</span></span>
-<span class="line" id="L1217"><span class="tok-comment">/// calls exit(0), and does not return.</span></span>
-<span class="line" id="L1218"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cleanExit</span>() <span class="tok-type">void</span> {</span>
-<span class="line" id="L1219">    <span class="tok-kw">if</span> (builtin.mode == .Debug) {</span>
-<span class="line" id="L1220">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1221">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1222">        exit(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1223">    }</span>
-<span class="line" id="L1224">}</span>
-<span class="line" id="L1225"></span>
+<span class="line" id="L1180">        .openbsd =&gt; {</span>
+<span class="line" id="L1181">            <span class="tok-kw">const</span> mib: [<span class="tok-number">2</span>]<span class="tok-type">c_int</span> = [_]<span class="tok-type">c_int</span>{</span>
+<span class="line" id="L1182">                std.os.CTL.HW,</span>
+<span class="line" id="L1183">                std.os.HW.PHYSMEM64,</span>
+<span class="line" id="L1184">            };</span>
+<span class="line" id="L1185">            <span class="tok-kw">var</span> physmem: <span class="tok-type">i64</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1186">            <span class="tok-kw">var</span> len: <span class="tok-type">usize</span> = <span class="tok-builtin">@sizeOf</span>(<span class="tok-builtin">@TypeOf</span>(physmem));</span>
+<span class="line" id="L1187">            std.os.sysctl(&amp;mib, &amp;physmem, &amp;len, <span class="tok-null">null</span>, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1188">                <span class="tok-kw">error</span>.NameTooLong =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// constant, known good value</span>
+</span>
+<span class="line" id="L1189">                <span class="tok-kw">error</span>.PermissionDenied =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// only when setting values,</span>
+</span>
+<span class="line" id="L1190">                <span class="tok-kw">error</span>.SystemResources =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// memory already on the stack</span>
+</span>
+<span class="line" id="L1191">                <span class="tok-kw">error</span>.UnknownName =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// constant, known good value</span>
+</span>
+<span class="line" id="L1192">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
+<span class="line" id="L1193">            };</span>
+<span class="line" id="L1194">            assert(physmem &gt;= <span class="tok-number">0</span>);</span>
+<span class="line" id="L1195">            <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">usize</span>, physmem);</span>
+<span class="line" id="L1196">        },</span>
+<span class="line" id="L1197">        .windows =&gt; {</span>
+<span class="line" id="L1198">            <span class="tok-kw">var</span> sbi: std.os.windows.SYSTEM_BASIC_INFORMATION = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1199">            <span class="tok-kw">const</span> rc = std.os.windows.ntdll.NtQuerySystemInformation(</span>
+<span class="line" id="L1200">                .SystemBasicInformation,</span>
+<span class="line" id="L1201">                &amp;sbi,</span>
+<span class="line" id="L1202">                <span class="tok-builtin">@sizeOf</span>(std.os.windows.SYSTEM_BASIC_INFORMATION),</span>
+<span class="line" id="L1203">                <span class="tok-null">null</span>,</span>
+<span class="line" id="L1204">            );</span>
+<span class="line" id="L1205">            <span class="tok-kw">if</span> (rc != .SUCCESS) {</span>
+<span class="line" id="L1206">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory;</span>
+<span class="line" id="L1207">            }</span>
+<span class="line" id="L1208">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, sbi.NumberOfPhysicalPages) * sbi.PageSize;</span>
+<span class="line" id="L1209">        },</span>
+<span class="line" id="L1210">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
+<span class="line" id="L1211">    }</span>
+<span class="line" id="L1212">}</span>
+<span class="line" id="L1213"></span>
+<span class="line" id="L1214"><span class="tok-kw">fn</span> <span class="tok-fn">totalSystemMemoryLinux</span>() !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1215">    <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> std.fs.openFileAbsoluteZ(<span class="tok-str">&quot;/proc/meminfo&quot;</span>, .{});</span>
+<span class="line" id="L1216">    <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L1217">    <span class="tok-kw">var</span> buf: [<span class="tok-number">50</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1218">    <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> file.read(&amp;buf);</span>
+<span class="line" id="L1219">    <span class="tok-kw">if</span> (amt != <span class="tok-number">50</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1220">    <span class="tok-kw">var</span> it = std.mem.tokenizeAny(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..amt], <span class="tok-str">&quot; \n&quot;</span>);</span>
+<span class="line" id="L1221">    <span class="tok-kw">const</span> label = it.next().?;</span>
+<span class="line" id="L1222">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, label, <span class="tok-str">&quot;MemTotal:&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1223">    <span class="tok-kw">const</span> int_text = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1224">    <span class="tok-kw">const</span> units = it.next() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1225">    <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, units, <span class="tok-str">&quot;kB&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Unexpected;</span>
+<span class="line" id="L1226">    <span class="tok-kw">const</span> kilobytes = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">usize</span>, int_text, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1227">    <span class="tok-kw">return</span> kilobytes * <span class="tok-number">1024</span>;</span>
+<span class="line" id="L1228">}</span>
+<span class="line" id="L1229"></span>
+<span class="line" id="L1230"><span class="tok-comment">/// Indicate that we are now terminating with a successful exit code.</span></span>
+<span class="line" id="L1231"><span class="tok-comment">/// In debug builds, this is a no-op, so that the calling code's</span></span>
+<span class="line" id="L1232"><span class="tok-comment">/// cleanup mechanisms are tested and so that external tools that</span></span>
+<span class="line" id="L1233"><span class="tok-comment">/// check for resource leaks can be accurate. In release builds, this</span></span>
+<span class="line" id="L1234"><span class="tok-comment">/// calls exit(0), and does not return.</span></span>
+<span class="line" id="L1235"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cleanExit</span>() <span class="tok-type">void</span> {</span>
+<span class="line" id="L1236">    <span class="tok-kw">if</span> (builtin.mode == .Debug) {</span>
+<span class="line" id="L1237">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1238">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1239">        exit(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1240">    }</span>
+<span class="line" id="L1241">}</span>
+<span class="line" id="L1242"></span>
 </code></pre></body>
 </html>

@@ -153,14 +153,14 @@
 <span class="line" id="L40"></span>
 <span class="line" id="L41">    <span class="tok-kw">fn</span> <span class="tok-fn">getBit</span>(self: FreeBlock, idx: <span class="tok-type">usize</span>) PageStatus {</span>
 <span class="line" id="L42">        <span class="tok-kw">const</span> bit_offset = <span class="tok-number">0</span>;</span>
-<span class="line" id="L43">        <span class="tok-kw">return</span> <span class="tok-builtin">@intToEnum</span>(PageStatus, Io.get(mem.sliceAsBytes(self.data), idx, bit_offset));</span>
+<span class="line" id="L43">        <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(PageStatus, Io.get(mem.sliceAsBytes(self.data), idx, bit_offset));</span>
 <span class="line" id="L44">    }</span>
 <span class="line" id="L45"></span>
 <span class="line" id="L46">    <span class="tok-kw">fn</span> <span class="tok-fn">setBits</span>(self: FreeBlock, start_idx: <span class="tok-type">usize</span>, len: <span class="tok-type">usize</span>, val: PageStatus) <span class="tok-type">void</span> {</span>
 <span class="line" id="L47">        <span class="tok-kw">const</span> bit_offset = <span class="tok-number">0</span>;</span>
 <span class="line" id="L48">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L49">        <span class="tok-kw">while</span> (i &lt; len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L50">            Io.set(mem.sliceAsBytes(self.data), start_idx + i, bit_offset, <span class="tok-builtin">@enumToInt</span>(val));</span>
+<span class="line" id="L50">            Io.set(mem.sliceAsBytes(self.data), start_idx + i, bit_offset, <span class="tok-builtin">@intFromEnum</span>(val));</span>
 <span class="line" id="L51">        }</span>
 <span class="line" id="L52">    }</span>
 <span class="line" id="L53"></span>
@@ -219,7 +219,7 @@
 <span class="line" id="L100">}</span>
 <span class="line" id="L101"></span>
 <span class="line" id="L102"><span class="tok-kw">fn</span> <span class="tok-fn">nPages</span>(memsize: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L103">    <span class="tok-kw">return</span> mem.alignForward(memsize, mem.page_size) / mem.page_size;</span>
+<span class="line" id="L103">    <span class="tok-kw">return</span> mem.alignForward(<span class="tok-type">usize</span>, memsize, mem.page_size) / mem.page_size;</span>
 <span class="line" id="L104">}</span>
 <span class="line" id="L105"></span>
 <span class="line" id="L106"><span class="tok-kw">fn</span> <span class="tok-fn">alloc</span>(ctx: *<span class="tok-type">anyopaque</span>, len: <span class="tok-type">usize</span>, log2_align: <span class="tok-type">u8</span>, ra: <span class="tok-type">usize</span>) ?[*]<span class="tok-type">u8</span> {</span>
@@ -228,7 +228,7 @@
 <span class="line" id="L109">    <span class="tok-kw">if</span> (len &gt; maxInt(<span class="tok-type">usize</span>) - (mem.page_size - <span class="tok-number">1</span>)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L110">    <span class="tok-kw">const</span> page_count = nPages(len);</span>
 <span class="line" id="L111">    <span class="tok-kw">const</span> page_idx = allocPages(page_count, log2_align) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L112">    <span class="tok-kw">return</span> <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-type">u8</span>, page_idx * mem.page_size);</span>
+<span class="line" id="L112">    <span class="tok-kw">return</span> <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-type">u8</span>, page_idx * mem.page_size);</span>
 <span class="line" id="L113">}</span>
 <span class="line" id="L114"></span>
 <span class="line" id="L115"><span class="tok-kw">fn</span> <span class="tok-fn">allocPages</span>(page_count: <span class="tok-type">usize</span>, log2_align: <span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
@@ -272,7 +272,7 @@
 </span>
 <span class="line" id="L152">            new_end -= <span class="tok-number">1</span>;</span>
 <span class="line" id="L153"></span>
-<span class="line" id="L154">            extended.data = <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-type">u128</span>, new_end * mem.page_size)[<span class="tok-number">0</span> .. mem.page_size / <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u128</span>)];</span>
+<span class="line" id="L154">            extended.data = <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-type">u128</span>, new_end * mem.page_size)[<span class="tok-number">0</span> .. mem.page_size / <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u128</span>)];</span>
 <span class="line" id="L155">            <span class="tok-comment">// Since this is the first page being freed and we consume it, assume *nothing* is free.</span>
 </span>
 <span class="line" id="L156">            <span class="tok-builtin">@memset</span>(extended.data, PageStatus.none_free);</span>
@@ -292,12 +292,12 @@
 <span class="line" id="L170">    _ = ctx;</span>
 <span class="line" id="L171">    _ = log2_buf_align;</span>
 <span class="line" id="L172">    _ = return_address;</span>
-<span class="line" id="L173">    <span class="tok-kw">const</span> aligned_len = mem.alignForward(buf.len, mem.page_size);</span>
+<span class="line" id="L173">    <span class="tok-kw">const</span> aligned_len = mem.alignForward(<span class="tok-type">usize</span>, buf.len, mem.page_size);</span>
 <span class="line" id="L174">    <span class="tok-kw">if</span> (new_len &gt; aligned_len) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
 <span class="line" id="L175">    <span class="tok-kw">const</span> current_n = nPages(aligned_len);</span>
 <span class="line" id="L176">    <span class="tok-kw">const</span> new_n = nPages(new_len);</span>
 <span class="line" id="L177">    <span class="tok-kw">if</span> (new_n != current_n) {</span>
-<span class="line" id="L178">        <span class="tok-kw">const</span> base = nPages(<span class="tok-builtin">@ptrToInt</span>(buf.ptr));</span>
+<span class="line" id="L178">        <span class="tok-kw">const</span> base = nPages(<span class="tok-builtin">@intFromPtr</span>(buf.ptr));</span>
 <span class="line" id="L179">        freePages(base + new_n, base + current_n);</span>
 <span class="line" id="L180">    }</span>
 <span class="line" id="L181">    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
@@ -312,9 +312,9 @@
 <span class="line" id="L190">    _ = ctx;</span>
 <span class="line" id="L191">    _ = log2_buf_align;</span>
 <span class="line" id="L192">    _ = return_address;</span>
-<span class="line" id="L193">    <span class="tok-kw">const</span> aligned_len = mem.alignForward(buf.len, mem.page_size);</span>
+<span class="line" id="L193">    <span class="tok-kw">const</span> aligned_len = mem.alignForward(<span class="tok-type">usize</span>, buf.len, mem.page_size);</span>
 <span class="line" id="L194">    <span class="tok-kw">const</span> current_n = nPages(aligned_len);</span>
-<span class="line" id="L195">    <span class="tok-kw">const</span> base = nPages(<span class="tok-builtin">@ptrToInt</span>(buf.ptr));</span>
+<span class="line" id="L195">    <span class="tok-kw">const</span> base = nPages(<span class="tok-builtin">@intFromPtr</span>(buf.ptr));</span>
 <span class="line" id="L196">    freePages(base, base + current_n);</span>
 <span class="line" id="L197">}</span>
 <span class="line" id="L198"></span>
@@ -324,7 +324,7 @@
 <span class="line" id="L202"></span>
 <span class="line" id="L203">    <span class="tok-kw">const</span> conventional_memsize = WasmPageAllocator.conventional.totalPages() * mem.page_size;</span>
 <span class="line" id="L204">    <span class="tok-kw">const</span> initial = <span class="tok-kw">try</span> page_allocator.alloc(<span class="tok-type">u8</span>, mem.page_size);</span>
-<span class="line" id="L205">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@ptrToInt</span>(initial.ptr) &lt; conventional_memsize); <span class="tok-comment">// If this isn't conventional, the rest of these tests don't make sense. Also we have a serious memory leak in the test suite.</span>
+<span class="line" id="L205">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@intFromPtr</span>(initial.ptr) &lt; conventional_memsize); <span class="tok-comment">// If this isn't conventional, the rest of these tests don't make sense. Also we have a serious memory leak in the test suite.</span>
 </span>
 <span class="line" id="L206"></span>
 <span class="line" id="L207">    <span class="tok-kw">var</span> inplace = <span class="tok-kw">try</span> page_allocator.realloc(initial, <span class="tok-number">1</span>);</span>
@@ -343,7 +343,7 @@
 <span class="line" id="L219">    page_allocator.free(padding);</span>
 <span class="line" id="L220"></span>
 <span class="line" id="L221">    <span class="tok-kw">const</span> ext = <span class="tok-kw">try</span> page_allocator.alloc(<span class="tok-type">u8</span>, conventional_memsize);</span>
-<span class="line" id="L222">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@ptrToInt</span>(ext.ptr) &gt;= conventional_memsize);</span>
+<span class="line" id="L222">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@intFromPtr</span>(ext.ptr) &gt;= conventional_memsize);</span>
 <span class="line" id="L223"></span>
 <span class="line" id="L224">    <span class="tok-kw">const</span> use_small = <span class="tok-kw">try</span> page_allocator.alloc(<span class="tok-type">u8</span>, <span class="tok-number">1</span>);</span>
 <span class="line" id="L225">    <span class="tok-kw">try</span> testing.expectEqual(initial.ptr, use_small.ptr);</span>

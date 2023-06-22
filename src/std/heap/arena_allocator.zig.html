@@ -242,181 +242,197 @@
 </span>
 <span class="line" id="L110">        <span class="tok-comment">// value.</span>
 </span>
-<span class="line" id="L111">        <span class="tok-kw">const</span> current_capacity = <span class="tok-kw">if</span> (mode != .free_all)</span>
-<span class="line" id="L112">            <span class="tok-builtin">@sizeOf</span>(BufNode) + self.queryCapacity() <span class="tok-comment">// we need at least space for exactly one node + the current capacity</span>
+<span class="line" id="L111">        <span class="tok-kw">const</span> requested_capacity = <span class="tok-kw">switch</span> (mode) {</span>
+<span class="line" id="L112">            .retain_capacity =&gt; self.queryCapacity(),</span>
+<span class="line" id="L113">            .retain_with_limit =&gt; |limit| <span class="tok-builtin">@min</span>(limit, self.queryCapacity()),</span>
+<span class="line" id="L114">            .free_all =&gt; <span class="tok-number">0</span>,</span>
+<span class="line" id="L115">        };</span>
+<span class="line" id="L116">        <span class="tok-kw">if</span> (requested_capacity == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L117">            <span class="tok-comment">// just reset when we don't have anything to reallocate</span>
 </span>
-<span class="line" id="L113">        <span class="tok-kw">else</span></span>
-<span class="line" id="L114">            <span class="tok-number">0</span>;</span>
-<span class="line" id="L115">        <span class="tok-kw">if</span> (mode == .free_all <span class="tok-kw">or</span> current_capacity == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L116">            <span class="tok-comment">// just reset when we don't have anything to reallocate</span>
+<span class="line" id="L118">            self.deinit();</span>
+<span class="line" id="L119">            self.state = State{};</span>
+<span class="line" id="L120">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L121">        }</span>
+<span class="line" id="L122">        <span class="tok-kw">const</span> total_size = requested_capacity + <span class="tok-builtin">@sizeOf</span>(BufNode);</span>
+<span class="line" id="L123">        <span class="tok-kw">const</span> align_bits = std.math.log2_int(<span class="tok-type">usize</span>, <span class="tok-builtin">@alignOf</span>(BufNode));</span>
+<span class="line" id="L124">        <span class="tok-comment">// Free all nodes except for the last one</span>
 </span>
-<span class="line" id="L117">            self.deinit();</span>
-<span class="line" id="L118">            self.state = State{};</span>
-<span class="line" id="L119">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L120">        }</span>
-<span class="line" id="L121">        <span class="tok-kw">const</span> total_size = <span class="tok-kw">switch</span> (mode) {</span>
-<span class="line" id="L122">            .retain_capacity =&gt; current_capacity,</span>
-<span class="line" id="L123">            .retain_with_limit =&gt; |limit| std.math.min(limit, current_capacity),</span>
-<span class="line" id="L124">            .free_all =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L125">        };</span>
-<span class="line" id="L126">        <span class="tok-kw">const</span> align_bits = std.math.log2_int(<span class="tok-type">usize</span>, <span class="tok-builtin">@alignOf</span>(BufNode));</span>
-<span class="line" id="L127">        <span class="tok-comment">// Free all nodes except for the last one</span>
+<span class="line" id="L125">        <span class="tok-kw">var</span> it = self.state.buffer_list.first;</span>
+<span class="line" id="L126">        <span class="tok-kw">const</span> maybe_first_node = <span class="tok-kw">while</span> (it) |node| {</span>
+<span class="line" id="L127">            <span class="tok-comment">// this has to occur before the free because the free frees node</span>
 </span>
-<span class="line" id="L128">        <span class="tok-kw">var</span> it = self.state.buffer_list.first;</span>
-<span class="line" id="L129">        <span class="tok-kw">const</span> maybe_first_node = <span class="tok-kw">while</span> (it) |node| {</span>
-<span class="line" id="L130">            <span class="tok-comment">// this has to occur before the free because the free frees node</span>
+<span class="line" id="L128">            <span class="tok-kw">const</span> next_it = node.next;</span>
+<span class="line" id="L129">            <span class="tok-kw">if</span> (next_it == <span class="tok-null">null</span>)</span>
+<span class="line" id="L130">                <span class="tok-kw">break</span> node;</span>
+<span class="line" id="L131">            <span class="tok-kw">const</span> alloc_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, node)[<span class="tok-number">0</span>..node.data];</span>
+<span class="line" id="L132">            self.child_allocator.rawFree(alloc_buf, align_bits, <span class="tok-builtin">@returnAddress</span>());</span>
+<span class="line" id="L133">            it = next_it;</span>
+<span class="line" id="L134">        } <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L135">        std.debug.assert(maybe_first_node == <span class="tok-null">null</span> <span class="tok-kw">or</span> maybe_first_node.?.next == <span class="tok-null">null</span>);</span>
+<span class="line" id="L136">        <span class="tok-comment">// reset the state before we try resizing the buffers, so we definitely have reset the arena to 0.</span>
 </span>
-<span class="line" id="L131">            <span class="tok-kw">const</span> next_it = node.next;</span>
-<span class="line" id="L132">            <span class="tok-kw">if</span> (next_it == <span class="tok-null">null</span>)</span>
-<span class="line" id="L133">                <span class="tok-kw">break</span> node;</span>
-<span class="line" id="L134">            <span class="tok-kw">const</span> alloc_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, node)[<span class="tok-number">0</span>..node.data];</span>
-<span class="line" id="L135">            self.child_allocator.rawFree(alloc_buf, align_bits, <span class="tok-builtin">@returnAddress</span>());</span>
-<span class="line" id="L136">            it = next_it;</span>
-<span class="line" id="L137">        } <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L138">        std.debug.assert(maybe_first_node == <span class="tok-null">null</span> <span class="tok-kw">or</span> maybe_first_node.?.next == <span class="tok-null">null</span>);</span>
-<span class="line" id="L139">        <span class="tok-comment">// reset the state before we try resizing the buffers, so we definitely have reset the arena to 0.</span>
+<span class="line" id="L137">        self.state.end_index = <span class="tok-number">0</span>;</span>
+<span class="line" id="L138">        <span class="tok-kw">if</span> (maybe_first_node) |first_node| {</span>
+<span class="line" id="L139">            self.state.buffer_list.first = first_node;</span>
+<span class="line" id="L140">            <span class="tok-comment">// perfect, no need to invoke the child_allocator</span>
 </span>
-<span class="line" id="L140">        self.state.end_index = <span class="tok-number">0</span>;</span>
-<span class="line" id="L141">        <span class="tok-kw">if</span> (maybe_first_node) |first_node| {</span>
-<span class="line" id="L142">            <span class="tok-comment">// perfect, no need to invoke the child_allocator</span>
+<span class="line" id="L141">            <span class="tok-kw">if</span> (first_node.data == total_size)</span>
+<span class="line" id="L142">                <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L143">            <span class="tok-kw">const</span> first_alloc_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, first_node)[<span class="tok-number">0</span>..first_node.data];</span>
+<span class="line" id="L144">            <span class="tok-kw">if</span> (self.child_allocator.rawResize(first_alloc_buf, align_bits, total_size, <span class="tok-builtin">@returnAddress</span>())) {</span>
+<span class="line" id="L145">                <span class="tok-comment">// successful resize</span>
 </span>
-<span class="line" id="L143">            <span class="tok-kw">if</span> (first_node.data == total_size)</span>
-<span class="line" id="L144">                <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L145">            <span class="tok-kw">const</span> first_alloc_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, first_node)[<span class="tok-number">0</span>..first_node.data];</span>
-<span class="line" id="L146">            <span class="tok-kw">if</span> (self.child_allocator.rawResize(first_alloc_buf, align_bits, total_size, <span class="tok-builtin">@returnAddress</span>())) {</span>
-<span class="line" id="L147">                <span class="tok-comment">// successful resize</span>
+<span class="line" id="L146">                first_node.data = total_size;</span>
+<span class="line" id="L147">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L148">                <span class="tok-comment">// manual realloc</span>
 </span>
-<span class="line" id="L148">                first_node.data = total_size;</span>
-<span class="line" id="L149">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L150">                <span class="tok-comment">// manual realloc</span>
+<span class="line" id="L149">                <span class="tok-kw">const</span> new_ptr = self.child_allocator.rawAlloc(total_size, align_bits, <span class="tok-builtin">@returnAddress</span>()) <span class="tok-kw">orelse</span> {</span>
+<span class="line" id="L150">                    <span class="tok-comment">// we failed to preheat the arena properly, signal this to the user.</span>
 </span>
-<span class="line" id="L151">                <span class="tok-kw">const</span> new_ptr = self.child_allocator.rawAlloc(total_size, align_bits, <span class="tok-builtin">@returnAddress</span>()) <span class="tok-kw">orelse</span> {</span>
-<span class="line" id="L152">                    <span class="tok-comment">// we failed to preheat the arena properly, signal this to the user.</span>
+<span class="line" id="L151">                    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L152">                };</span>
+<span class="line" id="L153">                self.child_allocator.rawFree(first_alloc_buf, align_bits, <span class="tok-builtin">@returnAddress</span>());</span>
+<span class="line" id="L154">                <span class="tok-kw">const</span> node = <span class="tok-builtin">@ptrCast</span>(*BufNode, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(BufNode), new_ptr));</span>
+<span class="line" id="L155">                node.* = .{ .data = total_size };</span>
+<span class="line" id="L156">                self.state.buffer_list.first = node;</span>
+<span class="line" id="L157">            }</span>
+<span class="line" id="L158">        }</span>
+<span class="line" id="L159">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L160">    }</span>
+<span class="line" id="L161"></span>
+<span class="line" id="L162">    <span class="tok-kw">fn</span> <span class="tok-fn">createNode</span>(self: *ArenaAllocator, prev_len: <span class="tok-type">usize</span>, minimum_size: <span class="tok-type">usize</span>) ?*BufNode {</span>
+<span class="line" id="L163">        <span class="tok-kw">const</span> actual_min_size = minimum_size + (<span class="tok-builtin">@sizeOf</span>(BufNode) + <span class="tok-number">16</span>);</span>
+<span class="line" id="L164">        <span class="tok-kw">const</span> big_enough_len = prev_len + actual_min_size;</span>
+<span class="line" id="L165">        <span class="tok-kw">const</span> len = big_enough_len + big_enough_len / <span class="tok-number">2</span>;</span>
+<span class="line" id="L166">        <span class="tok-kw">const</span> log2_align = <span class="tok-kw">comptime</span> std.math.log2_int(<span class="tok-type">usize</span>, <span class="tok-builtin">@alignOf</span>(BufNode));</span>
+<span class="line" id="L167">        <span class="tok-kw">const</span> ptr = self.child_allocator.rawAlloc(len, log2_align, <span class="tok-builtin">@returnAddress</span>()) <span class="tok-kw">orelse</span></span>
+<span class="line" id="L168">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L169">        <span class="tok-kw">const</span> buf_node = <span class="tok-builtin">@ptrCast</span>(*BufNode, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(BufNode), ptr));</span>
+<span class="line" id="L170">        buf_node.* = .{ .data = len };</span>
+<span class="line" id="L171">        self.state.buffer_list.prepend(buf_node);</span>
+<span class="line" id="L172">        self.state.end_index = <span class="tok-number">0</span>;</span>
+<span class="line" id="L173">        <span class="tok-kw">return</span> buf_node;</span>
+<span class="line" id="L174">    }</span>
+<span class="line" id="L175"></span>
+<span class="line" id="L176">    <span class="tok-kw">fn</span> <span class="tok-fn">alloc</span>(ctx: *<span class="tok-type">anyopaque</span>, n: <span class="tok-type">usize</span>, log2_ptr_align: <span class="tok-type">u8</span>, ra: <span class="tok-type">usize</span>) ?[*]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L177">        <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*ArenaAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(ArenaAllocator), ctx));</span>
+<span class="line" id="L178">        _ = ra;</span>
+<span class="line" id="L179"></span>
+<span class="line" id="L180">        <span class="tok-kw">const</span> ptr_align = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(Allocator.Log2Align, log2_ptr_align);</span>
+<span class="line" id="L181">        <span class="tok-kw">var</span> cur_node = <span class="tok-kw">if</span> (self.state.buffer_list.first) |first_node|</span>
+<span class="line" id="L182">            first_node</span>
+<span class="line" id="L183">        <span class="tok-kw">else</span></span>
+<span class="line" id="L184">            (self.createNode(<span class="tok-number">0</span>, n + ptr_align) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>);</span>
+<span class="line" id="L185">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L186">            <span class="tok-kw">const</span> cur_alloc_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, cur_node)[<span class="tok-number">0</span>..cur_node.data];</span>
+<span class="line" id="L187">            <span class="tok-kw">const</span> cur_buf = cur_alloc_buf[<span class="tok-builtin">@sizeOf</span>(BufNode)..];</span>
+<span class="line" id="L188">            <span class="tok-kw">const</span> addr = <span class="tok-builtin">@intFromPtr</span>(cur_buf.ptr) + self.state.end_index;</span>
+<span class="line" id="L189">            <span class="tok-kw">const</span> adjusted_addr = mem.alignForward(<span class="tok-type">usize</span>, addr, ptr_align);</span>
+<span class="line" id="L190">            <span class="tok-kw">const</span> adjusted_index = self.state.end_index + (adjusted_addr - addr);</span>
+<span class="line" id="L191">            <span class="tok-kw">const</span> new_end_index = adjusted_index + n;</span>
+<span class="line" id="L192"></span>
+<span class="line" id="L193">            <span class="tok-kw">if</span> (new_end_index &lt;= cur_buf.len) {</span>
+<span class="line" id="L194">                <span class="tok-kw">const</span> result = cur_buf[adjusted_index..new_end_index];</span>
+<span class="line" id="L195">                self.state.end_index = new_end_index;</span>
+<span class="line" id="L196">                <span class="tok-kw">return</span> result.ptr;</span>
+<span class="line" id="L197">            }</span>
+<span class="line" id="L198"></span>
+<span class="line" id="L199">            <span class="tok-kw">const</span> bigger_buf_size = <span class="tok-builtin">@sizeOf</span>(BufNode) + new_end_index;</span>
+<span class="line" id="L200">            <span class="tok-kw">const</span> log2_align = <span class="tok-kw">comptime</span> std.math.log2_int(<span class="tok-type">usize</span>, <span class="tok-builtin">@alignOf</span>(BufNode));</span>
+<span class="line" id="L201">            <span class="tok-kw">if</span> (self.child_allocator.rawResize(cur_alloc_buf, log2_align, bigger_buf_size, <span class="tok-builtin">@returnAddress</span>())) {</span>
+<span class="line" id="L202">                cur_node.data = bigger_buf_size;</span>
+<span class="line" id="L203">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L204">                <span class="tok-comment">// Allocate a new node if that's not possible</span>
 </span>
-<span class="line" id="L153">                    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L154">                };</span>
-<span class="line" id="L155">                self.child_allocator.rawFree(first_alloc_buf, align_bits, <span class="tok-builtin">@returnAddress</span>());</span>
-<span class="line" id="L156">                <span class="tok-kw">const</span> node = <span class="tok-builtin">@ptrCast</span>(*BufNode, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(BufNode), new_ptr));</span>
-<span class="line" id="L157">                node.* = .{ .data = total_size };</span>
-<span class="line" id="L158">                self.state.buffer_list.first = node;</span>
-<span class="line" id="L159">            }</span>
-<span class="line" id="L160">        }</span>
-<span class="line" id="L161">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L162">    }</span>
-<span class="line" id="L163"></span>
-<span class="line" id="L164">    <span class="tok-kw">fn</span> <span class="tok-fn">createNode</span>(self: *ArenaAllocator, prev_len: <span class="tok-type">usize</span>, minimum_size: <span class="tok-type">usize</span>) ?*BufNode {</span>
-<span class="line" id="L165">        <span class="tok-kw">const</span> actual_min_size = minimum_size + (<span class="tok-builtin">@sizeOf</span>(BufNode) + <span class="tok-number">16</span>);</span>
-<span class="line" id="L166">        <span class="tok-kw">const</span> big_enough_len = prev_len + actual_min_size;</span>
-<span class="line" id="L167">        <span class="tok-kw">const</span> len = big_enough_len + big_enough_len / <span class="tok-number">2</span>;</span>
-<span class="line" id="L168">        <span class="tok-kw">const</span> log2_align = <span class="tok-kw">comptime</span> std.math.log2_int(<span class="tok-type">usize</span>, <span class="tok-builtin">@alignOf</span>(BufNode));</span>
-<span class="line" id="L169">        <span class="tok-kw">const</span> ptr = self.child_allocator.rawAlloc(len, log2_align, <span class="tok-builtin">@returnAddress</span>()) <span class="tok-kw">orelse</span></span>
-<span class="line" id="L170">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L171">        <span class="tok-kw">const</span> buf_node = <span class="tok-builtin">@ptrCast</span>(*BufNode, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(BufNode), ptr));</span>
-<span class="line" id="L172">        buf_node.* = .{ .data = len };</span>
-<span class="line" id="L173">        self.state.buffer_list.prepend(buf_node);</span>
-<span class="line" id="L174">        self.state.end_index = <span class="tok-number">0</span>;</span>
-<span class="line" id="L175">        <span class="tok-kw">return</span> buf_node;</span>
-<span class="line" id="L176">    }</span>
-<span class="line" id="L177"></span>
-<span class="line" id="L178">    <span class="tok-kw">fn</span> <span class="tok-fn">alloc</span>(ctx: *<span class="tok-type">anyopaque</span>, n: <span class="tok-type">usize</span>, log2_ptr_align: <span class="tok-type">u8</span>, ra: <span class="tok-type">usize</span>) ?[*]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L179">        <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*ArenaAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(ArenaAllocator), ctx));</span>
-<span class="line" id="L180">        _ = ra;</span>
-<span class="line" id="L181"></span>
-<span class="line" id="L182">        <span class="tok-kw">const</span> ptr_align = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(Allocator.Log2Align, log2_ptr_align);</span>
-<span class="line" id="L183">        <span class="tok-kw">var</span> cur_node = <span class="tok-kw">if</span> (self.state.buffer_list.first) |first_node|</span>
-<span class="line" id="L184">            first_node</span>
-<span class="line" id="L185">        <span class="tok-kw">else</span></span>
-<span class="line" id="L186">            (self.createNode(<span class="tok-number">0</span>, n + ptr_align) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>);</span>
-<span class="line" id="L187">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L188">            <span class="tok-kw">const</span> cur_alloc_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, cur_node)[<span class="tok-number">0</span>..cur_node.data];</span>
-<span class="line" id="L189">            <span class="tok-kw">const</span> cur_buf = cur_alloc_buf[<span class="tok-builtin">@sizeOf</span>(BufNode)..];</span>
-<span class="line" id="L190">            <span class="tok-kw">const</span> addr = <span class="tok-builtin">@ptrToInt</span>(cur_buf.ptr) + self.state.end_index;</span>
-<span class="line" id="L191">            <span class="tok-kw">const</span> adjusted_addr = mem.alignForward(addr, ptr_align);</span>
-<span class="line" id="L192">            <span class="tok-kw">const</span> adjusted_index = self.state.end_index + (adjusted_addr - addr);</span>
-<span class="line" id="L193">            <span class="tok-kw">const</span> new_end_index = adjusted_index + n;</span>
-<span class="line" id="L194"></span>
-<span class="line" id="L195">            <span class="tok-kw">if</span> (new_end_index &lt;= cur_buf.len) {</span>
-<span class="line" id="L196">                <span class="tok-kw">const</span> result = cur_buf[adjusted_index..new_end_index];</span>
-<span class="line" id="L197">                self.state.end_index = new_end_index;</span>
-<span class="line" id="L198">                <span class="tok-kw">return</span> result.ptr;</span>
-<span class="line" id="L199">            }</span>
-<span class="line" id="L200"></span>
-<span class="line" id="L201">            <span class="tok-kw">const</span> bigger_buf_size = <span class="tok-builtin">@sizeOf</span>(BufNode) + new_end_index;</span>
-<span class="line" id="L202">            <span class="tok-kw">const</span> log2_align = <span class="tok-kw">comptime</span> std.math.log2_int(<span class="tok-type">usize</span>, <span class="tok-builtin">@alignOf</span>(BufNode));</span>
-<span class="line" id="L203">            <span class="tok-kw">if</span> (self.child_allocator.rawResize(cur_alloc_buf, log2_align, bigger_buf_size, <span class="tok-builtin">@returnAddress</span>())) {</span>
-<span class="line" id="L204">                cur_node.data = bigger_buf_size;</span>
-<span class="line" id="L205">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L206">                <span class="tok-comment">// Allocate a new node if that's not possible</span>
+<span class="line" id="L205">                cur_node = self.createNode(cur_buf.len, n + ptr_align) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L206">            }</span>
+<span class="line" id="L207">        }</span>
+<span class="line" id="L208">    }</span>
+<span class="line" id="L209"></span>
+<span class="line" id="L210">    <span class="tok-kw">fn</span> <span class="tok-fn">resize</span>(ctx: *<span class="tok-type">anyopaque</span>, buf: []<span class="tok-type">u8</span>, log2_buf_align: <span class="tok-type">u8</span>, new_len: <span class="tok-type">usize</span>, ret_addr: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L211">        <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*ArenaAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(ArenaAllocator), ctx));</span>
+<span class="line" id="L212">        _ = log2_buf_align;</span>
+<span class="line" id="L213">        _ = ret_addr;</span>
+<span class="line" id="L214"></span>
+<span class="line" id="L215">        <span class="tok-kw">const</span> cur_node = self.state.buffer_list.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L216">        <span class="tok-kw">const</span> cur_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, cur_node)[<span class="tok-builtin">@sizeOf</span>(BufNode)..cur_node.data];</span>
+<span class="line" id="L217">        <span class="tok-kw">if</span> (<span class="tok-builtin">@intFromPtr</span>(cur_buf.ptr) + self.state.end_index != <span class="tok-builtin">@intFromPtr</span>(buf.ptr) + buf.len) {</span>
+<span class="line" id="L218">            <span class="tok-comment">// It's not the most recent allocation, so it cannot be expanded,</span>
 </span>
-<span class="line" id="L207">                cur_node = self.createNode(cur_buf.len, n + ptr_align) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L208">            }</span>
-<span class="line" id="L209">        }</span>
-<span class="line" id="L210">    }</span>
-<span class="line" id="L211"></span>
-<span class="line" id="L212">    <span class="tok-kw">fn</span> <span class="tok-fn">resize</span>(ctx: *<span class="tok-type">anyopaque</span>, buf: []<span class="tok-type">u8</span>, log2_buf_align: <span class="tok-type">u8</span>, new_len: <span class="tok-type">usize</span>, ret_addr: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L213">        <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*ArenaAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(ArenaAllocator), ctx));</span>
-<span class="line" id="L214">        _ = log2_buf_align;</span>
-<span class="line" id="L215">        _ = ret_addr;</span>
-<span class="line" id="L216"></span>
-<span class="line" id="L217">        <span class="tok-kw">const</span> cur_node = self.state.buffer_list.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L218">        <span class="tok-kw">const</span> cur_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, cur_node)[<span class="tok-builtin">@sizeOf</span>(BufNode)..cur_node.data];</span>
-<span class="line" id="L219">        <span class="tok-kw">if</span> (<span class="tok-builtin">@ptrToInt</span>(cur_buf.ptr) + self.state.end_index != <span class="tok-builtin">@ptrToInt</span>(buf.ptr) + buf.len) {</span>
-<span class="line" id="L220">            <span class="tok-comment">// It's not the most recent allocation, so it cannot be expanded,</span>
+<span class="line" id="L219">            <span class="tok-comment">// but it's fine if they want to make it smaller.</span>
 </span>
-<span class="line" id="L221">            <span class="tok-comment">// but it's fine if they want to make it smaller.</span>
-</span>
-<span class="line" id="L222">            <span class="tok-kw">return</span> new_len &lt;= buf.len;</span>
-<span class="line" id="L223">        }</span>
-<span class="line" id="L224"></span>
-<span class="line" id="L225">        <span class="tok-kw">if</span> (buf.len &gt;= new_len) {</span>
-<span class="line" id="L226">            self.state.end_index -= buf.len - new_len;</span>
-<span class="line" id="L227">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L228">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (cur_buf.len - self.state.end_index &gt;= new_len - buf.len) {</span>
-<span class="line" id="L229">            self.state.end_index += new_len - buf.len;</span>
-<span class="line" id="L230">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L231">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L232">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L233">        }</span>
-<span class="line" id="L234">    }</span>
-<span class="line" id="L235"></span>
-<span class="line" id="L236">    <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(ctx: *<span class="tok-type">anyopaque</span>, buf: []<span class="tok-type">u8</span>, log2_buf_align: <span class="tok-type">u8</span>, ret_addr: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L237">        _ = log2_buf_align;</span>
-<span class="line" id="L238">        _ = ret_addr;</span>
+<span class="line" id="L220">            <span class="tok-kw">return</span> new_len &lt;= buf.len;</span>
+<span class="line" id="L221">        }</span>
+<span class="line" id="L222"></span>
+<span class="line" id="L223">        <span class="tok-kw">if</span> (buf.len &gt;= new_len) {</span>
+<span class="line" id="L224">            self.state.end_index -= buf.len - new_len;</span>
+<span class="line" id="L225">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L226">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (cur_buf.len - self.state.end_index &gt;= new_len - buf.len) {</span>
+<span class="line" id="L227">            self.state.end_index += new_len - buf.len;</span>
+<span class="line" id="L228">            <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L229">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L230">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L231">        }</span>
+<span class="line" id="L232">    }</span>
+<span class="line" id="L233"></span>
+<span class="line" id="L234">    <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(ctx: *<span class="tok-type">anyopaque</span>, buf: []<span class="tok-type">u8</span>, log2_buf_align: <span class="tok-type">u8</span>, ret_addr: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L235">        _ = log2_buf_align;</span>
+<span class="line" id="L236">        _ = ret_addr;</span>
+<span class="line" id="L237"></span>
+<span class="line" id="L238">        <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*ArenaAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(ArenaAllocator), ctx));</span>
 <span class="line" id="L239"></span>
-<span class="line" id="L240">        <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*ArenaAllocator, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(ArenaAllocator), ctx));</span>
-<span class="line" id="L241"></span>
-<span class="line" id="L242">        <span class="tok-kw">const</span> cur_node = self.state.buffer_list.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span>;</span>
-<span class="line" id="L243">        <span class="tok-kw">const</span> cur_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, cur_node)[<span class="tok-builtin">@sizeOf</span>(BufNode)..cur_node.data];</span>
-<span class="line" id="L244"></span>
-<span class="line" id="L245">        <span class="tok-kw">if</span> (<span class="tok-builtin">@ptrToInt</span>(cur_buf.ptr) + self.state.end_index == <span class="tok-builtin">@ptrToInt</span>(buf.ptr) + buf.len) {</span>
-<span class="line" id="L246">            self.state.end_index -= buf.len;</span>
-<span class="line" id="L247">        }</span>
-<span class="line" id="L248">    }</span>
-<span class="line" id="L249">};</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251"><span class="tok-kw">test</span> <span class="tok-str">&quot;ArenaAllocator (reset with preheating)&quot;</span> {</span>
-<span class="line" id="L252">    <span class="tok-kw">var</span> arena_allocator = ArenaAllocator.init(std.testing.allocator);</span>
-<span class="line" id="L253">    <span class="tok-kw">defer</span> arena_allocator.deinit();</span>
-<span class="line" id="L254">    <span class="tok-comment">// provides some variance in the allocated data</span>
+<span class="line" id="L240">        <span class="tok-kw">const</span> cur_node = self.state.buffer_list.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span>;</span>
+<span class="line" id="L241">        <span class="tok-kw">const</span> cur_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, cur_node)[<span class="tok-builtin">@sizeOf</span>(BufNode)..cur_node.data];</span>
+<span class="line" id="L242"></span>
+<span class="line" id="L243">        <span class="tok-kw">if</span> (<span class="tok-builtin">@intFromPtr</span>(cur_buf.ptr) + self.state.end_index == <span class="tok-builtin">@intFromPtr</span>(buf.ptr) + buf.len) {</span>
+<span class="line" id="L244">            self.state.end_index -= buf.len;</span>
+<span class="line" id="L245">        }</span>
+<span class="line" id="L246">    }</span>
+<span class="line" id="L247">};</span>
+<span class="line" id="L248"></span>
+<span class="line" id="L249"><span class="tok-kw">test</span> <span class="tok-str">&quot;ArenaAllocator (reset with preheating)&quot;</span> {</span>
+<span class="line" id="L250">    <span class="tok-kw">var</span> arena_allocator = ArenaAllocator.init(std.testing.allocator);</span>
+<span class="line" id="L251">    <span class="tok-kw">defer</span> arena_allocator.deinit();</span>
+<span class="line" id="L252">    <span class="tok-comment">// provides some variance in the allocated data</span>
 </span>
-<span class="line" id="L255">    <span class="tok-kw">var</span> rng_src = std.rand.DefaultPrng.init(<span class="tok-number">19930913</span>);</span>
-<span class="line" id="L256">    <span class="tok-kw">const</span> random = rng_src.random();</span>
-<span class="line" id="L257">    <span class="tok-kw">var</span> rounds: <span class="tok-type">usize</span> = <span class="tok-number">25</span>;</span>
-<span class="line" id="L258">    <span class="tok-kw">while</span> (rounds &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L259">        rounds -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L260">        _ = arena_allocator.reset(.retain_capacity);</span>
-<span class="line" id="L261">        <span class="tok-kw">var</span> alloced_bytes: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L262">        <span class="tok-kw">var</span> total_size: <span class="tok-type">usize</span> = random.intRangeAtMost(<span class="tok-type">usize</span>, <span class="tok-number">256</span>, <span class="tok-number">16384</span>);</span>
-<span class="line" id="L263">        <span class="tok-kw">while</span> (alloced_bytes &lt; total_size) {</span>
-<span class="line" id="L264">            <span class="tok-kw">const</span> size = random.intRangeAtMost(<span class="tok-type">usize</span>, <span class="tok-number">16</span>, <span class="tok-number">256</span>);</span>
-<span class="line" id="L265">            <span class="tok-kw">const</span> alignment = <span class="tok-number">32</span>;</span>
-<span class="line" id="L266">            <span class="tok-kw">const</span> slice = <span class="tok-kw">try</span> arena_allocator.allocator().alignedAlloc(<span class="tok-type">u8</span>, alignment, size);</span>
-<span class="line" id="L267">            <span class="tok-kw">try</span> std.testing.expect(std.mem.isAligned(<span class="tok-builtin">@ptrToInt</span>(slice.ptr), alignment));</span>
-<span class="line" id="L268">            <span class="tok-kw">try</span> std.testing.expectEqual(size, slice.len);</span>
-<span class="line" id="L269">            alloced_bytes += slice.len;</span>
-<span class="line" id="L270">        }</span>
-<span class="line" id="L271">    }</span>
-<span class="line" id="L272">}</span>
-<span class="line" id="L273"></span>
+<span class="line" id="L253">    <span class="tok-kw">var</span> rng_src = std.rand.DefaultPrng.init(<span class="tok-number">19930913</span>);</span>
+<span class="line" id="L254">    <span class="tok-kw">const</span> random = rng_src.random();</span>
+<span class="line" id="L255">    <span class="tok-kw">var</span> rounds: <span class="tok-type">usize</span> = <span class="tok-number">25</span>;</span>
+<span class="line" id="L256">    <span class="tok-kw">while</span> (rounds &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L257">        rounds -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L258">        _ = arena_allocator.reset(.retain_capacity);</span>
+<span class="line" id="L259">        <span class="tok-kw">var</span> alloced_bytes: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L260">        <span class="tok-kw">var</span> total_size: <span class="tok-type">usize</span> = random.intRangeAtMost(<span class="tok-type">usize</span>, <span class="tok-number">256</span>, <span class="tok-number">16384</span>);</span>
+<span class="line" id="L261">        <span class="tok-kw">while</span> (alloced_bytes &lt; total_size) {</span>
+<span class="line" id="L262">            <span class="tok-kw">const</span> size = random.intRangeAtMost(<span class="tok-type">usize</span>, <span class="tok-number">16</span>, <span class="tok-number">256</span>);</span>
+<span class="line" id="L263">            <span class="tok-kw">const</span> alignment = <span class="tok-number">32</span>;</span>
+<span class="line" id="L264">            <span class="tok-kw">const</span> slice = <span class="tok-kw">try</span> arena_allocator.allocator().alignedAlloc(<span class="tok-type">u8</span>, alignment, size);</span>
+<span class="line" id="L265">            <span class="tok-kw">try</span> std.testing.expect(std.mem.isAligned(<span class="tok-builtin">@intFromPtr</span>(slice.ptr), alignment));</span>
+<span class="line" id="L266">            <span class="tok-kw">try</span> std.testing.expectEqual(size, slice.len);</span>
+<span class="line" id="L267">            alloced_bytes += slice.len;</span>
+<span class="line" id="L268">        }</span>
+<span class="line" id="L269">    }</span>
+<span class="line" id="L270">}</span>
+<span class="line" id="L271"></span>
+<span class="line" id="L272"><span class="tok-kw">test</span> <span class="tok-str">&quot;ArenaAllocator (reset while retaining a buffer)&quot;</span> {</span>
+<span class="line" id="L273">    <span class="tok-kw">var</span> arena_allocator = ArenaAllocator.init(std.testing.allocator);</span>
+<span class="line" id="L274">    <span class="tok-kw">defer</span> arena_allocator.deinit();</span>
+<span class="line" id="L275">    <span class="tok-kw">const</span> a = arena_allocator.allocator();</span>
+<span class="line" id="L276"></span>
+<span class="line" id="L277">    <span class="tok-comment">// Create two internal buffers</span>
+</span>
+<span class="line" id="L278">    _ = <span class="tok-kw">try</span> a.alloc(<span class="tok-type">u8</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L279">    _ = <span class="tok-kw">try</span> a.alloc(<span class="tok-type">u8</span>, <span class="tok-number">1000</span>);</span>
+<span class="line" id="L280"></span>
+<span class="line" id="L281">    <span class="tok-comment">// Check that we have at least two buffers</span>
+</span>
+<span class="line" id="L282">    <span class="tok-kw">try</span> std.testing.expect(arena_allocator.state.buffer_list.first.?.next != <span class="tok-null">null</span>);</span>
+<span class="line" id="L283"></span>
+<span class="line" id="L284">    <span class="tok-comment">// This retains the first allocated buffer</span>
+</span>
+<span class="line" id="L285">    <span class="tok-kw">try</span> std.testing.expect(arena_allocator.reset(.{ .retain_with_limit = <span class="tok-number">1</span> }));</span>
+<span class="line" id="L286">}</span>
+<span class="line" id="L287"></span>
 </code></pre></body>
 </html>

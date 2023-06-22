@@ -282,7 +282,7 @@
 <span class="line" id="L122">                .seg_not_present = <span class="tok-number">0</span>,</span>
 <span class="line" id="L123">                .useable = <span class="tok-number">1</span>,</span>
 <span class="line" id="L124">            };</span>
-<span class="line" id="L125">            <span class="tok-kw">const</span> rc = std.os.linux.syscall1(.set_thread_area, <span class="tok-builtin">@ptrToInt</span>(&amp;user_desc));</span>
+<span class="line" id="L125">            <span class="tok-kw">const</span> rc = std.os.linux.syscall1(.set_thread_area, <span class="tok-builtin">@intFromPtr</span>(&amp;user_desc));</span>
 <span class="line" id="L126">            assert(rc == <span class="tok-number">0</span>);</span>
 <span class="line" id="L127"></span>
 <span class="line" id="L128">            <span class="tok-kw">const</span> gdt_entry_number = user_desc.entry_number;</span>
@@ -358,7 +358,7 @@
 <span class="line" id="L191"></span>
 <span class="line" id="L192">    <span class="tok-kw">for</span> (phdrs) |*phdr| {</span>
 <span class="line" id="L193">        <span class="tok-kw">switch</span> (phdr.p_type) {</span>
-<span class="line" id="L194">            elf.PT_PHDR =&gt; img_base = <span class="tok-builtin">@ptrToInt</span>(phdrs.ptr) - phdr.p_vaddr,</span>
+<span class="line" id="L194">            elf.PT_PHDR =&gt; img_base = <span class="tok-builtin">@intFromPtr</span>(phdrs.ptr) - phdr.p_vaddr,</span>
 <span class="line" id="L195">            elf.PT_TLS =&gt; tls_phdr = phdr,</span>
 <span class="line" id="L196">            <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L197">        }</span>
@@ -375,7 +375,7 @@
 <span class="line" id="L206">        <span class="tok-comment">// than the former</span>
 </span>
 <span class="line" id="L207">        tls_align_factor = phdr.p_align;</span>
-<span class="line" id="L208">        tls_data = <span class="tok-builtin">@intToPtr</span>([*]<span class="tok-type">u8</span>, img_base + phdr.p_vaddr)[<span class="tok-number">0</span>..phdr.p_filesz];</span>
+<span class="line" id="L208">        tls_data = <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-type">u8</span>, img_base + phdr.p_vaddr)[<span class="tok-number">0</span>..phdr.p_filesz];</span>
 <span class="line" id="L209">        tls_data_alloc_size = phdr.p_memsz;</span>
 <span class="line" id="L210">    } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L211">        tls_align_factor = <span class="tok-builtin">@alignOf</span>(<span class="tok-type">usize</span>);</span>
@@ -410,7 +410,7 @@
 <span class="line" id="L233">                l += tls_align_factor - delta;</span>
 <span class="line" id="L234">            l += <span class="tok-builtin">@sizeOf</span>(CustomData);</span>
 <span class="line" id="L235">            tcb_offset = l;</span>
-<span class="line" id="L236">            l += mem.alignForward(tls_tcb_size, tls_align_factor);</span>
+<span class="line" id="L236">            l += mem.alignForward(<span class="tok-type">usize</span>, tls_tcb_size, tls_align_factor);</span>
 <span class="line" id="L237">            data_offset = l;</span>
 <span class="line" id="L238">            l += tls_data_alloc_size;</span>
 <span class="line" id="L239">            <span class="tok-kw">break</span> :blk l;</span>
@@ -418,7 +418,7 @@
 <span class="line" id="L241">        .VariantII =&gt; blk: {</span>
 <span class="line" id="L242">            <span class="tok-kw">var</span> l: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L243">            data_offset = l;</span>
-<span class="line" id="L244">            l += mem.alignForward(tls_data_alloc_size, tls_align_factor);</span>
+<span class="line" id="L244">            l += mem.alignForward(<span class="tok-type">usize</span>, tls_data_alloc_size, tls_align_factor);</span>
 <span class="line" id="L245">            <span class="tok-comment">// The thread pointer is aligned to p_align</span>
 </span>
 <span class="line" id="L246">            tcb_offset = l;</span>
@@ -428,7 +428,7 @@
 <span class="line" id="L249">            <span class="tok-comment">// in between so it can be easily found</span>
 </span>
 <span class="line" id="L250">            l += <span class="tok-builtin">@sizeOf</span>(CustomData);</span>
-<span class="line" id="L251">            l = mem.alignForward(l, <span class="tok-builtin">@alignOf</span>(DTV));</span>
+<span class="line" id="L251">            l = mem.alignForward(<span class="tok-type">usize</span>, l, <span class="tok-builtin">@alignOf</span>(DTV));</span>
 <span class="line" id="L252">            dtv_offset = l;</span>
 <span class="line" id="L253">            l += <span class="tok-builtin">@sizeOf</span>(DTV);</span>
 <span class="line" id="L254">            <span class="tok-kw">break</span> :blk l;</span>
@@ -479,7 +479,7 @@
 </span>
 <span class="line" id="L294">    <span class="tok-comment">// is done with wrapping semantics.</span>
 </span>
-<span class="line" id="L295">    <span class="tok-kw">return</span> <span class="tok-builtin">@ptrToInt</span>(area.ptr) +% tls_tp_offset +%</span>
+<span class="line" id="L295">    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(area.ptr) +% tls_tp_offset +%</span>
 <span class="line" id="L296">        <span class="tok-kw">if</span> (tls_tp_points_past_tcb) tls_image.data_offset <span class="tok-kw">else</span> tls_image.tcb_offset;</span>
 <span class="line" id="L297">}</span>
 <span class="line" id="L298"></span>
@@ -526,8 +526,8 @@
 <span class="line" id="L329"></span>
 <span class="line" id="L330">        <span class="tok-comment">// Make sure the slice is correctly aligned.</span>
 </span>
-<span class="line" id="L331">        <span class="tok-kw">const</span> begin_addr = <span class="tok-builtin">@ptrToInt</span>(alloc_tls_area.ptr);</span>
-<span class="line" id="L332">        <span class="tok-kw">const</span> begin_aligned_addr = mem.alignForward(begin_addr, tls_image.alloc_align);</span>
+<span class="line" id="L331">        <span class="tok-kw">const</span> begin_addr = <span class="tok-builtin">@intFromPtr</span>(alloc_tls_area.ptr);</span>
+<span class="line" id="L332">        <span class="tok-kw">const</span> begin_aligned_addr = mem.alignForward(<span class="tok-type">usize</span>, begin_addr, tls_image.alloc_align);</span>
 <span class="line" id="L333">        <span class="tok-kw">const</span> start = begin_aligned_addr - begin_addr;</span>
 <span class="line" id="L334">        <span class="tok-kw">break</span> :blk alloc_tls_area[start .. start + tls_image.alloc_size];</span>
 <span class="line" id="L335">    };</span>

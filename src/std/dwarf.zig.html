@@ -1070,564 +1070,565 @@
 <span class="line" id="L936">            <span class="tok-kw">const</span> ranges_val = compile_unit.die.getAttr(AT.ranges) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L937">            <span class="tok-kw">const</span> ranges_offset = <span class="tok-kw">switch</span> (ranges_val.*) {</span>
 <span class="line" id="L938">                .SecOffset =&gt; |off| off,</span>
-<span class="line" id="L939">                .RangeListOffset =&gt; |idx| off: {</span>
-<span class="line" id="L940">                    <span class="tok-kw">if</span> (compile_unit.is_64) {</span>
-<span class="line" id="L941">                        <span class="tok-kw">const</span> offset_loc = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, compile_unit.rnglists_base + <span class="tok-number">8</span> * idx);</span>
-<span class="line" id="L942">                        <span class="tok-kw">if</span> (offset_loc + <span class="tok-number">8</span> &gt; debug_ranges.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L943">                        <span class="tok-kw">const</span> offset = mem.readInt(<span class="tok-type">u64</span>, debug_ranges[offset_loc..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], di.endian);</span>
-<span class="line" id="L944">                        <span class="tok-kw">break</span> :off compile_unit.rnglists_base + offset;</span>
-<span class="line" id="L945">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L946">                        <span class="tok-kw">const</span> offset_loc = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, compile_unit.rnglists_base + <span class="tok-number">4</span> * idx);</span>
-<span class="line" id="L947">                        <span class="tok-kw">if</span> (offset_loc + <span class="tok-number">4</span> &gt; debug_ranges.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L948">                        <span class="tok-kw">const</span> offset = mem.readInt(<span class="tok-type">u32</span>, debug_ranges[offset_loc..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], di.endian);</span>
-<span class="line" id="L949">                        <span class="tok-kw">break</span> :off compile_unit.rnglists_base + offset;</span>
-<span class="line" id="L950">                    }</span>
-<span class="line" id="L951">                },</span>
-<span class="line" id="L952">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> badDwarf(),</span>
-<span class="line" id="L953">            };</span>
-<span class="line" id="L954"></span>
-<span class="line" id="L955">            <span class="tok-kw">var</span> stream = io.fixedBufferStream(debug_ranges);</span>
-<span class="line" id="L956">            <span class="tok-kw">const</span> in = &amp;stream.reader();</span>
-<span class="line" id="L957">            <span class="tok-kw">const</span> seekable = &amp;stream.seekableStream();</span>
-<span class="line" id="L958"></span>
-<span class="line" id="L959">            <span class="tok-comment">// All the addresses in the list are relative to the value</span>
+<span class="line" id="L939">                .Const =&gt; |c| <span class="tok-kw">try</span> c.asUnsignedLe(),</span>
+<span class="line" id="L940">                .RangeListOffset =&gt; |idx| off: {</span>
+<span class="line" id="L941">                    <span class="tok-kw">if</span> (compile_unit.is_64) {</span>
+<span class="line" id="L942">                        <span class="tok-kw">const</span> offset_loc = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, compile_unit.rnglists_base + <span class="tok-number">8</span> * idx);</span>
+<span class="line" id="L943">                        <span class="tok-kw">if</span> (offset_loc + <span class="tok-number">8</span> &gt; debug_ranges.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L944">                        <span class="tok-kw">const</span> offset = mem.readInt(<span class="tok-type">u64</span>, debug_ranges[offset_loc..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], di.endian);</span>
+<span class="line" id="L945">                        <span class="tok-kw">break</span> :off compile_unit.rnglists_base + offset;</span>
+<span class="line" id="L946">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L947">                        <span class="tok-kw">const</span> offset_loc = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, compile_unit.rnglists_base + <span class="tok-number">4</span> * idx);</span>
+<span class="line" id="L948">                        <span class="tok-kw">if</span> (offset_loc + <span class="tok-number">4</span> &gt; debug_ranges.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L949">                        <span class="tok-kw">const</span> offset = mem.readInt(<span class="tok-type">u32</span>, debug_ranges[offset_loc..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], di.endian);</span>
+<span class="line" id="L950">                        <span class="tok-kw">break</span> :off compile_unit.rnglists_base + offset;</span>
+<span class="line" id="L951">                    }</span>
+<span class="line" id="L952">                },</span>
+<span class="line" id="L953">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> badDwarf(),</span>
+<span class="line" id="L954">            };</span>
+<span class="line" id="L955"></span>
+<span class="line" id="L956">            <span class="tok-kw">var</span> stream = io.fixedBufferStream(debug_ranges);</span>
+<span class="line" id="L957">            <span class="tok-kw">const</span> in = &amp;stream.reader();</span>
+<span class="line" id="L958">            <span class="tok-kw">const</span> seekable = &amp;stream.seekableStream();</span>
+<span class="line" id="L959"></span>
+<span class="line" id="L960">            <span class="tok-comment">// All the addresses in the list are relative to the value</span>
 </span>
-<span class="line" id="L960">            <span class="tok-comment">// specified by DW_AT.low_pc or to some other value encoded</span>
+<span class="line" id="L961">            <span class="tok-comment">// specified by DW_AT.low_pc or to some other value encoded</span>
 </span>
-<span class="line" id="L961">            <span class="tok-comment">// in the list itself.</span>
+<span class="line" id="L962">            <span class="tok-comment">// in the list itself.</span>
 </span>
-<span class="line" id="L962">            <span class="tok-comment">// If no starting value is specified use zero.</span>
+<span class="line" id="L963">            <span class="tok-comment">// If no starting value is specified use zero.</span>
 </span>
-<span class="line" id="L963">            <span class="tok-kw">var</span> base_address = compile_unit.die.getAttrAddr(di, AT.low_pc, compile_unit.*) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L964">                <span class="tok-kw">error</span>.MissingDebugInfo =&gt; <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>), <span class="tok-comment">// TODO https://github.com/ziglang/zig/issues/11135</span>
+<span class="line" id="L964">            <span class="tok-kw">var</span> base_address = compile_unit.die.getAttrAddr(di, AT.low_pc, compile_unit.*) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L965">                <span class="tok-kw">error</span>.MissingDebugInfo =&gt; <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>), <span class="tok-comment">// TODO https://github.com/ziglang/zig/issues/11135</span>
 </span>
-<span class="line" id="L965">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
-<span class="line" id="L966">            };</span>
-<span class="line" id="L967"></span>
-<span class="line" id="L968">            <span class="tok-kw">try</span> seekable.seekTo(ranges_offset);</span>
-<span class="line" id="L969"></span>
-<span class="line" id="L970">            <span class="tok-kw">if</span> (compile_unit.version &gt;= <span class="tok-number">5</span>) {</span>
-<span class="line" id="L971">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L972">                    <span class="tok-kw">const</span> kind = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L973">                    <span class="tok-kw">switch</span> (kind) {</span>
-<span class="line" id="L974">                        RLE.end_of_list =&gt; <span class="tok-kw">break</span>,</span>
-<span class="line" id="L975">                        RLE.base_addressx =&gt; {</span>
-<span class="line" id="L976">                            <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L977">                            base_address = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, index);</span>
-<span class="line" id="L978">                        },</span>
-<span class="line" id="L979">                        RLE.startx_endx =&gt; {</span>
-<span class="line" id="L980">                            <span class="tok-kw">const</span> start_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L981">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, start_index);</span>
-<span class="line" id="L982"></span>
-<span class="line" id="L983">                            <span class="tok-kw">const</span> end_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L984">                            <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, end_index);</span>
-<span class="line" id="L985"></span>
-<span class="line" id="L986">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
-<span class="line" id="L987">                                <span class="tok-kw">return</span> compile_unit;</span>
-<span class="line" id="L988">                            }</span>
-<span class="line" id="L989">                        },</span>
-<span class="line" id="L990">                        RLE.startx_length =&gt; {</span>
-<span class="line" id="L991">                            <span class="tok-kw">const</span> start_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L992">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, start_index);</span>
-<span class="line" id="L993"></span>
-<span class="line" id="L994">                            <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L995">                            <span class="tok-kw">const</span> end_addr = start_addr + len;</span>
-<span class="line" id="L996"></span>
-<span class="line" id="L997">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
-<span class="line" id="L998">                                <span class="tok-kw">return</span> compile_unit;</span>
-<span class="line" id="L999">                            }</span>
-<span class="line" id="L1000">                        },</span>
-<span class="line" id="L1001">                        RLE.offset_pair =&gt; {</span>
-<span class="line" id="L1002">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1003">                            <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1004">                            <span class="tok-comment">// This is the only kind that uses the base address</span>
+<span class="line" id="L966">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
+<span class="line" id="L967">            };</span>
+<span class="line" id="L968"></span>
+<span class="line" id="L969">            <span class="tok-kw">try</span> seekable.seekTo(ranges_offset);</span>
+<span class="line" id="L970"></span>
+<span class="line" id="L971">            <span class="tok-kw">if</span> (compile_unit.version &gt;= <span class="tok-number">5</span>) {</span>
+<span class="line" id="L972">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L973">                    <span class="tok-kw">const</span> kind = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L974">                    <span class="tok-kw">switch</span> (kind) {</span>
+<span class="line" id="L975">                        RLE.end_of_list =&gt; <span class="tok-kw">break</span>,</span>
+<span class="line" id="L976">                        RLE.base_addressx =&gt; {</span>
+<span class="line" id="L977">                            <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L978">                            base_address = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, index);</span>
+<span class="line" id="L979">                        },</span>
+<span class="line" id="L980">                        RLE.startx_endx =&gt; {</span>
+<span class="line" id="L981">                            <span class="tok-kw">const</span> start_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L982">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, start_index);</span>
+<span class="line" id="L983"></span>
+<span class="line" id="L984">                            <span class="tok-kw">const</span> end_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L985">                            <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, end_index);</span>
+<span class="line" id="L986"></span>
+<span class="line" id="L987">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
+<span class="line" id="L988">                                <span class="tok-kw">return</span> compile_unit;</span>
+<span class="line" id="L989">                            }</span>
+<span class="line" id="L990">                        },</span>
+<span class="line" id="L991">                        RLE.startx_length =&gt; {</span>
+<span class="line" id="L992">                            <span class="tok-kw">const</span> start_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L993">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> di.readDebugAddr(compile_unit.*, start_index);</span>
+<span class="line" id="L994"></span>
+<span class="line" id="L995">                            <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L996">                            <span class="tok-kw">const</span> end_addr = start_addr + len;</span>
+<span class="line" id="L997"></span>
+<span class="line" id="L998">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
+<span class="line" id="L999">                                <span class="tok-kw">return</span> compile_unit;</span>
+<span class="line" id="L1000">                            }</span>
+<span class="line" id="L1001">                        },</span>
+<span class="line" id="L1002">                        RLE.offset_pair =&gt; {</span>
+<span class="line" id="L1003">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1004">                            <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1005">                            <span class="tok-comment">// This is the only kind that uses the base address</span>
 </span>
-<span class="line" id="L1005">                            <span class="tok-kw">if</span> (target_address &gt;= base_address + start_addr <span class="tok-kw">and</span> target_address &lt; base_address + end_addr) {</span>
-<span class="line" id="L1006">                                <span class="tok-kw">return</span> compile_unit;</span>
-<span class="line" id="L1007">                            }</span>
-<span class="line" id="L1008">                        },</span>
-<span class="line" id="L1009">                        RLE.base_address =&gt; {</span>
-<span class="line" id="L1010">                            base_address = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1011">                        },</span>
-<span class="line" id="L1012">                        RLE.start_end =&gt; {</span>
-<span class="line" id="L1013">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1014">                            <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1015">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
-<span class="line" id="L1016">                                <span class="tok-kw">return</span> compile_unit;</span>
-<span class="line" id="L1017">                            }</span>
-<span class="line" id="L1018">                        },</span>
-<span class="line" id="L1019">                        RLE.start_length =&gt; {</span>
-<span class="line" id="L1020">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1021">                            <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1022">                            <span class="tok-kw">const</span> end_addr = start_addr + len;</span>
-<span class="line" id="L1023">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
-<span class="line" id="L1024">                                <span class="tok-kw">return</span> compile_unit;</span>
-<span class="line" id="L1025">                            }</span>
-<span class="line" id="L1026">                        },</span>
-<span class="line" id="L1027">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> badDwarf(),</span>
-<span class="line" id="L1028">                    }</span>
-<span class="line" id="L1029">                }</span>
-<span class="line" id="L1030">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1031">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1032">                    <span class="tok-kw">const</span> begin_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1033">                    <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1034">                    <span class="tok-kw">if</span> (begin_addr == <span class="tok-number">0</span> <span class="tok-kw">and</span> end_addr == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1035">                        <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1036">                    }</span>
-<span class="line" id="L1037">                    <span class="tok-comment">// This entry selects a new value for the base address</span>
+<span class="line" id="L1006">                            <span class="tok-kw">if</span> (target_address &gt;= base_address + start_addr <span class="tok-kw">and</span> target_address &lt; base_address + end_addr) {</span>
+<span class="line" id="L1007">                                <span class="tok-kw">return</span> compile_unit;</span>
+<span class="line" id="L1008">                            }</span>
+<span class="line" id="L1009">                        },</span>
+<span class="line" id="L1010">                        RLE.base_address =&gt; {</span>
+<span class="line" id="L1011">                            base_address = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1012">                        },</span>
+<span class="line" id="L1013">                        RLE.start_end =&gt; {</span>
+<span class="line" id="L1014">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1015">                            <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1016">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
+<span class="line" id="L1017">                                <span class="tok-kw">return</span> compile_unit;</span>
+<span class="line" id="L1018">                            }</span>
+<span class="line" id="L1019">                        },</span>
+<span class="line" id="L1020">                        RLE.start_length =&gt; {</span>
+<span class="line" id="L1021">                            <span class="tok-kw">const</span> start_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1022">                            <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1023">                            <span class="tok-kw">const</span> end_addr = start_addr + len;</span>
+<span class="line" id="L1024">                            <span class="tok-kw">if</span> (target_address &gt;= start_addr <span class="tok-kw">and</span> target_address &lt; end_addr) {</span>
+<span class="line" id="L1025">                                <span class="tok-kw">return</span> compile_unit;</span>
+<span class="line" id="L1026">                            }</span>
+<span class="line" id="L1027">                        },</span>
+<span class="line" id="L1028">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> badDwarf(),</span>
+<span class="line" id="L1029">                    }</span>
+<span class="line" id="L1030">                }</span>
+<span class="line" id="L1031">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1032">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1033">                    <span class="tok-kw">const</span> begin_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1034">                    <span class="tok-kw">const</span> end_addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1035">                    <span class="tok-kw">if</span> (begin_addr == <span class="tok-number">0</span> <span class="tok-kw">and</span> end_addr == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1036">                        <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1037">                    }</span>
+<span class="line" id="L1038">                    <span class="tok-comment">// This entry selects a new value for the base address</span>
 </span>
-<span class="line" id="L1038">                    <span class="tok-kw">if</span> (begin_addr == math.maxInt(<span class="tok-type">usize</span>)) {</span>
-<span class="line" id="L1039">                        base_address = end_addr;</span>
-<span class="line" id="L1040">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1041">                    }</span>
-<span class="line" id="L1042">                    <span class="tok-kw">if</span> (target_address &gt;= base_address + begin_addr <span class="tok-kw">and</span> target_address &lt; base_address + end_addr) {</span>
-<span class="line" id="L1043">                        <span class="tok-kw">return</span> compile_unit;</span>
-<span class="line" id="L1044">                    }</span>
-<span class="line" id="L1045">                }</span>
-<span class="line" id="L1046">            }</span>
-<span class="line" id="L1047">        }</span>
-<span class="line" id="L1048">        <span class="tok-kw">return</span> missingDwarf();</span>
-<span class="line" id="L1049">    }</span>
-<span class="line" id="L1050"></span>
-<span class="line" id="L1051">    <span class="tok-comment">/// Gets an already existing AbbrevTable given the abbrev_offset, or if not found,</span></span>
-<span class="line" id="L1052">    <span class="tok-comment">/// seeks in the stream and parses it.</span></span>
-<span class="line" id="L1053">    <span class="tok-kw">fn</span> <span class="tok-fn">getAbbrevTable</span>(di: *DwarfInfo, allocator: mem.Allocator, abbrev_offset: <span class="tok-type">u64</span>) !*<span class="tok-kw">const</span> AbbrevTable {</span>
-<span class="line" id="L1054">        <span class="tok-kw">for</span> (di.abbrev_table_list.items) |*header| {</span>
-<span class="line" id="L1055">            <span class="tok-kw">if</span> (header.offset == abbrev_offset) {</span>
-<span class="line" id="L1056">                <span class="tok-kw">return</span> &amp;header.table;</span>
-<span class="line" id="L1057">            }</span>
-<span class="line" id="L1058">        }</span>
-<span class="line" id="L1059">        <span class="tok-kw">try</span> di.abbrev_table_list.append(allocator, AbbrevTableHeader{</span>
-<span class="line" id="L1060">            .offset = abbrev_offset,</span>
-<span class="line" id="L1061">            .table = <span class="tok-kw">try</span> di.parseAbbrevTable(allocator, abbrev_offset),</span>
-<span class="line" id="L1062">        });</span>
-<span class="line" id="L1063">        <span class="tok-kw">return</span> &amp;di.abbrev_table_list.items[di.abbrev_table_list.items.len - <span class="tok-number">1</span>].table;</span>
-<span class="line" id="L1064">    }</span>
-<span class="line" id="L1065"></span>
-<span class="line" id="L1066">    <span class="tok-kw">fn</span> <span class="tok-fn">parseAbbrevTable</span>(di: *DwarfInfo, allocator: mem.Allocator, offset: <span class="tok-type">u64</span>) !AbbrevTable {</span>
-<span class="line" id="L1067">        <span class="tok-kw">var</span> stream = io.fixedBufferStream(di.debug_abbrev);</span>
-<span class="line" id="L1068">        <span class="tok-kw">const</span> in = &amp;stream.reader();</span>
-<span class="line" id="L1069">        <span class="tok-kw">const</span> seekable = &amp;stream.seekableStream();</span>
-<span class="line" id="L1070"></span>
-<span class="line" id="L1071">        <span class="tok-kw">try</span> seekable.seekTo(offset);</span>
-<span class="line" id="L1072">        <span class="tok-kw">var</span> result = AbbrevTable.init(allocator);</span>
-<span class="line" id="L1073">        <span class="tok-kw">errdefer</span> {</span>
-<span class="line" id="L1074">            <span class="tok-kw">for</span> (result.items) |*entry| {</span>
-<span class="line" id="L1075">                entry.attrs.deinit();</span>
-<span class="line" id="L1076">            }</span>
-<span class="line" id="L1077">            result.deinit();</span>
-<span class="line" id="L1078">        }</span>
-<span class="line" id="L1079"></span>
-<span class="line" id="L1080">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1081">            <span class="tok-kw">const</span> abbrev_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1082">            <span class="tok-kw">if</span> (abbrev_code == <span class="tok-number">0</span>) <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L1083">            <span class="tok-kw">try</span> result.append(AbbrevTableEntry{</span>
-<span class="line" id="L1084">                .abbrev_code = abbrev_code,</span>
-<span class="line" id="L1085">                .tag_id = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in),</span>
-<span class="line" id="L1086">                .has_children = (<span class="tok-kw">try</span> in.readByte()) == CHILDREN.yes,</span>
-<span class="line" id="L1087">                .attrs = std.ArrayList(AbbrevAttr).init(allocator),</span>
-<span class="line" id="L1088">            });</span>
-<span class="line" id="L1089">            <span class="tok-kw">const</span> attrs = &amp;result.items[result.items.len - <span class="tok-number">1</span>].attrs;</span>
-<span class="line" id="L1090"></span>
-<span class="line" id="L1091">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1092">                <span class="tok-kw">const</span> attr_id = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1093">                <span class="tok-kw">const</span> form_id = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1094">                <span class="tok-kw">if</span> (attr_id == <span class="tok-number">0</span> <span class="tok-kw">and</span> form_id == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1095">                <span class="tok-comment">// DW_FORM_implicit_const stores its value immediately after the attribute pair :(</span>
+<span class="line" id="L1039">                    <span class="tok-kw">if</span> (begin_addr == math.maxInt(<span class="tok-type">usize</span>)) {</span>
+<span class="line" id="L1040">                        base_address = end_addr;</span>
+<span class="line" id="L1041">                        <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1042">                    }</span>
+<span class="line" id="L1043">                    <span class="tok-kw">if</span> (target_address &gt;= base_address + begin_addr <span class="tok-kw">and</span> target_address &lt; base_address + end_addr) {</span>
+<span class="line" id="L1044">                        <span class="tok-kw">return</span> compile_unit;</span>
+<span class="line" id="L1045">                    }</span>
+<span class="line" id="L1046">                }</span>
+<span class="line" id="L1047">            }</span>
+<span class="line" id="L1048">        }</span>
+<span class="line" id="L1049">        <span class="tok-kw">return</span> missingDwarf();</span>
+<span class="line" id="L1050">    }</span>
+<span class="line" id="L1051"></span>
+<span class="line" id="L1052">    <span class="tok-comment">/// Gets an already existing AbbrevTable given the abbrev_offset, or if not found,</span></span>
+<span class="line" id="L1053">    <span class="tok-comment">/// seeks in the stream and parses it.</span></span>
+<span class="line" id="L1054">    <span class="tok-kw">fn</span> <span class="tok-fn">getAbbrevTable</span>(di: *DwarfInfo, allocator: mem.Allocator, abbrev_offset: <span class="tok-type">u64</span>) !*<span class="tok-kw">const</span> AbbrevTable {</span>
+<span class="line" id="L1055">        <span class="tok-kw">for</span> (di.abbrev_table_list.items) |*header| {</span>
+<span class="line" id="L1056">            <span class="tok-kw">if</span> (header.offset == abbrev_offset) {</span>
+<span class="line" id="L1057">                <span class="tok-kw">return</span> &amp;header.table;</span>
+<span class="line" id="L1058">            }</span>
+<span class="line" id="L1059">        }</span>
+<span class="line" id="L1060">        <span class="tok-kw">try</span> di.abbrev_table_list.append(allocator, AbbrevTableHeader{</span>
+<span class="line" id="L1061">            .offset = abbrev_offset,</span>
+<span class="line" id="L1062">            .table = <span class="tok-kw">try</span> di.parseAbbrevTable(allocator, abbrev_offset),</span>
+<span class="line" id="L1063">        });</span>
+<span class="line" id="L1064">        <span class="tok-kw">return</span> &amp;di.abbrev_table_list.items[di.abbrev_table_list.items.len - <span class="tok-number">1</span>].table;</span>
+<span class="line" id="L1065">    }</span>
+<span class="line" id="L1066"></span>
+<span class="line" id="L1067">    <span class="tok-kw">fn</span> <span class="tok-fn">parseAbbrevTable</span>(di: *DwarfInfo, allocator: mem.Allocator, offset: <span class="tok-type">u64</span>) !AbbrevTable {</span>
+<span class="line" id="L1068">        <span class="tok-kw">var</span> stream = io.fixedBufferStream(di.debug_abbrev);</span>
+<span class="line" id="L1069">        <span class="tok-kw">const</span> in = &amp;stream.reader();</span>
+<span class="line" id="L1070">        <span class="tok-kw">const</span> seekable = &amp;stream.seekableStream();</span>
+<span class="line" id="L1071"></span>
+<span class="line" id="L1072">        <span class="tok-kw">try</span> seekable.seekTo(offset);</span>
+<span class="line" id="L1073">        <span class="tok-kw">var</span> result = AbbrevTable.init(allocator);</span>
+<span class="line" id="L1074">        <span class="tok-kw">errdefer</span> {</span>
+<span class="line" id="L1075">            <span class="tok-kw">for</span> (result.items) |*entry| {</span>
+<span class="line" id="L1076">                entry.attrs.deinit();</span>
+<span class="line" id="L1077">            }</span>
+<span class="line" id="L1078">            result.deinit();</span>
+<span class="line" id="L1079">        }</span>
+<span class="line" id="L1080"></span>
+<span class="line" id="L1081">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1082">            <span class="tok-kw">const</span> abbrev_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1083">            <span class="tok-kw">if</span> (abbrev_code == <span class="tok-number">0</span>) <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L1084">            <span class="tok-kw">try</span> result.append(AbbrevTableEntry{</span>
+<span class="line" id="L1085">                .abbrev_code = abbrev_code,</span>
+<span class="line" id="L1086">                .tag_id = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in),</span>
+<span class="line" id="L1087">                .has_children = (<span class="tok-kw">try</span> in.readByte()) == CHILDREN.yes,</span>
+<span class="line" id="L1088">                .attrs = std.ArrayList(AbbrevAttr).init(allocator),</span>
+<span class="line" id="L1089">            });</span>
+<span class="line" id="L1090">            <span class="tok-kw">const</span> attrs = &amp;result.items[result.items.len - <span class="tok-number">1</span>].attrs;</span>
+<span class="line" id="L1091"></span>
+<span class="line" id="L1092">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1093">                <span class="tok-kw">const</span> attr_id = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1094">                <span class="tok-kw">const</span> form_id = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1095">                <span class="tok-kw">if</span> (attr_id == <span class="tok-number">0</span> <span class="tok-kw">and</span> form_id == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1096">                <span class="tok-comment">// DW_FORM_implicit_const stores its value immediately after the attribute pair :(</span>
 </span>
-<span class="line" id="L1096">                <span class="tok-kw">const</span> payload = <span class="tok-kw">if</span> (form_id == FORM.implicit_const) <span class="tok-kw">try</span> leb.readILEB128(<span class="tok-type">i64</span>, in) <span class="tok-kw">else</span> <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1097">                <span class="tok-kw">try</span> attrs.append(AbbrevAttr{</span>
-<span class="line" id="L1098">                    .attr_id = attr_id,</span>
-<span class="line" id="L1099">                    .form_id = form_id,</span>
-<span class="line" id="L1100">                    .payload = payload,</span>
-<span class="line" id="L1101">                });</span>
-<span class="line" id="L1102">            }</span>
-<span class="line" id="L1103">        }</span>
-<span class="line" id="L1104">    }</span>
-<span class="line" id="L1105"></span>
-<span class="line" id="L1106">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDie</span>(</span>
-<span class="line" id="L1107">        di: *DwarfInfo,</span>
-<span class="line" id="L1108">        allocator: mem.Allocator,</span>
-<span class="line" id="L1109">        in_stream: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L1110">        abbrev_table: *<span class="tok-kw">const</span> AbbrevTable,</span>
-<span class="line" id="L1111">        is_64: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L1112">    ) !?Die {</span>
-<span class="line" id="L1113">        <span class="tok-kw">const</span> abbrev_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in_stream);</span>
-<span class="line" id="L1114">        <span class="tok-kw">if</span> (abbrev_code == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1115">        <span class="tok-kw">const</span> table_entry = getAbbrevTableEntry(abbrev_table, abbrev_code) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1116"></span>
-<span class="line" id="L1117">        <span class="tok-kw">var</span> result = Die{</span>
-<span class="line" id="L1118">            <span class="tok-comment">// Lives as long as the Die.</span>
+<span class="line" id="L1097">                <span class="tok-kw">const</span> payload = <span class="tok-kw">if</span> (form_id == FORM.implicit_const) <span class="tok-kw">try</span> leb.readILEB128(<span class="tok-type">i64</span>, in) <span class="tok-kw">else</span> <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1098">                <span class="tok-kw">try</span> attrs.append(AbbrevAttr{</span>
+<span class="line" id="L1099">                    .attr_id = attr_id,</span>
+<span class="line" id="L1100">                    .form_id = form_id,</span>
+<span class="line" id="L1101">                    .payload = payload,</span>
+<span class="line" id="L1102">                });</span>
+<span class="line" id="L1103">            }</span>
+<span class="line" id="L1104">        }</span>
+<span class="line" id="L1105">    }</span>
+<span class="line" id="L1106"></span>
+<span class="line" id="L1107">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDie</span>(</span>
+<span class="line" id="L1108">        di: *DwarfInfo,</span>
+<span class="line" id="L1109">        allocator: mem.Allocator,</span>
+<span class="line" id="L1110">        in_stream: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L1111">        abbrev_table: *<span class="tok-kw">const</span> AbbrevTable,</span>
+<span class="line" id="L1112">        is_64: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L1113">    ) !?Die {</span>
+<span class="line" id="L1114">        <span class="tok-kw">const</span> abbrev_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in_stream);</span>
+<span class="line" id="L1115">        <span class="tok-kw">if</span> (abbrev_code == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1116">        <span class="tok-kw">const</span> table_entry = getAbbrevTableEntry(abbrev_table, abbrev_code) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1117"></span>
+<span class="line" id="L1118">        <span class="tok-kw">var</span> result = Die{</span>
+<span class="line" id="L1119">            <span class="tok-comment">// Lives as long as the Die.</span>
 </span>
-<span class="line" id="L1119">            .arena = std.heap.ArenaAllocator.init(allocator),</span>
-<span class="line" id="L1120">            .tag_id = table_entry.tag_id,</span>
-<span class="line" id="L1121">            .has_children = table_entry.has_children,</span>
-<span class="line" id="L1122">        };</span>
-<span class="line" id="L1123">        <span class="tok-kw">try</span> result.attrs.resize(allocator, table_entry.attrs.items.len);</span>
-<span class="line" id="L1124">        <span class="tok-kw">for</span> (table_entry.attrs.items, <span class="tok-number">0</span>..) |attr, i| {</span>
-<span class="line" id="L1125">            result.attrs.items[i] = Die.Attr{</span>
-<span class="line" id="L1126">                .id = attr.attr_id,</span>
-<span class="line" id="L1127">                .value = <span class="tok-kw">try</span> parseFormValue(</span>
-<span class="line" id="L1128">                    result.arena.allocator(),</span>
-<span class="line" id="L1129">                    in_stream,</span>
-<span class="line" id="L1130">                    attr.form_id,</span>
-<span class="line" id="L1131">                    di.endian,</span>
-<span class="line" id="L1132">                    is_64,</span>
-<span class="line" id="L1133">                ),</span>
-<span class="line" id="L1134">            };</span>
-<span class="line" id="L1135">            <span class="tok-kw">if</span> (attr.form_id == FORM.implicit_const) {</span>
-<span class="line" id="L1136">                result.attrs.items[i].value.Const.payload = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, attr.payload);</span>
-<span class="line" id="L1137">            }</span>
-<span class="line" id="L1138">        }</span>
-<span class="line" id="L1139">        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L1140">    }</span>
-<span class="line" id="L1141"></span>
-<span class="line" id="L1142">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getLineNumberInfo</span>(</span>
-<span class="line" id="L1143">        di: *DwarfInfo,</span>
-<span class="line" id="L1144">        allocator: mem.Allocator,</span>
-<span class="line" id="L1145">        compile_unit: CompileUnit,</span>
-<span class="line" id="L1146">        target_address: <span class="tok-type">u64</span>,</span>
-<span class="line" id="L1147">    ) !debug.LineInfo {</span>
-<span class="line" id="L1148">        <span class="tok-kw">var</span> stream = io.fixedBufferStream(di.debug_line);</span>
-<span class="line" id="L1149">        <span class="tok-kw">const</span> in = &amp;stream.reader();</span>
-<span class="line" id="L1150">        <span class="tok-kw">const</span> seekable = &amp;stream.seekableStream();</span>
-<span class="line" id="L1151"></span>
-<span class="line" id="L1152">        <span class="tok-kw">const</span> compile_unit_cwd = <span class="tok-kw">try</span> compile_unit.die.getAttrString(di, AT.comp_dir, di.debug_line_str, compile_unit);</span>
-<span class="line" id="L1153">        <span class="tok-kw">const</span> line_info_offset = <span class="tok-kw">try</span> compile_unit.die.getAttrSecOffset(AT.stmt_list);</span>
-<span class="line" id="L1154"></span>
-<span class="line" id="L1155">        <span class="tok-kw">try</span> seekable.seekTo(line_info_offset);</span>
-<span class="line" id="L1156"></span>
-<span class="line" id="L1157">        <span class="tok-kw">var</span> is_64: <span class="tok-type">bool</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1158">        <span class="tok-kw">const</span> unit_length = <span class="tok-kw">try</span> readUnitLength(in, di.endian, &amp;is_64);</span>
-<span class="line" id="L1159">        <span class="tok-kw">if</span> (unit_length == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1160">            <span class="tok-kw">return</span> missingDwarf();</span>
-<span class="line" id="L1161">        }</span>
-<span class="line" id="L1162">        <span class="tok-kw">const</span> next_offset = unit_length + (<span class="tok-kw">if</span> (is_64) <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">12</span>) <span class="tok-kw">else</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">4</span>));</span>
-<span class="line" id="L1163"></span>
-<span class="line" id="L1164">        <span class="tok-kw">const</span> version = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u16</span>, di.endian);</span>
-<span class="line" id="L1165">        <span class="tok-kw">if</span> (version &lt; <span class="tok-number">2</span>) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1166"></span>
-<span class="line" id="L1167">        <span class="tok-kw">var</span> addr_size: <span class="tok-type">u8</span> = <span class="tok-kw">if</span> (is_64) <span class="tok-number">8</span> <span class="tok-kw">else</span> <span class="tok-number">4</span>;</span>
-<span class="line" id="L1168">        <span class="tok-kw">var</span> seg_size: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1169">        <span class="tok-kw">if</span> (version &gt;= <span class="tok-number">5</span>) {</span>
-<span class="line" id="L1170">            addr_size = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1171">            seg_size = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1172">        }</span>
-<span class="line" id="L1173"></span>
-<span class="line" id="L1174">        <span class="tok-kw">const</span> prologue_length = <span class="tok-kw">if</span> (is_64) <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u64</span>, di.endian) <span class="tok-kw">else</span> <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u32</span>, di.endian);</span>
-<span class="line" id="L1175">        <span class="tok-kw">const</span> prog_start_offset = (<span class="tok-kw">try</span> seekable.getPos()) + prologue_length;</span>
-<span class="line" id="L1176"></span>
-<span class="line" id="L1177">        <span class="tok-kw">const</span> minimum_instruction_length = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1178">        <span class="tok-kw">if</span> (minimum_instruction_length == <span class="tok-number">0</span>) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1179"></span>
-<span class="line" id="L1180">        <span class="tok-kw">if</span> (version &gt;= <span class="tok-number">4</span>) {</span>
-<span class="line" id="L1181">            <span class="tok-comment">// maximum_operations_per_instruction</span>
+<span class="line" id="L1120">            .arena = std.heap.ArenaAllocator.init(allocator),</span>
+<span class="line" id="L1121">            .tag_id = table_entry.tag_id,</span>
+<span class="line" id="L1122">            .has_children = table_entry.has_children,</span>
+<span class="line" id="L1123">        };</span>
+<span class="line" id="L1124">        <span class="tok-kw">try</span> result.attrs.resize(allocator, table_entry.attrs.items.len);</span>
+<span class="line" id="L1125">        <span class="tok-kw">for</span> (table_entry.attrs.items, <span class="tok-number">0</span>..) |attr, i| {</span>
+<span class="line" id="L1126">            result.attrs.items[i] = Die.Attr{</span>
+<span class="line" id="L1127">                .id = attr.attr_id,</span>
+<span class="line" id="L1128">                .value = <span class="tok-kw">try</span> parseFormValue(</span>
+<span class="line" id="L1129">                    result.arena.allocator(),</span>
+<span class="line" id="L1130">                    in_stream,</span>
+<span class="line" id="L1131">                    attr.form_id,</span>
+<span class="line" id="L1132">                    di.endian,</span>
+<span class="line" id="L1133">                    is_64,</span>
+<span class="line" id="L1134">                ),</span>
+<span class="line" id="L1135">            };</span>
+<span class="line" id="L1136">            <span class="tok-kw">if</span> (attr.form_id == FORM.implicit_const) {</span>
+<span class="line" id="L1137">                result.attrs.items[i].value.Const.payload = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, attr.payload);</span>
+<span class="line" id="L1138">            }</span>
+<span class="line" id="L1139">        }</span>
+<span class="line" id="L1140">        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L1141">    }</span>
+<span class="line" id="L1142"></span>
+<span class="line" id="L1143">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getLineNumberInfo</span>(</span>
+<span class="line" id="L1144">        di: *DwarfInfo,</span>
+<span class="line" id="L1145">        allocator: mem.Allocator,</span>
+<span class="line" id="L1146">        compile_unit: CompileUnit,</span>
+<span class="line" id="L1147">        target_address: <span class="tok-type">u64</span>,</span>
+<span class="line" id="L1148">    ) !debug.LineInfo {</span>
+<span class="line" id="L1149">        <span class="tok-kw">var</span> stream = io.fixedBufferStream(di.debug_line);</span>
+<span class="line" id="L1150">        <span class="tok-kw">const</span> in = &amp;stream.reader();</span>
+<span class="line" id="L1151">        <span class="tok-kw">const</span> seekable = &amp;stream.seekableStream();</span>
+<span class="line" id="L1152"></span>
+<span class="line" id="L1153">        <span class="tok-kw">const</span> compile_unit_cwd = <span class="tok-kw">try</span> compile_unit.die.getAttrString(di, AT.comp_dir, di.debug_line_str, compile_unit);</span>
+<span class="line" id="L1154">        <span class="tok-kw">const</span> line_info_offset = <span class="tok-kw">try</span> compile_unit.die.getAttrSecOffset(AT.stmt_list);</span>
+<span class="line" id="L1155"></span>
+<span class="line" id="L1156">        <span class="tok-kw">try</span> seekable.seekTo(line_info_offset);</span>
+<span class="line" id="L1157"></span>
+<span class="line" id="L1158">        <span class="tok-kw">var</span> is_64: <span class="tok-type">bool</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1159">        <span class="tok-kw">const</span> unit_length = <span class="tok-kw">try</span> readUnitLength(in, di.endian, &amp;is_64);</span>
+<span class="line" id="L1160">        <span class="tok-kw">if</span> (unit_length == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1161">            <span class="tok-kw">return</span> missingDwarf();</span>
+<span class="line" id="L1162">        }</span>
+<span class="line" id="L1163">        <span class="tok-kw">const</span> next_offset = unit_length + (<span class="tok-kw">if</span> (is_64) <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">12</span>) <span class="tok-kw">else</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">4</span>));</span>
+<span class="line" id="L1164"></span>
+<span class="line" id="L1165">        <span class="tok-kw">const</span> version = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u16</span>, di.endian);</span>
+<span class="line" id="L1166">        <span class="tok-kw">if</span> (version &lt; <span class="tok-number">2</span>) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1167"></span>
+<span class="line" id="L1168">        <span class="tok-kw">var</span> addr_size: <span class="tok-type">u8</span> = <span class="tok-kw">if</span> (is_64) <span class="tok-number">8</span> <span class="tok-kw">else</span> <span class="tok-number">4</span>;</span>
+<span class="line" id="L1169">        <span class="tok-kw">var</span> seg_size: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1170">        <span class="tok-kw">if</span> (version &gt;= <span class="tok-number">5</span>) {</span>
+<span class="line" id="L1171">            addr_size = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1172">            seg_size = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1173">        }</span>
+<span class="line" id="L1174"></span>
+<span class="line" id="L1175">        <span class="tok-kw">const</span> prologue_length = <span class="tok-kw">if</span> (is_64) <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u64</span>, di.endian) <span class="tok-kw">else</span> <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u32</span>, di.endian);</span>
+<span class="line" id="L1176">        <span class="tok-kw">const</span> prog_start_offset = (<span class="tok-kw">try</span> seekable.getPos()) + prologue_length;</span>
+<span class="line" id="L1177"></span>
+<span class="line" id="L1178">        <span class="tok-kw">const</span> minimum_instruction_length = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1179">        <span class="tok-kw">if</span> (minimum_instruction_length == <span class="tok-number">0</span>) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1180"></span>
+<span class="line" id="L1181">        <span class="tok-kw">if</span> (version &gt;= <span class="tok-number">4</span>) {</span>
+<span class="line" id="L1182">            <span class="tok-comment">// maximum_operations_per_instruction</span>
 </span>
-<span class="line" id="L1182">            _ = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1183">        }</span>
-<span class="line" id="L1184"></span>
-<span class="line" id="L1185">        <span class="tok-kw">const</span> default_is_stmt = (<span class="tok-kw">try</span> in.readByte()) != <span class="tok-number">0</span>;</span>
-<span class="line" id="L1186">        <span class="tok-kw">const</span> line_base = <span class="tok-kw">try</span> in.readByteSigned();</span>
-<span class="line" id="L1187"></span>
-<span class="line" id="L1188">        <span class="tok-kw">const</span> line_range = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1189">        <span class="tok-kw">if</span> (line_range == <span class="tok-number">0</span>) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1190"></span>
-<span class="line" id="L1191">        <span class="tok-kw">const</span> opcode_base = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1192"></span>
-<span class="line" id="L1193">        <span class="tok-kw">const</span> standard_opcode_lengths = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, opcode_base - <span class="tok-number">1</span>);</span>
-<span class="line" id="L1194">        <span class="tok-kw">defer</span> allocator.free(standard_opcode_lengths);</span>
-<span class="line" id="L1195"></span>
-<span class="line" id="L1196">        {</span>
-<span class="line" id="L1197">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1198">            <span class="tok-kw">while</span> (i &lt; opcode_base - <span class="tok-number">1</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1199">                standard_opcode_lengths[i] = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1200">            }</span>
-<span class="line" id="L1201">        }</span>
-<span class="line" id="L1202"></span>
-<span class="line" id="L1203">        <span class="tok-kw">var</span> tmp_arena = std.heap.ArenaAllocator.init(allocator);</span>
-<span class="line" id="L1204">        <span class="tok-kw">defer</span> tmp_arena.deinit();</span>
-<span class="line" id="L1205">        <span class="tok-kw">const</span> arena = tmp_arena.allocator();</span>
-<span class="line" id="L1206"></span>
-<span class="line" id="L1207">        <span class="tok-kw">var</span> include_directories = std.ArrayList(FileEntry).init(arena);</span>
-<span class="line" id="L1208">        <span class="tok-kw">var</span> file_entries = std.ArrayList(FileEntry).init(arena);</span>
-<span class="line" id="L1209"></span>
-<span class="line" id="L1210">        <span class="tok-kw">if</span> (version &lt; <span class="tok-number">5</span>) {</span>
-<span class="line" id="L1211">            <span class="tok-kw">try</span> include_directories.append(.{ .path = compile_unit_cwd });</span>
-<span class="line" id="L1212"></span>
-<span class="line" id="L1213">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1214">                <span class="tok-kw">const</span> dir = <span class="tok-kw">try</span> in.readUntilDelimiterAlloc(arena, <span class="tok-number">0</span>, math.maxInt(<span class="tok-type">usize</span>));</span>
-<span class="line" id="L1215">                <span class="tok-kw">if</span> (dir.len == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1216">                <span class="tok-kw">try</span> include_directories.append(.{ .path = dir });</span>
-<span class="line" id="L1217">            }</span>
-<span class="line" id="L1218"></span>
-<span class="line" id="L1219">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1220">                <span class="tok-kw">const</span> file_name = <span class="tok-kw">try</span> in.readUntilDelimiterAlloc(arena, <span class="tok-number">0</span>, math.maxInt(<span class="tok-type">usize</span>));</span>
-<span class="line" id="L1221">                <span class="tok-kw">if</span> (file_name.len == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1222">                <span class="tok-kw">const</span> dir_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u32</span>, in);</span>
-<span class="line" id="L1223">                <span class="tok-kw">const</span> mtime = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1224">                <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1225">                <span class="tok-kw">try</span> file_entries.append(FileEntry{</span>
-<span class="line" id="L1226">                    .path = file_name,</span>
-<span class="line" id="L1227">                    .dir_index = dir_index,</span>
-<span class="line" id="L1228">                    .mtime = mtime,</span>
-<span class="line" id="L1229">                    .size = size,</span>
-<span class="line" id="L1230">                });</span>
-<span class="line" id="L1231">            }</span>
-<span class="line" id="L1232">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1233">            <span class="tok-kw">const</span> FileEntFmt = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1234">                content_type_code: <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1235">                form_code: <span class="tok-type">u16</span>,</span>
-<span class="line" id="L1236">            };</span>
-<span class="line" id="L1237">            {</span>
-<span class="line" id="L1238">                <span class="tok-kw">var</span> dir_ent_fmt_buf: [<span class="tok-number">10</span>]FileEntFmt = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1239">                <span class="tok-kw">const</span> directory_entry_format_count = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1240">                <span class="tok-kw">if</span> (directory_entry_format_count &gt; dir_ent_fmt_buf.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1241">                <span class="tok-kw">for</span> (dir_ent_fmt_buf[<span class="tok-number">0</span>..directory_entry_format_count]) |*ent_fmt| {</span>
-<span class="line" id="L1242">                    ent_fmt.* = .{</span>
-<span class="line" id="L1243">                        .content_type_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u8</span>, in),</span>
-<span class="line" id="L1244">                        .form_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u16</span>, in),</span>
-<span class="line" id="L1245">                    };</span>
-<span class="line" id="L1246">                }</span>
-<span class="line" id="L1247"></span>
-<span class="line" id="L1248">                <span class="tok-kw">const</span> directories_count = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1249">                <span class="tok-kw">try</span> include_directories.ensureUnusedCapacity(directories_count);</span>
-<span class="line" id="L1250">                {</span>
-<span class="line" id="L1251">                    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1252">                    <span class="tok-kw">while</span> (i &lt; directories_count) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1253">                        <span class="tok-kw">var</span> e: FileEntry = .{ .path = &amp;.{} };</span>
-<span class="line" id="L1254">                        <span class="tok-kw">for</span> (dir_ent_fmt_buf[<span class="tok-number">0</span>..directory_entry_format_count]) |ent_fmt| {</span>
-<span class="line" id="L1255">                            <span class="tok-kw">const</span> form_value = <span class="tok-kw">try</span> parseFormValue(</span>
-<span class="line" id="L1256">                                arena,</span>
-<span class="line" id="L1257">                                in,</span>
-<span class="line" id="L1258">                                ent_fmt.form_code,</span>
-<span class="line" id="L1259">                                di.endian,</span>
-<span class="line" id="L1260">                                is_64,</span>
-<span class="line" id="L1261">                            );</span>
-<span class="line" id="L1262">                            <span class="tok-kw">switch</span> (ent_fmt.content_type_code) {</span>
-<span class="line" id="L1263">                                LNCT.path =&gt; e.path = <span class="tok-kw">try</span> form_value.getString(di.*),</span>
-<span class="line" id="L1264">                                LNCT.directory_index =&gt; e.dir_index = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u32</span>),</span>
-<span class="line" id="L1265">                                LNCT.timestamp =&gt; e.mtime = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
-<span class="line" id="L1266">                                LNCT.size =&gt; e.size = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
-<span class="line" id="L1267">                                LNCT.MD5 =&gt; e.md5 = <span class="tok-kw">try</span> form_value.getData16(),</span>
-<span class="line" id="L1268">                                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1269">                            }</span>
-<span class="line" id="L1270">                        }</span>
-<span class="line" id="L1271">                        include_directories.appendAssumeCapacity(e);</span>
-<span class="line" id="L1272">                    }</span>
-<span class="line" id="L1273">                }</span>
-<span class="line" id="L1274">            }</span>
-<span class="line" id="L1275"></span>
-<span class="line" id="L1276">            <span class="tok-kw">var</span> file_ent_fmt_buf: [<span class="tok-number">10</span>]FileEntFmt = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1277">            <span class="tok-kw">const</span> file_name_entry_format_count = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1278">            <span class="tok-kw">if</span> (file_name_entry_format_count &gt; file_ent_fmt_buf.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1279">            <span class="tok-kw">for</span> (file_ent_fmt_buf[<span class="tok-number">0</span>..file_name_entry_format_count]) |*ent_fmt| {</span>
-<span class="line" id="L1280">                ent_fmt.* = .{</span>
-<span class="line" id="L1281">                    .content_type_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u8</span>, in),</span>
-<span class="line" id="L1282">                    .form_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u16</span>, in),</span>
-<span class="line" id="L1283">                };</span>
-<span class="line" id="L1284">            }</span>
-<span class="line" id="L1285"></span>
-<span class="line" id="L1286">            <span class="tok-kw">const</span> file_names_count = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1287">            <span class="tok-kw">try</span> file_entries.ensureUnusedCapacity(file_names_count);</span>
-<span class="line" id="L1288">            {</span>
-<span class="line" id="L1289">                <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1290">                <span class="tok-kw">while</span> (i &lt; file_names_count) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1291">                    <span class="tok-kw">var</span> e: FileEntry = .{ .path = &amp;.{} };</span>
-<span class="line" id="L1292">                    <span class="tok-kw">for</span> (file_ent_fmt_buf[<span class="tok-number">0</span>..file_name_entry_format_count]) |ent_fmt| {</span>
-<span class="line" id="L1293">                        <span class="tok-kw">const</span> form_value = <span class="tok-kw">try</span> parseFormValue(</span>
-<span class="line" id="L1294">                            arena,</span>
-<span class="line" id="L1295">                            in,</span>
-<span class="line" id="L1296">                            ent_fmt.form_code,</span>
-<span class="line" id="L1297">                            di.endian,</span>
-<span class="line" id="L1298">                            is_64,</span>
-<span class="line" id="L1299">                        );</span>
-<span class="line" id="L1300">                        <span class="tok-kw">switch</span> (ent_fmt.content_type_code) {</span>
-<span class="line" id="L1301">                            LNCT.path =&gt; e.path = <span class="tok-kw">try</span> form_value.getString(di.*),</span>
-<span class="line" id="L1302">                            LNCT.directory_index =&gt; e.dir_index = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u32</span>),</span>
-<span class="line" id="L1303">                            LNCT.timestamp =&gt; e.mtime = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
-<span class="line" id="L1304">                            LNCT.size =&gt; e.size = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
-<span class="line" id="L1305">                            LNCT.MD5 =&gt; e.md5 = <span class="tok-kw">try</span> form_value.getData16(),</span>
-<span class="line" id="L1306">                            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1307">                        }</span>
-<span class="line" id="L1308">                    }</span>
-<span class="line" id="L1309">                    file_entries.appendAssumeCapacity(e);</span>
-<span class="line" id="L1310">                }</span>
-<span class="line" id="L1311">            }</span>
-<span class="line" id="L1312">        }</span>
-<span class="line" id="L1313"></span>
-<span class="line" id="L1314">        <span class="tok-kw">var</span> prog = LineNumberProgram.init(</span>
-<span class="line" id="L1315">            default_is_stmt,</span>
-<span class="line" id="L1316">            include_directories.items,</span>
-<span class="line" id="L1317">            target_address,</span>
-<span class="line" id="L1318">            version,</span>
-<span class="line" id="L1319">        );</span>
-<span class="line" id="L1320"></span>
-<span class="line" id="L1321">        <span class="tok-kw">try</span> seekable.seekTo(prog_start_offset);</span>
-<span class="line" id="L1322"></span>
-<span class="line" id="L1323">        <span class="tok-kw">const</span> next_unit_pos = line_info_offset + next_offset;</span>
-<span class="line" id="L1324"></span>
-<span class="line" id="L1325">        <span class="tok-kw">while</span> ((<span class="tok-kw">try</span> seekable.getPos()) &lt; next_unit_pos) {</span>
-<span class="line" id="L1326">            <span class="tok-kw">const</span> opcode = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1327"></span>
-<span class="line" id="L1328">            <span class="tok-kw">if</span> (opcode == LNS.extended_op) {</span>
-<span class="line" id="L1329">                <span class="tok-kw">const</span> op_size = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1330">                <span class="tok-kw">if</span> (op_size &lt; <span class="tok-number">1</span>) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1331">                <span class="tok-kw">var</span> sub_op = <span class="tok-kw">try</span> in.readByte();</span>
-<span class="line" id="L1332">                <span class="tok-kw">switch</span> (sub_op) {</span>
-<span class="line" id="L1333">                    LNE.end_sequence =&gt; {</span>
-<span class="line" id="L1334">                        prog.end_sequence = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1335">                        <span class="tok-kw">if</span> (<span class="tok-kw">try</span> prog.checkLineMatch(allocator, file_entries.items)) |info| <span class="tok-kw">return</span> info;</span>
-<span class="line" id="L1336">                        prog.reset();</span>
-<span class="line" id="L1337">                    },</span>
-<span class="line" id="L1338">                    LNE.set_address =&gt; {</span>
-<span class="line" id="L1339">                        <span class="tok-kw">const</span> addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
-<span class="line" id="L1340">                        prog.address = addr;</span>
-<span class="line" id="L1341">                    },</span>
-<span class="line" id="L1342">                    LNE.define_file =&gt; {</span>
-<span class="line" id="L1343">                        <span class="tok-kw">const</span> path = <span class="tok-kw">try</span> in.readUntilDelimiterAlloc(arena, <span class="tok-number">0</span>, math.maxInt(<span class="tok-type">usize</span>));</span>
-<span class="line" id="L1344">                        <span class="tok-kw">const</span> dir_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u32</span>, in);</span>
-<span class="line" id="L1345">                        <span class="tok-kw">const</span> mtime = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1346">                        <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1347">                        <span class="tok-kw">try</span> file_entries.append(FileEntry{</span>
-<span class="line" id="L1348">                            .path = path,</span>
-<span class="line" id="L1349">                            .dir_index = dir_index,</span>
-<span class="line" id="L1350">                            .mtime = mtime,</span>
-<span class="line" id="L1351">                            .size = size,</span>
-<span class="line" id="L1352">                        });</span>
-<span class="line" id="L1353">                    },</span>
-<span class="line" id="L1354">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1355">                        <span class="tok-kw">const</span> fwd_amt = math.cast(<span class="tok-type">isize</span>, op_size - <span class="tok-number">1</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1356">                        <span class="tok-kw">try</span> seekable.seekBy(fwd_amt);</span>
-<span class="line" id="L1357">                    },</span>
-<span class="line" id="L1358">                }</span>
-<span class="line" id="L1359">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (opcode &gt;= opcode_base) {</span>
-<span class="line" id="L1360">                <span class="tok-comment">// special opcodes</span>
+<span class="line" id="L1183">            _ = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1184">        }</span>
+<span class="line" id="L1185"></span>
+<span class="line" id="L1186">        <span class="tok-kw">const</span> default_is_stmt = (<span class="tok-kw">try</span> in.readByte()) != <span class="tok-number">0</span>;</span>
+<span class="line" id="L1187">        <span class="tok-kw">const</span> line_base = <span class="tok-kw">try</span> in.readByteSigned();</span>
+<span class="line" id="L1188"></span>
+<span class="line" id="L1189">        <span class="tok-kw">const</span> line_range = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1190">        <span class="tok-kw">if</span> (line_range == <span class="tok-number">0</span>) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1191"></span>
+<span class="line" id="L1192">        <span class="tok-kw">const</span> opcode_base = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1193"></span>
+<span class="line" id="L1194">        <span class="tok-kw">const</span> standard_opcode_lengths = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, opcode_base - <span class="tok-number">1</span>);</span>
+<span class="line" id="L1195">        <span class="tok-kw">defer</span> allocator.free(standard_opcode_lengths);</span>
+<span class="line" id="L1196"></span>
+<span class="line" id="L1197">        {</span>
+<span class="line" id="L1198">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1199">            <span class="tok-kw">while</span> (i &lt; opcode_base - <span class="tok-number">1</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1200">                standard_opcode_lengths[i] = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1201">            }</span>
+<span class="line" id="L1202">        }</span>
+<span class="line" id="L1203"></span>
+<span class="line" id="L1204">        <span class="tok-kw">var</span> tmp_arena = std.heap.ArenaAllocator.init(allocator);</span>
+<span class="line" id="L1205">        <span class="tok-kw">defer</span> tmp_arena.deinit();</span>
+<span class="line" id="L1206">        <span class="tok-kw">const</span> arena = tmp_arena.allocator();</span>
+<span class="line" id="L1207"></span>
+<span class="line" id="L1208">        <span class="tok-kw">var</span> include_directories = std.ArrayList(FileEntry).init(arena);</span>
+<span class="line" id="L1209">        <span class="tok-kw">var</span> file_entries = std.ArrayList(FileEntry).init(arena);</span>
+<span class="line" id="L1210"></span>
+<span class="line" id="L1211">        <span class="tok-kw">if</span> (version &lt; <span class="tok-number">5</span>) {</span>
+<span class="line" id="L1212">            <span class="tok-kw">try</span> include_directories.append(.{ .path = compile_unit_cwd });</span>
+<span class="line" id="L1213"></span>
+<span class="line" id="L1214">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1215">                <span class="tok-kw">const</span> dir = <span class="tok-kw">try</span> in.readUntilDelimiterAlloc(arena, <span class="tok-number">0</span>, math.maxInt(<span class="tok-type">usize</span>));</span>
+<span class="line" id="L1216">                <span class="tok-kw">if</span> (dir.len == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1217">                <span class="tok-kw">try</span> include_directories.append(.{ .path = dir });</span>
+<span class="line" id="L1218">            }</span>
+<span class="line" id="L1219"></span>
+<span class="line" id="L1220">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1221">                <span class="tok-kw">const</span> file_name = <span class="tok-kw">try</span> in.readUntilDelimiterAlloc(arena, <span class="tok-number">0</span>, math.maxInt(<span class="tok-type">usize</span>));</span>
+<span class="line" id="L1222">                <span class="tok-kw">if</span> (file_name.len == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1223">                <span class="tok-kw">const</span> dir_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u32</span>, in);</span>
+<span class="line" id="L1224">                <span class="tok-kw">const</span> mtime = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1225">                <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1226">                <span class="tok-kw">try</span> file_entries.append(FileEntry{</span>
+<span class="line" id="L1227">                    .path = file_name,</span>
+<span class="line" id="L1228">                    .dir_index = dir_index,</span>
+<span class="line" id="L1229">                    .mtime = mtime,</span>
+<span class="line" id="L1230">                    .size = size,</span>
+<span class="line" id="L1231">                });</span>
+<span class="line" id="L1232">            }</span>
+<span class="line" id="L1233">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1234">            <span class="tok-kw">const</span> FileEntFmt = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1235">                content_type_code: <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1236">                form_code: <span class="tok-type">u16</span>,</span>
+<span class="line" id="L1237">            };</span>
+<span class="line" id="L1238">            {</span>
+<span class="line" id="L1239">                <span class="tok-kw">var</span> dir_ent_fmt_buf: [<span class="tok-number">10</span>]FileEntFmt = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1240">                <span class="tok-kw">const</span> directory_entry_format_count = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1241">                <span class="tok-kw">if</span> (directory_entry_format_count &gt; dir_ent_fmt_buf.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1242">                <span class="tok-kw">for</span> (dir_ent_fmt_buf[<span class="tok-number">0</span>..directory_entry_format_count]) |*ent_fmt| {</span>
+<span class="line" id="L1243">                    ent_fmt.* = .{</span>
+<span class="line" id="L1244">                        .content_type_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u8</span>, in),</span>
+<span class="line" id="L1245">                        .form_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u16</span>, in),</span>
+<span class="line" id="L1246">                    };</span>
+<span class="line" id="L1247">                }</span>
+<span class="line" id="L1248"></span>
+<span class="line" id="L1249">                <span class="tok-kw">const</span> directories_count = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1250">                <span class="tok-kw">try</span> include_directories.ensureUnusedCapacity(directories_count);</span>
+<span class="line" id="L1251">                {</span>
+<span class="line" id="L1252">                    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1253">                    <span class="tok-kw">while</span> (i &lt; directories_count) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1254">                        <span class="tok-kw">var</span> e: FileEntry = .{ .path = &amp;.{} };</span>
+<span class="line" id="L1255">                        <span class="tok-kw">for</span> (dir_ent_fmt_buf[<span class="tok-number">0</span>..directory_entry_format_count]) |ent_fmt| {</span>
+<span class="line" id="L1256">                            <span class="tok-kw">const</span> form_value = <span class="tok-kw">try</span> parseFormValue(</span>
+<span class="line" id="L1257">                                arena,</span>
+<span class="line" id="L1258">                                in,</span>
+<span class="line" id="L1259">                                ent_fmt.form_code,</span>
+<span class="line" id="L1260">                                di.endian,</span>
+<span class="line" id="L1261">                                is_64,</span>
+<span class="line" id="L1262">                            );</span>
+<span class="line" id="L1263">                            <span class="tok-kw">switch</span> (ent_fmt.content_type_code) {</span>
+<span class="line" id="L1264">                                LNCT.path =&gt; e.path = <span class="tok-kw">try</span> form_value.getString(di.*),</span>
+<span class="line" id="L1265">                                LNCT.directory_index =&gt; e.dir_index = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u32</span>),</span>
+<span class="line" id="L1266">                                LNCT.timestamp =&gt; e.mtime = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
+<span class="line" id="L1267">                                LNCT.size =&gt; e.size = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
+<span class="line" id="L1268">                                LNCT.MD5 =&gt; e.md5 = <span class="tok-kw">try</span> form_value.getData16(),</span>
+<span class="line" id="L1269">                                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1270">                            }</span>
+<span class="line" id="L1271">                        }</span>
+<span class="line" id="L1272">                        include_directories.appendAssumeCapacity(e);</span>
+<span class="line" id="L1273">                    }</span>
+<span class="line" id="L1274">                }</span>
+<span class="line" id="L1275">            }</span>
+<span class="line" id="L1276"></span>
+<span class="line" id="L1277">            <span class="tok-kw">var</span> file_ent_fmt_buf: [<span class="tok-number">10</span>]FileEntFmt = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1278">            <span class="tok-kw">const</span> file_name_entry_format_count = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1279">            <span class="tok-kw">if</span> (file_name_entry_format_count &gt; file_ent_fmt_buf.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1280">            <span class="tok-kw">for</span> (file_ent_fmt_buf[<span class="tok-number">0</span>..file_name_entry_format_count]) |*ent_fmt| {</span>
+<span class="line" id="L1281">                ent_fmt.* = .{</span>
+<span class="line" id="L1282">                    .content_type_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u8</span>, in),</span>
+<span class="line" id="L1283">                    .form_code = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u16</span>, in),</span>
+<span class="line" id="L1284">                };</span>
+<span class="line" id="L1285">            }</span>
+<span class="line" id="L1286"></span>
+<span class="line" id="L1287">            <span class="tok-kw">const</span> file_names_count = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1288">            <span class="tok-kw">try</span> file_entries.ensureUnusedCapacity(file_names_count);</span>
+<span class="line" id="L1289">            {</span>
+<span class="line" id="L1290">                <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1291">                <span class="tok-kw">while</span> (i &lt; file_names_count) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1292">                    <span class="tok-kw">var</span> e: FileEntry = .{ .path = &amp;.{} };</span>
+<span class="line" id="L1293">                    <span class="tok-kw">for</span> (file_ent_fmt_buf[<span class="tok-number">0</span>..file_name_entry_format_count]) |ent_fmt| {</span>
+<span class="line" id="L1294">                        <span class="tok-kw">const</span> form_value = <span class="tok-kw">try</span> parseFormValue(</span>
+<span class="line" id="L1295">                            arena,</span>
+<span class="line" id="L1296">                            in,</span>
+<span class="line" id="L1297">                            ent_fmt.form_code,</span>
+<span class="line" id="L1298">                            di.endian,</span>
+<span class="line" id="L1299">                            is_64,</span>
+<span class="line" id="L1300">                        );</span>
+<span class="line" id="L1301">                        <span class="tok-kw">switch</span> (ent_fmt.content_type_code) {</span>
+<span class="line" id="L1302">                            LNCT.path =&gt; e.path = <span class="tok-kw">try</span> form_value.getString(di.*),</span>
+<span class="line" id="L1303">                            LNCT.directory_index =&gt; e.dir_index = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u32</span>),</span>
+<span class="line" id="L1304">                            LNCT.timestamp =&gt; e.mtime = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
+<span class="line" id="L1305">                            LNCT.size =&gt; e.size = <span class="tok-kw">try</span> form_value.getUInt(<span class="tok-type">u64</span>),</span>
+<span class="line" id="L1306">                            LNCT.MD5 =&gt; e.md5 = <span class="tok-kw">try</span> form_value.getData16(),</span>
+<span class="line" id="L1307">                            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1308">                        }</span>
+<span class="line" id="L1309">                    }</span>
+<span class="line" id="L1310">                    file_entries.appendAssumeCapacity(e);</span>
+<span class="line" id="L1311">                }</span>
+<span class="line" id="L1312">            }</span>
+<span class="line" id="L1313">        }</span>
+<span class="line" id="L1314"></span>
+<span class="line" id="L1315">        <span class="tok-kw">var</span> prog = LineNumberProgram.init(</span>
+<span class="line" id="L1316">            default_is_stmt,</span>
+<span class="line" id="L1317">            include_directories.items,</span>
+<span class="line" id="L1318">            target_address,</span>
+<span class="line" id="L1319">            version,</span>
+<span class="line" id="L1320">        );</span>
+<span class="line" id="L1321"></span>
+<span class="line" id="L1322">        <span class="tok-kw">try</span> seekable.seekTo(prog_start_offset);</span>
+<span class="line" id="L1323"></span>
+<span class="line" id="L1324">        <span class="tok-kw">const</span> next_unit_pos = line_info_offset + next_offset;</span>
+<span class="line" id="L1325"></span>
+<span class="line" id="L1326">        <span class="tok-kw">while</span> ((<span class="tok-kw">try</span> seekable.getPos()) &lt; next_unit_pos) {</span>
+<span class="line" id="L1327">            <span class="tok-kw">const</span> opcode = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1328"></span>
+<span class="line" id="L1329">            <span class="tok-kw">if</span> (opcode == LNS.extended_op) {</span>
+<span class="line" id="L1330">                <span class="tok-kw">const</span> op_size = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1331">                <span class="tok-kw">if</span> (op_size &lt; <span class="tok-number">1</span>) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1332">                <span class="tok-kw">var</span> sub_op = <span class="tok-kw">try</span> in.readByte();</span>
+<span class="line" id="L1333">                <span class="tok-kw">switch</span> (sub_op) {</span>
+<span class="line" id="L1334">                    LNE.end_sequence =&gt; {</span>
+<span class="line" id="L1335">                        prog.end_sequence = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1336">                        <span class="tok-kw">if</span> (<span class="tok-kw">try</span> prog.checkLineMatch(allocator, file_entries.items)) |info| <span class="tok-kw">return</span> info;</span>
+<span class="line" id="L1337">                        prog.reset();</span>
+<span class="line" id="L1338">                    },</span>
+<span class="line" id="L1339">                    LNE.set_address =&gt; {</span>
+<span class="line" id="L1340">                        <span class="tok-kw">const</span> addr = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">usize</span>, di.endian);</span>
+<span class="line" id="L1341">                        prog.address = addr;</span>
+<span class="line" id="L1342">                    },</span>
+<span class="line" id="L1343">                    LNE.define_file =&gt; {</span>
+<span class="line" id="L1344">                        <span class="tok-kw">const</span> path = <span class="tok-kw">try</span> in.readUntilDelimiterAlloc(arena, <span class="tok-number">0</span>, math.maxInt(<span class="tok-type">usize</span>));</span>
+<span class="line" id="L1345">                        <span class="tok-kw">const</span> dir_index = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u32</span>, in);</span>
+<span class="line" id="L1346">                        <span class="tok-kw">const</span> mtime = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1347">                        <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1348">                        <span class="tok-kw">try</span> file_entries.append(FileEntry{</span>
+<span class="line" id="L1349">                            .path = path,</span>
+<span class="line" id="L1350">                            .dir_index = dir_index,</span>
+<span class="line" id="L1351">                            .mtime = mtime,</span>
+<span class="line" id="L1352">                            .size = size,</span>
+<span class="line" id="L1353">                        });</span>
+<span class="line" id="L1354">                    },</span>
+<span class="line" id="L1355">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1356">                        <span class="tok-kw">const</span> fwd_amt = math.cast(<span class="tok-type">isize</span>, op_size - <span class="tok-number">1</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1357">                        <span class="tok-kw">try</span> seekable.seekBy(fwd_amt);</span>
+<span class="line" id="L1358">                    },</span>
+<span class="line" id="L1359">                }</span>
+<span class="line" id="L1360">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (opcode &gt;= opcode_base) {</span>
+<span class="line" id="L1361">                <span class="tok-comment">// special opcodes</span>
 </span>
-<span class="line" id="L1361">                <span class="tok-kw">const</span> adjusted_opcode = opcode - opcode_base;</span>
-<span class="line" id="L1362">                <span class="tok-kw">const</span> inc_addr = minimum_instruction_length * (adjusted_opcode / line_range);</span>
-<span class="line" id="L1363">                <span class="tok-kw">const</span> inc_line = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, line_base) + <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, adjusted_opcode % line_range);</span>
-<span class="line" id="L1364">                prog.line += inc_line;</span>
-<span class="line" id="L1365">                prog.address += inc_addr;</span>
-<span class="line" id="L1366">                <span class="tok-kw">if</span> (<span class="tok-kw">try</span> prog.checkLineMatch(allocator, file_entries.items)) |info| <span class="tok-kw">return</span> info;</span>
-<span class="line" id="L1367">                prog.basic_block = <span class="tok-null">false</span>;</span>
-<span class="line" id="L1368">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1369">                <span class="tok-kw">switch</span> (opcode) {</span>
-<span class="line" id="L1370">                    LNS.copy =&gt; {</span>
-<span class="line" id="L1371">                        <span class="tok-kw">if</span> (<span class="tok-kw">try</span> prog.checkLineMatch(allocator, file_entries.items)) |info| <span class="tok-kw">return</span> info;</span>
-<span class="line" id="L1372">                        prog.basic_block = <span class="tok-null">false</span>;</span>
-<span class="line" id="L1373">                    },</span>
-<span class="line" id="L1374">                    LNS.advance_pc =&gt; {</span>
-<span class="line" id="L1375">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1376">                        prog.address += arg * minimum_instruction_length;</span>
-<span class="line" id="L1377">                    },</span>
-<span class="line" id="L1378">                    LNS.advance_line =&gt; {</span>
-<span class="line" id="L1379">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readILEB128(<span class="tok-type">i64</span>, in);</span>
-<span class="line" id="L1380">                        prog.line += arg;</span>
-<span class="line" id="L1381">                    },</span>
-<span class="line" id="L1382">                    LNS.set_file =&gt; {</span>
-<span class="line" id="L1383">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
-<span class="line" id="L1384">                        prog.file = arg;</span>
-<span class="line" id="L1385">                    },</span>
-<span class="line" id="L1386">                    LNS.set_column =&gt; {</span>
-<span class="line" id="L1387">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
-<span class="line" id="L1388">                        prog.column = arg;</span>
-<span class="line" id="L1389">                    },</span>
-<span class="line" id="L1390">                    LNS.negate_stmt =&gt; {</span>
-<span class="line" id="L1391">                        prog.is_stmt = !prog.is_stmt;</span>
-<span class="line" id="L1392">                    },</span>
-<span class="line" id="L1393">                    LNS.set_basic_block =&gt; {</span>
-<span class="line" id="L1394">                        prog.basic_block = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1395">                    },</span>
-<span class="line" id="L1396">                    LNS.const_add_pc =&gt; {</span>
-<span class="line" id="L1397">                        <span class="tok-kw">const</span> inc_addr = minimum_instruction_length * ((<span class="tok-number">255</span> - opcode_base) / line_range);</span>
-<span class="line" id="L1398">                        prog.address += inc_addr;</span>
-<span class="line" id="L1399">                    },</span>
-<span class="line" id="L1400">                    LNS.fixed_advance_pc =&gt; {</span>
-<span class="line" id="L1401">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u16</span>, di.endian);</span>
-<span class="line" id="L1402">                        prog.address += arg;</span>
-<span class="line" id="L1403">                    },</span>
-<span class="line" id="L1404">                    LNS.set_prologue_end =&gt; {},</span>
-<span class="line" id="L1405">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1406">                        <span class="tok-kw">if</span> (opcode - <span class="tok-number">1</span> &gt;= standard_opcode_lengths.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1407">                        <span class="tok-kw">const</span> len_bytes = standard_opcode_lengths[opcode - <span class="tok-number">1</span>];</span>
-<span class="line" id="L1408">                        <span class="tok-kw">try</span> seekable.seekBy(len_bytes);</span>
-<span class="line" id="L1409">                    },</span>
-<span class="line" id="L1410">                }</span>
-<span class="line" id="L1411">            }</span>
-<span class="line" id="L1412">        }</span>
-<span class="line" id="L1413"></span>
-<span class="line" id="L1414">        <span class="tok-kw">return</span> missingDwarf();</span>
-<span class="line" id="L1415">    }</span>
-<span class="line" id="L1416"></span>
-<span class="line" id="L1417">    <span class="tok-kw">fn</span> <span class="tok-fn">getString</span>(di: DwarfInfo, offset: <span class="tok-type">u64</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1418">        <span class="tok-kw">return</span> getStringGeneric(di.debug_str, offset);</span>
-<span class="line" id="L1419">    }</span>
-<span class="line" id="L1420"></span>
-<span class="line" id="L1421">    <span class="tok-kw">fn</span> <span class="tok-fn">getLineString</span>(di: DwarfInfo, offset: <span class="tok-type">u64</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1422">        <span class="tok-kw">return</span> getStringGeneric(di.debug_line_str, offset);</span>
-<span class="line" id="L1423">    }</span>
-<span class="line" id="L1424"></span>
-<span class="line" id="L1425">    <span class="tok-kw">fn</span> <span class="tok-fn">readDebugAddr</span>(di: DwarfInfo, compile_unit: CompileUnit, index: <span class="tok-type">u64</span>) !<span class="tok-type">u64</span> {</span>
-<span class="line" id="L1426">        <span class="tok-kw">const</span> debug_addr = di.debug_addr <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1427"></span>
-<span class="line" id="L1428">        <span class="tok-comment">// addr_base points to the first item after the header, however we</span>
+<span class="line" id="L1362">                <span class="tok-kw">const</span> adjusted_opcode = opcode - opcode_base;</span>
+<span class="line" id="L1363">                <span class="tok-kw">const</span> inc_addr = minimum_instruction_length * (adjusted_opcode / line_range);</span>
+<span class="line" id="L1364">                <span class="tok-kw">const</span> inc_line = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, line_base) + <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, adjusted_opcode % line_range);</span>
+<span class="line" id="L1365">                prog.line += inc_line;</span>
+<span class="line" id="L1366">                prog.address += inc_addr;</span>
+<span class="line" id="L1367">                <span class="tok-kw">if</span> (<span class="tok-kw">try</span> prog.checkLineMatch(allocator, file_entries.items)) |info| <span class="tok-kw">return</span> info;</span>
+<span class="line" id="L1368">                prog.basic_block = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1369">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1370">                <span class="tok-kw">switch</span> (opcode) {</span>
+<span class="line" id="L1371">                    LNS.copy =&gt; {</span>
+<span class="line" id="L1372">                        <span class="tok-kw">if</span> (<span class="tok-kw">try</span> prog.checkLineMatch(allocator, file_entries.items)) |info| <span class="tok-kw">return</span> info;</span>
+<span class="line" id="L1373">                        prog.basic_block = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1374">                    },</span>
+<span class="line" id="L1375">                    LNS.advance_pc =&gt; {</span>
+<span class="line" id="L1376">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1377">                        prog.address += arg * minimum_instruction_length;</span>
+<span class="line" id="L1378">                    },</span>
+<span class="line" id="L1379">                    LNS.advance_line =&gt; {</span>
+<span class="line" id="L1380">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readILEB128(<span class="tok-type">i64</span>, in);</span>
+<span class="line" id="L1381">                        prog.line += arg;</span>
+<span class="line" id="L1382">                    },</span>
+<span class="line" id="L1383">                    LNS.set_file =&gt; {</span>
+<span class="line" id="L1384">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">usize</span>, in);</span>
+<span class="line" id="L1385">                        prog.file = arg;</span>
+<span class="line" id="L1386">                    },</span>
+<span class="line" id="L1387">                    LNS.set_column =&gt; {</span>
+<span class="line" id="L1388">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> leb.readULEB128(<span class="tok-type">u64</span>, in);</span>
+<span class="line" id="L1389">                        prog.column = arg;</span>
+<span class="line" id="L1390">                    },</span>
+<span class="line" id="L1391">                    LNS.negate_stmt =&gt; {</span>
+<span class="line" id="L1392">                        prog.is_stmt = !prog.is_stmt;</span>
+<span class="line" id="L1393">                    },</span>
+<span class="line" id="L1394">                    LNS.set_basic_block =&gt; {</span>
+<span class="line" id="L1395">                        prog.basic_block = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1396">                    },</span>
+<span class="line" id="L1397">                    LNS.const_add_pc =&gt; {</span>
+<span class="line" id="L1398">                        <span class="tok-kw">const</span> inc_addr = minimum_instruction_length * ((<span class="tok-number">255</span> - opcode_base) / line_range);</span>
+<span class="line" id="L1399">                        prog.address += inc_addr;</span>
+<span class="line" id="L1400">                    },</span>
+<span class="line" id="L1401">                    LNS.fixed_advance_pc =&gt; {</span>
+<span class="line" id="L1402">                        <span class="tok-kw">const</span> arg = <span class="tok-kw">try</span> in.readInt(<span class="tok-type">u16</span>, di.endian);</span>
+<span class="line" id="L1403">                        prog.address += arg;</span>
+<span class="line" id="L1404">                    },</span>
+<span class="line" id="L1405">                    LNS.set_prologue_end =&gt; {},</span>
+<span class="line" id="L1406">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1407">                        <span class="tok-kw">if</span> (opcode - <span class="tok-number">1</span> &gt;= standard_opcode_lengths.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1408">                        <span class="tok-kw">const</span> len_bytes = standard_opcode_lengths[opcode - <span class="tok-number">1</span>];</span>
+<span class="line" id="L1409">                        <span class="tok-kw">try</span> seekable.seekBy(len_bytes);</span>
+<span class="line" id="L1410">                    },</span>
+<span class="line" id="L1411">                }</span>
+<span class="line" id="L1412">            }</span>
+<span class="line" id="L1413">        }</span>
+<span class="line" id="L1414"></span>
+<span class="line" id="L1415">        <span class="tok-kw">return</span> missingDwarf();</span>
+<span class="line" id="L1416">    }</span>
+<span class="line" id="L1417"></span>
+<span class="line" id="L1418">    <span class="tok-kw">fn</span> <span class="tok-fn">getString</span>(di: DwarfInfo, offset: <span class="tok-type">u64</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1419">        <span class="tok-kw">return</span> getStringGeneric(di.debug_str, offset);</span>
+<span class="line" id="L1420">    }</span>
+<span class="line" id="L1421"></span>
+<span class="line" id="L1422">    <span class="tok-kw">fn</span> <span class="tok-fn">getLineString</span>(di: DwarfInfo, offset: <span class="tok-type">u64</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1423">        <span class="tok-kw">return</span> getStringGeneric(di.debug_line_str, offset);</span>
+<span class="line" id="L1424">    }</span>
+<span class="line" id="L1425"></span>
+<span class="line" id="L1426">    <span class="tok-kw">fn</span> <span class="tok-fn">readDebugAddr</span>(di: DwarfInfo, compile_unit: CompileUnit, index: <span class="tok-type">u64</span>) !<span class="tok-type">u64</span> {</span>
+<span class="line" id="L1427">        <span class="tok-kw">const</span> debug_addr = di.debug_addr <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1428"></span>
+<span class="line" id="L1429">        <span class="tok-comment">// addr_base points to the first item after the header, however we</span>
 </span>
-<span class="line" id="L1429">        <span class="tok-comment">// need to read the header to know the size of each item. Empirically,</span>
+<span class="line" id="L1430">        <span class="tok-comment">// need to read the header to know the size of each item. Empirically,</span>
 </span>
-<span class="line" id="L1430">        <span class="tok-comment">// it may disagree with is_64 on the compile unit.</span>
+<span class="line" id="L1431">        <span class="tok-comment">// it may disagree with is_64 on the compile unit.</span>
 </span>
-<span class="line" id="L1431">        <span class="tok-comment">// The header is 8 or 12 bytes depending on is_64.</span>
+<span class="line" id="L1432">        <span class="tok-comment">// The header is 8 or 12 bytes depending on is_64.</span>
 </span>
-<span class="line" id="L1432">        <span class="tok-kw">if</span> (compile_unit.addr_base &lt; <span class="tok-number">8</span>) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1433"></span>
-<span class="line" id="L1434">        <span class="tok-kw">const</span> version = mem.readInt(<span class="tok-type">u16</span>, debug_addr[compile_unit.addr_base - <span class="tok-number">4</span> ..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], di.endian);</span>
-<span class="line" id="L1435">        <span class="tok-kw">if</span> (version != <span class="tok-number">5</span>) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1436"></span>
-<span class="line" id="L1437">        <span class="tok-kw">const</span> addr_size = debug_addr[compile_unit.addr_base - <span class="tok-number">2</span>];</span>
-<span class="line" id="L1438">        <span class="tok-kw">const</span> seg_size = debug_addr[compile_unit.addr_base - <span class="tok-number">1</span>];</span>
-<span class="line" id="L1439"></span>
-<span class="line" id="L1440">        <span class="tok-kw">const</span> byte_offset = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, compile_unit.addr_base + (addr_size + seg_size) * index);</span>
-<span class="line" id="L1441">        <span class="tok-kw">if</span> (byte_offset + addr_size &gt; debug_addr.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1442">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (addr_size) {</span>
-<span class="line" id="L1443">            <span class="tok-number">1</span> =&gt; debug_addr[byte_offset],</span>
-<span class="line" id="L1444">            <span class="tok-number">2</span> =&gt; mem.readInt(<span class="tok-type">u16</span>, debug_addr[byte_offset..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], di.endian),</span>
-<span class="line" id="L1445">            <span class="tok-number">4</span> =&gt; mem.readInt(<span class="tok-type">u32</span>, debug_addr[byte_offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], di.endian),</span>
-<span class="line" id="L1446">            <span class="tok-number">8</span> =&gt; mem.readInt(<span class="tok-type">u64</span>, debug_addr[byte_offset..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], di.endian),</span>
-<span class="line" id="L1447">            <span class="tok-kw">else</span> =&gt; badDwarf(),</span>
-<span class="line" id="L1448">        };</span>
-<span class="line" id="L1449">    }</span>
-<span class="line" id="L1450">};</span>
-<span class="line" id="L1451"></span>
-<span class="line" id="L1452"><span class="tok-comment">/// Initialize DWARF info. The caller has the responsibility to initialize most</span></span>
-<span class="line" id="L1453"><span class="tok-comment">/// the DwarfInfo fields before calling.</span></span>
-<span class="line" id="L1454"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDwarfDebugInfo</span>(di: *DwarfInfo, allocator: mem.Allocator) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1455">    <span class="tok-kw">try</span> di.scanAllFunctions(allocator);</span>
-<span class="line" id="L1456">    <span class="tok-kw">try</span> di.scanAllCompileUnits(allocator);</span>
-<span class="line" id="L1457">}</span>
-<span class="line" id="L1458"></span>
-<span class="line" id="L1459"><span class="tok-comment">/// This function is to make it handy to comment out the return and make it</span></span>
-<span class="line" id="L1460"><span class="tok-comment">/// into a crash when working on this file.</span></span>
-<span class="line" id="L1461"><span class="tok-kw">fn</span> <span class="tok-fn">badDwarf</span>() <span class="tok-kw">error</span>{InvalidDebugInfo} {</span>
-<span class="line" id="L1462">    <span class="tok-comment">//std.os.abort(); // can be handy to uncomment when working on this file</span>
+<span class="line" id="L1433">        <span class="tok-kw">if</span> (compile_unit.addr_base &lt; <span class="tok-number">8</span>) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1434"></span>
+<span class="line" id="L1435">        <span class="tok-kw">const</span> version = mem.readInt(<span class="tok-type">u16</span>, debug_addr[compile_unit.addr_base - <span class="tok-number">4</span> ..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], di.endian);</span>
+<span class="line" id="L1436">        <span class="tok-kw">if</span> (version != <span class="tok-number">5</span>) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1437"></span>
+<span class="line" id="L1438">        <span class="tok-kw">const</span> addr_size = debug_addr[compile_unit.addr_base - <span class="tok-number">2</span>];</span>
+<span class="line" id="L1439">        <span class="tok-kw">const</span> seg_size = debug_addr[compile_unit.addr_base - <span class="tok-number">1</span>];</span>
+<span class="line" id="L1440"></span>
+<span class="line" id="L1441">        <span class="tok-kw">const</span> byte_offset = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, compile_unit.addr_base + (addr_size + seg_size) * index);</span>
+<span class="line" id="L1442">        <span class="tok-kw">if</span> (byte_offset + addr_size &gt; debug_addr.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1443">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (addr_size) {</span>
+<span class="line" id="L1444">            <span class="tok-number">1</span> =&gt; debug_addr[byte_offset],</span>
+<span class="line" id="L1445">            <span class="tok-number">2</span> =&gt; mem.readInt(<span class="tok-type">u16</span>, debug_addr[byte_offset..][<span class="tok-number">0</span>..<span class="tok-number">2</span>], di.endian),</span>
+<span class="line" id="L1446">            <span class="tok-number">4</span> =&gt; mem.readInt(<span class="tok-type">u32</span>, debug_addr[byte_offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], di.endian),</span>
+<span class="line" id="L1447">            <span class="tok-number">8</span> =&gt; mem.readInt(<span class="tok-type">u64</span>, debug_addr[byte_offset..][<span class="tok-number">0</span>..<span class="tok-number">8</span>], di.endian),</span>
+<span class="line" id="L1448">            <span class="tok-kw">else</span> =&gt; badDwarf(),</span>
+<span class="line" id="L1449">        };</span>
+<span class="line" id="L1450">    }</span>
+<span class="line" id="L1451">};</span>
+<span class="line" id="L1452"></span>
+<span class="line" id="L1453"><span class="tok-comment">/// Initialize DWARF info. The caller has the responsibility to initialize most</span></span>
+<span class="line" id="L1454"><span class="tok-comment">/// the DwarfInfo fields before calling.</span></span>
+<span class="line" id="L1455"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDwarfDebugInfo</span>(di: *DwarfInfo, allocator: mem.Allocator) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1456">    <span class="tok-kw">try</span> di.scanAllFunctions(allocator);</span>
+<span class="line" id="L1457">    <span class="tok-kw">try</span> di.scanAllCompileUnits(allocator);</span>
+<span class="line" id="L1458">}</span>
+<span class="line" id="L1459"></span>
+<span class="line" id="L1460"><span class="tok-comment">/// This function is to make it handy to comment out the return and make it</span></span>
+<span class="line" id="L1461"><span class="tok-comment">/// into a crash when working on this file.</span></span>
+<span class="line" id="L1462"><span class="tok-kw">fn</span> <span class="tok-fn">badDwarf</span>() <span class="tok-kw">error</span>{InvalidDebugInfo} {</span>
+<span class="line" id="L1463">    <span class="tok-comment">//std.os.abort(); // can be handy to uncomment when working on this file</span>
 </span>
-<span class="line" id="L1463">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDebugInfo;</span>
-<span class="line" id="L1464">}</span>
-<span class="line" id="L1465"></span>
-<span class="line" id="L1466"><span class="tok-kw">fn</span> <span class="tok-fn">missingDwarf</span>() <span class="tok-kw">error</span>{MissingDebugInfo} {</span>
-<span class="line" id="L1467">    <span class="tok-comment">//std.os.abort(); // can be handy to uncomment when working on this file</span>
+<span class="line" id="L1464">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidDebugInfo;</span>
+<span class="line" id="L1465">}</span>
+<span class="line" id="L1466"></span>
+<span class="line" id="L1467"><span class="tok-kw">fn</span> <span class="tok-fn">missingDwarf</span>() <span class="tok-kw">error</span>{MissingDebugInfo} {</span>
+<span class="line" id="L1468">    <span class="tok-comment">//std.os.abort(); // can be handy to uncomment when working on this file</span>
 </span>
-<span class="line" id="L1468">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingDebugInfo;</span>
-<span class="line" id="L1469">}</span>
-<span class="line" id="L1470"></span>
-<span class="line" id="L1471"><span class="tok-kw">fn</span> <span class="tok-fn">getStringGeneric</span>(opt_str: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, offset: <span class="tok-type">u64</span>) ![:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1472">    <span class="tok-kw">const</span> str = opt_str <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1473">    <span class="tok-kw">if</span> (offset &gt; str.len) <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1474">    <span class="tok-kw">const</span> casted_offset = math.cast(<span class="tok-type">usize</span>, offset) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1475">    <span class="tok-comment">// Valid strings always have a terminating zero byte</span>
+<span class="line" id="L1469">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingDebugInfo;</span>
+<span class="line" id="L1470">}</span>
+<span class="line" id="L1471"></span>
+<span class="line" id="L1472"><span class="tok-kw">fn</span> <span class="tok-fn">getStringGeneric</span>(opt_str: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, offset: <span class="tok-type">u64</span>) ![:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1473">    <span class="tok-kw">const</span> str = opt_str <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1474">    <span class="tok-kw">if</span> (offset &gt; str.len) <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1475">    <span class="tok-kw">const</span> casted_offset = math.cast(<span class="tok-type">usize</span>, offset) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1476">    <span class="tok-comment">// Valid strings always have a terminating zero byte</span>
 </span>
-<span class="line" id="L1476">    <span class="tok-kw">const</span> last = mem.indexOfScalarPos(<span class="tok-type">u8</span>, str, casted_offset, <span class="tok-number">0</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
-<span class="line" id="L1477">    <span class="tok-kw">return</span> str[casted_offset..last :<span class="tok-number">0</span>];</span>
-<span class="line" id="L1478">}</span>
-<span class="line" id="L1479"></span>
+<span class="line" id="L1477">    <span class="tok-kw">const</span> last = mem.indexOfScalarPos(<span class="tok-type">u8</span>, str, casted_offset, <span class="tok-number">0</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> badDwarf();</span>
+<span class="line" id="L1478">    <span class="tok-kw">return</span> str[casted_offset..last :<span class="tok-number">0</span>];</span>
+<span class="line" id="L1479">}</span>
+<span class="line" id="L1480"></span>
 </code></pre></body>
 </html>
