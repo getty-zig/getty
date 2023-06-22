@@ -29,7 +29,7 @@ pub fn serialize(
     const is_literal = @typeInfo(T) == .EnumLiteral;
 
     var name = @tagName(value);
-    const index = if (is_literal) 0 else @enumToInt(value);
+    const index = if (is_literal) 0 else @intFromEnum(value);
 
     // Process attributes.
     //
