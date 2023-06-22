@@ -22,7 +22,7 @@ pub fn Visitor(comptime Float: type) type {
         }
 
         fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            return @intToFloat(Value, input);
+            return @floatFromInt(Value, input);
         }
     };
 }

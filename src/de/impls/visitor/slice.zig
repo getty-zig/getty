@@ -51,7 +51,7 @@ pub fn Visitor(comptime Slice: type) type {
 
             const sentinel = @typeInfo(Value).Pointer.sentinel;
 
-            const output = try allocator.?.alloc(u8, input.len + @boolToInt(sentinel != null));
+            const output = try allocator.?.alloc(u8, input.len + @intFromBool(sentinel != null));
             std.mem.copy(u8, output, input);
 
             if (sentinel) |s| {
