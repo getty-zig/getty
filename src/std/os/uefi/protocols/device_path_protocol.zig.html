@@ -138,10 +138,10 @@
 <span class="line" id="L23"></span>
 <span class="line" id="L24">    <span class="tok-comment">/// Returns the next DevicePathProtocol node in the sequence, if any.</span></span>
 <span class="line" id="L25">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">next</span>(self: *DevicePathProtocol) ?*DevicePathProtocol {</span>
-<span class="line" id="L26">        <span class="tok-kw">if</span> (self.<span class="tok-type">type</span> == .End <span class="tok-kw">and</span> <span class="tok-builtin">@enumFromInt</span>(EndDevicePath.Subtype, self.subtype) == .EndEntire)</span>
+<span class="line" id="L26">        <span class="tok-kw">if</span> (self.<span class="tok-type">type</span> == .End <span class="tok-kw">and</span> <span class="tok-builtin">@as</span>(EndDevicePath.Subtype, <span class="tok-builtin">@enumFromInt</span>(self.subtype)) == .EndEntire)</span>
 <span class="line" id="L27">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L28"></span>
-<span class="line" id="L29">        <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>(*DevicePathProtocol, <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, self) + self.length);</span>
+<span class="line" id="L29">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*DevicePathProtocol, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>([*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self)) + self.length));</span>
 <span class="line" id="L30">    }</span>
 <span class="line" id="L31"></span>
 <span class="line" id="L32">    <span class="tok-comment">/// Calculates the total length of the device path structure in bytes, including the end of device path node.</span></span>
@@ -165,33 +165,33 @@
 </span>
 <span class="line" id="L49">        <span class="tok-kw">var</span> buf = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u8</span>, path_size + <span class="tok-number">2</span> * (path.len + <span class="tok-number">1</span>) + <span class="tok-builtin">@sizeOf</span>(DevicePathProtocol));</span>
 <span class="line" id="L50"></span>
-<span class="line" id="L51">        <span class="tok-builtin">@memcpy</span>(buf[<span class="tok-number">0</span>..path_size.len], <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, self)[<span class="tok-number">0</span>..path_size]);</span>
+<span class="line" id="L51">        <span class="tok-builtin">@memcpy</span>(buf[<span class="tok-number">0</span>..path_size.len], <span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self))[<span class="tok-number">0</span>..path_size]);</span>
 <span class="line" id="L52"></span>
 <span class="line" id="L53">        <span class="tok-comment">// Pointer to the copy of the end node of the current chain, which is - 4 from the buffer</span>
 </span>
 <span class="line" id="L54">        <span class="tok-comment">// as the end node itself is 4 bytes (type: u8 + subtype: u8 + length: u16).</span>
 </span>
-<span class="line" id="L55">        <span class="tok-kw">var</span> new = <span class="tok-builtin">@ptrCast</span>(*MediaDevicePath.FilePathDevicePath, buf.ptr + path_size - <span class="tok-number">4</span>);</span>
+<span class="line" id="L55">        <span class="tok-kw">var</span> new = <span class="tok-builtin">@as</span>(*MediaDevicePath.FilePathDevicePath, <span class="tok-builtin">@ptrCast</span>(buf.ptr + path_size - <span class="tok-number">4</span>));</span>
 <span class="line" id="L56"></span>
 <span class="line" id="L57">        new.<span class="tok-type">type</span> = .Media;</span>
 <span class="line" id="L58">        new.subtype = .FilePath;</span>
-<span class="line" id="L59">        new.length = <span class="tok-builtin">@sizeOf</span>(MediaDevicePath.FilePathDevicePath) + <span class="tok-number">2</span> * (<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, path.len) + <span class="tok-number">1</span>);</span>
+<span class="line" id="L59">        new.length = <span class="tok-builtin">@sizeOf</span>(MediaDevicePath.FilePathDevicePath) + <span class="tok-number">2</span> * (<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(path.len)) + <span class="tok-number">1</span>);</span>
 <span class="line" id="L60"></span>
 <span class="line" id="L61">        <span class="tok-comment">// The same as new.getPath(), but not const as we're filling it in.</span>
 </span>
-<span class="line" id="L62">        <span class="tok-kw">var</span> ptr = <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, new) + <span class="tok-builtin">@sizeOf</span>(MediaDevicePath.FilePathDevicePath));</span>
+<span class="line" id="L62">        <span class="tok-kw">var</span> ptr = <span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>([*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(new)) + <span class="tok-builtin">@sizeOf</span>(MediaDevicePath.FilePathDevicePath)));</span>
 <span class="line" id="L63"></span>
 <span class="line" id="L64">        <span class="tok-kw">for</span> (path, <span class="tok-number">0</span>..) |s, i|</span>
 <span class="line" id="L65">            ptr[i] = s;</span>
 <span class="line" id="L66"></span>
 <span class="line" id="L67">        ptr[path.len] = <span class="tok-number">0</span>;</span>
 <span class="line" id="L68"></span>
-<span class="line" id="L69">        <span class="tok-kw">var</span> end = <span class="tok-builtin">@ptrCast</span>(*EndDevicePath.EndEntireDevicePath, <span class="tok-builtin">@ptrCast</span>(*DevicePathProtocol, new).next().?);</span>
+<span class="line" id="L69">        <span class="tok-kw">var</span> end = <span class="tok-builtin">@as</span>(*EndDevicePath.EndEntireDevicePath, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>(*DevicePathProtocol, <span class="tok-builtin">@ptrCast</span>(new)).next().?));</span>
 <span class="line" id="L70">        end.<span class="tok-type">type</span> = .End;</span>
 <span class="line" id="L71">        end.subtype = .EndEntire;</span>
 <span class="line" id="L72">        end.length = <span class="tok-builtin">@sizeOf</span>(EndDevicePath.EndEntireDevicePath);</span>
 <span class="line" id="L73"></span>
-<span class="line" id="L74">        <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>(*DevicePathProtocol, buf.ptr);</span>
+<span class="line" id="L74">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*DevicePathProtocol, <span class="tok-builtin">@ptrCast</span>(buf.ptr));</span>
 <span class="line" id="L75">    }</span>
 <span class="line" id="L76"></span>
 <span class="line" id="L77">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getDevicePath</span>(self: *<span class="tok-kw">const</span> DevicePathProtocol) ?DevicePath {</span>
@@ -228,7 +228,7 @@
 <span class="line" id="L104">            <span class="tok-kw">if</span> (self.subtype == tag_val) {</span>
 <span class="line" id="L105">                <span class="tok-comment">// e.g. expr = .{ .Pci = @ptrCast(...) }</span>
 </span>
-<span class="line" id="L106">                <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(TUnion, subtype.name, <span class="tok-builtin">@ptrCast</span>(subtype.<span class="tok-type">type</span>, self));</span>
+<span class="line" id="L106">                <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(TUnion, subtype.name, <span class="tok-builtin">@as</span>(subtype.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(self)));</span>
 <span class="line" id="L107">            }</span>
 <span class="line" id="L108">        }</span>
 <span class="line" id="L109"></span>
@@ -461,7 +461,7 @@
 <span class="line" id="L333">            <span class="tok-comment">// self.length is a minimum of 8 with one adr which is size 4.</span>
 </span>
 <span class="line" id="L334">            <span class="tok-kw">var</span> entries = (self.length - <span class="tok-number">4</span>) / <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L335">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u32</span>, &amp;self.adr)[<span class="tok-number">0</span>..entries];</span>
+<span class="line" id="L335">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u32</span>, <span class="tok-builtin">@ptrCast</span>(&amp;self.adr))[<span class="tok-number">0</span>..entries];</span>
 <span class="line" id="L336">        }</span>
 <span class="line" id="L337">    };</span>
 <span class="line" id="L338"></span>
@@ -679,7 +679,7 @@
 <span class="line" id="L550"></span>
 <span class="line" id="L551">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">serial_number</span>(self: *<span class="tok-kw">const</span> UsbWwidDevicePath) []<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span> {</span>
 <span class="line" id="L552">            <span class="tok-kw">var</span> serial_len = (self.length - <span class="tok-builtin">@sizeOf</span>(UsbWwidDevicePath)) / <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u16</span>);</span>
-<span class="line" id="L553">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, self) + <span class="tok-builtin">@sizeOf</span>(UsbWwidDevicePath))[<span class="tok-number">0</span>..serial_len];</span>
+<span class="line" id="L553">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self)) + <span class="tok-builtin">@sizeOf</span>(UsbWwidDevicePath)))[<span class="tok-number">0</span>..serial_len];</span>
 <span class="line" id="L554">        }</span>
 <span class="line" id="L555">    };</span>
 <span class="line" id="L556"></span>
@@ -1073,7 +1073,7 @@
 <span class="line" id="L943">        length: <span class="tok-type">u16</span> <span class="tok-kw">align</span>(<span class="tok-number">1</span>),</span>
 <span class="line" id="L944"></span>
 <span class="line" id="L945">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getPath</span>(self: *<span class="tok-kw">const</span> FilePathDevicePath) [*:<span class="tok-number">0</span>]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span> {</span>
-<span class="line" id="L946">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, self) + <span class="tok-builtin">@sizeOf</span>(FilePathDevicePath));</span>
+<span class="line" id="L946">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self)) + <span class="tok-builtin">@sizeOf</span>(FilePathDevicePath)));</span>
 <span class="line" id="L947">        }</span>
 <span class="line" id="L948">    };</span>
 <span class="line" id="L949"></span>
@@ -1198,7 +1198,7 @@
 <span class="line" id="L1068">        status_flag: <span class="tok-type">u16</span> <span class="tok-kw">align</span>(<span class="tok-number">1</span>),</span>
 <span class="line" id="L1069"></span>
 <span class="line" id="L1070">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getDescription</span>(self: *<span class="tok-kw">const</span> BBS101DevicePath) [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1071">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, self) + <span class="tok-builtin">@sizeOf</span>(BBS101DevicePath);</span>
+<span class="line" id="L1071">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(self)) + <span class="tok-builtin">@sizeOf</span>(BBS101DevicePath);</span>
 <span class="line" id="L1072">        }</span>
 <span class="line" id="L1073">    };</span>
 <span class="line" id="L1074"></span>

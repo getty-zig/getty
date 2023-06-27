@@ -254,7 +254,7 @@
 <span class="line" id="L140"><span class="tok-comment">///</span></span>
 <span class="line" id="L141"><span class="tok-comment">/// `host` is only borrowed during this function call.</span></span>
 <span class="line" id="L142"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(stream: <span class="tok-kw">anytype</span>, ca_bundle: Certificate.Bundle, host: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) InitError(<span class="tok-builtin">@TypeOf</span>(stream))!Client {</span>
-<span class="line" id="L143">    <span class="tok-kw">const</span> host_len = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, host.len);</span>
+<span class="line" id="L143">    <span class="tok-kw">const</span> host_len = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(host.len));</span>
 <span class="line" id="L144"></span>
 <span class="line" id="L145">    <span class="tok-kw">var</span> random_buffer: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L146">    crypto.random.bytes(&amp;random_buffer);</span>
@@ -315,7 +315,7 @@
 <span class="line" id="L194">        int2(host_len);</span>
 <span class="line" id="L195"></span>
 <span class="line" id="L196">    <span class="tok-kw">const</span> extensions_header =</span>
-<span class="line" id="L197">        int2(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, extensions_payload.len + host_len)) ++</span>
+<span class="line" id="L197">        int2(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(extensions_payload.len + host_len))) ++</span>
 <span class="line" id="L198">        extensions_payload;</span>
 <span class="line" id="L199"></span>
 <span class="line" id="L200">    <span class="tok-kw">const</span> legacy_compression_methods = <span class="tok-number">0x0100</span>;</span>
@@ -330,14 +330,14 @@
 <span class="line" id="L209"></span>
 <span class="line" id="L210">    <span class="tok-kw">const</span> out_handshake =</span>
 <span class="line" id="L211">        [_]<span class="tok-type">u8</span>{<span class="tok-builtin">@intFromEnum</span>(tls.HandshakeType.client_hello)} ++</span>
-<span class="line" id="L212">        int3(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u24</span>, client_hello.len + host_len)) ++</span>
+<span class="line" id="L212">        int3(<span class="tok-builtin">@as</span>(<span class="tok-type">u24</span>, <span class="tok-builtin">@intCast</span>(client_hello.len + host_len))) ++</span>
 <span class="line" id="L213">        client_hello;</span>
 <span class="line" id="L214"></span>
 <span class="line" id="L215">    <span class="tok-kw">const</span> plaintext_header = [_]<span class="tok-type">u8</span>{</span>
 <span class="line" id="L216">        <span class="tok-builtin">@intFromEnum</span>(tls.ContentType.handshake),</span>
 <span class="line" id="L217">        <span class="tok-number">0x03</span>, <span class="tok-number">0x01</span>, <span class="tok-comment">// legacy_record_version</span>
 </span>
-<span class="line" id="L218">    } ++ int2(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, out_handshake.len + host_len)) ++ out_handshake;</span>
+<span class="line" id="L218">    } ++ int2(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(out_handshake.len + host_len))) ++ out_handshake;</span>
 <span class="line" id="L219"></span>
 <span class="line" id="L220">    {</span>
 <span class="line" id="L221">        <span class="tok-kw">var</span> iovecs = [_]std.os.iovec_const{</span>
@@ -596,7 +596,7 @@
 <span class="line" id="L457">                        <span class="tok-kw">const</span> auth_tag = record_decoder.array(P.AEAD.tag_length).*;</span>
 <span class="line" id="L458">                        <span class="tok-kw">const</span> V = <span class="tok-builtin">@Vector</span>(P.AEAD.nonce_length, <span class="tok-type">u8</span>);</span>
 <span class="line" id="L459">                        <span class="tok-kw">const</span> pad = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** (P.AEAD.nonce_length - <span class="tok-number">8</span>);</span>
-<span class="line" id="L460">                        <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@bitCast</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, big(read_seq));</span>
+<span class="line" id="L460">                        <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@as</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@bitCast</span>(big(read_seq)));</span>
 <span class="line" id="L461">                        read_seq += <span class="tok-number">1</span>;</span>
 <span class="line" id="L462">                        <span class="tok-kw">const</span> nonce = <span class="tok-builtin">@as</span>(V, p.server_handshake_iv) ^ operand;</span>
 <span class="line" id="L463">                        P.AEAD.decrypt(cleartext, ciphertext, auth_tag, record_header, nonce, p.server_handshake_key) <span class="tok-kw">catch</span></span>
@@ -605,7 +605,7 @@
 <span class="line" id="L466">                    },</span>
 <span class="line" id="L467">                };</span>
 <span class="line" id="L468"></span>
-<span class="line" id="L469">                <span class="tok-kw">const</span> inner_ct = <span class="tok-builtin">@enumFromInt</span>(tls.ContentType, cleartext[cleartext.len - <span class="tok-number">1</span>]);</span>
+<span class="line" id="L469">                <span class="tok-kw">const</span> inner_ct = <span class="tok-builtin">@as</span>(tls.ContentType, <span class="tok-builtin">@enumFromInt</span>(cleartext[cleartext.len - <span class="tok-number">1</span>]));</span>
 <span class="line" id="L470">                <span class="tok-kw">if</span> (inner_ct != .handshake) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsUnexpectedMessage;</span>
 <span class="line" id="L471"></span>
 <span class="line" id="L472">                <span class="tok-kw">var</span> ctd = tls.Decoder.fromTheirSlice(cleartext[<span class="tok-number">0</span> .. cleartext.len - <span class="tok-number">1</span>]);</span>
@@ -659,7 +659,7 @@
 <span class="line" id="L520"></span>
 <span class="line" id="L521">                                <span class="tok-kw">const</span> subject_cert: Certificate = .{</span>
 <span class="line" id="L522">                                    .buffer = certd.buf,</span>
-<span class="line" id="L523">                                    .index = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, certd.idx),</span>
+<span class="line" id="L523">                                    .index = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(certd.idx)),</span>
 <span class="line" id="L524">                                };</span>
 <span class="line" id="L525">                                <span class="tok-kw">const</span> subject = <span class="tok-kw">try</span> subject_cert.parse();</span>
 <span class="line" id="L526">                                <span class="tok-kw">if</span> (cert_index == <span class="tok-number">0</span>) {</span>
@@ -676,7 +676,7 @@
 <span class="line" id="L534">                                    <span class="tok-kw">if</span> (pub_key.len &gt; main_cert_pub_key_buf.len)</span>
 <span class="line" id="L535">                                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificatePublicKeyInvalid;</span>
 <span class="line" id="L536">                                    <span class="tok-builtin">@memcpy</span>(main_cert_pub_key_buf[<span class="tok-number">0</span>..pub_key.len], pub_key);</span>
-<span class="line" id="L537">                                    main_cert_pub_key_len = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(main_cert_pub_key_len), pub_key.len);</span>
+<span class="line" id="L537">                                    main_cert_pub_key_len = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(main_cert_pub_key_len), <span class="tok-builtin">@intCast</span>(pub_key.len));</span>
 <span class="line" id="L538">                                } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L539">                                    <span class="tok-kw">try</span> prev_cert.verify(subject, now_sec);</span>
 <span class="line" id="L540">                                }</span>
@@ -827,7 +827,7 @@
 <span class="line" id="L679">                                .write_seq = <span class="tok-number">0</span>,</span>
 <span class="line" id="L680">                                .partial_cleartext_idx = <span class="tok-number">0</span>,</span>
 <span class="line" id="L681">                                .partial_ciphertext_idx = <span class="tok-number">0</span>,</span>
-<span class="line" id="L682">                                .partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u15</span>, leftover.len),</span>
+<span class="line" id="L682">                                .partial_ciphertext_end = <span class="tok-builtin">@as</span>(<span class="tok-type">u15</span>, <span class="tok-builtin">@intCast</span>(leftover.len)),</span>
 <span class="line" id="L683">                                .received_close_notify = <span class="tok-null">false</span>,</span>
 <span class="line" id="L684">                                .application_cipher = app_cipher,</span>
 <span class="line" id="L685">                                .partially_read_buffer = <span class="tok-null">undefined</span>,</span>
@@ -954,11 +954,11 @@
 <span class="line" id="L797">            <span class="tok-kw">const</span> overhead_len = tls.record_header_len + P.AEAD.tag_length + <span class="tok-number">1</span>;</span>
 <span class="line" id="L798">            <span class="tok-kw">const</span> close_notify_alert_reserved = tls.close_notify_alert.len + overhead_len;</span>
 <span class="line" id="L799">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L800">                <span class="tok-kw">const</span> encrypted_content_len = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@min</span>(</span>
+<span class="line" id="L800">                <span class="tok-kw">const</span> encrypted_content_len = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(</span>
 <span class="line" id="L801">                    <span class="tok-builtin">@min</span>(bytes.len - bytes_i, max_ciphertext_len - <span class="tok-number">1</span>),</span>
 <span class="line" id="L802">                    ciphertext_buf.len - close_notify_alert_reserved -</span>
 <span class="line" id="L803">                        overhead_len - ciphertext_end,</span>
-<span class="line" id="L804">                ));</span>
+<span class="line" id="L804">                )));</span>
 <span class="line" id="L805">                <span class="tok-kw">if</span> (encrypted_content_len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> .{</span>
 <span class="line" id="L806">                    .iovec_end = iovec_end,</span>
 <span class="line" id="L807">                    .ciphertext_end = ciphertext_end,</span>
@@ -983,7 +983,7 @@
 <span class="line" id="L826">                <span class="tok-kw">const</span> auth_tag = ciphertext_buf[ciphertext_end..][<span class="tok-number">0</span>..P.AEAD.tag_length];</span>
 <span class="line" id="L827">                ciphertext_end += auth_tag.len;</span>
 <span class="line" id="L828">                <span class="tok-kw">const</span> pad = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** (P.AEAD.nonce_length - <span class="tok-number">8</span>);</span>
-<span class="line" id="L829">                <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@bitCast</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, big(c.write_seq));</span>
+<span class="line" id="L829">                <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@as</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@bitCast</span>(big(c.write_seq)));</span>
 <span class="line" id="L830">                c.write_seq += <span class="tok-number">1</span>; <span class="tok-comment">// TODO send key_update on overflow</span>
 </span>
 <span class="line" id="L831">                <span class="tok-kw">const</span> nonce = <span class="tok-builtin">@as</span>(V, p.client_iv) ^ operand;</span>
@@ -1079,7 +1079,7 @@
 </span>
 <span class="line" id="L921">    <span class="tok-kw">const</span> partial_cleartext = c.partially_read_buffer[c.partial_cleartext_idx..c.partial_ciphertext_idx];</span>
 <span class="line" id="L922">    <span class="tok-kw">if</span> (partial_cleartext.len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L923">        <span class="tok-kw">const</span> amt = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u15</span>, vp.put(partial_cleartext));</span>
+<span class="line" id="L923">        <span class="tok-kw">const</span> amt = <span class="tok-builtin">@as</span>(<span class="tok-type">u15</span>, <span class="tok-builtin">@intCast</span>(vp.put(partial_cleartext)));</span>
 <span class="line" id="L924">        c.partial_cleartext_idx += amt;</span>
 <span class="line" id="L925"></span>
 <span class="line" id="L926">        <span class="tok-kw">if</span> (c.partial_cleartext_idx == c.partial_ciphertext_idx <span class="tok-kw">and</span></span>
@@ -1217,7 +1217,7 @@
 <span class="line" id="L1037">            in = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1038">            <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L1039">        }</span>
-<span class="line" id="L1040">        <span class="tok-kw">const</span> ct = <span class="tok-builtin">@enumFromInt</span>(tls.ContentType, frag[in]);</span>
+<span class="line" id="L1040">        <span class="tok-kw">const</span> ct = <span class="tok-builtin">@as</span>(tls.ContentType, <span class="tok-builtin">@enumFromInt</span>(frag[in]));</span>
 <span class="line" id="L1041">        in += <span class="tok-number">1</span>;</span>
 <span class="line" id="L1042">        <span class="tok-kw">const</span> legacy_version = mem.readIntBig(<span class="tok-type">u16</span>, frag[in..][<span class="tok-number">0</span>..<span class="tok-number">2</span>]);</span>
 <span class="line" id="L1043">        in += <span class="tok-number">2</span>;</span>
@@ -1252,8 +1252,8 @@
 <span class="line" id="L1070">        <span class="tok-kw">switch</span> (ct) {</span>
 <span class="line" id="L1071">            .alert =&gt; {</span>
 <span class="line" id="L1072">                <span class="tok-kw">if</span> (in + <span class="tok-number">2</span> &gt; frag.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TlsDecodeError;</span>
-<span class="line" id="L1073">                <span class="tok-kw">const</span> level = <span class="tok-builtin">@enumFromInt</span>(tls.AlertLevel, frag[in]);</span>
-<span class="line" id="L1074">                <span class="tok-kw">const</span> desc = <span class="tok-builtin">@enumFromInt</span>(tls.AlertDescription, frag[in + <span class="tok-number">1</span>]);</span>
+<span class="line" id="L1073">                <span class="tok-kw">const</span> level = <span class="tok-builtin">@as</span>(tls.AlertLevel, <span class="tok-builtin">@enumFromInt</span>(frag[in]));</span>
+<span class="line" id="L1074">                <span class="tok-kw">const</span> desc = <span class="tok-builtin">@as</span>(tls.AlertDescription, <span class="tok-builtin">@enumFromInt</span>(frag[in + <span class="tok-number">1</span>]));</span>
 <span class="line" id="L1075">                _ = level;</span>
 <span class="line" id="L1076"></span>
 <span class="line" id="L1077">                <span class="tok-kw">try</span> desc.toError();</span>
@@ -1272,7 +1272,7 @@
 <span class="line" id="L1089">                        in += ciphertext_len;</span>
 <span class="line" id="L1090">                        <span class="tok-kw">const</span> auth_tag = frag[in..][<span class="tok-number">0</span>..P.AEAD.tag_length].*;</span>
 <span class="line" id="L1091">                        <span class="tok-kw">const</span> pad = [<span class="tok-number">1</span>]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** (P.AEAD.nonce_length - <span class="tok-number">8</span>);</span>
-<span class="line" id="L1092">                        <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@bitCast</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, big(c.read_seq));</span>
+<span class="line" id="L1092">                        <span class="tok-kw">const</span> operand: V = pad ++ <span class="tok-builtin">@as</span>([<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@bitCast</span>(big(c.read_seq)));</span>
 <span class="line" id="L1093">                        <span class="tok-kw">const</span> nonce: [P.AEAD.nonce_length]<span class="tok-type">u8</span> = <span class="tok-builtin">@as</span>(V, p.server_iv) ^ operand;</span>
 <span class="line" id="L1094">                        <span class="tok-kw">const</span> out_buf = vp.peek();</span>
 <span class="line" id="L1095">                        <span class="tok-kw">const</span> cleartext_buf = <span class="tok-kw">if</span> (ciphertext.len &lt;= out_buf.len)</span>
@@ -1288,11 +1288,11 @@
 <span class="line" id="L1105"></span>
 <span class="line" id="L1106">                c.read_seq = <span class="tok-kw">try</span> std.math.add(<span class="tok-type">u64</span>, c.read_seq, <span class="tok-number">1</span>);</span>
 <span class="line" id="L1107"></span>
-<span class="line" id="L1108">                <span class="tok-kw">const</span> inner_ct = <span class="tok-builtin">@enumFromInt</span>(tls.ContentType, cleartext[cleartext.len - <span class="tok-number">1</span>]);</span>
+<span class="line" id="L1108">                <span class="tok-kw">const</span> inner_ct = <span class="tok-builtin">@as</span>(tls.ContentType, <span class="tok-builtin">@enumFromInt</span>(cleartext[cleartext.len - <span class="tok-number">1</span>]));</span>
 <span class="line" id="L1109">                <span class="tok-kw">switch</span> (inner_ct) {</span>
 <span class="line" id="L1110">                    .alert =&gt; {</span>
-<span class="line" id="L1111">                        <span class="tok-kw">const</span> level = <span class="tok-builtin">@enumFromInt</span>(tls.AlertLevel, cleartext[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L1112">                        <span class="tok-kw">const</span> desc = <span class="tok-builtin">@enumFromInt</span>(tls.AlertDescription, cleartext[<span class="tok-number">1</span>]);</span>
+<span class="line" id="L1111">                        <span class="tok-kw">const</span> level = <span class="tok-builtin">@as</span>(tls.AlertLevel, <span class="tok-builtin">@enumFromInt</span>(cleartext[<span class="tok-number">0</span>]));</span>
+<span class="line" id="L1112">                        <span class="tok-kw">const</span> desc = <span class="tok-builtin">@as</span>(tls.AlertDescription, <span class="tok-builtin">@enumFromInt</span>(cleartext[<span class="tok-number">1</span>]));</span>
 <span class="line" id="L1113">                        <span class="tok-kw">if</span> (desc == .close_notify) {</span>
 <span class="line" id="L1114">                            c.received_close_notify = <span class="tok-null">true</span>;</span>
 <span class="line" id="L1115">                            c.partial_ciphertext_end = c.partial_ciphertext_idx;</span>
@@ -1308,7 +1308,7 @@
 <span class="line" id="L1124">                    .handshake =&gt; {</span>
 <span class="line" id="L1125">                        <span class="tok-kw">var</span> ct_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1126">                        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1127">                            <span class="tok-kw">const</span> handshake_type = <span class="tok-builtin">@enumFromInt</span>(tls.HandshakeType, cleartext[ct_i]);</span>
+<span class="line" id="L1127">                            <span class="tok-kw">const</span> handshake_type = <span class="tok-builtin">@as</span>(tls.HandshakeType, <span class="tok-builtin">@enumFromInt</span>(cleartext[ct_i]));</span>
 <span class="line" id="L1128">                            ct_i += <span class="tok-number">1</span>;</span>
 <span class="line" id="L1129">                            <span class="tok-kw">const</span> handshake_len = mem.readIntBig(<span class="tok-type">u24</span>, cleartext[ct_i..][<span class="tok-number">0</span>..<span class="tok-number">3</span>]);</span>
 <span class="line" id="L1130">                            ct_i += <span class="tok-number">3</span>;</span>
@@ -1333,7 +1333,7 @@
 <span class="line" id="L1148">                                    }</span>
 <span class="line" id="L1149">                                    c.read_seq = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1150"></span>
-<span class="line" id="L1151">                                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@enumFromInt</span>(tls.KeyUpdateRequest, handshake[<span class="tok-number">0</span>])) {</span>
+<span class="line" id="L1151">                                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@as</span>(tls.KeyUpdateRequest, <span class="tok-builtin">@enumFromInt</span>(handshake[<span class="tok-number">0</span>]))) {</span>
 <span class="line" id="L1152">                                        .update_requested =&gt; {</span>
 <span class="line" id="L1153">                                            <span class="tok-kw">switch</span> (c.application_cipher) {</span>
 <span class="line" id="L1154">                                                <span class="tok-kw">inline</span> <span class="tok-kw">else</span> =&gt; |*p| {</span>
@@ -1376,13 +1376,13 @@
 <span class="line" id="L1186">                                    c.partially_read_buffer[c.partial_ciphertext_idx..][<span class="tok-number">0</span>..msg.len],</span>
 <span class="line" id="L1187">                                    msg,</span>
 <span class="line" id="L1188">                                );</span>
-<span class="line" id="L1189">                                c.partial_ciphertext_idx = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), c.partial_ciphertext_idx + msg.len);</span>
+<span class="line" id="L1189">                                c.partial_ciphertext_idx = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), <span class="tok-builtin">@intCast</span>(c.partial_ciphertext_idx + msg.len));</span>
 <span class="line" id="L1190">                            } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L1191">                                <span class="tok-kw">const</span> amt = vp.put(msg);</span>
 <span class="line" id="L1192">                                <span class="tok-kw">if</span> (amt &lt; msg.len) {</span>
 <span class="line" id="L1193">                                    <span class="tok-kw">const</span> rest = msg[amt..];</span>
 <span class="line" id="L1194">                                    c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1195">                                    c.partial_ciphertext_idx = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), rest.len);</span>
+<span class="line" id="L1195">                                    c.partial_ciphertext_idx = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_idx), <span class="tok-builtin">@intCast</span>(rest.len));</span>
 <span class="line" id="L1196">                                    <span class="tok-builtin">@memcpy</span>(c.partially_read_buffer[<span class="tok-number">0</span>..rest.len], rest);</span>
 <span class="line" id="L1197">                                }</span>
 <span class="line" id="L1198">                            }</span>
@@ -1414,12 +1414,12 @@
 <span class="line" id="L1221">    <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
 <span class="line" id="L1222">        <span class="tok-comment">// There is cleartext at the beginning already which we need to preserve.</span>
 </span>
-<span class="line" id="L1223">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), c.partial_ciphertext_idx + saved_buf.len);</span>
+<span class="line" id="L1223">        c.partial_ciphertext_end = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), <span class="tok-builtin">@intCast</span>(c.partial_ciphertext_idx + saved_buf.len));</span>
 <span class="line" id="L1224">        <span class="tok-builtin">@memcpy</span>(c.partially_read_buffer[c.partial_ciphertext_idx..][<span class="tok-number">0</span>..saved_buf.len], saved_buf);</span>
 <span class="line" id="L1225">    } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L1226">        c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1227">        c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1228">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), saved_buf.len);</span>
+<span class="line" id="L1228">        c.partial_ciphertext_end = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), <span class="tok-builtin">@intCast</span>(saved_buf.len));</span>
 <span class="line" id="L1229">        <span class="tok-builtin">@memcpy</span>(c.partially_read_buffer[<span class="tok-number">0</span>..saved_buf.len], saved_buf);</span>
 <span class="line" id="L1230">    }</span>
 <span class="line" id="L1231">    <span class="tok-kw">return</span> out;</span>
@@ -1430,7 +1430,7 @@
 <span class="line" id="L1236">    <span class="tok-kw">if</span> (c.partial_ciphertext_idx &gt; c.partial_cleartext_idx) {</span>
 <span class="line" id="L1237">        <span class="tok-comment">// There is cleartext at the beginning already which we need to preserve.</span>
 </span>
-<span class="line" id="L1238">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), c.partial_ciphertext_idx + first.len + frag1.len);</span>
+<span class="line" id="L1238">        c.partial_ciphertext_end = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), <span class="tok-builtin">@intCast</span>(c.partial_ciphertext_idx + first.len + frag1.len));</span>
 <span class="line" id="L1239">        <span class="tok-comment">// TODO: eliminate this call to copyForwards</span>
 </span>
 <span class="line" id="L1240">        std.mem.copyForwards(<span class="tok-type">u8</span>, c.partially_read_buffer[c.partial_ciphertext_idx..][<span class="tok-number">0</span>..first.len], first);</span>
@@ -1438,7 +1438,7 @@
 <span class="line" id="L1242">    } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L1243">        c.partial_cleartext_idx = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1244">        c.partial_ciphertext_idx = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1245">        c.partial_ciphertext_end = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), first.len + frag1.len);</span>
+<span class="line" id="L1245">        c.partial_ciphertext_end = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(c.partial_ciphertext_end), <span class="tok-builtin">@intCast</span>(first.len + frag1.len));</span>
 <span class="line" id="L1246">        <span class="tok-comment">// TODO: eliminate this call to copyForwards</span>
 </span>
 <span class="line" id="L1247">        std.mem.copyForwards(<span class="tok-type">u8</span>, c.partially_read_buffer[<span class="tok-number">0</span>..first.len], first);</span>

@@ -1009,7 +1009,7 @@
 <span class="line" id="L894"><span class="tok-comment">/// Decode the header of a block.</span></span>
 <span class="line" id="L895"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decodeBlockHeader</span>(src: *<span class="tok-kw">const</span> [<span class="tok-number">3</span>]<span class="tok-type">u8</span>) frame.Zstandard.Block.Header {</span>
 <span class="line" id="L896">    <span class="tok-kw">const</span> last_block = src[<span class="tok-number">0</span>] &amp; <span class="tok-number">1</span> == <span class="tok-number">1</span>;</span>
-<span class="line" id="L897">    <span class="tok-kw">const</span> block_type = <span class="tok-builtin">@enumFromInt</span>(frame.Zstandard.Block.Type, (src[<span class="tok-number">0</span>] &amp; <span class="tok-number">0b110</span>) &gt;&gt; <span class="tok-number">1</span>);</span>
+<span class="line" id="L897">    <span class="tok-kw">const</span> block_type = <span class="tok-builtin">@as</span>(frame.Zstandard.Block.Type, <span class="tok-builtin">@enumFromInt</span>((src[<span class="tok-number">0</span>] &amp; <span class="tok-number">0b110</span>) &gt;&gt; <span class="tok-number">1</span>));</span>
 <span class="line" id="L898">    <span class="tok-kw">const</span> block_size = ((src[<span class="tok-number">0</span>] &amp; <span class="tok-number">0b11111000</span>) &gt;&gt; <span class="tok-number">3</span>) + (<span class="tok-builtin">@as</span>(<span class="tok-type">u21</span>, src[<span class="tok-number">1</span>]) &lt;&lt; <span class="tok-number">5</span>) + (<span class="tok-builtin">@as</span>(<span class="tok-type">u21</span>, src[<span class="tok-number">2</span>]) &lt;&lt; <span class="tok-number">13</span>);</span>
 <span class="line" id="L899">    <span class="tok-kw">return</span> .{</span>
 <span class="line" id="L900">        .last_block = last_block,</span>
@@ -1123,7 +1123,7 @@
 <span class="line" id="L1008">                <span class="tok-kw">try</span> huffman.decodeHuffmanTree(counting_reader.reader(), buffer)</span>
 <span class="line" id="L1009">            <span class="tok-kw">else</span></span>
 <span class="line" id="L1010">                <span class="tok-null">null</span>;</span>
-<span class="line" id="L1011">            <span class="tok-kw">const</span> huffman_tree_size = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, counting_reader.bytes_read);</span>
+<span class="line" id="L1011">            <span class="tok-kw">const</span> huffman_tree_size = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(counting_reader.bytes_read));</span>
 <span class="line" id="L1012">            <span class="tok-kw">const</span> total_streams_size = std.math.sub(<span class="tok-type">usize</span>, header.compressed_size.?, huffman_tree_size) <span class="tok-kw">catch</span></span>
 <span class="line" id="L1013">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MalformedLiteralsSection;</span>
 <span class="line" id="L1014"></span>
@@ -1173,8 +1173,8 @@
 <span class="line" id="L1058"><span class="tok-comment">///   - `error.EndOfStream` if there are not enough bytes in `source`</span></span>
 <span class="line" id="L1059"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decodeLiteralsHeader</span>(source: <span class="tok-kw">anytype</span>) !LiteralsSection.Header {</span>
 <span class="line" id="L1060">    <span class="tok-kw">const</span> byte0 = <span class="tok-kw">try</span> source.readByte();</span>
-<span class="line" id="L1061">    <span class="tok-kw">const</span> block_type = <span class="tok-builtin">@enumFromInt</span>(LiteralsSection.BlockType, byte0 &amp; <span class="tok-number">0b11</span>);</span>
-<span class="line" id="L1062">    <span class="tok-kw">const</span> size_format = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u2</span>, (byte0 &amp; <span class="tok-number">0b1100</span>) &gt;&gt; <span class="tok-number">2</span>);</span>
+<span class="line" id="L1061">    <span class="tok-kw">const</span> block_type = <span class="tok-builtin">@as</span>(LiteralsSection.BlockType, <span class="tok-builtin">@enumFromInt</span>(byte0 &amp; <span class="tok-number">0b11</span>));</span>
+<span class="line" id="L1062">    <span class="tok-kw">const</span> size_format = <span class="tok-builtin">@as</span>(<span class="tok-type">u2</span>, <span class="tok-builtin">@intCast</span>((byte0 &amp; <span class="tok-number">0b1100</span>) &gt;&gt; <span class="tok-number">2</span>));</span>
 <span class="line" id="L1063">    <span class="tok-kw">var</span> regenerated_size: <span class="tok-type">u20</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L1064">    <span class="tok-kw">var</span> compressed_size: ?<span class="tok-type">u18</span> = <span class="tok-null">null</span>;</span>
 <span class="line" id="L1065">    <span class="tok-kw">switch</span> (block_type) {</span>
@@ -1247,9 +1247,9 @@
 <span class="line" id="L1132"></span>
 <span class="line" id="L1133">    <span class="tok-kw">const</span> compression_modes = <span class="tok-kw">try</span> source.readByte();</span>
 <span class="line" id="L1134"></span>
-<span class="line" id="L1135">    <span class="tok-kw">const</span> matches_mode = <span class="tok-builtin">@enumFromInt</span>(SequencesSection.Header.Mode, (compression_modes &amp; <span class="tok-number">0b00001100</span>) &gt;&gt; <span class="tok-number">2</span>);</span>
-<span class="line" id="L1136">    <span class="tok-kw">const</span> offsets_mode = <span class="tok-builtin">@enumFromInt</span>(SequencesSection.Header.Mode, (compression_modes &amp; <span class="tok-number">0b00110000</span>) &gt;&gt; <span class="tok-number">4</span>);</span>
-<span class="line" id="L1137">    <span class="tok-kw">const</span> literal_mode = <span class="tok-builtin">@enumFromInt</span>(SequencesSection.Header.Mode, (compression_modes &amp; <span class="tok-number">0b11000000</span>) &gt;&gt; <span class="tok-number">6</span>);</span>
+<span class="line" id="L1135">    <span class="tok-kw">const</span> matches_mode = <span class="tok-builtin">@as</span>(SequencesSection.Header.Mode, <span class="tok-builtin">@enumFromInt</span>((compression_modes &amp; <span class="tok-number">0b00001100</span>) &gt;&gt; <span class="tok-number">2</span>));</span>
+<span class="line" id="L1136">    <span class="tok-kw">const</span> offsets_mode = <span class="tok-builtin">@as</span>(SequencesSection.Header.Mode, <span class="tok-builtin">@enumFromInt</span>((compression_modes &amp; <span class="tok-number">0b00110000</span>) &gt;&gt; <span class="tok-number">4</span>));</span>
+<span class="line" id="L1137">    <span class="tok-kw">const</span> literal_mode = <span class="tok-builtin">@as</span>(SequencesSection.Header.Mode, <span class="tok-builtin">@enumFromInt</span>((compression_modes &amp; <span class="tok-number">0b11000000</span>) &gt;&gt; <span class="tok-number">6</span>));</span>
 <span class="line" id="L1138">    <span class="tok-kw">if</span> (compression_modes &amp; <span class="tok-number">0b11</span> != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ReservedBitSet;</span>
 <span class="line" id="L1139"></span>
 <span class="line" id="L1140">    <span class="tok-kw">return</span> SequencesSection.Header{</span>

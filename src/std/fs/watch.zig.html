@@ -406,7 +406,7 @@
 <span class="line" id="L279"></span>
 <span class="line" id="L280">            <span class="tok-kw">while</span> (!put.cancelled) {</span>
 <span class="line" id="L281">                kev.* = os.Kevent{</span>
-<span class="line" id="L282">                    .ident = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, fd),</span>
+<span class="line" id="L282">                    .ident = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(fd)),</span>
 <span class="line" id="L283">                    .filter = os.EVFILT_VNODE,</span>
 <span class="line" id="L284">                    .flags = os.EV_ADD | os.EV_ENABLE | os.EV_CLEAR | os.EV_ONESHOT |</span>
 <span class="line" id="L285">                        os.NOTE_WRITE | os.NOTE_DELETE | os.NOTE_REVOKE,</span>
@@ -619,14 +619,14 @@
 <span class="line" id="L487">                    <span class="tok-kw">var</span> ptr: [*]<span class="tok-type">u8</span> = &amp;event_buf;</span>
 <span class="line" id="L488">                    <span class="tok-kw">const</span> end_ptr = ptr + bytes_transferred;</span>
 <span class="line" id="L489">                    <span class="tok-kw">while</span> (<span class="tok-builtin">@intFromPtr</span>(ptr) &lt; <span class="tok-builtin">@intFromPtr</span>(end_ptr)) {</span>
-<span class="line" id="L490">                        <span class="tok-kw">const</span> ev = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> windows.FILE_NOTIFY_INFORMATION, ptr);</span>
+<span class="line" id="L490">                        <span class="tok-kw">const</span> ev = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> windows.FILE_NOTIFY_INFORMATION, <span class="tok-builtin">@ptrCast</span>(ptr));</span>
 <span class="line" id="L491">                        <span class="tok-kw">const</span> emit = <span class="tok-kw">switch</span> (ev.Action) {</span>
 <span class="line" id="L492">                            windows.FILE_ACTION_REMOVED =&gt; WatchEventId.Delete,</span>
 <span class="line" id="L493">                            windows.FILE_ACTION_MODIFIED =&gt; .CloseWrite,</span>
 <span class="line" id="L494">                            <span class="tok-kw">else</span> =&gt; <span class="tok-null">null</span>,</span>
 <span class="line" id="L495">                        };</span>
 <span class="line" id="L496">                        <span class="tok-kw">if</span> (emit) |id| {</span>
-<span class="line" id="L497">                            <span class="tok-kw">const</span> basename_ptr = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u16</span>, ptr + <span class="tok-builtin">@sizeOf</span>(windows.FILE_NOTIFY_INFORMATION));</span>
+<span class="line" id="L497">                            <span class="tok-kw">const</span> basename_ptr = <span class="tok-builtin">@as</span>([*]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(ptr + <span class="tok-builtin">@sizeOf</span>(windows.FILE_NOTIFY_INFORMATION)));</span>
 <span class="line" id="L498">                            <span class="tok-kw">const</span> basename_utf16le = basename_ptr[<span class="tok-number">0</span> .. ev.FileNameLength / <span class="tok-number">2</span>];</span>
 <span class="line" id="L499">                            <span class="tok-kw">var</span> basename_data: [std.fs.MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L500">                            <span class="tok-kw">const</span> basename = basename_data[<span class="tok-number">0</span> .. std.unicode.utf16leToUtf8(&amp;basename_data, basename_utf16le) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>];</span>
@@ -642,7 +642,7 @@
 <span class="line" id="L510">                        }</span>
 <span class="line" id="L511"></span>
 <span class="line" id="L512">                        <span class="tok-kw">if</span> (ev.NextEntryOffset == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L513">                        ptr = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(windows.FILE_NOTIFY_INFORMATION), ptr + ev.NextEntryOffset);</span>
+<span class="line" id="L513">                        ptr = <span class="tok-builtin">@alignCast</span>(ptr + ev.NextEntryOffset);</span>
 <span class="line" id="L514">                    }</span>
 <span class="line" id="L515">                }</span>
 <span class="line" id="L516">            }</span>
@@ -719,10 +719,10 @@
 <span class="line" id="L586">                <span class="tok-kw">var</span> ptr: [*]<span class="tok-type">u8</span> = &amp;event_buf;</span>
 <span class="line" id="L587">                <span class="tok-kw">const</span> end_ptr = ptr + bytes_read;</span>
 <span class="line" id="L588">                <span class="tok-kw">while</span> (<span class="tok-builtin">@intFromPtr</span>(ptr) &lt; <span class="tok-builtin">@intFromPtr</span>(end_ptr)) {</span>
-<span class="line" id="L589">                    <span class="tok-kw">const</span> ev = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> os.linux.inotify_event, ptr);</span>
+<span class="line" id="L589">                    <span class="tok-kw">const</span> ev = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> os.linux.inotify_event, <span class="tok-builtin">@ptrCast</span>(ptr));</span>
 <span class="line" id="L590">                    <span class="tok-kw">if</span> (ev.mask &amp; os.linux.IN_CLOSE_WRITE == os.linux.IN_CLOSE_WRITE) {</span>
 <span class="line" id="L591">                        <span class="tok-kw">const</span> basename_ptr = ptr + <span class="tok-builtin">@sizeOf</span>(os.linux.inotify_event);</span>
-<span class="line" id="L592">                        <span class="tok-kw">const</span> basename = std.mem.span(<span class="tok-builtin">@ptrCast</span>([*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, basename_ptr));</span>
+<span class="line" id="L592">                        <span class="tok-kw">const</span> basename = std.mem.span(<span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(basename_ptr)));</span>
 <span class="line" id="L593"></span>
 <span class="line" id="L594">                        <span class="tok-kw">const</span> dir = &amp;self.os_data.wd_table.get(ev.wd).?;</span>
 <span class="line" id="L595">                        <span class="tok-kw">if</span> (dir.file_table.getEntry(basename)) |file_value| {</span>
@@ -750,7 +750,7 @@
 <span class="line" id="L616">                        <span class="tok-comment">// File or directory was removed or deleted</span>
 </span>
 <span class="line" id="L617">                        <span class="tok-kw">const</span> basename_ptr = ptr + <span class="tok-builtin">@sizeOf</span>(os.linux.inotify_event);</span>
-<span class="line" id="L618">                        <span class="tok-kw">const</span> basename = std.mem.span(<span class="tok-builtin">@ptrCast</span>([*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, basename_ptr));</span>
+<span class="line" id="L618">                        <span class="tok-kw">const</span> basename = std.mem.span(<span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(basename_ptr)));</span>
 <span class="line" id="L619"></span>
 <span class="line" id="L620">                        <span class="tok-kw">const</span> dir = &amp;self.os_data.wd_table.get(ev.wd).?;</span>
 <span class="line" id="L621">                        <span class="tok-kw">if</span> (dir.file_table.getEntry(basename)) |file_value| {</span>
@@ -763,7 +763,7 @@
 <span class="line" id="L628">                        }</span>
 <span class="line" id="L629">                    }</span>
 <span class="line" id="L630"></span>
-<span class="line" id="L631">                    ptr = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(os.linux.inotify_event), ptr + <span class="tok-builtin">@sizeOf</span>(os.linux.inotify_event) + ev.len);</span>
+<span class="line" id="L631">                    ptr = <span class="tok-builtin">@alignCast</span>(ptr + <span class="tok-builtin">@sizeOf</span>(os.linux.inotify_event) + ev.len);</span>
 <span class="line" id="L632">                }</span>
 <span class="line" id="L633">            }</span>
 <span class="line" id="L634">        }</span>

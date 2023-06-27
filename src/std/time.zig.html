@@ -184,7 +184,7 @@
 <span class="line" id="L70"><span class="tok-comment">/// before the epoch.</span></span>
 <span class="line" id="L71"><span class="tok-comment">/// See `std.os.clock_gettime` for a POSIX timestamp.</span></span>
 <span class="line" id="L72"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">milliTimestamp</span>() <span class="tok-type">i64</span> {</span>
-<span class="line" id="L73">    <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@divFloor</span>(nanoTimestamp(), ns_per_ms));</span>
+<span class="line" id="L73">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@divFloor</span>(nanoTimestamp(), ns_per_ms)));</span>
 <span class="line" id="L74">}</span>
 <span class="line" id="L75"></span>
 <span class="line" id="L76"><span class="tok-comment">/// Get a calendar timestamp, in microseconds, relative to UTC 1970-01-01.</span></span>
@@ -193,7 +193,7 @@
 <span class="line" id="L79"><span class="tok-comment">/// before the epoch.</span></span>
 <span class="line" id="L80"><span class="tok-comment">/// See `std.os.clock_gettime` for a POSIX timestamp.</span></span>
 <span class="line" id="L81"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">microTimestamp</span>() <span class="tok-type">i64</span> {</span>
-<span class="line" id="L82">    <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@divFloor</span>(nanoTimestamp(), ns_per_us));</span>
+<span class="line" id="L82">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@divFloor</span>(nanoTimestamp(), ns_per_us)));</span>
 <span class="line" id="L83">}</span>
 <span class="line" id="L84"></span>
 <span class="line" id="L85"><span class="tok-comment">/// Get a calendar timestamp, in nanoseconds, relative to UTC 1970-01-01.</span></span>
@@ -212,7 +212,7 @@
 <span class="line" id="L96">        <span class="tok-kw">var</span> ft: os.windows.FILETIME = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L97">        os.windows.kernel32.GetSystemTimeAsFileTime(&amp;ft);</span>
 <span class="line" id="L98">        <span class="tok-kw">const</span> ft64 = (<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, ft.dwHighDateTime) &lt;&lt; <span class="tok-number">32</span>) | ft.dwLowDateTime;</span>
-<span class="line" id="L99">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">i128</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-type">i64</span>, ft64) + epoch_adj) * <span class="tok-number">100</span>;</span>
+<span class="line" id="L99">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">i128</span>, <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@bitCast</span>(ft64)) + epoch_adj) * <span class="tok-number">100</span>;</span>
 <span class="line" id="L100">    }</span>
 <span class="line" id="L101"></span>
 <span class="line" id="L102">    <span class="tok-kw">if</span> (builtin.os.tag == .wasi <span class="tok-kw">and</span> !builtin.link_libc) {</span>
@@ -376,9 +376,9 @@
 <span class="line" id="L240"></span>
 <span class="line" id="L241">            <span class="tok-comment">// Convert to ns using fixed point.</span>
 </span>
-<span class="line" id="L242">            <span class="tok-kw">const</span> scale = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, std.time.ns_per_s &lt;&lt; <span class="tok-number">32</span>) / <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, qpf);</span>
+<span class="line" id="L242">            <span class="tok-kw">const</span> scale = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, std.time.ns_per_s &lt;&lt; <span class="tok-number">32</span>) / <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(qpf));</span>
 <span class="line" id="L243">            <span class="tok-kw">const</span> result = (<span class="tok-builtin">@as</span>(<span class="tok-type">u96</span>, qpc) * scale) &gt;&gt; <span class="tok-number">32</span>;</span>
-<span class="line" id="L244">            <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u64</span>, result);</span>
+<span class="line" id="L244">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@truncate</span>(result));</span>
 <span class="line" id="L245">        }</span>
 <span class="line" id="L246"></span>
 <span class="line" id="L247">        <span class="tok-comment">// WASI timestamps are directly in nanoseconds</span>
@@ -389,9 +389,9 @@
 <span class="line" id="L251"></span>
 <span class="line" id="L252">        <span class="tok-comment">// Convert timespec diff to ns</span>
 </span>
-<span class="line" id="L253">        <span class="tok-kw">const</span> seconds = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u64</span>, self.timestamp.tv_sec - earlier.timestamp.tv_sec);</span>
-<span class="line" id="L254">        <span class="tok-kw">const</span> elapsed = (seconds * ns_per_s) + <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, self.timestamp.tv_nsec);</span>
-<span class="line" id="L255">        <span class="tok-kw">return</span> elapsed - <span class="tok-builtin">@intCast</span>(<span class="tok-type">u32</span>, earlier.timestamp.tv_nsec);</span>
+<span class="line" id="L253">        <span class="tok-kw">const</span> seconds = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@intCast</span>(self.timestamp.tv_sec - earlier.timestamp.tv_sec));</span>
+<span class="line" id="L254">        <span class="tok-kw">const</span> elapsed = (seconds * ns_per_s) + <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(self.timestamp.tv_nsec));</span>
+<span class="line" id="L255">        <span class="tok-kw">return</span> elapsed - <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(earlier.timestamp.tv_nsec));</span>
 <span class="line" id="L256">    }</span>
 <span class="line" id="L257">};</span>
 <span class="line" id="L258"></span>

@@ -302,7 +302,7 @@
 <span class="line" id="L187">        <span class="tok-kw">const</span> nread = <span class="tok-kw">try</span> conn.rawReadAtLeast(conn.read_buf[<span class="tok-number">0</span>..], <span class="tok-number">1</span>);</span>
 <span class="line" id="L188">        <span class="tok-kw">if</span> (nread == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EndOfStream;</span>
 <span class="line" id="L189">        conn.read_start = <span class="tok-number">0</span>;</span>
-<span class="line" id="L190">        conn.read_end = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, nread);</span>
+<span class="line" id="L190">        conn.read_end = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nread));</span>
 <span class="line" id="L191">    }</span>
 <span class="line" id="L192"></span>
 <span class="line" id="L193">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(conn: *Connection) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
@@ -324,8 +324,8 @@
 <span class="line" id="L209">            <span class="tok-kw">if</span> (available_read &gt; available_buffer) { <span class="tok-comment">// partially read buffered data</span>
 </span>
 <span class="line" id="L210">                <span class="tok-builtin">@memcpy</span>(buffer[out_index..], conn.read_buf[conn.read_start..conn.read_end][<span class="tok-number">0</span>..available_buffer]);</span>
-<span class="line" id="L211">                out_index += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, available_buffer);</span>
-<span class="line" id="L212">                conn.read_start += <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, available_buffer);</span>
+<span class="line" id="L211">                out_index += <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(available_buffer));</span>
+<span class="line" id="L212">                conn.read_start += <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(available_buffer));</span>
 <span class="line" id="L213"></span>
 <span class="line" id="L214">                <span class="tok-kw">break</span>;</span>
 <span class="line" id="L215">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (available_read &gt; <span class="tok-number">0</span>) { <span class="tok-comment">// fully read buffered data</span>
@@ -462,7 +462,7 @@
 <span class="line" id="L343">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid,</span>
 <span class="line" id="L344">        };</span>
 <span class="line" id="L345">        <span class="tok-kw">if</span> (first_line[<span class="tok-number">8</span>] != <span class="tok-str">' '</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpHeadersInvalid;</span>
-<span class="line" id="L346">        <span class="tok-kw">const</span> status = <span class="tok-builtin">@enumFromInt</span>(http.Status, parseInt3(first_line[<span class="tok-number">9</span>..<span class="tok-number">12</span>].*));</span>
+<span class="line" id="L346">        <span class="tok-kw">const</span> status = <span class="tok-builtin">@as</span>(http.Status, <span class="tok-builtin">@enumFromInt</span>(parseInt3(first_line[<span class="tok-number">9</span>..<span class="tok-number">12</span>].*)));</span>
 <span class="line" id="L347">        <span class="tok-kw">const</span> reason = mem.trimLeft(<span class="tok-type">u8</span>, first_line[<span class="tok-number">12</span>..], <span class="tok-str">&quot; &quot;</span>);</span>
 <span class="line" id="L348"></span>
 <span class="line" id="L349">        res.version = version;</span>
@@ -536,7 +536,7 @@
 <span class="line" id="L415">    }</span>
 <span class="line" id="L416"></span>
 <span class="line" id="L417">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int64</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">8</span>]<span class="tok-type">u8</span>) <span class="tok-type">u64</span> {</span>
-<span class="line" id="L418">        <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, array.*);</span>
+<span class="line" id="L418">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
 <span class="line" id="L419">    }</span>
 <span class="line" id="L420"></span>
 <span class="line" id="L421">    <span class="tok-kw">fn</span> <span class="tok-fn">parseInt3</span>(nnn: <span class="tok-builtin">@Vector</span>(<span class="tok-number">3</span>, <span class="tok-type">u8</span>)) <span class="tok-type">u10</span> {</span>
@@ -722,7 +722,7 @@
 <span class="line" id="L597"></span>
 <span class="line" id="L598">                req.transfer_encoding = .{ .content_length = content_length };</span>
 <span class="line" id="L599">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (has_transfer_encoding) {</span>
-<span class="line" id="L600">                <span class="tok-kw">const</span> transfer_encoding = req.headers.getFirstValue(<span class="tok-str">&quot;content-length&quot;</span>).?;</span>
+<span class="line" id="L600">                <span class="tok-kw">const</span> transfer_encoding = req.headers.getFirstValue(<span class="tok-str">&quot;transfer-encoding&quot;</span>).?;</span>
 <span class="line" id="L601">                <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, transfer_encoding, <span class="tok-str">&quot;chunked&quot;</span>)) {</span>
 <span class="line" id="L602">                    req.transfer_encoding = .chunked;</span>
 <span class="line" id="L603">                } <span class="tok-kw">else</span> {</span>
@@ -776,7 +776,7 @@
 <span class="line" id="L649">                <span class="tok-kw">try</span> req.connection.?.data.fill();</span>
 <span class="line" id="L650"></span>
 <span class="line" id="L651">                <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> req.response.parser.checkCompleteHead(req.client.allocator, req.connection.?.data.peek());</span>
-<span class="line" id="L652">                req.connection.?.data.drop(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, nchecked));</span>
+<span class="line" id="L652">                req.connection.?.data.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
 <span class="line" id="L653"></span>
 <span class="line" id="L654">                <span class="tok-kw">if</span> (req.response.parser.state.isContent()) <span class="tok-kw">break</span>;</span>
 <span class="line" id="L655">            }</span>
@@ -900,7 +900,7 @@
 <span class="line" id="L768">                <span class="tok-kw">try</span> req.connection.?.data.fill();</span>
 <span class="line" id="L769"></span>
 <span class="line" id="L770">                <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> req.response.parser.checkCompleteHead(req.client.allocator, req.connection.?.data.peek());</span>
-<span class="line" id="L771">                req.connection.?.data.drop(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, nchecked));</span>
+<span class="line" id="L771">                req.connection.?.data.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
 <span class="line" id="L772">            }</span>
 <span class="line" id="L773"></span>
 <span class="line" id="L774">            <span class="tok-kw">if</span> (has_trail) {</span>

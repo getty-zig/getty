@@ -185,7 +185,7 @@
 <span class="line" id="L68">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> EnvNameHashContext = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L69">        <span class="tok-kw">fn</span> <span class="tok-fn">upcase</span>(c: <span class="tok-type">u21</span>) <span class="tok-type">u21</span> {</span>
 <span class="line" id="L70">            <span class="tok-kw">if</span> (c &lt;= std.math.maxInt(<span class="tok-type">u16</span>))</span>
-<span class="line" id="L71">                <span class="tok-kw">return</span> std.os.windows.ntdll.RtlUpcaseUnicodeChar(<span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, c));</span>
+<span class="line" id="L71">                <span class="tok-kw">return</span> std.os.windows.ntdll.RtlUpcaseUnicodeChar(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(c)));</span>
 <span class="line" id="L72">            <span class="tok-kw">return</span> c;</span>
 <span class="line" id="L73">        }</span>
 <span class="line" id="L74"></span>
@@ -197,9 +197,9 @@
 <span class="line" id="L80">                <span class="tok-kw">while</span> (it.nextCodepoint()) |cp| {</span>
 <span class="line" id="L81">                    <span class="tok-kw">const</span> cp_upper = upcase(cp);</span>
 <span class="line" id="L82">                    h.update(&amp;[_]<span class="tok-type">u8</span>{</span>
-<span class="line" id="L83">                        <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (cp_upper &gt;&gt; <span class="tok-number">16</span>) &amp; <span class="tok-number">0xff</span>),</span>
-<span class="line" id="L84">                        <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (cp_upper &gt;&gt; <span class="tok-number">8</span>) &amp; <span class="tok-number">0xff</span>),</span>
-<span class="line" id="L85">                        <span class="tok-builtin">@intCast</span>(<span class="tok-type">u8</span>, (cp_upper &gt;&gt; <span class="tok-number">0</span>) &amp; <span class="tok-number">0xff</span>),</span>
+<span class="line" id="L83">                        <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>((cp_upper &gt;&gt; <span class="tok-number">16</span>) &amp; <span class="tok-number">0xff</span>)),</span>
+<span class="line" id="L84">                        <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>((cp_upper &gt;&gt; <span class="tok-number">8</span>) &amp; <span class="tok-number">0xff</span>)),</span>
+<span class="line" id="L85">                        <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>((cp_upper &gt;&gt; <span class="tok-number">0</span>) &amp; <span class="tok-number">0xff</span>)),</span>
 <span class="line" id="L86">                    });</span>
 <span class="line" id="L87">                }</span>
 <span class="line" id="L88">                <span class="tok-kw">return</span> h.final();</span>
@@ -1004,8 +1004,8 @@
 <span class="line" id="L872">    <span class="tok-kw">for</span> (args_alloc) |arg| {</span>
 <span class="line" id="L873">        total_bytes += <span class="tok-builtin">@sizeOf</span>([]<span class="tok-type">u8</span>) + arg.len + <span class="tok-number">1</span>;</span>
 <span class="line" id="L874">    }</span>
-<span class="line" id="L875">    <span class="tok-kw">const</span> unaligned_allocated_buf = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args_alloc.ptr)[<span class="tok-number">0</span>..total_bytes];</span>
-<span class="line" id="L876">    <span class="tok-kw">const</span> aligned_allocated_buf = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>([]<span class="tok-type">u8</span>), unaligned_allocated_buf);</span>
+<span class="line" id="L875">    <span class="tok-kw">const</span> unaligned_allocated_buf = <span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(args_alloc.ptr))[<span class="tok-number">0</span>..total_bytes];</span>
+<span class="line" id="L876">    <span class="tok-kw">const</span> aligned_allocated_buf: []<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>([]<span class="tok-type">u8</span>)) <span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-builtin">@alignCast</span>(unaligned_allocated_buf);</span>
 <span class="line" id="L877">    <span class="tok-kw">return</span> allocator.free(aligned_allocated_buf);</span>
 <span class="line" id="L878">}</span>
 <span class="line" id="L879"></span>
@@ -1290,7 +1290,7 @@
 </span>
 <span class="line" id="L1145">            <span class="tok-comment">// TODO type-safety for null-termination of `os.environ`.</span>
 </span>
-<span class="line" id="L1146">            <span class="tok-kw">break</span> :m <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-null">null</span>]<span class="tok-kw">const</span> ?[*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, os.environ.ptr);</span>
+<span class="line" id="L1146">            <span class="tok-kw">break</span> :m <span class="tok-builtin">@as</span>([*:<span class="tok-null">null</span>]<span class="tok-kw">const</span> ?[*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(os.environ.ptr));</span>
 <span class="line" id="L1147">        } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L1148">            <span class="tok-comment">// TODO come up with a solution for this.</span>
 </span>
@@ -1323,7 +1323,7 @@
 <span class="line" id="L1175">                <span class="tok-kw">error</span>.NameTooLong, <span class="tok-kw">error</span>.UnknownName =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L1176">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
 <span class="line" id="L1177">            };</span>
-<span class="line" id="L1178">            <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, physmem);</span>
+<span class="line" id="L1178">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(physmem));</span>
 <span class="line" id="L1179">        },</span>
 <span class="line" id="L1180">        .openbsd =&gt; {</span>
 <span class="line" id="L1181">            <span class="tok-kw">const</span> mib: [<span class="tok-number">2</span>]<span class="tok-type">c_int</span> = [_]<span class="tok-type">c_int</span>{</span>
@@ -1344,7 +1344,7 @@
 <span class="line" id="L1192">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownTotalSystemMemory,</span>
 <span class="line" id="L1193">            };</span>
 <span class="line" id="L1194">            assert(physmem &gt;= <span class="tok-number">0</span>);</span>
-<span class="line" id="L1195">            <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">usize</span>, physmem);</span>
+<span class="line" id="L1195">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@bitCast</span>(physmem));</span>
 <span class="line" id="L1196">        },</span>
 <span class="line" id="L1197">        .windows =&gt; {</span>
 <span class="line" id="L1198">            <span class="tok-kw">var</span> sbi: std.os.windows.SYSTEM_BASIC_INFORMATION = <span class="tok-null">undefined</span>;</span>

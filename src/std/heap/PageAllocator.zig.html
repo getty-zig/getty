@@ -140,7 +140,7 @@
 <span class="line" id="L27">            w.MEM_COMMIT | w.MEM_RESERVE,</span>
 <span class="line" id="L28">            w.PAGE_READWRITE,</span>
 <span class="line" id="L29">        ) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L30">        <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">align</span>(mem.page_size) <span class="tok-type">u8</span>, <span class="tok-builtin">@alignCast</span>(mem.page_size, addr));</span>
+<span class="line" id="L30">        <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>(addr);</span>
 <span class="line" id="L31">    }</span>
 <span class="line" id="L32"></span>
 <span class="line" id="L33">    <span class="tok-kw">const</span> hint = <span class="tok-builtin">@atomicLoad</span>(<span class="tok-builtin">@TypeOf</span>(std.heap.next_mmap_addr_hint), &amp;std.heap.next_mmap_addr_hint, .Unordered);</span>
@@ -153,7 +153,7 @@
 <span class="line" id="L40">        <span class="tok-number">0</span>,</span>
 <span class="line" id="L41">    ) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L42">    assert(mem.isAligned(<span class="tok-builtin">@intFromPtr</span>(slice.ptr), mem.page_size));</span>
-<span class="line" id="L43">    <span class="tok-kw">const</span> new_hint = <span class="tok-builtin">@alignCast</span>(mem.page_size, slice.ptr + aligned_len);</span>
+<span class="line" id="L43">    <span class="tok-kw">const</span> new_hint: [*]<span class="tok-kw">align</span>(mem.page_size) <span class="tok-type">u8</span> = <span class="tok-builtin">@alignCast</span>(slice.ptr + aligned_len);</span>
 <span class="line" id="L44">    _ = <span class="tok-builtin">@cmpxchgStrong</span>(<span class="tok-builtin">@TypeOf</span>(std.heap.next_mmap_addr_hint), &amp;std.heap.next_mmap_addr_hint, hint, new_hint, .Monotonic, .Monotonic);</span>
 <span class="line" id="L45">    <span class="tok-kw">return</span> slice.ptr;</span>
 <span class="line" id="L46">}</span>
@@ -181,7 +181,7 @@
 <span class="line" id="L67">                <span class="tok-comment">// decommit the pages not needed anymore.</span>
 </span>
 <span class="line" id="L68">                w.VirtualFree(</span>
-<span class="line" id="L69">                    <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-type">anyopaque</span>, new_addr_end),</span>
+<span class="line" id="L69">                    <span class="tok-builtin">@as</span>(*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrFromInt</span>(new_addr_end)),</span>
 <span class="line" id="L70">                    old_addr_end - new_addr_end,</span>
 <span class="line" id="L71">                    w.MEM_DECOMMIT,</span>
 <span class="line" id="L72">                );</span>
@@ -200,10 +200,10 @@
 <span class="line" id="L85">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
 <span class="line" id="L86"></span>
 <span class="line" id="L87">    <span class="tok-kw">if</span> (new_size_aligned &lt; buf_aligned_len) {</span>
-<span class="line" id="L88">        <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@alignCast</span>(mem.page_size, buf_unaligned.ptr + new_size_aligned);</span>
+<span class="line" id="L88">        <span class="tok-kw">const</span> ptr = buf_unaligned.ptr + new_size_aligned;</span>
 <span class="line" id="L89">        <span class="tok-comment">// TODO: if the next_mmap_addr_hint is within the unmapped range, update it</span>
 </span>
-<span class="line" id="L90">        os.munmap(ptr[<span class="tok-number">0</span> .. buf_aligned_len - new_size_aligned]);</span>
+<span class="line" id="L90">        os.munmap(<span class="tok-builtin">@alignCast</span>(ptr[<span class="tok-number">0</span> .. buf_aligned_len - new_size_aligned]));</span>
 <span class="line" id="L91">        <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
 <span class="line" id="L92">    }</span>
 <span class="line" id="L93"></span>
@@ -222,10 +222,9 @@
 <span class="line" id="L104">        os.windows.VirtualFree(slice.ptr, <span class="tok-number">0</span>, os.windows.MEM_RELEASE);</span>
 <span class="line" id="L105">    } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L106">        <span class="tok-kw">const</span> buf_aligned_len = mem.alignForward(<span class="tok-type">usize</span>, slice.len, mem.page_size);</span>
-<span class="line" id="L107">        <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@alignCast</span>(mem.page_size, slice.ptr);</span>
-<span class="line" id="L108">        os.munmap(ptr[<span class="tok-number">0</span>..buf_aligned_len]);</span>
-<span class="line" id="L109">    }</span>
-<span class="line" id="L110">}</span>
-<span class="line" id="L111"></span>
+<span class="line" id="L107">        os.munmap(<span class="tok-builtin">@alignCast</span>(slice.ptr[<span class="tok-number">0</span>..buf_aligned_len]));</span>
+<span class="line" id="L108">    }</span>
+<span class="line" id="L109">}</span>
+<span class="line" id="L110"></span>
 </code></pre></body>
 </html>

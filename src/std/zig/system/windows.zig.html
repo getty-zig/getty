@@ -145,8 +145,8 @@
 </span>
 <span class="line" id="L28">    <span class="tok-comment">//      `--&gt; OS version (Major &amp; minor)</span>
 </span>
-<span class="line" id="L29">    <span class="tok-kw">const</span> os_ver: <span class="tok-type">u16</span> = <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, version_info.dwMajorVersion &amp; <span class="tok-number">0xff</span>) &lt;&lt; <span class="tok-number">8</span> |</span>
-<span class="line" id="L30">        <span class="tok-builtin">@intCast</span>(<span class="tok-type">u16</span>, version_info.dwMinorVersion &amp; <span class="tok-number">0xff</span>);</span>
+<span class="line" id="L29">    <span class="tok-kw">const</span> os_ver: <span class="tok-type">u16</span> = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(version_info.dwMajorVersion &amp; <span class="tok-number">0xff</span>)) &lt;&lt; <span class="tok-number">8</span> |</span>
+<span class="line" id="L30">        <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(version_info.dwMinorVersion &amp; <span class="tok-number">0xff</span>));</span>
 <span class="line" id="L31">    <span class="tok-kw">const</span> sp_ver: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L32">    <span class="tok-kw">const</span> sub_ver: <span class="tok-type">u8</span> = <span class="tok-kw">if</span> (os_ver &gt;= <span class="tok-number">0x0A00</span>) subver: {</span>
 <span class="line" id="L33">        <span class="tok-comment">// There's no other way to obtain this info beside</span>
@@ -160,12 +160,12 @@
 <span class="line" id="L38">            <span class="tok-kw">if</span> (version_info.dwBuildNumber &gt;= build)</span>
 <span class="line" id="L39">                last_idx = i;</span>
 <span class="line" id="L40">        }</span>
-<span class="line" id="L41">        <span class="tok-kw">break</span> :subver <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, last_idx);</span>
+<span class="line" id="L41">        <span class="tok-kw">break</span> :subver <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@truncate</span>(last_idx));</span>
 <span class="line" id="L42">    } <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
 <span class="line" id="L43"></span>
 <span class="line" id="L44">    <span class="tok-kw">const</span> version: <span class="tok-type">u32</span> = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, os_ver) &lt;&lt; <span class="tok-number">16</span> | <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, sp_ver) &lt;&lt; <span class="tok-number">8</span> | sub_ver;</span>
 <span class="line" id="L45"></span>
-<span class="line" id="L46">    <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(WindowsVersion, version);</span>
+<span class="line" id="L46">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(WindowsVersion, <span class="tok-builtin">@enumFromInt</span>(version));</span>
 <span class="line" id="L47">}</span>
 <span class="line" id="L48"></span>
 <span class="line" id="L49"><span class="tok-comment">// Technically, a registry value can be as long as 1MB. However, MS recommends storing</span>
@@ -231,11 +231,11 @@
 <span class="line" id="L100">                REG.MULTI_SZ,</span>
 <span class="line" id="L101">                =&gt; {</span>
 <span class="line" id="L102">                    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@sizeOf</span>(std.os.windows.UNICODE_STRING) % <span class="tok-number">2</span> == <span class="tok-number">0</span>);</span>
-<span class="line" id="L103">                    <span class="tok-kw">const</span> unicode = <span class="tok-builtin">@ptrCast</span>(*std.os.windows.UNICODE_STRING, &amp;tmp_bufs[i]);</span>
+<span class="line" id="L103">                    <span class="tok-kw">const</span> unicode = <span class="tok-builtin">@as</span>(*std.os.windows.UNICODE_STRING, <span class="tok-builtin">@ptrCast</span>(&amp;tmp_bufs[i]));</span>
 <span class="line" id="L104">                    unicode.* = .{</span>
 <span class="line" id="L105">                        .Length = <span class="tok-number">0</span>,</span>
 <span class="line" id="L106">                        .MaximumLength = max_value_len - <span class="tok-builtin">@sizeOf</span>(std.os.windows.UNICODE_STRING),</span>
-<span class="line" id="L107">                        .Buffer = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u16</span>, tmp_bufs[i][<span class="tok-builtin">@sizeOf</span>(std.os.windows.UNICODE_STRING)..]),</span>
+<span class="line" id="L107">                        .Buffer = <span class="tok-builtin">@as</span>([*]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(tmp_bufs[i][<span class="tok-builtin">@sizeOf</span>(std.os.windows.UNICODE_STRING)..])),</span>
 <span class="line" id="L108">                    };</span>
 <span class="line" id="L109">                    <span class="tok-kw">break</span> :blk unicode;</span>
 <span class="line" id="L110">                },</span>
@@ -291,7 +291,7 @@
 <span class="line" id="L159">                REG.MULTI_SZ,</span>
 <span class="line" id="L160">                =&gt; {</span>
 <span class="line" id="L161">                    <span class="tok-kw">var</span> buf = <span class="tok-builtin">@field</span>(args, field.name).value_buf;</span>
-<span class="line" id="L162">                    <span class="tok-kw">const</span> entry = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> std.os.windows.UNICODE_STRING, table[i + <span class="tok-number">1</span>].EntryContext);</span>
+<span class="line" id="L162">                    <span class="tok-kw">const</span> entry = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> std.os.windows.UNICODE_STRING, <span class="tok-builtin">@ptrCast</span>(table[i + <span class="tok-number">1</span>].EntryContext));</span>
 <span class="line" id="L163">                    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> std.unicode.utf16leToUtf8(buf, entry.Buffer[<span class="tok-number">0</span> .. entry.Length / <span class="tok-number">2</span>]);</span>
 <span class="line" id="L164">                    buf[len] = <span class="tok-number">0</span>;</span>
 <span class="line" id="L165">                },</span>
@@ -300,7 +300,7 @@
 <span class="line" id="L168">                REG.DWORD_BIG_ENDIAN,</span>
 <span class="line" id="L169">                REG.QWORD,</span>
 <span class="line" id="L170">                =&gt; {</span>
-<span class="line" id="L171">                    <span class="tok-kw">const</span> entry = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u8</span>, table[i + <span class="tok-number">1</span>].EntryContext);</span>
+<span class="line" id="L171">                    <span class="tok-kw">const</span> entry = <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(table[i + <span class="tok-number">1</span>].EntryContext));</span>
 <span class="line" id="L172">                    <span class="tok-kw">switch</span> (<span class="tok-builtin">@field</span>(args, field.name).value_type) {</span>
 <span class="line" id="L173">                        REG.DWORD, REG.DWORD_BIG_ENDIAN =&gt; {</span>
 <span class="line" id="L174">                            <span class="tok-builtin">@memcpy</span>(<span class="tok-builtin">@field</span>(args, field.name).value_buf[<span class="tok-number">0</span>..<span class="tok-number">4</span>], entry[<span class="tok-number">0</span>..<span class="tok-number">4</span>]);</span>
@@ -401,18 +401,18 @@
 <span class="line" id="L255">                <span class="tok-comment">// CP 403A -&gt; ID_AA64MMFR2_EL1</span>
 </span>
 <span class="line" id="L256">                getCpuInfoFromRegistry(i, .{</span>
-<span class="line" id="L257">                    .{ .key = <span class="tok-str">&quot;CP 4000&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">0</span>]) },</span>
-<span class="line" id="L258">                    .{ .key = <span class="tok-str">&quot;CP 4020&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">1</span>]) },</span>
-<span class="line" id="L259">                    .{ .key = <span class="tok-str">&quot;CP 4021&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">2</span>]) },</span>
-<span class="line" id="L260">                    .{ .key = <span class="tok-str">&quot;CP 4028&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">3</span>]) },</span>
-<span class="line" id="L261">                    .{ .key = <span class="tok-str">&quot;CP 4029&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">4</span>]) },</span>
-<span class="line" id="L262">                    .{ .key = <span class="tok-str">&quot;CP 402C&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">5</span>]) },</span>
-<span class="line" id="L263">                    .{ .key = <span class="tok-str">&quot;CP 402D&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">6</span>]) },</span>
-<span class="line" id="L264">                    .{ .key = <span class="tok-str">&quot;CP 4030&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">7</span>]) },</span>
-<span class="line" id="L265">                    .{ .key = <span class="tok-str">&quot;CP 4031&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">8</span>]) },</span>
-<span class="line" id="L266">                    .{ .key = <span class="tok-str">&quot;CP 4038&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">9</span>]) },</span>
-<span class="line" id="L267">                    .{ .key = <span class="tok-str">&quot;CP 4039&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">10</span>]) },</span>
-<span class="line" id="L268">                    .{ .key = <span class="tok-str">&quot;CP 403A&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@ptrCast</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, &amp;registers[<span class="tok-number">11</span>]) },</span>
+<span class="line" id="L257">                    .{ .key = <span class="tok-str">&quot;CP 4000&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">0</span>])) },</span>
+<span class="line" id="L258">                    .{ .key = <span class="tok-str">&quot;CP 4020&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">1</span>])) },</span>
+<span class="line" id="L259">                    .{ .key = <span class="tok-str">&quot;CP 4021&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">2</span>])) },</span>
+<span class="line" id="L260">                    .{ .key = <span class="tok-str">&quot;CP 4028&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">3</span>])) },</span>
+<span class="line" id="L261">                    .{ .key = <span class="tok-str">&quot;CP 4029&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">4</span>])) },</span>
+<span class="line" id="L262">                    .{ .key = <span class="tok-str">&quot;CP 402C&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">5</span>])) },</span>
+<span class="line" id="L263">                    .{ .key = <span class="tok-str">&quot;CP 402D&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">6</span>])) },</span>
+<span class="line" id="L264">                    .{ .key = <span class="tok-str">&quot;CP 4030&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">7</span>])) },</span>
+<span class="line" id="L265">                    .{ .key = <span class="tok-str">&quot;CP 4031&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">8</span>])) },</span>
+<span class="line" id="L266">                    .{ .key = <span class="tok-str">&quot;CP 4038&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">9</span>])) },</span>
+<span class="line" id="L267">                    .{ .key = <span class="tok-str">&quot;CP 4039&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">10</span>])) },</span>
+<span class="line" id="L268">                    .{ .key = <span class="tok-str">&quot;CP 403A&quot;</span>, .value_type = REG.QWORD, .value_buf = <span class="tok-builtin">@as</span>(*[<span class="tok-number">8</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;registers[<span class="tok-number">11</span>])) },</span>
 <span class="line" id="L269">                }) <span class="tok-kw">catch</span> <span class="tok-kw">break</span> :blk <span class="tok-null">null</span>;</span>
 <span class="line" id="L270"></span>
 <span class="line" id="L271">                cores[i] = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;arm.zig&quot;</span>).aarch64.detectNativeCpuAndFeatures(current_arch, registers) <span class="tok-kw">orelse</span></span>

@@ -1045,7 +1045,7 @@
 <span class="line" id="L787">    }</span>
 <span class="line" id="L788"></span>
 <span class="line" id="L789">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">@&quot;type&quot;</span>(sect: section_64) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L790">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, sect.flags &amp; <span class="tok-number">0xff</span>);</span>
+<span class="line" id="L790">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@truncate</span>(sect.flags &amp; <span class="tok-number">0xff</span>));</span>
 <span class="line" id="L791">    }</span>
 <span class="line" id="L792"></span>
 <span class="line" id="L793">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">attrs</span>(sect: section_64) <span class="tok-type">u32</span> {</span>
@@ -2157,7 +2157,7 @@
 <span class="line" id="L1870"></span>
 <span class="line" id="L1871">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cast</span>(lc: LoadCommand, <span class="tok-kw">comptime</span> Cmd: <span class="tok-type">type</span>) ?Cmd {</span>
 <span class="line" id="L1872">            <span class="tok-kw">if</span> (lc.data.len &lt; <span class="tok-builtin">@sizeOf</span>(Cmd)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1873">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> Cmd, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(Cmd), &amp;lc.data[<span class="tok-number">0</span>])).*;</span>
+<span class="line" id="L1873">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> Cmd, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;lc.data[<span class="tok-number">0</span>]))).*;</span>
 <span class="line" id="L1874">        }</span>
 <span class="line" id="L1875"></span>
 <span class="line" id="L1876">        <span class="tok-comment">/// Asserts LoadCommand is of type segment_command_64.</span></span>
@@ -2165,9 +2165,9 @@
 <span class="line" id="L1878">            <span class="tok-kw">const</span> segment_lc = lc.cast(segment_command_64).?;</span>
 <span class="line" id="L1879">            <span class="tok-kw">if</span> (segment_lc.nsects == <span class="tok-number">0</span>) <span class="tok-kw">return</span> &amp;[<span class="tok-number">0</span>]section_64{};</span>
 <span class="line" id="L1880">            <span class="tok-kw">const</span> data = lc.data[<span class="tok-builtin">@sizeOf</span>(segment_command_64)..];</span>
-<span class="line" id="L1881">            <span class="tok-kw">const</span> sections = <span class="tok-builtin">@ptrCast</span>(</span>
+<span class="line" id="L1881">            <span class="tok-kw">const</span> sections = <span class="tok-builtin">@as</span>(</span>
 <span class="line" id="L1882">                [*]<span class="tok-kw">const</span> section_64,</span>
-<span class="line" id="L1883">                <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(section_64), &amp;data[<span class="tok-number">0</span>]),</span>
+<span class="line" id="L1883">                <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;data[<span class="tok-number">0</span>])),</span>
 <span class="line" id="L1884">            )[<span class="tok-number">0</span>..segment_lc.nsects];</span>
 <span class="line" id="L1885">            <span class="tok-kw">return</span> sections;</span>
 <span class="line" id="L1886">        }</span>
@@ -2190,16 +2190,16 @@
 <span class="line" id="L1903">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">next</span>(it: *LoadCommandIterator) ?LoadCommand {</span>
 <span class="line" id="L1904">        <span class="tok-kw">if</span> (it.index &gt;= it.ncmds) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L1905"></span>
-<span class="line" id="L1906">        <span class="tok-kw">const</span> hdr = <span class="tok-builtin">@ptrCast</span>(</span>
+<span class="line" id="L1906">        <span class="tok-kw">const</span> hdr = <span class="tok-builtin">@as</span>(</span>
 <span class="line" id="L1907">            *<span class="tok-kw">const</span> load_command,</span>
-<span class="line" id="L1908">            <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(load_command), &amp;it.buffer[<span class="tok-number">0</span>]),</span>
+<span class="line" id="L1908">            <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;it.buffer[<span class="tok-number">0</span>])),</span>
 <span class="line" id="L1909">        ).*;</span>
 <span class="line" id="L1910">        <span class="tok-kw">const</span> cmd = LoadCommand{</span>
 <span class="line" id="L1911">            .hdr = hdr,</span>
 <span class="line" id="L1912">            .data = it.buffer[<span class="tok-number">0</span>..hdr.cmdsize],</span>
 <span class="line" id="L1913">        };</span>
 <span class="line" id="L1914"></span>
-<span class="line" id="L1915">        it.buffer = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u64</span>), it.buffer[hdr.cmdsize..]);</span>
+<span class="line" id="L1915">        it.buffer = <span class="tok-builtin">@alignCast</span>(it.buffer[hdr.cmdsize..]);</span>
 <span class="line" id="L1916">        it.index += <span class="tok-number">1</span>;</span>
 <span class="line" id="L1917"></span>
 <span class="line" id="L1918">        <span class="tok-kw">return</span> cmd;</span>

@@ -191,20 +191,20 @@
 <span class="line" id="L71">        <span class="tok-kw">while</span> (_DYNAMIC[i].d_tag != elf.DT_NULL) : (i += <span class="tok-number">1</span>) {</span>
 <span class="line" id="L72">            <span class="tok-kw">switch</span> (_DYNAMIC[i].d_tag) {</span>
 <span class="line" id="L73">                elf.DT_DEBUG =&gt; {</span>
-<span class="line" id="L74">                    <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@ptrFromInt</span>(?*RDebug, _DYNAMIC[i].d_val);</span>
+<span class="line" id="L74">                    <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@as</span>(?*RDebug, <span class="tok-builtin">@ptrFromInt</span>(_DYNAMIC[i].d_val));</span>
 <span class="line" id="L75">                    <span class="tok-kw">if</span> (ptr) |r_debug| {</span>
 <span class="line" id="L76">                        <span class="tok-kw">if</span> (r_debug.r_version != <span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidExe;</span>
 <span class="line" id="L77">                        <span class="tok-kw">break</span> :init r_debug.r_map;</span>
 <span class="line" id="L78">                    }</span>
 <span class="line" id="L79">                },</span>
 <span class="line" id="L80">                elf.DT_PLTGOT =&gt; {</span>
-<span class="line" id="L81">                    <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@ptrFromInt</span>(?[*]<span class="tok-type">usize</span>, _DYNAMIC[i].d_val);</span>
+<span class="line" id="L81">                    <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@as</span>(?[*]<span class="tok-type">usize</span>, <span class="tok-builtin">@ptrFromInt</span>(_DYNAMIC[i].d_val));</span>
 <span class="line" id="L82">                    <span class="tok-kw">if</span> (ptr) |got_table| {</span>
 <span class="line" id="L83">                        <span class="tok-comment">// The address to the link_map structure is stored in</span>
 </span>
 <span class="line" id="L84">                        <span class="tok-comment">// the second slot</span>
 </span>
-<span class="line" id="L85">                        <span class="tok-kw">break</span> :init <span class="tok-builtin">@ptrFromInt</span>(?*LinkMap, got_table[<span class="tok-number">1</span>]);</span>
+<span class="line" id="L85">                        <span class="tok-kw">break</span> :init <span class="tok-builtin">@as</span>(?*LinkMap, <span class="tok-builtin">@ptrFromInt</span>(got_table[<span class="tok-number">1</span>]));</span>
 <span class="line" id="L86">                    }</span>
 <span class="line" id="L87">                },</span>
 <span class="line" id="L88">                <span class="tok-kw">else</span> =&gt; {},</span>
@@ -256,7 +256,7 @@
 <span class="line" id="L132">        );</span>
 <span class="line" id="L133">        <span class="tok-kw">defer</span> os.munmap(file_bytes);</span>
 <span class="line" id="L134"></span>
-<span class="line" id="L135">        <span class="tok-kw">const</span> eh = <span class="tok-builtin">@ptrCast</span>(*elf.Ehdr, file_bytes.ptr);</span>
+<span class="line" id="L135">        <span class="tok-kw">const</span> eh = <span class="tok-builtin">@as</span>(*elf.Ehdr, <span class="tok-builtin">@ptrCast</span>(file_bytes.ptr));</span>
 <span class="line" id="L136">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, eh.e_ident[<span class="tok-number">0</span>..<span class="tok-number">4</span>], elf.MAGIC)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NotElfFile;</span>
 <span class="line" id="L137">        <span class="tok-kw">if</span> (eh.e_type != elf.ET.DYN) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NotDynamicLibrary;</span>
 <span class="line" id="L138"></span>
@@ -275,10 +275,10 @@
 <span class="line" id="L149">                i += <span class="tok-number">1</span>;</span>
 <span class="line" id="L150">                ph_addr += eh.e_phentsize;</span>
 <span class="line" id="L151">            }) {</span>
-<span class="line" id="L152">                <span class="tok-kw">const</span> ph = <span class="tok-builtin">@ptrFromInt</span>(*elf.Phdr, ph_addr);</span>
+<span class="line" id="L152">                <span class="tok-kw">const</span> ph = <span class="tok-builtin">@as</span>(*elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(ph_addr));</span>
 <span class="line" id="L153">                <span class="tok-kw">switch</span> (ph.p_type) {</span>
 <span class="line" id="L154">                    elf.PT_LOAD =&gt; virt_addr_end = <span class="tok-builtin">@max</span>(virt_addr_end, ph.p_vaddr + ph.p_memsz),</span>
-<span class="line" id="L155">                    elf.PT_DYNAMIC =&gt; maybe_dynv = <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-type">usize</span>, elf_addr + ph.p_offset),</span>
+<span class="line" id="L155">                    elf.PT_DYNAMIC =&gt; maybe_dynv = <span class="tok-builtin">@as</span>([*]<span class="tok-type">usize</span>, <span class="tok-builtin">@ptrFromInt</span>(elf_addr + ph.p_offset)),</span>
 <span class="line" id="L156">                    <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L157">                }</span>
 <span class="line" id="L158">            }</span>
@@ -308,7 +308,7 @@
 <span class="line" id="L180">                i += <span class="tok-number">1</span>;</span>
 <span class="line" id="L181">                ph_addr += eh.e_phentsize;</span>
 <span class="line" id="L182">            }) {</span>
-<span class="line" id="L183">                <span class="tok-kw">const</span> ph = <span class="tok-builtin">@ptrFromInt</span>(*elf.Phdr, ph_addr);</span>
+<span class="line" id="L183">                <span class="tok-kw">const</span> ph = <span class="tok-builtin">@as</span>(*elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(ph_addr));</span>
 <span class="line" id="L184">                <span class="tok-kw">switch</span> (ph.p_type) {</span>
 <span class="line" id="L185">                    elf.PT_LOAD =&gt; {</span>
 <span class="line" id="L186">                        <span class="tok-comment">// The VirtAddr may not be page-aligned; in such case there will be</span>
@@ -318,7 +318,7 @@
 <span class="line" id="L188">                        <span class="tok-kw">const</span> aligned_addr = (base + ph.p_vaddr) &amp; ~(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, mem.page_size) - <span class="tok-number">1</span>);</span>
 <span class="line" id="L189">                        <span class="tok-kw">const</span> extra_bytes = (base + ph.p_vaddr) - aligned_addr;</span>
 <span class="line" id="L190">                        <span class="tok-kw">const</span> extended_memsz = mem.alignForward(<span class="tok-type">usize</span>, ph.p_memsz + extra_bytes, mem.page_size);</span>
-<span class="line" id="L191">                        <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-kw">align</span>(mem.page_size) <span class="tok-type">u8</span>, aligned_addr);</span>
+<span class="line" id="L191">                        <span class="tok-kw">const</span> ptr = <span class="tok-builtin">@as</span>([*]<span class="tok-kw">align</span>(mem.page_size) <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrFromInt</span>(aligned_addr));</span>
 <span class="line" id="L192">                        <span class="tok-kw">const</span> prot = elfToMmapProt(ph.p_flags);</span>
 <span class="line" id="L193">                        <span class="tok-kw">if</span> ((ph.p_flags &amp; elf.PF_W) == <span class="tok-number">0</span>) {</span>
 <span class="line" id="L194">                            <span class="tok-comment">// If it does not need write access, it can be mapped from the fd.</span>
@@ -359,11 +359,11 @@
 <span class="line" id="L228">            <span class="tok-kw">while</span> (dynv[i] != <span class="tok-number">0</span>) : (i += <span class="tok-number">2</span>) {</span>
 <span class="line" id="L229">                <span class="tok-kw">const</span> p = base + dynv[i + <span class="tok-number">1</span>];</span>
 <span class="line" id="L230">                <span class="tok-kw">switch</span> (dynv[i]) {</span>
-<span class="line" id="L231">                    elf.DT_STRTAB =&gt; maybe_strings = <span class="tok-builtin">@ptrFromInt</span>([*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, p),</span>
-<span class="line" id="L232">                    elf.DT_SYMTAB =&gt; maybe_syms = <span class="tok-builtin">@ptrFromInt</span>([*]elf.Sym, p),</span>
-<span class="line" id="L233">                    elf.DT_HASH =&gt; maybe_hashtab = <span class="tok-builtin">@ptrFromInt</span>([*]os.Elf_Symndx, p),</span>
-<span class="line" id="L234">                    elf.DT_VERSYM =&gt; maybe_versym = <span class="tok-builtin">@ptrFromInt</span>([*]<span class="tok-type">u16</span>, p),</span>
-<span class="line" id="L235">                    elf.DT_VERDEF =&gt; maybe_verdef = <span class="tok-builtin">@ptrFromInt</span>(*elf.Verdef, p),</span>
+<span class="line" id="L231">                    elf.DT_STRTAB =&gt; maybe_strings = <span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrFromInt</span>(p)),</span>
+<span class="line" id="L232">                    elf.DT_SYMTAB =&gt; maybe_syms = <span class="tok-builtin">@as</span>([*]elf.Sym, <span class="tok-builtin">@ptrFromInt</span>(p)),</span>
+<span class="line" id="L233">                    elf.DT_HASH =&gt; maybe_hashtab = <span class="tok-builtin">@as</span>([*]os.Elf_Symndx, <span class="tok-builtin">@ptrFromInt</span>(p)),</span>
+<span class="line" id="L234">                    elf.DT_VERSYM =&gt; maybe_versym = <span class="tok-builtin">@as</span>([*]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrFromInt</span>(p)),</span>
+<span class="line" id="L235">                    elf.DT_VERDEF =&gt; maybe_verdef = <span class="tok-builtin">@as</span>(*elf.Verdef, <span class="tok-builtin">@ptrFromInt</span>(p)),</span>
 <span class="line" id="L236">                    <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L237">                }</span>
 <span class="line" id="L238">            }</span>
@@ -392,7 +392,7 @@
 <span class="line" id="L261"></span>
 <span class="line" id="L262">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lookup</span>(self: *ElfDynLib, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, name: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?T {</span>
 <span class="line" id="L263">        <span class="tok-kw">if</span> (self.lookupAddress(<span class="tok-str">&quot;&quot;</span>, name)) |symbol| {</span>
-<span class="line" id="L264">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrFromInt</span>(T, symbol);</span>
+<span class="line" id="L264">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@ptrFromInt</span>(symbol));</span>
 <span class="line" id="L265">        } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L266">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L267">        }</span>
@@ -407,8 +407,8 @@
 <span class="line" id="L276"></span>
 <span class="line" id="L277">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L278">        <span class="tok-kw">while</span> (i &lt; self.hashtab[<span class="tok-number">1</span>]) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L279">            <span class="tok-kw">if</span> (<span class="tok-number">0</span> == (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, self.syms[i].st_info &amp; <span class="tok-number">0xf</span>) &amp; OK_TYPES)) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L280">            <span class="tok-kw">if</span> (<span class="tok-number">0</span> == (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">u5</span>, self.syms[i].st_info &gt;&gt; <span class="tok-number">4</span>) &amp; OK_BINDS)) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L279">            <span class="tok-kw">if</span> (<span class="tok-number">0</span> == (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(<span class="tok-type">u5</span>, <span class="tok-builtin">@intCast</span>(self.syms[i].st_info &amp; <span class="tok-number">0xf</span>)) &amp; OK_TYPES)) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L280">            <span class="tok-kw">if</span> (<span class="tok-number">0</span> == (<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(<span class="tok-type">u5</span>, <span class="tok-builtin">@intCast</span>(self.syms[i].st_info &gt;&gt; <span class="tok-number">4</span>)) &amp; OK_BINDS)) <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L281">            <span class="tok-kw">if</span> (<span class="tok-number">0</span> == self.syms[i].st_shndx) <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L282">            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, name, mem.sliceTo(self.strings + self.syms[i].st_name, <span class="tok-number">0</span>))) <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L283">            <span class="tok-kw">if</span> (maybe_versym) |versym| {</span>
@@ -432,15 +432,15 @@
 <span class="line" id="L301"></span>
 <span class="line" id="L302"><span class="tok-kw">fn</span> <span class="tok-fn">checkver</span>(def_arg: *elf.Verdef, vsym_arg: <span class="tok-type">i32</span>, vername: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, strings: [*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L303">    <span class="tok-kw">var</span> def = def_arg;</span>
-<span class="line" id="L304">    <span class="tok-kw">const</span> vsym = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, vsym_arg) &amp; <span class="tok-number">0x7fff</span>;</span>
+<span class="line" id="L304">    <span class="tok-kw">const</span> vsym = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(vsym_arg)) &amp; <span class="tok-number">0x7fff</span>;</span>
 <span class="line" id="L305">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
 <span class="line" id="L306">        <span class="tok-kw">if</span> (<span class="tok-number">0</span> == (def.vd_flags &amp; elf.VER_FLG_BASE) <span class="tok-kw">and</span> (def.vd_ndx &amp; <span class="tok-number">0x7fff</span>) == vsym)</span>
 <span class="line" id="L307">            <span class="tok-kw">break</span>;</span>
 <span class="line" id="L308">        <span class="tok-kw">if</span> (def.vd_next == <span class="tok-number">0</span>)</span>
 <span class="line" id="L309">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L310">        def = <span class="tok-builtin">@ptrFromInt</span>(*elf.Verdef, <span class="tok-builtin">@intFromPtr</span>(def) + def.vd_next);</span>
+<span class="line" id="L310">        def = <span class="tok-builtin">@as</span>(*elf.Verdef, <span class="tok-builtin">@ptrFromInt</span>(<span class="tok-builtin">@intFromPtr</span>(def) + def.vd_next));</span>
 <span class="line" id="L311">    }</span>
-<span class="line" id="L312">    <span class="tok-kw">const</span> aux = <span class="tok-builtin">@ptrFromInt</span>(*elf.Verdaux, <span class="tok-builtin">@intFromPtr</span>(def) + def.vd_aux);</span>
+<span class="line" id="L312">    <span class="tok-kw">const</span> aux = <span class="tok-builtin">@as</span>(*elf.Verdaux, <span class="tok-builtin">@ptrFromInt</span>(<span class="tok-builtin">@intFromPtr</span>(def) + def.vd_aux));</span>
 <span class="line" id="L313">    <span class="tok-kw">return</span> mem.eql(<span class="tok-type">u8</span>, vername, mem.sliceTo(strings + aux.vda_name, <span class="tok-number">0</span>));</span>
 <span class="line" id="L314">}</span>
 <span class="line" id="L315"></span>
@@ -479,7 +479,7 @@
 <span class="line" id="L347"></span>
 <span class="line" id="L348">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lookup</span>(self: *WindowsDynLib, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, name: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?T {</span>
 <span class="line" id="L349">        <span class="tok-kw">if</span> (windows.kernel32.GetProcAddress(self.dll, name.ptr)) |addr| {</span>
-<span class="line" id="L350">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>(T, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-builtin">@typeInfo</span>(T).Pointer.child), addr));</span>
+<span class="line" id="L350">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(addr)));</span>
 <span class="line" id="L351">        } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L352">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L353">        }</span>
@@ -515,7 +515,7 @@
 <span class="line" id="L382">        <span class="tok-comment">// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66826</span>
 </span>
 <span class="line" id="L383">        <span class="tok-kw">if</span> (<span class="tok-builtin">@call</span>(.never_tail, system.dlsym, .{ self.handle, name.ptr })) |symbol| {</span>
-<span class="line" id="L384">            <span class="tok-kw">return</span> <span class="tok-builtin">@ptrCast</span>(T, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-builtin">@typeInfo</span>(T).Pointer.child), symbol));</span>
+<span class="line" id="L384">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(symbol)));</span>
 <span class="line" id="L385">        } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L386">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L387">        }</span>

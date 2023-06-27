@@ -180,7 +180,7 @@
 <span class="line" id="L67">                <span class="tok-comment">// Set the name of the calling thread (no thread id required).</span>
 </span>
 <span class="line" id="L68">                <span class="tok-kw">const</span> err = <span class="tok-kw">try</span> os.prctl(.SET_NAME, .{<span class="tok-builtin">@intFromPtr</span>(name_with_terminator.ptr)});</span>
-<span class="line" id="L69">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@enumFromInt</span>(os.E, err)) {</span>
+<span class="line" id="L69">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@as</span>(os.E, <span class="tok-builtin">@enumFromInt</span>(err))) {</span>
 <span class="line" id="L70">                    .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
 <span class="line" id="L71">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> os.unexpectedErrno(e),</span>
 <span class="line" id="L72">                }</span>
@@ -298,7 +298,7 @@
 <span class="line" id="L177">                <span class="tok-comment">// Get the name of the calling thread (no thread id required).</span>
 </span>
 <span class="line" id="L178">                <span class="tok-kw">const</span> err = <span class="tok-kw">try</span> os.prctl(.GET_NAME, .{<span class="tok-builtin">@intFromPtr</span>(buffer.ptr)});</span>
-<span class="line" id="L179">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@enumFromInt</span>(os.E, err)) {</span>
+<span class="line" id="L179">                <span class="tok-kw">switch</span> (<span class="tok-builtin">@as</span>(os.E, <span class="tok-builtin">@enumFromInt</span>(err))) {</span>
 <span class="line" id="L180">                    .SUCCESS =&gt; <span class="tok-kw">return</span> std.mem.sliceTo(buffer, <span class="tok-number">0</span>),</span>
 <span class="line" id="L181">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> os.unexpectedErrno(e),</span>
 <span class="line" id="L182">                }</span>
@@ -333,7 +333,7 @@
 <span class="line" id="L211">                <span class="tok-null">null</span>,</span>
 <span class="line" id="L212">            )) {</span>
 <span class="line" id="L213">                .SUCCESS =&gt; {</span>
-<span class="line" id="L214">                    <span class="tok-kw">const</span> string = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> os.windows.UNICODE_STRING, &amp;buf);</span>
+<span class="line" id="L214">                    <span class="tok-kw">const</span> string = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> os.windows.UNICODE_STRING, <span class="tok-builtin">@ptrCast</span>(&amp;buf));</span>
 <span class="line" id="L215">                    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> std.unicode.utf16leToUtf8(buffer, string.Buffer[<span class="tok-number">0</span> .. string.Length / <span class="tok-number">2</span>]);</span>
 <span class="line" id="L216">                    <span class="tok-kw">return</span> <span class="tok-kw">if</span> (len &gt; <span class="tok-number">0</span>) buffer[<span class="tok-number">0</span>..len] <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L217">                },</span>
@@ -640,7 +640,7 @@
 <span class="line" id="L510">            thread: ThreadCompletion,</span>
 <span class="line" id="L511"></span>
 <span class="line" id="L512">            <span class="tok-kw">fn</span> <span class="tok-fn">entryFn</span>(raw_ptr: windows.PVOID) <span class="tok-kw">callconv</span>(.C) windows.DWORD {</span>
-<span class="line" id="L513">                <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-builtin">@This</span>(), <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-builtin">@This</span>()), raw_ptr));</span>
+<span class="line" id="L513">                <span class="tok-kw">const</span> self: *<span class="tok-builtin">@This</span>() = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(raw_ptr));</span>
 <span class="line" id="L514">                <span class="tok-kw">defer</span> <span class="tok-kw">switch</span> (self.thread.completion.swap(.completed, .SeqCst)) {</span>
 <span class="line" id="L515">                    .running =&gt; {},</span>
 <span class="line" id="L516">                    .completed =&gt; <span class="tok-kw">unreachable</span>,</span>
@@ -655,7 +655,7 @@
 <span class="line" id="L525">        <span class="tok-kw">const</span> alloc_ptr = windows.kernel32.HeapAlloc(heap_handle, <span class="tok-number">0</span>, alloc_bytes) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.OutOfMemory;</span>
 <span class="line" id="L526">        <span class="tok-kw">errdefer</span> assert(windows.kernel32.HeapFree(heap_handle, <span class="tok-number">0</span>, alloc_ptr) != <span class="tok-number">0</span>);</span>
 <span class="line" id="L527"></span>
-<span class="line" id="L528">        <span class="tok-kw">const</span> instance_bytes = <span class="tok-builtin">@ptrCast</span>([*]<span class="tok-type">u8</span>, alloc_ptr)[<span class="tok-number">0</span>..alloc_bytes];</span>
+<span class="line" id="L528">        <span class="tok-kw">const</span> instance_bytes = <span class="tok-builtin">@as</span>([*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(alloc_ptr))[<span class="tok-number">0</span>..alloc_bytes];</span>
 <span class="line" id="L529">        <span class="tok-kw">var</span> fba = std.heap.FixedBufferAllocator.init(instance_bytes);</span>
 <span class="line" id="L530">        <span class="tok-kw">const</span> instance = fba.allocator().create(Instance) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L531">        instance.* = .{</span>
@@ -680,7 +680,7 @@
 <span class="line" id="L547">            <span class="tok-null">null</span>,</span>
 <span class="line" id="L548">            stack_size,</span>
 <span class="line" id="L549">            Instance.entryFn,</span>
-<span class="line" id="L550">            <span class="tok-builtin">@ptrCast</span>(*<span class="tok-type">anyopaque</span>, instance),</span>
+<span class="line" id="L550">            <span class="tok-builtin">@as</span>(*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrCast</span>(instance)),</span>
 <span class="line" id="L551">            <span class="tok-number">0</span>,</span>
 <span class="line" id="L552">            <span class="tok-null">null</span>,</span>
 <span class="line" id="L553">        ) <span class="tok-kw">orelse</span> {</span>
@@ -730,19 +730,19 @@
 <span class="line" id="L596">                <span class="tok-kw">return</span> thread_id;</span>
 <span class="line" id="L597">            },</span>
 <span class="line" id="L598">            .dragonfly =&gt; {</span>
-<span class="line" id="L599">                <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, c.lwp_gettid());</span>
+<span class="line" id="L599">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(c.lwp_gettid()));</span>
 <span class="line" id="L600">            },</span>
 <span class="line" id="L601">            .netbsd =&gt; {</span>
-<span class="line" id="L602">                <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, c._lwp_self());</span>
+<span class="line" id="L602">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(c._lwp_self()));</span>
 <span class="line" id="L603">            },</span>
 <span class="line" id="L604">            .freebsd =&gt; {</span>
-<span class="line" id="L605">                <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, c.pthread_getthreadid_np());</span>
+<span class="line" id="L605">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(c.pthread_getthreadid_np()));</span>
 <span class="line" id="L606">            },</span>
 <span class="line" id="L607">            .openbsd =&gt; {</span>
-<span class="line" id="L608">                <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, c.getthrid());</span>
+<span class="line" id="L608">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(c.getthrid()));</span>
 <span class="line" id="L609">            },</span>
 <span class="line" id="L610">            .haiku =&gt; {</span>
-<span class="line" id="L611">                <span class="tok-kw">return</span> <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, c.find_thread(<span class="tok-null">null</span>));</span>
+<span class="line" id="L611">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(c.find_thread(<span class="tok-null">null</span>)));</span>
 <span class="line" id="L612">            },</span>
 <span class="line" id="L613">            <span class="tok-kw">else</span> =&gt; {</span>
 <span class="line" id="L614">                <span class="tok-kw">return</span> <span class="tok-builtin">@intFromPtr</span>(c.pthread_self());</span>
@@ -763,7 +763,7 @@
 <span class="line" id="L629">                    <span class="tok-kw">error</span>.NameTooLong, <span class="tok-kw">error</span>.UnknownName =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L630">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
 <span class="line" id="L631">                };</span>
-<span class="line" id="L632">                <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, count);</span>
+<span class="line" id="L632">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(count));</span>
 <span class="line" id="L633">            },</span>
 <span class="line" id="L634">            .solaris =&gt; {</span>
 <span class="line" id="L635">                <span class="tok-comment">// The &quot;proper&quot; way to get the cpu count would be to query</span>
@@ -774,7 +774,7 @@
 </span>
 <span class="line" id="L638">                <span class="tok-kw">const</span> rc = c.sysconf(os._SC.NPROCESSORS_ONLN);</span>
 <span class="line" id="L639">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
-<span class="line" id="L640">                    .SUCCESS =&gt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, rc),</span>
+<span class="line" id="L640">                    .SUCCESS =&gt; <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(rc)),</span>
 <span class="line" id="L641">                    <span class="tok-kw">else</span> =&gt; |err| os.unexpectedErrno(err),</span>
 <span class="line" id="L642">                };</span>
 <span class="line" id="L643">            },</span>
@@ -783,7 +783,7 @@
 <span class="line" id="L646">                <span class="tok-kw">const</span> rc = os.system.get_system_info(&amp;system_info); <span class="tok-comment">// always returns B_OK</span>
 </span>
 <span class="line" id="L647">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
-<span class="line" id="L648">                    .SUCCESS =&gt; <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, system_info.cpu_count),</span>
+<span class="line" id="L648">                    .SUCCESS =&gt; <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(system_info.cpu_count)),</span>
 <span class="line" id="L649">                    <span class="tok-kw">else</span> =&gt; |err| os.unexpectedErrno(err),</span>
 <span class="line" id="L650">                };</span>
 <span class="line" id="L651">            },</span>
@@ -795,7 +795,7 @@
 <span class="line" id="L657">                    <span class="tok-kw">error</span>.NameTooLong, <span class="tok-kw">error</span>.UnknownName =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L658">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
 <span class="line" id="L659">                };</span>
-<span class="line" id="L660">                <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, count);</span>
+<span class="line" id="L660">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(count));</span>
 <span class="line" id="L661">            },</span>
 <span class="line" id="L662">        }</span>
 <span class="line" id="L663">    }</span>
@@ -814,7 +814,7 @@
 <span class="line" id="L675">                    <span class="tok-kw">return</span> callFn(f, <span class="tok-builtin">@as</span>(Args, <span class="tok-null">undefined</span>));</span>
 <span class="line" id="L676">                }</span>
 <span class="line" id="L677"></span>
-<span class="line" id="L678">                <span class="tok-kw">const</span> args_ptr = <span class="tok-builtin">@ptrCast</span>(*Args, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(Args), raw_arg));</span>
+<span class="line" id="L678">                <span class="tok-kw">const</span> args_ptr: *Args = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(raw_arg));</span>
 <span class="line" id="L679">                <span class="tok-kw">defer</span> allocator.destroy(args_ptr);</span>
 <span class="line" id="L680">                <span class="tok-kw">return</span> callFn(f, args_ptr.*);</span>
 <span class="line" id="L681">            }</span>
@@ -839,7 +839,7 @@
 <span class="line" id="L699">            &amp;handle,</span>
 <span class="line" id="L700">            &amp;attr,</span>
 <span class="line" id="L701">            Instance.entryFn,</span>
-<span class="line" id="L702">            <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(Args) &gt; <span class="tok-number">1</span>) <span class="tok-builtin">@ptrCast</span>(*<span class="tok-type">anyopaque</span>, args_ptr) <span class="tok-kw">else</span> <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L702">            <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(Args) &gt; <span class="tok-number">1</span>) <span class="tok-builtin">@as</span>(*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrCast</span>(args_ptr)) <span class="tok-kw">else</span> <span class="tok-null">undefined</span>,</span>
 <span class="line" id="L703">        )) {</span>
 <span class="line" id="L704">            .SUCCESS =&gt; <span class="tok-kw">return</span> Impl{ .handle = handle },</span>
 <span class="line" id="L705">            .AGAIN =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
@@ -887,7 +887,7 @@
 <span class="line" id="L742"></span>
 <span class="line" id="L743">    <span class="tok-kw">fn</span> <span class="tok-fn">getCurrentId</span>() Id {</span>
 <span class="line" id="L744">        <span class="tok-kw">return</span> tls_thread_id <span class="tok-kw">orelse</span> {</span>
-<span class="line" id="L745">            <span class="tok-kw">const</span> tid = <span class="tok-builtin">@bitCast</span>(<span class="tok-type">u32</span>, linux.gettid());</span>
+<span class="line" id="L745">            <span class="tok-kw">const</span> tid = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(linux.gettid()));</span>
 <span class="line" id="L746">            tls_thread_id = tid;</span>
 <span class="line" id="L747">            <span class="tok-kw">return</span> tid;</span>
 <span class="line" id="L748">        };</span>
@@ -1134,7 +1134,7 @@
 <span class="line" id="L911">            thread: ThreadCompletion,</span>
 <span class="line" id="L912"></span>
 <span class="line" id="L913">            <span class="tok-kw">fn</span> <span class="tok-fn">entryFn</span>(raw_arg: <span class="tok-type">usize</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L914">                <span class="tok-kw">const</span> self = <span class="tok-builtin">@ptrFromInt</span>(*<span class="tok-builtin">@This</span>(), raw_arg);</span>
+<span class="line" id="L914">                <span class="tok-kw">const</span> self = <span class="tok-builtin">@as</span>(*<span class="tok-builtin">@This</span>(), <span class="tok-builtin">@ptrFromInt</span>(raw_arg));</span>
 <span class="line" id="L915">                <span class="tok-kw">defer</span> <span class="tok-kw">switch</span> (self.thread.completion.swap(.completed, .SeqCst)) {</span>
 <span class="line" id="L916">                    .running =&gt; {},</span>
 <span class="line" id="L917">                    .completed =&gt; <span class="tok-kw">unreachable</span>,</span>
@@ -1196,7 +1196,7 @@
 <span class="line" id="L970">        <span class="tok-comment">// map everything but the guard page as read/write</span>
 </span>
 <span class="line" id="L971">        os.mprotect(</span>
-<span class="line" id="L972">            <span class="tok-builtin">@alignCast</span>(page_size, mapped[guard_offset..]),</span>
+<span class="line" id="L972">            <span class="tok-builtin">@alignCast</span>(mapped[guard_offset..]),</span>
 <span class="line" id="L973">            os.PROT.READ | os.PROT.WRITE,</span>
 <span class="line" id="L974">        ) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L975">            <span class="tok-kw">error</span>.AccessDenied =&gt; <span class="tok-kw">unreachable</span>,</span>
@@ -1223,7 +1223,7 @@
 <span class="line" id="L994">            };</span>
 <span class="line" id="L995">        }</span>
 <span class="line" id="L996"></span>
-<span class="line" id="L997">        <span class="tok-kw">const</span> instance = <span class="tok-builtin">@ptrCast</span>(*Instance, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(Instance), &amp;mapped[instance_offset]));</span>
+<span class="line" id="L997">        <span class="tok-kw">const</span> instance: *Instance = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;mapped[instance_offset]));</span>
 <span class="line" id="L998">        instance.* = .{</span>
 <span class="line" id="L999">            .fn_args = args,</span>
 <span class="line" id="L1000">            .thread = .{ .mapped = mapped },</span>

@@ -547,8 +547,8 @@
 <span class="line" id="L434">    }</span>
 <span class="line" id="L435"></span>
 <span class="line" id="L436">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parse</span>(hdr_buf: *<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(Elf64_Ehdr)) <span class="tok-kw">const</span> [<span class="tok-builtin">@sizeOf</span>(Elf64_Ehdr)]<span class="tok-type">u8</span>) !Header {</span>
-<span class="line" id="L437">        <span class="tok-kw">const</span> hdr32 = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> Elf32_Ehdr, hdr_buf);</span>
-<span class="line" id="L438">        <span class="tok-kw">const</span> hdr64 = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-kw">const</span> Elf64_Ehdr, hdr_buf);</span>
+<span class="line" id="L437">        <span class="tok-kw">const</span> hdr32 = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> Elf32_Ehdr, <span class="tok-builtin">@ptrCast</span>(hdr_buf));</span>
+<span class="line" id="L438">        <span class="tok-kw">const</span> hdr64 = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> Elf64_Ehdr, <span class="tok-builtin">@ptrCast</span>(hdr_buf));</span>
 <span class="line" id="L439">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, hdr32.e_ident[<span class="tok-number">0</span>..<span class="tok-number">4</span>], MAGIC)) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidElfMagic;</span>
 <span class="line" id="L440">        <span class="tok-kw">if</span> (hdr32.e_ident[EI_VERSION] != <span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidElfVersion;</span>
 <span class="line" id="L441"></span>
@@ -567,7 +567,7 @@
 <span class="line" id="L454"></span>
 <span class="line" id="L455">        <span class="tok-kw">const</span> machine = <span class="tok-kw">if</span> (need_bswap) blk: {</span>
 <span class="line" id="L456">            <span class="tok-kw">const</span> value = <span class="tok-builtin">@intFromEnum</span>(hdr32.e_machine);</span>
-<span class="line" id="L457">            <span class="tok-kw">break</span> :blk <span class="tok-builtin">@enumFromInt</span>(EM, <span class="tok-builtin">@byteSwap</span>(value));</span>
+<span class="line" id="L457">            <span class="tok-kw">break</span> :blk <span class="tok-builtin">@as</span>(EM, <span class="tok-builtin">@enumFromInt</span>(<span class="tok-builtin">@byteSwap</span>(value)));</span>
 <span class="line" id="L458">        } <span class="tok-kw">else</span> hdr32.e_machine;</span>
 <span class="line" id="L459"></span>
 <span class="line" id="L460">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(Header, .{</span>
@@ -848,10 +848,10 @@
 <span class="line" id="L725">    st_shndx: Elf32_Section,</span>
 <span class="line" id="L726"></span>
 <span class="line" id="L727">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">st_type</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u4</span> {</span>
-<span class="line" id="L728">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u4</span>, self.st_info);</span>
+<span class="line" id="L728">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u4</span>, <span class="tok-builtin">@truncate</span>(self.st_info));</span>
 <span class="line" id="L729">    }</span>
 <span class="line" id="L730">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">st_bind</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u4</span> {</span>
-<span class="line" id="L731">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u4</span>, self.st_info &gt;&gt; <span class="tok-number">4</span>);</span>
+<span class="line" id="L731">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u4</span>, <span class="tok-builtin">@truncate</span>(self.st_info &gt;&gt; <span class="tok-number">4</span>));</span>
 <span class="line" id="L732">    }</span>
 <span class="line" id="L733">};</span>
 <span class="line" id="L734"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Elf64_Sym = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
@@ -863,10 +863,10 @@
 <span class="line" id="L740">    st_size: Elf64_Xword,</span>
 <span class="line" id="L741"></span>
 <span class="line" id="L742">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">st_type</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u4</span> {</span>
-<span class="line" id="L743">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u4</span>, self.st_info);</span>
+<span class="line" id="L743">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u4</span>, <span class="tok-builtin">@truncate</span>(self.st_info));</span>
 <span class="line" id="L744">    }</span>
 <span class="line" id="L745">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">st_bind</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u4</span> {</span>
-<span class="line" id="L746">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u4</span>, self.st_info &gt;&gt; <span class="tok-number">4</span>);</span>
+<span class="line" id="L746">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u4</span>, <span class="tok-builtin">@truncate</span>(self.st_info &gt;&gt; <span class="tok-number">4</span>));</span>
 <span class="line" id="L747">    }</span>
 <span class="line" id="L748">};</span>
 <span class="line" id="L749"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Elf32_Syminfo = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
@@ -882,10 +882,10 @@
 <span class="line" id="L759">    r_info: Elf32_Word,</span>
 <span class="line" id="L760"></span>
 <span class="line" id="L761">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_sym</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u24</span> {</span>
-<span class="line" id="L762">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u24</span>, self.r_info &gt;&gt; <span class="tok-number">8</span>);</span>
+<span class="line" id="L762">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u24</span>, <span class="tok-builtin">@truncate</span>(self.r_info &gt;&gt; <span class="tok-number">8</span>));</span>
 <span class="line" id="L763">    }</span>
 <span class="line" id="L764">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_type</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L765">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, self.r_info);</span>
+<span class="line" id="L765">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@truncate</span>(self.r_info));</span>
 <span class="line" id="L766">    }</span>
 <span class="line" id="L767">};</span>
 <span class="line" id="L768"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Elf64_Rel = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
@@ -893,10 +893,10 @@
 <span class="line" id="L770">    r_info: Elf64_Xword,</span>
 <span class="line" id="L771"></span>
 <span class="line" id="L772">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_sym</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L773">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u32</span>, self.r_info &gt;&gt; <span class="tok-number">32</span>);</span>
+<span class="line" id="L773">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(self.r_info &gt;&gt; <span class="tok-number">32</span>));</span>
 <span class="line" id="L774">    }</span>
 <span class="line" id="L775">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_type</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L776">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u32</span>, self.r_info);</span>
+<span class="line" id="L776">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(self.r_info));</span>
 <span class="line" id="L777">    }</span>
 <span class="line" id="L778">};</span>
 <span class="line" id="L779"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Elf32_Rela = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
@@ -905,10 +905,10 @@
 <span class="line" id="L782">    r_addend: Elf32_Sword,</span>
 <span class="line" id="L783"></span>
 <span class="line" id="L784">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_sym</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u24</span> {</span>
-<span class="line" id="L785">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u24</span>, self.r_info &gt;&gt; <span class="tok-number">8</span>);</span>
+<span class="line" id="L785">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u24</span>, <span class="tok-builtin">@truncate</span>(self.r_info &gt;&gt; <span class="tok-number">8</span>));</span>
 <span class="line" id="L786">    }</span>
 <span class="line" id="L787">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_type</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L788">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u8</span>, self.r_info);</span>
+<span class="line" id="L788">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@truncate</span>(self.r_info));</span>
 <span class="line" id="L789">    }</span>
 <span class="line" id="L790">};</span>
 <span class="line" id="L791"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Elf64_Rela = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
@@ -917,10 +917,10 @@
 <span class="line" id="L794">    r_addend: Elf64_Sxword,</span>
 <span class="line" id="L795"></span>
 <span class="line" id="L796">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_sym</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L797">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u32</span>, self.r_info &gt;&gt; <span class="tok-number">32</span>);</span>
+<span class="line" id="L797">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(self.r_info &gt;&gt; <span class="tok-number">32</span>));</span>
 <span class="line" id="L798">    }</span>
 <span class="line" id="L799">    <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">r_type</span>(self: <span class="tok-builtin">@This</span>()) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L800">        <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(<span class="tok-type">u32</span>, self.r_info);</span>
+<span class="line" id="L800">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(self.r_info));</span>
 <span class="line" id="L801">    }</span>
 <span class="line" id="L802">};</span>
 <span class="line" id="L803"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Elf32_Dyn = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>

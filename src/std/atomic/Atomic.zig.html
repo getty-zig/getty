@@ -160,7 +160,7 @@
 <span class="line" id="L46">                    <span class="tok-kw">extern</span> <span class="tok-str">&quot;c&quot;</span> <span class="tok-kw">fn</span> <span class="tok-fn">__tsan_release</span>(addr: *<span class="tok-type">anyopaque</span>) <span class="tok-type">void</span>;</span>
 <span class="line" id="L47">                };</span>
 <span class="line" id="L48"></span>
-<span class="line" id="L49">                <span class="tok-kw">const</span> addr = <span class="tok-builtin">@ptrCast</span>(*<span class="tok-type">anyopaque</span>, self);</span>
+<span class="line" id="L49">                <span class="tok-kw">const</span> addr = <span class="tok-builtin">@as</span>(*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrCast</span>(self));</span>
 <span class="line" id="L50">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (ordering) {</span>
 <span class="line" id="L51">                    .Unordered, .Monotonic =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-builtin">@tagName</span>(ordering) ++ <span class="tok-str">&quot; only applies to atomic loads and stores&quot;</span>),</span>
 <span class="line" id="L52">                    .Acquire =&gt; tsan.__tsan_acquire(addr),</span>
@@ -196,11 +196,11 @@
 <span class="line" id="L82">        }</span>
 <span class="line" id="L83"></span>
 <span class="line" id="L84">        <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">store</span>(self: *Self, value: T, <span class="tok-kw">comptime</span> ordering: Ordering) <span class="tok-type">void</span> {</span>
-<span class="line" id="L85">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (ordering) {</span>
+<span class="line" id="L85">            <span class="tok-kw">switch</span> (ordering) {</span>
 <span class="line" id="L86">                .AcqRel =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-builtin">@tagName</span>(ordering) ++ <span class="tok-str">&quot; implies &quot;</span> ++ <span class="tok-builtin">@tagName</span>(Ordering.Acquire) ++ <span class="tok-str">&quot; which is only allowed on atomic loads&quot;</span>),</span>
 <span class="line" id="L87">                .Acquire =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-builtin">@tagName</span>(ordering) ++ <span class="tok-str">&quot; is only allowed on atomic loads&quot;</span>),</span>
 <span class="line" id="L88">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@atomicStore</span>(T, &amp;self.value, value, ordering),</span>
-<span class="line" id="L89">            };</span>
+<span class="line" id="L89">            }</span>
 <span class="line" id="L90">        }</span>
 <span class="line" id="L91"></span>
 <span class="line" id="L92">        <span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">swap</span>(self: *Self, value: T, <span class="tok-kw">comptime</span> ordering: Ordering) T {</span>
@@ -433,7 +433,7 @@
 </span>
 <span class="line" id="L308">                _ = ordering;</span>
 <span class="line" id="L309"></span>
-<span class="line" id="L310">                <span class="tok-kw">return</span> <span class="tok-builtin">@intCast</span>(<span class="tok-type">u1</span>, old_bit);</span>
+<span class="line" id="L310">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u1</span>, <span class="tok-builtin">@intCast</span>(old_bit));</span>
 <span class="line" id="L311">            }</span>
 <span class="line" id="L312">        });</span>
 <span class="line" id="L313">    };</span>
@@ -518,8 +518,8 @@
 <span class="line" id="L392">        <span class="tok-kw">try</span> testing.expectEqual(a.load(.SeqCst), <span class="tok-null">true</span>);</span>
 <span class="line" id="L393"></span>
 <span class="line" id="L394">        <span class="tok-kw">var</span> b = Atomic(?*<span class="tok-type">u8</span>).init(<span class="tok-null">null</span>);</span>
-<span class="line" id="L395">        <span class="tok-kw">try</span> testing.expectEqual(b.swap(<span class="tok-builtin">@ptrFromInt</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>)), ordering), <span class="tok-null">null</span>);</span>
-<span class="line" id="L396">        <span class="tok-kw">try</span> testing.expectEqual(b.load(.SeqCst), <span class="tok-builtin">@ptrFromInt</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>)));</span>
+<span class="line" id="L395">        <span class="tok-kw">try</span> testing.expectEqual(b.swap(<span class="tok-builtin">@as</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrFromInt</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>))), ordering), <span class="tok-null">null</span>);</span>
+<span class="line" id="L396">        <span class="tok-kw">try</span> testing.expectEqual(b.load(.SeqCst), <span class="tok-builtin">@as</span>(?*<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrFromInt</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u8</span>))));</span>
 <span class="line" id="L397">    }</span>
 <span class="line" id="L398">}</span>
 <span class="line" id="L399"></span>
@@ -672,7 +672,7 @@
 <span class="line" id="L544">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
 <span class="line" id="L545"></span>
 <span class="line" id="L546">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-builtin">@bitSizeOf</span>(Int)) |bit_index| {</span>
-<span class="line" id="L547">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
+<span class="line" id="L547">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@as</span>(std.math.Log2Int(Int), <span class="tok-builtin">@intCast</span>(bit_index));</span>
 <span class="line" id="L548">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
 <span class="line" id="L549"></span>
 <span class="line" id="L550">                <span class="tok-comment">// setting the bit should change the bit</span>
@@ -689,7 +689,7 @@
 <span class="line" id="L559">                <span class="tok-comment">// all the previous bits should have not changed (still be set)</span>
 </span>
 <span class="line" id="L560">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..bit_index) |prev_bit_index| {</span>
-<span class="line" id="L561">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
+<span class="line" id="L561">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@as</span>(std.math.Log2Int(Int), <span class="tok-builtin">@intCast</span>(prev_bit_index));</span>
 <span class="line" id="L562">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
 <span class="line" id="L563">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask != <span class="tok-number">0</span>);</span>
 <span class="line" id="L564">                }</span>
@@ -704,7 +704,7 @@
 <span class="line" id="L573">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
 <span class="line" id="L574"></span>
 <span class="line" id="L575">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-builtin">@bitSizeOf</span>(Int)) |bit_index| {</span>
-<span class="line" id="L576">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
+<span class="line" id="L576">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@as</span>(std.math.Log2Int(Int), <span class="tok-builtin">@intCast</span>(bit_index));</span>
 <span class="line" id="L577">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
 <span class="line" id="L578">                x.storeUnchecked(x.loadUnchecked() | mask);</span>
 <span class="line" id="L579"></span>
@@ -722,7 +722,7 @@
 <span class="line" id="L589">                <span class="tok-comment">// all the previous bits should have not changed (still be reset)</span>
 </span>
 <span class="line" id="L590">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..bit_index) |prev_bit_index| {</span>
-<span class="line" id="L591">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
+<span class="line" id="L591">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@as</span>(std.math.Log2Int(Int), <span class="tok-builtin">@intCast</span>(prev_bit_index));</span>
 <span class="line" id="L592">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
 <span class="line" id="L593">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask == <span class="tok-number">0</span>);</span>
 <span class="line" id="L594">                }</span>
@@ -737,7 +737,7 @@
 <span class="line" id="L603">            <span class="tok-kw">var</span> x = Atomic(Int).init(<span class="tok-number">0</span>);</span>
 <span class="line" id="L604"></span>
 <span class="line" id="L605">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-builtin">@bitSizeOf</span>(Int)) |bit_index| {</span>
-<span class="line" id="L606">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), bit_index);</span>
+<span class="line" id="L606">                <span class="tok-kw">const</span> bit = <span class="tok-builtin">@as</span>(std.math.Log2Int(Int), <span class="tok-builtin">@intCast</span>(bit_index));</span>
 <span class="line" id="L607">                <span class="tok-kw">const</span> mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; bit;</span>
 <span class="line" id="L608"></span>
 <span class="line" id="L609">                <span class="tok-comment">// toggling the bit should change the bit</span>
@@ -754,7 +754,7 @@
 <span class="line" id="L618">                <span class="tok-comment">// all the previous bits should have not changed (still be toggled back)</span>
 </span>
 <span class="line" id="L619">                <span class="tok-kw">for</span> (<span class="tok-number">0</span>..bit_index) |prev_bit_index| {</span>
-<span class="line" id="L620">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@intCast</span>(std.math.Log2Int(Int), prev_bit_index);</span>
+<span class="line" id="L620">                    <span class="tok-kw">const</span> prev_bit = <span class="tok-builtin">@as</span>(std.math.Log2Int(Int), <span class="tok-builtin">@intCast</span>(prev_bit_index));</span>
 <span class="line" id="L621">                    <span class="tok-kw">const</span> prev_mask = <span class="tok-builtin">@as</span>(Int, <span class="tok-number">1</span>) &lt;&lt; prev_bit;</span>
 <span class="line" id="L622">                    <span class="tok-kw">try</span> testing.expect(x.load(.SeqCst) &amp; prev_mask == <span class="tok-number">0</span>);</span>
 <span class="line" id="L623">                }</span>

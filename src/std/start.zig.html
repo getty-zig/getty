@@ -316,7 +316,7 @@
 <span class="line" id="L190">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO&quot;</span>),</span>
 <span class="line" id="L191">        },</span>
 <span class="line" id="L192">        .windows =&gt; {</span>
-<span class="line" id="L193">            ExitProcess(<span class="tok-builtin">@truncate</span>(<span class="tok-type">u32</span>, code));</span>
+<span class="line" id="L193">            ExitProcess(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(code)));</span>
 <span class="line" id="L194">        },</span>
 <span class="line" id="L195">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO&quot;</span>),</span>
 <span class="line" id="L196">    }</span>
@@ -562,24 +562,24 @@
 <span class="line" id="L387">    std.debug.maybeEnableSegfaultHandler();</span>
 <span class="line" id="L388"></span>
 <span class="line" id="L389">    <span class="tok-kw">const</span> result: std.os.windows.INT = initEventLoopAndCallWinMain();</span>
-<span class="line" id="L390">    std.os.windows.kernel32.ExitProcess(<span class="tok-builtin">@bitCast</span>(std.os.windows.UINT, result));</span>
+<span class="line" id="L390">    std.os.windows.kernel32.ExitProcess(<span class="tok-builtin">@as</span>(std.os.windows.UINT, <span class="tok-builtin">@bitCast</span>(result)));</span>
 <span class="line" id="L391">}</span>
 <span class="line" id="L392"></span>
 <span class="line" id="L393"><span class="tok-kw">fn</span> <span class="tok-fn">posixCallMainAndExit</span>() <span class="tok-kw">callconv</span>(.C) <span class="tok-type">noreturn</span> {</span>
 <span class="line" id="L394">    <span class="tok-builtin">@setAlignStack</span>(<span class="tok-number">16</span>);</span>
 <span class="line" id="L395"></span>
 <span class="line" id="L396">    <span class="tok-kw">const</span> argc = argc_argv_ptr[<span class="tok-number">0</span>];</span>
-<span class="line" id="L397">    <span class="tok-kw">const</span> argv = <span class="tok-builtin">@ptrCast</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, argc_argv_ptr + <span class="tok-number">1</span>);</span>
+<span class="line" id="L397">    <span class="tok-kw">const</span> argv = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(argc_argv_ptr + <span class="tok-number">1</span>));</span>
 <span class="line" id="L398"></span>
-<span class="line" id="L399">    <span class="tok-kw">const</span> envp_optional = <span class="tok-builtin">@ptrCast</span>([*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">usize</span>), argv + argc + <span class="tok-number">1</span>));</span>
+<span class="line" id="L399">    <span class="tok-kw">const</span> envp_optional: [*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(argv + argc + <span class="tok-number">1</span>));</span>
 <span class="line" id="L400">    <span class="tok-kw">var</span> envp_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L401">    <span class="tok-kw">while</span> (envp_optional[envp_count]) |_| : (envp_count += <span class="tok-number">1</span>) {}</span>
-<span class="line" id="L402">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@ptrCast</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, envp_optional)[<span class="tok-number">0</span>..envp_count];</span>
+<span class="line" id="L402">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(envp_optional))[<span class="tok-number">0</span>..envp_count];</span>
 <span class="line" id="L403"></span>
 <span class="line" id="L404">    <span class="tok-kw">if</span> (native_os == .linux) {</span>
 <span class="line" id="L405">        <span class="tok-comment">// Find the beginning of the auxiliary vector</span>
 </span>
-<span class="line" id="L406">        <span class="tok-kw">const</span> auxv = <span class="tok-builtin">@ptrCast</span>([*]elf.Auxv, <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">usize</span>), envp.ptr + envp_count + <span class="tok-number">1</span>));</span>
+<span class="line" id="L406">        <span class="tok-kw">const</span> auxv: [*]elf.Auxv = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(envp.ptr + envp_count + <span class="tok-number">1</span>));</span>
 <span class="line" id="L407">        std.os.linux.elf_aux_maybe = auxv;</span>
 <span class="line" id="L408"></span>
 <span class="line" id="L409">        <span class="tok-kw">var</span> at_hwcap: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
@@ -595,7 +595,7 @@
 <span class="line" id="L419">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
 <span class="line" id="L420">                }</span>
 <span class="line" id="L421">            }</span>
-<span class="line" id="L422">            <span class="tok-kw">break</span> :init <span class="tok-builtin">@ptrFromInt</span>([*]elf.Phdr, at_phdr)[<span class="tok-number">0</span>..at_phnum];</span>
+<span class="line" id="L422">            <span class="tok-kw">break</span> :init <span class="tok-builtin">@as</span>([*]elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(at_phdr))[<span class="tok-number">0</span>..at_phnum];</span>
 <span class="line" id="L423">        };</span>
 <span class="line" id="L424"></span>
 <span class="line" id="L425">        <span class="tok-comment">// Apply the initial relocations as early as possible in the startup</span>
@@ -692,20 +692,20 @@
 <span class="line" id="L495"><span class="tok-kw">fn</span> <span class="tok-fn">main</span>(c_argc: <span class="tok-type">c_int</span>, c_argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>, c_envp: [*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">c_int</span> {</span>
 <span class="line" id="L496">    <span class="tok-kw">var</span> env_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L497">    <span class="tok-kw">while</span> (c_envp[env_count] != <span class="tok-null">null</span>) : (env_count += <span class="tok-number">1</span>) {}</span>
-<span class="line" id="L498">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@ptrCast</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, c_envp)[<span class="tok-number">0</span>..env_count];</span>
+<span class="line" id="L498">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_envp))[<span class="tok-number">0</span>..env_count];</span>
 <span class="line" id="L499"></span>
 <span class="line" id="L500">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
 <span class="line" id="L501">        <span class="tok-kw">const</span> at_phdr = std.c.getauxval(elf.AT_PHDR);</span>
 <span class="line" id="L502">        <span class="tok-kw">const</span> at_phnum = std.c.getauxval(elf.AT_PHNUM);</span>
-<span class="line" id="L503">        <span class="tok-kw">const</span> phdrs = (<span class="tok-builtin">@ptrFromInt</span>([*]elf.Phdr, at_phdr))[<span class="tok-number">0</span>..at_phnum];</span>
+<span class="line" id="L503">        <span class="tok-kw">const</span> phdrs = (<span class="tok-builtin">@as</span>([*]elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(at_phdr)))[<span class="tok-number">0</span>..at_phnum];</span>
 <span class="line" id="L504">        expandStackSize(phdrs);</span>
 <span class="line" id="L505">    }</span>
 <span class="line" id="L506"></span>
-<span class="line" id="L507">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMainWithArgs, .{ <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, c_argc), <span class="tok-builtin">@ptrCast</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, c_argv), envp });</span>
+<span class="line" id="L507">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMainWithArgs, .{ <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(c_argc)), <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_argv)), envp });</span>
 <span class="line" id="L508">}</span>
 <span class="line" id="L509"></span>
 <span class="line" id="L510"><span class="tok-kw">fn</span> <span class="tok-fn">mainWithoutEnv</span>(c_argc: <span class="tok-type">c_int</span>, c_argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">c_int</span> {</span>
-<span class="line" id="L511">    std.os.argv = <span class="tok-builtin">@ptrCast</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, c_argv)[<span class="tok-number">0</span>..<span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, c_argc)];</span>
+<span class="line" id="L511">    std.os.argv = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_argv))[<span class="tok-number">0</span>..<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(c_argc))];</span>
 <span class="line" id="L512">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMain, .{});</span>
 <span class="line" id="L513">}</span>
 <span class="line" id="L514"></span>
@@ -843,7 +843,7 @@
 <span class="line" id="L629"></span>
 <span class="line" id="L630"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">call_wWinMain</span>() std.os.windows.INT {</span>
 <span class="line" id="L631">    <span class="tok-kw">const</span> MAIN_HINSTANCE = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(root.wWinMain)).Fn.params[<span class="tok-number">0</span>].<span class="tok-type">type</span>.?;</span>
-<span class="line" id="L632">    <span class="tok-kw">const</span> hInstance = <span class="tok-builtin">@ptrCast</span>(MAIN_HINSTANCE, std.os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>).?);</span>
+<span class="line" id="L632">    <span class="tok-kw">const</span> hInstance = <span class="tok-builtin">@as</span>(MAIN_HINSTANCE, <span class="tok-builtin">@ptrCast</span>(std.os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>).?));</span>
 <span class="line" id="L633">    <span class="tok-kw">const</span> lpCmdLine = std.os.windows.kernel32.GetCommandLineW();</span>
 <span class="line" id="L634"></span>
 <span class="line" id="L635">    <span class="tok-comment">// There's no (documented) way to get the nCmdShow parameter, so we're</span>

@@ -151,7 +151,7 @@
 <span class="line" id="L37"></span>
 <span class="line" id="L38">    <span class="tok-comment">// Normalize our significant digits, so the most-significant bit is set.</span>
 </span>
-<span class="line" id="L39">    <span class="tok-kw">const</span> lz = <span class="tok-builtin">@clz</span>(<span class="tok-builtin">@bitCast</span>(<span class="tok-type">u64</span>, w));</span>
+<span class="line" id="L39">    <span class="tok-kw">const</span> lz = <span class="tok-builtin">@clz</span>(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@bitCast</span>(w)));</span>
 <span class="line" id="L40">    w = math.shl(<span class="tok-type">u64</span>, w, lz);</span>
 <span class="line" id="L41"></span>
 <span class="line" id="L42">    <span class="tok-kw">const</span> r = computeProductApprox(q, w, float_info.mantissa_explicit_bits + <span class="tok-number">3</span>);</span>
@@ -192,9 +192,9 @@
 <span class="line" id="L62">        }</span>
 <span class="line" id="L63">    }</span>
 <span class="line" id="L64"></span>
-<span class="line" id="L65">    <span class="tok-kw">const</span> upper_bit = <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, r.hi &gt;&gt; <span class="tok-number">63</span>);</span>
-<span class="line" id="L66">    <span class="tok-kw">var</span> mantissa = math.shr(<span class="tok-type">u64</span>, r.hi, upper_bit + <span class="tok-number">64</span> - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, float_info.mantissa_explicit_bits) - <span class="tok-number">3</span>);</span>
-<span class="line" id="L67">    <span class="tok-kw">var</span> power2 = power(<span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, q)) + upper_bit - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, lz) - float_info.minimum_exponent;</span>
+<span class="line" id="L65">    <span class="tok-kw">const</span> upper_bit = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intCast</span>(r.hi &gt;&gt; <span class="tok-number">63</span>));</span>
+<span class="line" id="L66">    <span class="tok-kw">var</span> mantissa = math.shr(<span class="tok-type">u64</span>, r.hi, upper_bit + <span class="tok-number">64</span> - <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intCast</span>(float_info.mantissa_explicit_bits)) - <span class="tok-number">3</span>);</span>
+<span class="line" id="L67">    <span class="tok-kw">var</span> power2 = power(<span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intCast</span>(q))) + upper_bit - <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intCast</span>(lz)) - float_info.minimum_exponent;</span>
 <span class="line" id="L68">    <span class="tok-kw">if</span> (power2 &lt;= <span class="tok-number">0</span>) {</span>
 <span class="line" id="L69">        <span class="tok-kw">if</span> (-power2 + <span class="tok-number">1</span> &gt;= <span class="tok-number">64</span>) {</span>
 <span class="line" id="L70">            <span class="tok-comment">// Have more than 64 bits below the minimum exponent, must be 0.</span>
@@ -236,7 +236,7 @@
 <span class="line" id="L93">        q &gt;= float_info.min_exponent_round_to_even <span class="tok-kw">and</span></span>
 <span class="line" id="L94">        q &lt;= float_info.max_exponent_round_to_even <span class="tok-kw">and</span></span>
 <span class="line" id="L95">        mantissa &amp; <span class="tok-number">3</span> == <span class="tok-number">1</span> <span class="tok-kw">and</span></span>
-<span class="line" id="L96">        math.shl(<span class="tok-type">u64</span>, mantissa, (upper_bit + <span class="tok-number">64</span> - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i32</span>, float_info.mantissa_explicit_bits) - <span class="tok-number">3</span>)) == r.hi)</span>
+<span class="line" id="L96">        math.shl(<span class="tok-type">u64</span>, mantissa, (upper_bit + <span class="tok-number">64</span> - <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@intCast</span>(float_info.mantissa_explicit_bits)) - <span class="tok-number">3</span>)) == r.hi)</span>
 <span class="line" id="L97">    {</span>
 <span class="line" id="L98">        <span class="tok-comment">// Zero the lowest bit, so we don't round up.</span>
 </span>
@@ -289,8 +289,8 @@
 <span class="line" id="L139">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">mul</span>(a: <span class="tok-type">u64</span>, b: <span class="tok-type">u64</span>) U128 {</span>
 <span class="line" id="L140">        <span class="tok-kw">const</span> x = <span class="tok-builtin">@as</span>(<span class="tok-type">u128</span>, a) * b;</span>
 <span class="line" id="L141">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L142">            .hi = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u64</span>, x &gt;&gt; <span class="tok-number">64</span>),</span>
-<span class="line" id="L143">            .lo = <span class="tok-builtin">@truncate</span>(<span class="tok-type">u64</span>, x),</span>
+<span class="line" id="L142">            .hi = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@truncate</span>(x &gt;&gt; <span class="tok-number">64</span>)),</span>
+<span class="line" id="L143">            .lo = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-builtin">@truncate</span>(x)),</span>
 <span class="line" id="L144">        };</span>
 <span class="line" id="L145">    }</span>
 <span class="line" id="L146">};</span>
@@ -317,7 +317,7 @@
 </span>
 <span class="line" id="L163">    <span class="tok-comment">// an exact value.</span>
 </span>
-<span class="line" id="L164">    <span class="tok-kw">const</span> index = <span class="tok-builtin">@intCast</span>(<span class="tok-type">usize</span>, q - <span class="tok-builtin">@intCast</span>(<span class="tok-type">i64</span>, eisel_lemire_smallest_power_of_five));</span>
+<span class="line" id="L164">    <span class="tok-kw">const</span> index = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(q - <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(eisel_lemire_smallest_power_of_five))));</span>
 <span class="line" id="L165">    <span class="tok-kw">const</span> pow5 = eisel_lemire_table_powers_of_five_128[index];</span>
 <span class="line" id="L166"></span>
 <span class="line" id="L167">    <span class="tok-comment">// Only need one multiplication as long as there is 1 zero but</span>

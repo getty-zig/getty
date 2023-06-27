@@ -592,9 +592,9 @@
 <span class="line" id="L449">                },</span>
 <span class="line" id="L450">                .SYMTAB =&gt; <span class="tok-kw">if</span> (opts.dump_symtab) {</span>
 <span class="line" id="L451">                    <span class="tok-kw">const</span> lc = cmd.cast(macho.symtab_command).?;</span>
-<span class="line" id="L452">                    symtab = <span class="tok-builtin">@ptrCast</span>(</span>
+<span class="line" id="L452">                    symtab = <span class="tok-builtin">@as</span>(</span>
 <span class="line" id="L453">                        [*]<span class="tok-kw">const</span> macho.nlist_64,</span>
-<span class="line" id="L454">                        <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@alignOf</span>(macho.nlist_64), &amp;bytes[lc.symoff]),</span>
+<span class="line" id="L454">                        <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;bytes[lc.symoff])),</span>
 <span class="line" id="L455">                    )[<span class="tok-number">0</span>..lc.nsyms];</span>
 <span class="line" id="L456">                    strtab = bytes[lc.stroff..][<span class="tok-number">0</span>..lc.strsize];</span>
 <span class="line" id="L457">                },</span>
@@ -617,7 +617,7 @@
 <span class="line" id="L474">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{s}\n&quot;</span>, .{symtab_label});</span>
 <span class="line" id="L475">            <span class="tok-kw">for</span> (symtab) |sym| {</span>
 <span class="line" id="L476">                <span class="tok-kw">if</span> (sym.stab()) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L477">                <span class="tok-kw">const</span> sym_name = mem.sliceTo(<span class="tok-builtin">@ptrCast</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, strtab.ptr + sym.n_strx), <span class="tok-number">0</span>);</span>
+<span class="line" id="L477">                <span class="tok-kw">const</span> sym_name = mem.sliceTo(<span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(strtab.ptr + sym.n_strx)), <span class="tok-number">0</span>);</span>
 <span class="line" id="L478">                <span class="tok-kw">if</span> (sym.sect()) {</span>
 <span class="line" id="L479">                    <span class="tok-kw">const</span> sect = sections.items[sym.n_sect - <span class="tok-number">1</span>];</span>
 <span class="line" id="L480">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{x} ({s},{s})&quot;</span>, .{</span>
@@ -630,7 +630,7 @@
 <span class="line" id="L487">                    }</span>
 <span class="line" id="L488">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot; {s}\n&quot;</span>, .{sym_name});</span>
 <span class="line" id="L489">                } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (sym.undf()) {</span>
-<span class="line" id="L490">                    <span class="tok-kw">const</span> ordinal = <span class="tok-builtin">@divTrunc</span>(<span class="tok-builtin">@bitCast</span>(<span class="tok-type">i16</span>, sym.n_desc), macho.N_SYMBOL_RESOLVER);</span>
+<span class="line" id="L490">                    <span class="tok-kw">const</span> ordinal = <span class="tok-builtin">@divTrunc</span>(<span class="tok-builtin">@as</span>(<span class="tok-type">i16</span>, <span class="tok-builtin">@bitCast</span>(sym.n_desc)), macho.N_SYMBOL_RESOLVER);</span>
 <span class="line" id="L491">                    <span class="tok-kw">const</span> import_name = blk: {</span>
 <span class="line" id="L492">                        <span class="tok-kw">if</span> (ordinal &lt;= <span class="tok-number">0</span>) {</span>
 <span class="line" id="L493">                            <span class="tok-kw">if</span> (ordinal == macho.BIND_SPECIAL_DYLIB_SELF)</span>
@@ -641,7 +641,7 @@
 <span class="line" id="L498">                                <span class="tok-kw">break</span> :blk <span class="tok-str">&quot;flat lookup&quot;</span>;</span>
 <span class="line" id="L499">                            <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L500">                        }</span>
-<span class="line" id="L501">                        <span class="tok-kw">const</span> full_path = imports.items[<span class="tok-builtin">@bitCast</span>(<span class="tok-type">u16</span>, ordinal) - <span class="tok-number">1</span>];</span>
+<span class="line" id="L501">                        <span class="tok-kw">const</span> full_path = imports.items[<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@bitCast</span>(ordinal)) - <span class="tok-number">1</span>];</span>
 <span class="line" id="L502">                        <span class="tok-kw">const</span> basename = fs.path.basename(full_path);</span>
 <span class="line" id="L503">                        assert(basename.len &gt; <span class="tok-number">0</span>);</span>
 <span class="line" id="L504">                        <span class="tok-kw">const</span> ext = mem.lastIndexOfScalar(<span class="tok-type">u8</span>, basename, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> basename.len;</span>
@@ -1151,8 +1151,8 @@
 <span class="line" id="L950">        <span class="tok-kw">switch</span> (opcode) {</span>
 <span class="line" id="L951">            .i32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;i32.const {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readILEB128(<span class="tok-type">i32</span>, reader)}),</span>
 <span class="line" id="L952">            .i64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;i64.const {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readILEB128(<span class="tok-type">i64</span>, reader)}),</span>
-<span class="line" id="L953">            .f32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f32.const {x}\n&quot;</span>, .{<span class="tok-builtin">@bitCast</span>(<span class="tok-type">f32</span>, <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>))}),</span>
-<span class="line" id="L954">            .f64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f64.const {x}\n&quot;</span>, .{<span class="tok-builtin">@bitCast</span>(<span class="tok-type">f64</span>, <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u64</span>))}),</span>
+<span class="line" id="L953">            .f32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f32.const {x}\n&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>)))}),</span>
+<span class="line" id="L954">            .f64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f64.const {x}\n&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u64</span>)))}),</span>
 <span class="line" id="L955">            .global_get =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;global.get {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)}),</span>
 <span class="line" id="L956">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L957">        }</span>
