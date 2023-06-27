@@ -172,8 +172,7 @@ pub fn Visitor(comptime Struct: type) type {
                     // "default" attribute is not set.
                     if (field.default_value) |default_ptr| {
                         if (!field.is_comptime) {
-                            const aligned_default_ptr = @alignCast(@alignOf(field.type), default_ptr);
-                            const default_value = @ptrCast(*const field.type, aligned_default_ptr).*;
+                            const default_value = @as(*const field.type, @ptrCast(@alignCast(default_ptr))).*;
                             @field(structure, field.name) = default_value;
 
                             break :blk;
