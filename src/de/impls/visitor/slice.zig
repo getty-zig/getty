@@ -33,7 +33,7 @@ pub fn Visitor(comptime Slice: type) type {
             }
 
             if (@typeInfo(Value).Pointer.sentinel) |s| {
-                const sentinel_char = @ptrCast(*const Child, s).*;
+                const sentinel_char = @as(*const Child, @ptrCast(s)).*;
                 return try list.toOwnedSliceSentinel(sentinel_char);
             }
 
@@ -55,7 +55,7 @@ pub fn Visitor(comptime Slice: type) type {
             std.mem.copy(u8, output, input);
 
             if (sentinel) |s| {
-                const sentinel_char = @ptrCast(*const u8, s).*;
+                const sentinel_char = @as(*const u8, @ptrCast(s)).*;
                 output[input.len] = sentinel_char;
                 return output[0..input.len :sentinel_char];
             }
