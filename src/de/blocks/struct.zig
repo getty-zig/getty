@@ -91,7 +91,7 @@ test "deserialize - struct" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
         try testing.expectEqual(t.name, t.want, got);
     }
 }
@@ -252,12 +252,12 @@ test "deserialize - struct, attributes" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(null, Self, Want, t.tokens),
+                testing.deserializeErr(std.testing.allocator, Self, Want, t.tokens),
             );
         } else {
             const Want = @TypeOf(t.want);
 
-            const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+            const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
             try testing.expectEqual(t.name, t.want, got);
         }
     }

@@ -114,7 +114,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .deserializeFloat = deserializeAny,
                 .deserializeInt = deserializeAny,
                 .deserializeIgnored = deserializeIgnored,
-                .deserializeMap = deserializeMap,
+                .deserializeMap = deserializeAny,
                 .deserializeOptional = deserializeAny,
                 .deserializeSeq = deserializeAny,
                 .deserializeString = deserializeAny,
@@ -154,6 +154,15 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     .String => |v| try visitor.visitString(allocator, De, v),
                     else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
                 },
+                .Map => |v| blk: {
+                    var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
+                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
+
+                    try expectEqual(@as(usize, 0), m.len.?);
+                    try self.assertNextToken(.MapEnd);
+
+                    break :blk value;
+                },
                 .Null => try visitor.visitNull(allocator, De),
                 .Some => try visitor.visitSome(allocator, self.deserializer()),
                 .String => |v| try visitor.visitString(allocator, De, v),
@@ -168,10 +177,10 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     break :blk value;
                 },
                 .Struct => |v| blk: {
-                    var s = Struct{ .de = self, .len = v.len, .end = .StructEnd };
-                    var value = try visitor.visitMap(allocator, De, s.mapAccess());
+                    var m = Map{ .de = self, .len = v.len, .end = .StructEnd };
+                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
 
-                    try expectEqual(@as(usize, 0), s.len.?);
+                    try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.StructEnd);
 
                     break :blk value;
@@ -182,21 +191,6 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
 
                 // Panic! At The Disco
-                else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
-            };
-        }
-
-        fn deserializeMap(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
-            return switch (self.nextToken()) {
-                .Map => |v| blk: {
-                    var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
-                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
-
-                    try expectEqual(@as(usize, 0), m.len.?);
-                    try self.assertNextToken(.MapEnd);
-
-                    break :blk value;
-                },
                 else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
             };
         }
@@ -289,65 +283,13 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             }
         };
 
-        const Struct = struct {
-            de: *Self,
-            len: ?usize,
-            end: Token,
-
-            pub usingnamespace MapAccessInterface(
-                *Struct,
-                Error,
-                .{
-                    .nextKeySeed = nextKeySeed,
-                    .nextValueSeed = nextValueSeed,
-                    .isKeyAllocated = isKeyAllocated,
-                },
-            );
-
-            fn nextKeySeed(self: *Struct, _: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
-                // All fields have been deserialized.
-                if (self.len.? == 0) {
-                    return null;
-                }
-
-                if (self.de.peekTokenOpt()) |token| {
-                    if (std.meta.eql(token, self.end)) return null;
-                } else {
-                    return null;
-                }
-
-                if (self.de.nextTokenOpt()) |token| {
-                    self.len.? -= @as(usize, 1);
-
-                    if (token != .String) {
-                        return error.InvalidType;
-                    }
-
-                    return token.String;
-                } else {
-                    return null;
-                }
-            }
-
-            fn nextValueSeed(self: *Struct, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                return try seed.deserialize(allocator, self.de.deserializer());
-            }
-
-            fn isKeyAllocated(_: *Struct, comptime _: type) bool {
-                return false;
-            }
-        };
-
         const Union = struct {
             de: *Self,
 
             pub usingnamespace UnionAccessInterface(
                 *Union,
                 Error,
-                .{
-                    .variantSeed = variantSeed,
-                    .isVariantAllocated = isVariantAllocated,
-                },
+                .{ .variantSeed = variantSeed },
             );
 
             pub usingnamespace VariantAccessInterface(
@@ -356,11 +298,11 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .payloadSeed = payloadSeed },
             );
 
-            fn variantSeed(self: *Union, _: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                const token = self.de.nextToken();
-
-                if (token == .String) {
-                    return token.String;
+            fn variantSeed(self: *Union, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+                if (self.de.peekTokenOpt()) |token| {
+                    if (token == .String) {
+                        return try seed.deserialize(allocator, self.de.deserializer());
+                    }
                 }
 
                 return error.InvalidType;
@@ -374,10 +316,6 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 if (self.de.nextToken() != .Void) {
                     return error.UnknownVariant;
                 }
-            }
-
-            fn isVariantAllocated(_: *Union, comptime _: type) bool {
-                return false;
             }
         };
     };
