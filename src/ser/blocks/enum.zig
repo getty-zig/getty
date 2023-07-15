@@ -41,7 +41,7 @@ pub fn serialize(
 
         if (attributes) |attrs| {
             inline for (fields) |field| {
-                const tag_matches = std.meta.isTag(value, field.name);
+                const tag_matches = value == @field(T, field.name);
 
                 if (tag_matches) {
                     const attrs_exist = @hasField(@TypeOf(attrs), field.name);
