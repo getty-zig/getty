@@ -35,7 +35,7 @@ pub fn serialize(
     // for loop here so that we can use the field name provided by @typeInfo
     // instead.
     inline for (info.fields) |field| {
-        const tag_matches = std.meta.isTag(value, field.name);
+        const tag_matches = value == @field(T, field.name);
 
         if (tag_matches) {
             const attrs = comptime blk: {

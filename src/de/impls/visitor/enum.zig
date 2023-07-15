@@ -27,7 +27,7 @@ pub fn Visitor(comptime Enum: type) type {
 
             if (attributes) |attrs| {
                 inline for (fields) |field| {
-                    const tag_matches = std.meta.isTag(result, field.name);
+                    const tag_matches = result == @field(@TypeOf(result), field.name);
 
                     if (tag_matches) {
                         const attrs_exist = @hasField(@TypeOf(attrs), field.name);
