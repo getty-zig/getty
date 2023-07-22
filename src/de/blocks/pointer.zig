@@ -112,11 +112,21 @@ test "deserialize - pointer" {
             };
         };
     };
+    const UnionABUntagged = union(enum) {
+        foo: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .Container = .{ .tag = .untagged },
+            };
+        };
+    };
 
     var int: i32 = 1;
     var eab = EnumAB.foo;
     var sab = StructAB{ .x = 1, .y = 2 };
     var uab = UnionAB{ .foo = 1 };
+    var uab_untagged = UnionABUntagged{ .foo = 1 };
 
     const tests = .{
         .{
@@ -145,13 +155,18 @@ test "deserialize - pointer" {
             .want = @as(*StructAB, &sab),
         },
         .{
-            .name = "union with AB",
+            .name = "union with AB (rename)",
             .tokens = &.{
                 .{ .Union = {} },
                 .{ .String = "FOO" },
                 .{ .I32 = 1 },
             },
             .want = @as(*UnionAB, &uab),
+        },
+        .{
+            .name = "union with AB (tag)",
+            .tokens = &.{.{ .I32 = 1 }},
+            .want = @as(*UnionABUntagged, &uab_untagged),
         },
     };
 
