@@ -31,7 +31,7 @@ pub fn serialize(
     return try seq.end();
 }
 
-test "serialize - array list" {
+test "serialize - multi array list" {
     const Element = struct {
         x: i32,
         y: i32,

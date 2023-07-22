@@ -57,7 +57,7 @@ pub fn free(
     }
 }
 
-test "deserialize - array list" {
+test "deserialize - multi array list" {
     const Element = struct {
         x: i32,
         y: i32,
