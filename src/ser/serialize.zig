@@ -10,17 +10,17 @@ const t = @import("testing.zig");
 /// Serializes `v` using a `getty.Serializer` `s`.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    a: ?std.mem.Allocator,
     /// A value to serialize.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    const T = @TypeOf(value);
+    s: anytype,
+) @TypeOf(s).Error!@TypeOf(s).Ok {
+    const T = @TypeOf(v);
 
     const block = comptime blk: {
         // Process user SBs.
-        for (@TypeOf(serializer).user_st) |sb| {
+        for (@TypeOf(s).user_st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
             }
@@ -32,7 +32,7 @@ pub fn serialize(
         }
 
         // Process serializer SBs.
-        for (@TypeOf(serializer).serializer_st) |sb| {
+        for (@TypeOf(s).serializer_st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
             }
@@ -51,14 +51,14 @@ pub fn serialize(
     // Process attributes, if any exist.
     if (comptime attributes.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
-            .Enum => return try blocks.Enum.serialize(allocator, value, serializer),
-            .Struct => return try blocks.Struct.serialize(allocator, value, serializer),
-            .Union => return try blocks.Union.serialize(allocator, value, serializer),
+            .Enum => return try blocks.Enum.serialize(a, v, s),
+            .Struct => return try blocks.Struct.serialize(a, v, s),
+            .Union => return try blocks.Union.serialize(a, v, s),
             else => @compileError("unexpected type cannot be serialized using attributes"),
         }
     }
 
-    return try block.serialize(allocator, value, serializer);
+    return try block.serialize(a, v, s);
 }
 
 test "serialize - success, normal" {
