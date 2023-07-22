@@ -846,7 +846,7 @@
 <span class="line" id="L728">                }</span>
 <span class="line" id="L729"></span>
 <span class="line" id="L730">                <span class="tok-kw">const</span> index = self.entries.addOneAssumeCapacity();</span>
-<span class="line" id="L731">                <span class="tok-comment">// unsafe indexing because the length changed</span>
+<span class="line" id="L731">                <span class="tok-comment">// The slice length changed, so we directly index the pointer.</span>
 </span>
 <span class="line" id="L732">                <span class="tok-kw">if</span> (store_hash) hashes_array.ptr[index] = h;</span>
 <span class="line" id="L733"></span>
@@ -1835,745 +1835,747 @@
 <span class="line" id="L1669"></span>
 <span class="line" id="L1670">        <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">checkedHash</span>(ctx: <span class="tok-kw">anytype</span>, key: <span class="tok-kw">anytype</span>) <span class="tok-type">u32</span> {</span>
 <span class="line" id="L1671">            <span class="tok-kw">comptime</span> std.hash_map.verifyContext(<span class="tok-builtin">@TypeOf</span>(ctx), <span class="tok-builtin">@TypeOf</span>(key), K, <span class="tok-type">u32</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L1672">            <span class="tok-comment">// If you get a compile error on the next line, it means that</span>
+<span class="line" id="L1672">            <span class="tok-comment">// If you get a compile error on the next line, it means that your</span>
 </span>
-<span class="line" id="L1673">            <span class="tok-kw">const</span> hash = ctx.hash(key); <span class="tok-comment">// your generic hash function doesn't accept your key</span>
+<span class="line" id="L1673">            <span class="tok-comment">// generic hash function doesn't accept your key.</span>
 </span>
-<span class="line" id="L1674">            <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(hash) != <span class="tok-type">u32</span>) {</span>
-<span class="line" id="L1675">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Context &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(ctx)) ++ <span class="tok-str">&quot; has a generic hash function that returns the wrong type!\n&quot;</span> ++</span>
-<span class="line" id="L1676">                    <span class="tok-builtin">@typeName</span>(<span class="tok-type">u32</span>) ++ <span class="tok-str">&quot; was expected, but found &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(hash)));</span>
-<span class="line" id="L1677">            }</span>
-<span class="line" id="L1678">            <span class="tok-kw">return</span> hash;</span>
-<span class="line" id="L1679">        }</span>
-<span class="line" id="L1680">        <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">checkedEql</span>(ctx: <span class="tok-kw">anytype</span>, a: <span class="tok-kw">anytype</span>, b: K, b_index: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L1681">            <span class="tok-kw">comptime</span> std.hash_map.verifyContext(<span class="tok-builtin">@TypeOf</span>(ctx), <span class="tok-builtin">@TypeOf</span>(a), K, <span class="tok-type">u32</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L1682">            <span class="tok-comment">// If you get a compile error on the next line, it means that</span>
+<span class="line" id="L1674">            <span class="tok-kw">const</span> hash = ctx.hash(key);</span>
+<span class="line" id="L1675">            <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(hash) != <span class="tok-type">u32</span>) {</span>
+<span class="line" id="L1676">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Context &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(ctx)) ++ <span class="tok-str">&quot; has a generic hash function that returns the wrong type!\n&quot;</span> ++</span>
+<span class="line" id="L1677">                    <span class="tok-builtin">@typeName</span>(<span class="tok-type">u32</span>) ++ <span class="tok-str">&quot; was expected, but found &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(hash)));</span>
+<span class="line" id="L1678">            }</span>
+<span class="line" id="L1679">            <span class="tok-kw">return</span> hash;</span>
+<span class="line" id="L1680">        }</span>
+<span class="line" id="L1681">        <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">checkedEql</span>(ctx: <span class="tok-kw">anytype</span>, a: <span class="tok-kw">anytype</span>, b: K, b_index: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1682">            <span class="tok-kw">comptime</span> std.hash_map.verifyContext(<span class="tok-builtin">@TypeOf</span>(ctx), <span class="tok-builtin">@TypeOf</span>(a), K, <span class="tok-type">u32</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L1683">            <span class="tok-comment">// If you get a compile error on the next line, it means that your</span>
 </span>
-<span class="line" id="L1683">            <span class="tok-kw">const</span> eql = ctx.eql(a, b, b_index); <span class="tok-comment">// your generic eql function doesn't accept (self, adapt key, K, index)</span>
+<span class="line" id="L1684">            <span class="tok-comment">// generic eql function doesn't accept (self, adapt key, K, index).</span>
 </span>
-<span class="line" id="L1684">            <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(eql) != <span class="tok-type">bool</span>) {</span>
-<span class="line" id="L1685">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Context &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(ctx)) ++ <span class="tok-str">&quot; has a generic eql function that returns the wrong type!\n&quot;</span> ++</span>
-<span class="line" id="L1686">                    <span class="tok-builtin">@typeName</span>(<span class="tok-type">bool</span>) ++ <span class="tok-str">&quot; was expected, but found &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(eql)));</span>
-<span class="line" id="L1687">            }</span>
-<span class="line" id="L1688">            <span class="tok-kw">return</span> eql;</span>
-<span class="line" id="L1689">        }</span>
-<span class="line" id="L1690"></span>
-<span class="line" id="L1691">        <span class="tok-kw">fn</span> <span class="tok-fn">dumpState</span>(self: Self, <span class="tok-kw">comptime</span> keyFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> valueFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1692">            <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(ByIndexContext) != <span class="tok-number">0</span>)</span>
-<span class="line" id="L1693">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Cannot infer context &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context) ++ <span class="tok-str">&quot;, call dumpStateContext instead.&quot;</span>);</span>
-<span class="line" id="L1694">            self.dumpStateContext(keyFmt, valueFmt, <span class="tok-null">undefined</span>);</span>
-<span class="line" id="L1695">        }</span>
-<span class="line" id="L1696">        <span class="tok-kw">fn</span> <span class="tok-fn">dumpStateContext</span>(self: Self, <span class="tok-kw">comptime</span> keyFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> valueFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, ctx: Context) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1697">            <span class="tok-kw">const</span> p = std.debug.print;</span>
-<span class="line" id="L1698">            p(<span class="tok-str">&quot;{s}:\n&quot;</span>, .{<span class="tok-builtin">@typeName</span>(Self)});</span>
-<span class="line" id="L1699">            <span class="tok-kw">const</span> slice = self.entries.slice();</span>
-<span class="line" id="L1700">            <span class="tok-kw">const</span> hash_status = <span class="tok-kw">if</span> (store_hash) <span class="tok-str">&quot;stored&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;computed&quot;</span>;</span>
-<span class="line" id="L1701">            p(<span class="tok-str">&quot;  len={} capacity={} hashes {s}\n&quot;</span>, .{ slice.len, slice.capacity, hash_status });</span>
-<span class="line" id="L1702">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1703">            <span class="tok-kw">const</span> mask: <span class="tok-type">u32</span> = <span class="tok-kw">if</span> (self.index_header) |header| header.mask() <span class="tok-kw">else</span> ~<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1704">            <span class="tok-kw">while</span> (i &lt; slice.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1705">                <span class="tok-kw">const</span> hash = <span class="tok-kw">if</span> (store_hash) slice.items(.hash)[i] <span class="tok-kw">else</span> checkedHash(ctx, slice.items(.key)[i]);</span>
-<span class="line" id="L1706">                <span class="tok-kw">if</span> (store_hash) {</span>
-<span class="line" id="L1707">                    p(</span>
-<span class="line" id="L1708">                        <span class="tok-str">&quot;  [{}]: key=&quot;</span> ++ keyFmt ++ <span class="tok-str">&quot; value=&quot;</span> ++ valueFmt ++ <span class="tok-str">&quot; hash=0x{x} slot=[0x{x}]\n&quot;</span>,</span>
-<span class="line" id="L1709">                        .{ i, slice.items(.key)[i], slice.items(.value)[i], hash, hash &amp; mask },</span>
-<span class="line" id="L1710">                    );</span>
-<span class="line" id="L1711">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1712">                    p(</span>
-<span class="line" id="L1713">                        <span class="tok-str">&quot;  [{}]: key=&quot;</span> ++ keyFmt ++ <span class="tok-str">&quot; value=&quot;</span> ++ valueFmt ++ <span class="tok-str">&quot; slot=[0x{x}]\n&quot;</span>,</span>
-<span class="line" id="L1714">                        .{ i, slice.items(.key)[i], slice.items(.value)[i], hash &amp; mask },</span>
-<span class="line" id="L1715">                    );</span>
-<span class="line" id="L1716">                }</span>
-<span class="line" id="L1717">            }</span>
-<span class="line" id="L1718">            <span class="tok-kw">if</span> (self.index_header) |header| {</span>
-<span class="line" id="L1719">                p(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
-<span class="line" id="L1720">                <span class="tok-kw">switch</span> (header.capacityIndexType()) {</span>
-<span class="line" id="L1721">                    .<span class="tok-type">u8</span> =&gt; dumpIndex(header, <span class="tok-type">u8</span>),</span>
-<span class="line" id="L1722">                    .<span class="tok-type">u16</span> =&gt; dumpIndex(header, <span class="tok-type">u16</span>),</span>
-<span class="line" id="L1723">                    .<span class="tok-type">u32</span> =&gt; dumpIndex(header, <span class="tok-type">u32</span>),</span>
-<span class="line" id="L1724">                }</span>
-<span class="line" id="L1725">            }</span>
-<span class="line" id="L1726">        }</span>
-<span class="line" id="L1727">        <span class="tok-kw">fn</span> <span class="tok-fn">dumpIndex</span>(header: *IndexHeader, <span class="tok-kw">comptime</span> I: <span class="tok-type">type</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1728">            <span class="tok-kw">const</span> p = std.debug.print;</span>
-<span class="line" id="L1729">            p(<span class="tok-str">&quot;  index len=0x{x} type={}\n&quot;</span>, .{ header.length(), header.capacityIndexType() });</span>
-<span class="line" id="L1730">            <span class="tok-kw">const</span> indexes = header.indexes(I);</span>
-<span class="line" id="L1731">            <span class="tok-kw">if</span> (indexes.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1732">            <span class="tok-kw">var</span> is_empty = <span class="tok-null">false</span>;</span>
-<span class="line" id="L1733">            <span class="tok-kw">for</span> (indexes, <span class="tok-number">0</span>..) |idx, i| {</span>
-<span class="line" id="L1734">                <span class="tok-kw">if</span> (idx.isEmpty()) {</span>
-<span class="line" id="L1735">                    is_empty = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1736">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1737">                    <span class="tok-kw">if</span> (is_empty) {</span>
-<span class="line" id="L1738">                        is_empty = <span class="tok-null">false</span>;</span>
-<span class="line" id="L1739">                        p(<span class="tok-str">&quot;  ...\n&quot;</span>, .{});</span>
-<span class="line" id="L1740">                    }</span>
-<span class="line" id="L1741">                    p(<span class="tok-str">&quot;  [0x{x}]: [{}] +{}\n&quot;</span>, .{ i, idx.entry_index, idx.distance_from_start_index });</span>
-<span class="line" id="L1742">                }</span>
-<span class="line" id="L1743">            }</span>
-<span class="line" id="L1744">            <span class="tok-kw">if</span> (is_empty) {</span>
-<span class="line" id="L1745">                p(<span class="tok-str">&quot;  ...\n&quot;</span>, .{});</span>
-<span class="line" id="L1746">            }</span>
-<span class="line" id="L1747">        }</span>
-<span class="line" id="L1748">    };</span>
-<span class="line" id="L1749">}</span>
-<span class="line" id="L1750"></span>
-<span class="line" id="L1751"><span class="tok-kw">const</span> CapacityIndexType = <span class="tok-kw">enum</span> { <span class="tok-type">u8</span>, <span class="tok-type">u16</span>, <span class="tok-type">u32</span> };</span>
+<span class="line" id="L1685">            <span class="tok-kw">const</span> eql = ctx.eql(a, b, b_index);</span>
+<span class="line" id="L1686">            <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(eql) != <span class="tok-type">bool</span>) {</span>
+<span class="line" id="L1687">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Context &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(ctx)) ++ <span class="tok-str">&quot; has a generic eql function that returns the wrong type!\n&quot;</span> ++</span>
+<span class="line" id="L1688">                    <span class="tok-builtin">@typeName</span>(<span class="tok-type">bool</span>) ++ <span class="tok-str">&quot; was expected, but found &quot;</span> ++ <span class="tok-builtin">@typeName</span>(<span class="tok-builtin">@TypeOf</span>(eql)));</span>
+<span class="line" id="L1689">            }</span>
+<span class="line" id="L1690">            <span class="tok-kw">return</span> eql;</span>
+<span class="line" id="L1691">        }</span>
+<span class="line" id="L1692"></span>
+<span class="line" id="L1693">        <span class="tok-kw">fn</span> <span class="tok-fn">dumpState</span>(self: Self, <span class="tok-kw">comptime</span> keyFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> valueFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1694">            <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(ByIndexContext) != <span class="tok-number">0</span>)</span>
+<span class="line" id="L1695">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Cannot infer context &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context) ++ <span class="tok-str">&quot;, call dumpStateContext instead.&quot;</span>);</span>
+<span class="line" id="L1696">            self.dumpStateContext(keyFmt, valueFmt, <span class="tok-null">undefined</span>);</span>
+<span class="line" id="L1697">        }</span>
+<span class="line" id="L1698">        <span class="tok-kw">fn</span> <span class="tok-fn">dumpStateContext</span>(self: Self, <span class="tok-kw">comptime</span> keyFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> valueFmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, ctx: Context) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1699">            <span class="tok-kw">const</span> p = std.debug.print;</span>
+<span class="line" id="L1700">            p(<span class="tok-str">&quot;{s}:\n&quot;</span>, .{<span class="tok-builtin">@typeName</span>(Self)});</span>
+<span class="line" id="L1701">            <span class="tok-kw">const</span> slice = self.entries.slice();</span>
+<span class="line" id="L1702">            <span class="tok-kw">const</span> hash_status = <span class="tok-kw">if</span> (store_hash) <span class="tok-str">&quot;stored&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;computed&quot;</span>;</span>
+<span class="line" id="L1703">            p(<span class="tok-str">&quot;  len={} capacity={} hashes {s}\n&quot;</span>, .{ slice.len, slice.capacity, hash_status });</span>
+<span class="line" id="L1704">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1705">            <span class="tok-kw">const</span> mask: <span class="tok-type">u32</span> = <span class="tok-kw">if</span> (self.index_header) |header| header.mask() <span class="tok-kw">else</span> ~<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1706">            <span class="tok-kw">while</span> (i &lt; slice.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1707">                <span class="tok-kw">const</span> hash = <span class="tok-kw">if</span> (store_hash) slice.items(.hash)[i] <span class="tok-kw">else</span> checkedHash(ctx, slice.items(.key)[i]);</span>
+<span class="line" id="L1708">                <span class="tok-kw">if</span> (store_hash) {</span>
+<span class="line" id="L1709">                    p(</span>
+<span class="line" id="L1710">                        <span class="tok-str">&quot;  [{}]: key=&quot;</span> ++ keyFmt ++ <span class="tok-str">&quot; value=&quot;</span> ++ valueFmt ++ <span class="tok-str">&quot; hash=0x{x} slot=[0x{x}]\n&quot;</span>,</span>
+<span class="line" id="L1711">                        .{ i, slice.items(.key)[i], slice.items(.value)[i], hash, hash &amp; mask },</span>
+<span class="line" id="L1712">                    );</span>
+<span class="line" id="L1713">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1714">                    p(</span>
+<span class="line" id="L1715">                        <span class="tok-str">&quot;  [{}]: key=&quot;</span> ++ keyFmt ++ <span class="tok-str">&quot; value=&quot;</span> ++ valueFmt ++ <span class="tok-str">&quot; slot=[0x{x}]\n&quot;</span>,</span>
+<span class="line" id="L1716">                        .{ i, slice.items(.key)[i], slice.items(.value)[i], hash &amp; mask },</span>
+<span class="line" id="L1717">                    );</span>
+<span class="line" id="L1718">                }</span>
+<span class="line" id="L1719">            }</span>
+<span class="line" id="L1720">            <span class="tok-kw">if</span> (self.index_header) |header| {</span>
+<span class="line" id="L1721">                p(<span class="tok-str">&quot;\n&quot;</span>, .{});</span>
+<span class="line" id="L1722">                <span class="tok-kw">switch</span> (header.capacityIndexType()) {</span>
+<span class="line" id="L1723">                    .<span class="tok-type">u8</span> =&gt; dumpIndex(header, <span class="tok-type">u8</span>),</span>
+<span class="line" id="L1724">                    .<span class="tok-type">u16</span> =&gt; dumpIndex(header, <span class="tok-type">u16</span>),</span>
+<span class="line" id="L1725">                    .<span class="tok-type">u32</span> =&gt; dumpIndex(header, <span class="tok-type">u32</span>),</span>
+<span class="line" id="L1726">                }</span>
+<span class="line" id="L1727">            }</span>
+<span class="line" id="L1728">        }</span>
+<span class="line" id="L1729">        <span class="tok-kw">fn</span> <span class="tok-fn">dumpIndex</span>(header: *IndexHeader, <span class="tok-kw">comptime</span> I: <span class="tok-type">type</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1730">            <span class="tok-kw">const</span> p = std.debug.print;</span>
+<span class="line" id="L1731">            p(<span class="tok-str">&quot;  index len=0x{x} type={}\n&quot;</span>, .{ header.length(), header.capacityIndexType() });</span>
+<span class="line" id="L1732">            <span class="tok-kw">const</span> indexes = header.indexes(I);</span>
+<span class="line" id="L1733">            <span class="tok-kw">if</span> (indexes.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1734">            <span class="tok-kw">var</span> is_empty = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1735">            <span class="tok-kw">for</span> (indexes, <span class="tok-number">0</span>..) |idx, i| {</span>
+<span class="line" id="L1736">                <span class="tok-kw">if</span> (idx.isEmpty()) {</span>
+<span class="line" id="L1737">                    is_empty = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1738">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1739">                    <span class="tok-kw">if</span> (is_empty) {</span>
+<span class="line" id="L1740">                        is_empty = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1741">                        p(<span class="tok-str">&quot;  ...\n&quot;</span>, .{});</span>
+<span class="line" id="L1742">                    }</span>
+<span class="line" id="L1743">                    p(<span class="tok-str">&quot;  [0x{x}]: [{}] +{}\n&quot;</span>, .{ i, idx.entry_index, idx.distance_from_start_index });</span>
+<span class="line" id="L1744">                }</span>
+<span class="line" id="L1745">            }</span>
+<span class="line" id="L1746">            <span class="tok-kw">if</span> (is_empty) {</span>
+<span class="line" id="L1747">                p(<span class="tok-str">&quot;  ...\n&quot;</span>, .{});</span>
+<span class="line" id="L1748">            }</span>
+<span class="line" id="L1749">        }</span>
+<span class="line" id="L1750">    };</span>
+<span class="line" id="L1751">}</span>
 <span class="line" id="L1752"></span>
-<span class="line" id="L1753"><span class="tok-kw">fn</span> <span class="tok-fn">capacityIndexType</span>(bit_index: <span class="tok-type">u8</span>) CapacityIndexType {</span>
-<span class="line" id="L1754">    <span class="tok-kw">if</span> (bit_index &lt;= <span class="tok-number">8</span>)</span>
-<span class="line" id="L1755">        <span class="tok-kw">return</span> .<span class="tok-type">u8</span>;</span>
-<span class="line" id="L1756">    <span class="tok-kw">if</span> (bit_index &lt;= <span class="tok-number">16</span>)</span>
-<span class="line" id="L1757">        <span class="tok-kw">return</span> .<span class="tok-type">u16</span>;</span>
-<span class="line" id="L1758">    assert(bit_index &lt;= <span class="tok-number">32</span>);</span>
-<span class="line" id="L1759">    <span class="tok-kw">return</span> .<span class="tok-type">u32</span>;</span>
-<span class="line" id="L1760">}</span>
-<span class="line" id="L1761"></span>
-<span class="line" id="L1762"><span class="tok-kw">fn</span> <span class="tok-fn">capacityIndexSize</span>(bit_index: <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1763">    <span class="tok-kw">switch</span> (capacityIndexType(bit_index)) {</span>
-<span class="line" id="L1764">        .<span class="tok-type">u8</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@sizeOf</span>(Index(<span class="tok-type">u8</span>)),</span>
-<span class="line" id="L1765">        .<span class="tok-type">u16</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@sizeOf</span>(Index(<span class="tok-type">u16</span>)),</span>
-<span class="line" id="L1766">        .<span class="tok-type">u32</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@sizeOf</span>(Index(<span class="tok-type">u32</span>)),</span>
-<span class="line" id="L1767">    }</span>
-<span class="line" id="L1768">}</span>
-<span class="line" id="L1769"></span>
-<span class="line" id="L1770"><span class="tok-comment">/// @truncate fails if the target type is larger than the</span></span>
-<span class="line" id="L1771"><span class="tok-comment">/// target value.  This causes problems when one of the types</span></span>
-<span class="line" id="L1772"><span class="tok-comment">/// is usize, which may be larger or smaller than u32 on different</span></span>
-<span class="line" id="L1773"><span class="tok-comment">/// systems.  This version of truncate is safe to use if either</span></span>
-<span class="line" id="L1774"><span class="tok-comment">/// parameter has dynamic size, and will perform widening conversion</span></span>
-<span class="line" id="L1775"><span class="tok-comment">/// when needed.  Both arguments must have the same signedness.</span></span>
-<span class="line" id="L1776"><span class="tok-kw">fn</span> <span class="tok-fn">safeTruncate</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, val: <span class="tok-kw">anytype</span>) T {</span>
-<span class="line" id="L1777">    <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(T) &gt;= <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-builtin">@TypeOf</span>(val)))</span>
-<span class="line" id="L1778">        <span class="tok-kw">return</span> val;</span>
-<span class="line" id="L1779">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@truncate</span>(val));</span>
-<span class="line" id="L1780">}</span>
-<span class="line" id="L1781"></span>
-<span class="line" id="L1782"><span class="tok-comment">/// A single entry in the lookup acceleration structure.  These structs</span></span>
-<span class="line" id="L1783"><span class="tok-comment">/// are found in an array after the IndexHeader.  Hashes index into this</span></span>
-<span class="line" id="L1784"><span class="tok-comment">/// array, and linear probing is used for collisions.</span></span>
-<span class="line" id="L1785"><span class="tok-kw">fn</span> <span class="tok-fn">Index</span>(<span class="tok-kw">comptime</span> I: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L1786">    <span class="tok-kw">return</span> <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1787">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L1788"></span>
-<span class="line" id="L1789">        <span class="tok-comment">/// The index of this entry in the backing store.  If the index is</span></span>
-<span class="line" id="L1790">        <span class="tok-comment">/// empty, this is empty_sentinel.</span></span>
-<span class="line" id="L1791">        entry_index: I,</span>
-<span class="line" id="L1792"></span>
-<span class="line" id="L1793">        <span class="tok-comment">/// The distance between this slot and its ideal placement.  This is</span></span>
-<span class="line" id="L1794">        <span class="tok-comment">/// used to keep maximum scan length small.  This value is undefined</span></span>
-<span class="line" id="L1795">        <span class="tok-comment">/// if the index is empty.</span></span>
-<span class="line" id="L1796">        distance_from_start_index: I,</span>
-<span class="line" id="L1797"></span>
-<span class="line" id="L1798">        <span class="tok-comment">/// The special entry_index value marking an empty slot.</span></span>
-<span class="line" id="L1799">        <span class="tok-kw">const</span> empty_sentinel = ~<span class="tok-builtin">@as</span>(I, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1800"></span>
-<span class="line" id="L1801">        <span class="tok-comment">/// A constant empty index</span></span>
-<span class="line" id="L1802">        <span class="tok-kw">const</span> empty = Self{</span>
-<span class="line" id="L1803">            .entry_index = empty_sentinel,</span>
-<span class="line" id="L1804">            .distance_from_start_index = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1805">        };</span>
-<span class="line" id="L1806"></span>
-<span class="line" id="L1807">        <span class="tok-comment">/// Checks if a slot is empty</span></span>
-<span class="line" id="L1808">        <span class="tok-kw">fn</span> <span class="tok-fn">isEmpty</span>(idx: Self) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L1809">            <span class="tok-kw">return</span> idx.entry_index == empty_sentinel;</span>
-<span class="line" id="L1810">        }</span>
-<span class="line" id="L1811"></span>
-<span class="line" id="L1812">        <span class="tok-comment">/// Sets a slot to empty</span></span>
-<span class="line" id="L1813">        <span class="tok-kw">fn</span> <span class="tok-fn">setEmpty</span>(idx: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1814">            idx.entry_index = empty_sentinel;</span>
-<span class="line" id="L1815">            idx.distance_from_start_index = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1816">        }</span>
-<span class="line" id="L1817">    };</span>
-<span class="line" id="L1818">}</span>
-<span class="line" id="L1819"></span>
-<span class="line" id="L1820"><span class="tok-comment">/// the byte size of the index must fit in a usize.  This is a power of two</span></span>
-<span class="line" id="L1821"><span class="tok-comment">/// length * the size of an Index(u32).  The index is 8 bytes (3 bits repr)</span></span>
-<span class="line" id="L1822"><span class="tok-comment">/// and max_usize + 1 is not representable, so we need to subtract out 4 bits.</span></span>
-<span class="line" id="L1823"><span class="tok-kw">const</span> max_representable_index_len = <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">usize</span>) - <span class="tok-number">4</span>;</span>
-<span class="line" id="L1824"><span class="tok-kw">const</span> max_bit_index = <span class="tok-builtin">@min</span>(<span class="tok-number">32</span>, max_representable_index_len);</span>
-<span class="line" id="L1825"><span class="tok-kw">const</span> min_bit_index = <span class="tok-number">5</span>;</span>
-<span class="line" id="L1826"><span class="tok-kw">const</span> max_capacity = (<span class="tok-number">1</span> &lt;&lt; max_bit_index) - <span class="tok-number">1</span>;</span>
-<span class="line" id="L1827"><span class="tok-kw">const</span> index_capacities = blk: {</span>
-<span class="line" id="L1828">    <span class="tok-kw">var</span> caps: [max_bit_index + <span class="tok-number">1</span>]<span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1829">    <span class="tok-kw">for</span> (caps[<span class="tok-number">0</span>..max_bit_index], <span class="tok-number">0</span>..) |*item, i| {</span>
-<span class="line" id="L1830">        item.* = (<span class="tok-number">1</span> &lt;&lt; i) * <span class="tok-number">3</span> / <span class="tok-number">5</span>;</span>
-<span class="line" id="L1831">    }</span>
-<span class="line" id="L1832">    caps[max_bit_index] = max_capacity;</span>
-<span class="line" id="L1833">    <span class="tok-kw">break</span> :blk caps;</span>
-<span class="line" id="L1834">};</span>
-<span class="line" id="L1835"></span>
-<span class="line" id="L1836"><span class="tok-comment">/// This struct is trailed by two arrays of length indexes_len</span></span>
-<span class="line" id="L1837"><span class="tok-comment">/// of integers, whose integer size is determined by indexes_len.</span></span>
-<span class="line" id="L1838"><span class="tok-comment">/// These arrays are indexed by constrainIndex(hash).  The</span></span>
-<span class="line" id="L1839"><span class="tok-comment">/// entryIndexes array contains the index in the dense backing store</span></span>
-<span class="line" id="L1840"><span class="tok-comment">/// where the entry's data can be found.  Entries which are not in</span></span>
-<span class="line" id="L1841"><span class="tok-comment">/// use have their index value set to emptySentinel(I).</span></span>
-<span class="line" id="L1842"><span class="tok-comment">/// The entryDistances array stores the distance between an entry</span></span>
-<span class="line" id="L1843"><span class="tok-comment">/// and its ideal hash bucket.  This is used when adding elements</span></span>
-<span class="line" id="L1844"><span class="tok-comment">/// to balance the maximum scan length.</span></span>
-<span class="line" id="L1845"><span class="tok-kw">const</span> IndexHeader = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1846">    <span class="tok-comment">/// This field tracks the total number of items in the arrays following</span></span>
-<span class="line" id="L1847">    <span class="tok-comment">/// this header.  It is the bit index of the power of two number of indices.</span></span>
-<span class="line" id="L1848">    <span class="tok-comment">/// This value is between min_bit_index and max_bit_index, inclusive.</span></span>
-<span class="line" id="L1849">    bit_index: <span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u32</span>)),</span>
-<span class="line" id="L1850"></span>
-<span class="line" id="L1851">    <span class="tok-comment">/// Map from an incrementing index to an index slot in the attached arrays.</span></span>
-<span class="line" id="L1852">    <span class="tok-kw">fn</span> <span class="tok-fn">constrainIndex</span>(header: IndexHeader, i: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1853">        <span class="tok-comment">// This is an optimization for modulo of power of two integers;</span>
+<span class="line" id="L1753"><span class="tok-kw">const</span> CapacityIndexType = <span class="tok-kw">enum</span> { <span class="tok-type">u8</span>, <span class="tok-type">u16</span>, <span class="tok-type">u32</span> };</span>
+<span class="line" id="L1754"></span>
+<span class="line" id="L1755"><span class="tok-kw">fn</span> <span class="tok-fn">capacityIndexType</span>(bit_index: <span class="tok-type">u8</span>) CapacityIndexType {</span>
+<span class="line" id="L1756">    <span class="tok-kw">if</span> (bit_index &lt;= <span class="tok-number">8</span>)</span>
+<span class="line" id="L1757">        <span class="tok-kw">return</span> .<span class="tok-type">u8</span>;</span>
+<span class="line" id="L1758">    <span class="tok-kw">if</span> (bit_index &lt;= <span class="tok-number">16</span>)</span>
+<span class="line" id="L1759">        <span class="tok-kw">return</span> .<span class="tok-type">u16</span>;</span>
+<span class="line" id="L1760">    assert(bit_index &lt;= <span class="tok-number">32</span>);</span>
+<span class="line" id="L1761">    <span class="tok-kw">return</span> .<span class="tok-type">u32</span>;</span>
+<span class="line" id="L1762">}</span>
+<span class="line" id="L1763"></span>
+<span class="line" id="L1764"><span class="tok-kw">fn</span> <span class="tok-fn">capacityIndexSize</span>(bit_index: <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1765">    <span class="tok-kw">switch</span> (capacityIndexType(bit_index)) {</span>
+<span class="line" id="L1766">        .<span class="tok-type">u8</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@sizeOf</span>(Index(<span class="tok-type">u8</span>)),</span>
+<span class="line" id="L1767">        .<span class="tok-type">u16</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@sizeOf</span>(Index(<span class="tok-type">u16</span>)),</span>
+<span class="line" id="L1768">        .<span class="tok-type">u32</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@sizeOf</span>(Index(<span class="tok-type">u32</span>)),</span>
+<span class="line" id="L1769">    }</span>
+<span class="line" id="L1770">}</span>
+<span class="line" id="L1771"></span>
+<span class="line" id="L1772"><span class="tok-comment">/// @truncate fails if the target type is larger than the</span></span>
+<span class="line" id="L1773"><span class="tok-comment">/// target value.  This causes problems when one of the types</span></span>
+<span class="line" id="L1774"><span class="tok-comment">/// is usize, which may be larger or smaller than u32 on different</span></span>
+<span class="line" id="L1775"><span class="tok-comment">/// systems.  This version of truncate is safe to use if either</span></span>
+<span class="line" id="L1776"><span class="tok-comment">/// parameter has dynamic size, and will perform widening conversion</span></span>
+<span class="line" id="L1777"><span class="tok-comment">/// when needed.  Both arguments must have the same signedness.</span></span>
+<span class="line" id="L1778"><span class="tok-kw">fn</span> <span class="tok-fn">safeTruncate</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, val: <span class="tok-kw">anytype</span>) T {</span>
+<span class="line" id="L1779">    <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(T) &gt;= <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-builtin">@TypeOf</span>(val)))</span>
+<span class="line" id="L1780">        <span class="tok-kw">return</span> val;</span>
+<span class="line" id="L1781">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@truncate</span>(val));</span>
+<span class="line" id="L1782">}</span>
+<span class="line" id="L1783"></span>
+<span class="line" id="L1784"><span class="tok-comment">/// A single entry in the lookup acceleration structure.  These structs</span></span>
+<span class="line" id="L1785"><span class="tok-comment">/// are found in an array after the IndexHeader.  Hashes index into this</span></span>
+<span class="line" id="L1786"><span class="tok-comment">/// array, and linear probing is used for collisions.</span></span>
+<span class="line" id="L1787"><span class="tok-kw">fn</span> <span class="tok-fn">Index</span>(<span class="tok-kw">comptime</span> I: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L1788">    <span class="tok-kw">return</span> <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1789">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L1790"></span>
+<span class="line" id="L1791">        <span class="tok-comment">/// The index of this entry in the backing store.  If the index is</span></span>
+<span class="line" id="L1792">        <span class="tok-comment">/// empty, this is empty_sentinel.</span></span>
+<span class="line" id="L1793">        entry_index: I,</span>
+<span class="line" id="L1794"></span>
+<span class="line" id="L1795">        <span class="tok-comment">/// The distance between this slot and its ideal placement.  This is</span></span>
+<span class="line" id="L1796">        <span class="tok-comment">/// used to keep maximum scan length small.  This value is undefined</span></span>
+<span class="line" id="L1797">        <span class="tok-comment">/// if the index is empty.</span></span>
+<span class="line" id="L1798">        distance_from_start_index: I,</span>
+<span class="line" id="L1799"></span>
+<span class="line" id="L1800">        <span class="tok-comment">/// The special entry_index value marking an empty slot.</span></span>
+<span class="line" id="L1801">        <span class="tok-kw">const</span> empty_sentinel = ~<span class="tok-builtin">@as</span>(I, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1802"></span>
+<span class="line" id="L1803">        <span class="tok-comment">/// A constant empty index</span></span>
+<span class="line" id="L1804">        <span class="tok-kw">const</span> empty = Self{</span>
+<span class="line" id="L1805">            .entry_index = empty_sentinel,</span>
+<span class="line" id="L1806">            .distance_from_start_index = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1807">        };</span>
+<span class="line" id="L1808"></span>
+<span class="line" id="L1809">        <span class="tok-comment">/// Checks if a slot is empty</span></span>
+<span class="line" id="L1810">        <span class="tok-kw">fn</span> <span class="tok-fn">isEmpty</span>(idx: Self) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1811">            <span class="tok-kw">return</span> idx.entry_index == empty_sentinel;</span>
+<span class="line" id="L1812">        }</span>
+<span class="line" id="L1813"></span>
+<span class="line" id="L1814">        <span class="tok-comment">/// Sets a slot to empty</span></span>
+<span class="line" id="L1815">        <span class="tok-kw">fn</span> <span class="tok-fn">setEmpty</span>(idx: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1816">            idx.entry_index = empty_sentinel;</span>
+<span class="line" id="L1817">            idx.distance_from_start_index = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1818">        }</span>
+<span class="line" id="L1819">    };</span>
+<span class="line" id="L1820">}</span>
+<span class="line" id="L1821"></span>
+<span class="line" id="L1822"><span class="tok-comment">/// the byte size of the index must fit in a usize.  This is a power of two</span></span>
+<span class="line" id="L1823"><span class="tok-comment">/// length * the size of an Index(u32).  The index is 8 bytes (3 bits repr)</span></span>
+<span class="line" id="L1824"><span class="tok-comment">/// and max_usize + 1 is not representable, so we need to subtract out 4 bits.</span></span>
+<span class="line" id="L1825"><span class="tok-kw">const</span> max_representable_index_len = <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">usize</span>) - <span class="tok-number">4</span>;</span>
+<span class="line" id="L1826"><span class="tok-kw">const</span> max_bit_index = <span class="tok-builtin">@min</span>(<span class="tok-number">32</span>, max_representable_index_len);</span>
+<span class="line" id="L1827"><span class="tok-kw">const</span> min_bit_index = <span class="tok-number">5</span>;</span>
+<span class="line" id="L1828"><span class="tok-kw">const</span> max_capacity = (<span class="tok-number">1</span> &lt;&lt; max_bit_index) - <span class="tok-number">1</span>;</span>
+<span class="line" id="L1829"><span class="tok-kw">const</span> index_capacities = blk: {</span>
+<span class="line" id="L1830">    <span class="tok-kw">var</span> caps: [max_bit_index + <span class="tok-number">1</span>]<span class="tok-type">u32</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1831">    <span class="tok-kw">for</span> (caps[<span class="tok-number">0</span>..max_bit_index], <span class="tok-number">0</span>..) |*item, i| {</span>
+<span class="line" id="L1832">        item.* = (<span class="tok-number">1</span> &lt;&lt; i) * <span class="tok-number">3</span> / <span class="tok-number">5</span>;</span>
+<span class="line" id="L1833">    }</span>
+<span class="line" id="L1834">    caps[max_bit_index] = max_capacity;</span>
+<span class="line" id="L1835">    <span class="tok-kw">break</span> :blk caps;</span>
+<span class="line" id="L1836">};</span>
+<span class="line" id="L1837"></span>
+<span class="line" id="L1838"><span class="tok-comment">/// This struct is trailed by two arrays of length indexes_len</span></span>
+<span class="line" id="L1839"><span class="tok-comment">/// of integers, whose integer size is determined by indexes_len.</span></span>
+<span class="line" id="L1840"><span class="tok-comment">/// These arrays are indexed by constrainIndex(hash).  The</span></span>
+<span class="line" id="L1841"><span class="tok-comment">/// entryIndexes array contains the index in the dense backing store</span></span>
+<span class="line" id="L1842"><span class="tok-comment">/// where the entry's data can be found.  Entries which are not in</span></span>
+<span class="line" id="L1843"><span class="tok-comment">/// use have their index value set to emptySentinel(I).</span></span>
+<span class="line" id="L1844"><span class="tok-comment">/// The entryDistances array stores the distance between an entry</span></span>
+<span class="line" id="L1845"><span class="tok-comment">/// and its ideal hash bucket.  This is used when adding elements</span></span>
+<span class="line" id="L1846"><span class="tok-comment">/// to balance the maximum scan length.</span></span>
+<span class="line" id="L1847"><span class="tok-kw">const</span> IndexHeader = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1848">    <span class="tok-comment">/// This field tracks the total number of items in the arrays following</span></span>
+<span class="line" id="L1849">    <span class="tok-comment">/// this header.  It is the bit index of the power of two number of indices.</span></span>
+<span class="line" id="L1850">    <span class="tok-comment">/// This value is between min_bit_index and max_bit_index, inclusive.</span></span>
+<span class="line" id="L1851">    bit_index: <span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u32</span>)),</span>
+<span class="line" id="L1852"></span>
+<span class="line" id="L1853">    <span class="tok-comment">/// Map from an incrementing index to an index slot in the attached arrays.</span></span>
+<span class="line" id="L1854">    <span class="tok-kw">fn</span> <span class="tok-fn">constrainIndex</span>(header: IndexHeader, i: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1855">        <span class="tok-comment">// This is an optimization for modulo of power of two integers;</span>
 </span>
-<span class="line" id="L1854">        <span class="tok-comment">// it requires `indexes_len` to always be a power of two.</span>
+<span class="line" id="L1856">        <span class="tok-comment">// it requires `indexes_len` to always be a power of two.</span>
 </span>
-<span class="line" id="L1855">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(i &amp; header.mask()));</span>
-<span class="line" id="L1856">    }</span>
-<span class="line" id="L1857"></span>
-<span class="line" id="L1858">    <span class="tok-comment">/// Returns the attached array of indexes.  I must match the type</span></span>
-<span class="line" id="L1859">    <span class="tok-comment">/// returned by capacityIndexType.</span></span>
-<span class="line" id="L1860">    <span class="tok-kw">fn</span> <span class="tok-fn">indexes</span>(header: *IndexHeader, <span class="tok-kw">comptime</span> I: <span class="tok-type">type</span>) []Index(I) {</span>
-<span class="line" id="L1861">        <span class="tok-kw">const</span> start_ptr: [*]Index(I) = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>([*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(header)) + <span class="tok-builtin">@sizeOf</span>(IndexHeader)));</span>
-<span class="line" id="L1862">        <span class="tok-kw">return</span> start_ptr[<span class="tok-number">0</span>..header.length()];</span>
-<span class="line" id="L1863">    }</span>
-<span class="line" id="L1864"></span>
-<span class="line" id="L1865">    <span class="tok-comment">/// Returns the type used for the index arrays.</span></span>
-<span class="line" id="L1866">    <span class="tok-kw">fn</span> <span class="tok-fn">capacityIndexType</span>(header: IndexHeader) CapacityIndexType {</span>
-<span class="line" id="L1867">        <span class="tok-kw">return</span> hash_map.capacityIndexType(header.bit_index);</span>
-<span class="line" id="L1868">    }</span>
-<span class="line" id="L1869"></span>
-<span class="line" id="L1870">    <span class="tok-kw">fn</span> <span class="tok-fn">capacity</span>(self: IndexHeader) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L1871">        <span class="tok-kw">return</span> index_capacities[self.bit_index];</span>
-<span class="line" id="L1872">    }</span>
-<span class="line" id="L1873">    <span class="tok-kw">fn</span> <span class="tok-fn">length</span>(self: IndexHeader) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1874">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(math.Log2Int(<span class="tok-type">usize</span>), <span class="tok-builtin">@intCast</span>(self.bit_index));</span>
-<span class="line" id="L1875">    }</span>
-<span class="line" id="L1876">    <span class="tok-kw">fn</span> <span class="tok-fn">mask</span>(self: IndexHeader) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L1877">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(self.length() - <span class="tok-number">1</span>));</span>
-<span class="line" id="L1878">    }</span>
-<span class="line" id="L1879"></span>
-<span class="line" id="L1880">    <span class="tok-kw">fn</span> <span class="tok-fn">findBitIndex</span>(desired_capacity: <span class="tok-type">usize</span>) !<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1881">        <span class="tok-kw">if</span> (desired_capacity &gt; max_capacity) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.OutOfMemory;</span>
-<span class="line" id="L1882">        <span class="tok-kw">var</span> new_bit_index = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>(std.math.log2_int_ceil(<span class="tok-type">usize</span>, desired_capacity)));</span>
-<span class="line" id="L1883">        <span class="tok-kw">if</span> (desired_capacity &gt; index_capacities[new_bit_index]) new_bit_index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1884">        <span class="tok-kw">if</span> (new_bit_index &lt; min_bit_index) new_bit_index = min_bit_index;</span>
-<span class="line" id="L1885">        assert(desired_capacity &lt;= index_capacities[new_bit_index]);</span>
-<span class="line" id="L1886">        <span class="tok-kw">return</span> new_bit_index;</span>
-<span class="line" id="L1887">    }</span>
-<span class="line" id="L1888"></span>
-<span class="line" id="L1889">    <span class="tok-comment">/// Allocates an index header, and fills the entryIndexes array with empty.</span></span>
-<span class="line" id="L1890">    <span class="tok-comment">/// The distance array contents are undefined.</span></span>
-<span class="line" id="L1891">    <span class="tok-kw">fn</span> <span class="tok-fn">alloc</span>(allocator: Allocator, new_bit_index: <span class="tok-type">u8</span>) !*IndexHeader {</span>
-<span class="line" id="L1892">        <span class="tok-kw">const</span> len = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(math.Log2Int(<span class="tok-type">usize</span>), <span class="tok-builtin">@intCast</span>(new_bit_index));</span>
-<span class="line" id="L1893">        <span class="tok-kw">const</span> index_size = hash_map.capacityIndexSize(new_bit_index);</span>
-<span class="line" id="L1894">        <span class="tok-kw">const</span> nbytes = <span class="tok-builtin">@sizeOf</span>(IndexHeader) + index_size * len;</span>
-<span class="line" id="L1895">        <span class="tok-kw">const</span> bytes = <span class="tok-kw">try</span> allocator.alignedAlloc(<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(IndexHeader), nbytes);</span>
-<span class="line" id="L1896">        <span class="tok-builtin">@memset</span>(bytes[<span class="tok-builtin">@sizeOf</span>(IndexHeader)..], <span class="tok-number">0xff</span>);</span>
-<span class="line" id="L1897">        <span class="tok-kw">const</span> result: *IndexHeader = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@ptrCast</span>(bytes.ptr));</span>
-<span class="line" id="L1898">        result.* = .{</span>
-<span class="line" id="L1899">            .bit_index = new_bit_index,</span>
-<span class="line" id="L1900">        };</span>
-<span class="line" id="L1901">        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L1902">    }</span>
-<span class="line" id="L1903"></span>
-<span class="line" id="L1904">    <span class="tok-comment">/// Releases the memory for a header and its associated arrays.</span></span>
-<span class="line" id="L1905">    <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(header: *IndexHeader, allocator: Allocator) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1906">        <span class="tok-kw">const</span> index_size = hash_map.capacityIndexSize(header.bit_index);</span>
-<span class="line" id="L1907">        <span class="tok-kw">const</span> ptr: [*]<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(IndexHeader)) <span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(header);</span>
-<span class="line" id="L1908">        <span class="tok-kw">const</span> slice = ptr[<span class="tok-number">0</span> .. <span class="tok-builtin">@sizeOf</span>(IndexHeader) + header.length() * index_size];</span>
-<span class="line" id="L1909">        allocator.free(slice);</span>
-<span class="line" id="L1910">    }</span>
-<span class="line" id="L1911"></span>
-<span class="line" id="L1912">    <span class="tok-comment">/// Puts an IndexHeader into the state that it would be in after being freshly allocated.</span></span>
-<span class="line" id="L1913">    <span class="tok-kw">fn</span> <span class="tok-fn">reset</span>(header: *IndexHeader) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1914">        <span class="tok-kw">const</span> index_size = hash_map.capacityIndexSize(header.bit_index);</span>
-<span class="line" id="L1915">        <span class="tok-kw">const</span> ptr: [*]<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(IndexHeader)) <span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(header);</span>
-<span class="line" id="L1916">        <span class="tok-kw">const</span> nbytes = <span class="tok-builtin">@sizeOf</span>(IndexHeader) + header.length() * index_size;</span>
-<span class="line" id="L1917">        <span class="tok-builtin">@memset</span>(ptr[<span class="tok-builtin">@sizeOf</span>(IndexHeader)..nbytes], <span class="tok-number">0xff</span>);</span>
-<span class="line" id="L1918">    }</span>
-<span class="line" id="L1919"></span>
-<span class="line" id="L1920">    <span class="tok-comment">// Verify that the header has sufficient alignment to produce aligned arrays.</span>
+<span class="line" id="L1857">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(i &amp; header.mask()));</span>
+<span class="line" id="L1858">    }</span>
+<span class="line" id="L1859"></span>
+<span class="line" id="L1860">    <span class="tok-comment">/// Returns the attached array of indexes.  I must match the type</span></span>
+<span class="line" id="L1861">    <span class="tok-comment">/// returned by capacityIndexType.</span></span>
+<span class="line" id="L1862">    <span class="tok-kw">fn</span> <span class="tok-fn">indexes</span>(header: *IndexHeader, <span class="tok-kw">comptime</span> I: <span class="tok-type">type</span>) []Index(I) {</span>
+<span class="line" id="L1863">        <span class="tok-kw">const</span> start_ptr: [*]Index(I) = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@as</span>([*]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(header)) + <span class="tok-builtin">@sizeOf</span>(IndexHeader)));</span>
+<span class="line" id="L1864">        <span class="tok-kw">return</span> start_ptr[<span class="tok-number">0</span>..header.length()];</span>
+<span class="line" id="L1865">    }</span>
+<span class="line" id="L1866"></span>
+<span class="line" id="L1867">    <span class="tok-comment">/// Returns the type used for the index arrays.</span></span>
+<span class="line" id="L1868">    <span class="tok-kw">fn</span> <span class="tok-fn">capacityIndexType</span>(header: IndexHeader) CapacityIndexType {</span>
+<span class="line" id="L1869">        <span class="tok-kw">return</span> hash_map.capacityIndexType(header.bit_index);</span>
+<span class="line" id="L1870">    }</span>
+<span class="line" id="L1871"></span>
+<span class="line" id="L1872">    <span class="tok-kw">fn</span> <span class="tok-fn">capacity</span>(self: IndexHeader) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L1873">        <span class="tok-kw">return</span> index_capacities[self.bit_index];</span>
+<span class="line" id="L1874">    }</span>
+<span class="line" id="L1875">    <span class="tok-kw">fn</span> <span class="tok-fn">length</span>(self: IndexHeader) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1876">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(math.Log2Int(<span class="tok-type">usize</span>), <span class="tok-builtin">@intCast</span>(self.bit_index));</span>
+<span class="line" id="L1877">    }</span>
+<span class="line" id="L1878">    <span class="tok-kw">fn</span> <span class="tok-fn">mask</span>(self: IndexHeader) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L1879">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(self.length() - <span class="tok-number">1</span>));</span>
+<span class="line" id="L1880">    }</span>
+<span class="line" id="L1881"></span>
+<span class="line" id="L1882">    <span class="tok-kw">fn</span> <span class="tok-fn">findBitIndex</span>(desired_capacity: <span class="tok-type">usize</span>) !<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1883">        <span class="tok-kw">if</span> (desired_capacity &gt; max_capacity) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.OutOfMemory;</span>
+<span class="line" id="L1884">        <span class="tok-kw">var</span> new_bit_index = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@intCast</span>(std.math.log2_int_ceil(<span class="tok-type">usize</span>, desired_capacity)));</span>
+<span class="line" id="L1885">        <span class="tok-kw">if</span> (desired_capacity &gt; index_capacities[new_bit_index]) new_bit_index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1886">        <span class="tok-kw">if</span> (new_bit_index &lt; min_bit_index) new_bit_index = min_bit_index;</span>
+<span class="line" id="L1887">        assert(desired_capacity &lt;= index_capacities[new_bit_index]);</span>
+<span class="line" id="L1888">        <span class="tok-kw">return</span> new_bit_index;</span>
+<span class="line" id="L1889">    }</span>
+<span class="line" id="L1890"></span>
+<span class="line" id="L1891">    <span class="tok-comment">/// Allocates an index header, and fills the entryIndexes array with empty.</span></span>
+<span class="line" id="L1892">    <span class="tok-comment">/// The distance array contents are undefined.</span></span>
+<span class="line" id="L1893">    <span class="tok-kw">fn</span> <span class="tok-fn">alloc</span>(allocator: Allocator, new_bit_index: <span class="tok-type">u8</span>) !*IndexHeader {</span>
+<span class="line" id="L1894">        <span class="tok-kw">const</span> len = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(math.Log2Int(<span class="tok-type">usize</span>), <span class="tok-builtin">@intCast</span>(new_bit_index));</span>
+<span class="line" id="L1895">        <span class="tok-kw">const</span> index_size = hash_map.capacityIndexSize(new_bit_index);</span>
+<span class="line" id="L1896">        <span class="tok-kw">const</span> nbytes = <span class="tok-builtin">@sizeOf</span>(IndexHeader) + index_size * len;</span>
+<span class="line" id="L1897">        <span class="tok-kw">const</span> bytes = <span class="tok-kw">try</span> allocator.alignedAlloc(<span class="tok-type">u8</span>, <span class="tok-builtin">@alignOf</span>(IndexHeader), nbytes);</span>
+<span class="line" id="L1898">        <span class="tok-builtin">@memset</span>(bytes[<span class="tok-builtin">@sizeOf</span>(IndexHeader)..], <span class="tok-number">0xff</span>);</span>
+<span class="line" id="L1899">        <span class="tok-kw">const</span> result: *IndexHeader = <span class="tok-builtin">@alignCast</span>(<span class="tok-builtin">@ptrCast</span>(bytes.ptr));</span>
+<span class="line" id="L1900">        result.* = .{</span>
+<span class="line" id="L1901">            .bit_index = new_bit_index,</span>
+<span class="line" id="L1902">        };</span>
+<span class="line" id="L1903">        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L1904">    }</span>
+<span class="line" id="L1905"></span>
+<span class="line" id="L1906">    <span class="tok-comment">/// Releases the memory for a header and its associated arrays.</span></span>
+<span class="line" id="L1907">    <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(header: *IndexHeader, allocator: Allocator) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1908">        <span class="tok-kw">const</span> index_size = hash_map.capacityIndexSize(header.bit_index);</span>
+<span class="line" id="L1909">        <span class="tok-kw">const</span> ptr: [*]<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(IndexHeader)) <span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(header);</span>
+<span class="line" id="L1910">        <span class="tok-kw">const</span> slice = ptr[<span class="tok-number">0</span> .. <span class="tok-builtin">@sizeOf</span>(IndexHeader) + header.length() * index_size];</span>
+<span class="line" id="L1911">        allocator.free(slice);</span>
+<span class="line" id="L1912">    }</span>
+<span class="line" id="L1913"></span>
+<span class="line" id="L1914">    <span class="tok-comment">/// Puts an IndexHeader into the state that it would be in after being freshly allocated.</span></span>
+<span class="line" id="L1915">    <span class="tok-kw">fn</span> <span class="tok-fn">reset</span>(header: *IndexHeader) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1916">        <span class="tok-kw">const</span> index_size = hash_map.capacityIndexSize(header.bit_index);</span>
+<span class="line" id="L1917">        <span class="tok-kw">const</span> ptr: [*]<span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(IndexHeader)) <span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(header);</span>
+<span class="line" id="L1918">        <span class="tok-kw">const</span> nbytes = <span class="tok-builtin">@sizeOf</span>(IndexHeader) + header.length() * index_size;</span>
+<span class="line" id="L1919">        <span class="tok-builtin">@memset</span>(ptr[<span class="tok-builtin">@sizeOf</span>(IndexHeader)..nbytes], <span class="tok-number">0xff</span>);</span>
+<span class="line" id="L1920">    }</span>
+<span class="line" id="L1921"></span>
+<span class="line" id="L1922">    <span class="tok-comment">// Verify that the header has sufficient alignment to produce aligned arrays.</span>
 </span>
-<span class="line" id="L1921">    <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L1922">        <span class="tok-kw">if</span> (<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u32</span>) &gt; <span class="tok-builtin">@alignOf</span>(IndexHeader))</span>
-<span class="line" id="L1923">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;IndexHeader must have a larger alignment than its indexes!&quot;</span>);</span>
-<span class="line" id="L1924">    }</span>
-<span class="line" id="L1925">};</span>
-<span class="line" id="L1926"></span>
-<span class="line" id="L1927"><span class="tok-kw">test</span> <span class="tok-str">&quot;basic hash map usage&quot;</span> {</span>
-<span class="line" id="L1928">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L1929">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L1930"></span>
-<span class="line" id="L1931">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">1</span>, <span class="tok-number">11</span>)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1932">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">2</span>, <span class="tok-number">22</span>)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1933">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">3</span>, <span class="tok-number">33</span>)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1934">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">4</span>, <span class="tok-number">44</span>)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1935"></span>
-<span class="line" id="L1936">    <span class="tok-kw">try</span> map.putNoClobber(<span class="tok-number">5</span>, <span class="tok-number">55</span>);</span>
-<span class="line" id="L1937">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">5</span>, <span class="tok-number">66</span>)).?.value == <span class="tok-number">55</span>);</span>
-<span class="line" id="L1938">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">5</span>, <span class="tok-number">55</span>)).?.value == <span class="tok-number">66</span>);</span>
-<span class="line" id="L1939"></span>
-<span class="line" id="L1940">    <span class="tok-kw">const</span> gop1 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">5</span>);</span>
-<span class="line" id="L1941">    <span class="tok-kw">try</span> testing.expect(gop1.found_existing == <span class="tok-null">true</span>);</span>
-<span class="line" id="L1942">    <span class="tok-kw">try</span> testing.expect(gop1.value_ptr.* == <span class="tok-number">55</span>);</span>
-<span class="line" id="L1943">    <span class="tok-kw">try</span> testing.expect(gop1.index == <span class="tok-number">4</span>);</span>
-<span class="line" id="L1944">    gop1.value_ptr.* = <span class="tok-number">77</span>;</span>
-<span class="line" id="L1945">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">5</span>).?.value_ptr.* == <span class="tok-number">77</span>);</span>
-<span class="line" id="L1946"></span>
-<span class="line" id="L1947">    <span class="tok-kw">const</span> gop2 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">99</span>);</span>
-<span class="line" id="L1948">    <span class="tok-kw">try</span> testing.expect(gop2.found_existing == <span class="tok-null">false</span>);</span>
-<span class="line" id="L1949">    <span class="tok-kw">try</span> testing.expect(gop2.index == <span class="tok-number">5</span>);</span>
-<span class="line" id="L1950">    gop2.value_ptr.* = <span class="tok-number">42</span>;</span>
-<span class="line" id="L1951">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">99</span>).?.value_ptr.* == <span class="tok-number">42</span>);</span>
-<span class="line" id="L1952"></span>
-<span class="line" id="L1953">    <span class="tok-kw">const</span> gop3 = <span class="tok-kw">try</span> map.getOrPutValue(<span class="tok-number">5</span>, <span class="tok-number">5</span>);</span>
-<span class="line" id="L1954">    <span class="tok-kw">try</span> testing.expect(gop3.value_ptr.* == <span class="tok-number">77</span>);</span>
-<span class="line" id="L1955"></span>
-<span class="line" id="L1956">    <span class="tok-kw">const</span> gop4 = <span class="tok-kw">try</span> map.getOrPutValue(<span class="tok-number">100</span>, <span class="tok-number">41</span>);</span>
-<span class="line" id="L1957">    <span class="tok-kw">try</span> testing.expect(gop4.value_ptr.* == <span class="tok-number">41</span>);</span>
-<span class="line" id="L1958"></span>
-<span class="line" id="L1959">    <span class="tok-kw">try</span> testing.expect(map.contains(<span class="tok-number">2</span>));</span>
-<span class="line" id="L1960">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">2</span>).?.value_ptr.* == <span class="tok-number">22</span>);</span>
-<span class="line" id="L1961">    <span class="tok-kw">try</span> testing.expect(map.get(<span class="tok-number">2</span>).? == <span class="tok-number">22</span>);</span>
-<span class="line" id="L1962"></span>
-<span class="line" id="L1963">    <span class="tok-kw">const</span> rmv1 = map.fetchSwapRemove(<span class="tok-number">2</span>);</span>
-<span class="line" id="L1964">    <span class="tok-kw">try</span> testing.expect(rmv1.?.key == <span class="tok-number">2</span>);</span>
-<span class="line" id="L1965">    <span class="tok-kw">try</span> testing.expect(rmv1.?.value == <span class="tok-number">22</span>);</span>
-<span class="line" id="L1966">    <span class="tok-kw">try</span> testing.expect(map.fetchSwapRemove(<span class="tok-number">2</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1967">    <span class="tok-kw">try</span> testing.expect(map.swapRemove(<span class="tok-number">2</span>) == <span class="tok-null">false</span>);</span>
-<span class="line" id="L1968">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">2</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1969">    <span class="tok-kw">try</span> testing.expect(map.get(<span class="tok-number">2</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1970"></span>
-<span class="line" id="L1971">    <span class="tok-comment">// Since we've used `swapRemove` above, the index of this entry should remain unchanged.</span>
+<span class="line" id="L1923">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L1924">        <span class="tok-kw">if</span> (<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u32</span>) &gt; <span class="tok-builtin">@alignOf</span>(IndexHeader))</span>
+<span class="line" id="L1925">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;IndexHeader must have a larger alignment than its indexes!&quot;</span>);</span>
+<span class="line" id="L1926">    }</span>
+<span class="line" id="L1927">};</span>
+<span class="line" id="L1928"></span>
+<span class="line" id="L1929"><span class="tok-kw">test</span> <span class="tok-str">&quot;basic hash map usage&quot;</span> {</span>
+<span class="line" id="L1930">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L1931">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L1932"></span>
+<span class="line" id="L1933">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">1</span>, <span class="tok-number">11</span>)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1934">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">2</span>, <span class="tok-number">22</span>)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1935">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">3</span>, <span class="tok-number">33</span>)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1936">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">4</span>, <span class="tok-number">44</span>)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1937"></span>
+<span class="line" id="L1938">    <span class="tok-kw">try</span> map.putNoClobber(<span class="tok-number">5</span>, <span class="tok-number">55</span>);</span>
+<span class="line" id="L1939">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">5</span>, <span class="tok-number">66</span>)).?.value == <span class="tok-number">55</span>);</span>
+<span class="line" id="L1940">    <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(<span class="tok-number">5</span>, <span class="tok-number">55</span>)).?.value == <span class="tok-number">66</span>);</span>
+<span class="line" id="L1941"></span>
+<span class="line" id="L1942">    <span class="tok-kw">const</span> gop1 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">5</span>);</span>
+<span class="line" id="L1943">    <span class="tok-kw">try</span> testing.expect(gop1.found_existing == <span class="tok-null">true</span>);</span>
+<span class="line" id="L1944">    <span class="tok-kw">try</span> testing.expect(gop1.value_ptr.* == <span class="tok-number">55</span>);</span>
+<span class="line" id="L1945">    <span class="tok-kw">try</span> testing.expect(gop1.index == <span class="tok-number">4</span>);</span>
+<span class="line" id="L1946">    gop1.value_ptr.* = <span class="tok-number">77</span>;</span>
+<span class="line" id="L1947">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">5</span>).?.value_ptr.* == <span class="tok-number">77</span>);</span>
+<span class="line" id="L1948"></span>
+<span class="line" id="L1949">    <span class="tok-kw">const</span> gop2 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">99</span>);</span>
+<span class="line" id="L1950">    <span class="tok-kw">try</span> testing.expect(gop2.found_existing == <span class="tok-null">false</span>);</span>
+<span class="line" id="L1951">    <span class="tok-kw">try</span> testing.expect(gop2.index == <span class="tok-number">5</span>);</span>
+<span class="line" id="L1952">    gop2.value_ptr.* = <span class="tok-number">42</span>;</span>
+<span class="line" id="L1953">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">99</span>).?.value_ptr.* == <span class="tok-number">42</span>);</span>
+<span class="line" id="L1954"></span>
+<span class="line" id="L1955">    <span class="tok-kw">const</span> gop3 = <span class="tok-kw">try</span> map.getOrPutValue(<span class="tok-number">5</span>, <span class="tok-number">5</span>);</span>
+<span class="line" id="L1956">    <span class="tok-kw">try</span> testing.expect(gop3.value_ptr.* == <span class="tok-number">77</span>);</span>
+<span class="line" id="L1957"></span>
+<span class="line" id="L1958">    <span class="tok-kw">const</span> gop4 = <span class="tok-kw">try</span> map.getOrPutValue(<span class="tok-number">100</span>, <span class="tok-number">41</span>);</span>
+<span class="line" id="L1959">    <span class="tok-kw">try</span> testing.expect(gop4.value_ptr.* == <span class="tok-number">41</span>);</span>
+<span class="line" id="L1960"></span>
+<span class="line" id="L1961">    <span class="tok-kw">try</span> testing.expect(map.contains(<span class="tok-number">2</span>));</span>
+<span class="line" id="L1962">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">2</span>).?.value_ptr.* == <span class="tok-number">22</span>);</span>
+<span class="line" id="L1963">    <span class="tok-kw">try</span> testing.expect(map.get(<span class="tok-number">2</span>).? == <span class="tok-number">22</span>);</span>
+<span class="line" id="L1964"></span>
+<span class="line" id="L1965">    <span class="tok-kw">const</span> rmv1 = map.fetchSwapRemove(<span class="tok-number">2</span>);</span>
+<span class="line" id="L1966">    <span class="tok-kw">try</span> testing.expect(rmv1.?.key == <span class="tok-number">2</span>);</span>
+<span class="line" id="L1967">    <span class="tok-kw">try</span> testing.expect(rmv1.?.value == <span class="tok-number">22</span>);</span>
+<span class="line" id="L1968">    <span class="tok-kw">try</span> testing.expect(map.fetchSwapRemove(<span class="tok-number">2</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1969">    <span class="tok-kw">try</span> testing.expect(map.swapRemove(<span class="tok-number">2</span>) == <span class="tok-null">false</span>);</span>
+<span class="line" id="L1970">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">2</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1971">    <span class="tok-kw">try</span> testing.expect(map.get(<span class="tok-number">2</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1972"></span>
+<span class="line" id="L1973">    <span class="tok-comment">// Since we've used `swapRemove` above, the index of this entry should remain unchanged.</span>
 </span>
-<span class="line" id="L1972">    <span class="tok-kw">try</span> testing.expect(map.getIndex(<span class="tok-number">100</span>).? == <span class="tok-number">1</span>);</span>
-<span class="line" id="L1973">    <span class="tok-kw">const</span> gop5 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">5</span>);</span>
-<span class="line" id="L1974">    <span class="tok-kw">try</span> testing.expect(gop5.found_existing == <span class="tok-null">true</span>);</span>
-<span class="line" id="L1975">    <span class="tok-kw">try</span> testing.expect(gop5.value_ptr.* == <span class="tok-number">77</span>);</span>
-<span class="line" id="L1976">    <span class="tok-kw">try</span> testing.expect(gop5.index == <span class="tok-number">4</span>);</span>
-<span class="line" id="L1977"></span>
-<span class="line" id="L1978">    <span class="tok-comment">// Whereas, if we do an `orderedRemove`, it should move the index forward one spot.</span>
+<span class="line" id="L1974">    <span class="tok-kw">try</span> testing.expect(map.getIndex(<span class="tok-number">100</span>).? == <span class="tok-number">1</span>);</span>
+<span class="line" id="L1975">    <span class="tok-kw">const</span> gop5 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">5</span>);</span>
+<span class="line" id="L1976">    <span class="tok-kw">try</span> testing.expect(gop5.found_existing == <span class="tok-null">true</span>);</span>
+<span class="line" id="L1977">    <span class="tok-kw">try</span> testing.expect(gop5.value_ptr.* == <span class="tok-number">77</span>);</span>
+<span class="line" id="L1978">    <span class="tok-kw">try</span> testing.expect(gop5.index == <span class="tok-number">4</span>);</span>
+<span class="line" id="L1979"></span>
+<span class="line" id="L1980">    <span class="tok-comment">// Whereas, if we do an `orderedRemove`, it should move the index forward one spot.</span>
 </span>
-<span class="line" id="L1979">    <span class="tok-kw">const</span> rmv2 = map.fetchOrderedRemove(<span class="tok-number">100</span>);</span>
-<span class="line" id="L1980">    <span class="tok-kw">try</span> testing.expect(rmv2.?.key == <span class="tok-number">100</span>);</span>
-<span class="line" id="L1981">    <span class="tok-kw">try</span> testing.expect(rmv2.?.value == <span class="tok-number">41</span>);</span>
-<span class="line" id="L1982">    <span class="tok-kw">try</span> testing.expect(map.fetchOrderedRemove(<span class="tok-number">100</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1983">    <span class="tok-kw">try</span> testing.expect(map.orderedRemove(<span class="tok-number">100</span>) == <span class="tok-null">false</span>);</span>
-<span class="line" id="L1984">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">100</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1985">    <span class="tok-kw">try</span> testing.expect(map.get(<span class="tok-number">100</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1986">    <span class="tok-kw">const</span> gop6 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">5</span>);</span>
-<span class="line" id="L1987">    <span class="tok-kw">try</span> testing.expect(gop6.found_existing == <span class="tok-null">true</span>);</span>
-<span class="line" id="L1988">    <span class="tok-kw">try</span> testing.expect(gop6.value_ptr.* == <span class="tok-number">77</span>);</span>
-<span class="line" id="L1989">    <span class="tok-kw">try</span> testing.expect(gop6.index == <span class="tok-number">3</span>);</span>
-<span class="line" id="L1990"></span>
-<span class="line" id="L1991">    <span class="tok-kw">try</span> testing.expect(map.swapRemove(<span class="tok-number">3</span>));</span>
-<span class="line" id="L1992">}</span>
-<span class="line" id="L1993"></span>
-<span class="line" id="L1994"><span class="tok-kw">test</span> <span class="tok-str">&quot;iterator hash map&quot;</span> {</span>
-<span class="line" id="L1995">    <span class="tok-kw">var</span> reset_map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L1996">    <span class="tok-kw">defer</span> reset_map.deinit();</span>
-<span class="line" id="L1997"></span>
-<span class="line" id="L1998">    <span class="tok-comment">// test ensureTotalCapacity with a 0 parameter</span>
+<span class="line" id="L1981">    <span class="tok-kw">const</span> rmv2 = map.fetchOrderedRemove(<span class="tok-number">100</span>);</span>
+<span class="line" id="L1982">    <span class="tok-kw">try</span> testing.expect(rmv2.?.key == <span class="tok-number">100</span>);</span>
+<span class="line" id="L1983">    <span class="tok-kw">try</span> testing.expect(rmv2.?.value == <span class="tok-number">41</span>);</span>
+<span class="line" id="L1984">    <span class="tok-kw">try</span> testing.expect(map.fetchOrderedRemove(<span class="tok-number">100</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1985">    <span class="tok-kw">try</span> testing.expect(map.orderedRemove(<span class="tok-number">100</span>) == <span class="tok-null">false</span>);</span>
+<span class="line" id="L1986">    <span class="tok-kw">try</span> testing.expect(map.getEntry(<span class="tok-number">100</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1987">    <span class="tok-kw">try</span> testing.expect(map.get(<span class="tok-number">100</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1988">    <span class="tok-kw">const</span> gop6 = <span class="tok-kw">try</span> map.getOrPut(<span class="tok-number">5</span>);</span>
+<span class="line" id="L1989">    <span class="tok-kw">try</span> testing.expect(gop6.found_existing == <span class="tok-null">true</span>);</span>
+<span class="line" id="L1990">    <span class="tok-kw">try</span> testing.expect(gop6.value_ptr.* == <span class="tok-number">77</span>);</span>
+<span class="line" id="L1991">    <span class="tok-kw">try</span> testing.expect(gop6.index == <span class="tok-number">3</span>);</span>
+<span class="line" id="L1992"></span>
+<span class="line" id="L1993">    <span class="tok-kw">try</span> testing.expect(map.swapRemove(<span class="tok-number">3</span>));</span>
+<span class="line" id="L1994">}</span>
+<span class="line" id="L1995"></span>
+<span class="line" id="L1996"><span class="tok-kw">test</span> <span class="tok-str">&quot;iterator hash map&quot;</span> {</span>
+<span class="line" id="L1997">    <span class="tok-kw">var</span> reset_map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L1998">    <span class="tok-kw">defer</span> reset_map.deinit();</span>
+<span class="line" id="L1999"></span>
+<span class="line" id="L2000">    <span class="tok-comment">// test ensureTotalCapacity with a 0 parameter</span>
 </span>
-<span class="line" id="L1999">    <span class="tok-kw">try</span> reset_map.ensureTotalCapacity(<span class="tok-number">0</span>);</span>
-<span class="line" id="L2000"></span>
-<span class="line" id="L2001">    <span class="tok-kw">try</span> reset_map.putNoClobber(<span class="tok-number">0</span>, <span class="tok-number">11</span>);</span>
-<span class="line" id="L2002">    <span class="tok-kw">try</span> reset_map.putNoClobber(<span class="tok-number">1</span>, <span class="tok-number">22</span>);</span>
-<span class="line" id="L2003">    <span class="tok-kw">try</span> reset_map.putNoClobber(<span class="tok-number">2</span>, <span class="tok-number">33</span>);</span>
-<span class="line" id="L2004"></span>
-<span class="line" id="L2005">    <span class="tok-kw">var</span> keys = [_]<span class="tok-type">i32</span>{</span>
-<span class="line" id="L2006">        <span class="tok-number">0</span>, <span class="tok-number">2</span>, <span class="tok-number">1</span>,</span>
-<span class="line" id="L2007">    };</span>
-<span class="line" id="L2008"></span>
-<span class="line" id="L2009">    <span class="tok-kw">var</span> values = [_]<span class="tok-type">i32</span>{</span>
-<span class="line" id="L2010">        <span class="tok-number">11</span>, <span class="tok-number">33</span>, <span class="tok-number">22</span>,</span>
-<span class="line" id="L2011">    };</span>
-<span class="line" id="L2012"></span>
-<span class="line" id="L2013">    <span class="tok-kw">var</span> buffer = [_]<span class="tok-type">i32</span>{</span>
-<span class="line" id="L2014">        <span class="tok-number">0</span>, <span class="tok-number">0</span>, <span class="tok-number">0</span>,</span>
-<span class="line" id="L2015">    };</span>
-<span class="line" id="L2016"></span>
-<span class="line" id="L2017">    <span class="tok-kw">var</span> it = reset_map.iterator();</span>
-<span class="line" id="L2018">    <span class="tok-kw">const</span> first_entry = it.next().?;</span>
-<span class="line" id="L2019">    it.reset();</span>
-<span class="line" id="L2020"></span>
-<span class="line" id="L2021">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2022">    <span class="tok-kw">while</span> (it.next()) |entry| : (count += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2023">        buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(entry.key_ptr.*))] = entry.value_ptr.*;</span>
-<span class="line" id="L2024">    }</span>
-<span class="line" id="L2025">    <span class="tok-kw">try</span> testing.expect(count == <span class="tok-number">3</span>);</span>
-<span class="line" id="L2026">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2027"></span>
-<span class="line" id="L2028">    <span class="tok-kw">for</span> (buffer, <span class="tok-number">0</span>..) |_, i| {</span>
-<span class="line" id="L2029">        <span class="tok-kw">try</span> testing.expect(buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(keys[i]))] == values[i]);</span>
-<span class="line" id="L2030">    }</span>
-<span class="line" id="L2031"></span>
-<span class="line" id="L2032">    it.reset();</span>
-<span class="line" id="L2033">    count = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2034">    <span class="tok-kw">while</span> (it.next()) |entry| {</span>
-<span class="line" id="L2035">        buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(entry.key_ptr.*))] = entry.value_ptr.*;</span>
-<span class="line" id="L2036">        count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L2037">        <span class="tok-kw">if</span> (count &gt;= <span class="tok-number">2</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L2038">    }</span>
-<span class="line" id="L2039"></span>
-<span class="line" id="L2040">    <span class="tok-kw">for</span> (buffer[<span class="tok-number">0</span>..<span class="tok-number">2</span>], <span class="tok-number">0</span>..) |_, i| {</span>
-<span class="line" id="L2041">        <span class="tok-kw">try</span> testing.expect(buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(keys[i]))] == values[i]);</span>
-<span class="line" id="L2042">    }</span>
-<span class="line" id="L2043"></span>
-<span class="line" id="L2044">    it.reset();</span>
-<span class="line" id="L2045">    <span class="tok-kw">var</span> entry = it.next().?;</span>
-<span class="line" id="L2046">    <span class="tok-kw">try</span> testing.expect(entry.key_ptr.* == first_entry.key_ptr.*);</span>
-<span class="line" id="L2047">    <span class="tok-kw">try</span> testing.expect(entry.value_ptr.* == first_entry.value_ptr.*);</span>
-<span class="line" id="L2048">}</span>
-<span class="line" id="L2049"></span>
-<span class="line" id="L2050"><span class="tok-kw">test</span> <span class="tok-str">&quot;ensure capacity&quot;</span> {</span>
-<span class="line" id="L2051">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2052">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2053"></span>
-<span class="line" id="L2054">    <span class="tok-kw">try</span> map.ensureTotalCapacity(<span class="tok-number">20</span>);</span>
-<span class="line" id="L2055">    <span class="tok-kw">const</span> initial_capacity = map.capacity();</span>
-<span class="line" id="L2056">    <span class="tok-kw">try</span> testing.expect(initial_capacity &gt;= <span class="tok-number">20</span>);</span>
-<span class="line" id="L2057">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2058">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">20</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2059">        <span class="tok-kw">try</span> testing.expect(map.fetchPutAssumeCapacity(i, i + <span class="tok-number">10</span>) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2060">    }</span>
-<span class="line" id="L2061">    <span class="tok-comment">// shouldn't resize from putAssumeCapacity</span>
+<span class="line" id="L2001">    <span class="tok-kw">try</span> reset_map.ensureTotalCapacity(<span class="tok-number">0</span>);</span>
+<span class="line" id="L2002"></span>
+<span class="line" id="L2003">    <span class="tok-kw">try</span> reset_map.putNoClobber(<span class="tok-number">0</span>, <span class="tok-number">11</span>);</span>
+<span class="line" id="L2004">    <span class="tok-kw">try</span> reset_map.putNoClobber(<span class="tok-number">1</span>, <span class="tok-number">22</span>);</span>
+<span class="line" id="L2005">    <span class="tok-kw">try</span> reset_map.putNoClobber(<span class="tok-number">2</span>, <span class="tok-number">33</span>);</span>
+<span class="line" id="L2006"></span>
+<span class="line" id="L2007">    <span class="tok-kw">var</span> keys = [_]<span class="tok-type">i32</span>{</span>
+<span class="line" id="L2008">        <span class="tok-number">0</span>, <span class="tok-number">2</span>, <span class="tok-number">1</span>,</span>
+<span class="line" id="L2009">    };</span>
+<span class="line" id="L2010"></span>
+<span class="line" id="L2011">    <span class="tok-kw">var</span> values = [_]<span class="tok-type">i32</span>{</span>
+<span class="line" id="L2012">        <span class="tok-number">11</span>, <span class="tok-number">33</span>, <span class="tok-number">22</span>,</span>
+<span class="line" id="L2013">    };</span>
+<span class="line" id="L2014"></span>
+<span class="line" id="L2015">    <span class="tok-kw">var</span> buffer = [_]<span class="tok-type">i32</span>{</span>
+<span class="line" id="L2016">        <span class="tok-number">0</span>, <span class="tok-number">0</span>, <span class="tok-number">0</span>,</span>
+<span class="line" id="L2017">    };</span>
+<span class="line" id="L2018"></span>
+<span class="line" id="L2019">    <span class="tok-kw">var</span> it = reset_map.iterator();</span>
+<span class="line" id="L2020">    <span class="tok-kw">const</span> first_entry = it.next().?;</span>
+<span class="line" id="L2021">    it.reset();</span>
+<span class="line" id="L2022"></span>
+<span class="line" id="L2023">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2024">    <span class="tok-kw">while</span> (it.next()) |entry| : (count += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2025">        buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(entry.key_ptr.*))] = entry.value_ptr.*;</span>
+<span class="line" id="L2026">    }</span>
+<span class="line" id="L2027">    <span class="tok-kw">try</span> testing.expect(count == <span class="tok-number">3</span>);</span>
+<span class="line" id="L2028">    <span class="tok-kw">try</span> testing.expect(it.next() == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2029"></span>
+<span class="line" id="L2030">    <span class="tok-kw">for</span> (buffer, <span class="tok-number">0</span>..) |_, i| {</span>
+<span class="line" id="L2031">        <span class="tok-kw">try</span> testing.expect(buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(keys[i]))] == values[i]);</span>
+<span class="line" id="L2032">    }</span>
+<span class="line" id="L2033"></span>
+<span class="line" id="L2034">    it.reset();</span>
+<span class="line" id="L2035">    count = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2036">    <span class="tok-kw">while</span> (it.next()) |entry| {</span>
+<span class="line" id="L2037">        buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(entry.key_ptr.*))] = entry.value_ptr.*;</span>
+<span class="line" id="L2038">        count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L2039">        <span class="tok-kw">if</span> (count &gt;= <span class="tok-number">2</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L2040">    }</span>
+<span class="line" id="L2041"></span>
+<span class="line" id="L2042">    <span class="tok-kw">for</span> (buffer[<span class="tok-number">0</span>..<span class="tok-number">2</span>], <span class="tok-number">0</span>..) |_, i| {</span>
+<span class="line" id="L2043">        <span class="tok-kw">try</span> testing.expect(buffer[<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(keys[i]))] == values[i]);</span>
+<span class="line" id="L2044">    }</span>
+<span class="line" id="L2045"></span>
+<span class="line" id="L2046">    it.reset();</span>
+<span class="line" id="L2047">    <span class="tok-kw">var</span> entry = it.next().?;</span>
+<span class="line" id="L2048">    <span class="tok-kw">try</span> testing.expect(entry.key_ptr.* == first_entry.key_ptr.*);</span>
+<span class="line" id="L2049">    <span class="tok-kw">try</span> testing.expect(entry.value_ptr.* == first_entry.value_ptr.*);</span>
+<span class="line" id="L2050">}</span>
+<span class="line" id="L2051"></span>
+<span class="line" id="L2052"><span class="tok-kw">test</span> <span class="tok-str">&quot;ensure capacity&quot;</span> {</span>
+<span class="line" id="L2053">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2054">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2055"></span>
+<span class="line" id="L2056">    <span class="tok-kw">try</span> map.ensureTotalCapacity(<span class="tok-number">20</span>);</span>
+<span class="line" id="L2057">    <span class="tok-kw">const</span> initial_capacity = map.capacity();</span>
+<span class="line" id="L2058">    <span class="tok-kw">try</span> testing.expect(initial_capacity &gt;= <span class="tok-number">20</span>);</span>
+<span class="line" id="L2059">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2060">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">20</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2061">        <span class="tok-kw">try</span> testing.expect(map.fetchPutAssumeCapacity(i, i + <span class="tok-number">10</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2062">    }</span>
+<span class="line" id="L2063">    <span class="tok-comment">// shouldn't resize from putAssumeCapacity</span>
 </span>
-<span class="line" id="L2062">    <span class="tok-kw">try</span> testing.expect(initial_capacity == map.capacity());</span>
-<span class="line" id="L2063">}</span>
-<span class="line" id="L2064"></span>
-<span class="line" id="L2065"><span class="tok-kw">test</span> <span class="tok-str">&quot;ensure capacity leak&quot;</span> {</span>
-<span class="line" id="L2066">    <span class="tok-kw">try</span> testing.checkAllAllocationFailures(std.testing.allocator, <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2067">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(allocator: Allocator) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L2068">            <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(allocator);</span>
-<span class="line" id="L2069">            <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2070"></span>
-<span class="line" id="L2071">            <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2072">            <span class="tok-comment">// put more than `linear_scan_max` in so index_header gets allocated.</span>
+<span class="line" id="L2064">    <span class="tok-kw">try</span> testing.expect(initial_capacity == map.capacity());</span>
+<span class="line" id="L2065">}</span>
+<span class="line" id="L2066"></span>
+<span class="line" id="L2067"><span class="tok-kw">test</span> <span class="tok-str">&quot;ensure capacity leak&quot;</span> {</span>
+<span class="line" id="L2068">    <span class="tok-kw">try</span> testing.checkAllAllocationFailures(std.testing.allocator, <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2069">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(allocator: Allocator) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L2070">            <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(allocator);</span>
+<span class="line" id="L2071">            <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2072"></span>
+<span class="line" id="L2073">            <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2074">            <span class="tok-comment">// put more than `linear_scan_max` in so index_header gets allocated.</span>
 </span>
-<span class="line" id="L2073">            <span class="tok-kw">while</span> (i &lt;= <span class="tok-number">20</span>) : (i += <span class="tok-number">1</span>) <span class="tok-kw">try</span> map.put(i, i);</span>
-<span class="line" id="L2074">        }</span>
-<span class="line" id="L2075">    }.f, .{});</span>
-<span class="line" id="L2076">}</span>
-<span class="line" id="L2077"></span>
-<span class="line" id="L2078"><span class="tok-kw">test</span> <span class="tok-str">&quot;big map&quot;</span> {</span>
-<span class="line" id="L2079">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2080">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2081"></span>
-<span class="line" id="L2082">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2083">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2084">        <span class="tok-kw">try</span> map.put(i, i + <span class="tok-number">10</span>);</span>
-<span class="line" id="L2085">    }</span>
-<span class="line" id="L2086"></span>
-<span class="line" id="L2087">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2088">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2089">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">10</span>), map.get(i));</span>
-<span class="line" id="L2090">    }</span>
-<span class="line" id="L2091">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2092">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
-<span class="line" id="L2093">    }</span>
-<span class="line" id="L2094"></span>
-<span class="line" id="L2095">    i = <span class="tok-number">4</span>;</span>
-<span class="line" id="L2096">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">12</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2097">        <span class="tok-kw">try</span> map.put(i, i + <span class="tok-number">12</span>);</span>
-<span class="line" id="L2098">    }</span>
-<span class="line" id="L2099"></span>
-<span class="line" id="L2100">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2101">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">4</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2102">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">10</span>), map.get(i));</span>
-<span class="line" id="L2103">    }</span>
-<span class="line" id="L2104">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">12</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2105">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">12</span>), map.get(i));</span>
-<span class="line" id="L2106">    }</span>
-<span class="line" id="L2107">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2108">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
-<span class="line" id="L2109">    }</span>
-<span class="line" id="L2110"></span>
-<span class="line" id="L2111">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2112">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">4</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2113">        <span class="tok-kw">try</span> testing.expect(map.orderedRemove(i));</span>
-<span class="line" id="L2114">    }</span>
-<span class="line" id="L2115">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2116">        <span class="tok-kw">try</span> testing.expect(map.swapRemove(i));</span>
-<span class="line" id="L2117">    }</span>
-<span class="line" id="L2118"></span>
-<span class="line" id="L2119">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2120">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2121">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
-<span class="line" id="L2122">    }</span>
-<span class="line" id="L2123">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">12</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2124">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">12</span>), map.get(i));</span>
-<span class="line" id="L2125">    }</span>
-<span class="line" id="L2126">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2127">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
-<span class="line" id="L2128">    }</span>
-<span class="line" id="L2129">}</span>
-<span class="line" id="L2130"></span>
-<span class="line" id="L2131"><span class="tok-kw">test</span> <span class="tok-str">&quot;clone&quot;</span> {</span>
-<span class="line" id="L2132">    <span class="tok-kw">var</span> original = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2133">    <span class="tok-kw">defer</span> original.deinit();</span>
-<span class="line" id="L2134"></span>
-<span class="line" id="L2135">    <span class="tok-comment">// put more than `linear_scan_max` so we can test that the index header is properly cloned</span>
+<span class="line" id="L2075">            <span class="tok-kw">while</span> (i &lt;= <span class="tok-number">20</span>) : (i += <span class="tok-number">1</span>) <span class="tok-kw">try</span> map.put(i, i);</span>
+<span class="line" id="L2076">        }</span>
+<span class="line" id="L2077">    }.f, .{});</span>
+<span class="line" id="L2078">}</span>
+<span class="line" id="L2079"></span>
+<span class="line" id="L2080"><span class="tok-kw">test</span> <span class="tok-str">&quot;big map&quot;</span> {</span>
+<span class="line" id="L2081">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2082">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2083"></span>
+<span class="line" id="L2084">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2085">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2086">        <span class="tok-kw">try</span> map.put(i, i + <span class="tok-number">10</span>);</span>
+<span class="line" id="L2087">    }</span>
+<span class="line" id="L2088"></span>
+<span class="line" id="L2089">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2090">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2091">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">10</span>), map.get(i));</span>
+<span class="line" id="L2092">    }</span>
+<span class="line" id="L2093">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2094">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
+<span class="line" id="L2095">    }</span>
+<span class="line" id="L2096"></span>
+<span class="line" id="L2097">    i = <span class="tok-number">4</span>;</span>
+<span class="line" id="L2098">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">12</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2099">        <span class="tok-kw">try</span> map.put(i, i + <span class="tok-number">12</span>);</span>
+<span class="line" id="L2100">    }</span>
+<span class="line" id="L2101"></span>
+<span class="line" id="L2102">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2103">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">4</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2104">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">10</span>), map.get(i));</span>
+<span class="line" id="L2105">    }</span>
+<span class="line" id="L2106">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">12</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2107">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">12</span>), map.get(i));</span>
+<span class="line" id="L2108">    }</span>
+<span class="line" id="L2109">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2110">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
+<span class="line" id="L2111">    }</span>
+<span class="line" id="L2112"></span>
+<span class="line" id="L2113">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2114">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">4</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2115">        <span class="tok-kw">try</span> testing.expect(map.orderedRemove(i));</span>
+<span class="line" id="L2116">    }</span>
+<span class="line" id="L2117">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2118">        <span class="tok-kw">try</span> testing.expect(map.swapRemove(i));</span>
+<span class="line" id="L2119">    }</span>
+<span class="line" id="L2120"></span>
+<span class="line" id="L2121">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2122">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">8</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2123">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
+<span class="line" id="L2124">    }</span>
+<span class="line" id="L2125">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">12</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2126">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, i + <span class="tok-number">12</span>), map.get(i));</span>
+<span class="line" id="L2127">    }</span>
+<span class="line" id="L2128">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">16</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2129">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(?<span class="tok-type">i32</span>, <span class="tok-null">null</span>), map.get(i));</span>
+<span class="line" id="L2130">    }</span>
+<span class="line" id="L2131">}</span>
+<span class="line" id="L2132"></span>
+<span class="line" id="L2133"><span class="tok-kw">test</span> <span class="tok-str">&quot;clone&quot;</span> {</span>
+<span class="line" id="L2134">    <span class="tok-kw">var</span> original = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2135">    <span class="tok-kw">defer</span> original.deinit();</span>
+<span class="line" id="L2136"></span>
+<span class="line" id="L2137">    <span class="tok-comment">// put more than `linear_scan_max` so we can test that the index header is properly cloned</span>
 </span>
-<span class="line" id="L2136">    <span class="tok-kw">var</span> i: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2137">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">10</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2138">        <span class="tok-kw">try</span> original.putNoClobber(i, i * <span class="tok-number">10</span>);</span>
-<span class="line" id="L2139">    }</span>
-<span class="line" id="L2140"></span>
-<span class="line" id="L2141">    <span class="tok-kw">var</span> copy = <span class="tok-kw">try</span> original.clone();</span>
-<span class="line" id="L2142">    <span class="tok-kw">defer</span> copy.deinit();</span>
-<span class="line" id="L2143"></span>
-<span class="line" id="L2144">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2145">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">10</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2146">        <span class="tok-kw">try</span> testing.expect(original.get(i).? == i * <span class="tok-number">10</span>);</span>
-<span class="line" id="L2147">        <span class="tok-kw">try</span> testing.expect(copy.get(i).? == i * <span class="tok-number">10</span>);</span>
-<span class="line" id="L2148">        <span class="tok-kw">try</span> testing.expect(original.getPtr(i).? != copy.getPtr(i).?);</span>
-<span class="line" id="L2149">    }</span>
-<span class="line" id="L2150"></span>
-<span class="line" id="L2151">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">20</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2152">        <span class="tok-kw">try</span> testing.expect(original.get(i) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2153">        <span class="tok-kw">try</span> testing.expect(copy.get(i) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2154">    }</span>
-<span class="line" id="L2155">}</span>
-<span class="line" id="L2156"></span>
-<span class="line" id="L2157"><span class="tok-kw">test</span> <span class="tok-str">&quot;shrink&quot;</span> {</span>
-<span class="line" id="L2158">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2159">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2160"></span>
-<span class="line" id="L2161">    <span class="tok-comment">// This test is more interesting if we insert enough entries to allocate the index header.</span>
+<span class="line" id="L2138">    <span class="tok-kw">var</span> i: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2139">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">10</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2140">        <span class="tok-kw">try</span> original.putNoClobber(i, i * <span class="tok-number">10</span>);</span>
+<span class="line" id="L2141">    }</span>
+<span class="line" id="L2142"></span>
+<span class="line" id="L2143">    <span class="tok-kw">var</span> copy = <span class="tok-kw">try</span> original.clone();</span>
+<span class="line" id="L2144">    <span class="tok-kw">defer</span> copy.deinit();</span>
+<span class="line" id="L2145"></span>
+<span class="line" id="L2146">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2147">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">10</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2148">        <span class="tok-kw">try</span> testing.expect(original.get(i).? == i * <span class="tok-number">10</span>);</span>
+<span class="line" id="L2149">        <span class="tok-kw">try</span> testing.expect(copy.get(i).? == i * <span class="tok-number">10</span>);</span>
+<span class="line" id="L2150">        <span class="tok-kw">try</span> testing.expect(original.getPtr(i).? != copy.getPtr(i).?);</span>
+<span class="line" id="L2151">    }</span>
+<span class="line" id="L2152"></span>
+<span class="line" id="L2153">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">20</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2154">        <span class="tok-kw">try</span> testing.expect(original.get(i) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2155">        <span class="tok-kw">try</span> testing.expect(copy.get(i) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2156">    }</span>
+<span class="line" id="L2157">}</span>
+<span class="line" id="L2158"></span>
+<span class="line" id="L2159"><span class="tok-kw">test</span> <span class="tok-str">&quot;shrink&quot;</span> {</span>
+<span class="line" id="L2160">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2161">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2162"></span>
+<span class="line" id="L2163">    <span class="tok-comment">// This test is more interesting if we insert enough entries to allocate the index header.</span>
 </span>
-<span class="line" id="L2162">    <span class="tok-kw">const</span> num_entries = <span class="tok-number">20</span>;</span>
-<span class="line" id="L2163">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2164">    <span class="tok-kw">while</span> (i &lt; num_entries) : (i += <span class="tok-number">1</span>)</span>
-<span class="line" id="L2165">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i * <span class="tok-number">10</span>)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2166"></span>
-<span class="line" id="L2167">    <span class="tok-kw">try</span> testing.expect(map.unmanaged.index_header != <span class="tok-null">null</span>);</span>
-<span class="line" id="L2168">    <span class="tok-kw">try</span> testing.expect(map.count() == num_entries);</span>
-<span class="line" id="L2169"></span>
-<span class="line" id="L2170">    <span class="tok-comment">// Test `shrinkRetainingCapacity`.</span>
+<span class="line" id="L2164">    <span class="tok-kw">const</span> num_entries = <span class="tok-number">20</span>;</span>
+<span class="line" id="L2165">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2166">    <span class="tok-kw">while</span> (i &lt; num_entries) : (i += <span class="tok-number">1</span>)</span>
+<span class="line" id="L2167">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i * <span class="tok-number">10</span>)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2168"></span>
+<span class="line" id="L2169">    <span class="tok-kw">try</span> testing.expect(map.unmanaged.index_header != <span class="tok-null">null</span>);</span>
+<span class="line" id="L2170">    <span class="tok-kw">try</span> testing.expect(map.count() == num_entries);</span>
+<span class="line" id="L2171"></span>
+<span class="line" id="L2172">    <span class="tok-comment">// Test `shrinkRetainingCapacity`.</span>
 </span>
-<span class="line" id="L2171">    map.shrinkRetainingCapacity(<span class="tok-number">17</span>);</span>
-<span class="line" id="L2172">    <span class="tok-kw">try</span> testing.expect(map.count() == <span class="tok-number">17</span>);</span>
-<span class="line" id="L2173">    <span class="tok-kw">try</span> testing.expect(map.capacity() == <span class="tok-number">20</span>);</span>
-<span class="line" id="L2174">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2175">    <span class="tok-kw">while</span> (i &lt; num_entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2176">        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(i);</span>
-<span class="line" id="L2177">        <span class="tok-kw">if</span> (i &lt; <span class="tok-number">17</span>) {</span>
-<span class="line" id="L2178">            <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">true</span>);</span>
-<span class="line" id="L2179">            <span class="tok-kw">try</span> testing.expect(gop.value_ptr.* == i * <span class="tok-number">10</span>);</span>
-<span class="line" id="L2180">        } <span class="tok-kw">else</span> <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">false</span>);</span>
-<span class="line" id="L2181">    }</span>
-<span class="line" id="L2182"></span>
-<span class="line" id="L2183">    <span class="tok-comment">// Test `shrinkAndFree`.</span>
+<span class="line" id="L2173">    map.shrinkRetainingCapacity(<span class="tok-number">17</span>);</span>
+<span class="line" id="L2174">    <span class="tok-kw">try</span> testing.expect(map.count() == <span class="tok-number">17</span>);</span>
+<span class="line" id="L2175">    <span class="tok-kw">try</span> testing.expect(map.capacity() == <span class="tok-number">20</span>);</span>
+<span class="line" id="L2176">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2177">    <span class="tok-kw">while</span> (i &lt; num_entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2178">        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(i);</span>
+<span class="line" id="L2179">        <span class="tok-kw">if</span> (i &lt; <span class="tok-number">17</span>) {</span>
+<span class="line" id="L2180">            <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">true</span>);</span>
+<span class="line" id="L2181">            <span class="tok-kw">try</span> testing.expect(gop.value_ptr.* == i * <span class="tok-number">10</span>);</span>
+<span class="line" id="L2182">        } <span class="tok-kw">else</span> <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">false</span>);</span>
+<span class="line" id="L2183">    }</span>
+<span class="line" id="L2184"></span>
+<span class="line" id="L2185">    <span class="tok-comment">// Test `shrinkAndFree`.</span>
 </span>
-<span class="line" id="L2184">    map.shrinkAndFree(<span class="tok-number">15</span>);</span>
-<span class="line" id="L2185">    <span class="tok-kw">try</span> testing.expect(map.count() == <span class="tok-number">15</span>);</span>
-<span class="line" id="L2186">    <span class="tok-kw">try</span> testing.expect(map.capacity() == <span class="tok-number">15</span>);</span>
-<span class="line" id="L2187">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2188">    <span class="tok-kw">while</span> (i &lt; num_entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2189">        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(i);</span>
-<span class="line" id="L2190">        <span class="tok-kw">if</span> (i &lt; <span class="tok-number">15</span>) {</span>
-<span class="line" id="L2191">            <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">true</span>);</span>
-<span class="line" id="L2192">            <span class="tok-kw">try</span> testing.expect(gop.value_ptr.* == i * <span class="tok-number">10</span>);</span>
-<span class="line" id="L2193">        } <span class="tok-kw">else</span> <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">false</span>);</span>
-<span class="line" id="L2194">    }</span>
-<span class="line" id="L2195">}</span>
-<span class="line" id="L2196"></span>
-<span class="line" id="L2197"><span class="tok-kw">test</span> <span class="tok-str">&quot;pop&quot;</span> {</span>
-<span class="line" id="L2198">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2199">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2200"></span>
-<span class="line" id="L2201">    <span class="tok-comment">// Insert just enough entries so that the map expands. Afterwards,</span>
+<span class="line" id="L2186">    map.shrinkAndFree(<span class="tok-number">15</span>);</span>
+<span class="line" id="L2187">    <span class="tok-kw">try</span> testing.expect(map.count() == <span class="tok-number">15</span>);</span>
+<span class="line" id="L2188">    <span class="tok-kw">try</span> testing.expect(map.capacity() == <span class="tok-number">15</span>);</span>
+<span class="line" id="L2189">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2190">    <span class="tok-kw">while</span> (i &lt; num_entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2191">        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(i);</span>
+<span class="line" id="L2192">        <span class="tok-kw">if</span> (i &lt; <span class="tok-number">15</span>) {</span>
+<span class="line" id="L2193">            <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">true</span>);</span>
+<span class="line" id="L2194">            <span class="tok-kw">try</span> testing.expect(gop.value_ptr.* == i * <span class="tok-number">10</span>);</span>
+<span class="line" id="L2195">        } <span class="tok-kw">else</span> <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">false</span>);</span>
+<span class="line" id="L2196">    }</span>
+<span class="line" id="L2197">}</span>
+<span class="line" id="L2198"></span>
+<span class="line" id="L2199"><span class="tok-kw">test</span> <span class="tok-str">&quot;pop&quot;</span> {</span>
+<span class="line" id="L2200">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2201">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2202"></span>
+<span class="line" id="L2203">    <span class="tok-comment">// Insert just enough entries so that the map expands. Afterwards,</span>
 </span>
-<span class="line" id="L2202">    <span class="tok-comment">// pop all entries out of the map.</span>
+<span class="line" id="L2204">    <span class="tok-comment">// pop all entries out of the map.</span>
 </span>
-<span class="line" id="L2203"></span>
-<span class="line" id="L2204">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2205">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">9</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2206">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2207">    }</span>
-<span class="line" id="L2208"></span>
-<span class="line" id="L2209">    <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2210">        <span class="tok-kw">const</span> pop = map.pop();</span>
-<span class="line" id="L2211">        <span class="tok-kw">try</span> testing.expect(pop.key == i - <span class="tok-number">1</span> <span class="tok-kw">and</span> pop.value == i - <span class="tok-number">1</span>);</span>
-<span class="line" id="L2212">    }</span>
-<span class="line" id="L2213">}</span>
-<span class="line" id="L2214"></span>
-<span class="line" id="L2215"><span class="tok-kw">test</span> <span class="tok-str">&quot;popOrNull&quot;</span> {</span>
-<span class="line" id="L2216">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2217">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2218"></span>
-<span class="line" id="L2219">    <span class="tok-comment">// Insert just enough entries so that the map expands. Afterwards,</span>
+<span class="line" id="L2205"></span>
+<span class="line" id="L2206">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2207">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">9</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2208">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2209">    }</span>
+<span class="line" id="L2210"></span>
+<span class="line" id="L2211">    <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2212">        <span class="tok-kw">const</span> pop = map.pop();</span>
+<span class="line" id="L2213">        <span class="tok-kw">try</span> testing.expect(pop.key == i - <span class="tok-number">1</span> <span class="tok-kw">and</span> pop.value == i - <span class="tok-number">1</span>);</span>
+<span class="line" id="L2214">    }</span>
+<span class="line" id="L2215">}</span>
+<span class="line" id="L2216"></span>
+<span class="line" id="L2217"><span class="tok-kw">test</span> <span class="tok-str">&quot;popOrNull&quot;</span> {</span>
+<span class="line" id="L2218">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2219">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2220"></span>
+<span class="line" id="L2221">    <span class="tok-comment">// Insert just enough entries so that the map expands. Afterwards,</span>
 </span>
-<span class="line" id="L2220">    <span class="tok-comment">// pop all entries out of the map.</span>
+<span class="line" id="L2222">    <span class="tok-comment">// pop all entries out of the map.</span>
 </span>
-<span class="line" id="L2221"></span>
-<span class="line" id="L2222">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2223">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">9</span>) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2224">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2225">    }</span>
-<span class="line" id="L2226"></span>
-<span class="line" id="L2227">    <span class="tok-kw">while</span> (map.popOrNull()) |pop| {</span>
-<span class="line" id="L2228">        <span class="tok-kw">try</span> testing.expect(pop.key == i - <span class="tok-number">1</span> <span class="tok-kw">and</span> pop.value == i - <span class="tok-number">1</span>);</span>
-<span class="line" id="L2229">        i -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L2230">    }</span>
-<span class="line" id="L2231"></span>
-<span class="line" id="L2232">    <span class="tok-kw">try</span> testing.expect(map.count() == <span class="tok-number">0</span>);</span>
-<span class="line" id="L2233">}</span>
-<span class="line" id="L2234"></span>
-<span class="line" id="L2235"><span class="tok-kw">test</span> <span class="tok-str">&quot;reIndex&quot;</span> {</span>
-<span class="line" id="L2236">    <span class="tok-kw">var</span> map = ArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>, AutoContext(<span class="tok-type">i32</span>), <span class="tok-null">true</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2237">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2238"></span>
-<span class="line" id="L2239">    <span class="tok-comment">// Populate via the API.</span>
+<span class="line" id="L2223"></span>
+<span class="line" id="L2224">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2225">    <span class="tok-kw">while</span> (i &lt; <span class="tok-number">9</span>) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2226">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2227">    }</span>
+<span class="line" id="L2228"></span>
+<span class="line" id="L2229">    <span class="tok-kw">while</span> (map.popOrNull()) |pop| {</span>
+<span class="line" id="L2230">        <span class="tok-kw">try</span> testing.expect(pop.key == i - <span class="tok-number">1</span> <span class="tok-kw">and</span> pop.value == i - <span class="tok-number">1</span>);</span>
+<span class="line" id="L2231">        i -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L2232">    }</span>
+<span class="line" id="L2233"></span>
+<span class="line" id="L2234">    <span class="tok-kw">try</span> testing.expect(map.count() == <span class="tok-number">0</span>);</span>
+<span class="line" id="L2235">}</span>
+<span class="line" id="L2236"></span>
+<span class="line" id="L2237"><span class="tok-kw">test</span> <span class="tok-str">&quot;reIndex&quot;</span> {</span>
+<span class="line" id="L2238">    <span class="tok-kw">var</span> map = ArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>, AutoContext(<span class="tok-type">i32</span>), <span class="tok-null">true</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2239">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2240"></span>
+<span class="line" id="L2241">    <span class="tok-comment">// Populate via the API.</span>
 </span>
-<span class="line" id="L2240">    <span class="tok-kw">const</span> num_indexed_entries = <span class="tok-number">20</span>;</span>
-<span class="line" id="L2241">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2242">    <span class="tok-kw">while</span> (i &lt; num_indexed_entries) : (i += <span class="tok-number">1</span>)</span>
-<span class="line" id="L2243">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i * <span class="tok-number">10</span>)) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L2244"></span>
-<span class="line" id="L2245">    <span class="tok-comment">// Make sure we allocated an index header.</span>
+<span class="line" id="L2242">    <span class="tok-kw">const</span> num_indexed_entries = <span class="tok-number">20</span>;</span>
+<span class="line" id="L2243">    <span class="tok-kw">var</span> i: <span class="tok-type">i32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2244">    <span class="tok-kw">while</span> (i &lt; num_indexed_entries) : (i += <span class="tok-number">1</span>)</span>
+<span class="line" id="L2245">        <span class="tok-kw">try</span> testing.expect((<span class="tok-kw">try</span> map.fetchPut(i, i * <span class="tok-number">10</span>)) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L2246"></span>
+<span class="line" id="L2247">    <span class="tok-comment">// Make sure we allocated an index header.</span>
 </span>
-<span class="line" id="L2246">    <span class="tok-kw">try</span> testing.expect(map.unmanaged.index_header != <span class="tok-null">null</span>);</span>
-<span class="line" id="L2247"></span>
-<span class="line" id="L2248">    <span class="tok-comment">// Now write to the underlying array list directly.</span>
+<span class="line" id="L2248">    <span class="tok-kw">try</span> testing.expect(map.unmanaged.index_header != <span class="tok-null">null</span>);</span>
+<span class="line" id="L2249"></span>
+<span class="line" id="L2250">    <span class="tok-comment">// Now write to the underlying array list directly.</span>
 </span>
-<span class="line" id="L2249">    <span class="tok-kw">const</span> num_unindexed_entries = <span class="tok-number">20</span>;</span>
-<span class="line" id="L2250">    <span class="tok-kw">const</span> hash = getAutoHashFn(<span class="tok-type">i32</span>, <span class="tok-type">void</span>);</span>
-<span class="line" id="L2251">    <span class="tok-kw">var</span> al = &amp;map.unmanaged.entries;</span>
-<span class="line" id="L2252">    <span class="tok-kw">while</span> (i &lt; num_indexed_entries + num_unindexed_entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2253">        <span class="tok-kw">try</span> al.append(std.testing.allocator, .{</span>
-<span class="line" id="L2254">            .key = i,</span>
-<span class="line" id="L2255">            .value = i * <span class="tok-number">10</span>,</span>
-<span class="line" id="L2256">            .hash = hash({}, i),</span>
-<span class="line" id="L2257">        });</span>
-<span class="line" id="L2258">    }</span>
-<span class="line" id="L2259"></span>
-<span class="line" id="L2260">    <span class="tok-comment">// After reindexing, we should see everything.</span>
+<span class="line" id="L2251">    <span class="tok-kw">const</span> num_unindexed_entries = <span class="tok-number">20</span>;</span>
+<span class="line" id="L2252">    <span class="tok-kw">const</span> hash = getAutoHashFn(<span class="tok-type">i32</span>, <span class="tok-type">void</span>);</span>
+<span class="line" id="L2253">    <span class="tok-kw">var</span> al = &amp;map.unmanaged.entries;</span>
+<span class="line" id="L2254">    <span class="tok-kw">while</span> (i &lt; num_indexed_entries + num_unindexed_entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2255">        <span class="tok-kw">try</span> al.append(std.testing.allocator, .{</span>
+<span class="line" id="L2256">            .key = i,</span>
+<span class="line" id="L2257">            .value = i * <span class="tok-number">10</span>,</span>
+<span class="line" id="L2258">            .hash = hash({}, i),</span>
+<span class="line" id="L2259">        });</span>
+<span class="line" id="L2260">    }</span>
+<span class="line" id="L2261"></span>
+<span class="line" id="L2262">    <span class="tok-comment">// After reindexing, we should see everything.</span>
 </span>
-<span class="line" id="L2261">    <span class="tok-kw">try</span> map.reIndex();</span>
-<span class="line" id="L2262">    i = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2263">    <span class="tok-kw">while</span> (i &lt; num_indexed_entries + num_unindexed_entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L2264">        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(i);</span>
-<span class="line" id="L2265">        <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">true</span>);</span>
-<span class="line" id="L2266">        <span class="tok-kw">try</span> testing.expect(gop.value_ptr.* == i * <span class="tok-number">10</span>);</span>
-<span class="line" id="L2267">        <span class="tok-kw">try</span> testing.expect(gop.index == i);</span>
-<span class="line" id="L2268">    }</span>
-<span class="line" id="L2269">}</span>
-<span class="line" id="L2270"></span>
-<span class="line" id="L2271"><span class="tok-kw">test</span> <span class="tok-str">&quot;auto store_hash&quot;</span> {</span>
-<span class="line" id="L2272">    <span class="tok-kw">const</span> HasCheapEql = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
-<span class="line" id="L2273">    <span class="tok-kw">const</span> HasExpensiveEql = AutoArrayHashMap([<span class="tok-number">32</span>]<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
-<span class="line" id="L2274">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasCheapEql.Data, .hash).<span class="tok-type">type</span> == <span class="tok-type">void</span>);</span>
-<span class="line" id="L2275">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasExpensiveEql.Data, .hash).<span class="tok-type">type</span> != <span class="tok-type">void</span>);</span>
-<span class="line" id="L2276"></span>
-<span class="line" id="L2277">    <span class="tok-kw">const</span> HasCheapEqlUn = AutoArrayHashMapUnmanaged(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
-<span class="line" id="L2278">    <span class="tok-kw">const</span> HasExpensiveEqlUn = AutoArrayHashMapUnmanaged([<span class="tok-number">32</span>]<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
-<span class="line" id="L2279">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasCheapEqlUn.Data, .hash).<span class="tok-type">type</span> == <span class="tok-type">void</span>);</span>
-<span class="line" id="L2280">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasExpensiveEqlUn.Data, .hash).<span class="tok-type">type</span> != <span class="tok-type">void</span>);</span>
-<span class="line" id="L2281">}</span>
-<span class="line" id="L2282"></span>
-<span class="line" id="L2283"><span class="tok-kw">test</span> <span class="tok-str">&quot;sort&quot;</span> {</span>
-<span class="line" id="L2284">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
-<span class="line" id="L2285">    <span class="tok-kw">defer</span> map.deinit();</span>
-<span class="line" id="L2286"></span>
-<span class="line" id="L2287">    <span class="tok-kw">for</span> ([_]<span class="tok-type">i32</span>{ <span class="tok-number">8</span>, <span class="tok-number">3</span>, <span class="tok-number">12</span>, <span class="tok-number">10</span>, <span class="tok-number">2</span>, <span class="tok-number">4</span>, <span class="tok-number">9</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span>, <span class="tok-number">13</span>, <span class="tok-number">14</span>, <span class="tok-number">15</span>, <span class="tok-number">16</span>, <span class="tok-number">1</span>, <span class="tok-number">11</span>, <span class="tok-number">17</span>, <span class="tok-number">7</span> }) |x| {</span>
-<span class="line" id="L2288">        <span class="tok-kw">try</span> map.put(x, x * <span class="tok-number">3</span>);</span>
-<span class="line" id="L2289">    }</span>
-<span class="line" id="L2290"></span>
-<span class="line" id="L2291">    <span class="tok-kw">const</span> C = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2292">        keys: []<span class="tok-type">i32</span>,</span>
-<span class="line" id="L2293"></span>
-<span class="line" id="L2294">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lessThan</span>(ctx: <span class="tok-builtin">@This</span>(), a_index: <span class="tok-type">usize</span>, b_index: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L2295">            <span class="tok-kw">return</span> ctx.keys[a_index] &lt; ctx.keys[b_index];</span>
-<span class="line" id="L2296">        }</span>
-<span class="line" id="L2297">    };</span>
-<span class="line" id="L2298"></span>
-<span class="line" id="L2299">    map.sort(C{ .keys = map.keys() });</span>
+<span class="line" id="L2263">    <span class="tok-kw">try</span> map.reIndex();</span>
+<span class="line" id="L2264">    i = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2265">    <span class="tok-kw">while</span> (i &lt; num_indexed_entries + num_unindexed_entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L2266">        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(i);</span>
+<span class="line" id="L2267">        <span class="tok-kw">try</span> testing.expect(gop.found_existing == <span class="tok-null">true</span>);</span>
+<span class="line" id="L2268">        <span class="tok-kw">try</span> testing.expect(gop.value_ptr.* == i * <span class="tok-number">10</span>);</span>
+<span class="line" id="L2269">        <span class="tok-kw">try</span> testing.expect(gop.index == i);</span>
+<span class="line" id="L2270">    }</span>
+<span class="line" id="L2271">}</span>
+<span class="line" id="L2272"></span>
+<span class="line" id="L2273"><span class="tok-kw">test</span> <span class="tok-str">&quot;auto store_hash&quot;</span> {</span>
+<span class="line" id="L2274">    <span class="tok-kw">const</span> HasCheapEql = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
+<span class="line" id="L2275">    <span class="tok-kw">const</span> HasExpensiveEql = AutoArrayHashMap([<span class="tok-number">32</span>]<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
+<span class="line" id="L2276">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasCheapEql.Data, .hash).<span class="tok-type">type</span> == <span class="tok-type">void</span>);</span>
+<span class="line" id="L2277">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasExpensiveEql.Data, .hash).<span class="tok-type">type</span> != <span class="tok-type">void</span>);</span>
+<span class="line" id="L2278"></span>
+<span class="line" id="L2279">    <span class="tok-kw">const</span> HasCheapEqlUn = AutoArrayHashMapUnmanaged(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
+<span class="line" id="L2280">    <span class="tok-kw">const</span> HasExpensiveEqlUn = AutoArrayHashMapUnmanaged([<span class="tok-number">32</span>]<span class="tok-type">i32</span>, <span class="tok-type">i32</span>);</span>
+<span class="line" id="L2281">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasCheapEqlUn.Data, .hash).<span class="tok-type">type</span> == <span class="tok-type">void</span>);</span>
+<span class="line" id="L2282">    <span class="tok-kw">try</span> testing.expect(meta.fieldInfo(HasExpensiveEqlUn.Data, .hash).<span class="tok-type">type</span> != <span class="tok-type">void</span>);</span>
+<span class="line" id="L2283">}</span>
+<span class="line" id="L2284"></span>
+<span class="line" id="L2285"><span class="tok-kw">test</span> <span class="tok-str">&quot;sort&quot;</span> {</span>
+<span class="line" id="L2286">    <span class="tok-kw">var</span> map = AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">i32</span>).init(std.testing.allocator);</span>
+<span class="line" id="L2287">    <span class="tok-kw">defer</span> map.deinit();</span>
+<span class="line" id="L2288"></span>
+<span class="line" id="L2289">    <span class="tok-kw">for</span> ([_]<span class="tok-type">i32</span>{ <span class="tok-number">8</span>, <span class="tok-number">3</span>, <span class="tok-number">12</span>, <span class="tok-number">10</span>, <span class="tok-number">2</span>, <span class="tok-number">4</span>, <span class="tok-number">9</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span>, <span class="tok-number">13</span>, <span class="tok-number">14</span>, <span class="tok-number">15</span>, <span class="tok-number">16</span>, <span class="tok-number">1</span>, <span class="tok-number">11</span>, <span class="tok-number">17</span>, <span class="tok-number">7</span> }) |x| {</span>
+<span class="line" id="L2290">        <span class="tok-kw">try</span> map.put(x, x * <span class="tok-number">3</span>);</span>
+<span class="line" id="L2291">    }</span>
+<span class="line" id="L2292"></span>
+<span class="line" id="L2293">    <span class="tok-kw">const</span> C = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2294">        keys: []<span class="tok-type">i32</span>,</span>
+<span class="line" id="L2295"></span>
+<span class="line" id="L2296">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lessThan</span>(ctx: <span class="tok-builtin">@This</span>(), a_index: <span class="tok-type">usize</span>, b_index: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L2297">            <span class="tok-kw">return</span> ctx.keys[a_index] &lt; ctx.keys[b_index];</span>
+<span class="line" id="L2298">        }</span>
+<span class="line" id="L2299">    };</span>
 <span class="line" id="L2300"></span>
-<span class="line" id="L2301">    <span class="tok-kw">var</span> x: <span class="tok-type">i32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L2302">    <span class="tok-kw">for</span> (map.keys(), <span class="tok-number">0</span>..) |key, i| {</span>
-<span class="line" id="L2303">        <span class="tok-kw">try</span> testing.expect(key == x);</span>
-<span class="line" id="L2304">        <span class="tok-kw">try</span> testing.expect(map.values()[i] == x * <span class="tok-number">3</span>);</span>
-<span class="line" id="L2305">        x += <span class="tok-number">1</span>;</span>
-<span class="line" id="L2306">    }</span>
-<span class="line" id="L2307">}</span>
-<span class="line" id="L2308"></span>
-<span class="line" id="L2309"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getHashPtrAddrFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K) <span class="tok-type">u32</span>) {</span>
-<span class="line" id="L2310">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2311">        <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: Context, key: K) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L2312">            _ = ctx;</span>
-<span class="line" id="L2313">            <span class="tok-kw">return</span> getAutoHashFn(<span class="tok-type">usize</span>, <span class="tok-type">void</span>)({}, <span class="tok-builtin">@intFromPtr</span>(key));</span>
-<span class="line" id="L2314">        }</span>
-<span class="line" id="L2315">    }.hash;</span>
-<span class="line" id="L2316">}</span>
-<span class="line" id="L2317"></span>
-<span class="line" id="L2318"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getTrivialEqlFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K, K) <span class="tok-type">bool</span>) {</span>
-<span class="line" id="L2319">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2320">        <span class="tok-kw">fn</span> <span class="tok-fn">eql</span>(ctx: Context, a: K, b: K) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L2321">            _ = ctx;</span>
-<span class="line" id="L2322">            <span class="tok-kw">return</span> a == b;</span>
-<span class="line" id="L2323">        }</span>
-<span class="line" id="L2324">    }.eql;</span>
-<span class="line" id="L2325">}</span>
-<span class="line" id="L2326"></span>
-<span class="line" id="L2327"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">AutoContext</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L2328">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2329">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> hash = getAutoHashFn(K, <span class="tok-builtin">@This</span>());</span>
-<span class="line" id="L2330">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> eql = getAutoEqlFn(K, <span class="tok-builtin">@This</span>());</span>
-<span class="line" id="L2331">    };</span>
-<span class="line" id="L2332">}</span>
-<span class="line" id="L2333"></span>
-<span class="line" id="L2334"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getAutoHashFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K) <span class="tok-type">u32</span>) {</span>
-<span class="line" id="L2335">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2336">        <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: Context, key: K) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L2337">            _ = ctx;</span>
-<span class="line" id="L2338">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> trait.hasUniqueRepresentation(K)) {</span>
-<span class="line" id="L2339">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(Wyhash.hash(<span class="tok-number">0</span>, std.mem.asBytes(&amp;key))));</span>
-<span class="line" id="L2340">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L2341">                <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L2342">                autoHash(&amp;hasher, key);</span>
-<span class="line" id="L2343">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(hasher.final()));</span>
-<span class="line" id="L2344">            }</span>
-<span class="line" id="L2345">        }</span>
-<span class="line" id="L2346">    }.hash;</span>
-<span class="line" id="L2347">}</span>
-<span class="line" id="L2348"></span>
-<span class="line" id="L2349"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getAutoEqlFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K, K, <span class="tok-type">usize</span>) <span class="tok-type">bool</span>) {</span>
-<span class="line" id="L2350">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2351">        <span class="tok-kw">fn</span> <span class="tok-fn">eql</span>(ctx: Context, a: K, b: K, b_index: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L2352">            _ = b_index;</span>
-<span class="line" id="L2353">            _ = ctx;</span>
-<span class="line" id="L2354">            <span class="tok-kw">return</span> meta.eql(a, b);</span>
-<span class="line" id="L2355">        }</span>
-<span class="line" id="L2356">    }.eql;</span>
-<span class="line" id="L2357">}</span>
-<span class="line" id="L2358"></span>
-<span class="line" id="L2359"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">autoEqlIsCheap</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L2360">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(K)) {</span>
-<span class="line" id="L2361">        .Bool,</span>
-<span class="line" id="L2362">        .Int,</span>
-<span class="line" id="L2363">        .Float,</span>
-<span class="line" id="L2364">        .Pointer,</span>
-<span class="line" id="L2365">        .ComptimeFloat,</span>
-<span class="line" id="L2366">        .ComptimeInt,</span>
-<span class="line" id="L2367">        .Enum,</span>
-<span class="line" id="L2368">        .Fn,</span>
-<span class="line" id="L2369">        .ErrorSet,</span>
-<span class="line" id="L2370">        .AnyFrame,</span>
-<span class="line" id="L2371">        .EnumLiteral,</span>
-<span class="line" id="L2372">        =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L2373">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L2374">    };</span>
-<span class="line" id="L2375">}</span>
-<span class="line" id="L2376"></span>
-<span class="line" id="L2377"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getAutoHashStratFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> strategy: std.hash.Strategy) (<span class="tok-kw">fn</span> (Context, K) <span class="tok-type">u32</span>) {</span>
-<span class="line" id="L2378">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2379">        <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: Context, key: K) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L2380">            _ = ctx;</span>
-<span class="line" id="L2381">            <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L2382">            std.hash.autoHashStrat(&amp;hasher, key, strategy);</span>
-<span class="line" id="L2383">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(hasher.final()));</span>
-<span class="line" id="L2384">        }</span>
-<span class="line" id="L2385">    }.hash;</span>
-<span class="line" id="L2386">}</span>
-<span class="line" id="L2387"></span>
+<span class="line" id="L2301">    map.sort(C{ .keys = map.keys() });</span>
+<span class="line" id="L2302"></span>
+<span class="line" id="L2303">    <span class="tok-kw">var</span> x: <span class="tok-type">i32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L2304">    <span class="tok-kw">for</span> (map.keys(), <span class="tok-number">0</span>..) |key, i| {</span>
+<span class="line" id="L2305">        <span class="tok-kw">try</span> testing.expect(key == x);</span>
+<span class="line" id="L2306">        <span class="tok-kw">try</span> testing.expect(map.values()[i] == x * <span class="tok-number">3</span>);</span>
+<span class="line" id="L2307">        x += <span class="tok-number">1</span>;</span>
+<span class="line" id="L2308">    }</span>
+<span class="line" id="L2309">}</span>
+<span class="line" id="L2310"></span>
+<span class="line" id="L2311"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getHashPtrAddrFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K) <span class="tok-type">u32</span>) {</span>
+<span class="line" id="L2312">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2313">        <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: Context, key: K) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L2314">            _ = ctx;</span>
+<span class="line" id="L2315">            <span class="tok-kw">return</span> getAutoHashFn(<span class="tok-type">usize</span>, <span class="tok-type">void</span>)({}, <span class="tok-builtin">@intFromPtr</span>(key));</span>
+<span class="line" id="L2316">        }</span>
+<span class="line" id="L2317">    }.hash;</span>
+<span class="line" id="L2318">}</span>
+<span class="line" id="L2319"></span>
+<span class="line" id="L2320"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getTrivialEqlFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K, K) <span class="tok-type">bool</span>) {</span>
+<span class="line" id="L2321">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2322">        <span class="tok-kw">fn</span> <span class="tok-fn">eql</span>(ctx: Context, a: K, b: K) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L2323">            _ = ctx;</span>
+<span class="line" id="L2324">            <span class="tok-kw">return</span> a == b;</span>
+<span class="line" id="L2325">        }</span>
+<span class="line" id="L2326">    }.eql;</span>
+<span class="line" id="L2327">}</span>
+<span class="line" id="L2328"></span>
+<span class="line" id="L2329"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">AutoContext</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L2330">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2331">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> hash = getAutoHashFn(K, <span class="tok-builtin">@This</span>());</span>
+<span class="line" id="L2332">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> eql = getAutoEqlFn(K, <span class="tok-builtin">@This</span>());</span>
+<span class="line" id="L2333">    };</span>
+<span class="line" id="L2334">}</span>
+<span class="line" id="L2335"></span>
+<span class="line" id="L2336"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getAutoHashFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K) <span class="tok-type">u32</span>) {</span>
+<span class="line" id="L2337">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2338">        <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: Context, key: K) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L2339">            _ = ctx;</span>
+<span class="line" id="L2340">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> trait.hasUniqueRepresentation(K)) {</span>
+<span class="line" id="L2341">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(Wyhash.hash(<span class="tok-number">0</span>, std.mem.asBytes(&amp;key))));</span>
+<span class="line" id="L2342">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L2343">                <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L2344">                autoHash(&amp;hasher, key);</span>
+<span class="line" id="L2345">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(hasher.final()));</span>
+<span class="line" id="L2346">            }</span>
+<span class="line" id="L2347">        }</span>
+<span class="line" id="L2348">    }.hash;</span>
+<span class="line" id="L2349">}</span>
+<span class="line" id="L2350"></span>
+<span class="line" id="L2351"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getAutoEqlFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>) (<span class="tok-kw">fn</span> (Context, K, K, <span class="tok-type">usize</span>) <span class="tok-type">bool</span>) {</span>
+<span class="line" id="L2352">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2353">        <span class="tok-kw">fn</span> <span class="tok-fn">eql</span>(ctx: Context, a: K, b: K, b_index: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L2354">            _ = b_index;</span>
+<span class="line" id="L2355">            _ = ctx;</span>
+<span class="line" id="L2356">            <span class="tok-kw">return</span> meta.eql(a, b);</span>
+<span class="line" id="L2357">        }</span>
+<span class="line" id="L2358">    }.eql;</span>
+<span class="line" id="L2359">}</span>
+<span class="line" id="L2360"></span>
+<span class="line" id="L2361"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">autoEqlIsCheap</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L2362">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(K)) {</span>
+<span class="line" id="L2363">        .Bool,</span>
+<span class="line" id="L2364">        .Int,</span>
+<span class="line" id="L2365">        .Float,</span>
+<span class="line" id="L2366">        .Pointer,</span>
+<span class="line" id="L2367">        .ComptimeFloat,</span>
+<span class="line" id="L2368">        .ComptimeInt,</span>
+<span class="line" id="L2369">        .Enum,</span>
+<span class="line" id="L2370">        .Fn,</span>
+<span class="line" id="L2371">        .ErrorSet,</span>
+<span class="line" id="L2372">        .AnyFrame,</span>
+<span class="line" id="L2373">        .EnumLiteral,</span>
+<span class="line" id="L2374">        =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L2375">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L2376">    };</span>
+<span class="line" id="L2377">}</span>
+<span class="line" id="L2378"></span>
+<span class="line" id="L2379"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getAutoHashStratFn</span>(<span class="tok-kw">comptime</span> K: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> strategy: std.hash.Strategy) (<span class="tok-kw">fn</span> (Context, K) <span class="tok-type">u32</span>) {</span>
+<span class="line" id="L2380">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2381">        <span class="tok-kw">fn</span> <span class="tok-fn">hash</span>(ctx: Context, key: K) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L2382">            _ = ctx;</span>
+<span class="line" id="L2383">            <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L2384">            std.hash.autoHashStrat(&amp;hasher, key, strategy);</span>
+<span class="line" id="L2385">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@truncate</span>(hasher.final()));</span>
+<span class="line" id="L2386">        }</span>
+<span class="line" id="L2387">    }.hash;</span>
+<span class="line" id="L2388">}</span>
+<span class="line" id="L2389"></span>
 </code></pre></body>
 </html>

@@ -1206,279 +1206,290 @@
 <span class="line" id="L1012">                <span class="tok-kw">const</span> start = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
 <span class="line" id="L1013">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\nstart {d}\n&quot;</span>, .{start});</span>
 <span class="line" id="L1014">            },</span>
-<span class="line" id="L1015">            <span class="tok-kw">else</span> =&gt; {}, <span class="tok-comment">// skip unknown sections</span>
+<span class="line" id="L1015">            .data_count =&gt; {</span>
+<span class="line" id="L1016">                <span class="tok-kw">const</span> count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1017">                <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;\ncount {d}\n&quot;</span>, .{count});</span>
+<span class="line" id="L1018">            },</span>
+<span class="line" id="L1019">            <span class="tok-kw">else</span> =&gt; {}, <span class="tok-comment">// skip unknown sections</span>
 </span>
-<span class="line" id="L1016">        }</span>
-<span class="line" id="L1017">    }</span>
-<span class="line" id="L1018"></span>
-<span class="line" id="L1019">    <span class="tok-kw">fn</span> <span class="tok-fn">dumpSection</span>(step: *Step, section: std.wasm.Section, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, entries: <span class="tok-type">u32</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1020">        <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
-<span class="line" id="L1021">        <span class="tok-kw">const</span> reader = fbs.reader();</span>
+<span class="line" id="L1020">        }</span>
+<span class="line" id="L1021">    }</span>
 <span class="line" id="L1022"></span>
-<span class="line" id="L1023">        <span class="tok-kw">switch</span> (section) {</span>
-<span class="line" id="L1024">            .<span class="tok-type">type</span> =&gt; {</span>
-<span class="line" id="L1025">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1026">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1027">                    <span class="tok-kw">const</span> func_type = <span class="tok-kw">try</span> reader.readByte();</span>
-<span class="line" id="L1028">                    <span class="tok-kw">if</span> (func_type != std.wasm.function_type) {</span>
-<span class="line" id="L1029">                        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;expected function type, found byte '{d}'&quot;</span>, .{func_type});</span>
-<span class="line" id="L1030">                    }</span>
-<span class="line" id="L1031">                    <span class="tok-kw">const</span> params = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1032">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;params {d}\n&quot;</span>, .{params});</span>
-<span class="line" id="L1033">                    <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1034">                    <span class="tok-kw">while</span> (index &lt; params) : (index += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1035">                        <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
-<span class="line" id="L1036">                    } <span class="tok-kw">else</span> index = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1037">                    <span class="tok-kw">const</span> returns = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1038">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;returns {d}\n&quot;</span>, .{returns});</span>
-<span class="line" id="L1039">                    <span class="tok-kw">while</span> (index &lt; returns) : (index += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1040">                        <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
-<span class="line" id="L1041">                    }</span>
-<span class="line" id="L1042">                }</span>
-<span class="line" id="L1043">            },</span>
-<span class="line" id="L1044">            .import =&gt; {</span>
-<span class="line" id="L1045">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1046">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1047">                    <span class="tok-kw">const</span> module_name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1048">                    <span class="tok-kw">const</span> module_name = data[fbs.pos..][<span class="tok-number">0</span>..module_name_len];</span>
-<span class="line" id="L1049">                    fbs.pos += module_name_len;</span>
-<span class="line" id="L1050">                    <span class="tok-kw">const</span> name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1051">                    <span class="tok-kw">const</span> name = data[fbs.pos..][<span class="tok-number">0</span>..name_len];</span>
-<span class="line" id="L1052">                    fbs.pos += name_len;</span>
-<span class="line" id="L1053"></span>
-<span class="line" id="L1054">                    <span class="tok-kw">const</span> kind = std.meta.intToEnum(std.wasm.ExternalKind, <span class="tok-kw">try</span> reader.readByte()) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L1055">                        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;invalid import kind&quot;</span>, .{});</span>
-<span class="line" id="L1056">                    };</span>
+<span class="line" id="L1023">    <span class="tok-kw">fn</span> <span class="tok-fn">dumpSection</span>(step: *Step, section: std.wasm.Section, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, entries: <span class="tok-type">u32</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1024">        <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
+<span class="line" id="L1025">        <span class="tok-kw">const</span> reader = fbs.reader();</span>
+<span class="line" id="L1026"></span>
+<span class="line" id="L1027">        <span class="tok-kw">switch</span> (section) {</span>
+<span class="line" id="L1028">            .<span class="tok-type">type</span> =&gt; {</span>
+<span class="line" id="L1029">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1030">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1031">                    <span class="tok-kw">const</span> func_type = <span class="tok-kw">try</span> reader.readByte();</span>
+<span class="line" id="L1032">                    <span class="tok-kw">if</span> (func_type != std.wasm.function_type) {</span>
+<span class="line" id="L1033">                        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;expected function type, found byte '{d}'&quot;</span>, .{func_type});</span>
+<span class="line" id="L1034">                    }</span>
+<span class="line" id="L1035">                    <span class="tok-kw">const</span> params = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1036">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;params {d}\n&quot;</span>, .{params});</span>
+<span class="line" id="L1037">                    <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1038">                    <span class="tok-kw">while</span> (index &lt; params) : (index += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1039">                        <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
+<span class="line" id="L1040">                    } <span class="tok-kw">else</span> index = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1041">                    <span class="tok-kw">const</span> returns = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1042">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;returns {d}\n&quot;</span>, .{returns});</span>
+<span class="line" id="L1043">                    <span class="tok-kw">while</span> (index &lt; returns) : (index += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1044">                        <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
+<span class="line" id="L1045">                    }</span>
+<span class="line" id="L1046">                }</span>
+<span class="line" id="L1047">            },</span>
+<span class="line" id="L1048">            .import =&gt; {</span>
+<span class="line" id="L1049">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1050">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1051">                    <span class="tok-kw">const</span> module_name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1052">                    <span class="tok-kw">const</span> module_name = data[fbs.pos..][<span class="tok-number">0</span>..module_name_len];</span>
+<span class="line" id="L1053">                    fbs.pos += module_name_len;</span>
+<span class="line" id="L1054">                    <span class="tok-kw">const</span> name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1055">                    <span class="tok-kw">const</span> name = data[fbs.pos..][<span class="tok-number">0</span>..name_len];</span>
+<span class="line" id="L1056">                    fbs.pos += name_len;</span>
 <span class="line" id="L1057"></span>
-<span class="line" id="L1058">                    <span class="tok-kw">try</span> writer.print(</span>
-<span class="line" id="L1059">                        <span class="tok-str">\\module {s}</span></span>
+<span class="line" id="L1058">                    <span class="tok-kw">const</span> kind = std.meta.intToEnum(std.wasm.ExternalKind, <span class="tok-kw">try</span> reader.readByte()) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L1059">                        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;invalid import kind&quot;</span>, .{});</span>
+<span class="line" id="L1060">                    };</span>
+<span class="line" id="L1061"></span>
+<span class="line" id="L1062">                    <span class="tok-kw">try</span> writer.print(</span>
+<span class="line" id="L1063">                        <span class="tok-str">\\module {s}</span></span>
 
-<span class="line" id="L1060">                        <span class="tok-str">\\name {s}</span></span>
+<span class="line" id="L1064">                        <span class="tok-str">\\name {s}</span></span>
 
-<span class="line" id="L1061">                        <span class="tok-str">\\kind {s}</span></span>
+<span class="line" id="L1065">                        <span class="tok-str">\\kind {s}</span></span>
 
-<span class="line" id="L1062">                    , .{ module_name, name, <span class="tok-builtin">@tagName</span>(kind) });</span>
-<span class="line" id="L1063">                    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
-<span class="line" id="L1064">                    <span class="tok-kw">switch</span> (kind) {</span>
-<span class="line" id="L1065">                        .function =&gt; {</span>
-<span class="line" id="L1066">                            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
-<span class="line" id="L1067">                        },</span>
-<span class="line" id="L1068">                        .memory =&gt; {</span>
-<span class="line" id="L1069">                            <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
-<span class="line" id="L1070">                        },</span>
-<span class="line" id="L1071">                        .global =&gt; {</span>
-<span class="line" id="L1072">                            <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
-<span class="line" id="L1073">                            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;mutable {}\n&quot;</span>, .{<span class="tok-number">0x01</span> == <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
+<span class="line" id="L1066">                    , .{ module_name, name, <span class="tok-builtin">@tagName</span>(kind) });</span>
+<span class="line" id="L1067">                    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
+<span class="line" id="L1068">                    <span class="tok-kw">switch</span> (kind) {</span>
+<span class="line" id="L1069">                        .function =&gt; {</span>
+<span class="line" id="L1070">                            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
+<span class="line" id="L1071">                        },</span>
+<span class="line" id="L1072">                        .memory =&gt; {</span>
+<span class="line" id="L1073">                            <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
 <span class="line" id="L1074">                        },</span>
-<span class="line" id="L1075">                        .table =&gt; {</span>
-<span class="line" id="L1076">                            <span class="tok-kw">try</span> parseDumpType(step, std.wasm.RefType, reader, writer);</span>
-<span class="line" id="L1077">                            <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
+<span class="line" id="L1075">                        .global =&gt; {</span>
+<span class="line" id="L1076">                            <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
+<span class="line" id="L1077">                            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;mutable {}\n&quot;</span>, .{<span class="tok-number">0x01</span> == <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
 <span class="line" id="L1078">                        },</span>
-<span class="line" id="L1079">                    }</span>
-<span class="line" id="L1080">                }</span>
-<span class="line" id="L1081">            },</span>
-<span class="line" id="L1082">            .function =&gt; {</span>
-<span class="line" id="L1083">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1084">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1085">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
-<span class="line" id="L1086">                }</span>
-<span class="line" id="L1087">            },</span>
-<span class="line" id="L1088">            .table =&gt; {</span>
-<span class="line" id="L1089">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1090">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1091">                    <span class="tok-kw">try</span> parseDumpType(step, std.wasm.RefType, reader, writer);</span>
-<span class="line" id="L1092">                    <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
-<span class="line" id="L1093">                }</span>
-<span class="line" id="L1094">            },</span>
-<span class="line" id="L1095">            .memory =&gt; {</span>
-<span class="line" id="L1096">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1097">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1098">                    <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
-<span class="line" id="L1099">                }</span>
-<span class="line" id="L1100">            },</span>
-<span class="line" id="L1101">            .global =&gt; {</span>
-<span class="line" id="L1102">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1103">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1104">                    <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
-<span class="line" id="L1105">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;mutable {}\n&quot;</span>, .{<span class="tok-number">0x01</span> == <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u1</span>, reader)});</span>
-<span class="line" id="L1106">                    <span class="tok-kw">try</span> parseDumpInit(step, reader, writer);</span>
-<span class="line" id="L1107">                }</span>
-<span class="line" id="L1108">            },</span>
-<span class="line" id="L1109">            .@&quot;export&quot; =&gt; {</span>
-<span class="line" id="L1110">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1111">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1112">                    <span class="tok-kw">const</span> name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1113">                    <span class="tok-kw">const</span> name = data[fbs.pos..][<span class="tok-number">0</span>..name_len];</span>
-<span class="line" id="L1114">                    fbs.pos += name_len;</span>
-<span class="line" id="L1115">                    <span class="tok-kw">const</span> kind_byte = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
-<span class="line" id="L1116">                    <span class="tok-kw">const</span> kind = std.meta.intToEnum(std.wasm.ExternalKind, kind_byte) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L1117">                        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;invalid export kind value '{d}'&quot;</span>, .{kind_byte});</span>
-<span class="line" id="L1118">                    };</span>
-<span class="line" id="L1119">                    <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1120">                    <span class="tok-kw">try</span> writer.print(</span>
-<span class="line" id="L1121">                        <span class="tok-str">\\name {s}</span></span>
+<span class="line" id="L1079">                        .table =&gt; {</span>
+<span class="line" id="L1080">                            <span class="tok-kw">try</span> parseDumpType(step, std.wasm.RefType, reader, writer);</span>
+<span class="line" id="L1081">                            <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
+<span class="line" id="L1082">                        },</span>
+<span class="line" id="L1083">                    }</span>
+<span class="line" id="L1084">                }</span>
+<span class="line" id="L1085">            },</span>
+<span class="line" id="L1086">            .function =&gt; {</span>
+<span class="line" id="L1087">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1088">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1089">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
+<span class="line" id="L1090">                }</span>
+<span class="line" id="L1091">            },</span>
+<span class="line" id="L1092">            .table =&gt; {</span>
+<span class="line" id="L1093">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1094">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1095">                    <span class="tok-kw">try</span> parseDumpType(step, std.wasm.RefType, reader, writer);</span>
+<span class="line" id="L1096">                    <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
+<span class="line" id="L1097">                }</span>
+<span class="line" id="L1098">            },</span>
+<span class="line" id="L1099">            .memory =&gt; {</span>
+<span class="line" id="L1100">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1101">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1102">                    <span class="tok-kw">try</span> parseDumpLimits(reader, writer);</span>
+<span class="line" id="L1103">                }</span>
+<span class="line" id="L1104">            },</span>
+<span class="line" id="L1105">            .global =&gt; {</span>
+<span class="line" id="L1106">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1107">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1108">                    <span class="tok-kw">try</span> parseDumpType(step, std.wasm.Valtype, reader, writer);</span>
+<span class="line" id="L1109">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;mutable {}\n&quot;</span>, .{<span class="tok-number">0x01</span> == <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u1</span>, reader)});</span>
+<span class="line" id="L1110">                    <span class="tok-kw">try</span> parseDumpInit(step, reader, writer);</span>
+<span class="line" id="L1111">                }</span>
+<span class="line" id="L1112">            },</span>
+<span class="line" id="L1113">            .@&quot;export&quot; =&gt; {</span>
+<span class="line" id="L1114">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1115">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1116">                    <span class="tok-kw">const</span> name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1117">                    <span class="tok-kw">const</span> name = data[fbs.pos..][<span class="tok-number">0</span>..name_len];</span>
+<span class="line" id="L1118">                    fbs.pos += name_len;</span>
+<span class="line" id="L1119">                    <span class="tok-kw">const</span> kind_byte = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
+<span class="line" id="L1120">                    <span class="tok-kw">const</span> kind = std.meta.intToEnum(std.wasm.ExternalKind, kind_byte) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L1121">                        <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;invalid export kind value '{d}'&quot;</span>, .{kind_byte});</span>
+<span class="line" id="L1122">                    };</span>
+<span class="line" id="L1123">                    <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1124">                    <span class="tok-kw">try</span> writer.print(</span>
+<span class="line" id="L1125">                        <span class="tok-str">\\name {s}</span></span>
 
-<span class="line" id="L1122">                        <span class="tok-str">\\kind {s}</span></span>
+<span class="line" id="L1126">                        <span class="tok-str">\\kind {s}</span></span>
 
-<span class="line" id="L1123">                        <span class="tok-str">\\index {d}</span></span>
+<span class="line" id="L1127">                        <span class="tok-str">\\index {d}</span></span>
 
-<span class="line" id="L1124">                    , .{ name, <span class="tok-builtin">@tagName</span>(kind), index });</span>
-<span class="line" id="L1125">                    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
-<span class="line" id="L1126">                }</span>
-<span class="line" id="L1127">            },</span>
-<span class="line" id="L1128">            .element =&gt; {</span>
-<span class="line" id="L1129">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1130">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1131">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;table index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
-<span class="line" id="L1132">                    <span class="tok-kw">try</span> parseDumpInit(step, reader, writer);</span>
-<span class="line" id="L1133"></span>
-<span class="line" id="L1134">                    <span class="tok-kw">const</span> function_indexes = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1135">                    <span class="tok-kw">var</span> function_index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1136">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;indexes {d}\n&quot;</span>, .{function_indexes});</span>
-<span class="line" id="L1137">                    <span class="tok-kw">while</span> (function_index &lt; function_indexes) : (function_index += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1138">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
-<span class="line" id="L1139">                    }</span>
-<span class="line" id="L1140">                }</span>
-<span class="line" id="L1141">            },</span>
-<span class="line" id="L1142">            .code =&gt; {}, <span class="tok-comment">// code section is considered opaque to linker</span>
+<span class="line" id="L1128">                    , .{ name, <span class="tok-builtin">@tagName</span>(kind), index });</span>
+<span class="line" id="L1129">                    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
+<span class="line" id="L1130">                }</span>
+<span class="line" id="L1131">            },</span>
+<span class="line" id="L1132">            .element =&gt; {</span>
+<span class="line" id="L1133">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1134">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1135">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;table index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
+<span class="line" id="L1136">                    <span class="tok-kw">try</span> parseDumpInit(step, reader, writer);</span>
+<span class="line" id="L1137"></span>
+<span class="line" id="L1138">                    <span class="tok-kw">const</span> function_indexes = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1139">                    <span class="tok-kw">var</span> function_index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1140">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;indexes {d}\n&quot;</span>, .{function_indexes});</span>
+<span class="line" id="L1141">                    <span class="tok-kw">while</span> (function_index &lt; function_indexes) : (function_index += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1142">                        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;index {d}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
+<span class="line" id="L1143">                    }</span>
+<span class="line" id="L1144">                }</span>
+<span class="line" id="L1145">            },</span>
+<span class="line" id="L1146">            .code =&gt; {}, <span class="tok-comment">// code section is considered opaque to linker</span>
 </span>
-<span class="line" id="L1143">            .data =&gt; {</span>
-<span class="line" id="L1144">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1145">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1146">                    <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1147">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;memory index 0x{x}\n&quot;</span>, .{index});</span>
-<span class="line" id="L1148">                    <span class="tok-kw">try</span> parseDumpInit(step, reader, writer);</span>
-<span class="line" id="L1149">                    <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1150">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;size {d}\n&quot;</span>, .{size});</span>
-<span class="line" id="L1151">                    <span class="tok-kw">try</span> reader.skipBytes(size, .{}); <span class="tok-comment">// we do not care about the content of the segments</span>
+<span class="line" id="L1147">            .data =&gt; {</span>
+<span class="line" id="L1148">                <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1149">                <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1150">                    <span class="tok-kw">const</span> flags = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1151">                    <span class="tok-kw">const</span> index = <span class="tok-kw">if</span> (flags &amp; <span class="tok-number">0x02</span> != <span class="tok-number">0</span>)</span>
+<span class="line" id="L1152">                        <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)</span>
+<span class="line" id="L1153">                    <span class="tok-kw">else</span></span>
+<span class="line" id="L1154">                        <span class="tok-number">0</span>;</span>
+<span class="line" id="L1155">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;memory index 0x{x}\n&quot;</span>, .{index});</span>
+<span class="line" id="L1156">                    <span class="tok-kw">if</span> (flags == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1157">                        <span class="tok-kw">try</span> parseDumpInit(step, reader, writer);</span>
+<span class="line" id="L1158">                    }</span>
+<span class="line" id="L1159"></span>
+<span class="line" id="L1160">                    <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1161">                    <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;size {d}\n&quot;</span>, .{size});</span>
+<span class="line" id="L1162">                    <span class="tok-kw">try</span> reader.skipBytes(size, .{}); <span class="tok-comment">// we do not care about the content of the segments</span>
 </span>
-<span class="line" id="L1152">                }</span>
-<span class="line" id="L1153">            },</span>
-<span class="line" id="L1154">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1155">        }</span>
-<span class="line" id="L1156">    }</span>
-<span class="line" id="L1157"></span>
-<span class="line" id="L1158">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpType</span>(step: *Step, <span class="tok-kw">comptime</span> WasmType: <span class="tok-type">type</span>, reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1159">        <span class="tok-kw">const</span> type_byte = <span class="tok-kw">try</span> reader.readByte();</span>
-<span class="line" id="L1160">        <span class="tok-kw">const</span> valtype = std.meta.intToEnum(WasmType, type_byte) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L1161">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;Invalid wasm type value '{d}'&quot;</span>, .{type_byte});</span>
-<span class="line" id="L1162">        };</span>
-<span class="line" id="L1163">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;type {s}\n&quot;</span>, .{<span class="tok-builtin">@tagName</span>(valtype)});</span>
-<span class="line" id="L1164">    }</span>
-<span class="line" id="L1165"></span>
-<span class="line" id="L1166">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpLimits</span>(reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1167">        <span class="tok-kw">const</span> flags = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
-<span class="line" id="L1168">        <span class="tok-kw">const</span> min = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1169"></span>
-<span class="line" id="L1170">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;min {x}\n&quot;</span>, .{min});</span>
-<span class="line" id="L1171">        <span class="tok-kw">if</span> (flags != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1172">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;max {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
-<span class="line" id="L1173">        }</span>
-<span class="line" id="L1174">    }</span>
-<span class="line" id="L1175"></span>
-<span class="line" id="L1176">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpInit</span>(step: *Step, reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1177">        <span class="tok-kw">const</span> byte = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
-<span class="line" id="L1178">        <span class="tok-kw">const</span> opcode = std.meta.intToEnum(std.wasm.Opcode, byte) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L1179">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;invalid wasm opcode '{d}'&quot;</span>, .{byte});</span>
-<span class="line" id="L1180">        };</span>
-<span class="line" id="L1181">        <span class="tok-kw">switch</span> (opcode) {</span>
-<span class="line" id="L1182">            .i32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;i32.const {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readILEB128(<span class="tok-type">i32</span>, reader)}),</span>
-<span class="line" id="L1183">            .i64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;i64.const {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readILEB128(<span class="tok-type">i64</span>, reader)}),</span>
-<span class="line" id="L1184">            .f32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f32.const {x}\n&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>)))}),</span>
-<span class="line" id="L1185">            .f64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f64.const {x}\n&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u64</span>)))}),</span>
-<span class="line" id="L1186">            .global_get =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;global.get {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)}),</span>
-<span class="line" id="L1187">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1188">        }</span>
-<span class="line" id="L1189">        <span class="tok-kw">const</span> end_opcode = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
-<span class="line" id="L1190">        <span class="tok-kw">if</span> (end_opcode != std.wasm.opcode(.end)) {</span>
-<span class="line" id="L1191">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;expected 'end' opcode in init expression&quot;</span>, .{});</span>
-<span class="line" id="L1192">        }</span>
-<span class="line" id="L1193">    }</span>
-<span class="line" id="L1194"></span>
-<span class="line" id="L1195">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpNames</span>(step: *Step, reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1196">        <span class="tok-kw">while</span> (reader.context.pos &lt; data.len) {</span>
-<span class="line" id="L1197">            <span class="tok-kw">try</span> parseDumpType(step, std.wasm.NameSubsection, reader, writer);</span>
-<span class="line" id="L1198">            <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1199">            <span class="tok-kw">const</span> entries = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1200">            <span class="tok-kw">try</span> writer.print(</span>
-<span class="line" id="L1201">                <span class="tok-str">\\size {d}</span></span>
+<span class="line" id="L1163">                }</span>
+<span class="line" id="L1164">            },</span>
+<span class="line" id="L1165">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1166">        }</span>
+<span class="line" id="L1167">    }</span>
+<span class="line" id="L1168"></span>
+<span class="line" id="L1169">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpType</span>(step: *Step, <span class="tok-kw">comptime</span> WasmType: <span class="tok-type">type</span>, reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1170">        <span class="tok-kw">const</span> type_byte = <span class="tok-kw">try</span> reader.readByte();</span>
+<span class="line" id="L1171">        <span class="tok-kw">const</span> valtype = std.meta.intToEnum(WasmType, type_byte) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L1172">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;Invalid wasm type value '{d}'&quot;</span>, .{type_byte});</span>
+<span class="line" id="L1173">        };</span>
+<span class="line" id="L1174">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;type {s}\n&quot;</span>, .{<span class="tok-builtin">@tagName</span>(valtype)});</span>
+<span class="line" id="L1175">    }</span>
+<span class="line" id="L1176"></span>
+<span class="line" id="L1177">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpLimits</span>(reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1178">        <span class="tok-kw">const</span> flags = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
+<span class="line" id="L1179">        <span class="tok-kw">const</span> min = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1180"></span>
+<span class="line" id="L1181">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;min {x}\n&quot;</span>, .{min});</span>
+<span class="line" id="L1182">        <span class="tok-kw">if</span> (flags != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1183">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;max {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)});</span>
+<span class="line" id="L1184">        }</span>
+<span class="line" id="L1185">    }</span>
+<span class="line" id="L1186"></span>
+<span class="line" id="L1187">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpInit</span>(step: *Step, reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1188">        <span class="tok-kw">const</span> byte = <span class="tok-kw">try</span> reader.readByte();</span>
+<span class="line" id="L1189">        <span class="tok-kw">const</span> opcode = std.meta.intToEnum(std.wasm.Opcode, byte) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L1190">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;invalid wasm opcode '{d}'&quot;</span>, .{byte});</span>
+<span class="line" id="L1191">        };</span>
+<span class="line" id="L1192">        <span class="tok-kw">switch</span> (opcode) {</span>
+<span class="line" id="L1193">            .i32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;i32.const {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readILEB128(<span class="tok-type">i32</span>, reader)}),</span>
+<span class="line" id="L1194">            .i64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;i64.const {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readILEB128(<span class="tok-type">i64</span>, reader)}),</span>
+<span class="line" id="L1195">            .f32_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f32.const {x}\n&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>)))}),</span>
+<span class="line" id="L1196">            .f64_const =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;f64.const {x}\n&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@bitCast</span>(<span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u64</span>)))}),</span>
+<span class="line" id="L1197">            .global_get =&gt; <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;global.get {x}\n&quot;</span>, .{<span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader)}),</span>
+<span class="line" id="L1198">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1199">        }</span>
+<span class="line" id="L1200">        <span class="tok-kw">const</span> end_opcode = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
+<span class="line" id="L1201">        <span class="tok-kw">if</span> (end_opcode != std.wasm.opcode(.end)) {</span>
+<span class="line" id="L1202">            <span class="tok-kw">return</span> step.fail(<span class="tok-str">&quot;expected 'end' opcode in init expression&quot;</span>, .{});</span>
+<span class="line" id="L1203">        }</span>
+<span class="line" id="L1204">    }</span>
+<span class="line" id="L1205"></span>
+<span class="line" id="L1206">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpNames</span>(step: *Step, reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1207">        <span class="tok-kw">while</span> (reader.context.pos &lt; data.len) {</span>
+<span class="line" id="L1208">            <span class="tok-kw">try</span> parseDumpType(step, std.wasm.NameSubsection, reader, writer);</span>
+<span class="line" id="L1209">            <span class="tok-kw">const</span> size = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1210">            <span class="tok-kw">const</span> entries = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1211">            <span class="tok-kw">try</span> writer.print(</span>
+<span class="line" id="L1212">                <span class="tok-str">\\size {d}</span></span>
 
-<span class="line" id="L1202">                <span class="tok-str">\\names {d}</span></span>
+<span class="line" id="L1213">                <span class="tok-str">\\names {d}</span></span>
 
-<span class="line" id="L1203">            , .{ size, entries });</span>
-<span class="line" id="L1204">            <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
-<span class="line" id="L1205">            <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1206">            <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1207">                <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1208">                <span class="tok-kw">const</span> name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1209">                <span class="tok-kw">const</span> pos = reader.context.pos;</span>
-<span class="line" id="L1210">                <span class="tok-kw">const</span> name = data[pos..][<span class="tok-number">0</span>..name_len];</span>
-<span class="line" id="L1211">                reader.context.pos += name_len;</span>
-<span class="line" id="L1212"></span>
-<span class="line" id="L1213">                <span class="tok-kw">try</span> writer.print(</span>
-<span class="line" id="L1214">                    <span class="tok-str">\\index {d}</span></span>
+<span class="line" id="L1214">            , .{ size, entries });</span>
+<span class="line" id="L1215">            <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
+<span class="line" id="L1216">            <span class="tok-kw">var</span> i: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1217">            <span class="tok-kw">while</span> (i &lt; entries) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1218">                <span class="tok-kw">const</span> index = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1219">                <span class="tok-kw">const</span> name_len = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1220">                <span class="tok-kw">const</span> pos = reader.context.pos;</span>
+<span class="line" id="L1221">                <span class="tok-kw">const</span> name = data[pos..][<span class="tok-number">0</span>..name_len];</span>
+<span class="line" id="L1222">                reader.context.pos += name_len;</span>
+<span class="line" id="L1223"></span>
+<span class="line" id="L1224">                <span class="tok-kw">try</span> writer.print(</span>
+<span class="line" id="L1225">                    <span class="tok-str">\\index {d}</span></span>
 
-<span class="line" id="L1215">                    <span class="tok-str">\\name {s}</span></span>
+<span class="line" id="L1226">                    <span class="tok-str">\\name {s}</span></span>
 
-<span class="line" id="L1216">                , .{ index, name });</span>
-<span class="line" id="L1217">                <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
-<span class="line" id="L1218">            }</span>
-<span class="line" id="L1219">        }</span>
-<span class="line" id="L1220">    }</span>
-<span class="line" id="L1221"></span>
-<span class="line" id="L1222">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpProducers</span>(reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1223">        <span class="tok-kw">const</span> field_count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1224">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;fields {d}\n&quot;</span>, .{field_count});</span>
-<span class="line" id="L1225">        <span class="tok-kw">var</span> current_field: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1226">        <span class="tok-kw">while</span> (current_field &lt; field_count) : (current_field += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1227">            <span class="tok-kw">const</span> field_name_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1228">            <span class="tok-kw">const</span> field_name = data[reader.context.pos..][<span class="tok-number">0</span>..field_name_length];</span>
-<span class="line" id="L1229">            reader.context.pos += field_name_length;</span>
-<span class="line" id="L1230"></span>
-<span class="line" id="L1231">            <span class="tok-kw">const</span> value_count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1232">            <span class="tok-kw">try</span> writer.print(</span>
-<span class="line" id="L1233">                <span class="tok-str">\\field_name {s}</span></span>
+<span class="line" id="L1227">                , .{ index, name });</span>
+<span class="line" id="L1228">                <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
+<span class="line" id="L1229">            }</span>
+<span class="line" id="L1230">        }</span>
+<span class="line" id="L1231">    }</span>
+<span class="line" id="L1232"></span>
+<span class="line" id="L1233">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpProducers</span>(reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1234">        <span class="tok-kw">const</span> field_count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1235">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;fields {d}\n&quot;</span>, .{field_count});</span>
+<span class="line" id="L1236">        <span class="tok-kw">var</span> current_field: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1237">        <span class="tok-kw">while</span> (current_field &lt; field_count) : (current_field += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1238">            <span class="tok-kw">const</span> field_name_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1239">            <span class="tok-kw">const</span> field_name = data[reader.context.pos..][<span class="tok-number">0</span>..field_name_length];</span>
+<span class="line" id="L1240">            reader.context.pos += field_name_length;</span>
+<span class="line" id="L1241"></span>
+<span class="line" id="L1242">            <span class="tok-kw">const</span> value_count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1243">            <span class="tok-kw">try</span> writer.print(</span>
+<span class="line" id="L1244">                <span class="tok-str">\\field_name {s}</span></span>
 
-<span class="line" id="L1234">                <span class="tok-str">\\values {d}</span></span>
+<span class="line" id="L1245">                <span class="tok-str">\\values {d}</span></span>
 
-<span class="line" id="L1235">            , .{ field_name, value_count });</span>
-<span class="line" id="L1236">            <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
-<span class="line" id="L1237">            <span class="tok-kw">var</span> current_value: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1238">            <span class="tok-kw">while</span> (current_value &lt; value_count) : (current_value += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1239">                <span class="tok-kw">const</span> value_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1240">                <span class="tok-kw">const</span> value = data[reader.context.pos..][<span class="tok-number">0</span>..value_length];</span>
-<span class="line" id="L1241">                reader.context.pos += value_length;</span>
-<span class="line" id="L1242"></span>
-<span class="line" id="L1243">                <span class="tok-kw">const</span> version_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1244">                <span class="tok-kw">const</span> version = data[reader.context.pos..][<span class="tok-number">0</span>..version_length];</span>
-<span class="line" id="L1245">                reader.context.pos += version_length;</span>
-<span class="line" id="L1246"></span>
-<span class="line" id="L1247">                <span class="tok-kw">try</span> writer.print(</span>
-<span class="line" id="L1248">                    <span class="tok-str">\\value_name {s}</span></span>
+<span class="line" id="L1246">            , .{ field_name, value_count });</span>
+<span class="line" id="L1247">            <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
+<span class="line" id="L1248">            <span class="tok-kw">var</span> current_value: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1249">            <span class="tok-kw">while</span> (current_value &lt; value_count) : (current_value += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1250">                <span class="tok-kw">const</span> value_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1251">                <span class="tok-kw">const</span> value = data[reader.context.pos..][<span class="tok-number">0</span>..value_length];</span>
+<span class="line" id="L1252">                reader.context.pos += value_length;</span>
+<span class="line" id="L1253"></span>
+<span class="line" id="L1254">                <span class="tok-kw">const</span> version_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1255">                <span class="tok-kw">const</span> version = data[reader.context.pos..][<span class="tok-number">0</span>..version_length];</span>
+<span class="line" id="L1256">                reader.context.pos += version_length;</span>
+<span class="line" id="L1257"></span>
+<span class="line" id="L1258">                <span class="tok-kw">try</span> writer.print(</span>
+<span class="line" id="L1259">                    <span class="tok-str">\\value_name {s}</span></span>
 
-<span class="line" id="L1249">                    <span class="tok-str">\\version {s}</span></span>
+<span class="line" id="L1260">                    <span class="tok-str">\\version {s}</span></span>
 
-<span class="line" id="L1250">                , .{ value, version });</span>
-<span class="line" id="L1251">                <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
-<span class="line" id="L1252">            }</span>
-<span class="line" id="L1253">        }</span>
-<span class="line" id="L1254">    }</span>
-<span class="line" id="L1255"></span>
-<span class="line" id="L1256">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpFeatures</span>(reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1257">        <span class="tok-kw">const</span> feature_count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1258">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;features {d}\n&quot;</span>, .{feature_count});</span>
-<span class="line" id="L1259"></span>
-<span class="line" id="L1260">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1261">        <span class="tok-kw">while</span> (index &lt; feature_count) : (index += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1262">            <span class="tok-kw">const</span> prefix_byte = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
-<span class="line" id="L1263">            <span class="tok-kw">const</span> name_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
-<span class="line" id="L1264">            <span class="tok-kw">const</span> feature_name = data[reader.context.pos..][<span class="tok-number">0</span>..name_length];</span>
-<span class="line" id="L1265">            reader.context.pos += name_length;</span>
+<span class="line" id="L1261">                , .{ value, version });</span>
+<span class="line" id="L1262">                <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\n'</span>);</span>
+<span class="line" id="L1263">            }</span>
+<span class="line" id="L1264">        }</span>
+<span class="line" id="L1265">    }</span>
 <span class="line" id="L1266"></span>
-<span class="line" id="L1267">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{c} {s}\n&quot;</span>, .{ prefix_byte, feature_name });</span>
-<span class="line" id="L1268">        }</span>
-<span class="line" id="L1269">    }</span>
-<span class="line" id="L1270">};</span>
-<span class="line" id="L1271"></span>
+<span class="line" id="L1267">    <span class="tok-kw">fn</span> <span class="tok-fn">parseDumpFeatures</span>(reader: <span class="tok-kw">anytype</span>, writer: <span class="tok-kw">anytype</span>, data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1268">        <span class="tok-kw">const</span> feature_count = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1269">        <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;features {d}\n&quot;</span>, .{feature_count});</span>
+<span class="line" id="L1270"></span>
+<span class="line" id="L1271">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1272">        <span class="tok-kw">while</span> (index &lt; feature_count) : (index += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1273">            <span class="tok-kw">const</span> prefix_byte = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u8</span>, reader);</span>
+<span class="line" id="L1274">            <span class="tok-kw">const</span> name_length = <span class="tok-kw">try</span> std.leb.readULEB128(<span class="tok-type">u32</span>, reader);</span>
+<span class="line" id="L1275">            <span class="tok-kw">const</span> feature_name = data[reader.context.pos..][<span class="tok-number">0</span>..name_length];</span>
+<span class="line" id="L1276">            reader.context.pos += name_length;</span>
+<span class="line" id="L1277"></span>
+<span class="line" id="L1278">            <span class="tok-kw">try</span> writer.print(<span class="tok-str">&quot;{c} {s}\n&quot;</span>, .{ prefix_byte, feature_name });</span>
+<span class="line" id="L1279">        }</span>
+<span class="line" id="L1280">    }</span>
+<span class="line" id="L1281">};</span>
+<span class="line" id="L1282"></span>
 </code></pre></body>
 </html>
