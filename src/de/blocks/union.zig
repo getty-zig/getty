@@ -48,13 +48,13 @@ pub fn deserialize(
     };
 
     return switch (tag) {
-        .external => try deserializeExternallyTaggedVariant(allocator, deserializer, visitor),
-        .untagged => try deserializeUntaggedVariant(allocator, T, deserializer, visitor),
+        .external => try deserializeExternallyTaggedUnion(allocator, deserializer, visitor),
+        .untagged => try deserializeUntaggedUnion(allocator, T, deserializer, visitor),
         .internal => @compileError("TODO: internally tagged representation"),
     };
 }
 
-fn deserializeExternallyTaggedVariant(
+fn deserializeExternallyTaggedUnion(
     allocator: ?std.mem.Allocator,
     deserializer: anytype,
     visitor: anytype,
@@ -63,7 +63,7 @@ fn deserializeExternallyTaggedVariant(
 }
 
 // Untagged unions are only supported in self-describing formats.
-fn deserializeUntaggedVariant(
+fn deserializeUntaggedUnion(
     allocator: ?std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
