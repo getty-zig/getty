@@ -21,8 +21,9 @@ pub const ser = struct {
     // Functions
     ////////////////////////////////////////////////////////////////////////////////
 
-    /// Returns serialization attributes for `T`. If none exist, `null` is
-    /// returned.
+    /// Returns attributes for `T`, given a `getty.Serializer` interface type `S`.
+    ///
+    /// If no serialization attributes are found, `null` is returned.
     pub const getAttributes = @import("attributes.zig").getAttributes;
 
     ////////////////////////////////////////////////////////////////////////////////

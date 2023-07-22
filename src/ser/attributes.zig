@@ -7,7 +7,9 @@ const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
 const tuples = @import("tuples.zig");
 
-/// Returns serialization attributes for `T`. If none exist, `null` is
+/// Returns attributes for `T`, given a `getty.Serializer` interface type `S`.
+///
+/// If no serialization attributes exist for `T`, given `S`, `null` is
 /// returned.
 pub fn getAttributes(
     /// The type for which attributes should be returned.

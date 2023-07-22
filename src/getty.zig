@@ -18,20 +18,21 @@ pub const de = @import("de/de.zig").de;
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Serializes a value into a `getty.Serializer`.
+/// Serializes `v` using a `getty.Serializer` `s`.
 pub const serialize = @import("ser/serialize.zig").serialize;
 
-/// Deserializes into a value of type `T` from a `getty.Deserializer`.
+/// Deserializes data from a `getty.Deserializer` `d` into a value of type
+/// `T`.
 pub const deserialize = @import("de/deserialize.zig").deserialize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Values
 ////////////////////////////////////////////////////////////////////////////////
 
-/// The default serialization tuple used by Getty.
+/// The default serialization tuple.
 pub const default_st = @import("ser/tuples.zig").default;
 
-/// The default deserialization tuple used by Getty.
+/// The default deserialization tuple.
 pub const default_dt = @import("de/tuples.zig").default;
 
 ////////////////////////////////////////////////////////////////////////////////
