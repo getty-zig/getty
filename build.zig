@@ -95,9 +95,15 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Op
         .target = target,
         .optimize = mode,
     });
-    docs_obj.emit_docs = .emit;
+    docs_obj.emit_bin = .no_emit;
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = docs_obj.getOutputDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "../docs", //path next to zig-out
+    });
 
     const docs_step = b.step("docs", "Generate project documentation");
     docs_step.dependOn(clean_step);
     docs_step.dependOn(&docs_obj.step);
+    docs_step.dependOn(&install_docs.step);
 }
