@@ -78,6 +78,8 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
 }
 
 fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.OptimizeMode) void {
+    const docs_step = b.step("getty-docs", "Build the project documentation");
+
     const doc_obj = b.addObject(.{
         .name = "docs",
         .root_source_file = .{ .path = package_path },
@@ -85,12 +87,11 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Op
         .optimize = mode,
     });
     doc_obj.emit_bin = .no_emit;
+
     const install_docs = b.addInstallDirectory(.{
         .source_dir = doc_obj.getOutputDocs(),
         .install_dir = .prefix,
         .install_subdir = "doc/getty",
     });
-
-    const docs_step = b.step("getty-docs", "Build the project documentation");
     docs_step.dependOn(&install_docs.step);
 }
