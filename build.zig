@@ -78,26 +78,19 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
 }
 
 fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.OptimizeMode) void {
-    // Remove cache.
-    const cmd = b.addSystemCommand(&[_][]const u8{
-        "rm",
-        "-rf",
-        "zig-cache",
-    });
-
-    const clean_step = b.step("clean", "Remove project artifacts");
-    clean_step.dependOn(&cmd.step);
-
-    // Build docs.
-    const docs_obj = b.addObject(.{
+    const doc_obj = b.addObject(.{
         .name = "docs",
         .root_source_file = .{ .path = package_path },
         .target = target,
         .optimize = mode,
     });
-    docs_obj.emit_docs = .emit;
+    doc_obj.emit_bin = .no_emit;
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = doc_obj.getOutputDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "doc/getty",
+    });
 
-    const docs_step = b.step("docs", "Generate project documentation");
-    docs_step.dependOn(clean_step);
-    docs_step.dependOn(&docs_obj.step);
+    const docs_step = b.step("getty-docs", "Build the project documentation");
+    docs_step.dependOn(&install_docs.step);
 }
