@@ -1,6 +1,6 @@
 const blocks = @import("blocks.zig");
 
-// The default deserialization tuple.
+/// The default deserialization tuple.
 pub const dt = .{
     ////////////////////////////////////////////////////////////////////////////
     // Primitives
