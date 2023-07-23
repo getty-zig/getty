@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const err = @import("../error.zig");
-const st = @import("../tuples.zig").st;
+const default_st = @import("../tuples.zig").st;
 
 /// A `Serializer` serializes values from Getty's data model into a data format.
 pub fn Serializer(
@@ -151,23 +151,23 @@ pub fn Serializer(
             ///   1. User-defined ST.
             ///   2. Serializer-defined ST.
             ///   3. Getty's default ST.
-            pub const ast = blk: {
+            pub const st = blk: {
                 const U = @TypeOf(user_st);
                 const S = @TypeOf(serializer_st);
                 const Empty = @TypeOf(.{});
 
                 if (U == Empty and S == Empty) {
                     // Both tuples are empty or the default ST.
-                    break :blk st;
+                    break :blk default_st;
                 } else if (U != Empty and S == Empty) {
                     // User tuple is custom but serializer tuple is empty or the default ST.
-                    break :blk user_st ++ st;
+                    break :blk user_st ++ default_st;
                 } else if (S != Empty and U == Empty) {
                     // Serializer tuple is custom but user tuple is empty or the default ST.
-                    break :blk serializer_st ++ st;
+                    break :blk serializer_st ++ default_st;
                 } else {
                     // Both tuples are custom.
-                    break :blk user_st ++ serializer_st ++ st;
+                    break :blk user_st ++ serializer_st ++ default_st;
                 }
             };
 

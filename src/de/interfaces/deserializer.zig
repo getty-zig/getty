@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const dt = @import("../tuples.zig").dt;
+const default_dt = @import("../tuples.zig").dt;
 const err = @import("../error.zig");
 
 /// A `Deserializer` deserializes values from a data format into Getty's data model.
@@ -118,23 +118,23 @@ pub fn Deserializer(
             ///   1. User-defined DT.
             ///   2. Deserializer-defined DT.
             ///   3. Getty's default DT.
-            pub const adt = blk: {
+            pub const dt = blk: {
                 const U = @TypeOf(user_dt);
                 const D = @TypeOf(deserializer_dt);
                 const Empty = @TypeOf(.{});
 
                 if (U == Empty and D == Empty) {
                     // Both tuples are empty or the default DT.
-                    break :blk dt;
+                    break :blk default_dt;
                 } else if (U != Empty and D == Empty) {
                     // User tuple is custom but deserializer tuple is empty or the default DT.
-                    break :blk user_dt ++ dt;
+                    break :blk user_dt ++ default_dt;
                 } else if (D != Empty and U == Empty) {
                     // Deserializer tuple is custom but user tuple is empty or the default DT.
-                    break :blk deserializer_dt ++ dt;
+                    break :blk deserializer_dt ++ default_dt;
                 } else {
                     // Both tuples are custom.
-                    break :blk user_dt ++ deserializer_dt ++ dt;
+                    break :blk user_dt ++ deserializer_dt ++ default_dt;
                 }
             };
 
