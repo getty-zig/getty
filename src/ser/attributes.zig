@@ -4,8 +4,8 @@ const expectEqual = std.testing.expectEqual;
 const blocks = @import("blocks.zig");
 const has_attributes = @import("../attributes.zig").has_attributes;
 const has_block = @import("../block.zig").has_block;
+const st = @import("tuples.zig").st;
 const t = @import("testing.zig");
-const tuples = @import("tuples.zig");
 
 /// Returns attributes for `T`, given a `getty.Serializer` interface type `S`.
 ///
@@ -89,7 +89,7 @@ test "getAttributes - fail" {
         pub const attributes = .{}; // empty attribute list
     }, Ser));
 
-    inline for (tuples.default) |block| {
+    inline for (st) |block| {
         try expectEqual(expected, comptime getAttributes(block, Ser));
     }
 }

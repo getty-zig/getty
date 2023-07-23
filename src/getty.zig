@@ -30,10 +30,10 @@ pub const deserialize = @import("de/deserialize.zig").deserialize;
 ////////////////////////////////////////////////////////////////////////////////
 
 /// The default serialization tuple.
-pub const default_st = @import("ser/tuples.zig").default;
+pub const st = @import("ser/tuples.zig").st;
 
 /// The default deserialization tuple.
-pub const default_dt = @import("de/tuples.zig").default;
+pub const dt = @import("de/tuples.zig").dt;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Testing

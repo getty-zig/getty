@@ -3,7 +3,7 @@ const expectEqual = std.testing.expectEqual;
 
 const attributes = @import("../attributes.zig");
 const blocks = @import("blocks.zig");
-const default_st = @import("tuples.zig").default;
+const st = @import("tuples.zig").st;
 const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
 
@@ -39,7 +39,7 @@ pub fn serialize(
         }
 
         // Process default SBs.
-        inline for (default_st) |sb| {
+        inline for (st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
             }

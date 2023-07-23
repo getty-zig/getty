@@ -1,4 +1,4 @@
-const default_dt = @import("tuples.zig").default;
+const dt = @import("tuples.zig").dt;
 const has_block = @import("../block.zig").has_block;
 
 /// Returns the highest priority Deserialization Block for a type.
@@ -29,7 +29,7 @@ pub fn find_db(
         }
 
         // Process default DBs.
-        for (default_dt) |db| {
+        for (dt) |db| {
             if (db.is(T)) {
                 return db;
             }

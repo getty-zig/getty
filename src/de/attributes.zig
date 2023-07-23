@@ -1,10 +1,10 @@
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
 
+const dt = @import("tuples.zig").dt;
 const has_attributes = @import("../attributes.zig").has_attributes;
 const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
-const tuples = @import("tuples.zig");
 
 /// Returns deserialization attributes for `T`. If none exist, `null` is returned.
 pub fn getAttributes(
@@ -85,7 +85,7 @@ test "getAttributes - fail" {
         pub const attributes = .{}; // empty attribute list
     }, De));
 
-    inline for (tuples.default) |block| {
+    inline for (dt) |block| {
         try expectEqual(expected, comptime getAttributes(block, De));
     }
 }
