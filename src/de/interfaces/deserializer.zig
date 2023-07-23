@@ -73,7 +73,7 @@ pub fn Deserializer(
                 }
 
                 // Process DT.
-                if (@TypeOf(user_dbt) == @TypeOf(dt)) {
+                if (@TypeOf(user_dbt) == @TypeOf(default_dt)) {
                     break :blk .{};
                 }
 
@@ -101,7 +101,7 @@ pub fn Deserializer(
                 }
 
                 // Process DT.
-                if (@TypeOf(deserializer_dbt) == @TypeOf(dt)) {
+                if (@TypeOf(deserializer_dbt) == @TypeOf(default_dt)) {
                     break :blk .{};
                 }
 

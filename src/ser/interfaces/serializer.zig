@@ -106,7 +106,7 @@ pub fn Serializer(
                 }
 
                 // Process ST.
-                if (@TypeOf(user_sbt) == @TypeOf(st)) {
+                if (@TypeOf(user_sbt) == @TypeOf(default_st)) {
                     break :blk .{};
                 }
 
@@ -134,7 +134,7 @@ pub fn Serializer(
                 }
 
                 // Process ST.
-                if (@TypeOf(serializer_sbt) == @TypeOf(st)) {
+                if (@TypeOf(serializer_sbt) == @TypeOf(default_st)) {
                     break :blk .{};
                 }
 
