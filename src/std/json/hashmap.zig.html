@@ -118,106 +118,80 @@
 <span class="line" id="L5"><span class="tok-kw">const</span> innerParse = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;static.zig&quot;</span>).innerParse;</span>
 <span class="line" id="L6"><span class="tok-kw">const</span> innerParseFromValue = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;static.zig&quot;</span>).innerParseFromValue;</span>
 <span class="line" id="L7"><span class="tok-kw">const</span> Value = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;dynamic.zig&quot;</span>).Value;</span>
-<span class="line" id="L8"><span class="tok-kw">const</span> StringifyOptions = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;stringify.zig&quot;</span>).StringifyOptions;</span>
-<span class="line" id="L9"><span class="tok-kw">const</span> stringify = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;stringify.zig&quot;</span>).stringify;</span>
-<span class="line" id="L10"><span class="tok-kw">const</span> encodeJsonString = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;stringify.zig&quot;</span>).encodeJsonString;</span>
-<span class="line" id="L11"></span>
-<span class="line" id="L12"><span class="tok-comment">/// A thin wrapper around `std.StringArrayHashMapUnmanaged` that implements</span></span>
-<span class="line" id="L13"><span class="tok-comment">/// `jsonParse`, `jsonParseFromValue`, and `jsonStringify`.</span></span>
-<span class="line" id="L14"><span class="tok-comment">/// This is useful when your JSON schema has an object with arbitrary data keys</span></span>
-<span class="line" id="L15"><span class="tok-comment">/// instead of comptime-known struct field names.</span></span>
-<span class="line" id="L16"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ArrayHashMap</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L17">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L18">        map: std.StringArrayHashMapUnmanaged(T) = .{},</span>
-<span class="line" id="L19"></span>
-<span class="line" id="L20">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *<span class="tok-builtin">@This</span>(), allocator: Allocator) <span class="tok-type">void</span> {</span>
-<span class="line" id="L21">            self.map.deinit(allocator);</span>
-<span class="line" id="L22">        }</span>
-<span class="line" id="L23"></span>
-<span class="line" id="L24">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParse</span>(allocator: Allocator, source: <span class="tok-kw">anytype</span>, options: ParseOptions) !<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L25">            <span class="tok-kw">var</span> map = std.StringArrayHashMapUnmanaged(T){};</span>
-<span class="line" id="L26">            <span class="tok-kw">errdefer</span> map.deinit(allocator);</span>
-<span class="line" id="L27"></span>
-<span class="line" id="L28">            <span class="tok-kw">if</span> (.object_begin != <span class="tok-kw">try</span> source.next()) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedToken;</span>
-<span class="line" id="L29">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L30">                <span class="tok-kw">const</span> token = <span class="tok-kw">try</span> source.nextAlloc(allocator, .alloc_if_needed);</span>
-<span class="line" id="L31">                <span class="tok-kw">switch</span> (token) {</span>
-<span class="line" id="L32">                    <span class="tok-kw">inline</span> .string, .allocated_string =&gt; |k| {</span>
-<span class="line" id="L33">                        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(allocator, k);</span>
-<span class="line" id="L34">                        <span class="tok-kw">if</span> (token == .allocated_string) {</span>
-<span class="line" id="L35">                            <span class="tok-comment">// Free the key before recursing in case we're using an allocator</span>
+<span class="line" id="L8"></span>
+<span class="line" id="L9"><span class="tok-comment">/// A thin wrapper around `std.StringArrayHashMapUnmanaged` that implements</span></span>
+<span class="line" id="L10"><span class="tok-comment">/// `jsonParse`, `jsonParseFromValue`, and `jsonStringify`.</span></span>
+<span class="line" id="L11"><span class="tok-comment">/// This is useful when your JSON schema has an object with arbitrary data keys</span></span>
+<span class="line" id="L12"><span class="tok-comment">/// instead of comptime-known struct field names.</span></span>
+<span class="line" id="L13"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ArrayHashMap</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L14">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L15">        map: std.StringArrayHashMapUnmanaged(T) = .{},</span>
+<span class="line" id="L16"></span>
+<span class="line" id="L17">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *<span class="tok-builtin">@This</span>(), allocator: Allocator) <span class="tok-type">void</span> {</span>
+<span class="line" id="L18">            self.map.deinit(allocator);</span>
+<span class="line" id="L19">        }</span>
+<span class="line" id="L20"></span>
+<span class="line" id="L21">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParse</span>(allocator: Allocator, source: <span class="tok-kw">anytype</span>, options: ParseOptions) !<span class="tok-builtin">@This</span>() {</span>
+<span class="line" id="L22">            <span class="tok-kw">var</span> map = std.StringArrayHashMapUnmanaged(T){};</span>
+<span class="line" id="L23">            <span class="tok-kw">errdefer</span> map.deinit(allocator);</span>
+<span class="line" id="L24"></span>
+<span class="line" id="L25">            <span class="tok-kw">if</span> (.object_begin != <span class="tok-kw">try</span> source.next()) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedToken;</span>
+<span class="line" id="L26">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L27">                <span class="tok-kw">const</span> token = <span class="tok-kw">try</span> source.nextAlloc(allocator, options.allocate.?);</span>
+<span class="line" id="L28">                <span class="tok-kw">switch</span> (token) {</span>
+<span class="line" id="L29">                    <span class="tok-kw">inline</span> .string, .allocated_string =&gt; |k| {</span>
+<span class="line" id="L30">                        <span class="tok-kw">const</span> gop = <span class="tok-kw">try</span> map.getOrPut(allocator, k);</span>
+<span class="line" id="L31">                        <span class="tok-kw">if</span> (gop.found_existing) {</span>
+<span class="line" id="L32">                            <span class="tok-kw">switch</span> (options.duplicate_field_behavior) {</span>
+<span class="line" id="L33">                                .use_first =&gt; {</span>
+<span class="line" id="L34">                                    <span class="tok-comment">// Parse and ignore the redundant value.</span>
 </span>
-<span class="line" id="L36">                            <span class="tok-comment">// that optimizes freeing the last allocated object.</span>
+<span class="line" id="L35">                                    <span class="tok-comment">// We don't want to skip the value, because we want type checking.</span>
 </span>
-<span class="line" id="L37">                            allocator.free(k);</span>
-<span class="line" id="L38">                        }</span>
-<span class="line" id="L39">                        <span class="tok-kw">if</span> (gop.found_existing) {</span>
-<span class="line" id="L40">                            <span class="tok-kw">switch</span> (options.duplicate_field_behavior) {</span>
-<span class="line" id="L41">                                .use_first =&gt; {</span>
-<span class="line" id="L42">                                    <span class="tok-comment">// Parse and ignore the redundant value.</span>
-</span>
-<span class="line" id="L43">                                    <span class="tok-comment">// We don't want to skip the value, because we want type checking.</span>
-</span>
-<span class="line" id="L44">                                    _ = <span class="tok-kw">try</span> innerParse(T, allocator, source, options);</span>
-<span class="line" id="L45">                                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L46">                                },</span>
-<span class="line" id="L47">                                .@&quot;error&quot; =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.DuplicateField,</span>
-<span class="line" id="L48">                                .use_last =&gt; {},</span>
-<span class="line" id="L49">                            }</span>
-<span class="line" id="L50">                        }</span>
-<span class="line" id="L51">                        gop.value_ptr.* = <span class="tok-kw">try</span> innerParse(T, allocator, source, options);</span>
-<span class="line" id="L52">                    },</span>
-<span class="line" id="L53">                    .object_end =&gt; <span class="tok-kw">break</span>,</span>
-<span class="line" id="L54">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L55">                }</span>
-<span class="line" id="L56">            }</span>
-<span class="line" id="L57">            <span class="tok-kw">return</span> .{ .map = map };</span>
-<span class="line" id="L58">        }</span>
-<span class="line" id="L59"></span>
-<span class="line" id="L60">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParseFromValue</span>(allocator: Allocator, source: Value, options: ParseOptions) !<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L61">            <span class="tok-kw">if</span> (source != .object) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedToken;</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63">            <span class="tok-kw">var</span> map = std.StringArrayHashMapUnmanaged(T){};</span>
-<span class="line" id="L64">            <span class="tok-kw">errdefer</span> map.deinit(allocator);</span>
-<span class="line" id="L65"></span>
-<span class="line" id="L66">            <span class="tok-kw">var</span> it = source.object.iterator();</span>
-<span class="line" id="L67">            <span class="tok-kw">while</span> (it.next()) |kv| {</span>
-<span class="line" id="L68">                <span class="tok-kw">try</span> map.put(allocator, kv.key_ptr.*, <span class="tok-kw">try</span> innerParseFromValue(T, allocator, kv.value_ptr.*, options));</span>
-<span class="line" id="L69">            }</span>
-<span class="line" id="L70">            <span class="tok-kw">return</span> .{ .map = map };</span>
-<span class="line" id="L71">        }</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonStringify</span>(self: <span class="tok-builtin">@This</span>(), options: StringifyOptions, out_stream: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L74">            <span class="tok-kw">try</span> out_stream.writeByte(<span class="tok-str">'{'</span>);</span>
-<span class="line" id="L75">            <span class="tok-kw">var</span> field_output = <span class="tok-null">false</span>;</span>
-<span class="line" id="L76">            <span class="tok-kw">var</span> child_options = options;</span>
-<span class="line" id="L77">            child_options.whitespace.indent_level += <span class="tok-number">1</span>;</span>
-<span class="line" id="L78">            <span class="tok-kw">var</span> it = self.map.iterator();</span>
-<span class="line" id="L79">            <span class="tok-kw">while</span> (it.next()) |kv| {</span>
-<span class="line" id="L80">                <span class="tok-kw">if</span> (!field_output) {</span>
-<span class="line" id="L81">                    field_output = <span class="tok-null">true</span>;</span>
-<span class="line" id="L82">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L83">                    <span class="tok-kw">try</span> out_stream.writeByte(<span class="tok-str">','</span>);</span>
-<span class="line" id="L84">                }</span>
-<span class="line" id="L85">                <span class="tok-kw">try</span> child_options.whitespace.outputIndent(out_stream);</span>
-<span class="line" id="L86">                <span class="tok-kw">try</span> encodeJsonString(kv.key_ptr.*, options, out_stream);</span>
-<span class="line" id="L87">                <span class="tok-kw">try</span> out_stream.writeByte(<span class="tok-str">':'</span>);</span>
-<span class="line" id="L88">                <span class="tok-kw">if</span> (child_options.whitespace.separator) {</span>
-<span class="line" id="L89">                    <span class="tok-kw">try</span> out_stream.writeByte(<span class="tok-str">' '</span>);</span>
-<span class="line" id="L90">                }</span>
-<span class="line" id="L91">                <span class="tok-kw">try</span> stringify(kv.value_ptr.*, child_options, out_stream);</span>
-<span class="line" id="L92">            }</span>
-<span class="line" id="L93">            <span class="tok-kw">if</span> (field_output) {</span>
-<span class="line" id="L94">                <span class="tok-kw">try</span> options.whitespace.outputIndent(out_stream);</span>
-<span class="line" id="L95">            }</span>
-<span class="line" id="L96">            <span class="tok-kw">try</span> out_stream.writeByte(<span class="tok-str">'}'</span>);</span>
-<span class="line" id="L97">        }</span>
-<span class="line" id="L98">    };</span>
-<span class="line" id="L99">}</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L102">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;hashmap_test.zig&quot;</span>);</span>
-<span class="line" id="L103">}</span>
-<span class="line" id="L104"></span>
+<span class="line" id="L36">                                    _ = <span class="tok-kw">try</span> innerParse(T, allocator, source, options);</span>
+<span class="line" id="L37">                                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L38">                                },</span>
+<span class="line" id="L39">                                .@&quot;error&quot; =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.DuplicateField,</span>
+<span class="line" id="L40">                                .use_last =&gt; {},</span>
+<span class="line" id="L41">                            }</span>
+<span class="line" id="L42">                        }</span>
+<span class="line" id="L43">                        gop.value_ptr.* = <span class="tok-kw">try</span> innerParse(T, allocator, source, options);</span>
+<span class="line" id="L44">                    },</span>
+<span class="line" id="L45">                    .object_end =&gt; <span class="tok-kw">break</span>,</span>
+<span class="line" id="L46">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L47">                }</span>
+<span class="line" id="L48">            }</span>
+<span class="line" id="L49">            <span class="tok-kw">return</span> .{ .map = map };</span>
+<span class="line" id="L50">        }</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParseFromValue</span>(allocator: Allocator, source: Value, options: ParseOptions) !<span class="tok-builtin">@This</span>() {</span>
+<span class="line" id="L53">            <span class="tok-kw">if</span> (source != .object) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedToken;</span>
+<span class="line" id="L54"></span>
+<span class="line" id="L55">            <span class="tok-kw">var</span> map = std.StringArrayHashMapUnmanaged(T){};</span>
+<span class="line" id="L56">            <span class="tok-kw">errdefer</span> map.deinit(allocator);</span>
+<span class="line" id="L57"></span>
+<span class="line" id="L58">            <span class="tok-kw">var</span> it = source.object.iterator();</span>
+<span class="line" id="L59">            <span class="tok-kw">while</span> (it.next()) |kv| {</span>
+<span class="line" id="L60">                <span class="tok-kw">try</span> map.put(allocator, kv.key_ptr.*, <span class="tok-kw">try</span> innerParseFromValue(T, allocator, kv.value_ptr.*, options));</span>
+<span class="line" id="L61">            }</span>
+<span class="line" id="L62">            <span class="tok-kw">return</span> .{ .map = map };</span>
+<span class="line" id="L63">        }</span>
+<span class="line" id="L64"></span>
+<span class="line" id="L65">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonStringify</span>(self: <span class="tok-builtin">@This</span>(), jws: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L66">            <span class="tok-kw">try</span> jws.beginObject();</span>
+<span class="line" id="L67">            <span class="tok-kw">var</span> it = self.map.iterator();</span>
+<span class="line" id="L68">            <span class="tok-kw">while</span> (it.next()) |kv| {</span>
+<span class="line" id="L69">                <span class="tok-kw">try</span> jws.objectField(kv.key_ptr.*);</span>
+<span class="line" id="L70">                <span class="tok-kw">try</span> jws.write(kv.value_ptr.*);</span>
+<span class="line" id="L71">            }</span>
+<span class="line" id="L72">            <span class="tok-kw">try</span> jws.endObject();</span>
+<span class="line" id="L73">        }</span>
+<span class="line" id="L74">    };</span>
+<span class="line" id="L75">}</span>
+<span class="line" id="L76"></span>
+<span class="line" id="L77"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L78">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;hashmap_test.zig&quot;</span>);</span>
+<span class="line" id="L79">}</span>
+<span class="line" id="L80"></span>
 </code></pre></body>
 </html>
