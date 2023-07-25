@@ -89,7 +89,7 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Op
     doc_obj.emit_bin = .no_emit;
 
     const install_docs = b.addInstallDirectory(.{
-        .source_dir = doc_obj.getOutputDocs(),
+        .source_dir = doc_obj.getEmittedDocs(),
         .install_dir = .prefix,
         .install_subdir = "doc/getty",
     });
