@@ -867,47 +867,50 @@
 <span class="line" id="L735"></span>
 <span class="line" id="L736">    <span class="tok-kw">const</span> server_thread = <span class="tok-kw">try</span> std.Thread.spawn(.{}, (<span class="tok-kw">struct</span> {</span>
 <span class="line" id="L737">        <span class="tok-kw">fn</span> <span class="tok-fn">apply</span>(s: *std.http.Server) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L738">            <span class="tok-kw">const</span> res = <span class="tok-kw">try</span> s.accept(.{ .dynamic = max_header_size });</span>
-<span class="line" id="L739">            <span class="tok-kw">defer</span> res.deinit();</span>
-<span class="line" id="L740">            <span class="tok-kw">defer</span> res.reset();</span>
-<span class="line" id="L741">            <span class="tok-kw">try</span> res.wait();</span>
-<span class="line" id="L742"></span>
-<span class="line" id="L743">            <span class="tok-kw">try</span> expect(res.request.transfer_encoding.? == .chunked);</span>
-<span class="line" id="L744"></span>
-<span class="line" id="L745">            <span class="tok-kw">const</span> server_body: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;message from server!\n&quot;</span>;</span>
-<span class="line" id="L746">            res.transfer_encoding = .{ .content_length = server_body.len };</span>
-<span class="line" id="L747">            <span class="tok-kw">try</span> res.headers.append(<span class="tok-str">&quot;content-type&quot;</span>, <span class="tok-str">&quot;text/plain&quot;</span>);</span>
-<span class="line" id="L748">            <span class="tok-kw">try</span> res.headers.append(<span class="tok-str">&quot;connection&quot;</span>, <span class="tok-str">&quot;close&quot;</span>);</span>
-<span class="line" id="L749">            <span class="tok-kw">try</span> res.do();</span>
-<span class="line" id="L750"></span>
-<span class="line" id="L751">            <span class="tok-kw">var</span> buf: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L752">            <span class="tok-kw">const</span> n = <span class="tok-kw">try</span> res.readAll(&amp;buf);</span>
-<span class="line" id="L753">            <span class="tok-kw">try</span> expect(std.mem.eql(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..n], <span class="tok-str">&quot;ABCD&quot;</span>));</span>
-<span class="line" id="L754">            _ = <span class="tok-kw">try</span> res.writer().writeAll(server_body);</span>
-<span class="line" id="L755">            <span class="tok-kw">try</span> res.finish();</span>
-<span class="line" id="L756">        }</span>
-<span class="line" id="L757">    }).apply, .{&amp;server});</span>
-<span class="line" id="L758"></span>
-<span class="line" id="L759">    <span class="tok-kw">const</span> request_bytes =</span>
-<span class="line" id="L760">        <span class="tok-str">&quot;POST / HTTP/1.1\r\n&quot;</span> ++</span>
-<span class="line" id="L761">        <span class="tok-str">&quot;Content-Type: text/plain\r\n&quot;</span> ++</span>
-<span class="line" id="L762">        <span class="tok-str">&quot;Transfer-Encoding: chunked\r\n&quot;</span> ++</span>
-<span class="line" id="L763">        <span class="tok-str">&quot;\r\n&quot;</span> ++</span>
-<span class="line" id="L764">        <span class="tok-str">&quot;1\r\n&quot;</span> ++</span>
-<span class="line" id="L765">        <span class="tok-str">&quot;A\r\n&quot;</span> ++</span>
-<span class="line" id="L766">        <span class="tok-str">&quot;1\r\n&quot;</span> ++</span>
-<span class="line" id="L767">        <span class="tok-str">&quot;B\r\n&quot;</span> ++</span>
-<span class="line" id="L768">        <span class="tok-str">&quot;2\r\n&quot;</span> ++</span>
-<span class="line" id="L769">        <span class="tok-str">&quot;CD\r\n&quot;</span> ++</span>
-<span class="line" id="L770">        <span class="tok-str">&quot;0\r\n&quot;</span> ++</span>
-<span class="line" id="L771">        <span class="tok-str">&quot;\r\n&quot;</span>;</span>
-<span class="line" id="L772"></span>
-<span class="line" id="L773">    <span class="tok-kw">const</span> stream = <span class="tok-kw">try</span> std.net.tcpConnectToHost(allocator, <span class="tok-str">&quot;127.0.0.1&quot;</span>, server_port);</span>
-<span class="line" id="L774">    <span class="tok-kw">defer</span> stream.close();</span>
-<span class="line" id="L775">    _ = <span class="tok-kw">try</span> stream.writeAll(request_bytes[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L776"></span>
-<span class="line" id="L777">    server_thread.join();</span>
-<span class="line" id="L778">}</span>
+<span class="line" id="L738">            <span class="tok-kw">var</span> res = <span class="tok-kw">try</span> s.accept(.{</span>
+<span class="line" id="L739">                .allocator = allocator,</span>
+<span class="line" id="L740">                .header_strategy = .{ .dynamic = max_header_size },</span>
+<span class="line" id="L741">            });</span>
+<span class="line" id="L742">            <span class="tok-kw">defer</span> res.deinit();</span>
+<span class="line" id="L743">            <span class="tok-kw">defer</span> _ = res.reset();</span>
+<span class="line" id="L744">            <span class="tok-kw">try</span> res.wait();</span>
+<span class="line" id="L745"></span>
+<span class="line" id="L746">            <span class="tok-kw">try</span> expect(res.request.transfer_encoding.? == .chunked);</span>
+<span class="line" id="L747"></span>
+<span class="line" id="L748">            <span class="tok-kw">const</span> server_body: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;message from server!\n&quot;</span>;</span>
+<span class="line" id="L749">            res.transfer_encoding = .{ .content_length = server_body.len };</span>
+<span class="line" id="L750">            <span class="tok-kw">try</span> res.headers.append(<span class="tok-str">&quot;content-type&quot;</span>, <span class="tok-str">&quot;text/plain&quot;</span>);</span>
+<span class="line" id="L751">            <span class="tok-kw">try</span> res.headers.append(<span class="tok-str">&quot;connection&quot;</span>, <span class="tok-str">&quot;close&quot;</span>);</span>
+<span class="line" id="L752">            <span class="tok-kw">try</span> res.do();</span>
+<span class="line" id="L753"></span>
+<span class="line" id="L754">            <span class="tok-kw">var</span> buf: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L755">            <span class="tok-kw">const</span> n = <span class="tok-kw">try</span> res.readAll(&amp;buf);</span>
+<span class="line" id="L756">            <span class="tok-kw">try</span> expect(std.mem.eql(<span class="tok-type">u8</span>, buf[<span class="tok-number">0</span>..n], <span class="tok-str">&quot;ABCD&quot;</span>));</span>
+<span class="line" id="L757">            _ = <span class="tok-kw">try</span> res.writer().writeAll(server_body);</span>
+<span class="line" id="L758">            <span class="tok-kw">try</span> res.finish();</span>
+<span class="line" id="L759">        }</span>
+<span class="line" id="L760">    }).apply, .{&amp;server});</span>
+<span class="line" id="L761"></span>
+<span class="line" id="L762">    <span class="tok-kw">const</span> request_bytes =</span>
+<span class="line" id="L763">        <span class="tok-str">&quot;POST / HTTP/1.1\r\n&quot;</span> ++</span>
+<span class="line" id="L764">        <span class="tok-str">&quot;Content-Type: text/plain\r\n&quot;</span> ++</span>
+<span class="line" id="L765">        <span class="tok-str">&quot;Transfer-Encoding: chunked\r\n&quot;</span> ++</span>
+<span class="line" id="L766">        <span class="tok-str">&quot;\r\n&quot;</span> ++</span>
+<span class="line" id="L767">        <span class="tok-str">&quot;1\r\n&quot;</span> ++</span>
+<span class="line" id="L768">        <span class="tok-str">&quot;A\r\n&quot;</span> ++</span>
+<span class="line" id="L769">        <span class="tok-str">&quot;1\r\n&quot;</span> ++</span>
+<span class="line" id="L770">        <span class="tok-str">&quot;B\r\n&quot;</span> ++</span>
+<span class="line" id="L771">        <span class="tok-str">&quot;2\r\n&quot;</span> ++</span>
+<span class="line" id="L772">        <span class="tok-str">&quot;CD\r\n&quot;</span> ++</span>
+<span class="line" id="L773">        <span class="tok-str">&quot;0\r\n&quot;</span> ++</span>
+<span class="line" id="L774">        <span class="tok-str">&quot;\r\n&quot;</span>;</span>
+<span class="line" id="L775"></span>
+<span class="line" id="L776">    <span class="tok-kw">const</span> stream = <span class="tok-kw">try</span> std.net.tcpConnectToHost(allocator, <span class="tok-str">&quot;127.0.0.1&quot;</span>, server_port);</span>
+<span class="line" id="L777">    <span class="tok-kw">defer</span> stream.close();</span>
+<span class="line" id="L778">    _ = <span class="tok-kw">try</span> stream.writeAll(request_bytes[<span class="tok-number">0</span>..]);</span>
 <span class="line" id="L779"></span>
+<span class="line" id="L780">    server_thread.join();</span>
+<span class="line" id="L781">}</span>
+<span class="line" id="L782"></span>
 </code></pre></body>
 </html>
