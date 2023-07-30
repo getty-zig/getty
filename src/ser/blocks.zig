@@ -153,6 +153,9 @@ pub const StringHashMapUnmanaged = _HashMap;
 /// Serialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
 
+/// Serialization block for `std.SegmentedList`.
+pub const SegmentedList = @import("blocks/segmented_list.zig");
+
 ////////////////////////////////////////////////////////////////////////////
 // Aggregates
 //

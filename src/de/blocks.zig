@@ -147,6 +147,9 @@ pub const StringHashMapUnmanaged = _HashMap;
 /// Deserialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
 
+/// Deserialization block for `std.SegmentedList`.
+pub const SegmentedList = @import("blocks/segmented_list.zig");
+
 ////////////////////////////////////////////////////////////////////////
 // User-Defined
 ////////////////////////////////////////////////////////////////////////

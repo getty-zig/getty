@@ -70,6 +70,7 @@ pub const dt = .{
     blocks.SemanticVersion,
     blocks.SinglyLinkedList,
     blocks.TailQueue,
+    blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////
     // User-Defined

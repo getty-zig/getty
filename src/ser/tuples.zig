@@ -80,6 +80,7 @@ pub const st = .{
     blocks.SinglyLinkedList,
     blocks.SemanticVersion,
     blocks.TailQueue,
+    blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////
     // Aggregates
