@@ -90,6 +90,9 @@ pub const BoundedArray = @import("blocks/bounded_array.zig");
 /// Serialization block for `std.BufMap` values.
 pub const BufMap = @import("blocks/buf_map.zig");
 
+/// Serialization block for `std.BufSet` values.
+pub const BufSet = @import("blocks/buf_set.zig");
+
 /// Serialization block for `std.DynamicBitSet` values.
 pub const DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 

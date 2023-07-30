@@ -34,6 +34,7 @@ pub const dt = .{
 
     blocks.BoundedArray,
     blocks.BufMap,
+    blocks.BufSet,
     blocks.DynamicBitSet,
     blocks.DynamicBitSetUnmanaged,
 
