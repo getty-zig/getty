@@ -90,6 +90,9 @@ pub const BoundedArray = @import("blocks/bounded_array.zig");
 /// Serialization block for `std.BufMap` values.
 pub const BufMap = @import("blocks/buf_map.zig");
 
+/// Serialization block for `std.BufSet` values.
+pub const BufSet = @import("blocks/buf_set.zig");
+
 /// Serialization block for `std.DynamicBitSet` values.
 pub const DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 
@@ -110,6 +113,9 @@ pub const MultiArrayList = @import("blocks/multi_array_list.zig");
 
 /// Serialization block for `std.net.Address` values.
 pub const NetAddress = @import("blocks/net_address.zig");
+
+/// Serialization block for `std.Uri` values.
+pub const Uri = @import("blocks/uri.zig");
 
 /// Serialization block for `std.PackedIntArray` values.
 pub const PackedIntArray = _PackedIntEndian;
@@ -146,6 +152,9 @@ pub const StringHashMapUnmanaged = _HashMap;
 
 /// Serialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
+
+/// Serialization block for `std.SegmentedList`.
+pub const SegmentedList = @import("blocks/segmented_list.zig");
 
 ////////////////////////////////////////////////////////////////////////////
 // Aggregates

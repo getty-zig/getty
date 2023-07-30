@@ -20,21 +20,20 @@ fn visitString(_: Visitor, allocator: ?std.mem.Allocator, comptime Deserializer:
         return error.MissingAllocator;
     }
 
+    const a = allocator.?;
+
     var ver = std.SemanticVersion.parse(input) catch return error.InvalidValue;
-    errdefer {
-        if (ver.pre) |pre| allocator.?.free(pre);
-        if (ver.build) |build| allocator.?.free(build);
-    }
+    errdefer free(a, Deserializer, ver);
 
     if (ver.pre == null and ver.build == null) {
         return ver;
     }
 
     if (ver.pre) |pre| {
-        ver.pre = try allocator.?.dupe(u8, pre);
+        ver.pre = try a.dupe(u8, pre);
     }
     if (ver.build) |build| {
-        ver.build = try allocator.?.dupe(u8, build);
+        ver.build = try a.dupe(u8, build);
     }
 
     return ver;

@@ -34,6 +34,7 @@ pub const dt = .{
 
     blocks.BoundedArray,
     blocks.BufMap,
+    blocks.BufSet,
     blocks.DynamicBitSet,
     blocks.DynamicBitSetUnmanaged,
 
@@ -56,6 +57,7 @@ pub const dt = .{
     blocks.IntegerBitSet,
     //blocks.MultiArrayList,
     //blocks.NetAddress,
+    blocks.Uri,
 
     // Covers the following types:
     //
@@ -68,6 +70,7 @@ pub const dt = .{
     blocks.SemanticVersion,
     blocks.SinglyLinkedList,
     blocks.TailQueue,
+    blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////
     // User-Defined

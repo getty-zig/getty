@@ -84,6 +84,9 @@ pub const BoundedArray = @import("blocks/bounded_array.zig");
 /// Deserialization block for `std.BufMap` values.
 pub const BufMap = @import("blocks/buf_map.zig");
 
+/// Deserialization block for `std.BufSet` values.
+pub const BufSet = @import("blocks/buf_set.zig");
+
 /// Deserialization block for `std.DynamicBitSet` values.
 pub const DynamicBitSet = _DynamicBitSet;
 
@@ -104,6 +107,9 @@ pub const MultiArrayList = @import("blocks/multi_array_list.zig");
 
 /// Deserialization block for `std.net.Address` values.
 pub const NetAddress = @import("blocks/net_address.zig");
+
+/// Deserialization block for `std.Uri`.
+pub const Uri = @import("blocks/uri.zig");
 
 /// Deserialization block for `std.PackedIntArray` values.
 pub const PackedIntArray = _PackedIntEndian;
@@ -140,6 +146,9 @@ pub const StringHashMapUnmanaged = _HashMap;
 
 /// Deserialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
+
+/// Deserialization block for `std.SegmentedList`.
+pub const SegmentedList = @import("blocks/segmented_list.zig");
 
 ////////////////////////////////////////////////////////////////////////
 // User-Defined

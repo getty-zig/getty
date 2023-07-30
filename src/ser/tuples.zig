@@ -45,6 +45,7 @@ pub const st = .{
 
     blocks.BoundedArray,
     blocks.BufMap,
+    blocks.BufSet,
     blocks.DynamicBitSet,
     blocks.DynamicBitSetUnmanaged,
 
@@ -66,6 +67,7 @@ pub const st = .{
 
     blocks.MultiArrayList,
     blocks.NetAddress,
+    blocks.Uri,
 
     // Covers the following types:
     //
@@ -78,6 +80,7 @@ pub const st = .{
     blocks.SinglyLinkedList,
     blocks.SemanticVersion,
     blocks.TailQueue,
+    blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////
     // Aggregates
