@@ -114,6 +114,9 @@ pub const MultiArrayList = @import("blocks/multi_array_list.zig");
 /// Serialization block for `std.net.Address` values.
 pub const NetAddress = @import("blocks/net_address.zig");
 
+/// Serialization block for `std.Uri` values.
+pub const Uri = @import("blocks/uri.zig");
+
 /// Serialization block for `std.PackedIntArray` values.
 pub const PackedIntArray = _PackedIntEndian;
 

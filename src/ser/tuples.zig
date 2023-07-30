@@ -67,6 +67,7 @@ pub const st = .{
 
     blocks.MultiArrayList,
     blocks.NetAddress,
+    blocks.Uri,
 
     // Covers the following types:
     //

@@ -57,6 +57,7 @@ pub const dt = .{
     blocks.IntegerBitSet,
     //blocks.MultiArrayList,
     //blocks.NetAddress,
+    blocks.Uri,
 
     // Covers the following types:
     //

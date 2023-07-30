@@ -121,11 +121,10 @@ test "deserialize - std.SemanticVersion" {
                 testing.deserializeErr(std.testing.allocator, Self, std.SemanticVersion, t.tokens),
             );
         } else {
+            const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+
             const got = try testing.deserialize(std.testing.allocator, t.name, Self, @TypeOf(t.want), t.tokens);
-            defer {
-                if (got.pre) |pre| std.testing.allocator.free(pre);
-                if (got.build) |build| std.testing.allocator.free(build);
-            }
+            defer free(std.testing.allocator, Deserializer, got);
 
             try testing.expectEqual(t.name, t.want.major, got.major);
             try testing.expectEqual(t.name, t.want.minor, got.minor);
