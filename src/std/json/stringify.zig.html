@@ -265,7 +265,7 @@
 <span class="line" id="L152"><span class="tok-comment">///    | &lt;object&gt;</span></span>
 <span class="line" id="L153"><span class="tok-comment">///    | &lt;array&gt;</span></span>
 <span class="line" id="L154"><span class="tok-comment">///    | write</span></span>
-<span class="line" id="L155"><span class="tok-comment">///    | writePreformatted</span></span>
+<span class="line" id="L155"><span class="tok-comment">///    | print</span></span>
 <span class="line" id="L156"><span class="tok-comment">///  &lt;object&gt; = beginObject ( objectField &lt;value&gt; )* endObject</span></span>
 <span class="line" id="L157"><span class="tok-comment">///  &lt;array&gt; = beginArray ( &lt;value&gt; )* endArray</span></span>
 <span class="line" id="L158"><span class="tok-comment">/// ```</span></span>
@@ -499,316 +499,318 @@
 <span class="line" id="L378">            <span class="tok-kw">return</span> self.indent_level == <span class="tok-number">0</span> <span class="tok-kw">and</span> self.next_punctuation == .comma;</span>
 <span class="line" id="L379">        }</span>
 <span class="line" id="L380"></span>
-<span class="line" id="L381">        <span class="tok-comment">/// An alternative to calling `write` that outputs the given bytes verbatim.</span></span>
+<span class="line" id="L381">        <span class="tok-comment">/// An alternative to calling `write` that formats a value with `std.fmt`.</span></span>
 <span class="line" id="L382">        <span class="tok-comment">/// This function does the usual punctuation and indentation formatting</span></span>
-<span class="line" id="L383">        <span class="tok-comment">/// assuming the given slice represents a single complete value;</span></span>
+<span class="line" id="L383">        <span class="tok-comment">/// assuming the resulting formatted string represents a single complete value;</span></span>
 <span class="line" id="L384">        <span class="tok-comment">/// e.g. `&quot;1&quot;`, `&quot;[]&quot;`, `&quot;[1,2]&quot;`, not `&quot;1,2&quot;`.</span></span>
-<span class="line" id="L385">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writePreformatted</span>(self: *Self, value_slice: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L386">            <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L387">            <span class="tok-kw">try</span> self.stream.writeAll(value_slice);</span>
-<span class="line" id="L388">            self.valueDone();</span>
-<span class="line" id="L389">        }</span>
-<span class="line" id="L390"></span>
-<span class="line" id="L391">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">objectField</span>(self: *Self, key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L392">            <span class="tok-kw">try</span> self.objectFieldStart();</span>
-<span class="line" id="L393">            <span class="tok-kw">try</span> encodeJsonString(key, self.options, self.stream);</span>
-<span class="line" id="L394">            self.next_punctuation = .colon;</span>
-<span class="line" id="L395">        }</span>
-<span class="line" id="L396"></span>
-<span class="line" id="L397">        <span class="tok-comment">/// See `WriteStream`.</span></span>
-<span class="line" id="L398">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(self: *Self, value: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L399">            <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
-<span class="line" id="L400">            <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L401">                .Int =&gt; |info| {</span>
-<span class="line" id="L402">                    <span class="tok-kw">if</span> (info.bits &lt; <span class="tok-number">53</span>) {</span>
-<span class="line" id="L403">                        <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L404">                        <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;{}&quot;</span>, .{value});</span>
-<span class="line" id="L405">                        self.valueDone();</span>
-<span class="line" id="L406">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L407">                    }</span>
-<span class="line" id="L408">                    <span class="tok-kw">if</span> (value &lt; <span class="tok-number">4503599627370496</span> <span class="tok-kw">and</span> (info.signedness == .unsigned <span class="tok-kw">or</span> value &gt; -<span class="tok-number">4503599627370496</span>)) {</span>
-<span class="line" id="L409">                        <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L410">                        <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;{}&quot;</span>, .{value});</span>
-<span class="line" id="L411">                        self.valueDone();</span>
-<span class="line" id="L412">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L413">                    }</span>
-<span class="line" id="L414">                    <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L415">                    <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;\&quot;{}\&quot;&quot;</span>, .{value});</span>
-<span class="line" id="L416">                    self.valueDone();</span>
-<span class="line" id="L417">                    <span class="tok-kw">return</span>;</span>
-<span class="line" id="L418">                },</span>
-<span class="line" id="L419">                .ComptimeInt =&gt; {</span>
-<span class="line" id="L420">                    <span class="tok-kw">return</span> self.write(<span class="tok-builtin">@as</span>(std.math.IntFittingRange(value, value), value));</span>
-<span class="line" id="L421">                },</span>
-<span class="line" id="L422">                .Float, .ComptimeFloat =&gt; {</span>
-<span class="line" id="L423">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@floatCast</span>(value)) == value) {</span>
-<span class="line" id="L424">                        <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L425">                        <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;{}&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@floatCast</span>(value))});</span>
-<span class="line" id="L426">                        self.valueDone();</span>
-<span class="line" id="L427">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L428">                    }</span>
-<span class="line" id="L429">                    <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L430">                    <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;\&quot;{}\&quot;&quot;</span>, .{value});</span>
-<span class="line" id="L431">                    self.valueDone();</span>
-<span class="line" id="L432">                    <span class="tok-kw">return</span>;</span>
-<span class="line" id="L433">                },</span>
-<span class="line" id="L434"></span>
-<span class="line" id="L435">                .Bool =&gt; {</span>
-<span class="line" id="L436">                    <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L437">                    <span class="tok-kw">try</span> self.stream.writeAll(<span class="tok-kw">if</span> (value) <span class="tok-str">&quot;true&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;false&quot;</span>);</span>
-<span class="line" id="L438">                    self.valueDone();</span>
-<span class="line" id="L439">                    <span class="tok-kw">return</span>;</span>
-<span class="line" id="L440">                },</span>
-<span class="line" id="L441">                .Null =&gt; {</span>
-<span class="line" id="L442">                    <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L443">                    <span class="tok-kw">try</span> self.stream.writeAll(<span class="tok-str">&quot;null&quot;</span>);</span>
-<span class="line" id="L444">                    self.valueDone();</span>
-<span class="line" id="L445">                    <span class="tok-kw">return</span>;</span>
-<span class="line" id="L446">                },</span>
-<span class="line" id="L447">                .Optional =&gt; {</span>
-<span class="line" id="L448">                    <span class="tok-kw">if</span> (value) |payload| {</span>
-<span class="line" id="L449">                        <span class="tok-kw">return</span> <span class="tok-kw">try</span> self.write(payload);</span>
-<span class="line" id="L450">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L451">                        <span class="tok-kw">return</span> <span class="tok-kw">try</span> self.write(<span class="tok-null">null</span>);</span>
-<span class="line" id="L452">                    }</span>
-<span class="line" id="L453">                },</span>
-<span class="line" id="L454">                .Enum =&gt; {</span>
-<span class="line" id="L455">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.hasFn(<span class="tok-str">&quot;jsonStringify&quot;</span>)(T)) {</span>
-<span class="line" id="L456">                        <span class="tok-kw">return</span> value.jsonStringify(self);</span>
-<span class="line" id="L457">                    }</span>
-<span class="line" id="L458"></span>
-<span class="line" id="L459">                    <span class="tok-kw">return</span> self.stringValue(<span class="tok-builtin">@tagName</span>(value));</span>
-<span class="line" id="L460">                },</span>
-<span class="line" id="L461">                .Union =&gt; {</span>
-<span class="line" id="L462">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.hasFn(<span class="tok-str">&quot;jsonStringify&quot;</span>)(T)) {</span>
-<span class="line" id="L463">                        <span class="tok-kw">return</span> value.jsonStringify(self);</span>
-<span class="line" id="L464">                    }</span>
-<span class="line" id="L465"></span>
-<span class="line" id="L466">                    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(T).Union;</span>
-<span class="line" id="L467">                    <span class="tok-kw">if</span> (info.tag_type) |UnionTagType| {</span>
-<span class="line" id="L468">                        <span class="tok-kw">try</span> self.beginObject();</span>
-<span class="line" id="L469">                        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |u_field| {</span>
-<span class="line" id="L470">                            <span class="tok-kw">if</span> (value == <span class="tok-builtin">@field</span>(UnionTagType, u_field.name)) {</span>
-<span class="line" id="L471">                                <span class="tok-kw">try</span> self.objectField(u_field.name);</span>
-<span class="line" id="L472">                                <span class="tok-kw">if</span> (u_field.<span class="tok-type">type</span> == <span class="tok-type">void</span>) {</span>
-<span class="line" id="L473">                                    <span class="tok-comment">// void value is {}</span>
+<span class="line" id="L385">        <span class="tok-comment">/// This function may be useful for doing your own number formatting.</span></span>
+<span class="line" id="L386">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">print</span>(self: *Self, <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, args: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L387">            <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L388">            <span class="tok-kw">try</span> self.stream.print(fmt, args);</span>
+<span class="line" id="L389">            self.valueDone();</span>
+<span class="line" id="L390">        }</span>
+<span class="line" id="L391"></span>
+<span class="line" id="L392">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">objectField</span>(self: *Self, key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L393">            <span class="tok-kw">try</span> self.objectFieldStart();</span>
+<span class="line" id="L394">            <span class="tok-kw">try</span> encodeJsonString(key, self.options, self.stream);</span>
+<span class="line" id="L395">            self.next_punctuation = .colon;</span>
+<span class="line" id="L396">        }</span>
+<span class="line" id="L397"></span>
+<span class="line" id="L398">        <span class="tok-comment">/// See `WriteStream`.</span></span>
+<span class="line" id="L399">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(self: *Self, value: <span class="tok-kw">anytype</span>) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L400">            <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
+<span class="line" id="L401">            <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L402">                .Int =&gt; |info| {</span>
+<span class="line" id="L403">                    <span class="tok-kw">if</span> (info.bits &lt; <span class="tok-number">53</span>) {</span>
+<span class="line" id="L404">                        <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L405">                        <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;{}&quot;</span>, .{value});</span>
+<span class="line" id="L406">                        self.valueDone();</span>
+<span class="line" id="L407">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L408">                    }</span>
+<span class="line" id="L409">                    <span class="tok-kw">if</span> (value &lt; <span class="tok-number">4503599627370496</span> <span class="tok-kw">and</span> (info.signedness == .unsigned <span class="tok-kw">or</span> value &gt; -<span class="tok-number">4503599627370496</span>)) {</span>
+<span class="line" id="L410">                        <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L411">                        <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;{}&quot;</span>, .{value});</span>
+<span class="line" id="L412">                        self.valueDone();</span>
+<span class="line" id="L413">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L414">                    }</span>
+<span class="line" id="L415">                    <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L416">                    <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;\&quot;{}\&quot;&quot;</span>, .{value});</span>
+<span class="line" id="L417">                    self.valueDone();</span>
+<span class="line" id="L418">                    <span class="tok-kw">return</span>;</span>
+<span class="line" id="L419">                },</span>
+<span class="line" id="L420">                .ComptimeInt =&gt; {</span>
+<span class="line" id="L421">                    <span class="tok-kw">return</span> self.write(<span class="tok-builtin">@as</span>(std.math.IntFittingRange(value, value), value));</span>
+<span class="line" id="L422">                },</span>
+<span class="line" id="L423">                .Float, .ComptimeFloat =&gt; {</span>
+<span class="line" id="L424">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@floatCast</span>(value)) == value) {</span>
+<span class="line" id="L425">                        <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L426">                        <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;{}&quot;</span>, .{<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-builtin">@floatCast</span>(value))});</span>
+<span class="line" id="L427">                        self.valueDone();</span>
+<span class="line" id="L428">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L429">                    }</span>
+<span class="line" id="L430">                    <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L431">                    <span class="tok-kw">try</span> self.stream.print(<span class="tok-str">&quot;\&quot;{}\&quot;&quot;</span>, .{value});</span>
+<span class="line" id="L432">                    self.valueDone();</span>
+<span class="line" id="L433">                    <span class="tok-kw">return</span>;</span>
+<span class="line" id="L434">                },</span>
+<span class="line" id="L435"></span>
+<span class="line" id="L436">                .Bool =&gt; {</span>
+<span class="line" id="L437">                    <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L438">                    <span class="tok-kw">try</span> self.stream.writeAll(<span class="tok-kw">if</span> (value) <span class="tok-str">&quot;true&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;false&quot;</span>);</span>
+<span class="line" id="L439">                    self.valueDone();</span>
+<span class="line" id="L440">                    <span class="tok-kw">return</span>;</span>
+<span class="line" id="L441">                },</span>
+<span class="line" id="L442">                .Null =&gt; {</span>
+<span class="line" id="L443">                    <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L444">                    <span class="tok-kw">try</span> self.stream.writeAll(<span class="tok-str">&quot;null&quot;</span>);</span>
+<span class="line" id="L445">                    self.valueDone();</span>
+<span class="line" id="L446">                    <span class="tok-kw">return</span>;</span>
+<span class="line" id="L447">                },</span>
+<span class="line" id="L448">                .Optional =&gt; {</span>
+<span class="line" id="L449">                    <span class="tok-kw">if</span> (value) |payload| {</span>
+<span class="line" id="L450">                        <span class="tok-kw">return</span> <span class="tok-kw">try</span> self.write(payload);</span>
+<span class="line" id="L451">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L452">                        <span class="tok-kw">return</span> <span class="tok-kw">try</span> self.write(<span class="tok-null">null</span>);</span>
+<span class="line" id="L453">                    }</span>
+<span class="line" id="L454">                },</span>
+<span class="line" id="L455">                .Enum =&gt; {</span>
+<span class="line" id="L456">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.hasFn(<span class="tok-str">&quot;jsonStringify&quot;</span>)(T)) {</span>
+<span class="line" id="L457">                        <span class="tok-kw">return</span> value.jsonStringify(self);</span>
+<span class="line" id="L458">                    }</span>
+<span class="line" id="L459"></span>
+<span class="line" id="L460">                    <span class="tok-kw">return</span> self.stringValue(<span class="tok-builtin">@tagName</span>(value));</span>
+<span class="line" id="L461">                },</span>
+<span class="line" id="L462">                .Union =&gt; {</span>
+<span class="line" id="L463">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.hasFn(<span class="tok-str">&quot;jsonStringify&quot;</span>)(T)) {</span>
+<span class="line" id="L464">                        <span class="tok-kw">return</span> value.jsonStringify(self);</span>
+<span class="line" id="L465">                    }</span>
+<span class="line" id="L466"></span>
+<span class="line" id="L467">                    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(T).Union;</span>
+<span class="line" id="L468">                    <span class="tok-kw">if</span> (info.tag_type) |UnionTagType| {</span>
+<span class="line" id="L469">                        <span class="tok-kw">try</span> self.beginObject();</span>
+<span class="line" id="L470">                        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |u_field| {</span>
+<span class="line" id="L471">                            <span class="tok-kw">if</span> (value == <span class="tok-builtin">@field</span>(UnionTagType, u_field.name)) {</span>
+<span class="line" id="L472">                                <span class="tok-kw">try</span> self.objectField(u_field.name);</span>
+<span class="line" id="L473">                                <span class="tok-kw">if</span> (u_field.<span class="tok-type">type</span> == <span class="tok-type">void</span>) {</span>
+<span class="line" id="L474">                                    <span class="tok-comment">// void value is {}</span>
 </span>
-<span class="line" id="L474">                                    <span class="tok-kw">try</span> self.beginObject();</span>
-<span class="line" id="L475">                                    <span class="tok-kw">try</span> self.endObject();</span>
-<span class="line" id="L476">                                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L477">                                    <span class="tok-kw">try</span> self.write(<span class="tok-builtin">@field</span>(value, u_field.name));</span>
-<span class="line" id="L478">                                }</span>
-<span class="line" id="L479">                                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L480">                            }</span>
-<span class="line" id="L481">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L482">                            <span class="tok-kw">unreachable</span>; <span class="tok-comment">// No active tag?</span>
+<span class="line" id="L475">                                    <span class="tok-kw">try</span> self.beginObject();</span>
+<span class="line" id="L476">                                    <span class="tok-kw">try</span> self.endObject();</span>
+<span class="line" id="L477">                                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L478">                                    <span class="tok-kw">try</span> self.write(<span class="tok-builtin">@field</span>(value, u_field.name));</span>
+<span class="line" id="L479">                                }</span>
+<span class="line" id="L480">                                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L481">                            }</span>
+<span class="line" id="L482">                        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L483">                            <span class="tok-kw">unreachable</span>; <span class="tok-comment">// No active tag?</span>
 </span>
-<span class="line" id="L483">                        }</span>
-<span class="line" id="L484">                        <span class="tok-kw">try</span> self.endObject();</span>
-<span class="line" id="L485">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L486">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L487">                        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unable to stringify untagged union '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;'&quot;</span>);</span>
-<span class="line" id="L488">                    }</span>
-<span class="line" id="L489">                },</span>
-<span class="line" id="L490">                .Struct =&gt; |S| {</span>
-<span class="line" id="L491">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.hasFn(<span class="tok-str">&quot;jsonStringify&quot;</span>)(T)) {</span>
-<span class="line" id="L492">                        <span class="tok-kw">return</span> value.jsonStringify(self);</span>
-<span class="line" id="L493">                    }</span>
-<span class="line" id="L494"></span>
-<span class="line" id="L495">                    <span class="tok-kw">if</span> (S.is_tuple) {</span>
-<span class="line" id="L496">                        <span class="tok-kw">try</span> self.beginArray();</span>
-<span class="line" id="L497">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L498">                        <span class="tok-kw">try</span> self.beginObject();</span>
-<span class="line" id="L499">                    }</span>
-<span class="line" id="L500">                    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (S.fields) |Field| {</span>
-<span class="line" id="L501">                        <span class="tok-comment">// don't include void fields</span>
+<span class="line" id="L484">                        }</span>
+<span class="line" id="L485">                        <span class="tok-kw">try</span> self.endObject();</span>
+<span class="line" id="L486">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L487">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L488">                        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unable to stringify untagged union '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;'&quot;</span>);</span>
+<span class="line" id="L489">                    }</span>
+<span class="line" id="L490">                },</span>
+<span class="line" id="L491">                .Struct =&gt; |S| {</span>
+<span class="line" id="L492">                    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.hasFn(<span class="tok-str">&quot;jsonStringify&quot;</span>)(T)) {</span>
+<span class="line" id="L493">                        <span class="tok-kw">return</span> value.jsonStringify(self);</span>
+<span class="line" id="L494">                    }</span>
+<span class="line" id="L495"></span>
+<span class="line" id="L496">                    <span class="tok-kw">if</span> (S.is_tuple) {</span>
+<span class="line" id="L497">                        <span class="tok-kw">try</span> self.beginArray();</span>
+<span class="line" id="L498">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L499">                        <span class="tok-kw">try</span> self.beginObject();</span>
+<span class="line" id="L500">                    }</span>
+<span class="line" id="L501">                    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (S.fields) |Field| {</span>
+<span class="line" id="L502">                        <span class="tok-comment">// don't include void fields</span>
 </span>
-<span class="line" id="L502">                        <span class="tok-kw">if</span> (Field.<span class="tok-type">type</span> == <span class="tok-type">void</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L503"></span>
-<span class="line" id="L504">                        <span class="tok-kw">var</span> emit_field = <span class="tok-null">true</span>;</span>
-<span class="line" id="L505"></span>
-<span class="line" id="L506">                        <span class="tok-comment">// don't include optional fields that are null when emit_null_optional_fields is set to false</span>
+<span class="line" id="L503">                        <span class="tok-kw">if</span> (Field.<span class="tok-type">type</span> == <span class="tok-type">void</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L504"></span>
+<span class="line" id="L505">                        <span class="tok-kw">var</span> emit_field = <span class="tok-null">true</span>;</span>
+<span class="line" id="L506"></span>
+<span class="line" id="L507">                        <span class="tok-comment">// don't include optional fields that are null when emit_null_optional_fields is set to false</span>
 </span>
-<span class="line" id="L507">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Field.<span class="tok-type">type</span>) == .Optional) {</span>
-<span class="line" id="L508">                            <span class="tok-kw">if</span> (self.options.emit_null_optional_fields == <span class="tok-null">false</span>) {</span>
-<span class="line" id="L509">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@field</span>(value, Field.name) == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L510">                                    emit_field = <span class="tok-null">false</span>;</span>
-<span class="line" id="L511">                                }</span>
-<span class="line" id="L512">                            }</span>
-<span class="line" id="L513">                        }</span>
-<span class="line" id="L514"></span>
-<span class="line" id="L515">                        <span class="tok-kw">if</span> (emit_field) {</span>
-<span class="line" id="L516">                            <span class="tok-kw">if</span> (!S.is_tuple) {</span>
-<span class="line" id="L517">                                <span class="tok-kw">try</span> self.objectField(Field.name);</span>
-<span class="line" id="L518">                            }</span>
-<span class="line" id="L519">                            <span class="tok-kw">try</span> self.write(<span class="tok-builtin">@field</span>(value, Field.name));</span>
-<span class="line" id="L520">                        }</span>
-<span class="line" id="L521">                    }</span>
-<span class="line" id="L522">                    <span class="tok-kw">if</span> (S.is_tuple) {</span>
-<span class="line" id="L523">                        <span class="tok-kw">try</span> self.endArray();</span>
-<span class="line" id="L524">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L525">                        <span class="tok-kw">try</span> self.endObject();</span>
-<span class="line" id="L526">                    }</span>
-<span class="line" id="L527">                    <span class="tok-kw">return</span>;</span>
-<span class="line" id="L528">                },</span>
-<span class="line" id="L529">                .ErrorSet =&gt; <span class="tok-kw">return</span> self.stringValue(<span class="tok-builtin">@errorName</span>(value)),</span>
-<span class="line" id="L530">                .Pointer =&gt; |ptr_info| <span class="tok-kw">switch</span> (ptr_info.size) {</span>
-<span class="line" id="L531">                    .One =&gt; <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(ptr_info.child)) {</span>
-<span class="line" id="L532">                        .Array =&gt; {</span>
-<span class="line" id="L533">                            <span class="tok-comment">// Coerce `*[N]T` to `[]const T`.</span>
+<span class="line" id="L508">                        <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Field.<span class="tok-type">type</span>) == .Optional) {</span>
+<span class="line" id="L509">                            <span class="tok-kw">if</span> (self.options.emit_null_optional_fields == <span class="tok-null">false</span>) {</span>
+<span class="line" id="L510">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@field</span>(value, Field.name) == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L511">                                    emit_field = <span class="tok-null">false</span>;</span>
+<span class="line" id="L512">                                }</span>
+<span class="line" id="L513">                            }</span>
+<span class="line" id="L514">                        }</span>
+<span class="line" id="L515"></span>
+<span class="line" id="L516">                        <span class="tok-kw">if</span> (emit_field) {</span>
+<span class="line" id="L517">                            <span class="tok-kw">if</span> (!S.is_tuple) {</span>
+<span class="line" id="L518">                                <span class="tok-kw">try</span> self.objectField(Field.name);</span>
+<span class="line" id="L519">                            }</span>
+<span class="line" id="L520">                            <span class="tok-kw">try</span> self.write(<span class="tok-builtin">@field</span>(value, Field.name));</span>
+<span class="line" id="L521">                        }</span>
+<span class="line" id="L522">                    }</span>
+<span class="line" id="L523">                    <span class="tok-kw">if</span> (S.is_tuple) {</span>
+<span class="line" id="L524">                        <span class="tok-kw">try</span> self.endArray();</span>
+<span class="line" id="L525">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L526">                        <span class="tok-kw">try</span> self.endObject();</span>
+<span class="line" id="L527">                    }</span>
+<span class="line" id="L528">                    <span class="tok-kw">return</span>;</span>
+<span class="line" id="L529">                },</span>
+<span class="line" id="L530">                .ErrorSet =&gt; <span class="tok-kw">return</span> self.stringValue(<span class="tok-builtin">@errorName</span>(value)),</span>
+<span class="line" id="L531">                .Pointer =&gt; |ptr_info| <span class="tok-kw">switch</span> (ptr_info.size) {</span>
+<span class="line" id="L532">                    .One =&gt; <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(ptr_info.child)) {</span>
+<span class="line" id="L533">                        .Array =&gt; {</span>
+<span class="line" id="L534">                            <span class="tok-comment">// Coerce `*[N]T` to `[]const T`.</span>
 </span>
-<span class="line" id="L534">                            <span class="tok-kw">const</span> Slice = []<span class="tok-kw">const</span> std.meta.Elem(ptr_info.child);</span>
-<span class="line" id="L535">                            <span class="tok-kw">return</span> self.write(<span class="tok-builtin">@as</span>(Slice, value));</span>
-<span class="line" id="L536">                        },</span>
-<span class="line" id="L537">                        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L538">                            <span class="tok-kw">return</span> self.write(value.*);</span>
-<span class="line" id="L539">                        },</span>
-<span class="line" id="L540">                    },</span>
-<span class="line" id="L541">                    .Many, .Slice =&gt; {</span>
-<span class="line" id="L542">                        <span class="tok-kw">if</span> (ptr_info.size == .Many <span class="tok-kw">and</span> ptr_info.sentinel == <span class="tok-null">null</span>)</span>
-<span class="line" id="L543">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unable to stringify type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;' without sentinel&quot;</span>);</span>
-<span class="line" id="L544">                        <span class="tok-kw">const</span> slice = <span class="tok-kw">if</span> (ptr_info.size == .Many) std.mem.span(value) <span class="tok-kw">else</span> value;</span>
-<span class="line" id="L545"></span>
-<span class="line" id="L546">                        <span class="tok-kw">if</span> (ptr_info.child == <span class="tok-type">u8</span>) {</span>
-<span class="line" id="L547">                            <span class="tok-comment">// This is a []const u8, or some similar Zig string.</span>
+<span class="line" id="L535">                            <span class="tok-kw">const</span> Slice = []<span class="tok-kw">const</span> std.meta.Elem(ptr_info.child);</span>
+<span class="line" id="L536">                            <span class="tok-kw">return</span> self.write(<span class="tok-builtin">@as</span>(Slice, value));</span>
+<span class="line" id="L537">                        },</span>
+<span class="line" id="L538">                        <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L539">                            <span class="tok-kw">return</span> self.write(value.*);</span>
+<span class="line" id="L540">                        },</span>
+<span class="line" id="L541">                    },</span>
+<span class="line" id="L542">                    .Many, .Slice =&gt; {</span>
+<span class="line" id="L543">                        <span class="tok-kw">if</span> (ptr_info.size == .Many <span class="tok-kw">and</span> ptr_info.sentinel == <span class="tok-null">null</span>)</span>
+<span class="line" id="L544">                            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unable to stringify type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;' without sentinel&quot;</span>);</span>
+<span class="line" id="L545">                        <span class="tok-kw">const</span> slice = <span class="tok-kw">if</span> (ptr_info.size == .Many) std.mem.span(value) <span class="tok-kw">else</span> value;</span>
+<span class="line" id="L546"></span>
+<span class="line" id="L547">                        <span class="tok-kw">if</span> (ptr_info.child == <span class="tok-type">u8</span>) {</span>
+<span class="line" id="L548">                            <span class="tok-comment">// This is a []const u8, or some similar Zig string.</span>
 </span>
-<span class="line" id="L548">                            <span class="tok-kw">if</span> (!self.options.emit_strings_as_arrays <span class="tok-kw">and</span> std.unicode.utf8ValidateSlice(slice)) {</span>
-<span class="line" id="L549">                                <span class="tok-kw">return</span> self.stringValue(slice);</span>
-<span class="line" id="L550">                            }</span>
-<span class="line" id="L551">                        }</span>
-<span class="line" id="L552"></span>
-<span class="line" id="L553">                        <span class="tok-kw">try</span> self.beginArray();</span>
-<span class="line" id="L554">                        <span class="tok-kw">for</span> (slice) |x| {</span>
-<span class="line" id="L555">                            <span class="tok-kw">try</span> self.write(x);</span>
-<span class="line" id="L556">                        }</span>
-<span class="line" id="L557">                        <span class="tok-kw">try</span> self.endArray();</span>
-<span class="line" id="L558">                        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L559">                    },</span>
-<span class="line" id="L560">                    <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unable to stringify type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;'&quot;</span>),</span>
-<span class="line" id="L561">                },</span>
-<span class="line" id="L562">                .Array =&gt; {</span>
-<span class="line" id="L563">                    <span class="tok-comment">// Coerce `[N]T` to `*const [N]T` (and then to `[]const T`).</span>
+<span class="line" id="L549">                            <span class="tok-kw">if</span> (!self.options.emit_strings_as_arrays <span class="tok-kw">and</span> std.unicode.utf8ValidateSlice(slice)) {</span>
+<span class="line" id="L550">                                <span class="tok-kw">return</span> self.stringValue(slice);</span>
+<span class="line" id="L551">                            }</span>
+<span class="line" id="L552">                        }</span>
+<span class="line" id="L553"></span>
+<span class="line" id="L554">                        <span class="tok-kw">try</span> self.beginArray();</span>
+<span class="line" id="L555">                        <span class="tok-kw">for</span> (slice) |x| {</span>
+<span class="line" id="L556">                            <span class="tok-kw">try</span> self.write(x);</span>
+<span class="line" id="L557">                        }</span>
+<span class="line" id="L558">                        <span class="tok-kw">try</span> self.endArray();</span>
+<span class="line" id="L559">                        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L560">                    },</span>
+<span class="line" id="L561">                    <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unable to stringify type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;'&quot;</span>),</span>
+<span class="line" id="L562">                },</span>
+<span class="line" id="L563">                .Array =&gt; {</span>
+<span class="line" id="L564">                    <span class="tok-comment">// Coerce `[N]T` to `*const [N]T` (and then to `[]const T`).</span>
 </span>
-<span class="line" id="L564">                    <span class="tok-kw">return</span> self.write(&amp;value);</span>
-<span class="line" id="L565">                },</span>
-<span class="line" id="L566">                .Vector =&gt; |info| {</span>
-<span class="line" id="L567">                    <span class="tok-kw">const</span> array: [info.len]info.child = value;</span>
-<span class="line" id="L568">                    <span class="tok-kw">return</span> self.write(&amp;array);</span>
-<span class="line" id="L569">                },</span>
-<span class="line" id="L570">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unable to stringify type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;'&quot;</span>),</span>
-<span class="line" id="L571">            }</span>
-<span class="line" id="L572">            <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L573">        }</span>
-<span class="line" id="L574"></span>
-<span class="line" id="L575">        <span class="tok-kw">fn</span> <span class="tok-fn">stringValue</span>(self: *Self, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L576">            <span class="tok-kw">try</span> self.valueStart();</span>
-<span class="line" id="L577">            <span class="tok-kw">try</span> encodeJsonString(s, self.options, self.stream);</span>
-<span class="line" id="L578">            self.valueDone();</span>
-<span class="line" id="L579">        }</span>
-<span class="line" id="L580"></span>
-<span class="line" id="L581">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> arrayElem = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; You don't need to call this anymore.&quot;</span>);</span>
-<span class="line" id="L582">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitNull = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write(null) instead.&quot;</span>);</span>
-<span class="line" id="L583">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitBool = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
-<span class="line" id="L584">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitNumber = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
-<span class="line" id="L585">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitString = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
-<span class="line" id="L586">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitJson = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
-<span class="line" id="L587">    };</span>
-<span class="line" id="L588">}</span>
-<span class="line" id="L589"></span>
-<span class="line" id="L590"><span class="tok-kw">fn</span> <span class="tok-fn">outputUnicodeEscape</span>(codepoint: <span class="tok-type">u21</span>, out_stream: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L591">    <span class="tok-kw">if</span> (codepoint &lt;= <span class="tok-number">0xFFFF</span>) {</span>
-<span class="line" id="L592">        <span class="tok-comment">// If the character is in the Basic Multilingual Plane (U+0000 through U+FFFF),</span>
+<span class="line" id="L565">                    <span class="tok-kw">return</span> self.write(&amp;value);</span>
+<span class="line" id="L566">                },</span>
+<span class="line" id="L567">                .Vector =&gt; |info| {</span>
+<span class="line" id="L568">                    <span class="tok-kw">const</span> array: [info.len]info.child = value;</span>
+<span class="line" id="L569">                    <span class="tok-kw">return</span> self.write(&amp;array);</span>
+<span class="line" id="L570">                },</span>
+<span class="line" id="L571">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Unable to stringify type '&quot;</span> ++ <span class="tok-builtin">@typeName</span>(T) ++ <span class="tok-str">&quot;'&quot;</span>),</span>
+<span class="line" id="L572">            }</span>
+<span class="line" id="L573">            <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L574">        }</span>
+<span class="line" id="L575"></span>
+<span class="line" id="L576">        <span class="tok-kw">fn</span> <span class="tok-fn">stringValue</span>(self: *Self, s: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L577">            <span class="tok-kw">try</span> self.valueStart();</span>
+<span class="line" id="L578">            <span class="tok-kw">try</span> encodeJsonString(s, self.options, self.stream);</span>
+<span class="line" id="L579">            self.valueDone();</span>
+<span class="line" id="L580">        }</span>
+<span class="line" id="L581"></span>
+<span class="line" id="L582">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> arrayElem = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; You don't need to call this anymore.&quot;</span>);</span>
+<span class="line" id="L583">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitNull = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write(null) instead.&quot;</span>);</span>
+<span class="line" id="L584">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitBool = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
+<span class="line" id="L585">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitNumber = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
+<span class="line" id="L586">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitString = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
+<span class="line" id="L587">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> emitJson = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .write() instead.&quot;</span>);</span>
+<span class="line" id="L588">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> writePreformatted = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Deprecated; Use .print(\&quot;{s}\&quot;, .{s}) instead.&quot;</span>);</span>
+<span class="line" id="L589">    };</span>
+<span class="line" id="L590">}</span>
+<span class="line" id="L591"></span>
+<span class="line" id="L592"><span class="tok-kw">fn</span> <span class="tok-fn">outputUnicodeEscape</span>(codepoint: <span class="tok-type">u21</span>, out_stream: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L593">    <span class="tok-kw">if</span> (codepoint &lt;= <span class="tok-number">0xFFFF</span>) {</span>
+<span class="line" id="L594">        <span class="tok-comment">// If the character is in the Basic Multilingual Plane (U+0000 through U+FFFF),</span>
 </span>
-<span class="line" id="L593">        <span class="tok-comment">// then it may be represented as a six-character sequence: a reverse solidus, followed</span>
+<span class="line" id="L595">        <span class="tok-comment">// then it may be represented as a six-character sequence: a reverse solidus, followed</span>
 </span>
-<span class="line" id="L594">        <span class="tok-comment">// by the lowercase letter u, followed by four hexadecimal digits that encode the character's code point.</span>
+<span class="line" id="L596">        <span class="tok-comment">// by the lowercase letter u, followed by four hexadecimal digits that encode the character's code point.</span>
 </span>
-<span class="line" id="L595">        <span class="tok-kw">try</span> out_stream.writeAll(<span class="tok-str">&quot;\\u&quot;</span>);</span>
-<span class="line" id="L596">        <span class="tok-kw">try</span> std.fmt.formatIntValue(codepoint, <span class="tok-str">&quot;x&quot;</span>, std.fmt.FormatOptions{ .width = <span class="tok-number">4</span>, .fill = <span class="tok-str">'0'</span> }, out_stream);</span>
-<span class="line" id="L597">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L598">        assert(codepoint &lt;= <span class="tok-number">0x10FFFF</span>);</span>
-<span class="line" id="L599">        <span class="tok-comment">// To escape an extended character that is not in the Basic Multilingual Plane,</span>
+<span class="line" id="L597">        <span class="tok-kw">try</span> out_stream.writeAll(<span class="tok-str">&quot;\\u&quot;</span>);</span>
+<span class="line" id="L598">        <span class="tok-kw">try</span> std.fmt.formatIntValue(codepoint, <span class="tok-str">&quot;x&quot;</span>, std.fmt.FormatOptions{ .width = <span class="tok-number">4</span>, .fill = <span class="tok-str">'0'</span> }, out_stream);</span>
+<span class="line" id="L599">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L600">        assert(codepoint &lt;= <span class="tok-number">0x10FFFF</span>);</span>
+<span class="line" id="L601">        <span class="tok-comment">// To escape an extended character that is not in the Basic Multilingual Plane,</span>
 </span>
-<span class="line" id="L600">        <span class="tok-comment">// the character is represented as a 12-character sequence, encoding the UTF-16 surrogate pair.</span>
+<span class="line" id="L602">        <span class="tok-comment">// the character is represented as a 12-character sequence, encoding the UTF-16 surrogate pair.</span>
 </span>
-<span class="line" id="L601">        <span class="tok-kw">const</span> high = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((codepoint - <span class="tok-number">0x10000</span>) &gt;&gt; <span class="tok-number">10</span>)) + <span class="tok-number">0xD800</span>;</span>
-<span class="line" id="L602">        <span class="tok-kw">const</span> low = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint &amp; <span class="tok-number">0x3FF</span>)) + <span class="tok-number">0xDC00</span>;</span>
-<span class="line" id="L603">        <span class="tok-kw">try</span> out_stream.writeAll(<span class="tok-str">&quot;\\u&quot;</span>);</span>
-<span class="line" id="L604">        <span class="tok-kw">try</span> std.fmt.formatIntValue(high, <span class="tok-str">&quot;x&quot;</span>, std.fmt.FormatOptions{ .width = <span class="tok-number">4</span>, .fill = <span class="tok-str">'0'</span> }, out_stream);</span>
+<span class="line" id="L603">        <span class="tok-kw">const</span> high = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((codepoint - <span class="tok-number">0x10000</span>) &gt;&gt; <span class="tok-number">10</span>)) + <span class="tok-number">0xD800</span>;</span>
+<span class="line" id="L604">        <span class="tok-kw">const</span> low = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint &amp; <span class="tok-number">0x3FF</span>)) + <span class="tok-number">0xDC00</span>;</span>
 <span class="line" id="L605">        <span class="tok-kw">try</span> out_stream.writeAll(<span class="tok-str">&quot;\\u&quot;</span>);</span>
-<span class="line" id="L606">        <span class="tok-kw">try</span> std.fmt.formatIntValue(low, <span class="tok-str">&quot;x&quot;</span>, std.fmt.FormatOptions{ .width = <span class="tok-number">4</span>, .fill = <span class="tok-str">'0'</span> }, out_stream);</span>
-<span class="line" id="L607">    }</span>
-<span class="line" id="L608">}</span>
-<span class="line" id="L609"></span>
-<span class="line" id="L610"><span class="tok-kw">fn</span> <span class="tok-fn">outputSpecialEscape</span>(c: <span class="tok-type">u8</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L611">    <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L612">        <span class="tok-str">'\\'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\\\&quot;</span>),</span>
-<span class="line" id="L613">        <span class="tok-str">'\&quot;'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\\&quot;&quot;</span>),</span>
-<span class="line" id="L614">        <span class="tok-number">0x08</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\b&quot;</span>),</span>
-<span class="line" id="L615">        <span class="tok-number">0x0C</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\f&quot;</span>),</span>
-<span class="line" id="L616">        <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\n&quot;</span>),</span>
-<span class="line" id="L617">        <span class="tok-str">'\r'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\r&quot;</span>),</span>
-<span class="line" id="L618">        <span class="tok-str">'\t'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\t&quot;</span>),</span>
-<span class="line" id="L619">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> outputUnicodeEscape(c, writer),</span>
-<span class="line" id="L620">    }</span>
-<span class="line" id="L621">}</span>
-<span class="line" id="L622"></span>
-<span class="line" id="L623"><span class="tok-comment">/// Write `string` to `writer` as a JSON encoded string.</span></span>
-<span class="line" id="L624"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">encodeJsonString</span>(string: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, options: StringifyOptions, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L625">    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\&quot;'</span>);</span>
-<span class="line" id="L626">    <span class="tok-kw">try</span> encodeJsonStringChars(string, options, writer);</span>
+<span class="line" id="L606">        <span class="tok-kw">try</span> std.fmt.formatIntValue(high, <span class="tok-str">&quot;x&quot;</span>, std.fmt.FormatOptions{ .width = <span class="tok-number">4</span>, .fill = <span class="tok-str">'0'</span> }, out_stream);</span>
+<span class="line" id="L607">        <span class="tok-kw">try</span> out_stream.writeAll(<span class="tok-str">&quot;\\u&quot;</span>);</span>
+<span class="line" id="L608">        <span class="tok-kw">try</span> std.fmt.formatIntValue(low, <span class="tok-str">&quot;x&quot;</span>, std.fmt.FormatOptions{ .width = <span class="tok-number">4</span>, .fill = <span class="tok-str">'0'</span> }, out_stream);</span>
+<span class="line" id="L609">    }</span>
+<span class="line" id="L610">}</span>
+<span class="line" id="L611"></span>
+<span class="line" id="L612"><span class="tok-kw">fn</span> <span class="tok-fn">outputSpecialEscape</span>(c: <span class="tok-type">u8</span>, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L613">    <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L614">        <span class="tok-str">'\\'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\\\&quot;</span>),</span>
+<span class="line" id="L615">        <span class="tok-str">'\&quot;'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\\&quot;&quot;</span>),</span>
+<span class="line" id="L616">        <span class="tok-number">0x08</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\b&quot;</span>),</span>
+<span class="line" id="L617">        <span class="tok-number">0x0C</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\f&quot;</span>),</span>
+<span class="line" id="L618">        <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\n&quot;</span>),</span>
+<span class="line" id="L619">        <span class="tok-str">'\r'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\r&quot;</span>),</span>
+<span class="line" id="L620">        <span class="tok-str">'\t'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot;\\t&quot;</span>),</span>
+<span class="line" id="L621">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> outputUnicodeEscape(c, writer),</span>
+<span class="line" id="L622">    }</span>
+<span class="line" id="L623">}</span>
+<span class="line" id="L624"></span>
+<span class="line" id="L625"><span class="tok-comment">/// Write `string` to `writer` as a JSON encoded string.</span></span>
+<span class="line" id="L626"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">encodeJsonString</span>(string: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, options: StringifyOptions, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L627">    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\&quot;'</span>);</span>
-<span class="line" id="L628">}</span>
-<span class="line" id="L629"></span>
-<span class="line" id="L630"><span class="tok-comment">/// Write `chars` to `writer` as JSON encoded string characters.</span></span>
-<span class="line" id="L631"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">encodeJsonStringChars</span>(chars: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, options: StringifyOptions, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L632">    <span class="tok-kw">var</span> write_cursor: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L633">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L634">    <span class="tok-kw">if</span> (options.escape_unicode) {</span>
-<span class="line" id="L635">        <span class="tok-kw">while</span> (i &lt; chars.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L636">            <span class="tok-kw">switch</span> (chars[i]) {</span>
-<span class="line" id="L637">                <span class="tok-comment">// normal ascii character</span>
+<span class="line" id="L628">    <span class="tok-kw">try</span> encodeJsonStringChars(string, options, writer);</span>
+<span class="line" id="L629">    <span class="tok-kw">try</span> writer.writeByte(<span class="tok-str">'\&quot;'</span>);</span>
+<span class="line" id="L630">}</span>
+<span class="line" id="L631"></span>
+<span class="line" id="L632"><span class="tok-comment">/// Write `chars` to `writer` as JSON encoded string characters.</span></span>
+<span class="line" id="L633"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">encodeJsonStringChars</span>(chars: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, options: StringifyOptions, writer: <span class="tok-kw">anytype</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L634">    <span class="tok-kw">var</span> write_cursor: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L635">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L636">    <span class="tok-kw">if</span> (options.escape_unicode) {</span>
+<span class="line" id="L637">        <span class="tok-kw">while</span> (i &lt; chars.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L638">            <span class="tok-kw">switch</span> (chars[i]) {</span>
+<span class="line" id="L639">                <span class="tok-comment">// normal ascii character</span>
 </span>
-<span class="line" id="L638">                <span class="tok-number">0x20</span>...<span class="tok-number">0x21</span>, <span class="tok-number">0x23</span>...<span class="tok-number">0x5B</span>, <span class="tok-number">0x5D</span>...<span class="tok-number">0x7E</span> =&gt; {},</span>
-<span class="line" id="L639">                <span class="tok-number">0x00</span>...<span class="tok-number">0x1F</span>, <span class="tok-str">'\\'</span>, <span class="tok-str">'\&quot;'</span> =&gt; {</span>
-<span class="line" id="L640">                    <span class="tok-comment">// Always must escape these.</span>
+<span class="line" id="L640">                <span class="tok-number">0x20</span>...<span class="tok-number">0x21</span>, <span class="tok-number">0x23</span>...<span class="tok-number">0x5B</span>, <span class="tok-number">0x5D</span>...<span class="tok-number">0x7E</span> =&gt; {},</span>
+<span class="line" id="L641">                <span class="tok-number">0x00</span>...<span class="tok-number">0x1F</span>, <span class="tok-str">'\\'</span>, <span class="tok-str">'\&quot;'</span> =&gt; {</span>
+<span class="line" id="L642">                    <span class="tok-comment">// Always must escape these.</span>
 </span>
-<span class="line" id="L641">                    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..i]);</span>
-<span class="line" id="L642">                    <span class="tok-kw">try</span> outputSpecialEscape(chars[i], writer);</span>
-<span class="line" id="L643">                    write_cursor = i + <span class="tok-number">1</span>;</span>
-<span class="line" id="L644">                },</span>
-<span class="line" id="L645">                <span class="tok-number">0x7F</span>...<span class="tok-number">0xFF</span> =&gt; {</span>
-<span class="line" id="L646">                    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..i]);</span>
-<span class="line" id="L647">                    <span class="tok-kw">const</span> ulen = std.unicode.utf8ByteSequenceLength(chars[i]) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L648">                    <span class="tok-kw">const</span> codepoint = std.unicode.utf8Decode(chars[i..][<span class="tok-number">0</span>..ulen]) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L649">                    <span class="tok-kw">try</span> outputUnicodeEscape(codepoint, writer);</span>
-<span class="line" id="L650">                    i += ulen - <span class="tok-number">1</span>;</span>
-<span class="line" id="L651">                    write_cursor = i + <span class="tok-number">1</span>;</span>
-<span class="line" id="L652">                },</span>
-<span class="line" id="L653">            }</span>
-<span class="line" id="L654">        }</span>
-<span class="line" id="L655">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L656">        <span class="tok-kw">while</span> (i &lt; chars.len) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L657">            <span class="tok-kw">switch</span> (chars[i]) {</span>
-<span class="line" id="L658">                <span class="tok-comment">// normal bytes</span>
+<span class="line" id="L643">                    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..i]);</span>
+<span class="line" id="L644">                    <span class="tok-kw">try</span> outputSpecialEscape(chars[i], writer);</span>
+<span class="line" id="L645">                    write_cursor = i + <span class="tok-number">1</span>;</span>
+<span class="line" id="L646">                },</span>
+<span class="line" id="L647">                <span class="tok-number">0x7F</span>...<span class="tok-number">0xFF</span> =&gt; {</span>
+<span class="line" id="L648">                    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..i]);</span>
+<span class="line" id="L649">                    <span class="tok-kw">const</span> ulen = std.unicode.utf8ByteSequenceLength(chars[i]) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L650">                    <span class="tok-kw">const</span> codepoint = std.unicode.utf8Decode(chars[i..][<span class="tok-number">0</span>..ulen]) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L651">                    <span class="tok-kw">try</span> outputUnicodeEscape(codepoint, writer);</span>
+<span class="line" id="L652">                    i += ulen - <span class="tok-number">1</span>;</span>
+<span class="line" id="L653">                    write_cursor = i + <span class="tok-number">1</span>;</span>
+<span class="line" id="L654">                },</span>
+<span class="line" id="L655">            }</span>
+<span class="line" id="L656">        }</span>
+<span class="line" id="L657">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L658">        <span class="tok-kw">while</span> (i &lt; chars.len) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L659">            <span class="tok-kw">switch</span> (chars[i]) {</span>
+<span class="line" id="L660">                <span class="tok-comment">// normal bytes</span>
 </span>
-<span class="line" id="L659">                <span class="tok-number">0x20</span>...<span class="tok-number">0x21</span>, <span class="tok-number">0x23</span>...<span class="tok-number">0x5B</span>, <span class="tok-number">0x5D</span>...<span class="tok-number">0xFF</span> =&gt; {},</span>
-<span class="line" id="L660">                <span class="tok-number">0x00</span>...<span class="tok-number">0x1F</span>, <span class="tok-str">'\\'</span>, <span class="tok-str">'\&quot;'</span> =&gt; {</span>
-<span class="line" id="L661">                    <span class="tok-comment">// Always must escape these.</span>
+<span class="line" id="L661">                <span class="tok-number">0x20</span>...<span class="tok-number">0x21</span>, <span class="tok-number">0x23</span>...<span class="tok-number">0x5B</span>, <span class="tok-number">0x5D</span>...<span class="tok-number">0xFF</span> =&gt; {},</span>
+<span class="line" id="L662">                <span class="tok-number">0x00</span>...<span class="tok-number">0x1F</span>, <span class="tok-str">'\\'</span>, <span class="tok-str">'\&quot;'</span> =&gt; {</span>
+<span class="line" id="L663">                    <span class="tok-comment">// Always must escape these.</span>
 </span>
-<span class="line" id="L662">                    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..i]);</span>
-<span class="line" id="L663">                    <span class="tok-kw">try</span> outputSpecialEscape(chars[i], writer);</span>
-<span class="line" id="L664">                    write_cursor = i + <span class="tok-number">1</span>;</span>
-<span class="line" id="L665">                },</span>
-<span class="line" id="L666">            }</span>
-<span class="line" id="L667">        }</span>
-<span class="line" id="L668">    }</span>
-<span class="line" id="L669">    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..chars.len]);</span>
-<span class="line" id="L670">}</span>
-<span class="line" id="L671"></span>
-<span class="line" id="L672"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L673">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;./stringify_test.zig&quot;</span>);</span>
-<span class="line" id="L674">}</span>
-<span class="line" id="L675"></span>
+<span class="line" id="L664">                    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..i]);</span>
+<span class="line" id="L665">                    <span class="tok-kw">try</span> outputSpecialEscape(chars[i], writer);</span>
+<span class="line" id="L666">                    write_cursor = i + <span class="tok-number">1</span>;</span>
+<span class="line" id="L667">                },</span>
+<span class="line" id="L668">            }</span>
+<span class="line" id="L669">        }</span>
+<span class="line" id="L670">    }</span>
+<span class="line" id="L671">    <span class="tok-kw">try</span> writer.writeAll(chars[write_cursor..chars.len]);</span>
+<span class="line" id="L672">}</span>
+<span class="line" id="L673"></span>
+<span class="line" id="L674"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L675">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;./stringify_test.zig&quot;</span>);</span>
+<span class="line" id="L676">}</span>
+<span class="line" id="L677"></span>
 </code></pre></body>
 </html>

@@ -184,7 +184,7 @@
 <span class="line" id="L66">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L67">        }</span>
 <span class="line" id="L68">        <span class="tok-kw">const</span> raw_version = mem.trimRight(<span class="tok-type">u8</span>, result.stdout, <span class="tok-str">&quot;\r\n&quot;</span>);</span>
-<span class="line" id="L69">        <span class="tok-kw">const</span> version = Version.parse(raw_version) <span class="tok-kw">catch</span> Version{</span>
+<span class="line" id="L69">        <span class="tok-kw">const</span> version = parseSdkVersion(raw_version) <span class="tok-kw">orelse</span> Version{</span>
 <span class="line" id="L70">            .major = <span class="tok-number">0</span>,</span>
 <span class="line" id="L71">            .minor = <span class="tok-number">0</span>,</span>
 <span class="line" id="L72">            .patch = <span class="tok-number">0</span>,</span>
@@ -197,18 +197,58 @@
 <span class="line" id="L79">    };</span>
 <span class="line" id="L80">}</span>
 <span class="line" id="L81"></span>
-<span class="line" id="L82"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DarwinSDK = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L83">    path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L84">    version: Version,</span>
-<span class="line" id="L85"></span>
-<span class="line" id="L86">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: DarwinSDK, allocator: Allocator) <span class="tok-type">void</span> {</span>
-<span class="line" id="L87">        allocator.free(self.path);</span>
-<span class="line" id="L88">    }</span>
-<span class="line" id="L89">};</span>
-<span class="line" id="L90"></span>
-<span class="line" id="L91"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L92">    _ = macos;</span>
-<span class="line" id="L93">}</span>
-<span class="line" id="L94"></span>
+<span class="line" id="L82"><span class="tok-comment">// Versions reported by Apple aren't exactly semantically valid as they usually omit</span>
+</span>
+<span class="line" id="L83"><span class="tok-comment">// the patch component. Hence, we do a simple check for the number of components and</span>
+</span>
+<span class="line" id="L84"><span class="tok-comment">// add the missing patch value if needed.</span>
+</span>
+<span class="line" id="L85"><span class="tok-kw">fn</span> <span class="tok-fn">parseSdkVersion</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ?Version {</span>
+<span class="line" id="L86">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L87">    <span class="tok-kw">if</span> (raw.len &gt; buffer.len) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L88">    <span class="tok-builtin">@memcpy</span>(buffer[<span class="tok-number">0</span>..raw.len], raw);</span>
+<span class="line" id="L89">    <span class="tok-kw">const</span> dots_count = mem.count(<span class="tok-type">u8</span>, raw, <span class="tok-str">&quot;.&quot;</span>);</span>
+<span class="line" id="L90">    <span class="tok-kw">if</span> (dots_count &lt; <span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L91">    <span class="tok-kw">const</span> len = <span class="tok-kw">if</span> (dots_count &lt; <span class="tok-number">2</span>) blk: {</span>
+<span class="line" id="L92">        <span class="tok-kw">const</span> patch_suffix = <span class="tok-str">&quot;.0&quot;</span>;</span>
+<span class="line" id="L93">        buffer[raw.len..][<span class="tok-number">0</span>..patch_suffix.len].* = patch_suffix.*;</span>
+<span class="line" id="L94">        <span class="tok-kw">break</span> :blk raw.len + patch_suffix.len;</span>
+<span class="line" id="L95">    } <span class="tok-kw">else</span> raw.len;</span>
+<span class="line" id="L96">    <span class="tok-kw">return</span> Version.parse(buffer[<span class="tok-number">0</span>..len]) <span class="tok-kw">catch</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L97">}</span>
+<span class="line" id="L98"></span>
+<span class="line" id="L99"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DarwinSDK = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L100">    path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L101">    version: Version,</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: DarwinSDK, allocator: Allocator) <span class="tok-type">void</span> {</span>
+<span class="line" id="L104">        allocator.free(self.path);</span>
+<span class="line" id="L105">    }</span>
+<span class="line" id="L106">};</span>
+<span class="line" id="L107"></span>
+<span class="line" id="L108"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L109">    _ = macos;</span>
+<span class="line" id="L110">}</span>
+<span class="line" id="L111"></span>
+<span class="line" id="L112"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
+<span class="line" id="L113"><span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
+<span class="line" id="L114"></span>
+<span class="line" id="L115"><span class="tok-kw">fn</span> <span class="tok-fn">testParseSdkVersionSuccess</span>(exp: Version, raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L116">    <span class="tok-kw">const</span> maybe_ver = parseSdkVersion(raw);</span>
+<span class="line" id="L117">    <span class="tok-kw">try</span> expect(maybe_ver != <span class="tok-null">null</span>);</span>
+<span class="line" id="L118">    <span class="tok-kw">const</span> ver = maybe_ver.?;</span>
+<span class="line" id="L119">    <span class="tok-kw">try</span> expectEqual(exp.major, ver.major);</span>
+<span class="line" id="L120">    <span class="tok-kw">try</span> expectEqual(exp.minor, ver.minor);</span>
+<span class="line" id="L121">    <span class="tok-kw">try</span> expectEqual(exp.patch, ver.patch);</span>
+<span class="line" id="L122">}</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124"><span class="tok-kw">test</span> <span class="tok-str">&quot;parseSdkVersion&quot;</span> {</span>
+<span class="line" id="L125">    <span class="tok-kw">try</span> testParseSdkVersionSuccess(.{ .major = <span class="tok-number">13</span>, .minor = <span class="tok-number">4</span>, .patch = <span class="tok-number">0</span> }, <span class="tok-str">&quot;13.4&quot;</span>);</span>
+<span class="line" id="L126">    <span class="tok-kw">try</span> testParseSdkVersionSuccess(.{ .major = <span class="tok-number">13</span>, .minor = <span class="tok-number">4</span>, .patch = <span class="tok-number">1</span> }, <span class="tok-str">&quot;13.4.1&quot;</span>);</span>
+<span class="line" id="L127">    <span class="tok-kw">try</span> testParseSdkVersionSuccess(.{ .major = <span class="tok-number">11</span>, .minor = <span class="tok-number">15</span>, .patch = <span class="tok-number">0</span> }, <span class="tok-str">&quot;11.15&quot;</span>);</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">    <span class="tok-kw">try</span> expect(parseSdkVersion(<span class="tok-str">&quot;11&quot;</span>) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L130">}</span>
+<span class="line" id="L131"></span>
 </code></pre></body>
 </html>
