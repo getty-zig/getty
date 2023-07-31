@@ -66,11 +66,11 @@ pub fn build(b: *std.Build) void {
 ```zig
 .{
     .name = "quick-start",
-    .version = "0.0.0",
+    .version = "0.1.0",
     .dependencies = .{
         .json = .{
-            .url = "https://github.com/getty-zig/json/archive/5a64449.tar.gz",
-            .hash = "122087fe6d2b141548103e98e4324ac0ab889e7d50d82e186f396d90f55a942aef61",
+            .url = "https://github.com/getty-zig/json/archive/3e3cf7b.tar.gz",
+            .hash = "122017ccb426b5f5690fdda438134852e940796b0ac619eb2648782a7879146f4fcd",
         },
     },
 }
