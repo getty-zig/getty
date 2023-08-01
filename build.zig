@@ -57,16 +57,16 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
         .root_source_file = .{ .path = "src/ser/ser.zig" },
         .target = target,
         .optimize = mode,
+        .main_pkg_path = .{ .path = "src/" },
     });
-    t_ser.setMainPkgPath("src/");
 
     const t_de = b.addTest(.{
         .name = "deserialization test",
         .root_source_file = .{ .path = "src/de/de.zig" },
         .target = target,
         .optimize = mode,
+        .main_pkg_path = .{ .path = "src/" },
     });
-    t_de.setMainPkgPath("src/");
 
     // Configure module-level test steps.
     test_ser_step.dependOn(&b.addRunArtifact(t_ser).step);
@@ -86,7 +86,6 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Op
         .target = target,
         .optimize = mode,
     });
-    doc_obj.emit_bin = .no_emit;
 
     const install_docs = b.addInstallDirectory(.{
         .source_dir = doc_obj.getEmittedDocs(),
