@@ -132,6 +132,9 @@ pub const PackedIntSliceEndian = _PackedIntEndian;
 /// Serialization block for `std.SemanticVersion`.
 pub const SemanticVersion = @import("blocks/semantic_version.zig");
 
+/// Serialization block for `std.PriorityQueue` values.
+pub const PriorityQueue = @import("blocks/priority_queue.zig");
+
 /// Serialization block for `std.SinglyLinkedList` values.
 pub const SinglyLinkedList = @import("blocks/singly_linked_list.zig");
 

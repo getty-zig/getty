@@ -77,6 +77,7 @@ pub const st = .{
     //   - std.PackedIntSliceEndian
     blocks.PackedIntArray,
 
+    blocks.PriorityQueue,
     blocks.SinglyLinkedList,
     blocks.SemanticVersion,
     blocks.TailQueue,
