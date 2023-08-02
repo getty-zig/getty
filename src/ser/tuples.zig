@@ -69,6 +69,12 @@ pub const st = .{
 
     // Covers the following types:
     //
+    //   - std.EnumMultiset
+    //   - std.BoundedEnumMultiset
+    blocks.BoundedEnumMultiset,
+
+    // Covers the following types:
+    //
     //   - std.HashMap
     //   - std.HashMapUnmanaged
     //   - std.AutoHashMap
