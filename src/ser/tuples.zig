@@ -78,6 +78,7 @@ pub const st = .{
     blocks.PackedIntArray,
 
     blocks.PriorityQueue,
+    blocks.PriorityDequeue,
     blocks.SinglyLinkedList,
     blocks.SemanticVersion,
     blocks.TailQueue,
