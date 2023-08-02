@@ -24,10 +24,8 @@ pub fn Visitor(comptime Array: type) type {
 
             errdefer {
                 if (allocator) |alloc| {
-                    if (array.len > 0) {
-                        for (0..seen) |i| {
-                            free(alloc, Deserializer, array[i]);
-                        }
+                    for (array[0..seen]) |v| {
+                        free(alloc, Deserializer, v);
                     }
                 }
             }
@@ -58,7 +56,7 @@ pub fn Visitor(comptime Array: type) type {
                 var string: Value = undefined;
 
                 if (input.len == string.len) {
-                    std.mem.copy(u8, &string, input);
+                    @memcpy(&string, input);
                     return string;
                 }
             }

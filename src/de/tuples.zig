@@ -40,6 +40,18 @@ pub const dt = .{
 
     // Covers the following types:
     //
+    //   - std.EnumArray
+    //   - std.IndexedArray
+    blocks.IndexedArray,
+
+    // Covers the following types:
+    //
+    //   - std.EnumMultiset
+    //   - std.BoundedEnumMultiset
+    blocks.BoundedEnumMultiset,
+
+    // Covers the following types:
+    //
     //   - std.HashMap
     //   - std.HashMapUnmanaged
     //   - std.AutoHashMap
