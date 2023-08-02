@@ -105,6 +105,12 @@ pub const EnumArray = _IndexedArray;
 /// Serialization block for `std.IndexedArray` values.
 pub const IndexedArray = _IndexedArray;
 
+/// Serialization block for `std.EnumSet` values.
+pub const EnumSet = _IndexedSet;
+
+/// Serialization block for `std.IndexedSet` values.
+pub const IndexedSet = _IndexedSet;
+
 /// Serialization block for `std.EnumMap` values.
 pub const EnumMap = _IndexedMap;
 
@@ -196,4 +202,5 @@ const _ArrayListAligned = @import("blocks/array_list_aligned.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
 const _IndexedArray = @import("blocks/indexed_array.zig");
+const _IndexedSet = @import("blocks/indexed_set.zig");
 const _IndexedMap = @import("blocks/indexed_map.zig");

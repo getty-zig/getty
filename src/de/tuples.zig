@@ -46,6 +46,12 @@ pub const dt = .{
 
     // Covers the following types:
     //
+    //   - std.EnumSet
+    //   - std.IndexedSet
+    blocks.IndexedSet,
+
+    // Covers the following types:
+    //
     //   - std.EnumMap
     //   - std.IndexedMap
     blocks.IndexedMap,
