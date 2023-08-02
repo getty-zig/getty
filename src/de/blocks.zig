@@ -99,11 +99,11 @@ pub const EnumArray = _IndexedArray;
 /// Deserialization block for `std.IndexedArray` values.
 pub const IndexedArray = _IndexedArray;
 
-/// Deserialization block for `std.BoundedEnumMultiset` values.
-pub const BoundedEnumMultiset = _EnumMultiset;
+/// Deserialization block for `std.Enummap` values.
+pub const EnumMap = _IndexedMap;
 
-/// Deserialization block for `std.EnumMultiset` values.
-pub const EnumMultiset = _EnumMultiset;
+/// Deserialization block for `std.IndexedMap` values.
+pub const IndexedMap = _IndexedMap;
 
 /// Deserialization block for `std.HashMap` values.
 pub const HashMap = _HashMap;
@@ -185,4 +185,4 @@ const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
 const _StaticBitSet = @import("blocks/static_bit_set.zig");
 const _IndexedArray = @import("blocks/indexed_array.zig");
-const _EnumMultiset = @import("blocks/enum_multiset.zig");
+const _IndexedMap = @import("blocks/indexed_map.zig");

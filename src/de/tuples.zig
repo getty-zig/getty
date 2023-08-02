@@ -46,9 +46,9 @@ pub const dt = .{
 
     // Covers the following types:
     //
-    //   - std.EnumMultiset
-    //   - std.BoundedEnumMultiset
-    blocks.BoundedEnumMultiset,
+    //   - std.EnumMap
+    //   - std.IndexedMap
+    blocks.IndexedMap,
 
     // Covers the following types:
     //
