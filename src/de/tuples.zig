@@ -96,6 +96,7 @@ pub const dt = .{
     blocks.SemanticVersion,
     blocks.SinglyLinkedList,
     blocks.TailQueue,
+    blocks.LinearFifo,
     blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////

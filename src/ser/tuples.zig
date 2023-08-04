@@ -106,6 +106,7 @@ pub const st = .{
     blocks.SinglyLinkedList,
     blocks.SemanticVersion,
     blocks.TailQueue,
+    blocks.LinearFifo,
     blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////
