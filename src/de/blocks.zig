@@ -93,6 +93,30 @@ pub const DynamicBitSet = _DynamicBitSet;
 /// Deserialization block for `std.DynamicBitSetUnmanaged` values.
 pub const DynamicBitSetUnmanaged = _DynamicBitSet;
 
+/// Deserialization block for `std.EnumArray` values.
+pub const EnumArray = _IndexedArray;
+
+/// Deserialization block for `std.IndexedArray` values.
+pub const IndexedArray = _IndexedArray;
+
+/// Deserialization block for `std.EnumSet` values.
+pub const EnumSet = _IndexedSet;
+
+/// Deserialization block for `std.IndexedSet` values.
+pub const IndexedSet = _IndexedSet;
+
+/// Deserialization block for `std.Enummap` values.
+pub const EnumMap = _IndexedMap;
+
+/// Deserialization block for `std.IndexedMap` values.
+pub const IndexedMap = _IndexedMap;
+
+/// Deserialization block for `std.EnumMultiset` values.
+pub const EnumMultiset = _EnumMultiset;
+
+/// Deserialization block for `std.BoundedEnumMultiset` values.
+pub const BoundedEnumMultiset = _EnumMultiset;
+
 /// Deserialization block for `std.HashMap` values.
 pub const HashMap = _HashMap;
 
@@ -126,6 +150,12 @@ pub const PackedIntSliceEndian = _PackedIntEndian;
 /// Deserialization block for `std.SemanticVersion`.
 pub const SemanticVersion = @import("blocks/semantic_version.zig");
 
+/// Deserialization block for `std.PriorityQueue` values.
+pub const PriorityQueue = @import("blocks/priority_queue.zig");
+
+/// Deserialization block for `std.PriorityDequeue` values.
+pub const PriorityDequeue = @import("blocks/priority_dequeue.zig");
+
 /// Deserialization block for `std.SinglyLinkedList` values.
 pub const SinglyLinkedList = @import("blocks/singly_linked_list.zig");
 
@@ -147,6 +177,9 @@ pub const StringHashMapUnmanaged = _HashMap;
 /// Deserialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
 
+/// Deserialization block for `std.LinearFifo`.
+pub const LinearFifo = @import("blocks/linear_fifo.zig");
+
 /// Deserialization block for `std.SegmentedList`.
 pub const SegmentedList = @import("blocks/segmented_list.zig");
 
@@ -166,3 +199,7 @@ const _DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
 const _StaticBitSet = @import("blocks/static_bit_set.zig");
+const _IndexedArray = @import("blocks/indexed_array.zig");
+const _IndexedSet = @import("blocks/indexed_set.zig");
+const _IndexedMap = @import("blocks/indexed_map.zig");
+const _EnumMultiset = @import("blocks/enum_multiset.zig");

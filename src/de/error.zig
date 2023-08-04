@@ -5,6 +5,8 @@ const std = @import("std");
 /// This error set must always be included in a `getty.Deserializer`
 /// implementation's error set.
 pub const Error = std.mem.Allocator.Error || error{
+    /// Overflow for math operations
+    Overflow,
     DuplicateField,
     InvalidLength,
     InvalidType,

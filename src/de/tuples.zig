@@ -40,6 +40,30 @@ pub const dt = .{
 
     // Covers the following types:
     //
+    //   - std.EnumArray
+    //   - std.IndexedArray
+    blocks.IndexedArray,
+
+    // Covers the following types:
+    //
+    //   - std.EnumSet
+    //   - std.IndexedSet
+    blocks.IndexedSet,
+
+    // Covers the following types:
+    //
+    //   - std.EnumMap
+    //   - std.IndexedMap
+    blocks.IndexedMap,
+
+    // Covers the following types:
+    //
+    //   - std.EnumMultiset
+    //   - std.BoundedEnumMultiset
+    blocks.BoundedEnumMultiset,
+
+    // Covers the following types:
+    //
     //   - std.HashMap
     //   - std.HashMapUnmanaged
     //   - std.AutoHashMap
@@ -67,9 +91,12 @@ pub const dt = .{
     //   - std.PackedIntSliceEndian
     blocks.PackedIntArray,
 
+    blocks.PriorityQueue,
+    blocks.PriorityDequeue,
     blocks.SemanticVersion,
     blocks.SinglyLinkedList,
     blocks.TailQueue,
+    blocks.LinearFifo,
     blocks.SegmentedList,
 
     ////////////////////////////////////////////////////////////////////////////

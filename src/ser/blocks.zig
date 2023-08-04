@@ -99,6 +99,30 @@ pub const DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 /// Serialization block for `std.DynamicBitSetUnmanaged` values.
 pub const DynamicBitSetUnmanaged = @import("blocks/dynamic_bit_set_unmanaged.zig");
 
+/// Serialization block for `std.EnumArray` values.
+pub const EnumArray = _IndexedArray;
+
+/// Serialization block for `std.IndexedArray` values.
+pub const IndexedArray = _IndexedArray;
+
+/// Serialization block for `std.EnumSet` values.
+pub const EnumSet = _IndexedSet;
+
+/// Serialization block for `std.IndexedSet` values.
+pub const IndexedSet = _IndexedSet;
+
+/// Serialization block for `std.EnumMap` values.
+pub const EnumMap = _IndexedMap;
+
+/// Serialization block for `std.IndexedMap` values.
+pub const IndexedMap = _IndexedMap;
+
+/// Serialization block for `std.EnumMultiset` values.
+pub const EnumMultiset = _EnumMultiset;
+
+/// Serialization block for `std.IndexedSet` values.
+pub const BoundedEnumMultiset = _EnumMultiset;
+
 /// Serialization block for `std.HashMap` values.
 pub const HashMap = _HashMap;
 
@@ -132,6 +156,12 @@ pub const PackedIntSliceEndian = _PackedIntEndian;
 /// Serialization block for `std.SemanticVersion`.
 pub const SemanticVersion = @import("blocks/semantic_version.zig");
 
+/// Serialization block for `std.PriorityQueue` values.
+pub const PriorityQueue = @import("blocks/priority_queue.zig");
+
+/// Serialization block for `std.PriorityDequeue` values.
+pub const PriorityDequeue = @import("blocks/priority_dequeue.zig");
+
 /// Serialization block for `std.SinglyLinkedList` values.
 pub const SinglyLinkedList = @import("blocks/singly_linked_list.zig");
 
@@ -152,6 +182,9 @@ pub const StringHashMapUnmanaged = _HashMap;
 
 /// Serialization block for `std.TailQueue`.
 pub const TailQueue = @import("blocks/tail_queue.zig");
+
+/// Serialization block for `std.LinearFifo`.
+pub const LinearFifo = @import("blocks/linear_fifo.zig");
 
 /// Serialization block for `std.SegmentedList`.
 pub const SegmentedList = @import("blocks/segmented_list.zig");
@@ -177,3 +210,7 @@ pub const Union = @import("blocks/union.zig");
 const _ArrayListAligned = @import("blocks/array_list_aligned.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
+const _IndexedArray = @import("blocks/indexed_array.zig");
+const _IndexedSet = @import("blocks/indexed_set.zig");
+const _IndexedMap = @import("blocks/indexed_map.zig");
+const _EnumMultiset = @import("blocks/enum_multiset.zig");
