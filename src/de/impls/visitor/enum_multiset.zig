@@ -25,7 +25,6 @@ pub fn Visitor(comptime EnumMultiset: type) type {
             const K = std.meta.FieldType(Value, .counts).Key;
 
             while (try seq.nextElement(ally, K)) |key| {
-                // defer free(ally.?, Deserializer, key);
                 try multiset.add(key, 1);
             }
 
