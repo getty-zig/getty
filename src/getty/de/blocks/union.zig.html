@@ -138,7 +138,7 @@
 <span class="line" id="L25"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
 <span class="line" id="L26"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
 <span class="line" id="L27">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L28">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L28">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L29">    <span class="tok-comment">/// The type being deserialized into.</span></span>
 <span class="line" id="L30">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L31">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
@@ -161,24 +161,24 @@
 <span class="line" id="L48">    };</span>
 <span class="line" id="L49"></span>
 <span class="line" id="L50">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
-<span class="line" id="L51">        .external =&gt; <span class="tok-kw">try</span> deserializeExternallyTaggedUnion(allocator, deserializer, visitor),</span>
-<span class="line" id="L52">        .untagged =&gt; <span class="tok-kw">try</span> deserializeUntaggedUnion(allocator, T, deserializer, visitor),</span>
+<span class="line" id="L51">        .external =&gt; <span class="tok-kw">try</span> deserializeExternallyTaggedUnion(ally, deserializer, visitor),</span>
+<span class="line" id="L52">        .untagged =&gt; <span class="tok-kw">try</span> deserializeUntaggedUnion(ally, T, deserializer, visitor),</span>
 <span class="line" id="L53">        .internal =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: internally tagged representation&quot;</span>),</span>
 <span class="line" id="L54">    };</span>
 <span class="line" id="L55">}</span>
 <span class="line" id="L56"></span>
 <span class="line" id="L57"><span class="tok-kw">fn</span> <span class="tok-fn">deserializeExternallyTaggedUnion</span>(</span>
-<span class="line" id="L58">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L58">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L59">    deserializer: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L60">    visitor: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L61">) <span class="tok-builtin">@TypeOf</span>(deserializer).Error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L62">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeUnion(allocator, visitor);</span>
+<span class="line" id="L62">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeUnion(ally, visitor);</span>
 <span class="line" id="L63">}</span>
 <span class="line" id="L64"></span>
 <span class="line" id="L65"><span class="tok-comment">// Untagged unions are only supported in self-describing formats.</span>
 </span>
 <span class="line" id="L66"><span class="tok-kw">fn</span> <span class="tok-fn">deserializeUntaggedUnion</span>(</span>
-<span class="line" id="L67">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L67">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L68">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L69">    deserializer: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L70">    visitor: <span class="tok-kw">anytype</span>,</span>
@@ -193,15 +193,15 @@
 </span>
 <span class="line" id="L76">    <span class="tok-comment">// actual input data of the deserializer.</span>
 </span>
-<span class="line" id="L77">    <span class="tok-kw">var</span> content = <span class="tok-kw">try</span> getty_deserialize(allocator, Content, deserializer);</span>
+<span class="line" id="L77">    <span class="tok-kw">var</span> content = <span class="tok-kw">try</span> getty_deserialize(ally, Content, deserializer);</span>
 <span class="line" id="L78">    <span class="tok-kw">defer</span> <span class="tok-kw">switch</span> (content) {</span>
 <span class="line" id="L79">        .Int, .Map, .Seq, .String, .Some =&gt; {</span>
 <span class="line" id="L80">            <span class="tok-comment">// If content was successfully deserialized, and we're here, then</span>
 </span>
 <span class="line" id="L81">            <span class="tok-comment">// that means allocator must've not been null.</span>
 </span>
-<span class="line" id="L82">            std.debug.assert(allocator != <span class="tok-null">null</span>);</span>
-<span class="line" id="L83">            getty_free(allocator.?, <span class="tok-builtin">@TypeOf</span>(deserializer), content);</span>
+<span class="line" id="L82">            std.debug.assert(ally != <span class="tok-null">null</span>);</span>
+<span class="line" id="L83">            getty_free(ally.?, <span class="tok-builtin">@TypeOf</span>(deserializer), content);</span>
 <span class="line" id="L84">        },</span>
 <span class="line" id="L85">        <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L86">    };</span>
@@ -212,7 +212,7 @@
 <span class="line" id="L90">    <span class="tok-kw">const</span> d = cd.deserializer();</span>
 <span class="line" id="L91"></span>
 <span class="line" id="L92">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (std.meta.fields(T)) |field| {</span>
-<span class="line" id="L93">        <span class="tok-kw">if</span> (getty_deserialize(allocator, field.<span class="tok-type">type</span>, d)) |value| {</span>
+<span class="line" id="L93">        <span class="tok-kw">if</span> (getty_deserialize(ally, field.<span class="tok-type">type</span>, d)) |value| {</span>
 <span class="line" id="L94">            <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(T, field.name, value);</span>
 <span class="line" id="L95">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
 <span class="line" id="L96">            <span class="tok-kw">error</span>.DuplicateField,</span>
@@ -259,28 +259,28 @@
 <span class="line" id="L136">    String: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
 <span class="line" id="L137">    Void,</span>
 <span class="line" id="L138"></span>
-<span class="line" id="L139">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: Content, allocator: std.mem.Allocator) <span class="tok-type">void</span> {</span>
+<span class="line" id="L139">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: Content, ally: std.mem.Allocator) <span class="tok-type">void</span> {</span>
 <span class="line" id="L140">        <span class="tok-kw">switch</span> (self) {</span>
 <span class="line" id="L141">            .Int =&gt; |v| {</span>
 <span class="line" id="L142">                <span class="tok-kw">var</span> mut = v;</span>
 <span class="line" id="L143">                mut.deinit();</span>
 <span class="line" id="L144">            },</span>
 <span class="line" id="L145">            .Seq =&gt; |v| {</span>
-<span class="line" id="L146">                <span class="tok-kw">for</span> (v.items) |elem| elem.deinit(allocator);</span>
+<span class="line" id="L146">                <span class="tok-kw">for</span> (v.items) |elem| elem.deinit(ally);</span>
 <span class="line" id="L147">                v.deinit();</span>
 <span class="line" id="L148">            },</span>
 <span class="line" id="L149">            .Map =&gt; |v| {</span>
 <span class="line" id="L150">                <span class="tok-kw">for</span> (v.items(.key), v.items(.value)) |key, value| {</span>
-<span class="line" id="L151">                    key.deinit(allocator);</span>
-<span class="line" id="L152">                    value.deinit(allocator);</span>
+<span class="line" id="L151">                    key.deinit(ally);</span>
+<span class="line" id="L152">                    value.deinit(ally);</span>
 <span class="line" id="L153">                }</span>
 <span class="line" id="L154">                <span class="tok-kw">var</span> mut = v;</span>
-<span class="line" id="L155">                mut.deinit(allocator);</span>
+<span class="line" id="L155">                mut.deinit(ally);</span>
 <span class="line" id="L156">            },</span>
-<span class="line" id="L157">            .String =&gt; |v| allocator.free(v),</span>
+<span class="line" id="L157">            .String =&gt; |v| ally.free(v),</span>
 <span class="line" id="L158">            .Some =&gt; |v| {</span>
-<span class="line" id="L159">                v.deinit(allocator);</span>
-<span class="line" id="L160">                allocator.destroy(v);</span>
+<span class="line" id="L159">                v.deinit(ally);</span>
+<span class="line" id="L160">                ally.destroy(v);</span>
 <span class="line" id="L161">            },</span>
 <span class="line" id="L162">            <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L163">        }</span>
@@ -288,12 +288,12 @@
 <span class="line" id="L165"></span>
 <span class="line" id="L166">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L167">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L168">            allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L168">            ally: ?std.mem.Allocator,</span>
 <span class="line" id="L169">            <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>,</span>
 <span class="line" id="L170">            deserializer: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L171">            visitor: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L172">        ) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L173">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeAny(allocator, visitor);</span>
+<span class="line" id="L173">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeAny(ally, visitor);</span>
 <span class="line" id="L174">        }</span>
 <span class="line" id="L175"></span>
 <span class="line" id="L176">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
@@ -331,36 +331,36 @@
 <span class="line" id="L207">                    };</span>
 <span class="line" id="L208">                }</span>
 <span class="line" id="L209"></span>
-<span class="line" id="L210">                <span class="tok-kw">fn</span> <span class="tok-fn">visitInt</span>(_: <span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
-<span class="line" id="L211">                    <span class="tok-kw">if</span> (allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L210">                <span class="tok-kw">fn</span> <span class="tok-fn">visitInt</span>(_: <span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
+<span class="line" id="L211">                    <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L212">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L213">                    }</span>
 <span class="line" id="L214"></span>
 <span class="line" id="L215">                    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(input))) {</span>
-<span class="line" id="L216">                        .Int =&gt; .{ .Int = <span class="tok-kw">try</span> std.math.big.int.Managed.initSet(allocator.?, input) },</span>
+<span class="line" id="L216">                        .Int =&gt; .{ .Int = <span class="tok-kw">try</span> std.math.big.int.Managed.initSet(ally.?, input) },</span>
 <span class="line" id="L217">                        .ComptimeInt =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;comptime_int is not supported&quot;</span>),</span>
 <span class="line" id="L218">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: The Visitor interface guarantees that input is an integer.</span>
 </span>
 <span class="line" id="L219">                    };</span>
 <span class="line" id="L220">                }</span>
 <span class="line" id="L221"></span>
-<span class="line" id="L222">                <span class="tok-kw">fn</span> <span class="tok-fn">visitMap</span>(_: <span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, mapAccess: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
-<span class="line" id="L223">                    <span class="tok-kw">if</span> (allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L222">                <span class="tok-kw">fn</span> <span class="tok-fn">visitMap</span>(_: <span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, mapAccess: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
+<span class="line" id="L223">                    <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L224">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L225">                    }</span>
 <span class="line" id="L226"></span>
 <span class="line" id="L227">                    <span class="tok-kw">var</span> map = ContentMultiArrayList{};</span>
-<span class="line" id="L228">                    <span class="tok-kw">errdefer</span> map.deinit(allocator.?);</span>
+<span class="line" id="L228">                    <span class="tok-kw">errdefer</span> map.deinit(ally.?);</span>
 <span class="line" id="L229"></span>
-<span class="line" id="L230">                    <span class="tok-kw">while</span> (<span class="tok-kw">try</span> mapAccess.nextKey(allocator.?, Content)) |key| {</span>
+<span class="line" id="L230">                    <span class="tok-kw">while</span> (<span class="tok-kw">try</span> mapAccess.nextKey(ally.?, Content)) |key| {</span>
 <span class="line" id="L231">                        <span class="tok-kw">errdefer</span> <span class="tok-kw">if</span> (mapAccess.isKeyAllocated(<span class="tok-builtin">@TypeOf</span>(key))) {</span>
-<span class="line" id="L232">                            getty_free(allocator.?, Deserializer, key);</span>
+<span class="line" id="L232">                            getty_free(ally.?, Deserializer, key);</span>
 <span class="line" id="L233">                        };</span>
 <span class="line" id="L234"></span>
-<span class="line" id="L235">                        <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> mapAccess.nextValue(allocator, Content);</span>
-<span class="line" id="L236">                        <span class="tok-kw">errdefer</span> getty_free(allocator.?, Deserializer, value);</span>
+<span class="line" id="L235">                        <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> mapAccess.nextValue(ally, Content);</span>
+<span class="line" id="L236">                        <span class="tok-kw">errdefer</span> getty_free(ally.?, Deserializer, value);</span>
 <span class="line" id="L237"></span>
-<span class="line" id="L238">                        <span class="tok-kw">try</span> map.append(allocator.?, .{</span>
+<span class="line" id="L238">                        <span class="tok-kw">try</span> map.append(ally.?, .{</span>
 <span class="line" id="L239">                            .key = key,</span>
 <span class="line" id="L240">                            .value = value,</span>
 <span class="line" id="L241">                        });</span>
@@ -373,49 +373,49 @@
 <span class="line" id="L248">                    <span class="tok-kw">return</span> .{ .Null = {} };</span>
 <span class="line" id="L249">                }</span>
 <span class="line" id="L250"></span>
-<span class="line" id="L251">                <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: <span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seqAccess: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
-<span class="line" id="L252">                    <span class="tok-kw">if</span> (allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L251">                <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: <span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seqAccess: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
+<span class="line" id="L252">                    <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L253">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L254">                    }</span>
 <span class="line" id="L255"></span>
-<span class="line" id="L256">                    <span class="tok-kw">var</span> list = std.ArrayList(Content).init(allocator.?);</span>
+<span class="line" id="L256">                    <span class="tok-kw">var</span> list = std.ArrayList(Content).init(ally.?);</span>
 <span class="line" id="L257">                    <span class="tok-kw">errdefer</span> list.deinit();</span>
 <span class="line" id="L258"></span>
-<span class="line" id="L259">                    <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seqAccess.nextElement(allocator.?, Content)) |elem| {</span>
+<span class="line" id="L259">                    <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seqAccess.nextElement(ally.?, Content)) |elem| {</span>
 <span class="line" id="L260">                        <span class="tok-kw">try</span> list.append(elem);</span>
 <span class="line" id="L261">                    }</span>
 <span class="line" id="L262"></span>
 <span class="line" id="L263">                    <span class="tok-kw">return</span> .{ .Seq = list };</span>
 <span class="line" id="L264">                }</span>
 <span class="line" id="L265"></span>
-<span class="line" id="L266">                <span class="tok-kw">fn</span> <span class="tok-fn">visitSome</span>(_: <span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Error!Content {</span>
-<span class="line" id="L267">                    <span class="tok-kw">return</span> .{ .Some = <span class="tok-kw">try</span> getty_deserialize(allocator, *Content, deserializer) };</span>
+<span class="line" id="L266">                <span class="tok-kw">fn</span> <span class="tok-fn">visitSome</span>(_: <span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Error!Content {</span>
+<span class="line" id="L267">                    <span class="tok-kw">return</span> .{ .Some = <span class="tok-kw">try</span> getty_deserialize(ally, *Content, deserializer) };</span>
 <span class="line" id="L268">                }</span>
 <span class="line" id="L269"></span>
-<span class="line" id="L270">                <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(_: <span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
-<span class="line" id="L271">                    <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> allocator.?.alloc(<span class="tok-type">u8</span>, input.len);</span>
+<span class="line" id="L270">                <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(_: <span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
+<span class="line" id="L271">                    <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> ally.?.alloc(<span class="tok-type">u8</span>, input.len);</span>
 <span class="line" id="L272">                    std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
 <span class="line" id="L273"></span>
 <span class="line" id="L274">                    <span class="tok-kw">return</span> .{ .String = output };</span>
 <span class="line" id="L275">                }</span>
 <span class="line" id="L276"></span>
-<span class="line" id="L277">                <span class="tok-kw">fn</span> <span class="tok-fn">visitUnion</span>(_: <span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, ua: <span class="tok-kw">anytype</span>, va: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
-<span class="line" id="L278">                    <span class="tok-kw">if</span> (allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L277">                <span class="tok-kw">fn</span> <span class="tok-fn">visitUnion</span>(_: <span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, ua: <span class="tok-kw">anytype</span>, va: <span class="tok-kw">anytype</span>) Deserializer.Error!Content {</span>
+<span class="line" id="L278">                    <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L279">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L280">                    }</span>
 <span class="line" id="L281"></span>
-<span class="line" id="L282">                    <span class="tok-kw">var</span> variant = <span class="tok-kw">try</span> ua.variant(allocator, Content);</span>
+<span class="line" id="L282">                    <span class="tok-kw">var</span> variant = <span class="tok-kw">try</span> ua.variant(ally, Content);</span>
 <span class="line" id="L283">                    <span class="tok-kw">errdefer</span> <span class="tok-kw">if</span> (ua.isVariantAllocated(<span class="tok-builtin">@TypeOf</span>(variant))) {</span>
-<span class="line" id="L284">                        getty_free(allocator.?, Deserializer, variant);</span>
+<span class="line" id="L284">                        getty_free(ally.?, Deserializer, variant);</span>
 <span class="line" id="L285">                    };</span>
 <span class="line" id="L286"></span>
-<span class="line" id="L287">                    <span class="tok-kw">var</span> payload = <span class="tok-kw">try</span> va.payload(allocator.?, Content);</span>
-<span class="line" id="L288">                    <span class="tok-kw">errdefer</span> getty_free(allocator.?, Deserializer, payload);</span>
+<span class="line" id="L287">                    <span class="tok-kw">var</span> payload = <span class="tok-kw">try</span> va.payload(ally.?, Content);</span>
+<span class="line" id="L288">                    <span class="tok-kw">errdefer</span> getty_free(ally.?, Deserializer, payload);</span>
 <span class="line" id="L289"></span>
 <span class="line" id="L290">                    <span class="tok-kw">var</span> map = ContentMultiArrayList{};</span>
-<span class="line" id="L291">                    <span class="tok-kw">errdefer</span> map.deinit(allocator.?);</span>
+<span class="line" id="L291">                    <span class="tok-kw">errdefer</span> map.deinit(ally.?);</span>
 <span class="line" id="L292"></span>
-<span class="line" id="L293">                    <span class="tok-kw">try</span> map.append(allocator.?, .{</span>
+<span class="line" id="L293">                    <span class="tok-kw">try</span> map.append(ally.?, .{</span>
 <span class="line" id="L294">                        .key = variant,</span>
 <span class="line" id="L295">                        .value = payload,</span>
 <span class="line" id="L296">                    });</span>
@@ -429,9 +429,9 @@
 <span class="line" id="L304">            };</span>
 <span class="line" id="L305">        }</span>
 <span class="line" id="L306"></span>
-<span class="line" id="L307">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(allocator: std.mem.Allocator, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>, value: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L307">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(ally: std.mem.Allocator, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>, value: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L308">            <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L309">                .Int, .Map, .Seq, .String, .Some =&gt; value.deinit(allocator),</span>
+<span class="line" id="L309">                .Int, .Map, .Seq, .String, .Some =&gt; value.deinit(ally),</span>
 <span class="line" id="L310">                <span class="tok-kw">else</span> =&gt; {},</span>
 <span class="line" id="L311">            }</span>
 <span class="line" id="L312">        }</span>
@@ -467,107 +467,107 @@
 <span class="line" id="L342"></span>
 <span class="line" id="L343">    <span class="tok-kw">const</span> De = Self.@&quot;getty.Deserializer&quot;;</span>
 <span class="line" id="L344"></span>
-<span class="line" id="L345">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeAny</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L345">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeAny</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L346">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L347">            .Bool =&gt; |v| <span class="tok-kw">try</span> visitor.visitBool(allocator, De, v),</span>
-<span class="line" id="L348">            <span class="tok-kw">inline</span> .F16, .F32, .F64, .F128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(allocator, De, v),</span>
+<span class="line" id="L347">            .Bool =&gt; |v| <span class="tok-kw">try</span> visitor.visitBool(ally, De, v),</span>
+<span class="line" id="L348">            <span class="tok-kw">inline</span> .F16, .F32, .F64, .F128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
 <span class="line" id="L349">            .Int =&gt; |v| blk: {</span>
 <span class="line" id="L350">                <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> Value = <span class="tok-builtin">@TypeOf</span>(visitor).Value;</span>
 <span class="line" id="L351"></span>
 <span class="line" id="L352">                <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Value) == .Int) {</span>
-<span class="line" id="L353">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(allocator, De, v.to(Value) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>);</span>
+<span class="line" id="L353">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(ally, De, v.to(Value) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>);</span>
 <span class="line" id="L354">                }</span>
 <span class="line" id="L355"></span>
 <span class="line" id="L356">                <span class="tok-kw">if</span> (v.isPositive()) {</span>
-<span class="line" id="L357">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(allocator, De, v.to(<span class="tok-type">u128</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue);</span>
+<span class="line" id="L357">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(ally, De, v.to(<span class="tok-type">u128</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue);</span>
 <span class="line" id="L358">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L359">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(allocator, De, v.to(<span class="tok-type">i128</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue);</span>
+<span class="line" id="L359">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(ally, De, v.to(<span class="tok-type">i128</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue);</span>
 <span class="line" id="L360">                }</span>
 <span class="line" id="L361">            },</span>
-<span class="line" id="L362">            .Map =&gt; |v| <span class="tok-kw">try</span> visitContentMap(allocator, v, visitor),</span>
-<span class="line" id="L363">            .Null =&gt; <span class="tok-kw">try</span> visitor.visitNull(allocator, De),</span>
-<span class="line" id="L364">            .Seq =&gt; |v| <span class="tok-kw">try</span> visitContentSeq(allocator, v, visitor),</span>
+<span class="line" id="L362">            .Map =&gt; |v| <span class="tok-kw">try</span> visitContentMap(ally, v, visitor),</span>
+<span class="line" id="L363">            .Null =&gt; <span class="tok-kw">try</span> visitor.visitNull(ally, De),</span>
+<span class="line" id="L364">            .Seq =&gt; |v| <span class="tok-kw">try</span> visitContentSeq(ally, v, visitor),</span>
 <span class="line" id="L365">            .Some =&gt; |v| blk: {</span>
 <span class="line" id="L366">                <span class="tok-kw">var</span> cd = Self{ .content = v.* };</span>
-<span class="line" id="L367">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitSome(allocator, cd.deserializer());</span>
+<span class="line" id="L367">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitSome(ally, cd.deserializer());</span>
 <span class="line" id="L368">            },</span>
-<span class="line" id="L369">            .String =&gt; |v| <span class="tok-kw">try</span> visitor.visitString(allocator, De, v),</span>
-<span class="line" id="L370">            .Void =&gt; <span class="tok-kw">try</span> visitor.visitVoid(allocator, De),</span>
+<span class="line" id="L369">            .String =&gt; |v| <span class="tok-kw">try</span> visitor.visitString(ally, De, v),</span>
+<span class="line" id="L370">            .Void =&gt; <span class="tok-kw">try</span> visitor.visitVoid(ally, De),</span>
 <span class="line" id="L371">        };</span>
 <span class="line" id="L372">    }</span>
 <span class="line" id="L373"></span>
-<span class="line" id="L374">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeBool</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L374">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeBool</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L375">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L376">            .Bool =&gt; |v| <span class="tok-kw">try</span> visitor.visitBool(allocator, De, v),</span>
+<span class="line" id="L376">            .Bool =&gt; |v| <span class="tok-kw">try</span> visitor.visitBool(ally, De, v),</span>
 <span class="line" id="L377">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L378">        };</span>
 <span class="line" id="L379">    }</span>
 <span class="line" id="L380"></span>
-<span class="line" id="L381">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeEnum</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L381">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeEnum</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L382">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
 <span class="line" id="L383">            .Int =&gt; |v| blk: {</span>
 <span class="line" id="L384">                <span class="tok-kw">const</span> int = v.to(<span class="tok-builtin">@TypeOf</span>(visitor).Value) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L385">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(allocator, De, int);</span>
+<span class="line" id="L385">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(ally, De, int);</span>
 <span class="line" id="L386">            },</span>
-<span class="line" id="L387">            .String =&gt; |v| <span class="tok-kw">try</span> visitor.visitString(allocator, De, v),</span>
+<span class="line" id="L387">            .String =&gt; |v| <span class="tok-kw">try</span> visitor.visitString(ally, De, v),</span>
 <span class="line" id="L388">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L389">        };</span>
 <span class="line" id="L390">    }</span>
 <span class="line" id="L391"></span>
-<span class="line" id="L392">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeFloat</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L392">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeFloat</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L393">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L394">            <span class="tok-kw">inline</span> .F16, .F32, .F64, .F128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(allocator, De, v),</span>
+<span class="line" id="L394">            <span class="tok-kw">inline</span> .F16, .F32, .F64, .F128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
 <span class="line" id="L395">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L396">        };</span>
 <span class="line" id="L397">    }</span>
 <span class="line" id="L398"></span>
-<span class="line" id="L399">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeIgnored</span>(_: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L400">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitVoid(allocator, De);</span>
+<span class="line" id="L399">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeIgnored</span>(_: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L400">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitVoid(ally, De);</span>
 <span class="line" id="L401">    }</span>
 <span class="line" id="L402"></span>
-<span class="line" id="L403">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeInt</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L403">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeInt</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L404">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
 <span class="line" id="L405">            .Int =&gt; |v| blk: {</span>
 <span class="line" id="L406">                <span class="tok-kw">const</span> int = v.to(<span class="tok-builtin">@TypeOf</span>(visitor).Value) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L407">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(allocator, De, int);</span>
+<span class="line" id="L407">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitInt(ally, De, int);</span>
 <span class="line" id="L408">            },</span>
 <span class="line" id="L409">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L410">        };</span>
 <span class="line" id="L411">    }</span>
 <span class="line" id="L412"></span>
-<span class="line" id="L413">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeMap</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L413">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeMap</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L414">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L415">            .Map =&gt; |v| <span class="tok-kw">try</span> visitContentMap(allocator, v, visitor),</span>
+<span class="line" id="L415">            .Map =&gt; |v| <span class="tok-kw">try</span> visitContentMap(ally, v, visitor),</span>
 <span class="line" id="L416">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L417">        };</span>
 <span class="line" id="L418">    }</span>
 <span class="line" id="L419"></span>
-<span class="line" id="L420">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeOptional</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L420">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeOptional</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L421">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L422">            .Null =&gt; <span class="tok-kw">try</span> visitor.visitNull(allocator, De),</span>
+<span class="line" id="L422">            .Null =&gt; <span class="tok-kw">try</span> visitor.visitNull(ally, De),</span>
 <span class="line" id="L423">            .Some =&gt; |v| blk: {</span>
 <span class="line" id="L424">                <span class="tok-kw">var</span> cd = Self{ .content = v.* };</span>
-<span class="line" id="L425">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitSome(allocator, cd.deserializer());</span>
+<span class="line" id="L425">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitSome(ally, cd.deserializer());</span>
 <span class="line" id="L426">            },</span>
 <span class="line" id="L427">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L428">        };</span>
 <span class="line" id="L429">    }</span>
 <span class="line" id="L430"></span>
-<span class="line" id="L431">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeSeq</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L431">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeSeq</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L432">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L433">            .Seq =&gt; |v| <span class="tok-kw">try</span> visitContentSeq(allocator, v, visitor),</span>
+<span class="line" id="L433">            .Seq =&gt; |v| <span class="tok-kw">try</span> visitContentSeq(ally, v, visitor),</span>
 <span class="line" id="L434">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L435">        };</span>
 <span class="line" id="L436">    }</span>
 <span class="line" id="L437"></span>
-<span class="line" id="L438">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeString</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L438">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeString</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L439">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L440">            .String =&gt; |v| <span class="tok-kw">try</span> visitor.visitString(allocator, De, v),</span>
+<span class="line" id="L440">            .String =&gt; |v| <span class="tok-kw">try</span> visitor.visitString(ally, De, v),</span>
 <span class="line" id="L441">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L442">        };</span>
 <span class="line" id="L443">    }</span>
 <span class="line" id="L444"></span>
-<span class="line" id="L445">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeUnion</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L445">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeUnion</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L446">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
 <span class="line" id="L447">            .Map =&gt; |mal| blk: {</span>
 <span class="line" id="L448">                <span class="tok-kw">const</span> keys = mal.items(.key);</span>
@@ -581,27 +581,27 @@
 <span class="line" id="L456">                <span class="tok-kw">const</span> ua = uva.unionAccess();</span>
 <span class="line" id="L457">                <span class="tok-kw">const</span> va = uva.variantAccess();</span>
 <span class="line" id="L458"></span>
-<span class="line" id="L459">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitUnion(allocator, De, ua, va);</span>
+<span class="line" id="L459">                <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitUnion(ally, De, ua, va);</span>
 <span class="line" id="L460">            },</span>
 <span class="line" id="L461">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L462">        };</span>
 <span class="line" id="L463">    }</span>
 <span class="line" id="L464"></span>
-<span class="line" id="L465">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeVoid</span>(self: Self, allocator: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L465">    <span class="tok-kw">fn</span> <span class="tok-fn">deserializeVoid</span>(self: Self, ally: ?std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L466">        <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.content) {</span>
-<span class="line" id="L467">            .Void =&gt; <span class="tok-kw">try</span> visitor.visitVoid(allocator, De),</span>
+<span class="line" id="L467">            .Void =&gt; <span class="tok-kw">try</span> visitor.visitVoid(ally, De),</span>
 <span class="line" id="L468">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">error</span>.InvalidType,</span>
 <span class="line" id="L469">        };</span>
 <span class="line" id="L470">    }</span>
 <span class="line" id="L471"></span>
-<span class="line" id="L472">    <span class="tok-kw">fn</span> <span class="tok-fn">visitContentMap</span>(allocator: ?std.mem.Allocator, content: ContentMultiArrayList, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L473">        <span class="tok-kw">if</span> (allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L472">    <span class="tok-kw">fn</span> <span class="tok-fn">visitContentMap</span>(ally: ?std.mem.Allocator, content: ContentMultiArrayList, visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L473">        <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L474">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L475">        }</span>
 <span class="line" id="L476"></span>
 <span class="line" id="L477">        <span class="tok-kw">var</span> map = ContentDeserializerMultiArrayList{};</span>
-<span class="line" id="L478">        <span class="tok-kw">try</span> map.ensureTotalCapacity(allocator.?, content.len);</span>
-<span class="line" id="L479">        <span class="tok-kw">defer</span> map.deinit(allocator.?);</span>
+<span class="line" id="L478">        <span class="tok-kw">try</span> map.ensureTotalCapacity(ally.?, content.len);</span>
+<span class="line" id="L479">        <span class="tok-kw">defer</span> map.deinit(ally.?);</span>
 <span class="line" id="L480"></span>
 <span class="line" id="L481">        <span class="tok-kw">for</span> (content.items(.key), content.items(.value)) |k, v| {</span>
 <span class="line" id="L482">            map.appendAssumeCapacity(.{</span>
@@ -611,15 +611,15 @@
 <span class="line" id="L486">        }</span>
 <span class="line" id="L487"></span>
 <span class="line" id="L488">        <span class="tok-kw">var</span> ma = MapAccess{ .deserializers = map };</span>
-<span class="line" id="L489">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitMap(allocator.?, De, ma.mapAccess());</span>
+<span class="line" id="L489">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitMap(ally.?, De, ma.mapAccess());</span>
 <span class="line" id="L490">    }</span>
 <span class="line" id="L491"></span>
-<span class="line" id="L492">    <span class="tok-kw">fn</span> <span class="tok-fn">visitContentSeq</span>(allocator: ?std.mem.Allocator, content: std.ArrayList(Content), visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L493">        <span class="tok-kw">if</span> (allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L492">    <span class="tok-kw">fn</span> <span class="tok-fn">visitContentSeq</span>(ally: ?std.mem.Allocator, content: std.ArrayList(Content), visitor: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L493">        <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L494">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L495">        }</span>
 <span class="line" id="L496"></span>
-<span class="line" id="L497">        <span class="tok-kw">var</span> seq = <span class="tok-kw">try</span> std.ArrayList(ContentDeserializer).initCapacity(allocator.?, content.items.len);</span>
+<span class="line" id="L497">        <span class="tok-kw">var</span> seq = <span class="tok-kw">try</span> std.ArrayList(ContentDeserializer).initCapacity(ally.?, content.items.len);</span>
 <span class="line" id="L498">        <span class="tok-kw">defer</span> seq.deinit();</span>
 <span class="line" id="L499"></span>
 <span class="line" id="L500">        <span class="tok-kw">for</span> (content.items) |c| {</span>
@@ -627,7 +627,7 @@
 <span class="line" id="L502">        }</span>
 <span class="line" id="L503"></span>
 <span class="line" id="L504">        <span class="tok-kw">var</span> sa = SeqAccess{ .deserializers = seq };</span>
-<span class="line" id="L505">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitSeq(allocator.?, De, sa.seqAccess());</span>
+<span class="line" id="L505">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitSeq(ally.?, De, sa.seqAccess());</span>
 <span class="line" id="L506">    }</span>
 <span class="line" id="L507">};</span>
 <span class="line" id="L508"></span>
@@ -644,19 +644,19 @@
 <span class="line" id="L519">        },</span>
 <span class="line" id="L520">    );</span>
 <span class="line" id="L521"></span>
-<span class="line" id="L522">    <span class="tok-kw">fn</span> <span class="tok-fn">nextKeySeed</span>(self: *<span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L522">    <span class="tok-kw">fn</span> <span class="tok-fn">nextKeySeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L523">        <span class="tok-kw">if</span> (self.pos &gt;= self.deserializers.items(.key).len) {</span>
 <span class="line" id="L524">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L525">        }</span>
 <span class="line" id="L526"></span>
 <span class="line" id="L527">        <span class="tok-kw">var</span> d = self.deserializers.items(.key)[self.pos];</span>
-<span class="line" id="L528">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(allocator, d.deserializer());</span>
+<span class="line" id="L528">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
 <span class="line" id="L529">    }</span>
 <span class="line" id="L530"></span>
-<span class="line" id="L531">    <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: *<span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L531">    <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L532">        <span class="tok-kw">var</span> d = self.deserializers.items(.value)[self.pos];</span>
 <span class="line" id="L533">        self.pos += <span class="tok-number">1</span>;</span>
-<span class="line" id="L534">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(allocator, d.deserializer());</span>
+<span class="line" id="L534">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
 <span class="line" id="L535">    }</span>
 <span class="line" id="L536">};</span>
 <span class="line" id="L537"></span>
@@ -670,7 +670,7 @@
 <span class="line" id="L545">        .{ .nextElementSeed = nextElementSeed },</span>
 <span class="line" id="L546">    );</span>
 <span class="line" id="L547"></span>
-<span class="line" id="L548">    <span class="tok-kw">fn</span> <span class="tok-fn">nextElementSeed</span>(self: *<span class="tok-builtin">@This</span>(), allocator: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L548">    <span class="tok-kw">fn</span> <span class="tok-fn">nextElementSeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L549">        <span class="tok-kw">if</span> (self.pos &gt;= self.deserializers.items.len) {</span>
 <span class="line" id="L550">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L551">        }</span>
@@ -678,7 +678,7 @@
 <span class="line" id="L553">        <span class="tok-kw">var</span> d = self.deserializers.items[self.pos];</span>
 <span class="line" id="L554">        self.pos += <span class="tok-number">1</span>;</span>
 <span class="line" id="L555"></span>
-<span class="line" id="L556">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(allocator, d.deserializer());</span>
+<span class="line" id="L556">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
 <span class="line" id="L557">    }</span>
 <span class="line" id="L558">};</span>
 <span class="line" id="L559"></span>
@@ -700,14 +700,14 @@
 <span class="line" id="L575">        .{ .payloadSeed = payloadSeed },</span>
 <span class="line" id="L576">    );</span>
 <span class="line" id="L577"></span>
-<span class="line" id="L578">    <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: *Self, allocator: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L578">    <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: *Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L579">        <span class="tok-kw">var</span> cd = ContentDeserializer{ .content = self.key };</span>
-<span class="line" id="L580">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(allocator, cd.deserializer());</span>
+<span class="line" id="L580">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, cd.deserializer());</span>
 <span class="line" id="L581">    }</span>
 <span class="line" id="L582"></span>
-<span class="line" id="L583">    <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: *Self, allocator: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L583">    <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: *Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L584">        <span class="tok-kw">var</span> cd = ContentDeserializer{ .content = self.value };</span>
-<span class="line" id="L585">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(allocator, cd.deserializer());</span>
+<span class="line" id="L585">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, cd.deserializer());</span>
 <span class="line" id="L586">    }</span>
 <span class="line" id="L587">};</span>
 <span class="line" id="L588"></span>
@@ -722,7 +722,7 @@
 <span class="line" id="L597"><span class="tok-comment">/// Frees resources allocated by Getty during deserialization.</span></span>
 <span class="line" id="L598"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(</span>
 <span class="line" id="L599">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L600">    allocator: std.mem.Allocator,</span>
+<span class="line" id="L600">    ally: std.mem.Allocator,</span>
 <span class="line" id="L601">    <span class="tok-comment">/// A `getty.Deserializer` interface type.</span></span>
 <span class="line" id="L602">    <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
 <span class="line" id="L603">    <span class="tok-comment">/// A value to deallocate.</span></span>
@@ -733,7 +733,7 @@
 <span class="line" id="L608">    <span class="tok-kw">if</span> (info.tag_type) |T| {</span>
 <span class="line" id="L609">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |field| {</span>
 <span class="line" id="L610">            <span class="tok-kw">if</span> (value == <span class="tok-builtin">@field</span>(T, field.name)) {</span>
-<span class="line" id="L611">                getty_free(allocator, Deserializer, <span class="tok-builtin">@field</span>(value, field.name));</span>
+<span class="line" id="L611">                getty_free(ally, Deserializer, <span class="tok-builtin">@field</span>(value, field.name));</span>
 <span class="line" id="L612">                <span class="tok-kw">break</span>;</span>
 <span class="line" id="L613">            }</span>
 <span class="line" id="L614">        }</span>

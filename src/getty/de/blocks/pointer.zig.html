@@ -136,7 +136,7 @@
 <span class="line" id="L23"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
 <span class="line" id="L24"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
 <span class="line" id="L25">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L26">    allocator: ?Allocator,</span>
+<span class="line" id="L26">    ally: ?Allocator,</span>
 <span class="line" id="L27">    <span class="tok-comment">/// The type being deserialized into.</span></span>
 <span class="line" id="L28">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L29">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
@@ -145,7 +145,7 @@
 <span class="line" id="L32">    visitor: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L33">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L34">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.meta.trait.isZigString(T)) {</span>
-<span class="line" id="L35">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeString(allocator, visitor);</span>
+<span class="line" id="L35">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeString(ally, visitor);</span>
 <span class="line" id="L36">    }</span>
 <span class="line" id="L37"></span>
 <span class="line" id="L38">    <span class="tok-kw">const</span> Child = std.meta.Child(T);</span>
@@ -153,15 +153,15 @@
 <span class="line" id="L40"></span>
 <span class="line" id="L41">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> has_attributes(Child, db)) {</span>
 <span class="line" id="L42">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(Child)) {</span>
-<span class="line" id="L43">            .Enum =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Enum.deserialize(allocator, Child, deserializer, visitor),</span>
-<span class="line" id="L44">            .Struct =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.deserialize(allocator, Child, deserializer, visitor),</span>
-<span class="line" id="L45">            .Union =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.deserialize(allocator, Child, deserializer, visitor),</span>
+<span class="line" id="L43">            .Enum =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Enum.deserialize(ally, Child, deserializer, visitor),</span>
+<span class="line" id="L44">            .Struct =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.deserialize(ally, Child, deserializer, visitor),</span>
+<span class="line" id="L45">            .Union =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.deserialize(ally, Child, deserializer, visitor),</span>
 <span class="line" id="L46">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.</span>
 </span>
 <span class="line" id="L47">        }</span>
 <span class="line" id="L48">    }</span>
 <span class="line" id="L49"></span>
-<span class="line" id="L50">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> db.deserialize(allocator, Child, deserializer, visitor);</span>
+<span class="line" id="L50">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> db.deserialize(ally, Child, deserializer, visitor);</span>
 <span class="line" id="L51">}</span>
 <span class="line" id="L52"></span>
 <span class="line" id="L53"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
@@ -175,7 +175,7 @@
 <span class="line" id="L61"><span class="tok-comment">/// Frees resources allocated by Getty during deserialization.</span></span>
 <span class="line" id="L62"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(</span>
 <span class="line" id="L63">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L64">    allocator: std.mem.Allocator,</span>
+<span class="line" id="L64">    ally: std.mem.Allocator,</span>
 <span class="line" id="L65">    <span class="tok-comment">/// A `getty.Deserializer` interface type.</span></span>
 <span class="line" id="L66">    <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
 <span class="line" id="L67">    <span class="tok-comment">/// A value to deallocate.</span></span>
@@ -192,8 +192,8 @@
 <span class="line" id="L76">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(info.child)) {</span>
 <span class="line" id="L77">        .Fn, .Opaque =&gt; {},</span>
 <span class="line" id="L78">        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L79">            getty_free(allocator, Deserializer, value.*);</span>
-<span class="line" id="L80">            allocator.destroy(value);</span>
+<span class="line" id="L79">            getty_free(ally, Deserializer, value.*);</span>
+<span class="line" id="L80">            ally.destroy(value);</span>
 <span class="line" id="L81">        },</span>
 <span class="line" id="L82">    }</span>
 <span class="line" id="L83">}</span>

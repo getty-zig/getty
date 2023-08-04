@@ -124,7 +124,7 @@
 <span class="line" id="L11"><span class="tok-comment">/// Deserializes data from a `getty.Deserializer` `d` into a value of type `T`.</span></span>
 <span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
 <span class="line" id="L13">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L14">    a: ?std.mem.Allocator,</span>
+<span class="line" id="L14">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L15">    <span class="tok-comment">/// The type of the value to deserialize into.</span></span>
 <span class="line" id="L16">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L17">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
@@ -136,15 +136,15 @@
 <span class="line" id="L23">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
 <span class="line" id="L24">            .Enum =&gt; {</span>
 <span class="line" id="L25">                <span class="tok-kw">var</span> v = blocks.Enum.Visitor(T){};</span>
-<span class="line" id="L26">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Enum.deserialize(a, T, d, v.visitor());</span>
+<span class="line" id="L26">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Enum.deserialize(ally, T, d, v.visitor());</span>
 <span class="line" id="L27">            },</span>
 <span class="line" id="L28">            .Struct =&gt; {</span>
 <span class="line" id="L29">                <span class="tok-kw">var</span> v = blocks.Struct.Visitor(T){};</span>
-<span class="line" id="L30">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.deserialize(a, T, d, v.visitor());</span>
+<span class="line" id="L30">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Struct.deserialize(ally, T, d, v.visitor());</span>
 <span class="line" id="L31">            },</span>
 <span class="line" id="L32">            .Union =&gt; {</span>
 <span class="line" id="L33">                <span class="tok-kw">var</span> v = blocks.Union.Visitor(T){};</span>
-<span class="line" id="L34">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.deserialize(a, T, d, v.visitor());</span>
+<span class="line" id="L34">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> blocks.Union.deserialize(ally, T, d, v.visitor());</span>
 <span class="line" id="L35">            },</span>
 <span class="line" id="L36">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.</span>
 </span>
@@ -152,7 +152,7 @@
 <span class="line" id="L38">    }</span>
 <span class="line" id="L39"></span>
 <span class="line" id="L40">    <span class="tok-kw">var</span> v = db.Visitor(T){};</span>
-<span class="line" id="L41">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> db.deserialize(a, T, d, v.visitor());</span>
+<span class="line" id="L41">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> db.deserialize(ally, T, d, v.visitor());</span>
 <span class="line" id="L42">}</span>
 <span class="line" id="L43"></span>
 <span class="line" id="L44"><span class="tok-kw">fn</span> <span class="tok-fn">PointVisitor</span>(<span class="tok-kw">comptime</span> Value: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
@@ -167,21 +167,21 @@
 <span class="line" id="L53"></span>
 <span class="line" id="L54">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(</span>
 <span class="line" id="L55">            _: Self,</span>
-<span class="line" id="L56">            allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L56">            ally: ?std.mem.Allocator,</span>
 <span class="line" id="L57">            <span class="tok-kw">comptime</span> De: <span class="tok-type">type</span>,</span>
 <span class="line" id="L58">            seq: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L59">        ) De.Error!Value {</span>
 <span class="line" id="L60">            <span class="tok-kw">var</span> point: Value = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L61"></span>
 <span class="line" id="L62">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (std.meta.fields(Value)) |field| {</span>
-<span class="line" id="L63">                <span class="tok-kw">if</span> (<span class="tok-kw">try</span> seq.nextElement(allocator, <span class="tok-type">i32</span>)) |elem| {</span>
+<span class="line" id="L63">                <span class="tok-kw">if</span> (<span class="tok-kw">try</span> seq.nextElement(ally, <span class="tok-type">i32</span>)) |elem| {</span>
 <span class="line" id="L64">                    <span class="tok-builtin">@field</span>(point, field.name) = elem;</span>
 <span class="line" id="L65">                } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L66">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidLength;</span>
 <span class="line" id="L67">                }</span>
 <span class="line" id="L68">            }</span>
 <span class="line" id="L69"></span>
-<span class="line" id="L70">            <span class="tok-kw">if</span> ((<span class="tok-kw">try</span> seq.nextElement(allocator, Ignored)) != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L70">            <span class="tok-kw">if</span> ((<span class="tok-kw">try</span> seq.nextElement(ally, Ignored)) != <span class="tok-null">null</span>) {</span>
 <span class="line" id="L71">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidLength;</span>
 <span class="line" id="L72">            }</span>
 <span class="line" id="L73"></span>
@@ -201,8 +201,8 @@
 <span class="line" id="L87">            <span class="tok-kw">return</span> T == Point;</span>
 <span class="line" id="L88">        }</span>
 <span class="line" id="L89"></span>
-<span class="line" id="L90">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(a: ?std.mem.Allocator, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>, d: <span class="tok-kw">anytype</span>, v: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(d).Error!<span class="tok-builtin">@TypeOf</span>(v).Value {</span>
-<span class="line" id="L91">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> d.deserializeSeq(a, v);</span>
+<span class="line" id="L90">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>, d: <span class="tok-kw">anytype</span>, v: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(d).Error!<span class="tok-builtin">@TypeOf</span>(v).Value {</span>
+<span class="line" id="L91">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> d.deserializeSeq(ally, v);</span>
 <span class="line" id="L92">        }</span>
 <span class="line" id="L93"></span>
 <span class="line" id="L94">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Visitor = PointVisitor;</span>
@@ -215,8 +215,8 @@
 <span class="line" id="L101">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
 <span class="line" id="L102"></span>
 <span class="line" id="L103">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L104">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(a: ?std.mem.Allocator, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>, d: <span class="tok-kw">anytype</span>, v: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(d).Error!<span class="tok-builtin">@TypeOf</span>(v).Value {</span>
-<span class="line" id="L105">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> d.deserializeSeq(a, v);</span>
+<span class="line" id="L104">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>, d: <span class="tok-kw">anytype</span>, v: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(d).Error!<span class="tok-builtin">@TypeOf</span>(v).Value {</span>
+<span class="line" id="L105">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> d.deserializeSeq(ally, v);</span>
 <span class="line" id="L106">            }</span>
 <span class="line" id="L107"></span>
 <span class="line" id="L108">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Visitor = PointVisitor;</span>

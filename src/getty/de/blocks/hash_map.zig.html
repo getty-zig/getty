@@ -112,7 +112,7 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> test_allocator = std.testing.allocator;</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> test_ally = std.testing.allocator;</span>
 <span class="line" id="L3"></span>
 <span class="line" id="L4"><span class="tok-kw">const</span> getty_free = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../free.zig&quot;</span>).free;</span>
 <span class="line" id="L5"><span class="tok-kw">const</span> HashMapVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/hash_map.zig&quot;</span>).Visitor;</span>
@@ -134,7 +134,7 @@
 <span class="line" id="L21"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
 <span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
 <span class="line" id="L23">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L24">    allocator: ?std.mem.Allocator,</span>
+<span class="line" id="L24">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L25">    <span class="tok-comment">/// The type being deserialized into.</span></span>
 <span class="line" id="L26">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L27">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
@@ -144,7 +144,7 @@
 <span class="line" id="L31">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
 <span class="line" id="L32">    _ = T;</span>
 <span class="line" id="L33"></span>
-<span class="line" id="L34">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeMap(allocator, visitor);</span>
+<span class="line" id="L34">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeMap(ally, visitor);</span>
 <span class="line" id="L35">}</span>
 <span class="line" id="L36"></span>
 <span class="line" id="L37"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
@@ -158,7 +158,7 @@
 <span class="line" id="L45"><span class="tok-comment">/// Frees resources allocated by Getty during deserialization.</span></span>
 <span class="line" id="L46"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(</span>
 <span class="line" id="L47">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L48">    allocator: std.mem.Allocator,</span>
+<span class="line" id="L48">    ally: std.mem.Allocator,</span>
 <span class="line" id="L49">    <span class="tok-comment">/// A `getty.Deserializer` interface type.</span></span>
 <span class="line" id="L50">    <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
 <span class="line" id="L51">    <span class="tok-comment">/// A value to deallocate.</span></span>
@@ -179,13 +179,13 @@
 <span class="line" id="L66"></span>
 <span class="line" id="L67">    <span class="tok-kw">var</span> iterator = value.iterator();</span>
 <span class="line" id="L68">    <span class="tok-kw">while</span> (iterator.next()) |entry| {</span>
-<span class="line" id="L69">        getty_free(allocator, Deserializer, entry.key_ptr.*);</span>
-<span class="line" id="L70">        getty_free(allocator, Deserializer, entry.value_ptr.*);</span>
+<span class="line" id="L69">        getty_free(ally, Deserializer, entry.key_ptr.*);</span>
+<span class="line" id="L70">        getty_free(ally, Deserializer, entry.value_ptr.*);</span>
 <span class="line" id="L71">    }</span>
 <span class="line" id="L72"></span>
 <span class="line" id="L73">    <span class="tok-kw">var</span> mut = value;</span>
 <span class="line" id="L74">    <span class="tok-kw">if</span> (unmanaged) {</span>
-<span class="line" id="L75">        mut.deinit(allocator);</span>
+<span class="line" id="L75">        mut.deinit(ally);</span>
 <span class="line" id="L76">    } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L77">        mut.deinit();</span>
 <span class="line" id="L78">    }</span>
@@ -207,7 +207,7 @@
 <span class="line" id="L90">                .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
 <span class="line" id="L91">                .{ .MapEnd = {} },</span>
 <span class="line" id="L92">            },</span>
-<span class="line" id="L93">            .want = std.AutoHashMap(<span class="tok-type">void</span>, <span class="tok-type">void</span>).init(test_allocator),</span>
+<span class="line" id="L93">            .want = std.AutoHashMap(<span class="tok-type">void</span>, <span class="tok-type">void</span>).init(test_ally),</span>
 <span class="line" id="L94">        },</span>
 <span class="line" id="L95">        .{</span>
 <span class="line" id="L96">            .name = <span class="tok-str">&quot;AutoHashMap - non-empty&quot;</span>,</span>
@@ -222,7 +222,7 @@
 <span class="line" id="L105">                .{ .MapEnd = {} },</span>
 <span class="line" id="L106">            },</span>
 <span class="line" id="L107">            .want = blk: {</span>
-<span class="line" id="L108">                <span class="tok-kw">var</span> want = std.AutoHashMap(<span class="tok-type">i32</span>, <span class="tok-type">bool</span>).init(test_allocator);</span>
+<span class="line" id="L108">                <span class="tok-kw">var</span> want = std.AutoHashMap(<span class="tok-type">i32</span>, <span class="tok-type">bool</span>).init(test_ally);</span>
 <span class="line" id="L109">                <span class="tok-kw">try</span> want.put(<span class="tok-number">1</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L110">                <span class="tok-kw">try</span> want.put(<span class="tok-number">2</span>, <span class="tok-null">false</span>);</span>
 <span class="line" id="L111">                <span class="tok-kw">try</span> want.put(<span class="tok-number">3</span>, <span class="tok-null">true</span>);</span>
@@ -235,7 +235,7 @@
 <span class="line" id="L118">                .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
 <span class="line" id="L119">                .{ .MapEnd = {} },</span>
 <span class="line" id="L120">            },</span>
-<span class="line" id="L121">            .want = std.AutoArrayHashMap(<span class="tok-type">void</span>, <span class="tok-type">void</span>).init(test_allocator),</span>
+<span class="line" id="L121">            .want = std.AutoArrayHashMap(<span class="tok-type">void</span>, <span class="tok-type">void</span>).init(test_ally),</span>
 <span class="line" id="L122">        },</span>
 <span class="line" id="L123">        .{</span>
 <span class="line" id="L124">            .name = <span class="tok-str">&quot;AutoArrayHashMap - non-empty&quot;</span>,</span>
@@ -250,7 +250,7 @@
 <span class="line" id="L133">                .{ .MapEnd = {} },</span>
 <span class="line" id="L134">            },</span>
 <span class="line" id="L135">            .want = blk: {</span>
-<span class="line" id="L136">                <span class="tok-kw">var</span> want = std.AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">bool</span>).init(test_allocator);</span>
+<span class="line" id="L136">                <span class="tok-kw">var</span> want = std.AutoArrayHashMap(<span class="tok-type">i32</span>, <span class="tok-type">bool</span>).init(test_ally);</span>
 <span class="line" id="L137">                <span class="tok-kw">try</span> want.put(<span class="tok-number">1</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L138">                <span class="tok-kw">try</span> want.put(<span class="tok-number">2</span>, <span class="tok-null">false</span>);</span>
 <span class="line" id="L139">                <span class="tok-kw">try</span> want.put(<span class="tok-number">3</span>, <span class="tok-null">true</span>);</span>
@@ -287,9 +287,9 @@
 <span class="line" id="L162">            },</span>
 <span class="line" id="L163">            .want = blk: {</span>
 <span class="line" id="L164">                <span class="tok-kw">var</span> want = std.AutoHashMapUnmanaged(<span class="tok-type">i32</span>, <span class="tok-type">bool</span>){};</span>
-<span class="line" id="L165">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-number">1</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L166">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-number">2</span>, <span class="tok-null">false</span>);</span>
-<span class="line" id="L167">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-number">3</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L165">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-number">1</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L166">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-number">2</span>, <span class="tok-null">false</span>);</span>
+<span class="line" id="L167">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-number">3</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L168">                <span class="tok-kw">break</span> :blk want;</span>
 <span class="line" id="L169">            },</span>
 <span class="line" id="L170">        },</span>
@@ -323,9 +323,9 @@
 <span class="line" id="L190">            },</span>
 <span class="line" id="L191">            .want = blk: {</span>
 <span class="line" id="L192">                <span class="tok-kw">var</span> want = std.AutoArrayHashMapUnmanaged(<span class="tok-type">i32</span>, <span class="tok-type">bool</span>){};</span>
-<span class="line" id="L193">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-number">1</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L194">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-number">2</span>, <span class="tok-null">false</span>);</span>
-<span class="line" id="L195">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-number">3</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L193">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-number">1</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L194">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-number">2</span>, <span class="tok-null">false</span>);</span>
+<span class="line" id="L195">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-number">3</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L196">                <span class="tok-kw">break</span> :blk want;</span>
 <span class="line" id="L197">            },</span>
 <span class="line" id="L198">        },</span>
@@ -334,11 +334,11 @@
 <span class="line" id="L201">    <span class="tok-kw">const</span> Deserializer = testing.DefaultDeserializer.@&quot;getty.Deserializer&quot;;</span>
 <span class="line" id="L202"></span>
 <span class="line" id="L203">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L204">        <span class="tok-kw">defer</span> free(test_allocator, Deserializer, t.want);</span>
+<span class="line" id="L204">        <span class="tok-kw">defer</span> free(test_ally, Deserializer, t.want);</span>
 <span class="line" id="L205"></span>
 <span class="line" id="L206">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L207">        <span class="tok-kw">var</span> got = <span class="tok-kw">try</span> testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L208">        <span class="tok-kw">defer</span> free(test_allocator, Deserializer, got);</span>
+<span class="line" id="L207">        <span class="tok-kw">var</span> got = <span class="tok-kw">try</span> testing.deserialize(test_ally, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L208">        <span class="tok-kw">defer</span> free(test_ally, Deserializer, got);</span>
 <span class="line" id="L209"></span>
 <span class="line" id="L210">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want.count(), got.count());</span>
 <span class="line" id="L211"></span>
@@ -357,7 +357,7 @@
 <span class="line" id="L224">                .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
 <span class="line" id="L225">                .{ .MapEnd = {} },</span>
 <span class="line" id="L226">            },</span>
-<span class="line" id="L227">            .want = std.StringHashMap(<span class="tok-type">void</span>).init(test_allocator),</span>
+<span class="line" id="L227">            .want = std.StringHashMap(<span class="tok-type">void</span>).init(test_ally),</span>
 <span class="line" id="L228">        },</span>
 <span class="line" id="L229">        .{</span>
 <span class="line" id="L230">            .name = <span class="tok-str">&quot;StringHashMap - non-empty&quot;</span>,</span>
@@ -372,7 +372,7 @@
 <span class="line" id="L239">                .{ .MapEnd = {} },</span>
 <span class="line" id="L240">            },</span>
 <span class="line" id="L241">            .want = blk: {</span>
-<span class="line" id="L242">                <span class="tok-kw">var</span> want = std.StringHashMap(<span class="tok-type">bool</span>).init(test_allocator);</span>
+<span class="line" id="L242">                <span class="tok-kw">var</span> want = std.StringHashMap(<span class="tok-type">bool</span>).init(test_ally);</span>
 <span class="line" id="L243">                <span class="tok-kw">try</span> want.put(<span class="tok-str">&quot;one&quot;</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L244">                <span class="tok-kw">try</span> want.put(<span class="tok-str">&quot;two&quot;</span>, <span class="tok-null">false</span>);</span>
 <span class="line" id="L245">                <span class="tok-kw">try</span> want.put(<span class="tok-str">&quot;three&quot;</span>, <span class="tok-null">true</span>);</span>
@@ -385,7 +385,7 @@
 <span class="line" id="L252">                .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
 <span class="line" id="L253">                .{ .MapEnd = {} },</span>
 <span class="line" id="L254">            },</span>
-<span class="line" id="L255">            .want = std.StringArrayHashMap(<span class="tok-type">void</span>).init(test_allocator),</span>
+<span class="line" id="L255">            .want = std.StringArrayHashMap(<span class="tok-type">void</span>).init(test_ally),</span>
 <span class="line" id="L256">        },</span>
 <span class="line" id="L257">        .{</span>
 <span class="line" id="L258">            .name = <span class="tok-str">&quot;StringArrayHashMap - non-empty&quot;</span>,</span>
@@ -400,7 +400,7 @@
 <span class="line" id="L267">                .{ .MapEnd = {} },</span>
 <span class="line" id="L268">            },</span>
 <span class="line" id="L269">            .want = blk: {</span>
-<span class="line" id="L270">                <span class="tok-kw">var</span> want = std.StringArrayHashMap(<span class="tok-type">bool</span>).init(test_allocator);</span>
+<span class="line" id="L270">                <span class="tok-kw">var</span> want = std.StringArrayHashMap(<span class="tok-type">bool</span>).init(test_ally);</span>
 <span class="line" id="L271">                <span class="tok-kw">try</span> want.put(<span class="tok-str">&quot;one&quot;</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L272">                <span class="tok-kw">try</span> want.put(<span class="tok-str">&quot;two&quot;</span>, <span class="tok-null">false</span>);</span>
 <span class="line" id="L273">                <span class="tok-kw">try</span> want.put(<span class="tok-str">&quot;three&quot;</span>, <span class="tok-null">true</span>);</span>
@@ -416,8 +416,8 @@
 <span class="line" id="L283">        <span class="tok-kw">defer</span> want.deinit();</span>
 <span class="line" id="L284"></span>
 <span class="line" id="L285">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L286">        <span class="tok-kw">var</span> got = <span class="tok-kw">try</span> testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L287">        <span class="tok-kw">defer</span> free(test_allocator, Deserializer, got);</span>
+<span class="line" id="L286">        <span class="tok-kw">var</span> got = <span class="tok-kw">try</span> testing.deserialize(test_ally, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L287">        <span class="tok-kw">defer</span> free(test_ally, Deserializer, got);</span>
 <span class="line" id="L288"></span>
 <span class="line" id="L289">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want.count(), got.count());</span>
 <span class="line" id="L290"></span>
@@ -444,9 +444,9 @@
 <span class="line" id="L311">            },</span>
 <span class="line" id="L312">            .want = blk: {</span>
 <span class="line" id="L313">                <span class="tok-kw">var</span> want = std.StringHashMapUnmanaged(<span class="tok-type">bool</span>){};</span>
-<span class="line" id="L314">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-str">&quot;one&quot;</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L315">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-str">&quot;two&quot;</span>, <span class="tok-null">false</span>);</span>
-<span class="line" id="L316">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-str">&quot;three&quot;</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L314">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-str">&quot;one&quot;</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L315">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-str">&quot;two&quot;</span>, <span class="tok-null">false</span>);</span>
+<span class="line" id="L316">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-str">&quot;three&quot;</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L317">                <span class="tok-kw">break</span> :blk want;</span>
 <span class="line" id="L318">            },</span>
 <span class="line" id="L319">        },</span>
@@ -464,9 +464,9 @@
 <span class="line" id="L331">            },</span>
 <span class="line" id="L332">            .want = blk: {</span>
 <span class="line" id="L333">                <span class="tok-kw">var</span> want = std.StringArrayHashMapUnmanaged(<span class="tok-type">bool</span>){};</span>
-<span class="line" id="L334">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-str">&quot;one&quot;</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L335">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-str">&quot;two&quot;</span>, <span class="tok-null">false</span>);</span>
-<span class="line" id="L336">                <span class="tok-kw">try</span> want.put(test_allocator, <span class="tok-str">&quot;three&quot;</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L334">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-str">&quot;one&quot;</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L335">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-str">&quot;two&quot;</span>, <span class="tok-null">false</span>);</span>
+<span class="line" id="L336">                <span class="tok-kw">try</span> want.put(test_ally, <span class="tok-str">&quot;three&quot;</span>, <span class="tok-null">true</span>);</span>
 <span class="line" id="L337">                <span class="tok-kw">break</span> :blk want;</span>
 <span class="line" id="L338">            },</span>
 <span class="line" id="L339">        },</span>
@@ -476,11 +476,11 @@
 <span class="line" id="L343"></span>
 <span class="line" id="L344">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
 <span class="line" id="L345">        <span class="tok-kw">var</span> want = t.want;</span>
-<span class="line" id="L346">        <span class="tok-kw">defer</span> want.deinit(test_allocator);</span>
+<span class="line" id="L346">        <span class="tok-kw">defer</span> want.deinit(test_ally);</span>
 <span class="line" id="L347"></span>
 <span class="line" id="L348">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L349">        <span class="tok-kw">var</span> got = <span class="tok-kw">try</span> testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L350">        <span class="tok-kw">defer</span> free(test_allocator, Deserializer, got);</span>
+<span class="line" id="L349">        <span class="tok-kw">var</span> got = <span class="tok-kw">try</span> testing.deserialize(test_ally, t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L350">        <span class="tok-kw">defer</span> free(test_ally, Deserializer, got);</span>
 <span class="line" id="L351"></span>
 <span class="line" id="L352">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want.count(), got.count());</span>
 <span class="line" id="L353"></span>

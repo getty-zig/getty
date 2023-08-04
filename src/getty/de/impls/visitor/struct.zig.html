@@ -130,7 +130,7 @@
 <span class="line" id="L17"></span>
 <span class="line" id="L18">        <span class="tok-kw">const</span> Value = Struct;</span>
 <span class="line" id="L19"></span>
-<span class="line" id="L20">        <span class="tok-kw">fn</span> <span class="tok-fn">visitMap</span>(_: Self, allocator: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, map: <span class="tok-kw">anytype</span>) Deserializer.Error!Value {</span>
+<span class="line" id="L20">        <span class="tok-kw">fn</span> <span class="tok-fn">visitMap</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, map: <span class="tok-kw">anytype</span>) Deserializer.Error!Value {</span>
 <span class="line" id="L21">            <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">10_000</span>);</span>
 <span class="line" id="L22"></span>
 <span class="line" id="L23">            <span class="tok-kw">const</span> fields = <span class="tok-kw">comptime</span> std.meta.fields(Value);</span>
@@ -140,10 +140,10 @@
 <span class="line" id="L27">            <span class="tok-kw">var</span> seen = [_]<span class="tok-type">bool</span>{<span class="tok-null">false</span>} ** fields.len;</span>
 <span class="line" id="L28"></span>
 <span class="line" id="L29">            <span class="tok-kw">errdefer</span> {</span>
-<span class="line" id="L30">                <span class="tok-kw">if</span> (allocator) |alloc| {</span>
+<span class="line" id="L30">                <span class="tok-kw">if</span> (ally) |a| {</span>
 <span class="line" id="L31">                    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields, <span class="tok-number">0</span>..) |field, i| {</span>
 <span class="line" id="L32">                        <span class="tok-kw">if</span> (!field.is_comptime <span class="tok-kw">and</span> seen[i]) {</span>
-<span class="line" id="L33">                            free(alloc, Deserializer, <span class="tok-builtin">@field</span>(structure, field.name));</span>
+<span class="line" id="L33">                            free(a, Deserializer, <span class="tok-builtin">@field</span>(structure, field.name));</span>
 <span class="line" id="L34">                        }</span>
 <span class="line" id="L35">                    }</span>
 <span class="line" id="L36">                }</span>
@@ -164,7 +164,7 @@
 <span class="line" id="L50">                <span class="tok-kw">break</span> :blk <span class="tok-null">false</span>;</span>
 <span class="line" id="L51">            };</span>
 <span class="line" id="L52"></span>
-<span class="line" id="L53">            key_loop: <span class="tok-kw">while</span> (<span class="tok-kw">try</span> map.nextKey(allocator, []<span class="tok-kw">const</span> <span class="tok-type">u8</span>)) |key| {</span>
+<span class="line" id="L53">            key_loop: <span class="tok-kw">while</span> (<span class="tok-kw">try</span> map.nextKey(ally, []<span class="tok-kw">const</span> <span class="tok-type">u8</span>)) |key| {</span>
 <span class="line" id="L54">                <span class="tok-comment">// If key is allocated, free it at the end of this loop.</span>
 </span>
 <span class="line" id="L55">                <span class="tok-comment">//</span>
@@ -175,13 +175,13 @@
 </span>
 <span class="line" id="L58">                <span class="tok-kw">const</span> key_is_allocated = map.isKeyAllocated(<span class="tok-builtin">@TypeOf</span>(key));</span>
 <span class="line" id="L59"></span>
-<span class="line" id="L60">                <span class="tok-kw">if</span> (key_is_allocated <span class="tok-kw">and</span> allocator == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L60">                <span class="tok-kw">if</span> (key_is_allocated <span class="tok-kw">and</span> ally == <span class="tok-null">null</span>) {</span>
 <span class="line" id="L61">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
 <span class="line" id="L62">                }</span>
 <span class="line" id="L63"></span>
 <span class="line" id="L64">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (key_is_allocated) {</span>
-<span class="line" id="L65">                    std.debug.assert(allocator != <span class="tok-null">null</span>);</span>
-<span class="line" id="L66">                    free(allocator.?, Deserializer, key);</span>
+<span class="line" id="L65">                    std.debug.assert(ally != <span class="tok-null">null</span>);</span>
+<span class="line" id="L66">                    free(ally.?, Deserializer, key);</span>
 <span class="line" id="L67">                };</span>
 <span class="line" id="L68"></span>
 <span class="line" id="L69">                <span class="tok-comment">// Indicates whether or not key matches any field in the struct.</span>
@@ -240,7 +240,7 @@
 <span class="line" id="L112">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.DuplicateField;</span>
 <span class="line" id="L113">                        }</span>
 <span class="line" id="L114"></span>
-<span class="line" id="L115">                        <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> map.nextValue(allocator, field.<span class="tok-type">type</span>);</span>
+<span class="line" id="L115">                        <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> map.nextValue(ally, field.<span class="tok-type">type</span>);</span>
 <span class="line" id="L116"></span>
 <span class="line" id="L117">                        <span class="tok-comment">// Do assign value to field if the &quot;skip&quot; attribute is</span>
 </span>
@@ -284,7 +284,7 @@
 </span>
 <span class="line" id="L144">                <span class="tok-kw">if</span> (!found) {</span>
 <span class="line" id="L145">                    <span class="tok-kw">switch</span> (ignore_unknown_fields) {</span>
-<span class="line" id="L146">                        <span class="tok-null">true</span> =&gt; _ = <span class="tok-kw">try</span> map.nextValue(allocator, Ignored),</span>
+<span class="line" id="L146">                        <span class="tok-null">true</span> =&gt; _ = <span class="tok-kw">try</span> map.nextValue(ally, Ignored),</span>
 <span class="line" id="L147">                        <span class="tok-null">false</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownField,</span>
 <span class="line" id="L148">                    }</span>
 <span class="line" id="L149">                }</span>
