@@ -16,21 +16,21 @@ pub fn Visitor(comptime Union: type) type {
 
         const Value = Union;
 
-        fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
+        fn visitUnion(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
             @setEvalBranchQuota(10_000);
 
             const attributes = comptime getAttributes(Value, Deserializer);
 
-            var variant = try ua.variant(allocator, []const u8);
+            var variant = try ua.variant(ally, []const u8);
             const variant_is_allocated = ua.isVariantAllocated(@TypeOf(variant));
 
-            if (variant_is_allocated and allocator == null) {
+            if (variant_is_allocated and ally == null) {
                 return error.MissingAllocator;
             }
 
             defer if (variant_is_allocated) {
-                std.debug.assert(allocator != null);
-                free(allocator.?, Deserializer, variant);
+                std.debug.assert(ally != null);
+                free(ally.?, Deserializer, variant);
             };
 
             inline for (std.meta.fields(Value)) |f| {
@@ -60,7 +60,7 @@ pub fn Visitor(comptime Union: type) type {
                         if (skipped) return error.UnknownVariant;
                     }
 
-                    return @unionInit(Value, f.name, try va.payload(allocator, f.type));
+                    return @unionInit(Value, f.name, try va.payload(ally, f.type));
                 }
             }
 

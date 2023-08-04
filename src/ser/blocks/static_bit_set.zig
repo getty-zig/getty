@@ -17,7 +17,7 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
@@ -29,9 +29,9 @@ pub fn serialize(
     const is_array_bitset = comptime std.mem.startsWith(u8, @typeName(T), "bit_set.ArrayBitSet");
 
     if (is_int_bitset) {
-        return try blocks.IntegerBitSet.serialize(allocator, value, serializer);
+        return try blocks.IntegerBitSet.serialize(ally, value, serializer);
     } else if (is_array_bitset) {
-        return try blocks.ArrayBitSet.serialize(allocator, value, serializer);
+        return try blocks.ArrayBitSet.serialize(ally, value, serializer);
     } else {
         // UNREACHABLE: The is function should guarantee that only
         // std.IntegerBitSet or std.ArrayBitSet values are passed to this

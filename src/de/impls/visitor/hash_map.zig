@@ -15,12 +15,12 @@ pub fn Visitor(comptime HashMap: type) type {
 
         const Value = HashMap;
 
-        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
-            const a = allocator.?;
+            const a = ally.?;
 
             const K = std.meta.fieldInfo(Value.KV, .key).type;
             const V = std.meta.fieldInfo(Value.KV, .value).type;

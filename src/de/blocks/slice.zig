@@ -17,7 +17,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -26,8 +26,8 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     return try switch (comptime std.meta.trait.isZigString(T)) {
-        true => deserializer.deserializeString(allocator, visitor),
-        false => deserializer.deserializeSeq(allocator, visitor),
+        true => deserializer.deserializeString(ally, visitor),
+        false => deserializer.deserializeSeq(ally, visitor),
     };
 }
 
@@ -42,17 +42,17 @@ pub fn Visitor(
 /// Frees resources allocated by Getty during deserialization.
 pub fn free(
     /// A memory allocator.
-    allocator: std.mem.Allocator,
+    ally: std.mem.Allocator,
     /// A `getty.Deserializer` interface type.
     comptime Deserializer: type,
     /// A value to deallocate.
     value: anytype,
 ) void {
     if (comptime std.meta.trait.isZigString(@TypeOf(value))) {
-        allocator.free(value);
+        ally.free(value);
     } else {
-        for (value) |v| getty_free(allocator, Deserializer, v);
-        allocator.free(value);
+        for (value) |v| getty_free(ally, Deserializer, v);
+        ally.free(value);
     }
 }
 

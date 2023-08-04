@@ -18,14 +18,14 @@ pub fn Visitor(comptime Array: type) type {
 
         const Value = Array;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var array: Value = undefined;
             var seen: usize = 0;
 
             errdefer {
-                if (allocator) |alloc| {
+                if (ally) |a| {
                     for (array[0..seen]) |v| {
-                        free(alloc, Deserializer, v);
+                        free(a, Deserializer, v);
                     }
                 }
             }
@@ -33,7 +33,7 @@ pub fn Visitor(comptime Array: type) type {
             switch (array.len) {
                 0 => array = .{},
                 else => for (&array) |*elem| {
-                    if (try seq.nextElement(allocator, Child)) |value| {
+                    if (try seq.nextElement(ally, Child)) |value| {
                         elem.* = value;
                         seen += 1;
                     } else {
@@ -44,7 +44,7 @@ pub fn Visitor(comptime Array: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(allocator, Child)) != null) {
+            if ((try seq.nextElement(ally, Child)) != null) {
                 return error.InvalidLength;
             }
 

@@ -10,7 +10,7 @@ const t = @import("testing.zig");
 /// Serializes `v` using a `getty.Serializer` `s`.
 pub fn serialize(
     /// An optional memory allocator.
-    a: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value to serialize.
     v: anytype,
     /// A `getty.Serializer` interface value.
@@ -51,14 +51,14 @@ pub fn serialize(
     // Process attributes, if any exist.
     if (comptime attributes.has_attributes(T, block)) {
         switch (@typeInfo(T)) {
-            .Enum => return try blocks.Enum.serialize(a, v, s),
-            .Struct => return try blocks.Struct.serialize(a, v, s),
-            .Union => return try blocks.Union.serialize(a, v, s),
+            .Enum => return try blocks.Enum.serialize(ally, v, s),
+            .Struct => return try blocks.Struct.serialize(ally, v, s),
+            .Union => return try blocks.Union.serialize(ally, v, s),
             else => @compileError("unexpected type cannot be serialized using attributes"),
         }
     }
 
-    return try block.serialize(a, v, s);
+    return try block.serialize(ally, v, s);
 }
 
 test "serialize - success, normal" {

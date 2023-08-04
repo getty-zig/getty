@@ -16,7 +16,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -26,7 +26,7 @@ pub fn deserialize(
 ) !@TypeOf(visitor).Value {
     _ = T;
 
-    return try deserializer.deserializeBool(allocator, visitor);
+    return try deserializer.deserializeBool(ally, visitor);
 }
 
 /// Returns a type that implements `getty.de.Visitor`.

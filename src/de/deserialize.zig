@@ -11,7 +11,7 @@ const Visitor = @import("interfaces/visitor.zig").Visitor;
 /// Deserializes data from a `getty.Deserializer` `d` into a value of type `T`.
 pub fn deserialize(
     /// An optional memory allocator.
-    a: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type of the value to deserialize into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -23,22 +23,22 @@ pub fn deserialize(
         switch (@typeInfo(T)) {
             .Enum => {
                 var v = blocks.Enum.Visitor(T){};
-                return try blocks.Enum.deserialize(a, T, d, v.visitor());
+                return try blocks.Enum.deserialize(ally, T, d, v.visitor());
             },
             .Struct => {
                 var v = blocks.Struct.Visitor(T){};
-                return try blocks.Struct.deserialize(a, T, d, v.visitor());
+                return try blocks.Struct.deserialize(ally, T, d, v.visitor());
             },
             .Union => {
                 var v = blocks.Union.Visitor(T){};
-                return try blocks.Union.deserialize(a, T, d, v.visitor());
+                return try blocks.Union.deserialize(ally, T, d, v.visitor());
             },
             else => unreachable, // UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.
         }
     }
 
     var v = db.Visitor(T){};
-    return try db.deserialize(a, T, d, v.visitor());
+    return try db.deserialize(ally, T, d, v.visitor());
 }
 
 fn PointVisitor(comptime Value: type) type {
@@ -53,21 +53,21 @@ fn PointVisitor(comptime Value: type) type {
 
         fn visitSeq(
             _: Self,
-            allocator: ?std.mem.Allocator,
+            ally: ?std.mem.Allocator,
             comptime De: type,
             seq: anytype,
         ) De.Error!Value {
             var point: Value = undefined;
 
             inline for (std.meta.fields(Value)) |field| {
-                if (try seq.nextElement(allocator, i32)) |elem| {
+                if (try seq.nextElement(ally, i32)) |elem| {
                     @field(point, field.name) = elem;
                 } else {
                     return error.InvalidLength;
                 }
             }
 
-            if ((try seq.nextElement(allocator, Ignored)) != null) {
+            if ((try seq.nextElement(ally, Ignored)) != null) {
                 return error.InvalidLength;
             }
 
@@ -87,8 +87,8 @@ test "deserialize - success, normal" {
             return T == Point;
         }
 
-        pub fn deserialize(a: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Error!@TypeOf(v).Value {
-            return try d.deserializeSeq(a, v);
+        pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Error!@TypeOf(v).Value {
+            return try d.deserializeSeq(ally, v);
         }
 
         pub const Visitor = PointVisitor;
@@ -101,8 +101,8 @@ test "deserialize - success, normal" {
         const Self = @This();
 
         pub const @"getty.db" = struct {
-            pub fn deserialize(a: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Error!@TypeOf(v).Value {
-                return try d.deserializeSeq(a, v);
+            pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Error!@TypeOf(v).Value {
+                return try d.deserializeSeq(ally, v);
             }
 
             pub const Visitor = PointVisitor;

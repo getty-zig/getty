@@ -26,9 +26,9 @@ fn Deserializer(comptime Reader: type) type {
 
         const De = Self.@"getty.Deserializer";
 
-        pub fn init(allocator: std.mem.Allocator, reader: Reader) Self {
+        pub fn init(ally: std.mem.Allocator, reader: Reader) Self {
             return .{
-                .tokens = JsonReader.init(allocator, reader),
+                .tokens = JsonReader.init(ally, reader),
             };
         }
 
@@ -36,20 +36,20 @@ fn Deserializer(comptime Reader: type) type {
             self.tokens.deinit();
         }
 
-        fn deserializeBool(self: *Self, allocator: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
+        fn deserializeBool(self: *Self, ally: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
             const token = try self.tokens.next();
             if (token == .true or token == .false) {
-                return try v.visitBool(allocator, De, token == .true);
+                return try v.visitBool(ally, De, token == .true);
             }
 
             return error.InvalidType;
         }
 
-        fn deserializeSeq(self: *Self, allocator: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
+        fn deserializeSeq(self: *Self, ally: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
             const token = try self.tokens.next();
             if (token == .array_begin) {
                 var sa = SeqAccess{ .de = self };
-                return try v.visitSeq(allocator, De, sa.seqAccess());
+                return try v.visitSeq(ally, De, sa.seqAccess());
             }
 
             return error.InvalidType;
@@ -66,13 +66,13 @@ fn Deserializer(comptime Reader: type) type {
                 },
             );
 
-            fn nextElementSeed(self: *@This(), allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextElementSeed(self: *@This(), ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // If ']' is encountered, return null
                 if (try self.de.tokens.peekNextTokenType() == .array_end) {
                     return null;
                 }
 
-                const element = try seed.deserialize(allocator, self.de.deserializer());
+                const element = try seed.deserialize(ally, self.de.deserializer());
 
                 return element;
             }
@@ -81,15 +81,15 @@ fn Deserializer(comptime Reader: type) type {
 }
 
 pub fn main() anyerror!void {
-    const allocator = std.heap.page_allocator;
+    const page_ally = std.heap.page_allocator;
 
     var fbs = std.io.fixedBufferStream("[true, false]");
     const reader = fbs.reader();
 
-    var d = Deserializer(@TypeOf(reader)).init(allocator, reader);
+    var d = Deserializer(@TypeOf(reader)).init(page_ally, reader);
     defer d.deinit();
 
-    const v = try getty.deserialize(allocator, std.ArrayList(bool), d.deserializer());
+    const v = try getty.deserialize(page_ally, std.ArrayList(bool), d.deserializer());
     defer v.deinit();
 
     std.debug.print("{any}, {}\n", .{ v.items, @TypeOf(v) });

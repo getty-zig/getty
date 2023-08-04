@@ -15,14 +15,14 @@ pub fn Visitor(comptime SegmentedList: type) type {
 
         const Value = SegmentedList;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var list = SegmentedList{};
-            errdefer free(allocator.?, Deserializer, list);
+            errdefer free(ally.?, Deserializer, list);
 
             const E = std.meta.Child(std.meta.FieldType(SegmentedList, .prealloc_segment));
 
-            while (try seq.nextElement(allocator, E)) |elem| {
-                try list.append(allocator.?, elem);
+            while (try seq.nextElement(ally, E)) |elem| {
+                try list.append(ally.?, elem);
             }
 
             return list;

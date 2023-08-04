@@ -33,22 +33,22 @@ pub fn VariantAccess(
 
             pub const Error = E;
 
-            pub fn payloadSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn payloadSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (methods.payloadSeed) |f| {
-                    return try f(self.context, allocator, seed);
+                    return try f(self.context, ally, seed);
                 }
 
                 @compileError("payloadSeed is not implemented by type: " ++ @typeName(Context));
             }
 
-            pub fn payload(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
+            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime T: type) Error!T {
                 if (methods.payload) |f| {
-                    return try f(self.context, allocator, T);
+                    return try f(self.context, ally, T);
                 } else {
                     var ds = DefaultSeed(T){};
                     const seed = ds.seed();
 
-                    return try self.payloadSeed(allocator, seed);
+                    return try self.payloadSeed(ally, seed);
                 }
             }
         };

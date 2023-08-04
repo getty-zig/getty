@@ -14,14 +14,14 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
     const String = []const u8;
-    return try getty_serialize(allocator, @as(String, @errorName(value)), serializer);
+    return try getty_serialize(ally, @as(String, @errorName(value)), serializer);
 }
 
 test "serialize - error" {

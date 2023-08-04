@@ -16,7 +16,7 @@ pub fn Visitor(comptime Tuple: type) type {
 
         const Value = Tuple;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -26,11 +26,11 @@ pub fn Visitor(comptime Tuple: type) type {
             comptime var seen: usize = 0;
 
             errdefer {
-                if (allocator) |alloc| {
+                if (ally) |a| {
                     if (len > 0) {
                         inline for (tuple, 0..) |v, i| {
                             if (i < seen) {
-                                free(alloc, Deserializer, v);
+                                free(a, Deserializer, v);
                             }
                         }
                     }
@@ -43,7 +43,7 @@ pub fn Visitor(comptime Tuple: type) type {
                     inline for (0..len) |i| {
                         // NOTE: Using an if to unwrap `value` runs into a
                         // compiler bug, so this is a workaround.
-                        const value = try seq.nextElement(allocator, fields[i].type);
+                        const value = try seq.nextElement(ally, fields[i].type);
                         if (value == null) return error.InvalidLength;
 
                         tuple[i] = value.?;
@@ -53,7 +53,7 @@ pub fn Visitor(comptime Tuple: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(allocator, Ignored)) != null) {
+            if ((try seq.nextElement(ally, Ignored)) != null) {
                 return error.InvalidLength;
             }
 

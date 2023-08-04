@@ -1,5 +1,5 @@
 const std = @import("std");
-const test_allocator = std.testing.allocator;
+const test_ally = std.testing.allocator;
 
 const blocks = @import("../blocks.zig");
 const t = @import("../testing.zig");
@@ -15,13 +15,13 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try blocks.DynamicBitSetUnmanaged.serialize(allocator, value.unmanaged, serializer);
+    return try blocks.DynamicBitSetUnmanaged.serialize(ally, value.unmanaged, serializer);
 }
 
 test "serialize - std.DynamicBitSet" {
@@ -29,7 +29,7 @@ test "serialize - std.DynamicBitSet" {
 
     // Empty
     {
-        var want = try std.DynamicBitSet.initEmpty(test_allocator, size);
+        var want = try std.DynamicBitSet.initEmpty(test_ally, size);
         defer want.deinit();
 
         try t.run(null, serialize, want, &.{
@@ -106,7 +106,7 @@ test "serialize - std.DynamicBitSet" {
 
     // Full
     {
-        var want = try std.DynamicBitSet.initFull(test_allocator, size);
+        var want = try std.DynamicBitSet.initFull(test_ally, size);
         defer want.deinit();
 
         try t.run(null, serialize, want, &.{
@@ -183,7 +183,7 @@ test "serialize - std.DynamicBitSet" {
 
     // Mixed (LSB set)
     {
-        var want = try std.DynamicBitSet.initEmpty(test_allocator, size);
+        var want = try std.DynamicBitSet.initEmpty(test_ally, size);
         defer want.deinit();
         {
             var i: usize = 0; // 0, 2, 4, ..., size - 2
@@ -264,7 +264,7 @@ test "serialize - std.DynamicBitSet" {
 
     // Mixed (LSB unset)
     {
-        var want = try std.DynamicBitSet.initEmpty(test_allocator, size);
+        var want = try std.DynamicBitSet.initEmpty(test_ally, size);
         defer want.deinit();
         {
             var i: usize = 1; // 1, 3, 5, ..., size - 1

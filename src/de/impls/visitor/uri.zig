@@ -15,12 +15,12 @@ pub usingnamespace VisitorInterface(
 
 const Value = std.Uri;
 
-fn visitString(_: Visitor, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-    if (allocator == null) {
+fn visitString(_: Visitor, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+    if (ally == null) {
         return error.MissingAllocator;
     }
 
-    const a = allocator.?;
+    const a = ally.?;
 
     var uri = std.Uri.parse(input) catch return error.InvalidValue;
     errdefer free(a, Deserializer, uri);

@@ -22,8 +22,8 @@ pub fn Visitor(comptime Optional: type) type {
             return null;
         }
 
-        fn visitSome(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try getty_deserialize(allocator, std.meta.Child(Value), deserializer);
+        fn visitSome(_: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            return try getty_deserialize(ally, std.meta.Child(Value), deserializer);
         }
     };
 }

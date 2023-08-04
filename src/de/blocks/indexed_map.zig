@@ -20,7 +20,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -30,7 +30,7 @@ pub fn deserialize(
 ) !@TypeOf(visitor).Value {
     _ = T;
 
-    return try deserializer.deserializeMap(allocator, visitor);
+    return try deserializer.deserializeMap(ally, visitor);
 }
 
 /// Returns a type that implements `getty.de.Visitor`.
@@ -44,7 +44,7 @@ pub fn Visitor(
 /// Frees resources allocated by Getty during deserialization.
 pub fn free(
     /// A memory allocator.
-    allocator: std.mem.Allocator,
+    ally: std.mem.Allocator,
     /// A `getty.Deserializer` interface type.
     comptime Deserializer: type,
     /// A value to deallocate.
@@ -53,9 +53,9 @@ pub fn free(
     var mut = value;
     var it = mut.iterator();
     while (it.next()) |entry| {
-        getty_free(allocator, Deserializer, entry.value.*);
+        getty_free(ally, Deserializer, entry.value.*);
     }
-    getty_free(allocator, Deserializer, value.bits);
+    getty_free(ally, Deserializer, value.bits);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {

@@ -18,12 +18,12 @@ pub fn Visitor(comptime Slice: type) type {
 
         const Value = Slice;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
-            const a = allocator.?;
+            const a = ally.?;
 
             var list = std.ArrayList(Child).init(a);
             errdefer free(a, Deserializer, list);
@@ -40,8 +40,8 @@ pub fn Visitor(comptime Slice: type) type {
             return try list.toOwnedSlice();
         }
 
-        fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitString(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
@@ -51,7 +51,7 @@ pub fn Visitor(comptime Slice: type) type {
 
             const sentinel = @typeInfo(Value).Pointer.sentinel;
 
-            const output = try allocator.?.alloc(u8, input.len + @intFromBool(sentinel != null));
+            const output = try ally.?.alloc(u8, input.len + @intFromBool(sentinel != null));
             std.mem.copy(u8, output, input);
 
             if (sentinel) |s| {

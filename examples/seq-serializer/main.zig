@@ -1,7 +1,7 @@
 const std = @import("std");
 const getty = @import("getty");
 
-const allocator = std.heap.page_allocator;
+const page_ally = std.heap.page_allocator;
 
 const Serializer = struct {
     pub usingnamespace getty.Serializer(
@@ -69,7 +69,7 @@ pub fn main() anyerror!void {
     try getty.serialize(null, @Vector(2, bool){ true, false }, s);
 
     // std.ArrayList
-    var list = std.ArrayList(bool).init(allocator);
+    var list = std.ArrayList(bool).init(page_ally);
     defer list.deinit();
     try list.appendSlice(&.{ true, false });
     try getty.serialize(null, list, s);

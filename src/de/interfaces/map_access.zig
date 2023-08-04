@@ -52,17 +52,17 @@ pub fn MapAccess(
 
             pub const Error = E;
 
-            pub fn nextKeySeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            pub fn nextKeySeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 if (methods.nextKeySeed) |f| {
-                    return try f(self.context, allocator, seed);
+                    return try f(self.context, ally, seed);
                 }
 
                 @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Context));
             }
 
-            pub fn nextValueSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn nextValueSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (methods.nextValueSeed) |f| {
-                    return try f(self.context, allocator, seed);
+                    return try f(self.context, ally, seed);
                 }
 
                 @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Context));
@@ -72,25 +72,25 @@ pub fn MapAccess(
             //_ = self;
             //}
 
-            pub fn nextKey(self: Self, allocator: ?std.mem.Allocator, comptime K: type) Error!?K {
+            pub fn nextKey(self: Self, ally: ?std.mem.Allocator, comptime K: type) Error!?K {
                 if (methods.nextKey) |f| {
-                    return try f(self.context, allocator, K);
+                    return try f(self.context, ally, K);
                 } else {
                     var seed = DefaultSeed(K){};
                     const ds = seed.seed();
 
-                    return try self.nextKeySeed(allocator, ds);
+                    return try self.nextKeySeed(ally, ds);
                 }
             }
 
-            pub fn nextValue(self: Self, allocator: ?std.mem.Allocator, comptime V: type) Error!V {
+            pub fn nextValue(self: Self, ally: ?std.mem.Allocator, comptime V: type) Error!V {
                 if (methods.nextValue) |f| {
-                    return try f(self.context, allocator, V);
+                    return try f(self.context, ally, V);
                 } else {
                     var seed = DefaultSeed(V){};
                     const ds = seed.seed();
 
-                    return try self.nextValueSeed(allocator, ds);
+                    return try self.nextValueSeed(ally, ds);
                 }
             }
 

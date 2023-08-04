@@ -34,9 +34,9 @@ pub fn Seed(
 
             pub const Value = V;
 
-            pub fn deserialize(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
+            pub fn deserialize(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
                 if (methods.deserialize) |f| {
-                    return try f(self.context, allocator, deserializer);
+                    return try f(self.context, ally, deserializer);
                 }
 
                 @compileError("deserialize is not implemented by type: " ++ @typeName(Context));

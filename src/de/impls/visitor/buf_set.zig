@@ -15,12 +15,12 @@ pub fn Visitor(comptime BufSet: type) type {
 
         const Value = BufSet;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
-            const a = allocator.?;
+            const a = ally.?;
 
             var set = BufSet.init(a);
             errdefer free(a, Deserializer, set);

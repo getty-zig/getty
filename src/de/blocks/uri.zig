@@ -16,7 +16,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -26,7 +26,7 @@ pub fn deserialize(
 ) !@TypeOf(visitor).Value {
     _ = T;
 
-    return try deserializer.deserializeString(allocator, visitor);
+    return try deserializer.deserializeString(ally, visitor);
 }
 
 /// Returns a type that implements `getty.de.Visitor`.
@@ -42,19 +42,19 @@ pub fn Visitor(
 /// Frees resources allocated by Getty during deserialization.
 pub fn free(
     /// A memory allocator.
-    allocator: std.mem.Allocator,
+    ally: std.mem.Allocator,
     /// A `getty.Deserializer` interface type.
     comptime _: type,
     /// A value to deallocate.
     value: anytype,
 ) void {
-    allocator.free(value.scheme);
-    allocator.free(value.path);
-    if (value.host) |host| allocator.free(host);
-    if (value.user) |user| allocator.free(user);
-    if (value.password) |password| allocator.free(password);
-    if (value.query) |query| allocator.free(query);
-    if (value.fragment) |fragment| allocator.free(fragment);
+    ally.free(value.scheme);
+    ally.free(value.path);
+    if (value.host) |host| ally.free(host);
+    if (value.user) |user| ally.free(user);
+    if (value.password) |password| ally.free(password);
+    if (value.query) |query| ally.free(query);
+    if (value.fragment) |fragment| ally.free(fragment);
 }
 
 test "deserialize - std.Uri" {

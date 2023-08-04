@@ -139,36 +139,36 @@ pub fn Deserializer(
             };
 
             /// Deserializes a deserializer's input data into some Getty value.
-            pub fn deserializeAny(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeAny(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeAny) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeAny is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Boolean.
-            pub fn deserializeBool(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeBool(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeBool) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeBool is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Enum.
-            pub fn deserializeEnum(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeEnum(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeEnum) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeEnum is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Float.
-            pub fn deserializeFloat(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeFloat(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeFloat) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeFloat is not implemented by type: " ++ @typeName(Context));
@@ -177,81 +177,81 @@ pub fn Deserializer(
             /// Hint that the type being deserialized into is expecting to
             /// deserialize a value whose type does not matter because it is
             /// ignored.
-            pub fn deserializeIgnored(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeIgnored(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeIgnored) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeIgnored is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Integer.
-            pub fn deserializeInt(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeInt(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeInt) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeInt is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Map.
-            pub fn deserializeMap(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeMap(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeMap) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeMap is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Optional.
-            pub fn deserializeOptional(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeOptional(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeOptional) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeOptional is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Sequence.
-            pub fn deserializeSeq(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeSeq(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeSeq) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeSeq is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty String.
-            pub fn deserializeString(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeString(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeString) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeString is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Struct.
-            pub fn deserializeStruct(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeStruct(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeStruct) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeStruct is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Union.
-            pub fn deserializeUnion(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeUnion(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeUnion) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeUnion is not implemented by type: " ++ @typeName(Context));
             }
 
             /// Deserializes a deserializer's input data into a Getty Void.
-            pub fn deserializeVoid(self: Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+            pub fn deserializeVoid(self: Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
                 if (methods.deserializeVoid) |f| {
-                    return try f(self.context, allocator, visitor);
+                    return try f(self.context, ally, visitor);
                 }
 
                 @compileError("deserializeVoid is not implemented by type: " ++ @typeName(Context));
