@@ -835,7 +835,7 @@
 <span class="line" id="L696"></span>
 <span class="line" id="L697">        <span class="tok-comment">// Use the same set of parameters used by the libc-less impl.</span>
 </span>
-<span class="line" id="L698">        <span class="tok-kw">const</span> stack_size = <span class="tok-builtin">@max</span>(config.stack_size, c.PTHREAD_STACK_MIN);</span>
+<span class="line" id="L698">        <span class="tok-kw">const</span> stack_size = <span class="tok-builtin">@max</span>(config.stack_size, <span class="tok-number">16</span> * <span class="tok-number">1024</span>);</span>
 <span class="line" id="L699">        assert(c.pthread_attr_setstacksize(&amp;attr, stack_size) == .SUCCESS);</span>
 <span class="line" id="L700">        assert(c.pthread_attr_setguardsize(&amp;attr, std.mem.page_size) == .SUCCESS);</span>
 <span class="line" id="L701"></span>
@@ -1554,206 +1554,208 @@
 <span class="line" id="L1275">                .entry_number = os.linux.tls.tls_image.gdt_entry_number,</span>
 <span class="line" id="L1276">                .base_addr = tls_ptr,</span>
 <span class="line" id="L1277">                .limit = <span class="tok-number">0xfffff</span>,</span>
-<span class="line" id="L1278">                .seg_32bit = <span class="tok-number">1</span>,</span>
-<span class="line" id="L1279">                .contents = <span class="tok-number">0</span>, <span class="tok-comment">// Data</span>
+<span class="line" id="L1278">                .flags = .{</span>
+<span class="line" id="L1279">                    .seg_32bit = <span class="tok-number">1</span>,</span>
+<span class="line" id="L1280">                    .contents = <span class="tok-number">0</span>, <span class="tok-comment">// Data</span>
 </span>
-<span class="line" id="L1280">                .read_exec_only = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1281">                .limit_in_pages = <span class="tok-number">1</span>,</span>
-<span class="line" id="L1282">                .seg_not_present = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1283">                .useable = <span class="tok-number">1</span>,</span>
-<span class="line" id="L1284">            };</span>
-<span class="line" id="L1285">        }</span>
-<span class="line" id="L1286"></span>
-<span class="line" id="L1287">        <span class="tok-kw">const</span> instance: *Instance = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;mapped[instance_offset]));</span>
-<span class="line" id="L1288">        instance.* = .{</span>
-<span class="line" id="L1289">            .fn_args = args,</span>
-<span class="line" id="L1290">            .thread = .{ .mapped = mapped },</span>
-<span class="line" id="L1291">        };</span>
-<span class="line" id="L1292"></span>
-<span class="line" id="L1293">        <span class="tok-kw">const</span> flags: <span class="tok-type">u32</span> = linux.CLONE.THREAD | linux.CLONE.DETACHED |</span>
-<span class="line" id="L1294">            linux.CLONE.VM | linux.CLONE.FS | linux.CLONE.FILES |</span>
-<span class="line" id="L1295">            linux.CLONE.PARENT_SETTID | linux.CLONE.CHILD_CLEARTID |</span>
-<span class="line" id="L1296">            linux.CLONE.SIGHAND | linux.CLONE.SYSVSEM | linux.CLONE.SETTLS;</span>
-<span class="line" id="L1297"></span>
-<span class="line" id="L1298">        <span class="tok-kw">switch</span> (linux.getErrno(linux.clone(</span>
-<span class="line" id="L1299">            Instance.entryFn,</span>
-<span class="line" id="L1300">            <span class="tok-builtin">@intFromPtr</span>(&amp;mapped[stack_offset]),</span>
-<span class="line" id="L1301">            flags,</span>
-<span class="line" id="L1302">            <span class="tok-builtin">@intFromPtr</span>(instance),</span>
-<span class="line" id="L1303">            &amp;instance.thread.parent_tid,</span>
-<span class="line" id="L1304">            tls_ptr,</span>
-<span class="line" id="L1305">            &amp;instance.thread.child_tid.value,</span>
-<span class="line" id="L1306">        ))) {</span>
-<span class="line" id="L1307">            .SUCCESS =&gt; <span class="tok-kw">return</span> Impl{ .thread = &amp;instance.thread },</span>
-<span class="line" id="L1308">            .AGAIN =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ThreadQuotaExceeded,</span>
-<span class="line" id="L1309">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1310">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
-<span class="line" id="L1311">            .NOSPC =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1312">            .PERM =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1313">            .USERS =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1314">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
-<span class="line" id="L1315">        }</span>
-<span class="line" id="L1316">    }</span>
-<span class="line" id="L1317"></span>
-<span class="line" id="L1318">    <span class="tok-kw">fn</span> <span class="tok-fn">getHandle</span>(self: Impl) ThreadHandle {</span>
-<span class="line" id="L1319">        <span class="tok-kw">return</span> self.thread.parent_tid;</span>
-<span class="line" id="L1320">    }</span>
-<span class="line" id="L1321"></span>
-<span class="line" id="L1322">    <span class="tok-kw">fn</span> <span class="tok-fn">detach</span>(self: Impl) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1323">        <span class="tok-kw">switch</span> (self.thread.completion.swap(.detached, .SeqCst)) {</span>
-<span class="line" id="L1324">            .running =&gt; {},</span>
-<span class="line" id="L1325">            .completed =&gt; self.join(),</span>
-<span class="line" id="L1326">            .detached =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1327">        }</span>
-<span class="line" id="L1328">    }</span>
-<span class="line" id="L1329"></span>
-<span class="line" id="L1330">    <span class="tok-kw">fn</span> <span class="tok-fn">join</span>(self: Impl) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1331">        <span class="tok-kw">defer</span> os.munmap(self.thread.mapped);</span>
-<span class="line" id="L1332"></span>
-<span class="line" id="L1333">        <span class="tok-kw">var</span> spin: <span class="tok-type">u8</span> = <span class="tok-number">10</span>;</span>
-<span class="line" id="L1334">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1335">            <span class="tok-kw">const</span> tid = self.thread.child_tid.load(.SeqCst);</span>
-<span class="line" id="L1336">            <span class="tok-kw">if</span> (tid == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1337">                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1338">            }</span>
-<span class="line" id="L1339"></span>
-<span class="line" id="L1340">            <span class="tok-kw">if</span> (spin &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1341">                spin -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L1342">                std.atomic.spinLoopHint();</span>
-<span class="line" id="L1343">                <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1344">            }</span>
-<span class="line" id="L1345"></span>
-<span class="line" id="L1346">            <span class="tok-kw">switch</span> (linux.getErrno(linux.futex_wait(</span>
-<span class="line" id="L1347">                &amp;self.thread.child_tid.value,</span>
-<span class="line" id="L1348">                linux.FUTEX.WAIT,</span>
-<span class="line" id="L1349">                tid,</span>
-<span class="line" id="L1350">                <span class="tok-null">null</span>,</span>
-<span class="line" id="L1351">            ))) {</span>
-<span class="line" id="L1352">                .SUCCESS =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1353">                .INTR =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1354">                .AGAIN =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1355">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L1356">            }</span>
-<span class="line" id="L1357">        }</span>
-<span class="line" id="L1358">    }</span>
-<span class="line" id="L1359">};</span>
-<span class="line" id="L1360"></span>
-<span class="line" id="L1361"><span class="tok-kw">fn</span> <span class="tok-fn">testThreadName</span>(thread: *Thread) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1362">    <span class="tok-kw">const</span> testCases = &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
-<span class="line" id="L1363">        <span class="tok-str">&quot;mythread&quot;</span>,</span>
-<span class="line" id="L1364">        <span class="tok-str">&quot;b&quot;</span> ** max_name_len,</span>
-<span class="line" id="L1365">    };</span>
-<span class="line" id="L1366"></span>
-<span class="line" id="L1367">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (testCases) |tc| {</span>
-<span class="line" id="L1368">        <span class="tok-kw">try</span> thread.setName(tc);</span>
-<span class="line" id="L1369"></span>
-<span class="line" id="L1370">        <span class="tok-kw">var</span> name_buffer: [max_name_len:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1281">                    .read_exec_only = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1282">                    .limit_in_pages = <span class="tok-number">1</span>,</span>
+<span class="line" id="L1283">                    .seg_not_present = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1284">                    .useable = <span class="tok-number">1</span>,</span>
+<span class="line" id="L1285">                },</span>
+<span class="line" id="L1286">            };</span>
+<span class="line" id="L1287">        }</span>
+<span class="line" id="L1288"></span>
+<span class="line" id="L1289">        <span class="tok-kw">const</span> instance: *Instance = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(&amp;mapped[instance_offset]));</span>
+<span class="line" id="L1290">        instance.* = .{</span>
+<span class="line" id="L1291">            .fn_args = args,</span>
+<span class="line" id="L1292">            .thread = .{ .mapped = mapped },</span>
+<span class="line" id="L1293">        };</span>
+<span class="line" id="L1294"></span>
+<span class="line" id="L1295">        <span class="tok-kw">const</span> flags: <span class="tok-type">u32</span> = linux.CLONE.THREAD | linux.CLONE.DETACHED |</span>
+<span class="line" id="L1296">            linux.CLONE.VM | linux.CLONE.FS | linux.CLONE.FILES |</span>
+<span class="line" id="L1297">            linux.CLONE.PARENT_SETTID | linux.CLONE.CHILD_CLEARTID |</span>
+<span class="line" id="L1298">            linux.CLONE.SIGHAND | linux.CLONE.SYSVSEM | linux.CLONE.SETTLS;</span>
+<span class="line" id="L1299"></span>
+<span class="line" id="L1300">        <span class="tok-kw">switch</span> (linux.getErrno(linux.clone(</span>
+<span class="line" id="L1301">            Instance.entryFn,</span>
+<span class="line" id="L1302">            <span class="tok-builtin">@intFromPtr</span>(&amp;mapped[stack_offset]),</span>
+<span class="line" id="L1303">            flags,</span>
+<span class="line" id="L1304">            <span class="tok-builtin">@intFromPtr</span>(instance),</span>
+<span class="line" id="L1305">            &amp;instance.thread.parent_tid,</span>
+<span class="line" id="L1306">            tls_ptr,</span>
+<span class="line" id="L1307">            &amp;instance.thread.child_tid.value,</span>
+<span class="line" id="L1308">        ))) {</span>
+<span class="line" id="L1309">            .SUCCESS =&gt; <span class="tok-kw">return</span> Impl{ .thread = &amp;instance.thread },</span>
+<span class="line" id="L1310">            .AGAIN =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ThreadQuotaExceeded,</span>
+<span class="line" id="L1311">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1312">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
+<span class="line" id="L1313">            .NOSPC =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1314">            .PERM =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1315">            .USERS =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1316">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
+<span class="line" id="L1317">        }</span>
+<span class="line" id="L1318">    }</span>
+<span class="line" id="L1319"></span>
+<span class="line" id="L1320">    <span class="tok-kw">fn</span> <span class="tok-fn">getHandle</span>(self: Impl) ThreadHandle {</span>
+<span class="line" id="L1321">        <span class="tok-kw">return</span> self.thread.parent_tid;</span>
+<span class="line" id="L1322">    }</span>
+<span class="line" id="L1323"></span>
+<span class="line" id="L1324">    <span class="tok-kw">fn</span> <span class="tok-fn">detach</span>(self: Impl) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1325">        <span class="tok-kw">switch</span> (self.thread.completion.swap(.detached, .SeqCst)) {</span>
+<span class="line" id="L1326">            .running =&gt; {},</span>
+<span class="line" id="L1327">            .completed =&gt; self.join(),</span>
+<span class="line" id="L1328">            .detached =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1329">        }</span>
+<span class="line" id="L1330">    }</span>
+<span class="line" id="L1331"></span>
+<span class="line" id="L1332">    <span class="tok-kw">fn</span> <span class="tok-fn">join</span>(self: Impl) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1333">        <span class="tok-kw">defer</span> os.munmap(self.thread.mapped);</span>
+<span class="line" id="L1334"></span>
+<span class="line" id="L1335">        <span class="tok-kw">var</span> spin: <span class="tok-type">u8</span> = <span class="tok-number">10</span>;</span>
+<span class="line" id="L1336">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1337">            <span class="tok-kw">const</span> tid = self.thread.child_tid.load(.SeqCst);</span>
+<span class="line" id="L1338">            <span class="tok-kw">if</span> (tid == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1339">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1340">            }</span>
+<span class="line" id="L1341"></span>
+<span class="line" id="L1342">            <span class="tok-kw">if</span> (spin &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1343">                spin -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L1344">                std.atomic.spinLoopHint();</span>
+<span class="line" id="L1345">                <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1346">            }</span>
+<span class="line" id="L1347"></span>
+<span class="line" id="L1348">            <span class="tok-kw">switch</span> (linux.getErrno(linux.futex_wait(</span>
+<span class="line" id="L1349">                &amp;self.thread.child_tid.value,</span>
+<span class="line" id="L1350">                linux.FUTEX.WAIT,</span>
+<span class="line" id="L1351">                tid,</span>
+<span class="line" id="L1352">                <span class="tok-null">null</span>,</span>
+<span class="line" id="L1353">            ))) {</span>
+<span class="line" id="L1354">                .SUCCESS =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1355">                .INTR =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1356">                .AGAIN =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1357">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1358">            }</span>
+<span class="line" id="L1359">        }</span>
+<span class="line" id="L1360">    }</span>
+<span class="line" id="L1361">};</span>
+<span class="line" id="L1362"></span>
+<span class="line" id="L1363"><span class="tok-kw">fn</span> <span class="tok-fn">testThreadName</span>(thread: *Thread) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1364">    <span class="tok-kw">const</span> testCases = &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{</span>
+<span class="line" id="L1365">        <span class="tok-str">&quot;mythread&quot;</span>,</span>
+<span class="line" id="L1366">        <span class="tok-str">&quot;b&quot;</span> ** max_name_len,</span>
+<span class="line" id="L1367">    };</span>
+<span class="line" id="L1368"></span>
+<span class="line" id="L1369">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (testCases) |tc| {</span>
+<span class="line" id="L1370">        <span class="tok-kw">try</span> thread.setName(tc);</span>
 <span class="line" id="L1371"></span>
-<span class="line" id="L1372">        <span class="tok-kw">const</span> name = <span class="tok-kw">try</span> thread.getName(&amp;name_buffer);</span>
-<span class="line" id="L1373">        <span class="tok-kw">if</span> (name) |value| {</span>
-<span class="line" id="L1374">            <span class="tok-kw">try</span> std.testing.expectEqual(tc.len, value.len);</span>
-<span class="line" id="L1375">            <span class="tok-kw">try</span> std.testing.expectEqualStrings(tc, value);</span>
-<span class="line" id="L1376">        }</span>
-<span class="line" id="L1377">    }</span>
-<span class="line" id="L1378">}</span>
-<span class="line" id="L1379"></span>
-<span class="line" id="L1380"><span class="tok-kw">test</span> <span class="tok-str">&quot;setName, getName&quot;</span> {</span>
-<span class="line" id="L1381">    <span class="tok-kw">if</span> (builtin.single_threaded) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L1382"></span>
-<span class="line" id="L1383">    <span class="tok-kw">const</span> Context = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1384">        start_wait_event: ResetEvent = .{},</span>
-<span class="line" id="L1385">        test_done_event: ResetEvent = .{},</span>
-<span class="line" id="L1386">        thread_done_event: ResetEvent = .{},</span>
-<span class="line" id="L1387"></span>
-<span class="line" id="L1388">        done: std.atomic.Atomic(<span class="tok-type">bool</span>) = std.atomic.Atomic(<span class="tok-type">bool</span>).init(<span class="tok-null">false</span>),</span>
-<span class="line" id="L1389">        thread: Thread = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1390"></span>
-<span class="line" id="L1391">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(ctx: *<span class="tok-builtin">@This</span>()) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1392">            <span class="tok-comment">// Wait for the main thread to have set the thread field in the context.</span>
+<span class="line" id="L1372">        <span class="tok-kw">var</span> name_buffer: [max_name_len:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1373"></span>
+<span class="line" id="L1374">        <span class="tok-kw">const</span> name = <span class="tok-kw">try</span> thread.getName(&amp;name_buffer);</span>
+<span class="line" id="L1375">        <span class="tok-kw">if</span> (name) |value| {</span>
+<span class="line" id="L1376">            <span class="tok-kw">try</span> std.testing.expectEqual(tc.len, value.len);</span>
+<span class="line" id="L1377">            <span class="tok-kw">try</span> std.testing.expectEqualStrings(tc, value);</span>
+<span class="line" id="L1378">        }</span>
+<span class="line" id="L1379">    }</span>
+<span class="line" id="L1380">}</span>
+<span class="line" id="L1381"></span>
+<span class="line" id="L1382"><span class="tok-kw">test</span> <span class="tok-str">&quot;setName, getName&quot;</span> {</span>
+<span class="line" id="L1383">    <span class="tok-kw">if</span> (builtin.single_threaded) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L1384"></span>
+<span class="line" id="L1385">    <span class="tok-kw">const</span> Context = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1386">        start_wait_event: ResetEvent = .{},</span>
+<span class="line" id="L1387">        test_done_event: ResetEvent = .{},</span>
+<span class="line" id="L1388">        thread_done_event: ResetEvent = .{},</span>
+<span class="line" id="L1389"></span>
+<span class="line" id="L1390">        done: std.atomic.Atomic(<span class="tok-type">bool</span>) = std.atomic.Atomic(<span class="tok-type">bool</span>).init(<span class="tok-null">false</span>),</span>
+<span class="line" id="L1391">        thread: Thread = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1392"></span>
+<span class="line" id="L1393">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(ctx: *<span class="tok-builtin">@This</span>()) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1394">            <span class="tok-comment">// Wait for the main thread to have set the thread field in the context.</span>
 </span>
-<span class="line" id="L1393">            ctx.start_wait_event.wait();</span>
-<span class="line" id="L1394"></span>
-<span class="line" id="L1395">            <span class="tok-kw">switch</span> (target.os.tag) {</span>
-<span class="line" id="L1396">                .windows =&gt; testThreadName(&amp;ctx.thread) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L1397">                    <span class="tok-kw">error</span>.Unsupported =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>
-<span class="line" id="L1398">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
-<span class="line" id="L1399">                },</span>
-<span class="line" id="L1400">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> testThreadName(&amp;ctx.thread),</span>
-<span class="line" id="L1401">            }</span>
-<span class="line" id="L1402"></span>
-<span class="line" id="L1403">            <span class="tok-comment">// Signal our test is done</span>
+<span class="line" id="L1395">            ctx.start_wait_event.wait();</span>
+<span class="line" id="L1396"></span>
+<span class="line" id="L1397">            <span class="tok-kw">switch</span> (target.os.tag) {</span>
+<span class="line" id="L1398">                .windows =&gt; testThreadName(&amp;ctx.thread) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1399">                    <span class="tok-kw">error</span>.Unsupported =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>
+<span class="line" id="L1400">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
+<span class="line" id="L1401">                },</span>
+<span class="line" id="L1402">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> testThreadName(&amp;ctx.thread),</span>
+<span class="line" id="L1403">            }</span>
+<span class="line" id="L1404"></span>
+<span class="line" id="L1405">            <span class="tok-comment">// Signal our test is done</span>
 </span>
-<span class="line" id="L1404">            ctx.test_done_event.set();</span>
-<span class="line" id="L1405"></span>
-<span class="line" id="L1406">            <span class="tok-comment">// wait for the thread to property exit</span>
+<span class="line" id="L1406">            ctx.test_done_event.set();</span>
+<span class="line" id="L1407"></span>
+<span class="line" id="L1408">            <span class="tok-comment">// wait for the thread to property exit</span>
 </span>
-<span class="line" id="L1407">            ctx.thread_done_event.wait();</span>
-<span class="line" id="L1408">        }</span>
-<span class="line" id="L1409">    };</span>
-<span class="line" id="L1410"></span>
-<span class="line" id="L1411">    <span class="tok-kw">var</span> context = Context{};</span>
-<span class="line" id="L1412">    <span class="tok-kw">var</span> thread = <span class="tok-kw">try</span> spawn(.{}, Context.run, .{&amp;context});</span>
-<span class="line" id="L1413"></span>
-<span class="line" id="L1414">    context.thread = thread;</span>
-<span class="line" id="L1415">    context.start_wait_event.set();</span>
-<span class="line" id="L1416">    context.test_done_event.wait();</span>
-<span class="line" id="L1417"></span>
-<span class="line" id="L1418">    <span class="tok-kw">switch</span> (target.os.tag) {</span>
-<span class="line" id="L1419">        .macos, .ios, .watchos, .tvos =&gt; {</span>
-<span class="line" id="L1420">            <span class="tok-kw">const</span> res = thread.setName(<span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1421">            <span class="tok-kw">try</span> std.testing.expectError(<span class="tok-kw">error</span>.Unsupported, res);</span>
-<span class="line" id="L1422">        },</span>
-<span class="line" id="L1423">        .windows =&gt; testThreadName(&amp;thread) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L1424">            <span class="tok-kw">error</span>.Unsupported =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>
-<span class="line" id="L1425">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
-<span class="line" id="L1426">        },</span>
-<span class="line" id="L1427">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> testThreadName(&amp;thread),</span>
-<span class="line" id="L1428">    }</span>
-<span class="line" id="L1429"></span>
-<span class="line" id="L1430">    context.thread_done_event.set();</span>
-<span class="line" id="L1431">    thread.join();</span>
-<span class="line" id="L1432">}</span>
-<span class="line" id="L1433"></span>
-<span class="line" id="L1434"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L1435">    <span class="tok-comment">// Doesn't use testing.refAllDecls() since that would pull in the compileError spinLoopHint.</span>
+<span class="line" id="L1409">            ctx.thread_done_event.wait();</span>
+<span class="line" id="L1410">        }</span>
+<span class="line" id="L1411">    };</span>
+<span class="line" id="L1412"></span>
+<span class="line" id="L1413">    <span class="tok-kw">var</span> context = Context{};</span>
+<span class="line" id="L1414">    <span class="tok-kw">var</span> thread = <span class="tok-kw">try</span> spawn(.{}, Context.run, .{&amp;context});</span>
+<span class="line" id="L1415"></span>
+<span class="line" id="L1416">    context.thread = thread;</span>
+<span class="line" id="L1417">    context.start_wait_event.set();</span>
+<span class="line" id="L1418">    context.test_done_event.wait();</span>
+<span class="line" id="L1419"></span>
+<span class="line" id="L1420">    <span class="tok-kw">switch</span> (target.os.tag) {</span>
+<span class="line" id="L1421">        .macos, .ios, .watchos, .tvos =&gt; {</span>
+<span class="line" id="L1422">            <span class="tok-kw">const</span> res = thread.setName(<span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1423">            <span class="tok-kw">try</span> std.testing.expectError(<span class="tok-kw">error</span>.Unsupported, res);</span>
+<span class="line" id="L1424">        },</span>
+<span class="line" id="L1425">        .windows =&gt; testThreadName(&amp;thread) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1426">            <span class="tok-kw">error</span>.Unsupported =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>
+<span class="line" id="L1427">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
+<span class="line" id="L1428">        },</span>
+<span class="line" id="L1429">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> testThreadName(&amp;thread),</span>
+<span class="line" id="L1430">    }</span>
+<span class="line" id="L1431"></span>
+<span class="line" id="L1432">    context.thread_done_event.set();</span>
+<span class="line" id="L1433">    thread.join();</span>
+<span class="line" id="L1434">}</span>
+<span class="line" id="L1435"></span>
+<span class="line" id="L1436"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L1437">    <span class="tok-comment">// Doesn't use testing.refAllDecls() since that would pull in the compileError spinLoopHint.</span>
 </span>
-<span class="line" id="L1436">    _ = Futex;</span>
-<span class="line" id="L1437">    _ = ResetEvent;</span>
-<span class="line" id="L1438">    _ = Mutex;</span>
-<span class="line" id="L1439">    _ = Semaphore;</span>
-<span class="line" id="L1440">    _ = Condition;</span>
-<span class="line" id="L1441">    _ = RwLock;</span>
-<span class="line" id="L1442">}</span>
-<span class="line" id="L1443"></span>
-<span class="line" id="L1444"><span class="tok-kw">fn</span> <span class="tok-fn">testIncrementNotify</span>(value: *<span class="tok-type">usize</span>, event: *ResetEvent) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1445">    value.* += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1446">    event.set();</span>
-<span class="line" id="L1447">}</span>
-<span class="line" id="L1448"></span>
-<span class="line" id="L1449"><span class="tok-kw">test</span> <span class="tok-str">&quot;Thread.join&quot;</span> {</span>
-<span class="line" id="L1450">    <span class="tok-kw">if</span> (builtin.single_threaded) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L1451"></span>
-<span class="line" id="L1452">    <span class="tok-kw">var</span> value: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1453">    <span class="tok-kw">var</span> event = ResetEvent{};</span>
-<span class="line" id="L1454"></span>
-<span class="line" id="L1455">    <span class="tok-kw">const</span> thread = <span class="tok-kw">try</span> Thread.spawn(.{}, testIncrementNotify, .{ &amp;value, &amp;event });</span>
-<span class="line" id="L1456">    thread.join();</span>
-<span class="line" id="L1457"></span>
-<span class="line" id="L1458">    <span class="tok-kw">try</span> std.testing.expectEqual(value, <span class="tok-number">1</span>);</span>
-<span class="line" id="L1459">}</span>
-<span class="line" id="L1460"></span>
-<span class="line" id="L1461"><span class="tok-kw">test</span> <span class="tok-str">&quot;Thread.detach&quot;</span> {</span>
-<span class="line" id="L1462">    <span class="tok-kw">if</span> (builtin.single_threaded) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L1463"></span>
-<span class="line" id="L1464">    <span class="tok-kw">var</span> value: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1465">    <span class="tok-kw">var</span> event = ResetEvent{};</span>
-<span class="line" id="L1466"></span>
-<span class="line" id="L1467">    <span class="tok-kw">const</span> thread = <span class="tok-kw">try</span> Thread.spawn(.{}, testIncrementNotify, .{ &amp;value, &amp;event });</span>
-<span class="line" id="L1468">    thread.detach();</span>
-<span class="line" id="L1469"></span>
-<span class="line" id="L1470">    event.wait();</span>
-<span class="line" id="L1471">    <span class="tok-kw">try</span> std.testing.expectEqual(value, <span class="tok-number">1</span>);</span>
-<span class="line" id="L1472">}</span>
-<span class="line" id="L1473"></span>
+<span class="line" id="L1438">    _ = Futex;</span>
+<span class="line" id="L1439">    _ = ResetEvent;</span>
+<span class="line" id="L1440">    _ = Mutex;</span>
+<span class="line" id="L1441">    _ = Semaphore;</span>
+<span class="line" id="L1442">    _ = Condition;</span>
+<span class="line" id="L1443">    _ = RwLock;</span>
+<span class="line" id="L1444">}</span>
+<span class="line" id="L1445"></span>
+<span class="line" id="L1446"><span class="tok-kw">fn</span> <span class="tok-fn">testIncrementNotify</span>(value: *<span class="tok-type">usize</span>, event: *ResetEvent) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1447">    value.* += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1448">    event.set();</span>
+<span class="line" id="L1449">}</span>
+<span class="line" id="L1450"></span>
+<span class="line" id="L1451"><span class="tok-kw">test</span> <span class="tok-str">&quot;Thread.join&quot;</span> {</span>
+<span class="line" id="L1452">    <span class="tok-kw">if</span> (builtin.single_threaded) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L1453"></span>
+<span class="line" id="L1454">    <span class="tok-kw">var</span> value: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1455">    <span class="tok-kw">var</span> event = ResetEvent{};</span>
+<span class="line" id="L1456"></span>
+<span class="line" id="L1457">    <span class="tok-kw">const</span> thread = <span class="tok-kw">try</span> Thread.spawn(.{}, testIncrementNotify, .{ &amp;value, &amp;event });</span>
+<span class="line" id="L1458">    thread.join();</span>
+<span class="line" id="L1459"></span>
+<span class="line" id="L1460">    <span class="tok-kw">try</span> std.testing.expectEqual(value, <span class="tok-number">1</span>);</span>
+<span class="line" id="L1461">}</span>
+<span class="line" id="L1462"></span>
+<span class="line" id="L1463"><span class="tok-kw">test</span> <span class="tok-str">&quot;Thread.detach&quot;</span> {</span>
+<span class="line" id="L1464">    <span class="tok-kw">if</span> (builtin.single_threaded) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L1465"></span>
+<span class="line" id="L1466">    <span class="tok-kw">var</span> value: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1467">    <span class="tok-kw">var</span> event = ResetEvent{};</span>
+<span class="line" id="L1468"></span>
+<span class="line" id="L1469">    <span class="tok-kw">const</span> thread = <span class="tok-kw">try</span> Thread.spawn(.{}, testIncrementNotify, .{ &amp;value, &amp;event });</span>
+<span class="line" id="L1470">    thread.detach();</span>
+<span class="line" id="L1471"></span>
+<span class="line" id="L1472">    event.wait();</span>
+<span class="line" id="L1473">    <span class="tok-kw">try</span> std.testing.expectEqual(value, <span class="tok-number">1</span>);</span>
+<span class="line" id="L1474">}</span>
+<span class="line" id="L1475"></span>
 </code></pre></body>
 </html>
