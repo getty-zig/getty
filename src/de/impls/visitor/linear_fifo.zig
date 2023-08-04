@@ -15,29 +15,29 @@ pub fn Visitor(comptime LinearFifo: type) type {
 
         const Value = LinearFifo;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             if (is_buffer_static) {
                 var fifo = Value.init();
-                errdefer free(allocator.?, Deserializer, fifo);
+                errdefer free(ally.?, Deserializer, fifo);
 
                 for (0..fifo.buf.len) |_| {
-                    if (try seq.nextElement(allocator, Child)) |elem| {
+                    if (try seq.nextElement(ally, Child)) |elem| {
                         fifo.writeItemAssumeCapacity(elem);
                     } else {
                         break;
                     }
-                } else if (try seq.nextElement(allocator, Child) != null) {
+                } else if (try seq.nextElement(ally, Child) != null) {
                     // Expected end of sequence, but found an element.
                     return error.InvalidLength;
                 }
 
                 return fifo;
             } else if (is_buffer_dynamic) {
-                if (allocator == null) {
+                if (ally == null) {
                     return error.MissingAllocator;
                 }
 
-                const a = allocator.?;
+                const a = ally.?;
 
                 var fifo = Value.init(a);
                 errdefer free(a, Deserializer, fifo);
@@ -49,11 +49,11 @@ pub fn Visitor(comptime LinearFifo: type) type {
 
                 return fifo;
             } else {
-                if (allocator == null) {
+                if (ally == null) {
                     return error.MissingAllocator;
                 }
 
-                const a = allocator.?;
+                const a = ally.?;
 
                 var list = std.ArrayList(Child).init(a);
                 errdefer free(a, Deserializer, list);

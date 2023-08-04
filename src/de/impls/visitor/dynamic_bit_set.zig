@@ -14,8 +14,8 @@ pub fn Visitor(comptime Value: type) type {
             },
         );
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
@@ -27,10 +27,10 @@ pub fn Visitor(comptime Value: type) type {
             // To avoid messing around with resizing bitsets, we instead
             // deserialize into an ArrayList initially. Then, the list's
             // elements are simply copied over to a properly sized bitset.
-            var list = try std.ArrayList(Value.MaskInt).initCapacity(allocator.?, 8);
+            var list = try std.ArrayList(Value.MaskInt).initCapacity(ally.?, 8);
             defer list.deinit();
 
-            while (try seq.nextElement(allocator, Value.MaskInt)) |bit| {
+            while (try seq.nextElement(ally, Value.MaskInt)) |bit| {
                 switch (bit) {
                     0 => try list.append(0),
                     1 => try list.append(1),
@@ -38,8 +38,8 @@ pub fn Visitor(comptime Value: type) type {
                 }
             }
 
-            var bitset = try Value.initEmpty(allocator.?, list.items.len);
-            errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(allocator.?);
+            var bitset = try Value.initEmpty(ally.?, list.items.len);
+            errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(ally.?);
 
             for (list.items, 0..) |bit, i| {
                 if (bit == 1) bitset.set(list.items.len - 1 - i);

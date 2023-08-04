@@ -34,8 +34,8 @@ pub fn Visitor(comptime Pointer: type) type {
         const Value = Pointer;
         const Child = std.meta.Child(Value);
 
-        fn visitBool(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitBool(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -48,8 +48,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitFloat(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitFloat(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -62,8 +62,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitInt(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitInt(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -76,8 +76,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -90,8 +90,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitNull(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitNull(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -104,8 +104,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -118,8 +118,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitSome(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            if (allocator) |a| {
+        fn visitSome(_: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -132,8 +132,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitString(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitString(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -146,8 +146,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitUnion(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitUnion(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
@@ -160,8 +160,8 @@ pub fn Visitor(comptime Pointer: type) type {
             return error.MissingAllocator;
         }
 
-        fn visitVoid(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
-            if (allocator) |a| {
+        fn visitVoid(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+            if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 

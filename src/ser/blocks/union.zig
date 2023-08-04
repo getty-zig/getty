@@ -16,7 +16,7 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
@@ -37,7 +37,7 @@ pub fn serialize(
         const tag_matches = value == @field(T, field.name);
 
         if (tag_matches) {
-            return try serializeVariant(allocator, value, serializer, field);
+            return try serializeVariant(ally, value, serializer, field);
         }
     }
 
@@ -48,7 +48,7 @@ pub fn serialize(
 }
 
 fn serializeVariant(
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     value: anytype,
     serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
@@ -69,7 +69,7 @@ fn serializeVariant(
 
     return switch (tag) {
         .external => try serializeExternallyTaggedVariant(value, serializer, field),
-        .untagged => try serializeUntaggedVariant(allocator, value, serializer, field),
+        .untagged => try serializeUntaggedVariant(ally, value, serializer, field),
         .internal => @compileError("TODO: internally tagged representation"),
     };
 }
@@ -115,12 +115,12 @@ fn serializeExternallyTaggedVariant(
 }
 
 fn serializeUntaggedVariant(
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     value: anytype,
     serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return getty_serialize(allocator, @field(value, field.name), serializer);
+    return getty_serialize(ally, @field(value, field.name), serializer);
 }
 
 test "serialize - union" {

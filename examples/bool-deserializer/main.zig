@@ -25,9 +25,9 @@ fn Deserializer(comptime Reader: type) type {
 
         const De = Self.@"getty.Deserializer";
 
-        pub fn init(allocator: std.mem.Allocator, reader: Reader) Self {
+        pub fn init(ally: std.mem.Allocator, reader: Reader) Self {
             return .{
-                .tokens = JsonReader.init(allocator, reader),
+                .tokens = JsonReader.init(ally, reader),
             };
         }
 
@@ -35,10 +35,10 @@ fn Deserializer(comptime Reader: type) type {
             self.tokens.deinit();
         }
 
-        fn deserializeBool(self: *Self, allocator: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
+        fn deserializeBool(self: *Self, ally: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
             const token = try self.tokens.next();
             if (token == .true or token == .false) {
-                return try v.visitBool(allocator, De, token == .true);
+                return try v.visitBool(ally, De, token == .true);
             }
 
             return error.InvalidType;

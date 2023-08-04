@@ -88,7 +88,7 @@ pub fn build(b: *std.Build) void {
 const std = @import("std");
 const json = @import("json");
 
-const allocator = std.heap.page_allocator;
+const page_ally = std.heap.page_allocator;
 
 const Point = struct {
     x: i32,
@@ -99,11 +99,11 @@ pub fn main() !void {
     const value = Point{ .x = 1, .y = 2 };
 
     // Serialize a Point value into JSON.
-    const serialized = try json.toSlice(allocator, value);
-    defer allocator.free(serialized);
+    const serialized = try json.toSlice(page_ally, value);
+    defer page_ally.free(serialized);
 
     // Deserialize JSON data into a Point value.
-    const deserialized = try json.fromSlice(allocator, Point, serialized);
+    const deserialized = try json.fromSlice(page_ally, Point, serialized);
 
     // Print results.
     std.debug.print("{s}\n", .{serialized});

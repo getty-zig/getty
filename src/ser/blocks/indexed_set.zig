@@ -18,13 +18,13 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    return try getty_serialize(allocator, value.bits, serializer);
+    return try getty_serialize(ally, value.bits, serializer);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {

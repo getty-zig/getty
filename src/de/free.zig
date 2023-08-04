@@ -11,7 +11,7 @@ const find_db = @import("find.zig").find_db;
 /// pointers pointing to values on the stack.
 pub fn free(
     /// A memory allocator.
-    allocator: std.mem.Allocator,
+    ally: std.mem.Allocator,
     /// A `getty.Deserializer` interface type.
     comptime Deserializer: type,
     /// A value to deallocate.
@@ -35,6 +35,6 @@ pub fn free(
     };
 
     if (@hasDecl(db, "free")) {
-        db.free(allocator, Deserializer, value);
+        db.free(ally, Deserializer, value);
     }
 }

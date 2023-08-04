@@ -13,13 +13,13 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    _ = allocator;
+    _ = ally;
 
     const cap = value.capacity();
     std.debug.assert(cap != 0); // std.IntegerBitSet would be used if cap was 0.

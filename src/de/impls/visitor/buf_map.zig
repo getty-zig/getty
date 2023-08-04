@@ -15,12 +15,12 @@ pub fn Visitor(comptime BufMap: type) type {
 
         const Value = BufMap;
 
-        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
-            const a = allocator.?;
+            const a = ally.?;
 
             var m = BufMap.init(a);
             errdefer free(a, Deserializer, m);

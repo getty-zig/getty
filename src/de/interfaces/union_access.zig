@@ -40,22 +40,22 @@ pub fn UnionAccess(
 
             pub const Error = E;
 
-            pub fn variantSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (methods.variantSeed) |f| {
-                    return try f(self.context, allocator, seed);
+                    return try f(self.context, ally, seed);
                 }
 
                 @compileError("variantSeed is not implemented by type: " ++ @typeName(Context));
             }
 
-            pub fn variant(self: Self, allocator: ?std.mem.Allocator, comptime T: type) Error!T {
+            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime T: type) Error!T {
                 if (methods.variant) |f| {
-                    return try f(self.context, allocator, T);
+                    return try f(self.context, ally, T);
                 } else {
                     var ds = DefaultSeed(T){};
                     const seed = ds.seed();
 
-                    return try self.variantSeed(allocator, seed);
+                    return try self.variantSeed(ally, seed);
                 }
             }
 

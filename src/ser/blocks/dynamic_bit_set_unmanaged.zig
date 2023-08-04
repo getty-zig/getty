@@ -1,5 +1,5 @@
 const std = @import("std");
-const test_allocator = std.testing.allocator;
+const test_ally = std.testing.allocator;
 
 const t = @import("../testing.zig");
 
@@ -14,13 +14,13 @@ pub fn is(
 /// Specifies the serialization process for values relevant to this block.
 pub fn serialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// A value being serialized.
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
 ) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
-    _ = allocator;
+    _ = ally;
 
     const cap = value.capacity();
 
@@ -72,8 +72,8 @@ test "serialize - std.DynamicBitSetUnmanaged" {
 
     // Empty
     {
-        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, size);
-        defer want.deinit(test_allocator);
+        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, size);
+        defer want.deinit(test_ally);
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = size } },
@@ -149,8 +149,8 @@ test "serialize - std.DynamicBitSetUnmanaged" {
 
     // Full
     {
-        var want = try std.DynamicBitSetUnmanaged.initFull(test_allocator, size);
-        defer want.deinit(test_allocator);
+        var want = try std.DynamicBitSetUnmanaged.initFull(test_ally, size);
+        defer want.deinit(test_ally);
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = size } },
@@ -226,8 +226,8 @@ test "serialize - std.DynamicBitSetUnmanaged" {
 
     // Mixed (LSB set)
     {
-        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, size);
-        defer want.deinit(test_allocator);
+        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, size);
+        defer want.deinit(test_ally);
         {
             var i: usize = 0; // 0, 2, 4, ..., size - 2
             while (i < size) : (i += 2) want.set(i);
@@ -307,8 +307,8 @@ test "serialize - std.DynamicBitSetUnmanaged" {
 
     // Mixed (LSB unset)
     {
-        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, size);
-        defer want.deinit(test_allocator);
+        var want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, size);
+        defer want.deinit(test_ally);
         {
             var i: usize = 1; // 1, 3, 5, ..., size - 1
             while (i < size) : (i += 2) want.set(i);

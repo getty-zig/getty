@@ -33,22 +33,22 @@ pub fn SeqAccess(
 
             pub const Error = E;
 
-            pub fn nextElementSeed(self: Self, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 if (methods.nextElementSeed) |f| {
-                    return try f(self.context, allocator, seed);
+                    return try f(self.context, ally, seed);
                 }
 
                 @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Context));
             }
 
-            pub fn nextElement(self: Self, allocator: ?std.mem.Allocator, comptime Value: type) Error!?Value {
+            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Value: type) Error!?Value {
                 if (methods.nextElement) |f| {
-                    return try f(self.context, allocator, Value);
+                    return try f(self.context, ally, Value);
                 } else {
                     var seed = DefaultSeed(Value){};
                     const ds = seed.seed();
 
-                    return try self.nextElementSeed(allocator, ds);
+                    return try self.nextElementSeed(ally, ds);
                 }
             }
         };

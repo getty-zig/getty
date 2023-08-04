@@ -1,5 +1,5 @@
 const std = @import("std");
-const test_allocator = std.testing.allocator;
+const test_ally = std.testing.allocator;
 
 const getty_free = @import("../free.zig").free;
 const HashMapVisitor = @import("../impls/visitor/hash_map.zig").Visitor;
@@ -21,7 +21,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -31,7 +31,7 @@ pub fn deserialize(
 ) !@TypeOf(visitor).Value {
     _ = T;
 
-    return try deserializer.deserializeMap(allocator, visitor);
+    return try deserializer.deserializeMap(ally, visitor);
 }
 
 /// Returns a type that implements `getty.de.Visitor`.
@@ -45,7 +45,7 @@ pub fn Visitor(
 /// Frees resources allocated by Getty during deserialization.
 pub fn free(
     /// A memory allocator.
-    allocator: std.mem.Allocator,
+    ally: std.mem.Allocator,
     /// A `getty.Deserializer` interface type.
     comptime Deserializer: type,
     /// A value to deallocate.
@@ -66,13 +66,13 @@ pub fn free(
 
     var iterator = value.iterator();
     while (iterator.next()) |entry| {
-        getty_free(allocator, Deserializer, entry.key_ptr.*);
-        getty_free(allocator, Deserializer, entry.value_ptr.*);
+        getty_free(ally, Deserializer, entry.key_ptr.*);
+        getty_free(ally, Deserializer, entry.value_ptr.*);
     }
 
     var mut = value;
     if (unmanaged) {
-        mut.deinit(allocator);
+        mut.deinit(ally);
     } else {
         mut.deinit();
     }
@@ -90,7 +90,7 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
                 .{ .Map = .{ .len = 0 } },
                 .{ .MapEnd = {} },
             },
-            .want = std.AutoHashMap(void, void).init(test_allocator),
+            .want = std.AutoHashMap(void, void).init(test_ally),
         },
         .{
             .name = "AutoHashMap - non-empty",
@@ -105,7 +105,7 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
                 .{ .MapEnd = {} },
             },
             .want = blk: {
-                var want = std.AutoHashMap(i32, bool).init(test_allocator);
+                var want = std.AutoHashMap(i32, bool).init(test_ally);
                 try want.put(1, true);
                 try want.put(2, false);
                 try want.put(3, true);
@@ -118,7 +118,7 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
                 .{ .Map = .{ .len = 0 } },
                 .{ .MapEnd = {} },
             },
-            .want = std.AutoArrayHashMap(void, void).init(test_allocator),
+            .want = std.AutoArrayHashMap(void, void).init(test_ally),
         },
         .{
             .name = "AutoArrayHashMap - non-empty",
@@ -133,7 +133,7 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
                 .{ .MapEnd = {} },
             },
             .want = blk: {
-                var want = std.AutoArrayHashMap(i32, bool).init(test_allocator);
+                var want = std.AutoArrayHashMap(i32, bool).init(test_ally);
                 try want.put(1, true);
                 try want.put(2, false);
                 try want.put(3, true);
@@ -162,9 +162,9 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
             },
             .want = blk: {
                 var want = std.AutoHashMapUnmanaged(i32, bool){};
-                try want.put(test_allocator, 1, true);
-                try want.put(test_allocator, 2, false);
-                try want.put(test_allocator, 3, true);
+                try want.put(test_ally, 1, true);
+                try want.put(test_ally, 2, false);
+                try want.put(test_ally, 3, true);
                 break :blk want;
             },
         },
@@ -190,9 +190,9 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
             },
             .want = blk: {
                 var want = std.AutoArrayHashMapUnmanaged(i32, bool){};
-                try want.put(test_allocator, 1, true);
-                try want.put(test_allocator, 2, false);
-                try want.put(test_allocator, 3, true);
+                try want.put(test_ally, 1, true);
+                try want.put(test_ally, 2, false);
+                try want.put(test_ally, 3, true);
                 break :blk want;
             },
         },
@@ -201,11 +201,11 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
     const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
 
     inline for (tests) |t| {
-        defer free(test_allocator, Deserializer, t.want);
+        defer free(test_ally, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer free(test_allocator, Deserializer, got);
+        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        defer free(test_ally, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
 
@@ -224,7 +224,7 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
                 .{ .Map = .{ .len = 0 } },
                 .{ .MapEnd = {} },
             },
-            .want = std.StringHashMap(void).init(test_allocator),
+            .want = std.StringHashMap(void).init(test_ally),
         },
         .{
             .name = "StringHashMap - non-empty",
@@ -239,7 +239,7 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
                 .{ .MapEnd = {} },
             },
             .want = blk: {
-                var want = std.StringHashMap(bool).init(test_allocator);
+                var want = std.StringHashMap(bool).init(test_ally);
                 try want.put("one", true);
                 try want.put("two", false);
                 try want.put("three", true);
@@ -252,7 +252,7 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
                 .{ .Map = .{ .len = 0 } },
                 .{ .MapEnd = {} },
             },
-            .want = std.StringArrayHashMap(void).init(test_allocator),
+            .want = std.StringArrayHashMap(void).init(test_ally),
         },
         .{
             .name = "StringArrayHashMap - non-empty",
@@ -267,7 +267,7 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
                 .{ .MapEnd = {} },
             },
             .want = blk: {
-                var want = std.StringArrayHashMap(bool).init(test_allocator);
+                var want = std.StringArrayHashMap(bool).init(test_ally);
                 try want.put("one", true);
                 try want.put("two", false);
                 try want.put("three", true);
@@ -283,8 +283,8 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         defer want.deinit();
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer free(test_allocator, Deserializer, got);
+        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        defer free(test_ally, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
 
@@ -311,9 +311,9 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
             },
             .want = blk: {
                 var want = std.StringHashMapUnmanaged(bool){};
-                try want.put(test_allocator, "one", true);
-                try want.put(test_allocator, "two", false);
-                try want.put(test_allocator, "three", true);
+                try want.put(test_ally, "one", true);
+                try want.put(test_ally, "two", false);
+                try want.put(test_ally, "three", true);
                 break :blk want;
             },
         },
@@ -331,9 +331,9 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
             },
             .want = blk: {
                 var want = std.StringArrayHashMapUnmanaged(bool){};
-                try want.put(test_allocator, "one", true);
-                try want.put(test_allocator, "two", false);
-                try want.put(test_allocator, "three", true);
+                try want.put(test_ally, "one", true);
+                try want.put(test_ally, "two", false);
+                try want.put(test_ally, "three", true);
                 break :blk want;
             },
         },
@@ -343,11 +343,11 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
 
     inline for (tests) |t| {
         var want = t.want;
-        defer want.deinit(test_allocator);
+        defer want.deinit(test_ally);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer free(test_allocator, Deserializer, got);
+        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        defer free(test_ally, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
 

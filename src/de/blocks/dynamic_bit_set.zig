@@ -1,5 +1,5 @@
 const std = @import("std");
-const test_allocator = std.testing.allocator;
+const test_ally = std.testing.allocator;
 
 const DynamicBitSetVisitor = @import("../impls/visitor/dynamic_bit_set.zig").Visitor;
 const testing = @import("../testing.zig");
@@ -17,7 +17,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -27,7 +27,7 @@ pub fn deserialize(
 ) !@TypeOf(visitor).Value {
     _ = T;
 
-    return try deserializer.deserializeSeq(allocator, visitor);
+    return try deserializer.deserializeSeq(ally, visitor);
 }
 
 /// Returns a type that implements `getty.de.Visitor`.
@@ -46,7 +46,7 @@ test "deserialize - std.DynamicBitSet" {
                 .{ .Seq = .{ .len = 0 } },
                 .{ .SeqEnd = {} },
             },
-            .want = try std.DynamicBitSet.initEmpty(test_allocator, 0),
+            .want = try std.DynamicBitSet.initEmpty(test_ally, 0),
         },
         .{
             .name = "empty",
@@ -57,7 +57,7 @@ test "deserialize - std.DynamicBitSet" {
                 .{ .I32 = 0 },
                 .{ .SeqEnd = {} },
             },
-            .want = try std.DynamicBitSet.initEmpty(test_allocator, 3),
+            .want = try std.DynamicBitSet.initEmpty(test_ally, 3),
         },
         .{
             .name = "full",
@@ -68,7 +68,7 @@ test "deserialize - std.DynamicBitSet" {
                 .{ .I32 = 1 },
                 .{ .SeqEnd = {} },
             },
-            .want = try std.DynamicBitSet.initFull(test_allocator, 3),
+            .want = try std.DynamicBitSet.initFull(test_ally, 3),
         },
         .{
             .name = "mixed (LSB set)",
@@ -87,7 +87,7 @@ test "deserialize - std.DynamicBitSet" {
                 .{ .SeqEnd = {} },
             },
             .want = blk: {
-                var want = try std.DynamicBitSet.initEmpty(test_allocator, 10);
+                var want = try std.DynamicBitSet.initEmpty(test_ally, 10);
                 want.set(0);
                 want.set(2);
                 want.set(4);
@@ -113,7 +113,7 @@ test "deserialize - std.DynamicBitSet" {
                 .{ .SeqEnd = {} },
             },
             .want = blk: {
-                var want = try std.DynamicBitSet.initEmpty(test_allocator, 10);
+                var want = try std.DynamicBitSet.initEmpty(test_ally, 10);
                 want.set(1);
                 want.set(3);
                 want.set(5);
@@ -129,7 +129,7 @@ test "deserialize - std.DynamicBitSet" {
         defer want.deinit();
 
         const Want = @TypeOf(want);
-        var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
+        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
         defer got.deinit();
 
         try testing.expectEqual(t.name, want.capacity(), got.capacity());
@@ -145,7 +145,7 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
                 .{ .Seq = .{ .len = 0 } },
                 .{ .SeqEnd = {} },
             },
-            .want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, 0),
+            .want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, 0),
         },
         .{
             .name = "empty",
@@ -156,7 +156,7 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
                 .{ .I32 = 0 },
                 .{ .SeqEnd = {} },
             },
-            .want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, 3),
+            .want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, 3),
         },
         .{
             .name = "full",
@@ -167,7 +167,7 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
                 .{ .I32 = 1 },
                 .{ .SeqEnd = {} },
             },
-            .want = try std.DynamicBitSetUnmanaged.initFull(test_allocator, 3),
+            .want = try std.DynamicBitSetUnmanaged.initFull(test_ally, 3),
         },
         .{
             .name = "mixed (LSB set)",
@@ -186,7 +186,7 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
                 .{ .SeqEnd = {} },
             },
             .want = blk: {
-                var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, 10);
+                var want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, 10);
                 want.set(0);
                 want.set(2);
                 want.set(4);
@@ -212,7 +212,7 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
                 .{ .SeqEnd = {} },
             },
             .want = blk: {
-                var want = try std.DynamicBitSetUnmanaged.initEmpty(test_allocator, 10);
+                var want = try std.DynamicBitSetUnmanaged.initEmpty(test_ally, 10);
                 want.set(1);
                 want.set(3);
                 want.set(5);
@@ -225,11 +225,11 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
 
     inline for (tests) |t| {
         var want = t.want;
-        defer want.deinit(test_allocator);
+        defer want.deinit(test_ally);
 
         const Want = @TypeOf(want);
-        var got = try testing.deserialize(test_allocator, t.name, Self, Want, t.tokens);
-        defer got.deinit(test_allocator);
+        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        defer got.deinit(test_ally);
 
         try testing.expectEqual(t.name, want.capacity(), got.capacity());
         try testing.expect(t.name, want.eql(got));

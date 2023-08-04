@@ -70,15 +70,15 @@ pub fn Visitor(
 
             pub const Value = V;
 
-            pub fn visitBool(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
+            pub fn visitBool(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Value {
                 if (methods.visitBool) |f| {
-                    return try f(self.context, allocator, Deserializer, input);
+                    return try f(self.context, ally, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitFloat(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitFloat(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 if (methods.visitFloat) |f| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
@@ -87,13 +87,13 @@ pub fn Visitor(
                         }
                     }
 
-                    return try f(self.context, allocator, Deserializer, input);
+                    return try f(self.context, ally, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitInt(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitInt(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 if (methods.visitInt) |f| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
@@ -102,23 +102,23 @@ pub fn Visitor(
                         }
                     }
 
-                    return try f(self.context, allocator, Deserializer, input);
+                    return try f(self.context, ally, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitMap(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+            pub fn visitMap(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
                 if (methods.visitMap) |f| {
-                    return try f(self.context, allocator, Deserializer, map);
+                    return try f(self.context, ally, Deserializer, map);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitNull(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+            pub fn visitNull(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
                 if (methods.visitNull) |f| {
-                    return try f(self.context, allocator, Deserializer);
+                    return try f(self.context, ally, Deserializer);
                 }
 
                 return error.Unsupported;
@@ -129,17 +129,17 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSeq(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            pub fn visitSeq(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
                 if (methods.visitSeq) |f| {
-                    return try f(self.context, allocator, Deserializer, seq);
+                    return try f(self.context, ally, Deserializer, seq);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitSome(self: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            pub fn visitSome(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
                 if (methods.visitSome) |f| {
-                    return try f(self.context, allocator, deserializer);
+                    return try f(self.context, ally, deserializer);
                 }
 
                 return error.Unsupported;
@@ -148,7 +148,7 @@ pub fn Visitor(
             ///
             ///
             /// The visitor is responsible for visiting the entire slice.
-            pub fn visitString(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+            pub fn visitString(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
                 if (methods.visitString) |f| {
                     comptime {
                         if (!std.meta.trait.isZigString(@TypeOf(input))) {
@@ -156,23 +156,23 @@ pub fn Visitor(
                         }
                     }
 
-                    return try f(self.context, allocator, Deserializer, input);
+                    return try f(self.context, ally, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitUnion(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
+            pub fn visitUnion(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
                 if (methods.visitUnion) |f| {
-                    return try f(self.context, allocator, Deserializer, ua, va);
+                    return try f(self.context, ally, Deserializer, ua, va);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitVoid(self: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
+            pub fn visitVoid(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Value {
                 if (methods.visitVoid) |f| {
-                    return try f(self.context, allocator, Deserializer);
+                    return try f(self.context, ally, Deserializer);
                 }
 
                 return error.Unsupported;

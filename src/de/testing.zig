@@ -15,13 +15,13 @@ const VariantAccessInterface = @import("interfaces/variant_access.zig").VariantA
 pub usingnamespace testing;
 
 pub fn deserialize(
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     comptime test_case: ?[]const u8,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
 ) !Want {
-    return deserializeErr(allocator, block, Want, input) catch |e| {
+    return deserializeErr(ally, block, Want, input) catch |e| {
         if (test_case) |t| {
             return testing.logErr(t, e);
         }
@@ -31,7 +31,7 @@ pub fn deserialize(
 }
 
 pub fn deserializeErr(
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
@@ -47,7 +47,7 @@ pub fn deserializeErr(
     var v = block.Visitor(Want){};
     const visitor = v.visitor();
 
-    const got = try block.deserialize(allocator, Want, deserializer, visitor);
+    const got = try block.deserialize(ally, Want, deserializer, visitor);
 
     try std.testing.expect(d.remaining() == 0);
 
@@ -128,48 +128,48 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
         const De = Self.@"getty.Deserializer";
 
-        fn deserializeAny(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeAny(self: *Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
-                .Bool => |v| try visitor.visitBool(allocator, De, v),
-                .I8 => |v| try visitor.visitInt(allocator, De, v),
-                .I16 => |v| try visitor.visitInt(allocator, De, v),
-                .I32 => |v| try visitor.visitInt(allocator, De, v),
-                .I64 => |v| try visitor.visitInt(allocator, De, v),
-                .I128 => |v| try visitor.visitInt(allocator, De, v),
-                .U8 => |v| try visitor.visitInt(allocator, De, v),
-                .U16 => |v| try visitor.visitInt(allocator, De, v),
-                .U32 => |v| try visitor.visitInt(allocator, De, v),
-                .U64 => |v| try visitor.visitInt(allocator, De, v),
-                .U128 => |v| try visitor.visitInt(allocator, De, v),
-                .F16 => |v| try visitor.visitFloat(allocator, De, v),
-                .F32 => |v| try visitor.visitFloat(allocator, De, v),
-                .F64 => |v| try visitor.visitFloat(allocator, De, v),
-                .F128 => |v| try visitor.visitFloat(allocator, De, v),
+                .Bool => |v| try visitor.visitBool(ally, De, v),
+                .I8 => |v| try visitor.visitInt(ally, De, v),
+                .I16 => |v| try visitor.visitInt(ally, De, v),
+                .I32 => |v| try visitor.visitInt(ally, De, v),
+                .I64 => |v| try visitor.visitInt(ally, De, v),
+                .I128 => |v| try visitor.visitInt(ally, De, v),
+                .U8 => |v| try visitor.visitInt(ally, De, v),
+                .U16 => |v| try visitor.visitInt(ally, De, v),
+                .U32 => |v| try visitor.visitInt(ally, De, v),
+                .U64 => |v| try visitor.visitInt(ally, De, v),
+                .U128 => |v| try visitor.visitInt(ally, De, v),
+                .F16 => |v| try visitor.visitFloat(ally, De, v),
+                .F32 => |v| try visitor.visitFloat(ally, De, v),
+                .F64 => |v| try visitor.visitFloat(ally, De, v),
+                .F128 => |v| try visitor.visitFloat(ally, De, v),
                 .Enum => switch (self.nextToken()) {
-                    .U8 => |v| try visitor.visitInt(allocator, De, v),
-                    .U16 => |v| try visitor.visitInt(allocator, De, v),
-                    .U32 => |v| try visitor.visitInt(allocator, De, v),
-                    .U64 => |v| try visitor.visitInt(allocator, De, v),
-                    .U128 => |v| try visitor.visitInt(allocator, De, v),
-                    .String => |v| try visitor.visitString(allocator, De, v),
+                    .U8 => |v| try visitor.visitInt(ally, De, v),
+                    .U16 => |v| try visitor.visitInt(ally, De, v),
+                    .U32 => |v| try visitor.visitInt(ally, De, v),
+                    .U64 => |v| try visitor.visitInt(ally, De, v),
+                    .U128 => |v| try visitor.visitInt(ally, De, v),
+                    .String => |v| try visitor.visitString(ally, De, v),
                     else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
                 },
                 .Map => |v| blk: {
                     var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
-                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
+                    var value = try visitor.visitMap(ally, De, m.mapAccess());
 
                     try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.MapEnd);
 
                     break :blk value;
                 },
-                .Null => try visitor.visitNull(allocator, De),
-                .Some => try visitor.visitSome(allocator, self.deserializer()),
-                .String => |v| try visitor.visitString(allocator, De, v),
-                .Void => try visitor.visitVoid(allocator, De),
+                .Null => try visitor.visitNull(ally, De),
+                .Some => try visitor.visitSome(ally, self.deserializer()),
+                .String => |v| try visitor.visitString(ally, De, v),
+                .Void => try visitor.visitVoid(ally, De),
                 .Seq => |v| blk: {
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
-                    var value = try visitor.visitSeq(allocator, De, s.seqAccess());
+                    var value = try visitor.visitSeq(ally, De, s.seqAccess());
 
                     try expectEqual(@as(usize, 0), s.len.?);
                     try self.assertNextToken(.SeqEnd);
@@ -178,7 +178,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Struct => |v| blk: {
                     var m = Map{ .de = self, .len = v.len, .end = .StructEnd };
-                    var value = try visitor.visitMap(allocator, De, m.mapAccess());
+                    var value = try visitor.visitMap(ally, De, m.mapAccess());
 
                     try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.StructEnd);
@@ -187,7 +187,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Union => blk: {
                     var u = Union{ .de = self };
-                    break :blk try visitor.visitUnion(allocator, De, u.unionAccess(), u.variantAccess());
+                    break :blk try visitor.visitUnion(ally, De, u.unionAccess(), u.variantAccess());
                 },
 
                 // Panic! At The Disco
@@ -195,9 +195,9 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             };
         }
 
-        fn deserializeIgnored(self: *Self, allocator: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeIgnored(self: *Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             _ = self.nextTokenOpt();
-            return try visitor.visitVoid(allocator, De);
+            return try visitor.visitVoid(ally, De);
         }
 
         fn assertNextToken(self: *Self, expected: Token) !void {
@@ -231,7 +231,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .nextElementSeed = nextElementSeed },
             );
 
-            fn nextElementSeed(self: *Seq, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextElementSeed(self: *Seq, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // All elements have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -243,7 +243,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                return try seed.deserialize(allocator, self.de.deserializer());
+                return try seed.deserialize(ally, self.de.deserializer());
             }
         };
 
@@ -261,7 +261,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
             );
 
-            fn nextKeySeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextKeySeed(self: *Map, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // All entries have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -275,11 +275,11 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                return try seed.deserialize(allocator, self.de.deserializer());
+                return try seed.deserialize(ally, self.de.deserializer());
             }
 
-            fn nextValueSeed(self: *Map, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                return try seed.deserialize(allocator, self.de.deserializer());
+            fn nextValueSeed(self: *Map, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+                return try seed.deserialize(ally, self.de.deserializer());
             }
         };
 
@@ -298,19 +298,19 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .payloadSeed = payloadSeed },
             );
 
-            fn variantSeed(self: *Union, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn variantSeed(self: *Union, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (self.de.peekTokenOpt()) |token| {
                     if (token == .String) {
-                        return try seed.deserialize(allocator, self.de.deserializer());
+                        return try seed.deserialize(ally, self.de.deserializer());
                     }
                 }
 
                 return error.InvalidType;
             }
 
-            fn payloadSeed(self: *Union, allocator: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn payloadSeed(self: *Union, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (@TypeOf(seed).Value != void) {
-                    return try seed.deserialize(allocator, self.de.deserializer());
+                    return try seed.deserialize(ally, self.de.deserializer());
                 }
 
                 if (self.de.nextToken() != .Void) {

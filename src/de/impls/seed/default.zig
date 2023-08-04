@@ -20,8 +20,8 @@ pub fn DefaultSeed(
             .{ .deserialize = deserialize },
         );
 
-        fn deserialize(_: Self, allocator: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
-            return try getty_deserialize(allocator, Value, deserializer);
+        fn deserialize(_: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            return try getty_deserialize(ally, Value, deserializer);
         }
     };
 }

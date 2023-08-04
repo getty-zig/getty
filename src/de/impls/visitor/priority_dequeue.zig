@@ -15,12 +15,12 @@ pub fn Visitor(comptime PriorityDequeue: type) type {
 
         const Value = PriorityDequeue;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
-            if (allocator == null) {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+            if (ally == null) {
                 return error.MissingAllocator;
             }
 
-            const a = allocator.?;
+            const a = ally.?;
 
             const T = std.meta.Child(std.meta.FieldType(Value, .items));
             const Context = std.meta.FieldType(Value, .context);

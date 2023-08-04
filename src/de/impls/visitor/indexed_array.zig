@@ -15,22 +15,22 @@ pub fn Visitor(comptime IndexedArray: type) type {
 
         const Value = IndexedArray;
 
-        fn visitSeq(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             var array = Value.initUndefined();
             var seen: usize = 0;
 
             const V = Value.Value;
 
             errdefer {
-                if (allocator) |alloc| {
+                if (ally) |a| {
                     for (array.values[0..seen]) |v| {
-                        free(alloc, Deserializer, v);
+                        free(a, Deserializer, v);
                     }
                 }
             }
 
             for (&array.values) |*value| {
-                if (try seq.nextElement(allocator, V)) |v| {
+                if (try seq.nextElement(ally, V)) |v| {
                     value.* = v;
                     seen += 1;
                 } else {
@@ -40,7 +40,7 @@ pub fn Visitor(comptime IndexedArray: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(allocator, V)) != null) {
+            if ((try seq.nextElement(ally, V)) != null) {
                 return error.InvalidLength;
             }
 

@@ -17,7 +17,7 @@ pub fn Visitor(comptime Struct: type) type {
 
         const Value = Struct;
 
-        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = comptime std.meta.fields(Value);
@@ -27,10 +27,10 @@ pub fn Visitor(comptime Struct: type) type {
             var seen = [_]bool{false} ** fields.len;
 
             errdefer {
-                if (allocator) |alloc| {
+                if (ally) |a| {
                     inline for (fields, 0..) |field, i| {
                         if (!field.is_comptime and seen[i]) {
-                            free(alloc, Deserializer, @field(structure, field.name));
+                            free(a, Deserializer, @field(structure, field.name));
                         }
                     }
                 }
@@ -50,20 +50,20 @@ pub fn Visitor(comptime Struct: type) type {
                 break :blk false;
             };
 
-            key_loop: while (try map.nextKey(allocator, []const u8)) |key| {
+            key_loop: while (try map.nextKey(ally, []const u8)) |key| {
                 // If key is allocated, free it at the end of this loop.
                 //
                 // key won't ever be part of the final value returned by the
                 // visitor, so there's never a reason to keep it around.
                 const key_is_allocated = map.isKeyAllocated(@TypeOf(key));
 
-                if (key_is_allocated and allocator == null) {
+                if (key_is_allocated and ally == null) {
                     return error.MissingAllocator;
                 }
 
                 defer if (key_is_allocated) {
-                    std.debug.assert(allocator != null);
-                    free(allocator.?, Deserializer, key);
+                    std.debug.assert(ally != null);
+                    free(ally.?, Deserializer, key);
                 };
 
                 // Indicates whether or not key matches any field in the struct.
@@ -112,7 +112,7 @@ pub fn Visitor(comptime Struct: type) type {
                             return error.DuplicateField;
                         }
 
-                        const value = try map.nextValue(allocator, field.type);
+                        const value = try map.nextValue(ally, field.type);
 
                         // Do assign value to field if the "skip" attribute is
                         // set.
@@ -143,7 +143,7 @@ pub fn Visitor(comptime Struct: type) type {
                 // field is not checked.
                 if (!found) {
                     switch (ignore_unknown_fields) {
-                        true => _ = try map.nextValue(allocator, Ignored),
+                        true => _ = try map.nextValue(ally, Ignored),
                         false => return error.UnknownField,
                     }
                 }

@@ -14,7 +14,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// An optional memory allocator.
-    allocator: ?std.mem.Allocator,
+    ally: ?std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -23,7 +23,7 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     _ = deserializer;
-    _ = allocator;
+    _ = ally;
 
     @compileError("type is not supported: " ++ @typeName(T));
 }

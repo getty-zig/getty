@@ -15,17 +15,17 @@ pub fn Visitor(comptime IndexedMap: type) type {
 
         const Value = IndexedMap;
 
-        fn visitMap(_: Self, allocator: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
             var m = Value{};
-            errdefer free(allocator.?, Deserializer, m);
+            errdefer free(ally.?, Deserializer, m);
 
-            while (try map.nextKey(allocator, Value.Key)) |k| {
+            while (try map.nextKey(ally, Value.Key)) |k| {
                 defer if (map.isKeyAllocated(@TypeOf(k))) {
-                    free(allocator.?, Deserializer, k);
+                    free(ally.?, Deserializer, k);
                 };
 
-                const v = try map.nextValue(allocator, Value.Value);
-                errdefer free(allocator.?, Deserializer, v);
+                const v = try map.nextValue(ally, Value.Value);
+                errdefer free(ally.?, Deserializer, v);
 
                 m.put(k, v);
             }
