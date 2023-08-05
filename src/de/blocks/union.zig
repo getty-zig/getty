@@ -344,20 +344,10 @@ const ContentDeserializer = struct {
 
     fn deserializeAny(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
-            .Bool => |v| try visitor.visitBool(ally, De, v),
-            inline .F16, .F32, .F64, .F128 => |v| try visitor.visitFloat(ally, De, v),
-            .Int => |v| blk: {
-                comptime var Value = @TypeOf(visitor).Value;
-
-                if (@typeInfo(Value) == .Int) {
-                    break :blk try visitor.visitInt(ally, De, v.to(Value) catch unreachable);
-                }
-
-                if (v.isPositive()) {
-                    break :blk try visitor.visitInt(ally, De, v.to(u128) catch return error.InvalidValue);
-                } else {
-                    break :blk try visitor.visitInt(ally, De, v.to(i128) catch return error.InvalidValue);
-                }
+            .Bool => try self.deserializeBool(ally, visitor),
+            inline .F16, .F32, .F64, .F128 => try self.deserializeFloat(ally, visitor),
+            .Int => blk: {
+                break :blk try self.deserializeInt(ally, visitor);
             },
             .Map => |v| try visitContentMap(ally, v, visitor),
             .Null => try visitor.visitNull(ally, De),
@@ -366,8 +356,8 @@ const ContentDeserializer = struct {
                 var cd = Self{ .content = v.* };
                 break :blk try visitor.visitSome(ally, cd.deserializer());
             },
-            .String => |v| try visitor.visitString(ally, De, v),
-            .Void => try visitor.visitVoid(ally, De),
+            .String => try self.deserializeString(ally, visitor),
+            .Void => try self.deserializeVoid(ally, visitor),
         };
     }
 
@@ -403,8 +393,17 @@ const ContentDeserializer = struct {
     fn deserializeInt(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Int => |v| blk: {
-                const int = v.to(@TypeOf(visitor).Value) catch unreachable;
-                break :blk try visitor.visitInt(ally, De, int);
+                comptime var Value = @TypeOf(visitor).Value;
+
+                if (@typeInfo(Value) == .Int) {
+                    break :blk try visitor.visitInt(ally, De, v.to(Value) catch unreachable);
+                }
+
+                if (v.isPositive()) {
+                    break :blk try visitor.visitInt(ally, De, v.to(u128) catch return error.InvalidValue);
+                } else {
+                    break :blk try visitor.visitInt(ally, De, v.to(i128) catch return error.InvalidValue);
+                }
             },
             else => error.InvalidType,
         };
