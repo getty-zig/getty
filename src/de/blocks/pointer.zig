@@ -126,7 +126,8 @@ test "deserialize - pointer" {
     var eab = EnumAB.foo;
     var sab = StructAB{ .x = 1, .y = 2 };
     var uab = UnionAB{ .foo = 1 };
-    var uab_untagged = UnionABUntagged{ .foo = 1 };
+    var uab_untagged_1st = UnionABUntagged{ .foo = 123 };
+    //var uab_untagged_2nd = UnionABUntagged{ .bar = true };
 
     const tests = .{
         .{
@@ -164,10 +165,15 @@ test "deserialize - pointer" {
             .want = @as(*UnionAB, &uab),
         },
         .{
-            .name = "union with AB (tag)",
-            .tokens = &.{.{ .I32 = 1 }},
-            .want = @as(*UnionABUntagged, &uab_untagged),
+            .name = "union with AB (untagged, 1st variant)",
+            .tokens = &.{.{ .I32 = 123 }},
+            .want = @as(*UnionABUntagged, &uab_untagged_1st),
         },
+        //.{
+        //.name = "union with AB (untagged, 2nd variant)",
+        //.tokens = &.{.{ .bool = true }},
+        //.want = @as(*UnionABUntagged, &uab_untagged_2nd),
+        //},
     };
 
     const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";

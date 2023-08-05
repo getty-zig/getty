@@ -91,7 +91,14 @@ fn deserializeUntaggedUnion(
 
     inline for (std.meta.fields(T)) |field| {
         if (getty_deserialize(ally, field.type, d)) |value| {
-            return @unionInit(T, field.name, value);
+            var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(value)){
+                .variant = field.name,
+                .payload = value,
+            };
+            const ua = tuva.unionAccess();
+            const va = tuva.variantAccess();
+
+            return try visitor.visitUnion(ally, @TypeOf(d), ua, va);
         } else |err| switch (err) {
             error.DuplicateField,
             error.InvalidLength,
@@ -556,6 +563,44 @@ const SeqAccess = struct {
     }
 };
 
+fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type) type {
+    return struct {
+        variant: Variant,
+        payload: Payload,
+
+        const Self = @This();
+
+        pub usingnamespace UnionAccessInterface(
+            Self,
+            getty_error,
+            .{
+                .variantSeed = variantSeed,
+                .isVariantAllocated = isAllocated,
+            },
+        );
+
+        pub usingnamespace VariantAccessInterface(
+            Self,
+            getty_error,
+            .{
+                .payloadSeed = payloadSeed,
+                .isPayloadAllocated = isAllocated,
+            },
+        );
+
+        fn variantSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+            return self.variant;
+        }
+
+        fn payloadSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+            return self.payload;
+        }
+
+        fn isAllocated(_: Self, comptime _: type) bool {
+            return false;
+        }
+    };
+}
 const UnionVariantAccess = struct {
     key: Content,
     value: Content,
