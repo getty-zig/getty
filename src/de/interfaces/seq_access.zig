@@ -22,6 +22,10 @@ pub fn SeqAccess(
                 unreachable;
             }
         }.f) = null,
+
+        /// Returns true if the latest value deserialized by nextElementSeed was
+        /// allocated on the heap. Otherwise, false is returned.
+        isElementAllocated: ?fn (Context, comptime T: type) bool = null,
     },
 ) type {
     return struct {
@@ -50,6 +54,14 @@ pub fn SeqAccess(
 
                     return try self.nextElementSeed(ally, ds);
                 }
+            }
+
+            pub fn isElementAllocated(self: Self, comptime T: type) bool {
+                if (methods.isElementAllocated) |f| {
+                    return f(self.context, T);
+                }
+
+                return @typeInfo(T) == .Pointer;
             }
         };
 

@@ -22,6 +22,10 @@ pub fn VariantAccess(
                 unreachable;
             }
         }.f) = null,
+
+        /// Returns true if the latest value deserialized by payloadSeed was
+        /// allocated on the heap. Otherwise, false is returned.
+        isPayloadAllocated: ?fn (Context, comptime T: type) bool = null,
     },
 ) type {
     return struct {
@@ -50,6 +54,14 @@ pub fn VariantAccess(
 
                     return try self.payloadSeed(ally, seed);
                 }
+            }
+
+            pub fn isPayloadAllocated(self: Self, comptime T: type) bool {
+                if (methods.isPayloadAllocated) |f| {
+                    return f(self.context, T);
+                }
+
+                return @typeInfo(T) == .Pointer;
             }
         };
 

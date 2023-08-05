@@ -41,6 +41,10 @@ pub fn MapAccess(
         /// Returns true if the latest key deserialized by nextKeySeed was
         /// allocated on the heap. Otherwise, false is returned.
         isKeyAllocated: ?fn (Context, comptime K: type) bool = null,
+
+        /// Returns true if the latest value deserialized by nextValueSeed was
+        /// allocated on the heap. Otherwise, false is returned.
+        isValueAllocated: ?fn (Context, comptime V: type) bool = null,
     },
 ) type {
     return struct {
@@ -104,6 +108,14 @@ pub fn MapAccess(
                 }
 
                 return @typeInfo(K) == .Pointer;
+            }
+
+            pub fn isValueAllocated(self: Self, comptime V: type) bool {
+                if (methods.isValueAllocated) |f| {
+                    return f(self.context, V);
+                }
+
+                return @typeInfo(V) == .Pointer;
             }
         };
 
