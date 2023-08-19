@@ -112,120 +112,186 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
-<span class="line" id="L3"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
-<span class="line" id="L4"></span>
-<span class="line" id="L5"><span class="tok-comment">/// Creates a raw &quot;1.0&quot; mantissa for floating point type T. Used to dedupe f80 logic.</span></span>
-<span class="line" id="L6"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">mantissaOne</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
-<span class="line" id="L7">    <span class="tok-kw">return</span> <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits == <span class="tok-number">80</span>) <span class="tok-number">1</span> &lt;&lt; floatFractionalBits(T) <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L8">}</span>
-<span class="line" id="L9"></span>
-<span class="line" id="L10"><span class="tok-comment">/// Creates floating point type T from an unbiased exponent and raw mantissa.</span></span>
-<span class="line" id="L11"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">reconstructFloat</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> exponent: <span class="tok-type">comptime_int</span>, <span class="tok-kw">comptime</span> mantissa: <span class="tok-type">comptime_int</span>) T {</span>
-<span class="line" id="L12">    <span class="tok-kw">const</span> TBits = <span class="tok-builtin">@Type</span>(.{ .Int = .{ .signedness = .unsigned, .bits = <span class="tok-builtin">@bitSizeOf</span>(T) } });</span>
-<span class="line" id="L13">    <span class="tok-kw">const</span> biased_exponent = <span class="tok-builtin">@as</span>(TBits, exponent + floatExponentMax(T));</span>
-<span class="line" id="L14">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@bitCast</span>((biased_exponent &lt;&lt; floatMantissaBits(T)) | <span class="tok-builtin">@as</span>(TBits, mantissa)));</span>
-<span class="line" id="L15">}</span>
-<span class="line" id="L16"></span>
-<span class="line" id="L17"><span class="tok-comment">/// Returns the number of bits in the exponent of floating point type T.</span></span>
-<span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatExponentBits</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
-<span class="line" id="L19">    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@typeInfo</span>(T) == .Float);</span>
-<span class="line" id="L20"></span>
-<span class="line" id="L21">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits) {</span>
-<span class="line" id="L22">        <span class="tok-number">16</span> =&gt; <span class="tok-number">5</span>,</span>
-<span class="line" id="L23">        <span class="tok-number">32</span> =&gt; <span class="tok-number">8</span>,</span>
-<span class="line" id="L24">        <span class="tok-number">64</span> =&gt; <span class="tok-number">11</span>,</span>
-<span class="line" id="L25">        <span class="tok-number">80</span> =&gt; <span class="tok-number">15</span>,</span>
-<span class="line" id="L26">        <span class="tok-number">128</span> =&gt; <span class="tok-number">15</span>,</span>
-<span class="line" id="L27">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unknown floating point type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L28">    };</span>
-<span class="line" id="L29">}</span>
-<span class="line" id="L30"></span>
-<span class="line" id="L31"><span class="tok-comment">/// Returns the number of bits in the mantissa of floating point type T.</span></span>
-<span class="line" id="L32"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatMantissaBits</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
-<span class="line" id="L33">    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@typeInfo</span>(T) == .Float);</span>
-<span class="line" id="L34"></span>
-<span class="line" id="L35">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits) {</span>
-<span class="line" id="L36">        <span class="tok-number">16</span> =&gt; <span class="tok-number">10</span>,</span>
-<span class="line" id="L37">        <span class="tok-number">32</span> =&gt; <span class="tok-number">23</span>,</span>
-<span class="line" id="L38">        <span class="tok-number">64</span> =&gt; <span class="tok-number">52</span>,</span>
-<span class="line" id="L39">        <span class="tok-number">80</span> =&gt; <span class="tok-number">64</span>,</span>
-<span class="line" id="L40">        <span class="tok-number">128</span> =&gt; <span class="tok-number">112</span>,</span>
-<span class="line" id="L41">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unknown floating point type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L42">    };</span>
-<span class="line" id="L43">}</span>
-<span class="line" id="L44"></span>
-<span class="line" id="L45"><span class="tok-comment">/// Returns the number of fractional bits in the mantissa of floating point type T.</span></span>
-<span class="line" id="L46"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatFractionalBits</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
-<span class="line" id="L47">    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@typeInfo</span>(T) == .Float);</span>
-<span class="line" id="L48"></span>
-<span class="line" id="L49">    <span class="tok-comment">// standard IEEE floats have an implicit 0.m or 1.m integer part</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-comment">/// Creates a raw &quot;1.0&quot; mantissa for floating point type T. Used to dedupe f80 logic.</span></span>
+<span class="line" id="L8"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">mantissaOne</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
+<span class="line" id="L9">    <span class="tok-kw">return</span> <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits == <span class="tok-number">80</span>) <span class="tok-number">1</span> &lt;&lt; floatFractionalBits(T) <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L10">}</span>
+<span class="line" id="L11"></span>
+<span class="line" id="L12"><span class="tok-comment">/// Creates floating point type T from an unbiased exponent and raw mantissa.</span></span>
+<span class="line" id="L13"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">reconstructFloat</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> exponent: <span class="tok-type">comptime_int</span>, <span class="tok-kw">comptime</span> mantissa: <span class="tok-type">comptime_int</span>) T {</span>
+<span class="line" id="L14">    <span class="tok-kw">const</span> TBits = <span class="tok-builtin">@Type</span>(.{ .Int = .{ .signedness = .unsigned, .bits = <span class="tok-builtin">@bitSizeOf</span>(T) } });</span>
+<span class="line" id="L15">    <span class="tok-kw">const</span> biased_exponent = <span class="tok-builtin">@as</span>(TBits, exponent + floatExponentMax(T));</span>
+<span class="line" id="L16">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@bitCast</span>((biased_exponent &lt;&lt; floatMantissaBits(T)) | <span class="tok-builtin">@as</span>(TBits, mantissa)));</span>
+<span class="line" id="L17">}</span>
+<span class="line" id="L18"></span>
+<span class="line" id="L19"><span class="tok-comment">/// Returns the number of bits in the exponent of floating point type T.</span></span>
+<span class="line" id="L20"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatExponentBits</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
+<span class="line" id="L21">    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@typeInfo</span>(T) == .Float);</span>
+<span class="line" id="L22"></span>
+<span class="line" id="L23">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits) {</span>
+<span class="line" id="L24">        <span class="tok-number">16</span> =&gt; <span class="tok-number">5</span>,</span>
+<span class="line" id="L25">        <span class="tok-number">32</span> =&gt; <span class="tok-number">8</span>,</span>
+<span class="line" id="L26">        <span class="tok-number">64</span> =&gt; <span class="tok-number">11</span>,</span>
+<span class="line" id="L27">        <span class="tok-number">80</span> =&gt; <span class="tok-number">15</span>,</span>
+<span class="line" id="L28">        <span class="tok-number">128</span> =&gt; <span class="tok-number">15</span>,</span>
+<span class="line" id="L29">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unknown floating point type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L30">    };</span>
+<span class="line" id="L31">}</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33"><span class="tok-comment">/// Returns the number of bits in the mantissa of floating point type T.</span></span>
+<span class="line" id="L34"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatMantissaBits</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
+<span class="line" id="L35">    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@typeInfo</span>(T) == .Float);</span>
+<span class="line" id="L36"></span>
+<span class="line" id="L37">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits) {</span>
+<span class="line" id="L38">        <span class="tok-number">16</span> =&gt; <span class="tok-number">10</span>,</span>
+<span class="line" id="L39">        <span class="tok-number">32</span> =&gt; <span class="tok-number">23</span>,</span>
+<span class="line" id="L40">        <span class="tok-number">64</span> =&gt; <span class="tok-number">52</span>,</span>
+<span class="line" id="L41">        <span class="tok-number">80</span> =&gt; <span class="tok-number">64</span>,</span>
+<span class="line" id="L42">        <span class="tok-number">128</span> =&gt; <span class="tok-number">112</span>,</span>
+<span class="line" id="L43">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unknown floating point type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L44">    };</span>
+<span class="line" id="L45">}</span>
+<span class="line" id="L46"></span>
+<span class="line" id="L47"><span class="tok-comment">/// Returns the number of fractional bits in the mantissa of floating point type T.</span></span>
+<span class="line" id="L48"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatFractionalBits</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
+<span class="line" id="L49">    <span class="tok-kw">comptime</span> assert(<span class="tok-builtin">@typeInfo</span>(T) == .Float);</span>
+<span class="line" id="L50"></span>
+<span class="line" id="L51">    <span class="tok-comment">// standard IEEE floats have an implicit 0.m or 1.m integer part</span>
 </span>
-<span class="line" id="L50">    <span class="tok-comment">// f80 is special and has an explicitly stored bit in the MSB</span>
+<span class="line" id="L52">    <span class="tok-comment">// f80 is special and has an explicitly stored bit in the MSB</span>
 </span>
-<span class="line" id="L51">    <span class="tok-comment">// this function corresponds to `MANT_DIG - 1' from C</span>
+<span class="line" id="L53">    <span class="tok-comment">// this function corresponds to `MANT_DIG - 1' from C</span>
 </span>
-<span class="line" id="L52">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits) {</span>
-<span class="line" id="L53">        <span class="tok-number">16</span> =&gt; <span class="tok-number">10</span>,</span>
-<span class="line" id="L54">        <span class="tok-number">32</span> =&gt; <span class="tok-number">23</span>,</span>
-<span class="line" id="L55">        <span class="tok-number">64</span> =&gt; <span class="tok-number">52</span>,</span>
-<span class="line" id="L56">        <span class="tok-number">80</span> =&gt; <span class="tok-number">63</span>,</span>
-<span class="line" id="L57">        <span class="tok-number">128</span> =&gt; <span class="tok-number">112</span>,</span>
-<span class="line" id="L58">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unknown floating point type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
-<span class="line" id="L59">    };</span>
-<span class="line" id="L60">}</span>
-<span class="line" id="L61"></span>
-<span class="line" id="L62"><span class="tok-comment">/// Returns the minimum exponent that can represent</span></span>
-<span class="line" id="L63"><span class="tok-comment">/// a normalised value in floating point type T.</span></span>
-<span class="line" id="L64"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatExponentMin</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
-<span class="line" id="L65">    <span class="tok-kw">return</span> -floatExponentMax(T) + <span class="tok-number">1</span>;</span>
-<span class="line" id="L66">}</span>
-<span class="line" id="L67"></span>
-<span class="line" id="L68"><span class="tok-comment">/// Returns the maximum exponent that can represent</span></span>
-<span class="line" id="L69"><span class="tok-comment">/// a normalised value in floating point type T.</span></span>
-<span class="line" id="L70"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatExponentMax</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
-<span class="line" id="L71">    <span class="tok-kw">return</span> (<span class="tok-number">1</span> &lt;&lt; (floatExponentBits(T) - <span class="tok-number">1</span>)) - <span class="tok-number">1</span>;</span>
-<span class="line" id="L72">}</span>
-<span class="line" id="L73"></span>
-<span class="line" id="L74"><span class="tok-comment">/// Returns the smallest subnormal number representable in floating point type T.</span></span>
-<span class="line" id="L75"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatTrueMin</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
-<span class="line" id="L76">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMin(T) - <span class="tok-number">1</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L77">}</span>
-<span class="line" id="L78"></span>
-<span class="line" id="L79"><span class="tok-comment">/// Returns the smallest normal number representable in floating point type T.</span></span>
-<span class="line" id="L80"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatMin</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
-<span class="line" id="L81">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMin(T), mantissaOne(T));</span>
-<span class="line" id="L82">}</span>
-<span class="line" id="L83"></span>
-<span class="line" id="L84"><span class="tok-comment">/// Returns the largest normal number representable in floating point type T.</span></span>
-<span class="line" id="L85"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatMax</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
-<span class="line" id="L86">    <span class="tok-kw">const</span> all1s_mantissa = (<span class="tok-number">1</span> &lt;&lt; floatMantissaBits(T)) - <span class="tok-number">1</span>;</span>
-<span class="line" id="L87">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMax(T), all1s_mantissa);</span>
-<span class="line" id="L88">}</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90"><span class="tok-comment">/// Returns the machine epsilon of floating point type T.</span></span>
-<span class="line" id="L91"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatEps</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
-<span class="line" id="L92">    <span class="tok-kw">return</span> reconstructFloat(T, -floatFractionalBits(T), mantissaOne(T));</span>
-<span class="line" id="L93">}</span>
-<span class="line" id="L94"></span>
-<span class="line" id="L95"><span class="tok-comment">/// Returns the value inf for floating point type T.</span></span>
-<span class="line" id="L96"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">inf</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
-<span class="line" id="L97">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMax(T) + <span class="tok-number">1</span>, mantissaOne(T));</span>
-<span class="line" id="L98">}</span>
-<span class="line" id="L99"></span>
-<span class="line" id="L100"><span class="tok-kw">test</span> <span class="tok-str">&quot;float bits&quot;</span> {</span>
-<span class="line" id="L101">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ <span class="tok-type">f16</span>, <span class="tok-type">f32</span>, <span class="tok-type">f64</span>, <span class="tok-type">f80</span>, <span class="tok-type">f128</span>, <span class="tok-type">c_longdouble</span> }) |T| {</span>
-<span class="line" id="L102">        <span class="tok-comment">// (1 +) for the sign bit, since it is separate from the other bits</span>
+<span class="line" id="L54">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T).Float.bits) {</span>
+<span class="line" id="L55">        <span class="tok-number">16</span> =&gt; <span class="tok-number">10</span>,</span>
+<span class="line" id="L56">        <span class="tok-number">32</span> =&gt; <span class="tok-number">23</span>,</span>
+<span class="line" id="L57">        <span class="tok-number">64</span> =&gt; <span class="tok-number">52</span>,</span>
+<span class="line" id="L58">        <span class="tok-number">80</span> =&gt; <span class="tok-number">63</span>,</span>
+<span class="line" id="L59">        <span class="tok-number">128</span> =&gt; <span class="tok-number">112</span>,</span>
+<span class="line" id="L60">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unknown floating point type &quot;</span> ++ <span class="tok-builtin">@typeName</span>(T)),</span>
+<span class="line" id="L61">    };</span>
+<span class="line" id="L62">}</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64"><span class="tok-comment">/// Returns the minimum exponent that can represent</span></span>
+<span class="line" id="L65"><span class="tok-comment">/// a normalised value in floating point type T.</span></span>
+<span class="line" id="L66"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatExponentMin</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
+<span class="line" id="L67">    <span class="tok-kw">return</span> -floatExponentMax(T) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L68">}</span>
+<span class="line" id="L69"></span>
+<span class="line" id="L70"><span class="tok-comment">/// Returns the maximum exponent that can represent</span></span>
+<span class="line" id="L71"><span class="tok-comment">/// a normalised value in floating point type T.</span></span>
+<span class="line" id="L72"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatExponentMax</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">comptime_int</span> {</span>
+<span class="line" id="L73">    <span class="tok-kw">return</span> (<span class="tok-number">1</span> &lt;&lt; (floatExponentBits(T) - <span class="tok-number">1</span>)) - <span class="tok-number">1</span>;</span>
+<span class="line" id="L74">}</span>
+<span class="line" id="L75"></span>
+<span class="line" id="L76"><span class="tok-comment">/// Returns the smallest subnormal number representable in floating point type T.</span></span>
+<span class="line" id="L77"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatTrueMin</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L78">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMin(T) - <span class="tok-number">1</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L79">}</span>
+<span class="line" id="L80"></span>
+<span class="line" id="L81"><span class="tok-comment">/// Returns the smallest normal number representable in floating point type T.</span></span>
+<span class="line" id="L82"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatMin</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L83">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMin(T), mantissaOne(T));</span>
+<span class="line" id="L84">}</span>
+<span class="line" id="L85"></span>
+<span class="line" id="L86"><span class="tok-comment">/// Returns the largest normal number representable in floating point type T.</span></span>
+<span class="line" id="L87"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatMax</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L88">    <span class="tok-kw">const</span> all1s_mantissa = (<span class="tok-number">1</span> &lt;&lt; floatMantissaBits(T)) - <span class="tok-number">1</span>;</span>
+<span class="line" id="L89">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMax(T), all1s_mantissa);</span>
+<span class="line" id="L90">}</span>
+<span class="line" id="L91"></span>
+<span class="line" id="L92"><span class="tok-comment">/// Returns the machine epsilon of floating point type T.</span></span>
+<span class="line" id="L93"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">floatEps</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L94">    <span class="tok-kw">return</span> reconstructFloat(T, -floatFractionalBits(T), mantissaOne(T));</span>
+<span class="line" id="L95">}</span>
+<span class="line" id="L96"></span>
+<span class="line" id="L97"><span class="tok-comment">/// Returns the value inf for floating point type T.</span></span>
+<span class="line" id="L98"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">inf</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L99">    <span class="tok-kw">return</span> reconstructFloat(T, floatExponentMax(T) + <span class="tok-number">1</span>, mantissaOne(T));</span>
+<span class="line" id="L100">}</span>
+<span class="line" id="L101"></span>
+<span class="line" id="L102"><span class="tok-comment">/// Returns the canonical quiet NaN representation for floating point type T.</span></span>
+<span class="line" id="L103"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">nan</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L104">    <span class="tok-kw">return</span> reconstructFloat(</span>
+<span class="line" id="L105">        T,</span>
+<span class="line" id="L106">        floatExponentMax(T) + <span class="tok-number">1</span>,</span>
+<span class="line" id="L107">        mantissaOne(T) | <span class="tok-number">1</span> &lt;&lt; (floatFractionalBits(T) - <span class="tok-number">1</span>),</span>
+<span class="line" id="L108">    );</span>
+<span class="line" id="L109">}</span>
+<span class="line" id="L110"></span>
+<span class="line" id="L111"><span class="tok-comment">/// Returns a signalling NaN representation for floating point type T.</span></span>
+<span class="line" id="L112"><span class="tok-comment">///</span></span>
+<span class="line" id="L113"><span class="tok-comment">/// TODO: LLVM is known to miscompile on some architectures to quiet NaN -</span></span>
+<span class="line" id="L114"><span class="tok-comment">///       this is tracked by https://github.com/ziglang/zig/issues/14366</span></span>
+<span class="line" id="L115"><span class="tok-kw">pub</span> <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">snan</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) T {</span>
+<span class="line" id="L116">    <span class="tok-kw">return</span> reconstructFloat(</span>
+<span class="line" id="L117">        T,</span>
+<span class="line" id="L118">        floatExponentMax(T) + <span class="tok-number">1</span>,</span>
+<span class="line" id="L119">        mantissaOne(T) | <span class="tok-number">1</span> &lt;&lt; (floatFractionalBits(T) - <span class="tok-number">2</span>),</span>
+<span class="line" id="L120">    );</span>
+<span class="line" id="L121">}</span>
+<span class="line" id="L122"></span>
+<span class="line" id="L123"><span class="tok-kw">test</span> <span class="tok-str">&quot;float bits&quot;</span> {</span>
+<span class="line" id="L124">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ <span class="tok-type">f16</span>, <span class="tok-type">f32</span>, <span class="tok-type">f64</span>, <span class="tok-type">f80</span>, <span class="tok-type">f128</span>, <span class="tok-type">c_longdouble</span> }) |T| {</span>
+<span class="line" id="L125">        <span class="tok-comment">// (1 +) for the sign bit, since it is separate from the other bits</span>
 </span>
-<span class="line" id="L103">        <span class="tok-kw">const</span> size = <span class="tok-number">1</span> + floatExponentBits(T) + floatMantissaBits(T);</span>
-<span class="line" id="L104">        <span class="tok-kw">try</span> expect(<span class="tok-builtin">@bitSizeOf</span>(T) == size);</span>
-<span class="line" id="L105"></span>
-<span class="line" id="L106">        <span class="tok-comment">// for machine epsilon, assert expmin &lt;= -prec &lt;= expmax</span>
+<span class="line" id="L126">        <span class="tok-kw">const</span> size = <span class="tok-number">1</span> + floatExponentBits(T) + floatMantissaBits(T);</span>
+<span class="line" id="L127">        <span class="tok-kw">try</span> expect(<span class="tok-builtin">@bitSizeOf</span>(T) == size);</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">        <span class="tok-comment">// for machine epsilon, assert expmin &lt;= -prec &lt;= expmax</span>
 </span>
-<span class="line" id="L107">        <span class="tok-kw">try</span> expect(floatExponentMin(T) &lt;= -floatFractionalBits(T));</span>
-<span class="line" id="L108">        <span class="tok-kw">try</span> expect(-floatFractionalBits(T) &lt;= floatExponentMax(T));</span>
-<span class="line" id="L109">    }</span>
-<span class="line" id="L110">}</span>
-<span class="line" id="L111"></span>
+<span class="line" id="L130">        <span class="tok-kw">try</span> expect(floatExponentMin(T) &lt;= -floatFractionalBits(T));</span>
+<span class="line" id="L131">        <span class="tok-kw">try</span> expect(-floatFractionalBits(T) &lt;= floatExponentMax(T));</span>
+<span class="line" id="L132">    }</span>
+<span class="line" id="L133">}</span>
+<span class="line" id="L134"></span>
+<span class="line" id="L135"><span class="tok-kw">test</span> <span class="tok-str">&quot;math.inf&quot;</span> {</span>
+<span class="line" id="L136">    <span class="tok-kw">const</span> inf_u16: <span class="tok-type">u16</span> = <span class="tok-number">0x7C00</span>;</span>
+<span class="line" id="L137">    <span class="tok-kw">const</span> inf_u32: <span class="tok-type">u32</span> = <span class="tok-number">0x7F800000</span>;</span>
+<span class="line" id="L138">    <span class="tok-kw">const</span> inf_u64: <span class="tok-type">u64</span> = <span class="tok-number">0x7FF0000000000000</span>;</span>
+<span class="line" id="L139">    <span class="tok-kw">const</span> inf_u80: <span class="tok-type">u80</span> = <span class="tok-number">0x7FFF8000000000000000</span>;</span>
+<span class="line" id="L140">    <span class="tok-kw">const</span> inf_u128: <span class="tok-type">u128</span> = <span class="tok-number">0x7FFF0000000000000000000000000000</span>;</span>
+<span class="line" id="L141">    <span class="tok-kw">try</span> expectEqual(inf_u16, <span class="tok-builtin">@bitCast</span>(inf(<span class="tok-type">f16</span>)));</span>
+<span class="line" id="L142">    <span class="tok-kw">try</span> expectEqual(inf_u32, <span class="tok-builtin">@bitCast</span>(inf(<span class="tok-type">f32</span>)));</span>
+<span class="line" id="L143">    <span class="tok-kw">try</span> expectEqual(inf_u64, <span class="tok-builtin">@bitCast</span>(inf(<span class="tok-type">f64</span>)));</span>
+<span class="line" id="L144">    <span class="tok-kw">try</span> expectEqual(inf_u80, <span class="tok-builtin">@bitCast</span>(inf(<span class="tok-type">f80</span>)));</span>
+<span class="line" id="L145">    <span class="tok-kw">try</span> expectEqual(inf_u128, <span class="tok-builtin">@bitCast</span>(inf(<span class="tok-type">f128</span>)));</span>
+<span class="line" id="L146">}</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148"><span class="tok-kw">test</span> <span class="tok-str">&quot;math.nan&quot;</span> {</span>
+<span class="line" id="L149">    <span class="tok-kw">const</span> qnan_u16: <span class="tok-type">u16</span> = <span class="tok-number">0x7E00</span>;</span>
+<span class="line" id="L150">    <span class="tok-kw">const</span> qnan_u32: <span class="tok-type">u32</span> = <span class="tok-number">0x7FC00000</span>;</span>
+<span class="line" id="L151">    <span class="tok-kw">const</span> qnan_u64: <span class="tok-type">u64</span> = <span class="tok-number">0x7FF8000000000000</span>;</span>
+<span class="line" id="L152">    <span class="tok-kw">const</span> qnan_u80: <span class="tok-type">u80</span> = <span class="tok-number">0x7FFFC000000000000000</span>;</span>
+<span class="line" id="L153">    <span class="tok-kw">const</span> qnan_u128: <span class="tok-type">u128</span> = <span class="tok-number">0x7FFF8000000000000000000000000000</span>;</span>
+<span class="line" id="L154">    <span class="tok-kw">try</span> expectEqual(qnan_u16, <span class="tok-builtin">@bitCast</span>(nan(<span class="tok-type">f16</span>)));</span>
+<span class="line" id="L155">    <span class="tok-kw">try</span> expectEqual(qnan_u32, <span class="tok-builtin">@bitCast</span>(nan(<span class="tok-type">f32</span>)));</span>
+<span class="line" id="L156">    <span class="tok-kw">try</span> expectEqual(qnan_u64, <span class="tok-builtin">@bitCast</span>(nan(<span class="tok-type">f64</span>)));</span>
+<span class="line" id="L157">    <span class="tok-kw">try</span> expectEqual(qnan_u80, <span class="tok-builtin">@bitCast</span>(nan(<span class="tok-type">f80</span>)));</span>
+<span class="line" id="L158">    <span class="tok-kw">try</span> expectEqual(qnan_u128, <span class="tok-builtin">@bitCast</span>(nan(<span class="tok-type">f128</span>)));</span>
+<span class="line" id="L159">}</span>
+<span class="line" id="L160"></span>
+<span class="line" id="L161"><span class="tok-kw">test</span> <span class="tok-str">&quot;math.snan&quot;</span> {</span>
+<span class="line" id="L162">    <span class="tok-comment">// TODO: https://github.com/ziglang/zig/issues/14366</span>
+</span>
+<span class="line" id="L163">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_llvm <span class="tok-kw">and</span> <span class="tok-kw">comptime</span> builtin.cpu.arch.isArmOrThumb()) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L164"></span>
+<span class="line" id="L165">    <span class="tok-kw">const</span> snan_u16: <span class="tok-type">u16</span> = <span class="tok-number">0x7D00</span>;</span>
+<span class="line" id="L166">    <span class="tok-kw">const</span> snan_u32: <span class="tok-type">u32</span> = <span class="tok-number">0x7FA00000</span>;</span>
+<span class="line" id="L167">    <span class="tok-kw">const</span> snan_u64: <span class="tok-type">u64</span> = <span class="tok-number">0x7FF4000000000000</span>;</span>
+<span class="line" id="L168">    <span class="tok-kw">const</span> snan_u80: <span class="tok-type">u80</span> = <span class="tok-number">0x7FFFA000000000000000</span>;</span>
+<span class="line" id="L169">    <span class="tok-kw">const</span> snan_u128: <span class="tok-type">u128</span> = <span class="tok-number">0x7FFF4000000000000000000000000000</span>;</span>
+<span class="line" id="L170">    <span class="tok-kw">try</span> expectEqual(snan_u16, <span class="tok-builtin">@bitCast</span>(snan(<span class="tok-type">f16</span>)));</span>
+<span class="line" id="L171">    <span class="tok-kw">try</span> expectEqual(snan_u32, <span class="tok-builtin">@bitCast</span>(snan(<span class="tok-type">f32</span>)));</span>
+<span class="line" id="L172">    <span class="tok-kw">try</span> expectEqual(snan_u64, <span class="tok-builtin">@bitCast</span>(snan(<span class="tok-type">f64</span>)));</span>
+<span class="line" id="L173">    <span class="tok-kw">try</span> expectEqual(snan_u80, <span class="tok-builtin">@bitCast</span>(snan(<span class="tok-type">f80</span>)));</span>
+<span class="line" id="L174">    <span class="tok-kw">try</span> expectEqual(snan_u128, <span class="tok-builtin">@bitCast</span>(snan(<span class="tok-type">f128</span>)));</span>
+<span class="line" id="L175">}</span>
+<span class="line" id="L176"></span>
 </code></pre></body>
 </html>

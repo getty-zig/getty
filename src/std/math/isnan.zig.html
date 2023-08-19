@@ -112,34 +112,49 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> math = std.math;</span>
-<span class="line" id="L3"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> maxInt = std.math.maxInt;</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-comment">/// Returns whether x is a nan.</span></span>
+<span class="line" id="L2"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> math = std.math;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> meta = std.meta;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> expect = std.testing.expect;</span>
+<span class="line" id="L6"></span>
 <span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isNan</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L8">    <span class="tok-kw">return</span> x != x;</span>
 <span class="line" id="L9">}</span>
 <span class="line" id="L10"></span>
-<span class="line" id="L11"><span class="tok-comment">/// Returns whether x is a signalling nan.</span></span>
-<span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSignalNan</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L13">    <span class="tok-comment">// Note: A signalling nan is identical to a standard nan right now but may have a different bit</span>
+<span class="line" id="L11"><span class="tok-comment">/// TODO: LLVM is known to miscompile on some architectures to quiet NaN -</span></span>
+<span class="line" id="L12"><span class="tok-comment">///       this is tracked by https://github.com/ziglang/zig/issues/14366</span></span>
+<span class="line" id="L13"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSignalNan</span>(x: <span class="tok-kw">anytype</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L14">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(x);</span>
+<span class="line" id="L15">    <span class="tok-kw">const</span> U = meta.Int(.unsigned, <span class="tok-builtin">@bitSizeOf</span>(T));</span>
+<span class="line" id="L16">    <span class="tok-kw">const</span> quiet_signal_bit_mask = <span class="tok-number">1</span> &lt;&lt; (math.floatFractionalBits(T) - <span class="tok-number">1</span>);</span>
+<span class="line" id="L17">    <span class="tok-kw">return</span> isNan(x) <span class="tok-kw">and</span> (<span class="tok-builtin">@as</span>(U, <span class="tok-builtin">@bitCast</span>(x)) &amp; quiet_signal_bit_mask == <span class="tok-number">0</span>);</span>
+<span class="line" id="L18">}</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20"><span class="tok-kw">test</span> <span class="tok-str">&quot;math.isNan&quot;</span> {</span>
+<span class="line" id="L21">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ <span class="tok-type">f16</span>, <span class="tok-type">f32</span>, <span class="tok-type">f64</span>, <span class="tok-type">f80</span>, <span class="tok-type">f128</span>, <span class="tok-type">c_longdouble</span> }) |T| {</span>
+<span class="line" id="L22">        <span class="tok-kw">try</span> expect(isNan(math.nan(T)));</span>
+<span class="line" id="L23">        <span class="tok-kw">try</span> expect(isNan(-math.nan(T)));</span>
+<span class="line" id="L24">        <span class="tok-kw">try</span> expect(isNan(math.snan(T)));</span>
+<span class="line" id="L25">        <span class="tok-kw">try</span> expect(!isNan(<span class="tok-builtin">@as</span>(T, <span class="tok-number">1.0</span>)));</span>
+<span class="line" id="L26">        <span class="tok-kw">try</span> expect(!isNan(<span class="tok-builtin">@as</span>(T, math.inf(T))));</span>
+<span class="line" id="L27">    }</span>
+<span class="line" id="L28">}</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30"><span class="tok-kw">test</span> <span class="tok-str">&quot;math.isSignalNan&quot;</span> {</span>
+<span class="line" id="L31">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ <span class="tok-type">f16</span>, <span class="tok-type">f32</span>, <span class="tok-type">f64</span>, <span class="tok-type">f80</span>, <span class="tok-type">f128</span>, <span class="tok-type">c_longdouble</span> }) |T| {</span>
+<span class="line" id="L32">        <span class="tok-comment">// TODO: Signalling NaN values get converted to quiet NaN values in</span>
 </span>
-<span class="line" id="L14">    <span class="tok-comment">// representation in the future when required.</span>
+<span class="line" id="L33">        <span class="tok-comment">//       some cases where they shouldn't such that this can fail.</span>
 </span>
-<span class="line" id="L15">    <span class="tok-kw">return</span> isNan(x);</span>
-<span class="line" id="L16">}</span>
-<span class="line" id="L17"></span>
-<span class="line" id="L18"><span class="tok-kw">test</span> <span class="tok-str">&quot;math.isNan&quot;</span> {</span>
-<span class="line" id="L19">    <span class="tok-kw">try</span> expect(isNan(math.nan(<span class="tok-type">f16</span>)));</span>
-<span class="line" id="L20">    <span class="tok-kw">try</span> expect(isNan(math.nan(<span class="tok-type">f32</span>)));</span>
-<span class="line" id="L21">    <span class="tok-kw">try</span> expect(isNan(math.nan(<span class="tok-type">f64</span>)));</span>
-<span class="line" id="L22">    <span class="tok-kw">try</span> expect(isNan(math.nan(<span class="tok-type">f128</span>)));</span>
-<span class="line" id="L23">    <span class="tok-kw">try</span> expect(!isNan(<span class="tok-builtin">@as</span>(<span class="tok-type">f16</span>, <span class="tok-number">1.0</span>)));</span>
-<span class="line" id="L24">    <span class="tok-kw">try</span> expect(!isNan(<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-number">1.0</span>)));</span>
-<span class="line" id="L25">    <span class="tok-kw">try</span> expect(!isNan(<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-number">1.0</span>)));</span>
-<span class="line" id="L26">    <span class="tok-kw">try</span> expect(!isNan(<span class="tok-builtin">@as</span>(<span class="tok-type">f128</span>, <span class="tok-number">1.0</span>)));</span>
-<span class="line" id="L27">}</span>
-<span class="line" id="L28"></span>
+<span class="line" id="L34">        <span class="tok-comment">//       See https://github.com/ziglang/zig/issues/14366</span>
+</span>
+<span class="line" id="L35">        <span class="tok-comment">// try expect(isSignalNan(math.snan(T)));</span>
+</span>
+<span class="line" id="L36">        <span class="tok-kw">try</span> expect(!isSignalNan(math.nan(T)));</span>
+<span class="line" id="L37">        <span class="tok-kw">try</span> expect(!isSignalNan(<span class="tok-builtin">@as</span>(T, <span class="tok-number">1.0</span>)));</span>
+<span class="line" id="L38">        <span class="tok-kw">try</span> expect(!isSignalNan(math.inf(T)));</span>
+<span class="line" id="L39">    }</span>
+<span class="line" id="L40">}</span>
+<span class="line" id="L41"></span>
 </code></pre></body>
 </html>

@@ -281,182 +281,186 @@
 <span class="line" id="L168">            tag.* = xorBlocks(e, hash(aes_enc_ctx, &amp;lx, ad));</span>
 <span class="line" id="L169">        }</span>
 <span class="line" id="L170"></span>
-<span class="line" id="L171">        <span class="tok-comment">/// m: message: output buffer should be of size c.len</span></span>
-<span class="line" id="L172">        <span class="tok-comment">/// c: ciphertext</span></span>
-<span class="line" id="L173">        <span class="tok-comment">/// tag: authentication tag</span></span>
-<span class="line" id="L174">        <span class="tok-comment">/// ad: Associated Data</span></span>
-<span class="line" id="L175">        <span class="tok-comment">/// npub: public nonce</span></span>
-<span class="line" id="L176">        <span class="tok-comment">/// k: secret key</span></span>
-<span class="line" id="L177">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decrypt</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, tag: [tag_length]<span class="tok-type">u8</span>, ad: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, key: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L178">            assert(c.len == m.len);</span>
-<span class="line" id="L179"></span>
-<span class="line" id="L180">            <span class="tok-kw">const</span> aes_enc_ctx = Aes.initEnc(key);</span>
-<span class="line" id="L181">            <span class="tok-kw">const</span> aes_dec_ctx = DecryptCtx.initFromEnc(aes_enc_ctx);</span>
-<span class="line" id="L182">            <span class="tok-kw">const</span> full_blocks: <span class="tok-type">usize</span> = m.len / <span class="tok-number">16</span>;</span>
-<span class="line" id="L183">            <span class="tok-kw">const</span> x_max = <span class="tok-kw">if</span> (full_blocks &gt; <span class="tok-number">0</span>) math.log2_int(<span class="tok-type">usize</span>, full_blocks) <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L184">            <span class="tok-kw">var</span> lx = Lx.init(aes_enc_ctx);</span>
-<span class="line" id="L185">            <span class="tok-kw">const</span> lt = lx.precomp(x_max);</span>
-<span class="line" id="L186"></span>
-<span class="line" id="L187">            <span class="tok-kw">var</span> offset = getOffset(aes_enc_ctx, npub);</span>
-<span class="line" id="L188">            <span class="tok-kw">var</span> sum = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">16</span>;</span>
-<span class="line" id="L189">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L190"></span>
-<span class="line" id="L191">            <span class="tok-kw">while</span> (wb &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> i + wb &lt;= full_blocks) : (i += wb) {</span>
-<span class="line" id="L192">                <span class="tok-kw">var</span> offsets: [wb]Block <span class="tok-kw">align</span>(<span class="tok-number">16</span>) = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L193">                <span class="tok-kw">var</span> es: [<span class="tok-number">16</span> * wb]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-number">16</span>) = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L194">                <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L195">                <span class="tok-kw">while</span> (j &lt; wb) : (j += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L196">                    xorWith(&amp;offset, lt[<span class="tok-builtin">@ctz</span>(i + <span class="tok-number">1</span> + j)]);</span>
-<span class="line" id="L197">                    offsets[j] = offset;</span>
-<span class="line" id="L198">                    <span class="tok-kw">const</span> q = c[(i + j) * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].*;</span>
-<span class="line" id="L199">                    es[j * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].* = xorBlocks(q, offsets[j]);</span>
-<span class="line" id="L200">                }</span>
-<span class="line" id="L201">                aes_dec_ctx.decryptWide(wb, &amp;es, &amp;es);</span>
-<span class="line" id="L202">                j = <span class="tok-number">0</span>;</span>
-<span class="line" id="L203">                <span class="tok-kw">while</span> (j &lt; wb) : (j += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L204">                    <span class="tok-kw">const</span> p = xorBlocks(es[j * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].*, offsets[j]);</span>
-<span class="line" id="L205">                    m[(i + j) * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].* = p;</span>
-<span class="line" id="L206">                    xorWith(&amp;sum, p);</span>
-<span class="line" id="L207">                }</span>
-<span class="line" id="L208">            }</span>
-<span class="line" id="L209">            <span class="tok-kw">while</span> (i &lt; full_blocks) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L210">                xorWith(&amp;offset, lt[<span class="tok-builtin">@ctz</span>(i + <span class="tok-number">1</span>)]);</span>
-<span class="line" id="L211">                <span class="tok-kw">const</span> q = c[i * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].*;</span>
-<span class="line" id="L212">                <span class="tok-kw">var</span> e = xorBlocks(q, offset);</span>
-<span class="line" id="L213">                aes_dec_ctx.decrypt(&amp;e, &amp;e);</span>
-<span class="line" id="L214">                <span class="tok-kw">const</span> p = xorBlocks(e, offset);</span>
-<span class="line" id="L215">                m[i * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].* = p;</span>
-<span class="line" id="L216">                xorWith(&amp;sum, p);</span>
-<span class="line" id="L217">            }</span>
-<span class="line" id="L218">            <span class="tok-kw">const</span> leftover = m.len % <span class="tok-number">16</span>;</span>
-<span class="line" id="L219">            <span class="tok-kw">if</span> (leftover &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L220">                xorWith(&amp;offset, lx.star);</span>
-<span class="line" id="L221">                <span class="tok-kw">var</span> pad = offset;</span>
-<span class="line" id="L222">                aes_enc_ctx.encrypt(&amp;pad, &amp;pad);</span>
-<span class="line" id="L223">                <span class="tok-kw">for</span> (c[i * <span class="tok-number">16</span> ..], <span class="tok-number">0</span>..) |x, j| {</span>
-<span class="line" id="L224">                    m[i * <span class="tok-number">16</span> + j] = pad[j] ^ x;</span>
-<span class="line" id="L225">                }</span>
-<span class="line" id="L226">                <span class="tok-kw">var</span> e = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">16</span>;</span>
-<span class="line" id="L227">                <span class="tok-builtin">@memcpy</span>(e[<span class="tok-number">0</span>..leftover], m[i * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..leftover]);</span>
-<span class="line" id="L228">                e[leftover] = <span class="tok-number">0x80</span>;</span>
-<span class="line" id="L229">                xorWith(&amp;sum, e);</span>
-<span class="line" id="L230">            }</span>
-<span class="line" id="L231">            <span class="tok-kw">var</span> e = xorBlocks(xorBlocks(sum, offset), lx.dol);</span>
-<span class="line" id="L232">            aes_enc_ctx.encrypt(&amp;e, &amp;e);</span>
-<span class="line" id="L233">            <span class="tok-kw">var</span> computed_tag = xorBlocks(e, hash(aes_enc_ctx, &amp;lx, ad));</span>
-<span class="line" id="L234">            <span class="tok-kw">const</span> verify = crypto.utils.timingSafeEql([tag_length]<span class="tok-type">u8</span>, computed_tag, tag);</span>
-<span class="line" id="L235">            crypto.utils.secureZero(<span class="tok-type">u8</span>, &amp;computed_tag);</span>
-<span class="line" id="L236">            <span class="tok-kw">if</span> (!verify) {</span>
-<span class="line" id="L237">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
-<span class="line" id="L238">            }</span>
-<span class="line" id="L239">        }</span>
-<span class="line" id="L240">    };</span>
-<span class="line" id="L241">}</span>
-<span class="line" id="L242"></span>
-<span class="line" id="L243"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">xorBlocks</span>(x: Block, y: Block) Block {</span>
-<span class="line" id="L244">    <span class="tok-kw">var</span> z: Block = x;</span>
-<span class="line" id="L245">    <span class="tok-kw">for</span> (&amp;z, <span class="tok-number">0</span>..) |*v, i| {</span>
-<span class="line" id="L246">        v.* = x[i] ^ y[i];</span>
-<span class="line" id="L247">    }</span>
-<span class="line" id="L248">    <span class="tok-kw">return</span> z;</span>
-<span class="line" id="L249">}</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">xorWith</span>(x: *Block, y: Block) <span class="tok-type">void</span> {</span>
-<span class="line" id="L252">    <span class="tok-kw">for</span> (x, <span class="tok-number">0</span>..) |*v, i| {</span>
-<span class="line" id="L253">        v.* ^= y[i];</span>
-<span class="line" id="L254">    }</span>
-<span class="line" id="L255">}</span>
-<span class="line" id="L256"></span>
-<span class="line" id="L257"><span class="tok-kw">const</span> hexToBytes = std.fmt.hexToBytes;</span>
-<span class="line" id="L258"></span>
-<span class="line" id="L259"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 1&quot;</span> {</span>
-<span class="line" id="L260">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L261"></span>
-<span class="line" id="L262">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L263">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L264">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L265">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
-<span class="line" id="L266">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA99887766554433221100&quot;</span>);</span>
-<span class="line" id="L267"></span>
-<span class="line" id="L268">    <span class="tok-kw">var</span> c: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L269">    Aes128Ocb.encrypt(&amp;c, &amp;tag, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
-<span class="line" id="L270"></span>
-<span class="line" id="L271">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L272">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;785407BFFFC8AD9EDCC5520AC9111EE6&quot;</span>);</span>
-<span class="line" id="L273"></span>
-<span class="line" id="L274">    <span class="tok-kw">var</span> m: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L275">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m, <span class="tok-str">&quot;&quot;</span>, tag, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
-<span class="line" id="L276">}</span>
+<span class="line" id="L171">        <span class="tok-comment">/// `m`: Message</span></span>
+<span class="line" id="L172">        <span class="tok-comment">/// `c`: Ciphertext</span></span>
+<span class="line" id="L173">        <span class="tok-comment">/// `tag`: Authentication tag</span></span>
+<span class="line" id="L174">        <span class="tok-comment">/// `ad`: Associated data</span></span>
+<span class="line" id="L175">        <span class="tok-comment">/// `npub`: Public nonce</span></span>
+<span class="line" id="L176">        <span class="tok-comment">/// `k`: Private key</span></span>
+<span class="line" id="L177">        <span class="tok-comment">/// Asserts `c.len == m.len`.</span></span>
+<span class="line" id="L178">        <span class="tok-comment">///</span></span>
+<span class="line" id="L179">        <span class="tok-comment">/// Contents of `m` are undefined if an error is returned.</span></span>
+<span class="line" id="L180">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decrypt</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, tag: [tag_length]<span class="tok-type">u8</span>, ad: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, key: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L181">            assert(c.len == m.len);</span>
+<span class="line" id="L182"></span>
+<span class="line" id="L183">            <span class="tok-kw">const</span> aes_enc_ctx = Aes.initEnc(key);</span>
+<span class="line" id="L184">            <span class="tok-kw">const</span> aes_dec_ctx = DecryptCtx.initFromEnc(aes_enc_ctx);</span>
+<span class="line" id="L185">            <span class="tok-kw">const</span> full_blocks: <span class="tok-type">usize</span> = m.len / <span class="tok-number">16</span>;</span>
+<span class="line" id="L186">            <span class="tok-kw">const</span> x_max = <span class="tok-kw">if</span> (full_blocks &gt; <span class="tok-number">0</span>) math.log2_int(<span class="tok-type">usize</span>, full_blocks) <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L187">            <span class="tok-kw">var</span> lx = Lx.init(aes_enc_ctx);</span>
+<span class="line" id="L188">            <span class="tok-kw">const</span> lt = lx.precomp(x_max);</span>
+<span class="line" id="L189"></span>
+<span class="line" id="L190">            <span class="tok-kw">var</span> offset = getOffset(aes_enc_ctx, npub);</span>
+<span class="line" id="L191">            <span class="tok-kw">var</span> sum = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">16</span>;</span>
+<span class="line" id="L192">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L193"></span>
+<span class="line" id="L194">            <span class="tok-kw">while</span> (wb &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> i + wb &lt;= full_blocks) : (i += wb) {</span>
+<span class="line" id="L195">                <span class="tok-kw">var</span> offsets: [wb]Block <span class="tok-kw">align</span>(<span class="tok-number">16</span>) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L196">                <span class="tok-kw">var</span> es: [<span class="tok-number">16</span> * wb]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-number">16</span>) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L197">                <span class="tok-kw">var</span> j: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L198">                <span class="tok-kw">while</span> (j &lt; wb) : (j += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L199">                    xorWith(&amp;offset, lt[<span class="tok-builtin">@ctz</span>(i + <span class="tok-number">1</span> + j)]);</span>
+<span class="line" id="L200">                    offsets[j] = offset;</span>
+<span class="line" id="L201">                    <span class="tok-kw">const</span> q = c[(i + j) * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].*;</span>
+<span class="line" id="L202">                    es[j * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].* = xorBlocks(q, offsets[j]);</span>
+<span class="line" id="L203">                }</span>
+<span class="line" id="L204">                aes_dec_ctx.decryptWide(wb, &amp;es, &amp;es);</span>
+<span class="line" id="L205">                j = <span class="tok-number">0</span>;</span>
+<span class="line" id="L206">                <span class="tok-kw">while</span> (j &lt; wb) : (j += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L207">                    <span class="tok-kw">const</span> p = xorBlocks(es[j * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].*, offsets[j]);</span>
+<span class="line" id="L208">                    m[(i + j) * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].* = p;</span>
+<span class="line" id="L209">                    xorWith(&amp;sum, p);</span>
+<span class="line" id="L210">                }</span>
+<span class="line" id="L211">            }</span>
+<span class="line" id="L212">            <span class="tok-kw">while</span> (i &lt; full_blocks) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L213">                xorWith(&amp;offset, lt[<span class="tok-builtin">@ctz</span>(i + <span class="tok-number">1</span>)]);</span>
+<span class="line" id="L214">                <span class="tok-kw">const</span> q = c[i * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].*;</span>
+<span class="line" id="L215">                <span class="tok-kw">var</span> e = xorBlocks(q, offset);</span>
+<span class="line" id="L216">                aes_dec_ctx.decrypt(&amp;e, &amp;e);</span>
+<span class="line" id="L217">                <span class="tok-kw">const</span> p = xorBlocks(e, offset);</span>
+<span class="line" id="L218">                m[i * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..<span class="tok-number">16</span>].* = p;</span>
+<span class="line" id="L219">                xorWith(&amp;sum, p);</span>
+<span class="line" id="L220">            }</span>
+<span class="line" id="L221">            <span class="tok-kw">const</span> leftover = m.len % <span class="tok-number">16</span>;</span>
+<span class="line" id="L222">            <span class="tok-kw">if</span> (leftover &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L223">                xorWith(&amp;offset, lx.star);</span>
+<span class="line" id="L224">                <span class="tok-kw">var</span> pad = offset;</span>
+<span class="line" id="L225">                aes_enc_ctx.encrypt(&amp;pad, &amp;pad);</span>
+<span class="line" id="L226">                <span class="tok-kw">for</span> (c[i * <span class="tok-number">16</span> ..], <span class="tok-number">0</span>..) |x, j| {</span>
+<span class="line" id="L227">                    m[i * <span class="tok-number">16</span> + j] = pad[j] ^ x;</span>
+<span class="line" id="L228">                }</span>
+<span class="line" id="L229">                <span class="tok-kw">var</span> e = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">16</span>;</span>
+<span class="line" id="L230">                <span class="tok-builtin">@memcpy</span>(e[<span class="tok-number">0</span>..leftover], m[i * <span class="tok-number">16</span> ..][<span class="tok-number">0</span>..leftover]);</span>
+<span class="line" id="L231">                e[leftover] = <span class="tok-number">0x80</span>;</span>
+<span class="line" id="L232">                xorWith(&amp;sum, e);</span>
+<span class="line" id="L233">            }</span>
+<span class="line" id="L234">            <span class="tok-kw">var</span> e = xorBlocks(xorBlocks(sum, offset), lx.dol);</span>
+<span class="line" id="L235">            aes_enc_ctx.encrypt(&amp;e, &amp;e);</span>
+<span class="line" id="L236">            <span class="tok-kw">var</span> computed_tag = xorBlocks(e, hash(aes_enc_ctx, &amp;lx, ad));</span>
+<span class="line" id="L237">            <span class="tok-kw">const</span> verify = crypto.utils.timingSafeEql([tag_length]<span class="tok-type">u8</span>, computed_tag, tag);</span>
+<span class="line" id="L238">            <span class="tok-kw">if</span> (!verify) {</span>
+<span class="line" id="L239">                crypto.utils.secureZero(<span class="tok-type">u8</span>, &amp;computed_tag);</span>
+<span class="line" id="L240">                <span class="tok-builtin">@memset</span>(m, <span class="tok-null">undefined</span>);</span>
+<span class="line" id="L241">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
+<span class="line" id="L242">            }</span>
+<span class="line" id="L243">        }</span>
+<span class="line" id="L244">    };</span>
+<span class="line" id="L245">}</span>
+<span class="line" id="L246"></span>
+<span class="line" id="L247"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">xorBlocks</span>(x: Block, y: Block) Block {</span>
+<span class="line" id="L248">    <span class="tok-kw">var</span> z: Block = x;</span>
+<span class="line" id="L249">    <span class="tok-kw">for</span> (&amp;z, <span class="tok-number">0</span>..) |*v, i| {</span>
+<span class="line" id="L250">        v.* = x[i] ^ y[i];</span>
+<span class="line" id="L251">    }</span>
+<span class="line" id="L252">    <span class="tok-kw">return</span> z;</span>
+<span class="line" id="L253">}</span>
+<span class="line" id="L254"></span>
+<span class="line" id="L255"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">xorWith</span>(x: *Block, y: Block) <span class="tok-type">void</span> {</span>
+<span class="line" id="L256">    <span class="tok-kw">for</span> (x, <span class="tok-number">0</span>..) |*v, i| {</span>
+<span class="line" id="L257">        v.* ^= y[i];</span>
+<span class="line" id="L258">    }</span>
+<span class="line" id="L259">}</span>
+<span class="line" id="L260"></span>
+<span class="line" id="L261"><span class="tok-kw">const</span> hexToBytes = std.fmt.hexToBytes;</span>
+<span class="line" id="L262"></span>
+<span class="line" id="L263"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 1&quot;</span> {</span>
+<span class="line" id="L264">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L265"></span>
+<span class="line" id="L266">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L267">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L268">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L269">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
+<span class="line" id="L270">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA99887766554433221100&quot;</span>);</span>
+<span class="line" id="L271"></span>
+<span class="line" id="L272">    <span class="tok-kw">var</span> c: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L273">    Aes128Ocb.encrypt(&amp;c, &amp;tag, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
+<span class="line" id="L274"></span>
+<span class="line" id="L275">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L276">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;785407BFFFC8AD9EDCC5520AC9111EE6&quot;</span>);</span>
 <span class="line" id="L277"></span>
-<span class="line" id="L278"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 2&quot;</span> {</span>
-<span class="line" id="L279">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L280"></span>
-<span class="line" id="L281">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L282">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L283">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L284">    <span class="tok-kw">var</span> ad: [<span class="tok-number">40</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L285">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
-<span class="line" id="L286">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;ad, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F2021222324252627&quot;</span>);</span>
-<span class="line" id="L287">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA9988776655443322110E&quot;</span>);</span>
-<span class="line" id="L288"></span>
-<span class="line" id="L289">    <span class="tok-kw">var</span> c: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L290">    Aes128Ocb.encrypt(&amp;c, &amp;tag, <span class="tok-str">&quot;&quot;</span>, &amp;ad, nonce, k);</span>
-<span class="line" id="L291"></span>
-<span class="line" id="L292">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L293">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;C5CD9D1850C141E358649994EE701B68&quot;</span>);</span>
-<span class="line" id="L294"></span>
-<span class="line" id="L295">    <span class="tok-kw">var</span> m: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L296">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m, &amp;c, tag, &amp;ad, nonce, k);</span>
-<span class="line" id="L297">}</span>
+<span class="line" id="L278">    <span class="tok-kw">var</span> m: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L279">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m, <span class="tok-str">&quot;&quot;</span>, tag, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
+<span class="line" id="L280">}</span>
+<span class="line" id="L281"></span>
+<span class="line" id="L282"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 2&quot;</span> {</span>
+<span class="line" id="L283">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L284"></span>
+<span class="line" id="L285">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L286">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L287">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L288">    <span class="tok-kw">var</span> ad: [<span class="tok-number">40</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L289">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
+<span class="line" id="L290">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;ad, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F2021222324252627&quot;</span>);</span>
+<span class="line" id="L291">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA9988776655443322110E&quot;</span>);</span>
+<span class="line" id="L292"></span>
+<span class="line" id="L293">    <span class="tok-kw">var</span> c: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L294">    Aes128Ocb.encrypt(&amp;c, &amp;tag, <span class="tok-str">&quot;&quot;</span>, &amp;ad, nonce, k);</span>
+<span class="line" id="L295"></span>
+<span class="line" id="L296">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L297">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;C5CD9D1850C141E358649994EE701B68&quot;</span>);</span>
 <span class="line" id="L298"></span>
-<span class="line" id="L299"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 3&quot;</span> {</span>
-<span class="line" id="L300">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L301"></span>
-<span class="line" id="L302">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L303">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L304">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L305">    <span class="tok-kw">var</span> m: [<span class="tok-number">40</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L306">    <span class="tok-kw">var</span> c: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L307">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
-<span class="line" id="L308">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;m, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F2021222324252627&quot;</span>);</span>
-<span class="line" id="L309">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA9988776655443322110F&quot;</span>);</span>
-<span class="line" id="L310"></span>
-<span class="line" id="L311">    Aes128Ocb.encrypt(&amp;c, &amp;tag, &amp;m, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
-<span class="line" id="L312"></span>
-<span class="line" id="L313">    <span class="tok-kw">var</span> expected_c: [c.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L314">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L315">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;479AD363AC366B95A98CA5F3000B1479&quot;</span>);</span>
-<span class="line" id="L316">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_c, <span class="tok-str">&quot;4412923493C57D5DE0D700F753CCE0D1D2D95060122E9F15A5DDBFC5787E50B5CC55EE507BCB084E&quot;</span>);</span>
-<span class="line" id="L317"></span>
-<span class="line" id="L318">    <span class="tok-kw">var</span> m2: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L319">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m2, &amp;c, tag, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
-<span class="line" id="L320">    assert(mem.eql(<span class="tok-type">u8</span>, &amp;m, &amp;m2));</span>
-<span class="line" id="L321">}</span>
-<span class="line" id="L322"></span>
-<span class="line" id="L323"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 4&quot;</span> {</span>
-<span class="line" id="L324">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L325"></span>
-<span class="line" id="L326">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L327">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L328">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L329">    <span class="tok-kw">var</span> m: [<span class="tok-number">40</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L330">    <span class="tok-kw">var</span> ad = m;</span>
-<span class="line" id="L331">    <span class="tok-kw">var</span> c: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L332">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
-<span class="line" id="L333">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;m, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F2021222324252627&quot;</span>);</span>
-<span class="line" id="L334">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA99887766554433221104&quot;</span>);</span>
-<span class="line" id="L335"></span>
-<span class="line" id="L336">    Aes128Ocb.encrypt(&amp;c, &amp;tag, &amp;m, &amp;ad, nonce, k);</span>
-<span class="line" id="L337"></span>
-<span class="line" id="L338">    <span class="tok-kw">var</span> expected_c: [c.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L339">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L340">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;3AD7A4FF3835B8C5701C1CCEC8FC3358&quot;</span>);</span>
-<span class="line" id="L341">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_c, <span class="tok-str">&quot;571D535B60B277188BE5147170A9A22C&quot;</span>);</span>
-<span class="line" id="L342"></span>
-<span class="line" id="L343">    <span class="tok-kw">var</span> m2: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L344">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m2, &amp;c, tag, &amp;ad, nonce, k);</span>
-<span class="line" id="L345">    assert(mem.eql(<span class="tok-type">u8</span>, &amp;m, &amp;m2));</span>
-<span class="line" id="L346">}</span>
-<span class="line" id="L347"></span>
+<span class="line" id="L299">    <span class="tok-kw">var</span> m: [<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L300">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m, &amp;c, tag, &amp;ad, nonce, k);</span>
+<span class="line" id="L301">}</span>
+<span class="line" id="L302"></span>
+<span class="line" id="L303"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 3&quot;</span> {</span>
+<span class="line" id="L304">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L305"></span>
+<span class="line" id="L306">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L307">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L308">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L309">    <span class="tok-kw">var</span> m: [<span class="tok-number">40</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L310">    <span class="tok-kw">var</span> c: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L311">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
+<span class="line" id="L312">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;m, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F2021222324252627&quot;</span>);</span>
+<span class="line" id="L313">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA9988776655443322110F&quot;</span>);</span>
+<span class="line" id="L314"></span>
+<span class="line" id="L315">    Aes128Ocb.encrypt(&amp;c, &amp;tag, &amp;m, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
+<span class="line" id="L316"></span>
+<span class="line" id="L317">    <span class="tok-kw">var</span> expected_c: [c.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L318">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L319">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;479AD363AC366B95A98CA5F3000B1479&quot;</span>);</span>
+<span class="line" id="L320">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_c, <span class="tok-str">&quot;4412923493C57D5DE0D700F753CCE0D1D2D95060122E9F15A5DDBFC5787E50B5CC55EE507BCB084E&quot;</span>);</span>
+<span class="line" id="L321"></span>
+<span class="line" id="L322">    <span class="tok-kw">var</span> m2: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L323">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m2, &amp;c, tag, <span class="tok-str">&quot;&quot;</span>, nonce, k);</span>
+<span class="line" id="L324">    assert(mem.eql(<span class="tok-type">u8</span>, &amp;m, &amp;m2));</span>
+<span class="line" id="L325">}</span>
+<span class="line" id="L326"></span>
+<span class="line" id="L327"><span class="tok-kw">test</span> <span class="tok-str">&quot;AesOcb test vector 4&quot;</span> {</span>
+<span class="line" id="L328">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L329"></span>
+<span class="line" id="L330">    <span class="tok-kw">var</span> k: [Aes128Ocb.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L331">    <span class="tok-kw">var</span> nonce: [Aes128Ocb.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L332">    <span class="tok-kw">var</span> tag: [Aes128Ocb.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L333">    <span class="tok-kw">var</span> m: [<span class="tok-number">40</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L334">    <span class="tok-kw">var</span> ad = m;</span>
+<span class="line" id="L335">    <span class="tok-kw">var</span> c: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L336">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;k, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F&quot;</span>);</span>
+<span class="line" id="L337">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;m, <span class="tok-str">&quot;000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F2021222324252627&quot;</span>);</span>
+<span class="line" id="L338">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;nonce, <span class="tok-str">&quot;BBAA99887766554433221104&quot;</span>);</span>
+<span class="line" id="L339"></span>
+<span class="line" id="L340">    Aes128Ocb.encrypt(&amp;c, &amp;tag, &amp;m, &amp;ad, nonce, k);</span>
+<span class="line" id="L341"></span>
+<span class="line" id="L342">    <span class="tok-kw">var</span> expected_c: [c.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L343">    <span class="tok-kw">var</span> expected_tag: [tag.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L344">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_tag, <span class="tok-str">&quot;3AD7A4FF3835B8C5701C1CCEC8FC3358&quot;</span>);</span>
+<span class="line" id="L345">    _ = <span class="tok-kw">try</span> hexToBytes(&amp;expected_c, <span class="tok-str">&quot;571D535B60B277188BE5147170A9A22C&quot;</span>);</span>
+<span class="line" id="L346"></span>
+<span class="line" id="L347">    <span class="tok-kw">var</span> m2: [m.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L348">    <span class="tok-kw">try</span> Aes128Ocb.decrypt(&amp;m2, &amp;c, tag, &amp;ad, nonce, k);</span>
+<span class="line" id="L349">    assert(mem.eql(<span class="tok-type">u8</span>, &amp;m, &amp;m2));</span>
+<span class="line" id="L350">}</span>
+<span class="line" id="L351"></span>
 </code></pre></body>
 </html>

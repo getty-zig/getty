@@ -260,30 +260,40 @@
 <span class="line" id="L147">        tag.* = mac(c, ad, npub, key);</span>
 <span class="line" id="L148">    }</span>
 <span class="line" id="L149"></span>
-<span class="line" id="L150">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decrypt</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, tag: [tag_length]<span class="tok-type">u8</span>, ad: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, key: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L151">        <span class="tok-kw">var</span> computed_tag = mac(c, ad, npub, key);</span>
-<span class="line" id="L152">        <span class="tok-kw">const</span> res = crypto.utils.timingSafeEql([tag_length]<span class="tok-type">u8</span>, computed_tag, tag);</span>
-<span class="line" id="L153">        crypto.utils.secureZero(<span class="tok-type">u8</span>, &amp;computed_tag);</span>
-<span class="line" id="L154">        <span class="tok-kw">if</span> (!res) {</span>
-<span class="line" id="L155">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
-<span class="line" id="L156">        }</span>
-<span class="line" id="L157">        xor(m, c, npub, key);</span>
-<span class="line" id="L158">    }</span>
-<span class="line" id="L159">};</span>
-<span class="line" id="L160"></span>
-<span class="line" id="L161"><span class="tok-kw">test</span> <span class="tok-str">&quot;ISAP&quot;</span> {</span>
-<span class="line" id="L162">    <span class="tok-kw">const</span> k = [_]<span class="tok-type">u8</span>{<span class="tok-number">1</span>} ** <span class="tok-number">16</span>;</span>
-<span class="line" id="L163">    <span class="tok-kw">const</span> n = [_]<span class="tok-type">u8</span>{<span class="tok-number">2</span>} ** <span class="tok-number">16</span>;</span>
-<span class="line" id="L164">    <span class="tok-kw">var</span> tag: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L165">    <span class="tok-kw">const</span> ad = <span class="tok-str">&quot;ad&quot;</span>;</span>
-<span class="line" id="L166">    <span class="tok-kw">var</span> msg = <span class="tok-str">&quot;test&quot;</span>;</span>
-<span class="line" id="L167">    <span class="tok-kw">var</span> c: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L168">    IsapA128A.encrypt(c[<span class="tok-number">0</span>..], &amp;tag, msg[<span class="tok-number">0</span>..], ad, n, k);</span>
-<span class="line" id="L169">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, &amp;[_]<span class="tok-type">u8</span>{ <span class="tok-number">0x8f</span>, <span class="tok-number">0x68</span>, <span class="tok-number">0x03</span>, <span class="tok-number">0x8d</span> }, c[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L170">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, &amp;[_]<span class="tok-type">u8</span>{ <span class="tok-number">0x6c</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0xe8</span>, <span class="tok-number">0xe2</span>, <span class="tok-number">0xe1</span>, <span class="tok-number">0x1f</span>, <span class="tok-number">0x38</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x75</span>, <span class="tok-number">0xde</span>, <span class="tok-number">0xd5</span>, <span class="tok-number">0x2d</span>, <span class="tok-number">0xb2</span>, <span class="tok-number">0x31</span>, <span class="tok-number">0x82</span> }, tag[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L171">    <span class="tok-kw">try</span> IsapA128A.decrypt(c[<span class="tok-number">0</span>..], c[<span class="tok-number">0</span>..], tag, ad, n, k);</span>
-<span class="line" id="L172">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, msg, c[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L173">}</span>
-<span class="line" id="L174"></span>
+<span class="line" id="L150">    <span class="tok-comment">/// `m`: Message</span></span>
+<span class="line" id="L151">    <span class="tok-comment">/// `c`: Ciphertext</span></span>
+<span class="line" id="L152">    <span class="tok-comment">/// `tag`: Authentication tag</span></span>
+<span class="line" id="L153">    <span class="tok-comment">/// `ad`: Associated data</span></span>
+<span class="line" id="L154">    <span class="tok-comment">/// `npub`: Public nonce</span></span>
+<span class="line" id="L155">    <span class="tok-comment">/// `k`: Private key</span></span>
+<span class="line" id="L156">    <span class="tok-comment">/// Asserts `c.len == m.len`.</span></span>
+<span class="line" id="L157">    <span class="tok-comment">///</span></span>
+<span class="line" id="L158">    <span class="tok-comment">/// Contents of `m` are undefined if an error is returned.</span></span>
+<span class="line" id="L159">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decrypt</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, tag: [tag_length]<span class="tok-type">u8</span>, ad: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, key: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L160">        <span class="tok-kw">var</span> computed_tag = mac(c, ad, npub, key);</span>
+<span class="line" id="L161">        <span class="tok-kw">const</span> verify = crypto.utils.timingSafeEql([tag_length]<span class="tok-type">u8</span>, computed_tag, tag);</span>
+<span class="line" id="L162">        <span class="tok-kw">if</span> (!verify) {</span>
+<span class="line" id="L163">            crypto.utils.secureZero(<span class="tok-type">u8</span>, &amp;computed_tag);</span>
+<span class="line" id="L164">            <span class="tok-builtin">@memset</span>(m, <span class="tok-null">undefined</span>);</span>
+<span class="line" id="L165">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
+<span class="line" id="L166">        }</span>
+<span class="line" id="L167">        xor(m, c, npub, key);</span>
+<span class="line" id="L168">    }</span>
+<span class="line" id="L169">};</span>
+<span class="line" id="L170"></span>
+<span class="line" id="L171"><span class="tok-kw">test</span> <span class="tok-str">&quot;ISAP&quot;</span> {</span>
+<span class="line" id="L172">    <span class="tok-kw">const</span> k = [_]<span class="tok-type">u8</span>{<span class="tok-number">1</span>} ** <span class="tok-number">16</span>;</span>
+<span class="line" id="L173">    <span class="tok-kw">const</span> n = [_]<span class="tok-type">u8</span>{<span class="tok-number">2</span>} ** <span class="tok-number">16</span>;</span>
+<span class="line" id="L174">    <span class="tok-kw">var</span> tag: [<span class="tok-number">16</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L175">    <span class="tok-kw">const</span> ad = <span class="tok-str">&quot;ad&quot;</span>;</span>
+<span class="line" id="L176">    <span class="tok-kw">var</span> msg = <span class="tok-str">&quot;test&quot;</span>;</span>
+<span class="line" id="L177">    <span class="tok-kw">var</span> c: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L178">    IsapA128A.encrypt(c[<span class="tok-number">0</span>..], &amp;tag, msg[<span class="tok-number">0</span>..], ad, n, k);</span>
+<span class="line" id="L179">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, &amp;[_]<span class="tok-type">u8</span>{ <span class="tok-number">0x8f</span>, <span class="tok-number">0x68</span>, <span class="tok-number">0x03</span>, <span class="tok-number">0x8d</span> }, c[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L180">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, &amp;[_]<span class="tok-type">u8</span>{ <span class="tok-number">0x6c</span>, <span class="tok-number">0x25</span>, <span class="tok-number">0xe8</span>, <span class="tok-number">0xe2</span>, <span class="tok-number">0xe1</span>, <span class="tok-number">0x1f</span>, <span class="tok-number">0x38</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0x80</span>, <span class="tok-number">0x75</span>, <span class="tok-number">0xde</span>, <span class="tok-number">0xd5</span>, <span class="tok-number">0x2d</span>, <span class="tok-number">0xb2</span>, <span class="tok-number">0x31</span>, <span class="tok-number">0x82</span> }, tag[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L181">    <span class="tok-kw">try</span> IsapA128A.decrypt(c[<span class="tok-number">0</span>..], c[<span class="tok-number">0</span>..], tag, ad, n, k);</span>
+<span class="line" id="L182">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">u8</span>, msg, c[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L183">}</span>
+<span class="line" id="L184"></span>
 </code></pre></body>
 </html>

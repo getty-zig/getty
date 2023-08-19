@@ -117,41 +117,42 @@
 <span class="line" id="L4"><span class="tok-kw">const</span> blocks = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;blocks.zig&quot;</span>);</span>
 <span class="line" id="L5"><span class="tok-kw">const</span> find_db = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;find.zig&quot;</span>).find_db;</span>
 <span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-comment">/// Frees resources allocated by Getty during deserialization.</span></span>
-<span class="line" id="L8"><span class="tok-comment">///</span></span>
-<span class="line" id="L9"><span class="tok-comment">/// `free` assumes that all pointers passed to it are heap-allocated and</span></span>
-<span class="line" id="L10"><span class="tok-comment">/// will therefore attempt to free them. So be sure not to pass in any</span></span>
-<span class="line" id="L11"><span class="tok-comment">/// pointers pointing to values on the stack.</span></span>
-<span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(</span>
-<span class="line" id="L13">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L14">    ally: std.mem.Allocator,</span>
-<span class="line" id="L15">    <span class="tok-comment">/// A `getty.Deserializer` interface type.</span></span>
-<span class="line" id="L16">    <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
-<span class="line" id="L17">    <span class="tok-comment">/// A value to deallocate.</span></span>
-<span class="line" id="L18">    value: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L19">) <span class="tok-type">void</span> {</span>
-<span class="line" id="L20">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
-<span class="line" id="L21"></span>
-<span class="line" id="L22">    <span class="tok-kw">const</span> db = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L23">        <span class="tok-kw">var</span> db = find_db(T, Deserializer);</span>
-<span class="line" id="L24"></span>
-<span class="line" id="L25">        <span class="tok-kw">if</span> (attributes.has_attributes(T, db)) {</span>
-<span class="line" id="L26">            db = <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L27">                .Enum =&gt; blocks.Enum,</span>
-<span class="line" id="L28">                .Struct =&gt; blocks.Struct,</span>
-<span class="line" id="L29">                .Union =&gt; blocks.Union,</span>
-<span class="line" id="L30">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.</span>
+<span class="line" id="L7"><span class="tok-comment">/// Frees `v` using an allocator `ally` according to the deserialization blocks</span></span>
+<span class="line" id="L8"><span class="tok-comment">/// specified in the `getty.Deserializer` type `D`.</span></span>
+<span class="line" id="L9"><span class="tok-comment">///</span></span>
+<span class="line" id="L10"><span class="tok-comment">/// `free` is intended to be used for freeing values deserialized by Getty. `v`</span></span>
+<span class="line" id="L11"><span class="tok-comment">/// must be a fully deserialized value. Attempts to free partially deserialized</span></span>
+<span class="line" id="L12"><span class="tok-comment">/// values will result in undefined behavior.</span></span>
+<span class="line" id="L13"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">free</span>(</span>
+<span class="line" id="L14">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L15">    ally: std.mem.Allocator,</span>
+<span class="line" id="L16">    <span class="tok-comment">/// A `getty.Deserializer` interface type.</span></span>
+<span class="line" id="L17">    <span class="tok-kw">comptime</span> D: <span class="tok-type">type</span>,</span>
+<span class="line" id="L18">    <span class="tok-comment">/// A value to deallocate.</span></span>
+<span class="line" id="L19">    v: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L20">) <span class="tok-type">void</span> {</span>
+<span class="line" id="L21">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(v);</span>
+<span class="line" id="L22"></span>
+<span class="line" id="L23">    <span class="tok-kw">const</span> db = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L24">        <span class="tok-kw">var</span> db = find_db(T, D);</span>
+<span class="line" id="L25"></span>
+<span class="line" id="L26">        <span class="tok-kw">if</span> (attributes.has_attributes(T, db)) {</span>
+<span class="line" id="L27">            db = <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L28">                .Enum =&gt; blocks.Enum,</span>
+<span class="line" id="L29">                .Struct =&gt; blocks.Struct,</span>
+<span class="line" id="L30">                .Union =&gt; blocks.Union,</span>
+<span class="line" id="L31">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.</span>
 </span>
-<span class="line" id="L31">            };</span>
-<span class="line" id="L32">        }</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">        <span class="tok-kw">break</span> :blk db;</span>
-<span class="line" id="L35">    };</span>
-<span class="line" id="L36"></span>
-<span class="line" id="L37">    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(db, <span class="tok-str">&quot;free&quot;</span>)) {</span>
-<span class="line" id="L38">        db.free(ally, Deserializer, value);</span>
-<span class="line" id="L39">    }</span>
-<span class="line" id="L40">}</span>
-<span class="line" id="L41"></span>
+<span class="line" id="L32">            };</span>
+<span class="line" id="L33">        }</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35">        <span class="tok-kw">break</span> :blk db;</span>
+<span class="line" id="L36">    };</span>
+<span class="line" id="L37"></span>
+<span class="line" id="L38">    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(db, <span class="tok-str">&quot;free&quot;</span>)) {</span>
+<span class="line" id="L39">        db.free(ally, D, v);</span>
+<span class="line" id="L40">    }</span>
+<span class="line" id="L41">}</span>
+<span class="line" id="L42"></span>
 </code></pre></body>
 </html>

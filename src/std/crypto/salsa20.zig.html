@@ -507,240 +507,242 @@
 <span class="line" id="L394">        mac.final(tag);</span>
 <span class="line" id="L395">    }</span>
 <span class="line" id="L396"></span>
-<span class="line" id="L397">    <span class="tok-comment">/// m: message: output buffer should be of size c.len</span></span>
-<span class="line" id="L398">    <span class="tok-comment">/// c: ciphertext</span></span>
-<span class="line" id="L399">    <span class="tok-comment">/// tag: authentication tag</span></span>
-<span class="line" id="L400">    <span class="tok-comment">/// ad: Associated Data</span></span>
-<span class="line" id="L401">    <span class="tok-comment">/// npub: public nonce</span></span>
-<span class="line" id="L402">    <span class="tok-comment">/// k: private key</span></span>
-<span class="line" id="L403">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decrypt</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, tag: [tag_length]<span class="tok-type">u8</span>, ad: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, k: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L404">        debug.assert(c.len == m.len);</span>
-<span class="line" id="L405">        <span class="tok-kw">const</span> extended = extend(rounds, k, npub);</span>
-<span class="line" id="L406">        <span class="tok-kw">var</span> block0 = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">64</span>;</span>
-<span class="line" id="L407">        <span class="tok-kw">const</span> mlen0 = <span class="tok-builtin">@min</span>(<span class="tok-number">32</span>, c.len);</span>
-<span class="line" id="L408">        <span class="tok-builtin">@memcpy</span>(block0[<span class="tok-number">32</span>..][<span class="tok-number">0</span>..mlen0], c[<span class="tok-number">0</span>..mlen0]);</span>
-<span class="line" id="L409">        Salsa20.xor(block0[<span class="tok-number">0</span>..], block0[<span class="tok-number">0</span>..], <span class="tok-number">0</span>, extended.key, extended.nonce);</span>
-<span class="line" id="L410">        <span class="tok-kw">var</span> mac = Poly1305.init(block0[<span class="tok-number">0</span>..<span class="tok-number">32</span>]);</span>
-<span class="line" id="L411">        mac.update(ad);</span>
-<span class="line" id="L412">        mac.update(c);</span>
-<span class="line" id="L413">        <span class="tok-kw">var</span> computedTag: [tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L414">        mac.final(&amp;computedTag);</span>
-<span class="line" id="L415">        <span class="tok-kw">var</span> acc: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L416">        <span class="tok-kw">for</span> (computedTag, <span class="tok-number">0</span>..) |_, i| {</span>
-<span class="line" id="L417">            acc |= computedTag[i] ^ tag[i];</span>
-<span class="line" id="L418">        }</span>
-<span class="line" id="L419">        <span class="tok-kw">if</span> (acc != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L420">            utils.secureZero(<span class="tok-type">u8</span>, &amp;computedTag);</span>
-<span class="line" id="L421">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
-<span class="line" id="L422">        }</span>
-<span class="line" id="L423">        <span class="tok-builtin">@memcpy</span>(m[<span class="tok-number">0</span>..mlen0], block0[<span class="tok-number">32</span>..][<span class="tok-number">0</span>..mlen0]);</span>
-<span class="line" id="L424">        Salsa20.xor(m[mlen0..], c[mlen0..], <span class="tok-number">1</span>, extended.key, extended.nonce);</span>
-<span class="line" id="L425">    }</span>
-<span class="line" id="L426">};</span>
-<span class="line" id="L427"></span>
-<span class="line" id="L428"><span class="tok-comment">/// NaCl-compatible secretbox API.</span></span>
-<span class="line" id="L429"><span class="tok-comment">///</span></span>
-<span class="line" id="L430"><span class="tok-comment">/// A secretbox contains both an encrypted message and an authentication tag to verify that it hasn't been tampered with.</span></span>
-<span class="line" id="L431"><span class="tok-comment">/// A secret key shared by all the recipients must be already known in order to use this API.</span></span>
-<span class="line" id="L432"><span class="tok-comment">///</span></span>
-<span class="line" id="L433"><span class="tok-comment">/// Nonces are 192-bit large and can safely be chosen with a random number generator.</span></span>
-<span class="line" id="L434"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SecretBox = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L435">    <span class="tok-comment">/// Key length in bytes.</span></span>
-<span class="line" id="L436">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> key_length = XSalsa20Poly1305.key_length;</span>
-<span class="line" id="L437">    <span class="tok-comment">/// Nonce length in bytes.</span></span>
-<span class="line" id="L438">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> nonce_length = XSalsa20Poly1305.nonce_length;</span>
-<span class="line" id="L439">    <span class="tok-comment">/// Authentication tag length in bytes.</span></span>
-<span class="line" id="L440">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> tag_length = XSalsa20Poly1305.tag_length;</span>
-<span class="line" id="L441"></span>
-<span class="line" id="L442">    <span class="tok-comment">/// Encrypt and authenticate `m` using a nonce `npub` and a key `k`.</span></span>
-<span class="line" id="L443">    <span class="tok-comment">/// `c` must be exactly `tag_length` longer than `m`, as it will store both the ciphertext and the authentication tag.</span></span>
-<span class="line" id="L444">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seal</span>(c: []<span class="tok-type">u8</span>, m: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, k: [key_length]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L445">        debug.assert(c.len == tag_length + m.len);</span>
-<span class="line" id="L446">        XSalsa20Poly1305.encrypt(c[tag_length..], c[<span class="tok-number">0</span>..tag_length], m, <span class="tok-str">&quot;&quot;</span>, npub, k);</span>
-<span class="line" id="L447">    }</span>
-<span class="line" id="L448"></span>
-<span class="line" id="L449">    <span class="tok-comment">/// Verify and decrypt `c` using a nonce `npub` and a key `k`.</span></span>
-<span class="line" id="L450">    <span class="tok-comment">/// `m` must be exactly `tag_length` smaller than `c`, as `c` includes an authentication tag in addition to the encrypted message.</span></span>
-<span class="line" id="L451">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, k: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L452">        <span class="tok-kw">if</span> (c.len &lt; tag_length) {</span>
-<span class="line" id="L453">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
-<span class="line" id="L454">        }</span>
-<span class="line" id="L455">        debug.assert(m.len == c.len - tag_length);</span>
-<span class="line" id="L456">        <span class="tok-kw">return</span> XSalsa20Poly1305.decrypt(m, c[tag_length..], c[<span class="tok-number">0</span>..tag_length].*, <span class="tok-str">&quot;&quot;</span>, npub, k);</span>
-<span class="line" id="L457">    }</span>
-<span class="line" id="L458">};</span>
-<span class="line" id="L459"></span>
-<span class="line" id="L460"><span class="tok-comment">/// NaCl-compatible box API.</span></span>
-<span class="line" id="L461"><span class="tok-comment">///</span></span>
-<span class="line" id="L462"><span class="tok-comment">/// A secretbox contains both an encrypted message and an authentication tag to verify that it hasn't been tampered with.</span></span>
-<span class="line" id="L463"><span class="tok-comment">/// This construction uses public-key cryptography. A shared secret doesn't have to be known in advance by both parties.</span></span>
-<span class="line" id="L464"><span class="tok-comment">/// Instead, a message is encrypted using a sender's secret key and a recipient's public key,</span></span>
-<span class="line" id="L465"><span class="tok-comment">/// and is decrypted using the recipient's secret key and the sender's public key.</span></span>
-<span class="line" id="L466"><span class="tok-comment">///</span></span>
-<span class="line" id="L467"><span class="tok-comment">/// Nonces are 192-bit large and can safely be chosen with a random number generator.</span></span>
-<span class="line" id="L468"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Box = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L469">    <span class="tok-comment">/// Public key length in bytes.</span></span>
-<span class="line" id="L470">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> public_length = X25519.public_length;</span>
-<span class="line" id="L471">    <span class="tok-comment">/// Secret key length in bytes.</span></span>
-<span class="line" id="L472">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> secret_length = X25519.secret_length;</span>
-<span class="line" id="L473">    <span class="tok-comment">/// Shared key length in bytes.</span></span>
-<span class="line" id="L474">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> shared_length = XSalsa20Poly1305.key_length;</span>
-<span class="line" id="L475">    <span class="tok-comment">/// Seed (for key pair creation) length in bytes.</span></span>
-<span class="line" id="L476">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> seed_length = X25519.seed_length;</span>
-<span class="line" id="L477">    <span class="tok-comment">/// Nonce length in bytes.</span></span>
-<span class="line" id="L478">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> nonce_length = XSalsa20Poly1305.nonce_length;</span>
-<span class="line" id="L479">    <span class="tok-comment">/// Authentication tag length in bytes.</span></span>
-<span class="line" id="L480">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> tag_length = XSalsa20Poly1305.tag_length;</span>
-<span class="line" id="L481"></span>
-<span class="line" id="L482">    <span class="tok-comment">/// A key pair.</span></span>
-<span class="line" id="L483">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> KeyPair = X25519.KeyPair;</span>
-<span class="line" id="L484"></span>
-<span class="line" id="L485">    <span class="tok-comment">/// Compute a secret suitable for `secretbox` given a recipent's public key and a sender's secret key.</span></span>
-<span class="line" id="L486">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createSharedSecret</span>(public_key: [public_length]<span class="tok-type">u8</span>, secret_key: [secret_length]<span class="tok-type">u8</span>) (IdentityElementError || WeakPublicKeyError)![shared_length]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L487">        <span class="tok-kw">const</span> p = <span class="tok-kw">try</span> X25519.scalarmult(secret_key, public_key);</span>
-<span class="line" id="L488">        <span class="tok-kw">const</span> zero = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">16</span>;</span>
-<span class="line" id="L489">        <span class="tok-kw">return</span> SalsaImpl(<span class="tok-number">20</span>).hsalsa(zero, p);</span>
-<span class="line" id="L490">    }</span>
-<span class="line" id="L491"></span>
-<span class="line" id="L492">    <span class="tok-comment">/// Encrypt and authenticate a message using a recipient's public key `public_key` and a sender's `secret_key`.</span></span>
-<span class="line" id="L493">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seal</span>(c: []<span class="tok-type">u8</span>, m: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, public_key: [public_length]<span class="tok-type">u8</span>, secret_key: [secret_length]<span class="tok-type">u8</span>) (IdentityElementError || WeakPublicKeyError)!<span class="tok-type">void</span> {</span>
-<span class="line" id="L494">        <span class="tok-kw">const</span> shared_key = <span class="tok-kw">try</span> createSharedSecret(public_key, secret_key);</span>
-<span class="line" id="L495">        <span class="tok-kw">return</span> SecretBox.seal(c, m, npub, shared_key);</span>
-<span class="line" id="L496">    }</span>
-<span class="line" id="L497"></span>
-<span class="line" id="L498">    <span class="tok-comment">/// Verify and decrypt a message using a recipient's secret key `public_key` and a sender's `public_key`.</span></span>
-<span class="line" id="L499">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, public_key: [public_length]<span class="tok-type">u8</span>, secret_key: [secret_length]<span class="tok-type">u8</span>) (IdentityElementError || WeakPublicKeyError || AuthenticationError)!<span class="tok-type">void</span> {</span>
-<span class="line" id="L500">        <span class="tok-kw">const</span> shared_key = <span class="tok-kw">try</span> createSharedSecret(public_key, secret_key);</span>
-<span class="line" id="L501">        <span class="tok-kw">return</span> SecretBox.open(m, c, npub, shared_key);</span>
-<span class="line" id="L502">    }</span>
-<span class="line" id="L503">};</span>
-<span class="line" id="L504"></span>
-<span class="line" id="L505"><span class="tok-comment">/// libsodium-compatible sealed boxes</span></span>
-<span class="line" id="L506"><span class="tok-comment">///</span></span>
-<span class="line" id="L507"><span class="tok-comment">/// Sealed boxes are designed to anonymously send messages to a recipient given their public key.</span></span>
-<span class="line" id="L508"><span class="tok-comment">/// Only the recipient can decrypt these messages, using their private key.</span></span>
-<span class="line" id="L509"><span class="tok-comment">/// While the recipient can verify the integrity of the message, it cannot verify the identity of the sender.</span></span>
-<span class="line" id="L510"><span class="tok-comment">///</span></span>
-<span class="line" id="L511"><span class="tok-comment">/// A message is encrypted using an ephemeral key pair, whose secret part is destroyed right after the encryption process.</span></span>
-<span class="line" id="L512"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SealedBox = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L513">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> public_length = Box.public_length;</span>
-<span class="line" id="L514">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> secret_length = Box.secret_length;</span>
-<span class="line" id="L515">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> seed_length = Box.seed_length;</span>
-<span class="line" id="L516">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> seal_length = Box.public_length + Box.tag_length;</span>
-<span class="line" id="L517"></span>
-<span class="line" id="L518">    <span class="tok-comment">/// A key pair.</span></span>
-<span class="line" id="L519">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> KeyPair = Box.KeyPair;</span>
-<span class="line" id="L520"></span>
-<span class="line" id="L521">    <span class="tok-kw">fn</span> <span class="tok-fn">createNonce</span>(pk1: [public_length]<span class="tok-type">u8</span>, pk2: [public_length]<span class="tok-type">u8</span>) [Box.nonce_length]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L522">        <span class="tok-kw">var</span> hasher = Blake2b(Box.nonce_length * <span class="tok-number">8</span>).init(.{});</span>
-<span class="line" id="L523">        hasher.update(&amp;pk1);</span>
-<span class="line" id="L524">        hasher.update(&amp;pk2);</span>
-<span class="line" id="L525">        <span class="tok-kw">var</span> nonce: [Box.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L526">        hasher.final(&amp;nonce);</span>
-<span class="line" id="L527">        <span class="tok-kw">return</span> nonce;</span>
-<span class="line" id="L528">    }</span>
-<span class="line" id="L529"></span>
-<span class="line" id="L530">    <span class="tok-comment">/// Encrypt a message `m` for a recipient whose public key is `public_key`.</span></span>
-<span class="line" id="L531">    <span class="tok-comment">/// `c` must be `seal_length` bytes larger than `m`, so that the required metadata can be added.</span></span>
-<span class="line" id="L532">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seal</span>(c: []<span class="tok-type">u8</span>, m: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, public_key: [public_length]<span class="tok-type">u8</span>) (WeakPublicKeyError || IdentityElementError)!<span class="tok-type">void</span> {</span>
-<span class="line" id="L533">        debug.assert(c.len == m.len + seal_length);</span>
-<span class="line" id="L534">        <span class="tok-kw">var</span> ekp = <span class="tok-kw">try</span> KeyPair.create(<span class="tok-null">null</span>);</span>
-<span class="line" id="L535">        <span class="tok-kw">const</span> nonce = createNonce(ekp.public_key, public_key);</span>
-<span class="line" id="L536">        c[<span class="tok-number">0</span>..public_length].* = ekp.public_key;</span>
-<span class="line" id="L537">        <span class="tok-kw">try</span> Box.seal(c[Box.public_length..], m, nonce, public_key, ekp.secret_key);</span>
-<span class="line" id="L538">        utils.secureZero(<span class="tok-type">u8</span>, ekp.secret_key[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L539">    }</span>
-<span class="line" id="L540"></span>
-<span class="line" id="L541">    <span class="tok-comment">/// Decrypt a message using a key pair.</span></span>
-<span class="line" id="L542">    <span class="tok-comment">/// `m` must be exactly `seal_length` bytes smaller than `c`, as `c` also includes metadata.</span></span>
-<span class="line" id="L543">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, keypair: KeyPair) (IdentityElementError || WeakPublicKeyError || AuthenticationError)!<span class="tok-type">void</span> {</span>
-<span class="line" id="L544">        <span class="tok-kw">if</span> (c.len &lt; seal_length) {</span>
-<span class="line" id="L545">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
-<span class="line" id="L546">        }</span>
-<span class="line" id="L547">        <span class="tok-kw">const</span> epk = c[<span class="tok-number">0</span>..public_length];</span>
-<span class="line" id="L548">        <span class="tok-kw">const</span> nonce = createNonce(epk.*, keypair.public_key);</span>
-<span class="line" id="L549">        <span class="tok-kw">return</span> Box.open(m, c[public_length..], nonce, epk.*, keypair.secret_key);</span>
-<span class="line" id="L550">    }</span>
-<span class="line" id="L551">};</span>
-<span class="line" id="L552"></span>
-<span class="line" id="L553"><span class="tok-kw">const</span> htest = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;test.zig&quot;</span>);</span>
+<span class="line" id="L397">    <span class="tok-comment">/// `m`: Message</span></span>
+<span class="line" id="L398">    <span class="tok-comment">/// `c`: Ciphertext</span></span>
+<span class="line" id="L399">    <span class="tok-comment">/// `tag`: Authentication tag</span></span>
+<span class="line" id="L400">    <span class="tok-comment">/// `ad`: Associated data</span></span>
+<span class="line" id="L401">    <span class="tok-comment">/// `npub`: Public nonce</span></span>
+<span class="line" id="L402">    <span class="tok-comment">/// `k`: Private key</span></span>
+<span class="line" id="L403">    <span class="tok-comment">/// Asserts `c.len == m.len`.</span></span>
+<span class="line" id="L404">    <span class="tok-comment">///</span></span>
+<span class="line" id="L405">    <span class="tok-comment">/// Contents of `m` are undefined if an error is returned.</span></span>
+<span class="line" id="L406">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decrypt</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, tag: [tag_length]<span class="tok-type">u8</span>, ad: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, k: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L407">        debug.assert(c.len == m.len);</span>
+<span class="line" id="L408">        <span class="tok-kw">const</span> extended = extend(rounds, k, npub);</span>
+<span class="line" id="L409">        <span class="tok-kw">var</span> block0 = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">64</span>;</span>
+<span class="line" id="L410">        <span class="tok-kw">const</span> mlen0 = <span class="tok-builtin">@min</span>(<span class="tok-number">32</span>, c.len);</span>
+<span class="line" id="L411">        <span class="tok-builtin">@memcpy</span>(block0[<span class="tok-number">32</span>..][<span class="tok-number">0</span>..mlen0], c[<span class="tok-number">0</span>..mlen0]);</span>
+<span class="line" id="L412">        Salsa20.xor(block0[<span class="tok-number">0</span>..], block0[<span class="tok-number">0</span>..], <span class="tok-number">0</span>, extended.key, extended.nonce);</span>
+<span class="line" id="L413">        <span class="tok-kw">var</span> mac = Poly1305.init(block0[<span class="tok-number">0</span>..<span class="tok-number">32</span>]);</span>
+<span class="line" id="L414">        mac.update(ad);</span>
+<span class="line" id="L415">        mac.update(c);</span>
+<span class="line" id="L416">        <span class="tok-kw">var</span> computed_tag: [tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L417">        mac.final(&amp;computed_tag);</span>
+<span class="line" id="L418"></span>
+<span class="line" id="L419">        <span class="tok-kw">const</span> verify = utils.timingSafeEql([tag_length]<span class="tok-type">u8</span>, computed_tag, tag);</span>
+<span class="line" id="L420">        <span class="tok-kw">if</span> (!verify) {</span>
+<span class="line" id="L421">            utils.secureZero(<span class="tok-type">u8</span>, &amp;computed_tag);</span>
+<span class="line" id="L422">            <span class="tok-builtin">@memset</span>(m, <span class="tok-null">undefined</span>);</span>
+<span class="line" id="L423">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
+<span class="line" id="L424">        }</span>
+<span class="line" id="L425">        <span class="tok-builtin">@memcpy</span>(m[<span class="tok-number">0</span>..mlen0], block0[<span class="tok-number">32</span>..][<span class="tok-number">0</span>..mlen0]);</span>
+<span class="line" id="L426">        Salsa20.xor(m[mlen0..], c[mlen0..], <span class="tok-number">1</span>, extended.key, extended.nonce);</span>
+<span class="line" id="L427">    }</span>
+<span class="line" id="L428">};</span>
+<span class="line" id="L429"></span>
+<span class="line" id="L430"><span class="tok-comment">/// NaCl-compatible secretbox API.</span></span>
+<span class="line" id="L431"><span class="tok-comment">///</span></span>
+<span class="line" id="L432"><span class="tok-comment">/// A secretbox contains both an encrypted message and an authentication tag to verify that it hasn't been tampered with.</span></span>
+<span class="line" id="L433"><span class="tok-comment">/// A secret key shared by all the recipients must be already known in order to use this API.</span></span>
+<span class="line" id="L434"><span class="tok-comment">///</span></span>
+<span class="line" id="L435"><span class="tok-comment">/// Nonces are 192-bit large and can safely be chosen with a random number generator.</span></span>
+<span class="line" id="L436"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SecretBox = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L437">    <span class="tok-comment">/// Key length in bytes.</span></span>
+<span class="line" id="L438">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> key_length = XSalsa20Poly1305.key_length;</span>
+<span class="line" id="L439">    <span class="tok-comment">/// Nonce length in bytes.</span></span>
+<span class="line" id="L440">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> nonce_length = XSalsa20Poly1305.nonce_length;</span>
+<span class="line" id="L441">    <span class="tok-comment">/// Authentication tag length in bytes.</span></span>
+<span class="line" id="L442">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> tag_length = XSalsa20Poly1305.tag_length;</span>
+<span class="line" id="L443"></span>
+<span class="line" id="L444">    <span class="tok-comment">/// Encrypt and authenticate `m` using a nonce `npub` and a key `k`.</span></span>
+<span class="line" id="L445">    <span class="tok-comment">/// `c` must be exactly `tag_length` longer than `m`, as it will store both the ciphertext and the authentication tag.</span></span>
+<span class="line" id="L446">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seal</span>(c: []<span class="tok-type">u8</span>, m: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, k: [key_length]<span class="tok-type">u8</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L447">        debug.assert(c.len == tag_length + m.len);</span>
+<span class="line" id="L448">        XSalsa20Poly1305.encrypt(c[tag_length..], c[<span class="tok-number">0</span>..tag_length], m, <span class="tok-str">&quot;&quot;</span>, npub, k);</span>
+<span class="line" id="L449">    }</span>
+<span class="line" id="L450"></span>
+<span class="line" id="L451">    <span class="tok-comment">/// Verify and decrypt `c` using a nonce `npub` and a key `k`.</span></span>
+<span class="line" id="L452">    <span class="tok-comment">/// `m` must be exactly `tag_length` smaller than `c`, as `c` includes an authentication tag in addition to the encrypted message.</span></span>
+<span class="line" id="L453">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, k: [key_length]<span class="tok-type">u8</span>) AuthenticationError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L454">        <span class="tok-kw">if</span> (c.len &lt; tag_length) {</span>
+<span class="line" id="L455">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
+<span class="line" id="L456">        }</span>
+<span class="line" id="L457">        debug.assert(m.len == c.len - tag_length);</span>
+<span class="line" id="L458">        <span class="tok-kw">return</span> XSalsa20Poly1305.decrypt(m, c[tag_length..], c[<span class="tok-number">0</span>..tag_length].*, <span class="tok-str">&quot;&quot;</span>, npub, k);</span>
+<span class="line" id="L459">    }</span>
+<span class="line" id="L460">};</span>
+<span class="line" id="L461"></span>
+<span class="line" id="L462"><span class="tok-comment">/// NaCl-compatible box API.</span></span>
+<span class="line" id="L463"><span class="tok-comment">///</span></span>
+<span class="line" id="L464"><span class="tok-comment">/// A secretbox contains both an encrypted message and an authentication tag to verify that it hasn't been tampered with.</span></span>
+<span class="line" id="L465"><span class="tok-comment">/// This construction uses public-key cryptography. A shared secret doesn't have to be known in advance by both parties.</span></span>
+<span class="line" id="L466"><span class="tok-comment">/// Instead, a message is encrypted using a sender's secret key and a recipient's public key,</span></span>
+<span class="line" id="L467"><span class="tok-comment">/// and is decrypted using the recipient's secret key and the sender's public key.</span></span>
+<span class="line" id="L468"><span class="tok-comment">///</span></span>
+<span class="line" id="L469"><span class="tok-comment">/// Nonces are 192-bit large and can safely be chosen with a random number generator.</span></span>
+<span class="line" id="L470"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> Box = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L471">    <span class="tok-comment">/// Public key length in bytes.</span></span>
+<span class="line" id="L472">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> public_length = X25519.public_length;</span>
+<span class="line" id="L473">    <span class="tok-comment">/// Secret key length in bytes.</span></span>
+<span class="line" id="L474">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> secret_length = X25519.secret_length;</span>
+<span class="line" id="L475">    <span class="tok-comment">/// Shared key length in bytes.</span></span>
+<span class="line" id="L476">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> shared_length = XSalsa20Poly1305.key_length;</span>
+<span class="line" id="L477">    <span class="tok-comment">/// Seed (for key pair creation) length in bytes.</span></span>
+<span class="line" id="L478">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> seed_length = X25519.seed_length;</span>
+<span class="line" id="L479">    <span class="tok-comment">/// Nonce length in bytes.</span></span>
+<span class="line" id="L480">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> nonce_length = XSalsa20Poly1305.nonce_length;</span>
+<span class="line" id="L481">    <span class="tok-comment">/// Authentication tag length in bytes.</span></span>
+<span class="line" id="L482">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> tag_length = XSalsa20Poly1305.tag_length;</span>
+<span class="line" id="L483"></span>
+<span class="line" id="L484">    <span class="tok-comment">/// A key pair.</span></span>
+<span class="line" id="L485">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> KeyPair = X25519.KeyPair;</span>
+<span class="line" id="L486"></span>
+<span class="line" id="L487">    <span class="tok-comment">/// Compute a secret suitable for `secretbox` given a recipent's public key and a sender's secret key.</span></span>
+<span class="line" id="L488">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createSharedSecret</span>(public_key: [public_length]<span class="tok-type">u8</span>, secret_key: [secret_length]<span class="tok-type">u8</span>) (IdentityElementError || WeakPublicKeyError)![shared_length]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L489">        <span class="tok-kw">const</span> p = <span class="tok-kw">try</span> X25519.scalarmult(secret_key, public_key);</span>
+<span class="line" id="L490">        <span class="tok-kw">const</span> zero = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">16</span>;</span>
+<span class="line" id="L491">        <span class="tok-kw">return</span> SalsaImpl(<span class="tok-number">20</span>).hsalsa(zero, p);</span>
+<span class="line" id="L492">    }</span>
+<span class="line" id="L493"></span>
+<span class="line" id="L494">    <span class="tok-comment">/// Encrypt and authenticate a message using a recipient's public key `public_key` and a sender's `secret_key`.</span></span>
+<span class="line" id="L495">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seal</span>(c: []<span class="tok-type">u8</span>, m: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, public_key: [public_length]<span class="tok-type">u8</span>, secret_key: [secret_length]<span class="tok-type">u8</span>) (IdentityElementError || WeakPublicKeyError)!<span class="tok-type">void</span> {</span>
+<span class="line" id="L496">        <span class="tok-kw">const</span> shared_key = <span class="tok-kw">try</span> createSharedSecret(public_key, secret_key);</span>
+<span class="line" id="L497">        <span class="tok-kw">return</span> SecretBox.seal(c, m, npub, shared_key);</span>
+<span class="line" id="L498">    }</span>
+<span class="line" id="L499"></span>
+<span class="line" id="L500">    <span class="tok-comment">/// Verify and decrypt a message using a recipient's secret key `public_key` and a sender's `public_key`.</span></span>
+<span class="line" id="L501">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, npub: [nonce_length]<span class="tok-type">u8</span>, public_key: [public_length]<span class="tok-type">u8</span>, secret_key: [secret_length]<span class="tok-type">u8</span>) (IdentityElementError || WeakPublicKeyError || AuthenticationError)!<span class="tok-type">void</span> {</span>
+<span class="line" id="L502">        <span class="tok-kw">const</span> shared_key = <span class="tok-kw">try</span> createSharedSecret(public_key, secret_key);</span>
+<span class="line" id="L503">        <span class="tok-kw">return</span> SecretBox.open(m, c, npub, shared_key);</span>
+<span class="line" id="L504">    }</span>
+<span class="line" id="L505">};</span>
+<span class="line" id="L506"></span>
+<span class="line" id="L507"><span class="tok-comment">/// libsodium-compatible sealed boxes</span></span>
+<span class="line" id="L508"><span class="tok-comment">///</span></span>
+<span class="line" id="L509"><span class="tok-comment">/// Sealed boxes are designed to anonymously send messages to a recipient given their public key.</span></span>
+<span class="line" id="L510"><span class="tok-comment">/// Only the recipient can decrypt these messages, using their private key.</span></span>
+<span class="line" id="L511"><span class="tok-comment">/// While the recipient can verify the integrity of the message, it cannot verify the identity of the sender.</span></span>
+<span class="line" id="L512"><span class="tok-comment">///</span></span>
+<span class="line" id="L513"><span class="tok-comment">/// A message is encrypted using an ephemeral key pair, whose secret part is destroyed right after the encryption process.</span></span>
+<span class="line" id="L514"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SealedBox = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L515">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> public_length = Box.public_length;</span>
+<span class="line" id="L516">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> secret_length = Box.secret_length;</span>
+<span class="line" id="L517">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> seed_length = Box.seed_length;</span>
+<span class="line" id="L518">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> seal_length = Box.public_length + Box.tag_length;</span>
+<span class="line" id="L519"></span>
+<span class="line" id="L520">    <span class="tok-comment">/// A key pair.</span></span>
+<span class="line" id="L521">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> KeyPair = Box.KeyPair;</span>
+<span class="line" id="L522"></span>
+<span class="line" id="L523">    <span class="tok-kw">fn</span> <span class="tok-fn">createNonce</span>(pk1: [public_length]<span class="tok-type">u8</span>, pk2: [public_length]<span class="tok-type">u8</span>) [Box.nonce_length]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L524">        <span class="tok-kw">var</span> hasher = Blake2b(Box.nonce_length * <span class="tok-number">8</span>).init(.{});</span>
+<span class="line" id="L525">        hasher.update(&amp;pk1);</span>
+<span class="line" id="L526">        hasher.update(&amp;pk2);</span>
+<span class="line" id="L527">        <span class="tok-kw">var</span> nonce: [Box.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L528">        hasher.final(&amp;nonce);</span>
+<span class="line" id="L529">        <span class="tok-kw">return</span> nonce;</span>
+<span class="line" id="L530">    }</span>
+<span class="line" id="L531"></span>
+<span class="line" id="L532">    <span class="tok-comment">/// Encrypt a message `m` for a recipient whose public key is `public_key`.</span></span>
+<span class="line" id="L533">    <span class="tok-comment">/// `c` must be `seal_length` bytes larger than `m`, so that the required metadata can be added.</span></span>
+<span class="line" id="L534">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seal</span>(c: []<span class="tok-type">u8</span>, m: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, public_key: [public_length]<span class="tok-type">u8</span>) (WeakPublicKeyError || IdentityElementError)!<span class="tok-type">void</span> {</span>
+<span class="line" id="L535">        debug.assert(c.len == m.len + seal_length);</span>
+<span class="line" id="L536">        <span class="tok-kw">var</span> ekp = <span class="tok-kw">try</span> KeyPair.create(<span class="tok-null">null</span>);</span>
+<span class="line" id="L537">        <span class="tok-kw">const</span> nonce = createNonce(ekp.public_key, public_key);</span>
+<span class="line" id="L538">        c[<span class="tok-number">0</span>..public_length].* = ekp.public_key;</span>
+<span class="line" id="L539">        <span class="tok-kw">try</span> Box.seal(c[Box.public_length..], m, nonce, public_key, ekp.secret_key);</span>
+<span class="line" id="L540">        utils.secureZero(<span class="tok-type">u8</span>, ekp.secret_key[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L541">    }</span>
+<span class="line" id="L542"></span>
+<span class="line" id="L543">    <span class="tok-comment">/// Decrypt a message using a key pair.</span></span>
+<span class="line" id="L544">    <span class="tok-comment">/// `m` must be exactly `seal_length` bytes smaller than `c`, as `c` also includes metadata.</span></span>
+<span class="line" id="L545">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">open</span>(m: []<span class="tok-type">u8</span>, c: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, keypair: KeyPair) (IdentityElementError || WeakPublicKeyError || AuthenticationError)!<span class="tok-type">void</span> {</span>
+<span class="line" id="L546">        <span class="tok-kw">if</span> (c.len &lt; seal_length) {</span>
+<span class="line" id="L547">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AuthenticationFailed;</span>
+<span class="line" id="L548">        }</span>
+<span class="line" id="L549">        <span class="tok-kw">const</span> epk = c[<span class="tok-number">0</span>..public_length];</span>
+<span class="line" id="L550">        <span class="tok-kw">const</span> nonce = createNonce(epk.*, keypair.public_key);</span>
+<span class="line" id="L551">        <span class="tok-kw">return</span> Box.open(m, c[public_length..], nonce, epk.*, keypair.secret_key);</span>
+<span class="line" id="L552">    }</span>
+<span class="line" id="L553">};</span>
 <span class="line" id="L554"></span>
-<span class="line" id="L555"><span class="tok-kw">test</span> <span class="tok-str">&quot;(x)salsa20&quot;</span> {</span>
-<span class="line" id="L556">    <span class="tok-kw">const</span> key = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x69</span>} ** <span class="tok-number">32</span>;</span>
-<span class="line" id="L557">    <span class="tok-kw">const</span> nonce = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x42</span>} ** <span class="tok-number">8</span>;</span>
-<span class="line" id="L558">    <span class="tok-kw">const</span> msg = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">20</span>;</span>
-<span class="line" id="L559">    <span class="tok-kw">var</span> c: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L560"></span>
-<span class="line" id="L561">    Salsa20.xor(&amp;c, msg[<span class="tok-number">0</span>..], <span class="tok-number">0</span>, key, nonce);</span>
-<span class="line" id="L562">    <span class="tok-kw">try</span> htest.assertEqual(<span class="tok-str">&quot;30ff9933aa6534ff5207142593cd1fca4b23bdd8&quot;</span>, c[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L563"></span>
-<span class="line" id="L564">    <span class="tok-kw">const</span> extended_nonce = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x42</span>} ** <span class="tok-number">24</span>;</span>
-<span class="line" id="L565">    XSalsa20.xor(&amp;c, msg[<span class="tok-number">0</span>..], <span class="tok-number">0</span>, key, extended_nonce);</span>
-<span class="line" id="L566">    <span class="tok-kw">try</span> htest.assertEqual(<span class="tok-str">&quot;b4ab7d82e750ec07644fa3281bce6cd91d4243f9&quot;</span>, c[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L567">}</span>
-<span class="line" id="L568"></span>
-<span class="line" id="L569"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305&quot;</span> {</span>
-<span class="line" id="L570">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L571">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L572">    <span class="tok-kw">var</span> c: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L573">    <span class="tok-kw">var</span> key: [XSalsa20Poly1305.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L574">    <span class="tok-kw">var</span> nonce: [XSalsa20Poly1305.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L575">    <span class="tok-kw">var</span> tag: [XSalsa20Poly1305.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L576">    crypto.random.bytes(&amp;msg);</span>
-<span class="line" id="L577">    crypto.random.bytes(&amp;key);</span>
-<span class="line" id="L578">    crypto.random.bytes(&amp;nonce);</span>
-<span class="line" id="L579"></span>
-<span class="line" id="L580">    XSalsa20Poly1305.encrypt(c[<span class="tok-number">0</span>..], &amp;tag, msg[<span class="tok-number">0</span>..], <span class="tok-str">&quot;ad&quot;</span>, nonce, key);</span>
-<span class="line" id="L581">    <span class="tok-kw">try</span> XSalsa20Poly1305.decrypt(msg2[<span class="tok-number">0</span>..], c[<span class="tok-number">0</span>..], tag, <span class="tok-str">&quot;ad&quot;</span>, nonce, key);</span>
-<span class="line" id="L582">}</span>
-<span class="line" id="L583"></span>
-<span class="line" id="L584"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305 secretbox&quot;</span> {</span>
-<span class="line" id="L585">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L586">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L587">    <span class="tok-kw">var</span> key: [XSalsa20Poly1305.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L588">    <span class="tok-kw">var</span> nonce: [Box.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L589">    <span class="tok-kw">var</span> boxed: [msg.len + Box.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L590">    crypto.random.bytes(&amp;msg);</span>
-<span class="line" id="L591">    crypto.random.bytes(&amp;key);</span>
-<span class="line" id="L592">    crypto.random.bytes(&amp;nonce);</span>
-<span class="line" id="L593"></span>
-<span class="line" id="L594">    SecretBox.seal(boxed[<span class="tok-number">0</span>..], msg[<span class="tok-number">0</span>..], nonce, key);</span>
-<span class="line" id="L595">    <span class="tok-kw">try</span> SecretBox.open(msg2[<span class="tok-number">0</span>..], boxed[<span class="tok-number">0</span>..], nonce, key);</span>
-<span class="line" id="L596">}</span>
-<span class="line" id="L597"></span>
-<span class="line" id="L598"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305 box&quot;</span> {</span>
-<span class="line" id="L599">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L600">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L601">    <span class="tok-kw">var</span> nonce: [Box.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L602">    <span class="tok-kw">var</span> boxed: [msg.len + Box.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L603">    crypto.random.bytes(&amp;msg);</span>
-<span class="line" id="L604">    crypto.random.bytes(&amp;nonce);</span>
-<span class="line" id="L605"></span>
-<span class="line" id="L606">    <span class="tok-kw">var</span> kp1 = <span class="tok-kw">try</span> Box.KeyPair.create(<span class="tok-null">null</span>);</span>
-<span class="line" id="L607">    <span class="tok-kw">var</span> kp2 = <span class="tok-kw">try</span> Box.KeyPair.create(<span class="tok-null">null</span>);</span>
-<span class="line" id="L608">    <span class="tok-kw">try</span> Box.seal(boxed[<span class="tok-number">0</span>..], msg[<span class="tok-number">0</span>..], nonce, kp1.public_key, kp2.secret_key);</span>
-<span class="line" id="L609">    <span class="tok-kw">try</span> Box.open(msg2[<span class="tok-number">0</span>..], boxed[<span class="tok-number">0</span>..], nonce, kp2.public_key, kp1.secret_key);</span>
-<span class="line" id="L610">}</span>
-<span class="line" id="L611"></span>
-<span class="line" id="L612"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305 sealedbox&quot;</span> {</span>
-<span class="line" id="L613">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L614">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L615">    <span class="tok-kw">var</span> boxed: [msg.len + SealedBox.seal_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L616">    crypto.random.bytes(&amp;msg);</span>
-<span class="line" id="L617"></span>
-<span class="line" id="L618">    <span class="tok-kw">var</span> kp = <span class="tok-kw">try</span> Box.KeyPair.create(<span class="tok-null">null</span>);</span>
-<span class="line" id="L619">    <span class="tok-kw">try</span> SealedBox.seal(boxed[<span class="tok-number">0</span>..], msg[<span class="tok-number">0</span>..], kp.public_key);</span>
-<span class="line" id="L620">    <span class="tok-kw">try</span> SealedBox.open(msg2[<span class="tok-number">0</span>..], boxed[<span class="tok-number">0</span>..], kp);</span>
-<span class="line" id="L621">}</span>
-<span class="line" id="L622"></span>
-<span class="line" id="L623"><span class="tok-kw">test</span> <span class="tok-str">&quot;secretbox twoblocks&quot;</span> {</span>
-<span class="line" id="L624">    <span class="tok-kw">const</span> key = [_]<span class="tok-type">u8</span>{ <span class="tok-number">0xc9</span>, <span class="tok-number">0xc9</span>, <span class="tok-number">0x4d</span>, <span class="tok-number">0xcf</span>, <span class="tok-number">0x68</span>, <span class="tok-number">0xbe</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0xe4</span>, <span class="tok-number">0x7f</span>, <span class="tok-number">0xe6</span>, <span class="tok-number">0x13</span>, <span class="tok-number">0x26</span>, <span class="tok-number">0xfc</span>, <span class="tok-number">0xc4</span>, <span class="tok-number">0x2f</span>, <span class="tok-number">0xd0</span>, <span class="tok-number">0xdb</span>, <span class="tok-number">0x93</span>, <span class="tok-number">0x91</span>, <span class="tok-number">0x1c</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x94</span>, <span class="tok-number">0x89</span>, <span class="tok-number">0xe1</span>, <span class="tok-number">0x1b</span>, <span class="tok-number">0x88</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x18</span>, <span class="tok-number">0x86</span>, <span class="tok-number">0x64</span>, <span class="tok-number">0x8b</span>, <span class="tok-number">0x7b</span> };</span>
-<span class="line" id="L625">    <span class="tok-kw">const</span> nonce = [_]<span class="tok-type">u8</span>{ <span class="tok-number">0xa4</span>, <span class="tok-number">0x33</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0x0a</span>, <span class="tok-number">0x07</span>, <span class="tok-number">0x68</span>, <span class="tok-number">0x6e</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0x2b</span>, <span class="tok-number">0x6d</span>, <span class="tok-number">0xd4</span>, <span class="tok-number">0x59</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x72</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0xd3</span>, <span class="tok-number">0x8a</span>, <span class="tok-number">0x67</span>, <span class="tok-number">0x55</span>, <span class="tok-number">0xc7</span>, <span class="tok-number">0x9e</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0x77</span>, <span class="tok-number">0xdc</span> };</span>
-<span class="line" id="L626">    <span class="tok-kw">const</span> msg = [_]<span class="tok-type">u8</span>{<span class="tok-str">'a'</span>} ** <span class="tok-number">97</span>;</span>
-<span class="line" id="L627">    <span class="tok-kw">var</span> ciphertext: [msg.len + SecretBox.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L628">    SecretBox.seal(&amp;ciphertext, &amp;msg, nonce, key);</span>
-<span class="line" id="L629">    <span class="tok-kw">try</span> htest.assertEqual(<span class="tok-str">&quot;b05760e217288ba079caa2fd57fd3701784974ffcfda20fe523b89211ad8af065a6eb37cdb29d51aca5bd75dafdd21d18b044c54bb7c526cf576c94ee8900f911ceab0147e82b667a28c52d58ceb29554ff45471224d37b03256b01c119b89ff6d36855de8138d103386dbc9d971f52261&quot;</span>, &amp;ciphertext);</span>
-<span class="line" id="L630">}</span>
-<span class="line" id="L631"></span>
+<span class="line" id="L555"><span class="tok-kw">const</span> htest = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;test.zig&quot;</span>);</span>
+<span class="line" id="L556"></span>
+<span class="line" id="L557"><span class="tok-kw">test</span> <span class="tok-str">&quot;(x)salsa20&quot;</span> {</span>
+<span class="line" id="L558">    <span class="tok-kw">const</span> key = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x69</span>} ** <span class="tok-number">32</span>;</span>
+<span class="line" id="L559">    <span class="tok-kw">const</span> nonce = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x42</span>} ** <span class="tok-number">8</span>;</span>
+<span class="line" id="L560">    <span class="tok-kw">const</span> msg = [_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">20</span>;</span>
+<span class="line" id="L561">    <span class="tok-kw">var</span> c: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L562"></span>
+<span class="line" id="L563">    Salsa20.xor(&amp;c, msg[<span class="tok-number">0</span>..], <span class="tok-number">0</span>, key, nonce);</span>
+<span class="line" id="L564">    <span class="tok-kw">try</span> htest.assertEqual(<span class="tok-str">&quot;30ff9933aa6534ff5207142593cd1fca4b23bdd8&quot;</span>, c[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L565"></span>
+<span class="line" id="L566">    <span class="tok-kw">const</span> extended_nonce = [_]<span class="tok-type">u8</span>{<span class="tok-number">0x42</span>} ** <span class="tok-number">24</span>;</span>
+<span class="line" id="L567">    XSalsa20.xor(&amp;c, msg[<span class="tok-number">0</span>..], <span class="tok-number">0</span>, key, extended_nonce);</span>
+<span class="line" id="L568">    <span class="tok-kw">try</span> htest.assertEqual(<span class="tok-str">&quot;b4ab7d82e750ec07644fa3281bce6cd91d4243f9&quot;</span>, c[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L569">}</span>
+<span class="line" id="L570"></span>
+<span class="line" id="L571"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305&quot;</span> {</span>
+<span class="line" id="L572">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L573">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L574">    <span class="tok-kw">var</span> c: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L575">    <span class="tok-kw">var</span> key: [XSalsa20Poly1305.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L576">    <span class="tok-kw">var</span> nonce: [XSalsa20Poly1305.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L577">    <span class="tok-kw">var</span> tag: [XSalsa20Poly1305.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L578">    crypto.random.bytes(&amp;msg);</span>
+<span class="line" id="L579">    crypto.random.bytes(&amp;key);</span>
+<span class="line" id="L580">    crypto.random.bytes(&amp;nonce);</span>
+<span class="line" id="L581"></span>
+<span class="line" id="L582">    XSalsa20Poly1305.encrypt(c[<span class="tok-number">0</span>..], &amp;tag, msg[<span class="tok-number">0</span>..], <span class="tok-str">&quot;ad&quot;</span>, nonce, key);</span>
+<span class="line" id="L583">    <span class="tok-kw">try</span> XSalsa20Poly1305.decrypt(msg2[<span class="tok-number">0</span>..], c[<span class="tok-number">0</span>..], tag, <span class="tok-str">&quot;ad&quot;</span>, nonce, key);</span>
+<span class="line" id="L584">}</span>
+<span class="line" id="L585"></span>
+<span class="line" id="L586"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305 secretbox&quot;</span> {</span>
+<span class="line" id="L587">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L588">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L589">    <span class="tok-kw">var</span> key: [XSalsa20Poly1305.key_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L590">    <span class="tok-kw">var</span> nonce: [Box.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L591">    <span class="tok-kw">var</span> boxed: [msg.len + Box.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L592">    crypto.random.bytes(&amp;msg);</span>
+<span class="line" id="L593">    crypto.random.bytes(&amp;key);</span>
+<span class="line" id="L594">    crypto.random.bytes(&amp;nonce);</span>
+<span class="line" id="L595"></span>
+<span class="line" id="L596">    SecretBox.seal(boxed[<span class="tok-number">0</span>..], msg[<span class="tok-number">0</span>..], nonce, key);</span>
+<span class="line" id="L597">    <span class="tok-kw">try</span> SecretBox.open(msg2[<span class="tok-number">0</span>..], boxed[<span class="tok-number">0</span>..], nonce, key);</span>
+<span class="line" id="L598">}</span>
+<span class="line" id="L599"></span>
+<span class="line" id="L600"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305 box&quot;</span> {</span>
+<span class="line" id="L601">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L602">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L603">    <span class="tok-kw">var</span> nonce: [Box.nonce_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L604">    <span class="tok-kw">var</span> boxed: [msg.len + Box.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L605">    crypto.random.bytes(&amp;msg);</span>
+<span class="line" id="L606">    crypto.random.bytes(&amp;nonce);</span>
+<span class="line" id="L607"></span>
+<span class="line" id="L608">    <span class="tok-kw">var</span> kp1 = <span class="tok-kw">try</span> Box.KeyPair.create(<span class="tok-null">null</span>);</span>
+<span class="line" id="L609">    <span class="tok-kw">var</span> kp2 = <span class="tok-kw">try</span> Box.KeyPair.create(<span class="tok-null">null</span>);</span>
+<span class="line" id="L610">    <span class="tok-kw">try</span> Box.seal(boxed[<span class="tok-number">0</span>..], msg[<span class="tok-number">0</span>..], nonce, kp1.public_key, kp2.secret_key);</span>
+<span class="line" id="L611">    <span class="tok-kw">try</span> Box.open(msg2[<span class="tok-number">0</span>..], boxed[<span class="tok-number">0</span>..], nonce, kp2.public_key, kp1.secret_key);</span>
+<span class="line" id="L612">}</span>
+<span class="line" id="L613"></span>
+<span class="line" id="L614"><span class="tok-kw">test</span> <span class="tok-str">&quot;xsalsa20poly1305 sealedbox&quot;</span> {</span>
+<span class="line" id="L615">    <span class="tok-kw">var</span> msg: [<span class="tok-number">100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L616">    <span class="tok-kw">var</span> msg2: [msg.len]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L617">    <span class="tok-kw">var</span> boxed: [msg.len + SealedBox.seal_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L618">    crypto.random.bytes(&amp;msg);</span>
+<span class="line" id="L619"></span>
+<span class="line" id="L620">    <span class="tok-kw">var</span> kp = <span class="tok-kw">try</span> Box.KeyPair.create(<span class="tok-null">null</span>);</span>
+<span class="line" id="L621">    <span class="tok-kw">try</span> SealedBox.seal(boxed[<span class="tok-number">0</span>..], msg[<span class="tok-number">0</span>..], kp.public_key);</span>
+<span class="line" id="L622">    <span class="tok-kw">try</span> SealedBox.open(msg2[<span class="tok-number">0</span>..], boxed[<span class="tok-number">0</span>..], kp);</span>
+<span class="line" id="L623">}</span>
+<span class="line" id="L624"></span>
+<span class="line" id="L625"><span class="tok-kw">test</span> <span class="tok-str">&quot;secretbox twoblocks&quot;</span> {</span>
+<span class="line" id="L626">    <span class="tok-kw">const</span> key = [_]<span class="tok-type">u8</span>{ <span class="tok-number">0xc9</span>, <span class="tok-number">0xc9</span>, <span class="tok-number">0x4d</span>, <span class="tok-number">0xcf</span>, <span class="tok-number">0x68</span>, <span class="tok-number">0xbe</span>, <span class="tok-number">0x00</span>, <span class="tok-number">0xe4</span>, <span class="tok-number">0x7f</span>, <span class="tok-number">0xe6</span>, <span class="tok-number">0x13</span>, <span class="tok-number">0x26</span>, <span class="tok-number">0xfc</span>, <span class="tok-number">0xc4</span>, <span class="tok-number">0x2f</span>, <span class="tok-number">0xd0</span>, <span class="tok-number">0xdb</span>, <span class="tok-number">0x93</span>, <span class="tok-number">0x91</span>, <span class="tok-number">0x1c</span>, <span class="tok-number">0x09</span>, <span class="tok-number">0x94</span>, <span class="tok-number">0x89</span>, <span class="tok-number">0xe1</span>, <span class="tok-number">0x1b</span>, <span class="tok-number">0x88</span>, <span class="tok-number">0x63</span>, <span class="tok-number">0x18</span>, <span class="tok-number">0x86</span>, <span class="tok-number">0x64</span>, <span class="tok-number">0x8b</span>, <span class="tok-number">0x7b</span> };</span>
+<span class="line" id="L627">    <span class="tok-kw">const</span> nonce = [_]<span class="tok-type">u8</span>{ <span class="tok-number">0xa4</span>, <span class="tok-number">0x33</span>, <span class="tok-number">0xe9</span>, <span class="tok-number">0x0a</span>, <span class="tok-number">0x07</span>, <span class="tok-number">0x68</span>, <span class="tok-number">0x6e</span>, <span class="tok-number">0x9a</span>, <span class="tok-number">0x2b</span>, <span class="tok-number">0x6d</span>, <span class="tok-number">0xd4</span>, <span class="tok-number">0x59</span>, <span class="tok-number">0x04</span>, <span class="tok-number">0x72</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0xd3</span>, <span class="tok-number">0x8a</span>, <span class="tok-number">0x67</span>, <span class="tok-number">0x55</span>, <span class="tok-number">0xc7</span>, <span class="tok-number">0x9e</span>, <span class="tok-number">0x3e</span>, <span class="tok-number">0x77</span>, <span class="tok-number">0xdc</span> };</span>
+<span class="line" id="L628">    <span class="tok-kw">const</span> msg = [_]<span class="tok-type">u8</span>{<span class="tok-str">'a'</span>} ** <span class="tok-number">97</span>;</span>
+<span class="line" id="L629">    <span class="tok-kw">var</span> ciphertext: [msg.len + SecretBox.tag_length]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L630">    SecretBox.seal(&amp;ciphertext, &amp;msg, nonce, key);</span>
+<span class="line" id="L631">    <span class="tok-kw">try</span> htest.assertEqual(<span class="tok-str">&quot;b05760e217288ba079caa2fd57fd3701784974ffcfda20fe523b89211ad8af065a6eb37cdb29d51aca5bd75dafdd21d18b044c54bb7c526cf576c94ee8900f911ceab0147e82b667a28c52d58ceb29554ff45471224d37b03256b01c119b89ff6d36855de8138d103386dbc9d971f52261&quot;</span>, &amp;ciphertext);</span>
+<span class="line" id="L632">}</span>
+<span class="line" id="L633"></span>
 </code></pre></body>
 </html>

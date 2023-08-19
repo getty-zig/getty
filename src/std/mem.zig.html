@@ -4325,547 +4325,555 @@
 <span class="line" id="L4138">    <span class="tok-kw">try</span> testing.expectEqual(in.alignment, out.alignment);</span>
 <span class="line" id="L4139">}</span>
 <span class="line" id="L4140"></span>
-<span class="line" id="L4141"><span class="tok-kw">fn</span> <span class="tok-fn">SliceAsBytesReturnType</span>(<span class="tok-kw">comptime</span> sliceType: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L4142">    <span class="tok-kw">if</span> (!trait.isSlice(sliceType) <span class="tok-kw">and</span> !trait.isPtrTo(.Array)(sliceType)) {</span>
-<span class="line" id="L4143">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected []T or *[_]T, passed &quot;</span> ++ <span class="tok-builtin">@typeName</span>(sliceType));</span>
+<span class="line" id="L4141"><span class="tok-kw">fn</span> <span class="tok-fn">SliceAsBytesReturnType</span>(<span class="tok-kw">comptime</span> Slice: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L4142">    <span class="tok-kw">if</span> (!trait.isSlice(Slice) <span class="tok-kw">and</span> !trait.isPtrTo(.Array)(Slice)) {</span>
+<span class="line" id="L4143">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;expected []T or *[_]T, passed &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Slice));</span>
 <span class="line" id="L4144">    }</span>
 <span class="line" id="L4145"></span>
-<span class="line" id="L4146">    <span class="tok-kw">return</span> CopyPtrAttrs(sliceType, .Slice, <span class="tok-type">u8</span>);</span>
+<span class="line" id="L4146">    <span class="tok-kw">return</span> CopyPtrAttrs(Slice, .Slice, <span class="tok-type">u8</span>);</span>
 <span class="line" id="L4147">}</span>
 <span class="line" id="L4148"></span>
 <span class="line" id="L4149"><span class="tok-comment">/// Given a slice, returns a slice of the underlying bytes, preserving pointer attributes.</span></span>
 <span class="line" id="L4150"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">sliceAsBytes</span>(slice: <span class="tok-kw">anytype</span>) SliceAsBytesReturnType(<span class="tok-builtin">@TypeOf</span>(slice)) {</span>
 <span class="line" id="L4151">    <span class="tok-kw">const</span> Slice = <span class="tok-builtin">@TypeOf</span>(slice);</span>
 <span class="line" id="L4152"></span>
-<span class="line" id="L4153">    <span class="tok-comment">// let's not give an undefined pointer to @ptrCast</span>
+<span class="line" id="L4153">    <span class="tok-comment">// a slice of zero-bit values always occupies zero bytes</span>
 </span>
-<span class="line" id="L4154">    <span class="tok-comment">// it may be equal to zero and fail a null check</span>
+<span class="line" id="L4154">    <span class="tok-kw">if</span> (<span class="tok-builtin">@sizeOf</span>(meta.Elem(Slice)) == <span class="tok-number">0</span>) <span class="tok-kw">return</span> &amp;[<span class="tok-number">0</span>]<span class="tok-type">u8</span>{};</span>
+<span class="line" id="L4155"></span>
+<span class="line" id="L4156">    <span class="tok-comment">// let's not give an undefined pointer to @ptrCast</span>
 </span>
-<span class="line" id="L4155">    <span class="tok-kw">if</span> (slice.len == <span class="tok-number">0</span> <span class="tok-kw">and</span> <span class="tok-kw">comptime</span> meta.sentinel(Slice) == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L4156">        <span class="tok-kw">return</span> &amp;[<span class="tok-number">0</span>]<span class="tok-type">u8</span>{};</span>
-<span class="line" id="L4157">    }</span>
-<span class="line" id="L4158"></span>
-<span class="line" id="L4159">    <span class="tok-kw">const</span> cast_target = CopyPtrAttrs(Slice, .Many, <span class="tok-type">u8</span>);</span>
-<span class="line" id="L4160"></span>
-<span class="line" id="L4161">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(cast_target, <span class="tok-builtin">@ptrCast</span>(slice))[<span class="tok-number">0</span> .. slice.len * <span class="tok-builtin">@sizeOf</span>(meta.Elem(Slice))];</span>
-<span class="line" id="L4162">}</span>
-<span class="line" id="L4163"></span>
-<span class="line" id="L4164"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes&quot;</span> {</span>
-<span class="line" id="L4165">    <span class="tok-kw">const</span> bytes = [_]<span class="tok-type">u16</span>{ <span class="tok-number">0xDEAD</span>, <span class="tok-number">0xBEEF</span> };</span>
-<span class="line" id="L4166">    <span class="tok-kw">const</span> slice = sliceAsBytes(bytes[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L4167">    <span class="tok-kw">try</span> testing.expect(slice.len == <span class="tok-number">4</span>);</span>
-<span class="line" id="L4168">    <span class="tok-kw">try</span> testing.expect(eql(<span class="tok-type">u8</span>, slice, <span class="tok-kw">switch</span> (native_endian) {</span>
-<span class="line" id="L4169">        .Big =&gt; <span class="tok-str">&quot;\xDE\xAD\xBE\xEF&quot;</span>,</span>
-<span class="line" id="L4170">        .Little =&gt; <span class="tok-str">&quot;\xAD\xDE\xEF\xBE&quot;</span>,</span>
-<span class="line" id="L4171">    }));</span>
-<span class="line" id="L4172">}</span>
-<span class="line" id="L4173"></span>
-<span class="line" id="L4174"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes with sentinel slice&quot;</span> {</span>
-<span class="line" id="L4175">    <span class="tok-kw">const</span> empty_string: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;&quot;</span>;</span>
-<span class="line" id="L4176">    <span class="tok-kw">const</span> bytes = sliceAsBytes(empty_string);</span>
-<span class="line" id="L4177">    <span class="tok-kw">try</span> testing.expect(bytes.len == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4178">}</span>
-<span class="line" id="L4179"></span>
-<span class="line" id="L4180"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes packed struct at runtime and comptime&quot;</span> {</span>
-<span class="line" id="L4181">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">packed</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L4182">        a: <span class="tok-type">u4</span>,</span>
-<span class="line" id="L4183">        b: <span class="tok-type">u4</span>,</span>
-<span class="line" id="L4184">    };</span>
-<span class="line" id="L4185">    <span class="tok-kw">const</span> S = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L4186">        <span class="tok-kw">fn</span> <span class="tok-fn">doTheTest</span>() !<span class="tok-type">void</span> {</span>
-<span class="line" id="L4187">            <span class="tok-kw">var</span> foo: Foo = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L4188">            <span class="tok-kw">var</span> slice = sliceAsBytes(<span class="tok-builtin">@as</span>(*[<span class="tok-number">1</span>]Foo, &amp;foo)[<span class="tok-number">0</span>..<span class="tok-number">1</span>]);</span>
-<span class="line" id="L4189">            slice[<span class="tok-number">0</span>] = <span class="tok-number">0x13</span>;</span>
-<span class="line" id="L4190">            <span class="tok-kw">try</span> testing.expect(foo.a == <span class="tok-number">0x3</span>);</span>
-<span class="line" id="L4191">            <span class="tok-kw">try</span> testing.expect(foo.b == <span class="tok-number">0x1</span>);</span>
-<span class="line" id="L4192">        }</span>
-<span class="line" id="L4193">    };</span>
-<span class="line" id="L4194">    <span class="tok-kw">try</span> S.doTheTest();</span>
-<span class="line" id="L4195">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> S.doTheTest();</span>
-<span class="line" id="L4196">}</span>
-<span class="line" id="L4197"></span>
-<span class="line" id="L4198"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes and bytesAsSlice back&quot;</span> {</span>
-<span class="line" id="L4199">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@sizeOf</span>(<span class="tok-type">i32</span>) == <span class="tok-number">4</span>);</span>
-<span class="line" id="L4200"></span>
-<span class="line" id="L4201">    <span class="tok-kw">var</span> big_thing_array = [_]<span class="tok-type">i32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span> };</span>
-<span class="line" id="L4202">    <span class="tok-kw">const</span> big_thing_slice: []<span class="tok-type">i32</span> = big_thing_array[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L4203"></span>
-<span class="line" id="L4204">    <span class="tok-kw">const</span> bytes = sliceAsBytes(big_thing_slice);</span>
-<span class="line" id="L4205">    <span class="tok-kw">try</span> testing.expect(bytes.len == <span class="tok-number">4</span> * <span class="tok-number">4</span>);</span>
-<span class="line" id="L4206"></span>
-<span class="line" id="L4207">    bytes[<span class="tok-number">4</span>] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4208">    bytes[<span class="tok-number">5</span>] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4209">    bytes[<span class="tok-number">6</span>] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4210">    bytes[<span class="tok-number">7</span>] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4211">    <span class="tok-kw">try</span> testing.expect(big_thing_slice[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4212"></span>
-<span class="line" id="L4213">    <span class="tok-kw">const</span> big_thing_again = bytesAsSlice(<span class="tok-type">i32</span>, bytes);</span>
-<span class="line" id="L4214">    <span class="tok-kw">try</span> testing.expect(big_thing_again[<span class="tok-number">2</span>] == <span class="tok-number">3</span>);</span>
-<span class="line" id="L4215"></span>
-<span class="line" id="L4216">    big_thing_again[<span class="tok-number">2</span>] = -<span class="tok-number">1</span>;</span>
-<span class="line" id="L4217">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">8</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
-<span class="line" id="L4218">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">9</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
-<span class="line" id="L4219">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">10</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
-<span class="line" id="L4220">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">11</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
-<span class="line" id="L4221">}</span>
+<span class="line" id="L4157">    <span class="tok-comment">// it may be equal to zero and fail a null check</span>
+</span>
+<span class="line" id="L4158">    <span class="tok-kw">if</span> (slice.len == <span class="tok-number">0</span> <span class="tok-kw">and</span> <span class="tok-kw">comptime</span> meta.sentinel(Slice) == <span class="tok-null">null</span>) <span class="tok-kw">return</span> &amp;[<span class="tok-number">0</span>]<span class="tok-type">u8</span>{};</span>
+<span class="line" id="L4159"></span>
+<span class="line" id="L4160">    <span class="tok-kw">const</span> cast_target = CopyPtrAttrs(Slice, .Many, <span class="tok-type">u8</span>);</span>
+<span class="line" id="L4161"></span>
+<span class="line" id="L4162">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(cast_target, <span class="tok-builtin">@ptrCast</span>(slice))[<span class="tok-number">0</span> .. slice.len * <span class="tok-builtin">@sizeOf</span>(meta.Elem(Slice))];</span>
+<span class="line" id="L4163">}</span>
+<span class="line" id="L4164"></span>
+<span class="line" id="L4165"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes&quot;</span> {</span>
+<span class="line" id="L4166">    <span class="tok-kw">const</span> bytes = [_]<span class="tok-type">u16</span>{ <span class="tok-number">0xDEAD</span>, <span class="tok-number">0xBEEF</span> };</span>
+<span class="line" id="L4167">    <span class="tok-kw">const</span> slice = sliceAsBytes(bytes[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L4168">    <span class="tok-kw">try</span> testing.expect(slice.len == <span class="tok-number">4</span>);</span>
+<span class="line" id="L4169">    <span class="tok-kw">try</span> testing.expect(eql(<span class="tok-type">u8</span>, slice, <span class="tok-kw">switch</span> (native_endian) {</span>
+<span class="line" id="L4170">        .Big =&gt; <span class="tok-str">&quot;\xDE\xAD\xBE\xEF&quot;</span>,</span>
+<span class="line" id="L4171">        .Little =&gt; <span class="tok-str">&quot;\xAD\xDE\xEF\xBE&quot;</span>,</span>
+<span class="line" id="L4172">    }));</span>
+<span class="line" id="L4173">}</span>
+<span class="line" id="L4174"></span>
+<span class="line" id="L4175"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes with sentinel slice&quot;</span> {</span>
+<span class="line" id="L4176">    <span class="tok-kw">const</span> empty_string: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-str">&quot;&quot;</span>;</span>
+<span class="line" id="L4177">    <span class="tok-kw">const</span> bytes = sliceAsBytes(empty_string);</span>
+<span class="line" id="L4178">    <span class="tok-kw">try</span> testing.expect(bytes.len == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4179">}</span>
+<span class="line" id="L4180"></span>
+<span class="line" id="L4181"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes with zero-bit element type&quot;</span> {</span>
+<span class="line" id="L4182">    <span class="tok-kw">const</span> lots_of_nothing = [<span class="tok-number">1</span>]<span class="tok-type">void</span>{{}} ** <span class="tok-number">10_000</span>;</span>
+<span class="line" id="L4183">    <span class="tok-kw">const</span> bytes = sliceAsBytes(&amp;lots_of_nothing);</span>
+<span class="line" id="L4184">    <span class="tok-kw">try</span> testing.expect(bytes.len == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4185">}</span>
+<span class="line" id="L4186"></span>
+<span class="line" id="L4187"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes packed struct at runtime and comptime&quot;</span> {</span>
+<span class="line" id="L4188">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">packed</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L4189">        a: <span class="tok-type">u4</span>,</span>
+<span class="line" id="L4190">        b: <span class="tok-type">u4</span>,</span>
+<span class="line" id="L4191">    };</span>
+<span class="line" id="L4192">    <span class="tok-kw">const</span> S = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L4193">        <span class="tok-kw">fn</span> <span class="tok-fn">doTheTest</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L4194">            <span class="tok-kw">var</span> foo: Foo = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L4195">            <span class="tok-kw">var</span> slice = sliceAsBytes(<span class="tok-builtin">@as</span>(*[<span class="tok-number">1</span>]Foo, &amp;foo)[<span class="tok-number">0</span>..<span class="tok-number">1</span>]);</span>
+<span class="line" id="L4196">            slice[<span class="tok-number">0</span>] = <span class="tok-number">0x13</span>;</span>
+<span class="line" id="L4197">            <span class="tok-kw">try</span> testing.expect(foo.a == <span class="tok-number">0x3</span>);</span>
+<span class="line" id="L4198">            <span class="tok-kw">try</span> testing.expect(foo.b == <span class="tok-number">0x1</span>);</span>
+<span class="line" id="L4199">        }</span>
+<span class="line" id="L4200">    };</span>
+<span class="line" id="L4201">    <span class="tok-kw">try</span> S.doTheTest();</span>
+<span class="line" id="L4202">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> S.doTheTest();</span>
+<span class="line" id="L4203">}</span>
+<span class="line" id="L4204"></span>
+<span class="line" id="L4205"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes and bytesAsSlice back&quot;</span> {</span>
+<span class="line" id="L4206">    <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@sizeOf</span>(<span class="tok-type">i32</span>) == <span class="tok-number">4</span>);</span>
+<span class="line" id="L4207"></span>
+<span class="line" id="L4208">    <span class="tok-kw">var</span> big_thing_array = [_]<span class="tok-type">i32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span> };</span>
+<span class="line" id="L4209">    <span class="tok-kw">const</span> big_thing_slice: []<span class="tok-type">i32</span> = big_thing_array[<span class="tok-number">0</span>..];</span>
+<span class="line" id="L4210"></span>
+<span class="line" id="L4211">    <span class="tok-kw">const</span> bytes = sliceAsBytes(big_thing_slice);</span>
+<span class="line" id="L4212">    <span class="tok-kw">try</span> testing.expect(bytes.len == <span class="tok-number">4</span> * <span class="tok-number">4</span>);</span>
+<span class="line" id="L4213"></span>
+<span class="line" id="L4214">    bytes[<span class="tok-number">4</span>] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4215">    bytes[<span class="tok-number">5</span>] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4216">    bytes[<span class="tok-number">6</span>] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4217">    bytes[<span class="tok-number">7</span>] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4218">    <span class="tok-kw">try</span> testing.expect(big_thing_slice[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4219"></span>
+<span class="line" id="L4220">    <span class="tok-kw">const</span> big_thing_again = bytesAsSlice(<span class="tok-type">i32</span>, bytes);</span>
+<span class="line" id="L4221">    <span class="tok-kw">try</span> testing.expect(big_thing_again[<span class="tok-number">2</span>] == <span class="tok-number">3</span>);</span>
 <span class="line" id="L4222"></span>
-<span class="line" id="L4223"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes preserves pointer attributes&quot;</span> {</span>
-<span class="line" id="L4224">    <span class="tok-kw">const</span> inArr <span class="tok-kw">align</span>(<span class="tok-number">16</span>) = [<span class="tok-number">2</span>]<span class="tok-type">u16</span>{ <span class="tok-number">0xDEAD</span>, <span class="tok-number">0xBEEF</span> };</span>
-<span class="line" id="L4225">    <span class="tok-kw">const</span> inSlice = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">16</span>) <span class="tok-kw">const</span> <span class="tok-kw">volatile</span> [<span class="tok-number">2</span>]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(&amp;inArr))[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L4226">    <span class="tok-kw">const</span> outSlice = sliceAsBytes(inSlice);</span>
-<span class="line" id="L4227"></span>
-<span class="line" id="L4228">    <span class="tok-kw">const</span> in = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(inSlice)).Pointer;</span>
-<span class="line" id="L4229">    <span class="tok-kw">const</span> out = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(outSlice)).Pointer;</span>
-<span class="line" id="L4230"></span>
-<span class="line" id="L4231">    <span class="tok-kw">try</span> testing.expectEqual(in.is_const, out.is_const);</span>
-<span class="line" id="L4232">    <span class="tok-kw">try</span> testing.expectEqual(in.is_volatile, out.is_volatile);</span>
-<span class="line" id="L4233">    <span class="tok-kw">try</span> testing.expectEqual(in.is_allowzero, out.is_allowzero);</span>
-<span class="line" id="L4234">    <span class="tok-kw">try</span> testing.expectEqual(in.alignment, out.alignment);</span>
-<span class="line" id="L4235">}</span>
-<span class="line" id="L4236"></span>
-<span class="line" id="L4237"><span class="tok-comment">/// Round an address up to the next (or current) aligned address.</span></span>
-<span class="line" id="L4238"><span class="tok-comment">/// The alignment must be a power of 2 and greater than 0.</span></span>
-<span class="line" id="L4239"><span class="tok-comment">/// Asserts that rounding up the address does not cause integer overflow.</span></span>
-<span class="line" id="L4240"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignForward</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, addr: T, alignment: T) T {</span>
-<span class="line" id="L4241">    assert(isValidAlignGeneric(T, alignment));</span>
-<span class="line" id="L4242">    <span class="tok-kw">return</span> alignBackward(T, addr + (alignment - <span class="tok-number">1</span>), alignment);</span>
-<span class="line" id="L4243">}</span>
-<span class="line" id="L4244"></span>
-<span class="line" id="L4245"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignForwardLog2</span>(addr: <span class="tok-type">usize</span>, log2_alignment: <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L4246">    <span class="tok-kw">const</span> alignment = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(math.Log2Int(<span class="tok-type">usize</span>), <span class="tok-builtin">@intCast</span>(log2_alignment));</span>
-<span class="line" id="L4247">    <span class="tok-kw">return</span> alignForward(<span class="tok-type">usize</span>, addr, alignment);</span>
-<span class="line" id="L4248">}</span>
-<span class="line" id="L4249"></span>
-<span class="line" id="L4250"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> alignForwardGeneric = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;renamed to alignForward&quot;</span>);</span>
+<span class="line" id="L4223">    big_thing_again[<span class="tok-number">2</span>] = -<span class="tok-number">1</span>;</span>
+<span class="line" id="L4224">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">8</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
+<span class="line" id="L4225">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">9</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
+<span class="line" id="L4226">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">10</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
+<span class="line" id="L4227">    <span class="tok-kw">try</span> testing.expect(bytes[<span class="tok-number">11</span>] == math.maxInt(<span class="tok-type">u8</span>));</span>
+<span class="line" id="L4228">}</span>
+<span class="line" id="L4229"></span>
+<span class="line" id="L4230"><span class="tok-kw">test</span> <span class="tok-str">&quot;sliceAsBytes preserves pointer attributes&quot;</span> {</span>
+<span class="line" id="L4231">    <span class="tok-kw">const</span> inArr <span class="tok-kw">align</span>(<span class="tok-number">16</span>) = [<span class="tok-number">2</span>]<span class="tok-type">u16</span>{ <span class="tok-number">0xDEAD</span>, <span class="tok-number">0xBEEF</span> };</span>
+<span class="line" id="L4232">    <span class="tok-kw">const</span> inSlice = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">16</span>) <span class="tok-kw">const</span> <span class="tok-kw">volatile</span> [<span class="tok-number">2</span>]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(&amp;inArr))[<span class="tok-number">0</span>..];</span>
+<span class="line" id="L4233">    <span class="tok-kw">const</span> outSlice = sliceAsBytes(inSlice);</span>
+<span class="line" id="L4234"></span>
+<span class="line" id="L4235">    <span class="tok-kw">const</span> in = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(inSlice)).Pointer;</span>
+<span class="line" id="L4236">    <span class="tok-kw">const</span> out = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(outSlice)).Pointer;</span>
+<span class="line" id="L4237"></span>
+<span class="line" id="L4238">    <span class="tok-kw">try</span> testing.expectEqual(in.is_const, out.is_const);</span>
+<span class="line" id="L4239">    <span class="tok-kw">try</span> testing.expectEqual(in.is_volatile, out.is_volatile);</span>
+<span class="line" id="L4240">    <span class="tok-kw">try</span> testing.expectEqual(in.is_allowzero, out.is_allowzero);</span>
+<span class="line" id="L4241">    <span class="tok-kw">try</span> testing.expectEqual(in.alignment, out.alignment);</span>
+<span class="line" id="L4242">}</span>
+<span class="line" id="L4243"></span>
+<span class="line" id="L4244"><span class="tok-comment">/// Round an address up to the next (or current) aligned address.</span></span>
+<span class="line" id="L4245"><span class="tok-comment">/// The alignment must be a power of 2 and greater than 0.</span></span>
+<span class="line" id="L4246"><span class="tok-comment">/// Asserts that rounding up the address does not cause integer overflow.</span></span>
+<span class="line" id="L4247"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignForward</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, addr: T, alignment: T) T {</span>
+<span class="line" id="L4248">    assert(isValidAlignGeneric(T, alignment));</span>
+<span class="line" id="L4249">    <span class="tok-kw">return</span> alignBackward(T, addr + (alignment - <span class="tok-number">1</span>), alignment);</span>
+<span class="line" id="L4250">}</span>
 <span class="line" id="L4251"></span>
-<span class="line" id="L4252"><span class="tok-comment">/// Force an evaluation of the expression; this tries to prevent</span></span>
-<span class="line" id="L4253"><span class="tok-comment">/// the compiler from optimizing the computation away even if the</span></span>
-<span class="line" id="L4254"><span class="tok-comment">/// result eventually gets discarded.</span></span>
-<span class="line" id="L4255"><span class="tok-comment">// TODO: use @declareSideEffect() when it is available - https://github.com/ziglang/zig/issues/6168</span>
+<span class="line" id="L4252"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignForwardLog2</span>(addr: <span class="tok-type">usize</span>, log2_alignment: <span class="tok-type">u8</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L4253">    <span class="tok-kw">const</span> alignment = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>) &lt;&lt; <span class="tok-builtin">@as</span>(math.Log2Int(<span class="tok-type">usize</span>), <span class="tok-builtin">@intCast</span>(log2_alignment));</span>
+<span class="line" id="L4254">    <span class="tok-kw">return</span> alignForward(<span class="tok-type">usize</span>, addr, alignment);</span>
+<span class="line" id="L4255">}</span>
+<span class="line" id="L4256"></span>
+<span class="line" id="L4257"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> alignForwardGeneric = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;renamed to alignForward&quot;</span>);</span>
+<span class="line" id="L4258"></span>
+<span class="line" id="L4259"><span class="tok-comment">/// Force an evaluation of the expression; this tries to prevent</span></span>
+<span class="line" id="L4260"><span class="tok-comment">/// the compiler from optimizing the computation away even if the</span></span>
+<span class="line" id="L4261"><span class="tok-comment">/// result eventually gets discarded.</span></span>
+<span class="line" id="L4262"><span class="tok-comment">// TODO: use @declareSideEffect() when it is available - https://github.com/ziglang/zig/issues/6168</span>
 </span>
-<span class="line" id="L4256"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">doNotOptimizeAway</span>(val: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L4257">    <span class="tok-kw">var</span> a: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4258">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(.{a})).Struct.fields[<span class="tok-number">0</span>].is_comptime) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L4259"></span>
-<span class="line" id="L4260">    <span class="tok-kw">const</span> max_gp_register_bits = <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">c_long</span>);</span>
-<span class="line" id="L4261">    <span class="tok-kw">const</span> t = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(val));</span>
-<span class="line" id="L4262">    <span class="tok-kw">switch</span> (t) {</span>
-<span class="line" id="L4263">        .Void, .Null, .ComptimeInt, .ComptimeFloat =&gt; <span class="tok-kw">return</span>,</span>
-<span class="line" id="L4264">        .Enum =&gt; doNotOptimizeAway(<span class="tok-builtin">@intFromEnum</span>(val)),</span>
-<span class="line" id="L4265">        .Bool =&gt; doNotOptimizeAway(<span class="tok-builtin">@intFromBool</span>(val)),</span>
-<span class="line" id="L4266">        .Int =&gt; {</span>
-<span class="line" id="L4267">            <span class="tok-kw">const</span> bits = t.Int.bits;</span>
-<span class="line" id="L4268">            <span class="tok-kw">if</span> (bits &lt;= max_gp_register_bits <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c) {</span>
-<span class="line" id="L4269">                <span class="tok-kw">const</span> val2 = <span class="tok-builtin">@as</span>(</span>
-<span class="line" id="L4270">                    std.meta.Int(t.Int.signedness, <span class="tok-builtin">@max</span>(<span class="tok-number">8</span>, std.math.ceilPowerOfTwoAssert(<span class="tok-type">u16</span>, bits))),</span>
-<span class="line" id="L4271">                    val,</span>
-<span class="line" id="L4272">                );</span>
-<span class="line" id="L4273">                <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-str">&quot;&quot;</span></span>
-<span class="line" id="L4274">                    :</span>
-<span class="line" id="L4275">                    : [val2] <span class="tok-str">&quot;r&quot;</span> (val2),</span>
-<span class="line" id="L4276">                );</span>
-<span class="line" id="L4277">            } <span class="tok-kw">else</span> doNotOptimizeAway(&amp;val);</span>
-<span class="line" id="L4278">        },</span>
-<span class="line" id="L4279">        .Float =&gt; {</span>
-<span class="line" id="L4280">            <span class="tok-kw">if</span> ((t.Float.bits == <span class="tok-number">32</span> <span class="tok-kw">or</span> t.Float.bits == <span class="tok-number">64</span>) <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c) {</span>
-<span class="line" id="L4281">                <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-str">&quot;&quot;</span></span>
-<span class="line" id="L4282">                    :</span>
-<span class="line" id="L4283">                    : [val] <span class="tok-str">&quot;rm&quot;</span> (val),</span>
-<span class="line" id="L4284">                );</span>
-<span class="line" id="L4285">            } <span class="tok-kw">else</span> doNotOptimizeAway(&amp;val);</span>
-<span class="line" id="L4286">        },</span>
-<span class="line" id="L4287">        .Pointer =&gt; {</span>
-<span class="line" id="L4288">            <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) {</span>
-<span class="line" id="L4289">                doNotOptimizeAwayC(val);</span>
-<span class="line" id="L4290">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L4291">                <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-str">&quot;&quot;</span></span>
-<span class="line" id="L4292">                    :</span>
-<span class="line" id="L4293">                    : [val] <span class="tok-str">&quot;m&quot;</span> (val),</span>
-<span class="line" id="L4294">                    : <span class="tok-str">&quot;memory&quot;</span></span>
-<span class="line" id="L4295">                );</span>
-<span class="line" id="L4296">            }</span>
-<span class="line" id="L4297">        },</span>
-<span class="line" id="L4298">        .Array =&gt; {</span>
-<span class="line" id="L4299">            <span class="tok-kw">if</span> (t.Array.len * <span class="tok-builtin">@sizeOf</span>(t.Array.child) &lt;= <span class="tok-number">64</span>) {</span>
-<span class="line" id="L4300">                <span class="tok-kw">for</span> (val) |v| doNotOptimizeAway(v);</span>
-<span class="line" id="L4301">            } <span class="tok-kw">else</span> doNotOptimizeAway(&amp;val);</span>
-<span class="line" id="L4302">        },</span>
-<span class="line" id="L4303">        <span class="tok-kw">else</span> =&gt; doNotOptimizeAway(&amp;val),</span>
-<span class="line" id="L4304">    }</span>
-<span class="line" id="L4305">}</span>
-<span class="line" id="L4306"></span>
-<span class="line" id="L4307"><span class="tok-comment">/// .stage2_c doesn't support asm blocks yet, so use volatile stores instead</span></span>
-<span class="line" id="L4308"><span class="tok-kw">var</span> deopt_target: <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-type">u8</span> <span class="tok-kw">else</span> <span class="tok-type">void</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L4309"><span class="tok-kw">fn</span> <span class="tok-fn">doNotOptimizeAwayC</span>(ptr: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L4310">    <span class="tok-kw">const</span> dest = <span class="tok-builtin">@as</span>(*<span class="tok-kw">volatile</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;deopt_target));</span>
-<span class="line" id="L4311">    <span class="tok-kw">for</span> (asBytes(ptr)) |b| {</span>
-<span class="line" id="L4312">        dest.* = b;</span>
-<span class="line" id="L4313">    }</span>
-<span class="line" id="L4314">    dest.* = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4315">}</span>
-<span class="line" id="L4316"></span>
-<span class="line" id="L4317"><span class="tok-kw">test</span> <span class="tok-str">&quot;doNotOptimizeAway&quot;</span> {</span>
-<span class="line" id="L4318">    <span class="tok-kw">comptime</span> doNotOptimizeAway(<span class="tok-str">&quot;test&quot;</span>);</span>
-<span class="line" id="L4319"></span>
-<span class="line" id="L4320">    doNotOptimizeAway(<span class="tok-null">null</span>);</span>
-<span class="line" id="L4321">    doNotOptimizeAway(<span class="tok-null">true</span>);</span>
-<span class="line" id="L4322">    doNotOptimizeAway(<span class="tok-number">0</span>);</span>
-<span class="line" id="L4323">    doNotOptimizeAway(<span class="tok-number">0.0</span>);</span>
-<span class="line" id="L4324">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u1</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4325">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u3</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4326">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4327">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4328">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4329">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4330">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u128</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4331">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u13</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4332">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u37</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4333">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u96</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4334">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u200</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L4335">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-number">0.0</span>));</span>
-<span class="line" id="L4336">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-number">0.0</span>));</span>
-<span class="line" id="L4337">    doNotOptimizeAway([_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">4</span>);</span>
-<span class="line" id="L4338">    doNotOptimizeAway([_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">100</span>);</span>
-<span class="line" id="L4339">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(std.builtin.Endian, .Little));</span>
-<span class="line" id="L4340">}</span>
-<span class="line" id="L4341"></span>
-<span class="line" id="L4342"><span class="tok-kw">test</span> <span class="tok-str">&quot;alignForward&quot;</span> {</span>
-<span class="line" id="L4343">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">1</span>, <span class="tok-number">1</span>) == <span class="tok-number">1</span>);</span>
-<span class="line" id="L4344">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">2</span>, <span class="tok-number">1</span>) == <span class="tok-number">2</span>);</span>
-<span class="line" id="L4345">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">1</span>, <span class="tok-number">2</span>) == <span class="tok-number">2</span>);</span>
-<span class="line" id="L4346">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">2</span>, <span class="tok-number">2</span>) == <span class="tok-number">2</span>);</span>
-<span class="line" id="L4347">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">3</span>, <span class="tok-number">2</span>) == <span class="tok-number">4</span>);</span>
-<span class="line" id="L4348">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">4</span>, <span class="tok-number">2</span>) == <span class="tok-number">4</span>);</span>
-<span class="line" id="L4349">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">7</span>, <span class="tok-number">8</span>) == <span class="tok-number">8</span>);</span>
-<span class="line" id="L4350">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">8</span>, <span class="tok-number">8</span>) == <span class="tok-number">8</span>);</span>
-<span class="line" id="L4351">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">9</span>, <span class="tok-number">8</span>) == <span class="tok-number">16</span>);</span>
-<span class="line" id="L4352">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">15</span>, <span class="tok-number">8</span>) == <span class="tok-number">16</span>);</span>
-<span class="line" id="L4353">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">16</span>, <span class="tok-number">8</span>) == <span class="tok-number">16</span>);</span>
-<span class="line" id="L4354">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">17</span>, <span class="tok-number">8</span>) == <span class="tok-number">24</span>);</span>
-<span class="line" id="L4355">}</span>
-<span class="line" id="L4356"></span>
-<span class="line" id="L4357"><span class="tok-comment">/// Round an address down to the previous (or current) aligned address.</span></span>
-<span class="line" id="L4358"><span class="tok-comment">/// Unlike `alignBackward`, `alignment` can be any positive number, not just a power of 2.</span></span>
-<span class="line" id="L4359"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignBackwardAnyAlign</span>(i: <span class="tok-type">usize</span>, alignment: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L4360">    <span class="tok-kw">if</span> (isValidAlign(alignment))</span>
-<span class="line" id="L4361">        <span class="tok-kw">return</span> alignBackward(<span class="tok-type">usize</span>, i, alignment);</span>
-<span class="line" id="L4362">    assert(alignment != <span class="tok-number">0</span>);</span>
-<span class="line" id="L4363">    <span class="tok-kw">return</span> i - <span class="tok-builtin">@mod</span>(i, alignment);</span>
-<span class="line" id="L4364">}</span>
-<span class="line" id="L4365"></span>
-<span class="line" id="L4366"><span class="tok-comment">/// Round an address down to the previous (or current) aligned address.</span></span>
-<span class="line" id="L4367"><span class="tok-comment">/// The alignment must be a power of 2 and greater than 0.</span></span>
-<span class="line" id="L4368"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignBackward</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, addr: T, alignment: T) T {</span>
-<span class="line" id="L4369">    assert(isValidAlignGeneric(T, alignment));</span>
-<span class="line" id="L4370">    <span class="tok-comment">// 000010000 // example alignment</span>
+<span class="line" id="L4263"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">doNotOptimizeAway</span>(val: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L4264">    <span class="tok-kw">var</span> a: <span class="tok-type">u8</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4265">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(.{a})).Struct.fields[<span class="tok-number">0</span>].is_comptime) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L4266"></span>
+<span class="line" id="L4267">    <span class="tok-kw">const</span> max_gp_register_bits = <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">c_long</span>);</span>
+<span class="line" id="L4268">    <span class="tok-kw">const</span> t = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(val));</span>
+<span class="line" id="L4269">    <span class="tok-kw">switch</span> (t) {</span>
+<span class="line" id="L4270">        .Void, .Null, .ComptimeInt, .ComptimeFloat =&gt; <span class="tok-kw">return</span>,</span>
+<span class="line" id="L4271">        .Enum =&gt; doNotOptimizeAway(<span class="tok-builtin">@intFromEnum</span>(val)),</span>
+<span class="line" id="L4272">        .Bool =&gt; doNotOptimizeAway(<span class="tok-builtin">@intFromBool</span>(val)),</span>
+<span class="line" id="L4273">        .Int =&gt; {</span>
+<span class="line" id="L4274">            <span class="tok-kw">const</span> bits = t.Int.bits;</span>
+<span class="line" id="L4275">            <span class="tok-kw">if</span> (bits &lt;= max_gp_register_bits <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c) {</span>
+<span class="line" id="L4276">                <span class="tok-kw">const</span> val2 = <span class="tok-builtin">@as</span>(</span>
+<span class="line" id="L4277">                    std.meta.Int(t.Int.signedness, <span class="tok-builtin">@max</span>(<span class="tok-number">8</span>, std.math.ceilPowerOfTwoAssert(<span class="tok-type">u16</span>, bits))),</span>
+<span class="line" id="L4278">                    val,</span>
+<span class="line" id="L4279">                );</span>
+<span class="line" id="L4280">                <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-str">&quot;&quot;</span></span>
+<span class="line" id="L4281">                    :</span>
+<span class="line" id="L4282">                    : [val2] <span class="tok-str">&quot;r&quot;</span> (val2),</span>
+<span class="line" id="L4283">                );</span>
+<span class="line" id="L4284">            } <span class="tok-kw">else</span> doNotOptimizeAway(&amp;val);</span>
+<span class="line" id="L4285">        },</span>
+<span class="line" id="L4286">        .Float =&gt; {</span>
+<span class="line" id="L4287">            <span class="tok-kw">if</span> ((t.Float.bits == <span class="tok-number">32</span> <span class="tok-kw">or</span> t.Float.bits == <span class="tok-number">64</span>) <span class="tok-kw">and</span> builtin.zig_backend != .stage2_c) {</span>
+<span class="line" id="L4288">                <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-str">&quot;&quot;</span></span>
+<span class="line" id="L4289">                    :</span>
+<span class="line" id="L4290">                    : [val] <span class="tok-str">&quot;rm&quot;</span> (val),</span>
+<span class="line" id="L4291">                );</span>
+<span class="line" id="L4292">            } <span class="tok-kw">else</span> doNotOptimizeAway(&amp;val);</span>
+<span class="line" id="L4293">        },</span>
+<span class="line" id="L4294">        .Pointer =&gt; {</span>
+<span class="line" id="L4295">            <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) {</span>
+<span class="line" id="L4296">                doNotOptimizeAwayC(val);</span>
+<span class="line" id="L4297">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L4298">                <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-str">&quot;&quot;</span></span>
+<span class="line" id="L4299">                    :</span>
+<span class="line" id="L4300">                    : [val] <span class="tok-str">&quot;m&quot;</span> (val),</span>
+<span class="line" id="L4301">                    : <span class="tok-str">&quot;memory&quot;</span></span>
+<span class="line" id="L4302">                );</span>
+<span class="line" id="L4303">            }</span>
+<span class="line" id="L4304">        },</span>
+<span class="line" id="L4305">        .Array =&gt; {</span>
+<span class="line" id="L4306">            <span class="tok-kw">if</span> (t.Array.len * <span class="tok-builtin">@sizeOf</span>(t.Array.child) &lt;= <span class="tok-number">64</span>) {</span>
+<span class="line" id="L4307">                <span class="tok-kw">for</span> (val) |v| doNotOptimizeAway(v);</span>
+<span class="line" id="L4308">            } <span class="tok-kw">else</span> doNotOptimizeAway(&amp;val);</span>
+<span class="line" id="L4309">        },</span>
+<span class="line" id="L4310">        <span class="tok-kw">else</span> =&gt; doNotOptimizeAway(&amp;val),</span>
+<span class="line" id="L4311">    }</span>
+<span class="line" id="L4312">}</span>
+<span class="line" id="L4313"></span>
+<span class="line" id="L4314"><span class="tok-comment">/// .stage2_c doesn't support asm blocks yet, so use volatile stores instead</span></span>
+<span class="line" id="L4315"><span class="tok-kw">var</span> deopt_target: <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-type">u8</span> <span class="tok-kw">else</span> <span class="tok-type">void</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L4316"><span class="tok-kw">fn</span> <span class="tok-fn">doNotOptimizeAwayC</span>(ptr: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L4317">    <span class="tok-kw">const</span> dest = <span class="tok-builtin">@as</span>(*<span class="tok-kw">volatile</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(&amp;deopt_target));</span>
+<span class="line" id="L4318">    <span class="tok-kw">for</span> (asBytes(ptr)) |b| {</span>
+<span class="line" id="L4319">        dest.* = b;</span>
+<span class="line" id="L4320">    }</span>
+<span class="line" id="L4321">    dest.* = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4322">}</span>
+<span class="line" id="L4323"></span>
+<span class="line" id="L4324"><span class="tok-kw">test</span> <span class="tok-str">&quot;doNotOptimizeAway&quot;</span> {</span>
+<span class="line" id="L4325">    <span class="tok-kw">comptime</span> doNotOptimizeAway(<span class="tok-str">&quot;test&quot;</span>);</span>
+<span class="line" id="L4326"></span>
+<span class="line" id="L4327">    doNotOptimizeAway(<span class="tok-null">null</span>);</span>
+<span class="line" id="L4328">    doNotOptimizeAway(<span class="tok-null">true</span>);</span>
+<span class="line" id="L4329">    doNotOptimizeAway(<span class="tok-number">0</span>);</span>
+<span class="line" id="L4330">    doNotOptimizeAway(<span class="tok-number">0.0</span>);</span>
+<span class="line" id="L4331">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u1</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4332">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u3</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4333">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4334">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4335">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4336">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4337">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u128</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4338">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u13</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4339">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u37</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4340">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u96</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4341">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">u200</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L4342">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">f32</span>, <span class="tok-number">0.0</span>));</span>
+<span class="line" id="L4343">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(<span class="tok-type">f64</span>, <span class="tok-number">0.0</span>));</span>
+<span class="line" id="L4344">    doNotOptimizeAway([_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">4</span>);</span>
+<span class="line" id="L4345">    doNotOptimizeAway([_]<span class="tok-type">u8</span>{<span class="tok-number">0</span>} ** <span class="tok-number">100</span>);</span>
+<span class="line" id="L4346">    doNotOptimizeAway(<span class="tok-builtin">@as</span>(std.builtin.Endian, .Little));</span>
+<span class="line" id="L4347">}</span>
+<span class="line" id="L4348"></span>
+<span class="line" id="L4349"><span class="tok-kw">test</span> <span class="tok-str">&quot;alignForward&quot;</span> {</span>
+<span class="line" id="L4350">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">1</span>, <span class="tok-number">1</span>) == <span class="tok-number">1</span>);</span>
+<span class="line" id="L4351">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">2</span>, <span class="tok-number">1</span>) == <span class="tok-number">2</span>);</span>
+<span class="line" id="L4352">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">1</span>, <span class="tok-number">2</span>) == <span class="tok-number">2</span>);</span>
+<span class="line" id="L4353">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">2</span>, <span class="tok-number">2</span>) == <span class="tok-number">2</span>);</span>
+<span class="line" id="L4354">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">3</span>, <span class="tok-number">2</span>) == <span class="tok-number">4</span>);</span>
+<span class="line" id="L4355">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">4</span>, <span class="tok-number">2</span>) == <span class="tok-number">4</span>);</span>
+<span class="line" id="L4356">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">7</span>, <span class="tok-number">8</span>) == <span class="tok-number">8</span>);</span>
+<span class="line" id="L4357">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">8</span>, <span class="tok-number">8</span>) == <span class="tok-number">8</span>);</span>
+<span class="line" id="L4358">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">9</span>, <span class="tok-number">8</span>) == <span class="tok-number">16</span>);</span>
+<span class="line" id="L4359">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">15</span>, <span class="tok-number">8</span>) == <span class="tok-number">16</span>);</span>
+<span class="line" id="L4360">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">16</span>, <span class="tok-number">8</span>) == <span class="tok-number">16</span>);</span>
+<span class="line" id="L4361">    <span class="tok-kw">try</span> testing.expect(alignForward(<span class="tok-type">usize</span>, <span class="tok-number">17</span>, <span class="tok-number">8</span>) == <span class="tok-number">24</span>);</span>
+<span class="line" id="L4362">}</span>
+<span class="line" id="L4363"></span>
+<span class="line" id="L4364"><span class="tok-comment">/// Round an address down to the previous (or current) aligned address.</span></span>
+<span class="line" id="L4365"><span class="tok-comment">/// Unlike `alignBackward`, `alignment` can be any positive number, not just a power of 2.</span></span>
+<span class="line" id="L4366"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignBackwardAnyAlign</span>(i: <span class="tok-type">usize</span>, alignment: <span class="tok-type">usize</span>) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L4367">    <span class="tok-kw">if</span> (isValidAlign(alignment))</span>
+<span class="line" id="L4368">        <span class="tok-kw">return</span> alignBackward(<span class="tok-type">usize</span>, i, alignment);</span>
+<span class="line" id="L4369">    assert(alignment != <span class="tok-number">0</span>);</span>
+<span class="line" id="L4370">    <span class="tok-kw">return</span> i - <span class="tok-builtin">@mod</span>(i, alignment);</span>
+<span class="line" id="L4371">}</span>
+<span class="line" id="L4372"></span>
+<span class="line" id="L4373"><span class="tok-comment">/// Round an address down to the previous (or current) aligned address.</span></span>
+<span class="line" id="L4374"><span class="tok-comment">/// The alignment must be a power of 2 and greater than 0.</span></span>
+<span class="line" id="L4375"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignBackward</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, addr: T, alignment: T) T {</span>
+<span class="line" id="L4376">    assert(isValidAlignGeneric(T, alignment));</span>
+<span class="line" id="L4377">    <span class="tok-comment">// 000010000 // example alignment</span>
 </span>
-<span class="line" id="L4371">    <span class="tok-comment">// 000001111 // subtract 1</span>
+<span class="line" id="L4378">    <span class="tok-comment">// 000001111 // subtract 1</span>
 </span>
-<span class="line" id="L4372">    <span class="tok-comment">// 111110000 // binary not</span>
+<span class="line" id="L4379">    <span class="tok-comment">// 111110000 // binary not</span>
 </span>
-<span class="line" id="L4373">    <span class="tok-kw">return</span> addr &amp; ~(alignment - <span class="tok-number">1</span>);</span>
-<span class="line" id="L4374">}</span>
-<span class="line" id="L4375"></span>
-<span class="line" id="L4376"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> alignBackwardGeneric = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;renamed to alignBackward&quot;</span>);</span>
-<span class="line" id="L4377"></span>
-<span class="line" id="L4378"><span class="tok-comment">/// Returns whether `alignment` is a valid alignment, meaning it is</span></span>
-<span class="line" id="L4379"><span class="tok-comment">/// a positive power of 2.</span></span>
-<span class="line" id="L4380"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isValidAlign</span>(alignment: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4381">    <span class="tok-kw">return</span> isValidAlignGeneric(<span class="tok-type">usize</span>, alignment);</span>
-<span class="line" id="L4382">}</span>
-<span class="line" id="L4383"></span>
-<span class="line" id="L4384"><span class="tok-comment">/// Returns whether `alignment` is a valid alignment, meaning it is</span></span>
-<span class="line" id="L4385"><span class="tok-comment">/// a positive power of 2.</span></span>
-<span class="line" id="L4386"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isValidAlignGeneric</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, alignment: T) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4387">    <span class="tok-kw">return</span> alignment &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> std.math.isPowerOfTwo(alignment);</span>
-<span class="line" id="L4388">}</span>
-<span class="line" id="L4389"></span>
-<span class="line" id="L4390"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAlignedAnyAlign</span>(i: <span class="tok-type">usize</span>, alignment: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4391">    <span class="tok-kw">if</span> (isValidAlign(alignment))</span>
-<span class="line" id="L4392">        <span class="tok-kw">return</span> isAligned(i, alignment);</span>
-<span class="line" id="L4393">    assert(alignment != <span class="tok-number">0</span>);</span>
-<span class="line" id="L4394">    <span class="tok-kw">return</span> <span class="tok-number">0</span> == <span class="tok-builtin">@mod</span>(i, alignment);</span>
+<span class="line" id="L4380">    <span class="tok-kw">return</span> addr &amp; ~(alignment - <span class="tok-number">1</span>);</span>
+<span class="line" id="L4381">}</span>
+<span class="line" id="L4382"></span>
+<span class="line" id="L4383"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> alignBackwardGeneric = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;renamed to alignBackward&quot;</span>);</span>
+<span class="line" id="L4384"></span>
+<span class="line" id="L4385"><span class="tok-comment">/// Returns whether `alignment` is a valid alignment, meaning it is</span></span>
+<span class="line" id="L4386"><span class="tok-comment">/// a positive power of 2.</span></span>
+<span class="line" id="L4387"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isValidAlign</span>(alignment: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4388">    <span class="tok-kw">return</span> isValidAlignGeneric(<span class="tok-type">usize</span>, alignment);</span>
+<span class="line" id="L4389">}</span>
+<span class="line" id="L4390"></span>
+<span class="line" id="L4391"><span class="tok-comment">/// Returns whether `alignment` is a valid alignment, meaning it is</span></span>
+<span class="line" id="L4392"><span class="tok-comment">/// a positive power of 2.</span></span>
+<span class="line" id="L4393"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isValidAlignGeneric</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, alignment: T) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4394">    <span class="tok-kw">return</span> alignment &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> std.math.isPowerOfTwo(alignment);</span>
 <span class="line" id="L4395">}</span>
 <span class="line" id="L4396"></span>
-<span class="line" id="L4397"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAlignedLog2</span>(addr: <span class="tok-type">usize</span>, log2_alignment: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4398">    <span class="tok-kw">return</span> <span class="tok-builtin">@ctz</span>(addr) &gt;= log2_alignment;</span>
-<span class="line" id="L4399">}</span>
-<span class="line" id="L4400"></span>
-<span class="line" id="L4401"><span class="tok-comment">/// Given an address and an alignment, return true if the address is a multiple of the alignment</span></span>
-<span class="line" id="L4402"><span class="tok-comment">/// The alignment must be a power of 2 and greater than 0.</span></span>
-<span class="line" id="L4403"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAligned</span>(addr: <span class="tok-type">usize</span>, alignment: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4404">    <span class="tok-kw">return</span> isAlignedGeneric(<span class="tok-type">u64</span>, addr, alignment);</span>
-<span class="line" id="L4405">}</span>
-<span class="line" id="L4406"></span>
-<span class="line" id="L4407"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAlignedGeneric</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, addr: T, alignment: T) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4408">    <span class="tok-kw">return</span> alignBackward(T, addr, alignment) == addr;</span>
-<span class="line" id="L4409">}</span>
-<span class="line" id="L4410"></span>
-<span class="line" id="L4411"><span class="tok-kw">test</span> <span class="tok-str">&quot;isAligned&quot;</span> {</span>
-<span class="line" id="L4412">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">0</span>, <span class="tok-number">4</span>));</span>
-<span class="line" id="L4413">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">1</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L4414">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">2</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L4415">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">2</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L4416">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">2</span>, <span class="tok-number">4</span>));</span>
-<span class="line" id="L4417">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">3</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L4418">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">3</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L4419">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">3</span>, <span class="tok-number">4</span>));</span>
-<span class="line" id="L4420">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">4</span>, <span class="tok-number">4</span>));</span>
-<span class="line" id="L4421">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">4</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L4422">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">4</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L4423">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">4</span>, <span class="tok-number">8</span>));</span>
-<span class="line" id="L4424">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">4</span>, <span class="tok-number">16</span>));</span>
-<span class="line" id="L4425">}</span>
-<span class="line" id="L4426"></span>
-<span class="line" id="L4427"><span class="tok-kw">test</span> <span class="tok-str">&quot;freeing empty string with null-terminated sentinel&quot;</span> {</span>
-<span class="line" id="L4428">    <span class="tok-kw">const</span> empty_string = <span class="tok-kw">try</span> testing.allocator.dupeZ(<span class="tok-type">u8</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L4429">    testing.allocator.free(empty_string);</span>
-<span class="line" id="L4430">}</span>
-<span class="line" id="L4431"></span>
-<span class="line" id="L4432"><span class="tok-comment">/// Returns a slice with the given new alignment,</span></span>
-<span class="line" id="L4433"><span class="tok-comment">/// all other pointer attributes copied from `AttributeSource`.</span></span>
-<span class="line" id="L4434"><span class="tok-kw">fn</span> <span class="tok-fn">AlignedSlice</span>(<span class="tok-kw">comptime</span> AttributeSource: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> new_alignment: <span class="tok-type">usize</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L4435">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(AttributeSource).Pointer;</span>
-<span class="line" id="L4436">    <span class="tok-kw">return</span> <span class="tok-builtin">@Type</span>(.{</span>
-<span class="line" id="L4437">        .Pointer = .{</span>
-<span class="line" id="L4438">            .size = .Slice,</span>
-<span class="line" id="L4439">            .is_const = info.is_const,</span>
-<span class="line" id="L4440">            .is_volatile = info.is_volatile,</span>
-<span class="line" id="L4441">            .is_allowzero = info.is_allowzero,</span>
-<span class="line" id="L4442">            .alignment = new_alignment,</span>
-<span class="line" id="L4443">            .address_space = info.address_space,</span>
-<span class="line" id="L4444">            .child = info.child,</span>
-<span class="line" id="L4445">            .sentinel = <span class="tok-null">null</span>,</span>
-<span class="line" id="L4446">        },</span>
-<span class="line" id="L4447">    });</span>
-<span class="line" id="L4448">}</span>
-<span class="line" id="L4449"></span>
-<span class="line" id="L4450"><span class="tok-comment">/// Returns the largest slice in the given bytes that conforms to the new alignment,</span></span>
-<span class="line" id="L4451"><span class="tok-comment">/// or `null` if the given bytes contain no conforming address.</span></span>
-<span class="line" id="L4452"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignInBytes</span>(bytes: []<span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> new_alignment: <span class="tok-type">usize</span>) ?[]<span class="tok-kw">align</span>(new_alignment) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L4453">    <span class="tok-kw">const</span> begin_address = <span class="tok-builtin">@intFromPtr</span>(bytes.ptr);</span>
-<span class="line" id="L4454">    <span class="tok-kw">const</span> end_address = begin_address + bytes.len;</span>
-<span class="line" id="L4455"></span>
-<span class="line" id="L4456">    <span class="tok-kw">const</span> begin_address_aligned = mem.alignForward(<span class="tok-type">usize</span>, begin_address, new_alignment);</span>
-<span class="line" id="L4457">    <span class="tok-kw">const</span> new_length = std.math.sub(<span class="tok-type">usize</span>, end_address, begin_address_aligned) <span class="tok-kw">catch</span> |e| <span class="tok-kw">switch</span> (e) {</span>
-<span class="line" id="L4458">        <span class="tok-kw">error</span>.Overflow =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L4459">    };</span>
-<span class="line" id="L4460">    <span class="tok-kw">const</span> alignment_offset = begin_address_aligned - begin_address;</span>
-<span class="line" id="L4461">    <span class="tok-kw">return</span> <span class="tok-builtin">@alignCast</span>(bytes[alignment_offset .. alignment_offset + new_length]);</span>
-<span class="line" id="L4462">}</span>
-<span class="line" id="L4463"></span>
-<span class="line" id="L4464"><span class="tok-comment">/// Returns the largest sub-slice within the given slice that conforms to the new alignment,</span></span>
-<span class="line" id="L4465"><span class="tok-comment">/// or `null` if the given slice contains no conforming address.</span></span>
-<span class="line" id="L4466"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignInSlice</span>(slice: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> new_alignment: <span class="tok-type">usize</span>) ?AlignedSlice(<span class="tok-builtin">@TypeOf</span>(slice), new_alignment) {</span>
-<span class="line" id="L4467">    <span class="tok-kw">const</span> bytes = sliceAsBytes(slice);</span>
-<span class="line" id="L4468">    <span class="tok-kw">const</span> aligned_bytes = alignInBytes(bytes, new_alignment) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L4469"></span>
-<span class="line" id="L4470">    <span class="tok-kw">const</span> Element = <span class="tok-builtin">@TypeOf</span>(slice[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L4471">    <span class="tok-kw">const</span> slice_length_bytes = aligned_bytes.len - (aligned_bytes.len % <span class="tok-builtin">@sizeOf</span>(Element));</span>
-<span class="line" id="L4472">    <span class="tok-kw">const</span> aligned_slice = bytesAsSlice(Element, aligned_bytes[<span class="tok-number">0</span>..slice_length_bytes]);</span>
-<span class="line" id="L4473">    <span class="tok-kw">return</span> <span class="tok-builtin">@alignCast</span>(aligned_slice);</span>
-<span class="line" id="L4474">}</span>
-<span class="line" id="L4475"></span>
-<span class="line" id="L4476"><span class="tok-kw">test</span> <span class="tok-str">&quot;read/write(Var)PackedInt&quot;</span> {</span>
-<span class="line" id="L4477">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L4478"></span>
-<span class="line" id="L4479">    <span class="tok-kw">switch</span> (builtin.cpu.arch) {</span>
-<span class="line" id="L4480">        <span class="tok-comment">// This test generates too much code to execute on WASI.</span>
-</span>
-<span class="line" id="L4481">        <span class="tok-comment">// LLVM backend fails with &quot;too many locals: locals exceed maximum&quot;</span>
-</span>
-<span class="line" id="L4482">        .wasm32, .wasm64 =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>
-<span class="line" id="L4483">        <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L4484">    }</span>
+<span class="line" id="L4397"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAlignedAnyAlign</span>(i: <span class="tok-type">usize</span>, alignment: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4398">    <span class="tok-kw">if</span> (isValidAlign(alignment))</span>
+<span class="line" id="L4399">        <span class="tok-kw">return</span> isAligned(i, alignment);</span>
+<span class="line" id="L4400">    assert(alignment != <span class="tok-number">0</span>);</span>
+<span class="line" id="L4401">    <span class="tok-kw">return</span> <span class="tok-number">0</span> == <span class="tok-builtin">@mod</span>(i, alignment);</span>
+<span class="line" id="L4402">}</span>
+<span class="line" id="L4403"></span>
+<span class="line" id="L4404"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAlignedLog2</span>(addr: <span class="tok-type">usize</span>, log2_alignment: <span class="tok-type">u8</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4405">    <span class="tok-kw">return</span> <span class="tok-builtin">@ctz</span>(addr) &gt;= log2_alignment;</span>
+<span class="line" id="L4406">}</span>
+<span class="line" id="L4407"></span>
+<span class="line" id="L4408"><span class="tok-comment">/// Given an address and an alignment, return true if the address is a multiple of the alignment</span></span>
+<span class="line" id="L4409"><span class="tok-comment">/// The alignment must be a power of 2 and greater than 0.</span></span>
+<span class="line" id="L4410"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAligned</span>(addr: <span class="tok-type">usize</span>, alignment: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4411">    <span class="tok-kw">return</span> isAlignedGeneric(<span class="tok-type">u64</span>, addr, alignment);</span>
+<span class="line" id="L4412">}</span>
+<span class="line" id="L4413"></span>
+<span class="line" id="L4414"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isAlignedGeneric</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, addr: T, alignment: T) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4415">    <span class="tok-kw">return</span> alignBackward(T, addr, alignment) == addr;</span>
+<span class="line" id="L4416">}</span>
+<span class="line" id="L4417"></span>
+<span class="line" id="L4418"><span class="tok-kw">test</span> <span class="tok-str">&quot;isAligned&quot;</span> {</span>
+<span class="line" id="L4419">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">0</span>, <span class="tok-number">4</span>));</span>
+<span class="line" id="L4420">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">1</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L4421">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">2</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L4422">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">2</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L4423">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">2</span>, <span class="tok-number">4</span>));</span>
+<span class="line" id="L4424">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">3</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L4425">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">3</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L4426">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">3</span>, <span class="tok-number">4</span>));</span>
+<span class="line" id="L4427">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">4</span>, <span class="tok-number">4</span>));</span>
+<span class="line" id="L4428">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">4</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L4429">    <span class="tok-kw">try</span> testing.expect(isAligned(<span class="tok-number">4</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L4430">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">4</span>, <span class="tok-number">8</span>));</span>
+<span class="line" id="L4431">    <span class="tok-kw">try</span> testing.expect(!isAligned(<span class="tok-number">4</span>, <span class="tok-number">16</span>));</span>
+<span class="line" id="L4432">}</span>
+<span class="line" id="L4433"></span>
+<span class="line" id="L4434"><span class="tok-kw">test</span> <span class="tok-str">&quot;freeing empty string with null-terminated sentinel&quot;</span> {</span>
+<span class="line" id="L4435">    <span class="tok-kw">const</span> empty_string = <span class="tok-kw">try</span> testing.allocator.dupeZ(<span class="tok-type">u8</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L4436">    testing.allocator.free(empty_string);</span>
+<span class="line" id="L4437">}</span>
+<span class="line" id="L4438"></span>
+<span class="line" id="L4439"><span class="tok-comment">/// Returns a slice with the given new alignment,</span></span>
+<span class="line" id="L4440"><span class="tok-comment">/// all other pointer attributes copied from `AttributeSource`.</span></span>
+<span class="line" id="L4441"><span class="tok-kw">fn</span> <span class="tok-fn">AlignedSlice</span>(<span class="tok-kw">comptime</span> AttributeSource: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> new_alignment: <span class="tok-type">usize</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L4442">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(AttributeSource).Pointer;</span>
+<span class="line" id="L4443">    <span class="tok-kw">return</span> <span class="tok-builtin">@Type</span>(.{</span>
+<span class="line" id="L4444">        .Pointer = .{</span>
+<span class="line" id="L4445">            .size = .Slice,</span>
+<span class="line" id="L4446">            .is_const = info.is_const,</span>
+<span class="line" id="L4447">            .is_volatile = info.is_volatile,</span>
+<span class="line" id="L4448">            .is_allowzero = info.is_allowzero,</span>
+<span class="line" id="L4449">            .alignment = new_alignment,</span>
+<span class="line" id="L4450">            .address_space = info.address_space,</span>
+<span class="line" id="L4451">            .child = info.child,</span>
+<span class="line" id="L4452">            .sentinel = <span class="tok-null">null</span>,</span>
+<span class="line" id="L4453">        },</span>
+<span class="line" id="L4454">    });</span>
+<span class="line" id="L4455">}</span>
+<span class="line" id="L4456"></span>
+<span class="line" id="L4457"><span class="tok-comment">/// Returns the largest slice in the given bytes that conforms to the new alignment,</span></span>
+<span class="line" id="L4458"><span class="tok-comment">/// or `null` if the given bytes contain no conforming address.</span></span>
+<span class="line" id="L4459"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignInBytes</span>(bytes: []<span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> new_alignment: <span class="tok-type">usize</span>) ?[]<span class="tok-kw">align</span>(new_alignment) <span class="tok-type">u8</span> {</span>
+<span class="line" id="L4460">    <span class="tok-kw">const</span> begin_address = <span class="tok-builtin">@intFromPtr</span>(bytes.ptr);</span>
+<span class="line" id="L4461">    <span class="tok-kw">const</span> end_address = begin_address + bytes.len;</span>
+<span class="line" id="L4462"></span>
+<span class="line" id="L4463">    <span class="tok-kw">const</span> begin_address_aligned = mem.alignForward(<span class="tok-type">usize</span>, begin_address, new_alignment);</span>
+<span class="line" id="L4464">    <span class="tok-kw">const</span> new_length = std.math.sub(<span class="tok-type">usize</span>, end_address, begin_address_aligned) <span class="tok-kw">catch</span> |e| <span class="tok-kw">switch</span> (e) {</span>
+<span class="line" id="L4465">        <span class="tok-kw">error</span>.Overflow =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L4466">    };</span>
+<span class="line" id="L4467">    <span class="tok-kw">const</span> alignment_offset = begin_address_aligned - begin_address;</span>
+<span class="line" id="L4468">    <span class="tok-kw">return</span> <span class="tok-builtin">@alignCast</span>(bytes[alignment_offset .. alignment_offset + new_length]);</span>
+<span class="line" id="L4469">}</span>
+<span class="line" id="L4470"></span>
+<span class="line" id="L4471"><span class="tok-comment">/// Returns the largest sub-slice within the given slice that conforms to the new alignment,</span></span>
+<span class="line" id="L4472"><span class="tok-comment">/// or `null` if the given slice contains no conforming address.</span></span>
+<span class="line" id="L4473"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">alignInSlice</span>(slice: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> new_alignment: <span class="tok-type">usize</span>) ?AlignedSlice(<span class="tok-builtin">@TypeOf</span>(slice), new_alignment) {</span>
+<span class="line" id="L4474">    <span class="tok-kw">const</span> bytes = sliceAsBytes(slice);</span>
+<span class="line" id="L4475">    <span class="tok-kw">const</span> aligned_bytes = alignInBytes(bytes, new_alignment) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L4476"></span>
+<span class="line" id="L4477">    <span class="tok-kw">const</span> Element = <span class="tok-builtin">@TypeOf</span>(slice[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L4478">    <span class="tok-kw">const</span> slice_length_bytes = aligned_bytes.len - (aligned_bytes.len % <span class="tok-builtin">@sizeOf</span>(Element));</span>
+<span class="line" id="L4479">    <span class="tok-kw">const</span> aligned_slice = bytesAsSlice(Element, aligned_bytes[<span class="tok-number">0</span>..slice_length_bytes]);</span>
+<span class="line" id="L4480">    <span class="tok-kw">return</span> <span class="tok-builtin">@alignCast</span>(aligned_slice);</span>
+<span class="line" id="L4481">}</span>
+<span class="line" id="L4482"></span>
+<span class="line" id="L4483"><span class="tok-kw">test</span> <span class="tok-str">&quot;read/write(Var)PackedInt&quot;</span> {</span>
+<span class="line" id="L4484">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_c) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L4485"></span>
-<span class="line" id="L4486">    <span class="tok-kw">const</span> foreign_endian: Endian = <span class="tok-kw">if</span> (native_endian == .Big) .Little <span class="tok-kw">else</span> .Big;</span>
-<span class="line" id="L4487">    <span class="tok-kw">const</span> expect = std.testing.expect;</span>
-<span class="line" id="L4488">    <span class="tok-kw">var</span> prng = std.rand.DefaultPrng.init(<span class="tok-number">1234</span>);</span>
-<span class="line" id="L4489">    <span class="tok-kw">const</span> random = prng.random();</span>
-<span class="line" id="L4490"></span>
-<span class="line" id="L4491">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">10_000</span>);</span>
-<span class="line" id="L4492">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ <span class="tok-type">u8</span>, <span class="tok-type">u16</span>, <span class="tok-type">u32</span>, <span class="tok-type">u128</span> }) |BackingType| {</span>
-<span class="line" id="L4493">        <span class="tok-kw">for</span> ([_]BackingType{</span>
-<span class="line" id="L4494">            <span class="tok-builtin">@as</span>(BackingType, <span class="tok-number">0</span>), <span class="tok-comment">// all zeros</span>
+<span class="line" id="L4486">    <span class="tok-kw">switch</span> (builtin.cpu.arch) {</span>
+<span class="line" id="L4487">        <span class="tok-comment">// This test generates too much code to execute on WASI.</span>
 </span>
-<span class="line" id="L4495">            -%<span class="tok-builtin">@as</span>(BackingType, <span class="tok-number">1</span>), <span class="tok-comment">// all ones</span>
+<span class="line" id="L4488">        <span class="tok-comment">// LLVM backend fails with &quot;too many locals: locals exceed maximum&quot;</span>
 </span>
-<span class="line" id="L4496">            random.int(BackingType), <span class="tok-comment">// random</span>
+<span class="line" id="L4489">        .wasm32, .wasm64 =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest,</span>
+<span class="line" id="L4490">        <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L4491">    }</span>
+<span class="line" id="L4492"></span>
+<span class="line" id="L4493">    <span class="tok-kw">const</span> foreign_endian: Endian = <span class="tok-kw">if</span> (native_endian == .Big) .Little <span class="tok-kw">else</span> .Big;</span>
+<span class="line" id="L4494">    <span class="tok-kw">const</span> expect = std.testing.expect;</span>
+<span class="line" id="L4495">    <span class="tok-kw">var</span> prng = std.rand.DefaultPrng.init(<span class="tok-number">1234</span>);</span>
+<span class="line" id="L4496">    <span class="tok-kw">const</span> random = prng.random();</span>
+<span class="line" id="L4497"></span>
+<span class="line" id="L4498">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">10_000</span>);</span>
+<span class="line" id="L4499">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ <span class="tok-type">u8</span>, <span class="tok-type">u16</span>, <span class="tok-type">u32</span>, <span class="tok-type">u128</span> }) |BackingType| {</span>
+<span class="line" id="L4500">        <span class="tok-kw">for</span> ([_]BackingType{</span>
+<span class="line" id="L4501">            <span class="tok-builtin">@as</span>(BackingType, <span class="tok-number">0</span>), <span class="tok-comment">// all zeros</span>
 </span>
-<span class="line" id="L4497">            random.int(BackingType), <span class="tok-comment">// random</span>
+<span class="line" id="L4502">            -%<span class="tok-builtin">@as</span>(BackingType, <span class="tok-number">1</span>), <span class="tok-comment">// all ones</span>
 </span>
-<span class="line" id="L4498">            random.int(BackingType), <span class="tok-comment">// random</span>
+<span class="line" id="L4503">            random.int(BackingType), <span class="tok-comment">// random</span>
 </span>
-<span class="line" id="L4499">        }) |init_value| {</span>
-<span class="line" id="L4500">            <span class="tok-kw">const</span> uTs = [_]<span class="tok-type">type</span>{ <span class="tok-type">u1</span>, <span class="tok-type">u3</span>, <span class="tok-type">u7</span>, <span class="tok-type">u8</span>, <span class="tok-type">u9</span>, <span class="tok-type">u10</span>, <span class="tok-type">u15</span>, <span class="tok-type">u16</span>, <span class="tok-type">u86</span> };</span>
-<span class="line" id="L4501">            <span class="tok-kw">const</span> iTs = [_]<span class="tok-type">type</span>{ <span class="tok-type">i1</span>, <span class="tok-type">i3</span>, <span class="tok-type">i7</span>, <span class="tok-type">i8</span>, <span class="tok-type">i9</span>, <span class="tok-type">i10</span>, <span class="tok-type">i15</span>, <span class="tok-type">i16</span>, <span class="tok-type">i86</span> };</span>
-<span class="line" id="L4502">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (uTs ++ iTs) |PackedType| {</span>
-<span class="line" id="L4503">                <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(PackedType) &gt; <span class="tok-builtin">@bitSizeOf</span>(BackingType))</span>
-<span class="line" id="L4504">                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L4505"></span>
-<span class="line" id="L4506">                <span class="tok-kw">const</span> iPackedType = std.meta.Int(.signed, <span class="tok-builtin">@bitSizeOf</span>(PackedType));</span>
-<span class="line" id="L4507">                <span class="tok-kw">const</span> uPackedType = std.meta.Int(.unsigned, <span class="tok-builtin">@bitSizeOf</span>(PackedType));</span>
-<span class="line" id="L4508">                <span class="tok-kw">const</span> Log2T = std.math.Log2Int(BackingType);</span>
-<span class="line" id="L4509"></span>
-<span class="line" id="L4510">                <span class="tok-kw">const</span> offset_at_end = <span class="tok-builtin">@bitSizeOf</span>(BackingType) - <span class="tok-builtin">@bitSizeOf</span>(PackedType);</span>
-<span class="line" id="L4511">                <span class="tok-kw">for</span> ([_]<span class="tok-type">usize</span>{ <span class="tok-number">0</span>, <span class="tok-number">1</span>, <span class="tok-number">7</span>, <span class="tok-number">8</span>, <span class="tok-number">9</span>, <span class="tok-number">10</span>, <span class="tok-number">15</span>, <span class="tok-number">16</span>, <span class="tok-number">86</span>, offset_at_end }) |offset| {</span>
-<span class="line" id="L4512">                    <span class="tok-kw">if</span> (offset &gt; offset_at_end <span class="tok-kw">or</span> offset == <span class="tok-builtin">@bitSizeOf</span>(BackingType))</span>
-<span class="line" id="L4513">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L4514"></span>
-<span class="line" id="L4515">                    <span class="tok-kw">for</span> ([_]PackedType{</span>
-<span class="line" id="L4516">                        ~<span class="tok-builtin">@as</span>(PackedType, <span class="tok-number">0</span>), <span class="tok-comment">// all ones: -1 iN / maxInt uN</span>
+<span class="line" id="L4504">            random.int(BackingType), <span class="tok-comment">// random</span>
 </span>
-<span class="line" id="L4517">                        <span class="tok-builtin">@as</span>(PackedType, <span class="tok-number">0</span>), <span class="tok-comment">// all zeros: 0 iN / 0 uN</span>
+<span class="line" id="L4505">            random.int(BackingType), <span class="tok-comment">// random</span>
 </span>
-<span class="line" id="L4518">                        <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(iPackedType, math.maxInt(iPackedType)))), <span class="tok-comment">// maxInt iN</span>
+<span class="line" id="L4506">        }) |init_value| {</span>
+<span class="line" id="L4507">            <span class="tok-kw">const</span> uTs = [_]<span class="tok-type">type</span>{ <span class="tok-type">u1</span>, <span class="tok-type">u3</span>, <span class="tok-type">u7</span>, <span class="tok-type">u8</span>, <span class="tok-type">u9</span>, <span class="tok-type">u10</span>, <span class="tok-type">u15</span>, <span class="tok-type">u16</span>, <span class="tok-type">u86</span> };</span>
+<span class="line" id="L4508">            <span class="tok-kw">const</span> iTs = [_]<span class="tok-type">type</span>{ <span class="tok-type">i1</span>, <span class="tok-type">i3</span>, <span class="tok-type">i7</span>, <span class="tok-type">i8</span>, <span class="tok-type">i9</span>, <span class="tok-type">i10</span>, <span class="tok-type">i15</span>, <span class="tok-type">i16</span>, <span class="tok-type">i86</span> };</span>
+<span class="line" id="L4509">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (uTs ++ iTs) |PackedType| {</span>
+<span class="line" id="L4510">                <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(PackedType) &gt; <span class="tok-builtin">@bitSizeOf</span>(BackingType))</span>
+<span class="line" id="L4511">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L4512"></span>
+<span class="line" id="L4513">                <span class="tok-kw">const</span> iPackedType = std.meta.Int(.signed, <span class="tok-builtin">@bitSizeOf</span>(PackedType));</span>
+<span class="line" id="L4514">                <span class="tok-kw">const</span> uPackedType = std.meta.Int(.unsigned, <span class="tok-builtin">@bitSizeOf</span>(PackedType));</span>
+<span class="line" id="L4515">                <span class="tok-kw">const</span> Log2T = std.math.Log2Int(BackingType);</span>
+<span class="line" id="L4516"></span>
+<span class="line" id="L4517">                <span class="tok-kw">const</span> offset_at_end = <span class="tok-builtin">@bitSizeOf</span>(BackingType) - <span class="tok-builtin">@bitSizeOf</span>(PackedType);</span>
+<span class="line" id="L4518">                <span class="tok-kw">for</span> ([_]<span class="tok-type">usize</span>{ <span class="tok-number">0</span>, <span class="tok-number">1</span>, <span class="tok-number">7</span>, <span class="tok-number">8</span>, <span class="tok-number">9</span>, <span class="tok-number">10</span>, <span class="tok-number">15</span>, <span class="tok-number">16</span>, <span class="tok-number">86</span>, offset_at_end }) |offset| {</span>
+<span class="line" id="L4519">                    <span class="tok-kw">if</span> (offset &gt; offset_at_end <span class="tok-kw">or</span> offset == <span class="tok-builtin">@bitSizeOf</span>(BackingType))</span>
+<span class="line" id="L4520">                        <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L4521"></span>
+<span class="line" id="L4522">                    <span class="tok-kw">for</span> ([_]PackedType{</span>
+<span class="line" id="L4523">                        ~<span class="tok-builtin">@as</span>(PackedType, <span class="tok-number">0</span>), <span class="tok-comment">// all ones: -1 iN / maxInt uN</span>
 </span>
-<span class="line" id="L4519">                        <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(iPackedType, math.minInt(iPackedType)))), <span class="tok-comment">// maxInt iN</span>
+<span class="line" id="L4524">                        <span class="tok-builtin">@as</span>(PackedType, <span class="tok-number">0</span>), <span class="tok-comment">// all zeros: 0 iN / 0 uN</span>
 </span>
-<span class="line" id="L4520">                        random.int(PackedType), <span class="tok-comment">// random</span>
+<span class="line" id="L4525">                        <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(iPackedType, math.maxInt(iPackedType)))), <span class="tok-comment">// maxInt iN</span>
 </span>
-<span class="line" id="L4521">                        random.int(PackedType), <span class="tok-comment">// random</span>
+<span class="line" id="L4526">                        <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(iPackedType, math.minInt(iPackedType)))), <span class="tok-comment">// maxInt iN</span>
 </span>
-<span class="line" id="L4522">                    }) |write_value| {</span>
-<span class="line" id="L4523">                        { <span class="tok-comment">// Fixed-size Read/Write (Native-endian)</span>
+<span class="line" id="L4527">                        random.int(PackedType), <span class="tok-comment">// random</span>
 </span>
-<span class="line" id="L4524"></span>
-<span class="line" id="L4525">                            <span class="tok-comment">// Initialize Value</span>
+<span class="line" id="L4528">                        random.int(PackedType), <span class="tok-comment">// random</span>
 </span>
-<span class="line" id="L4526">                            <span class="tok-kw">var</span> value: BackingType = init_value;</span>
-<span class="line" id="L4527"></span>
-<span class="line" id="L4528">                            <span class="tok-comment">// Read</span>
+<span class="line" id="L4529">                    }) |write_value| {</span>
+<span class="line" id="L4530">                        { <span class="tok-comment">// Fixed-size Read/Write (Native-endian)</span>
 </span>
-<span class="line" id="L4529">                            <span class="tok-kw">const</span> read_value1 = readPackedInt(PackedType, asBytes(&amp;value), offset, native_endian);</span>
-<span class="line" id="L4530">                            <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
 <span class="line" id="L4531"></span>
-<span class="line" id="L4532">                            <span class="tok-comment">// Write</span>
+<span class="line" id="L4532">                            <span class="tok-comment">// Initialize Value</span>
 </span>
-<span class="line" id="L4533">                            writePackedInt(PackedType, asBytes(&amp;value), offset, write_value, native_endian);</span>
-<span class="line" id="L4534">                            <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
-<span class="line" id="L4535"></span>
-<span class="line" id="L4536">                            <span class="tok-comment">// Read again</span>
+<span class="line" id="L4533">                            <span class="tok-kw">var</span> value: BackingType = init_value;</span>
+<span class="line" id="L4534"></span>
+<span class="line" id="L4535">                            <span class="tok-comment">// Read</span>
 </span>
-<span class="line" id="L4537">                            <span class="tok-kw">const</span> read_value2 = readPackedInt(PackedType, asBytes(&amp;value), offset, native_endian);</span>
-<span class="line" id="L4538">                            <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
-<span class="line" id="L4539"></span>
-<span class="line" id="L4540">                            <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
+<span class="line" id="L4536">                            <span class="tok-kw">const</span> read_value1 = readPackedInt(PackedType, asBytes(&amp;value), offset, native_endian);</span>
+<span class="line" id="L4537">                            <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4538"></span>
+<span class="line" id="L4539">                            <span class="tok-comment">// Write</span>
 </span>
-<span class="line" id="L4541">                            <span class="tok-kw">const</span> diff_bits = init_value ^ value;</span>
-<span class="line" id="L4542">                            <span class="tok-kw">if</span> (offset != offset_at_end)</span>
-<span class="line" id="L4543">                                <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4544">                            <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
-<span class="line" id="L4545">                                <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4546">                        }</span>
-<span class="line" id="L4547"></span>
-<span class="line" id="L4548">                        { <span class="tok-comment">// Fixed-size Read/Write (Foreign-endian)</span>
+<span class="line" id="L4540">                            writePackedInt(PackedType, asBytes(&amp;value), offset, write_value, native_endian);</span>
+<span class="line" id="L4541">                            <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4542"></span>
+<span class="line" id="L4543">                            <span class="tok-comment">// Read again</span>
 </span>
-<span class="line" id="L4549"></span>
-<span class="line" id="L4550">                            <span class="tok-comment">// Initialize Value</span>
+<span class="line" id="L4544">                            <span class="tok-kw">const</span> read_value2 = readPackedInt(PackedType, asBytes(&amp;value), offset, native_endian);</span>
+<span class="line" id="L4545">                            <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
+<span class="line" id="L4546"></span>
+<span class="line" id="L4547">                            <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
 </span>
-<span class="line" id="L4551">                            <span class="tok-kw">var</span> value: BackingType = <span class="tok-builtin">@byteSwap</span>(init_value);</span>
-<span class="line" id="L4552"></span>
-<span class="line" id="L4553">                            <span class="tok-comment">// Read</span>
+<span class="line" id="L4548">                            <span class="tok-kw">const</span> diff_bits = init_value ^ value;</span>
+<span class="line" id="L4549">                            <span class="tok-kw">if</span> (offset != offset_at_end)</span>
+<span class="line" id="L4550">                                <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4551">                            <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
+<span class="line" id="L4552">                                <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4553">                        }</span>
+<span class="line" id="L4554"></span>
+<span class="line" id="L4555">                        { <span class="tok-comment">// Fixed-size Read/Write (Foreign-endian)</span>
 </span>
-<span class="line" id="L4554">                            <span class="tok-kw">const</span> read_value1 = readPackedInt(PackedType, asBytes(&amp;value), offset, foreign_endian);</span>
-<span class="line" id="L4555">                            <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
 <span class="line" id="L4556"></span>
-<span class="line" id="L4557">                            <span class="tok-comment">// Write</span>
+<span class="line" id="L4557">                            <span class="tok-comment">// Initialize Value</span>
 </span>
-<span class="line" id="L4558">                            writePackedInt(PackedType, asBytes(&amp;value), offset, write_value, foreign_endian);</span>
-<span class="line" id="L4559">                            <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
-<span class="line" id="L4560"></span>
-<span class="line" id="L4561">                            <span class="tok-comment">// Read again</span>
+<span class="line" id="L4558">                            <span class="tok-kw">var</span> value: BackingType = <span class="tok-builtin">@byteSwap</span>(init_value);</span>
+<span class="line" id="L4559"></span>
+<span class="line" id="L4560">                            <span class="tok-comment">// Read</span>
 </span>
-<span class="line" id="L4562">                            <span class="tok-kw">const</span> read_value2 = readPackedInt(PackedType, asBytes(&amp;value), offset, foreign_endian);</span>
-<span class="line" id="L4563">                            <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
-<span class="line" id="L4564"></span>
-<span class="line" id="L4565">                            <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
+<span class="line" id="L4561">                            <span class="tok-kw">const</span> read_value1 = readPackedInt(PackedType, asBytes(&amp;value), offset, foreign_endian);</span>
+<span class="line" id="L4562">                            <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4563"></span>
+<span class="line" id="L4564">                            <span class="tok-comment">// Write</span>
 </span>
-<span class="line" id="L4566">                            <span class="tok-kw">const</span> diff_bits = init_value ^ <span class="tok-builtin">@byteSwap</span>(value);</span>
-<span class="line" id="L4567">                            <span class="tok-kw">if</span> (offset != offset_at_end)</span>
-<span class="line" id="L4568">                                <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4569">                            <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
-<span class="line" id="L4570">                                <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4571">                        }</span>
-<span class="line" id="L4572"></span>
-<span class="line" id="L4573">                        <span class="tok-kw">const</span> signedness = <span class="tok-builtin">@typeInfo</span>(PackedType).Int.signedness;</span>
-<span class="line" id="L4574">                        <span class="tok-kw">const</span> NextPowerOfTwoInt = std.meta.Int(signedness, <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> std.math.ceilPowerOfTwo(<span class="tok-type">u16</span>, <span class="tok-builtin">@bitSizeOf</span>(PackedType)));</span>
-<span class="line" id="L4575">                        <span class="tok-kw">const</span> ui64 = std.meta.Int(signedness, <span class="tok-number">64</span>);</span>
-<span class="line" id="L4576">                        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ PackedType, NextPowerOfTwoInt, ui64 }) |U| {</span>
-<span class="line" id="L4577">                            { <span class="tok-comment">// Variable-size Read/Write (Native-endian)</span>
+<span class="line" id="L4565">                            writePackedInt(PackedType, asBytes(&amp;value), offset, write_value, foreign_endian);</span>
+<span class="line" id="L4566">                            <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4567"></span>
+<span class="line" id="L4568">                            <span class="tok-comment">// Read again</span>
 </span>
-<span class="line" id="L4578"></span>
-<span class="line" id="L4579">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(U) &lt; <span class="tok-builtin">@bitSizeOf</span>(PackedType))</span>
-<span class="line" id="L4580">                                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L4581"></span>
-<span class="line" id="L4582">                                <span class="tok-comment">// Initialize Value</span>
+<span class="line" id="L4569">                            <span class="tok-kw">const</span> read_value2 = readPackedInt(PackedType, asBytes(&amp;value), offset, foreign_endian);</span>
+<span class="line" id="L4570">                            <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
+<span class="line" id="L4571"></span>
+<span class="line" id="L4572">                            <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
 </span>
-<span class="line" id="L4583">                                <span class="tok-kw">var</span> value: BackingType = init_value;</span>
-<span class="line" id="L4584"></span>
-<span class="line" id="L4585">                                <span class="tok-comment">// Read</span>
+<span class="line" id="L4573">                            <span class="tok-kw">const</span> diff_bits = init_value ^ <span class="tok-builtin">@byteSwap</span>(value);</span>
+<span class="line" id="L4574">                            <span class="tok-kw">if</span> (offset != offset_at_end)</span>
+<span class="line" id="L4575">                                <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4576">                            <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
+<span class="line" id="L4577">                                <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4578">                        }</span>
+<span class="line" id="L4579"></span>
+<span class="line" id="L4580">                        <span class="tok-kw">const</span> signedness = <span class="tok-builtin">@typeInfo</span>(PackedType).Int.signedness;</span>
+<span class="line" id="L4581">                        <span class="tok-kw">const</span> NextPowerOfTwoInt = std.meta.Int(signedness, <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> std.math.ceilPowerOfTwo(<span class="tok-type">u16</span>, <span class="tok-builtin">@bitSizeOf</span>(PackedType)));</span>
+<span class="line" id="L4582">                        <span class="tok-kw">const</span> ui64 = std.meta.Int(signedness, <span class="tok-number">64</span>);</span>
+<span class="line" id="L4583">                        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> ([_]<span class="tok-type">type</span>{ PackedType, NextPowerOfTwoInt, ui64 }) |U| {</span>
+<span class="line" id="L4584">                            { <span class="tok-comment">// Variable-size Read/Write (Native-endian)</span>
 </span>
-<span class="line" id="L4586">                                <span class="tok-kw">const</span> read_value1 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), native_endian, signedness);</span>
-<span class="line" id="L4587">                                <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4585"></span>
+<span class="line" id="L4586">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(U) &lt; <span class="tok-builtin">@bitSizeOf</span>(PackedType))</span>
+<span class="line" id="L4587">                                    <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L4588"></span>
-<span class="line" id="L4589">                                <span class="tok-comment">// Write</span>
+<span class="line" id="L4589">                                <span class="tok-comment">// Initialize Value</span>
 </span>
-<span class="line" id="L4590">                                writeVarPackedInt(asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), <span class="tok-builtin">@as</span>(U, write_value), native_endian);</span>
-<span class="line" id="L4591">                                <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
-<span class="line" id="L4592"></span>
-<span class="line" id="L4593">                                <span class="tok-comment">// Read again</span>
+<span class="line" id="L4590">                                <span class="tok-kw">var</span> value: BackingType = init_value;</span>
+<span class="line" id="L4591"></span>
+<span class="line" id="L4592">                                <span class="tok-comment">// Read</span>
 </span>
-<span class="line" id="L4594">                                <span class="tok-kw">const</span> read_value2 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), native_endian, signedness);</span>
-<span class="line" id="L4595">                                <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
-<span class="line" id="L4596"></span>
-<span class="line" id="L4597">                                <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
+<span class="line" id="L4593">                                <span class="tok-kw">const</span> read_value1 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), native_endian, signedness);</span>
+<span class="line" id="L4594">                                <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4595"></span>
+<span class="line" id="L4596">                                <span class="tok-comment">// Write</span>
 </span>
-<span class="line" id="L4598">                                <span class="tok-kw">const</span> diff_bits = init_value ^ value;</span>
-<span class="line" id="L4599">                                <span class="tok-kw">if</span> (offset != offset_at_end)</span>
-<span class="line" id="L4600">                                    <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4601">                                <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
-<span class="line" id="L4602">                                    <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4603">                            }</span>
-<span class="line" id="L4604"></span>
-<span class="line" id="L4605">                            { <span class="tok-comment">// Variable-size Read/Write (Foreign-endian)</span>
+<span class="line" id="L4597">                                writeVarPackedInt(asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), <span class="tok-builtin">@as</span>(U, write_value), native_endian);</span>
+<span class="line" id="L4598">                                <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(value &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4599"></span>
+<span class="line" id="L4600">                                <span class="tok-comment">// Read again</span>
 </span>
-<span class="line" id="L4606"></span>
-<span class="line" id="L4607">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(U) &lt; <span class="tok-builtin">@bitSizeOf</span>(PackedType))</span>
-<span class="line" id="L4608">                                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L4609"></span>
-<span class="line" id="L4610">                                <span class="tok-comment">// Initialize Value</span>
+<span class="line" id="L4601">                                <span class="tok-kw">const</span> read_value2 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), native_endian, signedness);</span>
+<span class="line" id="L4602">                                <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
+<span class="line" id="L4603"></span>
+<span class="line" id="L4604">                                <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
 </span>
-<span class="line" id="L4611">                                <span class="tok-kw">var</span> value: BackingType = <span class="tok-builtin">@byteSwap</span>(init_value);</span>
-<span class="line" id="L4612"></span>
-<span class="line" id="L4613">                                <span class="tok-comment">// Read</span>
+<span class="line" id="L4605">                                <span class="tok-kw">const</span> diff_bits = init_value ^ value;</span>
+<span class="line" id="L4606">                                <span class="tok-kw">if</span> (offset != offset_at_end)</span>
+<span class="line" id="L4607">                                    <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4608">                                <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
+<span class="line" id="L4609">                                    <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4610">                            }</span>
+<span class="line" id="L4611"></span>
+<span class="line" id="L4612">                            { <span class="tok-comment">// Variable-size Read/Write (Foreign-endian)</span>
 </span>
-<span class="line" id="L4614">                                <span class="tok-kw">const</span> read_value1 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), foreign_endian, signedness);</span>
-<span class="line" id="L4615">                                <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4613"></span>
+<span class="line" id="L4614">                                <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(U) &lt; <span class="tok-builtin">@bitSizeOf</span>(PackedType))</span>
+<span class="line" id="L4615">                                    <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L4616"></span>
-<span class="line" id="L4617">                                <span class="tok-comment">// Write</span>
+<span class="line" id="L4617">                                <span class="tok-comment">// Initialize Value</span>
 </span>
-<span class="line" id="L4618">                                writeVarPackedInt(asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), <span class="tok-builtin">@as</span>(U, write_value), foreign_endian);</span>
-<span class="line" id="L4619">                                <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
-<span class="line" id="L4620"></span>
-<span class="line" id="L4621">                                <span class="tok-comment">// Read again</span>
+<span class="line" id="L4618">                                <span class="tok-kw">var</span> value: BackingType = <span class="tok-builtin">@byteSwap</span>(init_value);</span>
+<span class="line" id="L4619"></span>
+<span class="line" id="L4620">                                <span class="tok-comment">// Read</span>
 </span>
-<span class="line" id="L4622">                                <span class="tok-kw">const</span> read_value2 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), foreign_endian, signedness);</span>
-<span class="line" id="L4623">                                <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
-<span class="line" id="L4624"></span>
-<span class="line" id="L4625">                                <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
+<span class="line" id="L4621">                                <span class="tok-kw">const</span> read_value1 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), foreign_endian, signedness);</span>
+<span class="line" id="L4622">                                <span class="tok-kw">try</span> expect(read_value1 == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4623"></span>
+<span class="line" id="L4624">                                <span class="tok-comment">// Write</span>
 </span>
-<span class="line" id="L4626">                                <span class="tok-kw">const</span> diff_bits = init_value ^ <span class="tok-builtin">@byteSwap</span>(value);</span>
-<span class="line" id="L4627">                                <span class="tok-kw">if</span> (offset != offset_at_end)</span>
-<span class="line" id="L4628">                                    <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4629">                                <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
-<span class="line" id="L4630">                                    <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
-<span class="line" id="L4631">                            }</span>
-<span class="line" id="L4632">                        }</span>
-<span class="line" id="L4633">                    }</span>
-<span class="line" id="L4634">                }</span>
-<span class="line" id="L4635">            }</span>
-<span class="line" id="L4636">        }</span>
-<span class="line" id="L4637">    }</span>
-<span class="line" id="L4638">}</span>
-<span class="line" id="L4639"></span>
+<span class="line" id="L4625">                                writeVarPackedInt(asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), <span class="tok-builtin">@as</span>(U, write_value), foreign_endian);</span>
+<span class="line" id="L4626">                                <span class="tok-kw">try</span> expect(write_value == <span class="tok-builtin">@as</span>(PackedType, <span class="tok-builtin">@bitCast</span>(<span class="tok-builtin">@as</span>(uPackedType, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@byteSwap</span>(value) &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset)))))));</span>
+<span class="line" id="L4627"></span>
+<span class="line" id="L4628">                                <span class="tok-comment">// Read again</span>
+</span>
+<span class="line" id="L4629">                                <span class="tok-kw">const</span> read_value2 = readVarPackedInt(U, asBytes(&amp;value), offset, <span class="tok-builtin">@bitSizeOf</span>(PackedType), foreign_endian, signedness);</span>
+<span class="line" id="L4630">                                <span class="tok-kw">try</span> expect(read_value2 == write_value);</span>
+<span class="line" id="L4631"></span>
+<span class="line" id="L4632">                                <span class="tok-comment">// Verify bits outside of the target integer are unmodified</span>
+</span>
+<span class="line" id="L4633">                                <span class="tok-kw">const</span> diff_bits = init_value ^ <span class="tok-builtin">@byteSwap</span>(value);</span>
+<span class="line" id="L4634">                                <span class="tok-kw">if</span> (offset != offset_at_end)</span>
+<span class="line" id="L4635">                                    <span class="tok-kw">try</span> expect(diff_bits &gt;&gt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(offset + <span class="tok-builtin">@bitSizeOf</span>(PackedType))) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4636">                                <span class="tok-kw">if</span> (offset != <span class="tok-number">0</span>)</span>
+<span class="line" id="L4637">                                    <span class="tok-kw">try</span> expect(diff_bits &lt;&lt; <span class="tok-builtin">@as</span>(Log2T, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@bitSizeOf</span>(BackingType) - offset)) == <span class="tok-number">0</span>);</span>
+<span class="line" id="L4638">                            }</span>
+<span class="line" id="L4639">                        }</span>
+<span class="line" id="L4640">                    }</span>
+<span class="line" id="L4641">                }</span>
+<span class="line" id="L4642">            }</span>
+<span class="line" id="L4643">        }</span>
+<span class="line" id="L4644">    }</span>
+<span class="line" id="L4645">}</span>
+<span class="line" id="L4646"></span>
 </code></pre></body>
 </html>

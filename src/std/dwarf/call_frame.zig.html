@@ -578,238 +578,239 @@
 <span class="line" id="L452"></span>
 <span class="line" id="L453">    <span class="tok-comment">/// Return a slice backed by the row's non-CFA columns</span></span>
 <span class="line" id="L454">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">rowColumns</span>(self: VirtualMachine, row: Row) []Column {</span>
-<span class="line" id="L455">        <span class="tok-kw">return</span> self.columns.items[row.columns.start..][<span class="tok-number">0</span>..row.columns.len];</span>
-<span class="line" id="L456">    }</span>
-<span class="line" id="L457"></span>
-<span class="line" id="L458">    <span class="tok-comment">/// Either retrieves or adds a column for `register` (non-CFA) in the current row.</span></span>
-<span class="line" id="L459">    <span class="tok-kw">fn</span> <span class="tok-fn">getOrAddColumn</span>(self: *VirtualMachine, allocator: std.mem.Allocator, register: <span class="tok-type">u8</span>) !*Column {</span>
-<span class="line" id="L460">        <span class="tok-kw">for</span> (self.rowColumns(self.current_row)) |*c| {</span>
-<span class="line" id="L461">            <span class="tok-kw">if</span> (c.register == register) <span class="tok-kw">return</span> c;</span>
-<span class="line" id="L462">        }</span>
-<span class="line" id="L463"></span>
-<span class="line" id="L464">        <span class="tok-kw">if</span> (self.current_row.columns.len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L465">            self.current_row.columns.start = self.columns.items.len;</span>
-<span class="line" id="L466">        }</span>
-<span class="line" id="L467">        self.current_row.columns.len += <span class="tok-number">1</span>;</span>
-<span class="line" id="L468"></span>
-<span class="line" id="L469">        <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.columns.addOne(allocator);</span>
-<span class="line" id="L470">        column.* = .{</span>
-<span class="line" id="L471">            .register = register,</span>
-<span class="line" id="L472">        };</span>
-<span class="line" id="L473"></span>
-<span class="line" id="L474">        <span class="tok-kw">return</span> column;</span>
-<span class="line" id="L475">    }</span>
-<span class="line" id="L476"></span>
-<span class="line" id="L477">    <span class="tok-comment">/// Runs the CIE instructions, then the FDE instructions. Execution halts</span></span>
-<span class="line" id="L478">    <span class="tok-comment">/// once the row that corresponds to `pc` is known, and the row is returned.</span></span>
-<span class="line" id="L479">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runTo</span>(</span>
-<span class="line" id="L480">        self: *VirtualMachine,</span>
-<span class="line" id="L481">        allocator: std.mem.Allocator,</span>
-<span class="line" id="L482">        pc: <span class="tok-type">u64</span>,</span>
-<span class="line" id="L483">        cie: dwarf.CommonInformationEntry,</span>
-<span class="line" id="L484">        fde: dwarf.FrameDescriptionEntry,</span>
-<span class="line" id="L485">        addr_size_bytes: <span class="tok-type">u8</span>,</span>
-<span class="line" id="L486">        endian: std.builtin.Endian,</span>
-<span class="line" id="L487">    ) !Row {</span>
-<span class="line" id="L488">        assert(self.cie_row == <span class="tok-null">null</span>);</span>
-<span class="line" id="L489">        <span class="tok-kw">if</span> (pc &lt; fde.pc_begin <span class="tok-kw">or</span> pc &gt;= fde.pc_begin + fde.pc_range) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AddressOutOfRange;</span>
-<span class="line" id="L490"></span>
-<span class="line" id="L491">        <span class="tok-kw">var</span> prev_row: Row = self.current_row;</span>
-<span class="line" id="L492"></span>
-<span class="line" id="L493">        <span class="tok-kw">var</span> cie_stream = std.io.fixedBufferStream(cie.initial_instructions);</span>
-<span class="line" id="L494">        <span class="tok-kw">var</span> fde_stream = std.io.fixedBufferStream(fde.instructions);</span>
-<span class="line" id="L495">        <span class="tok-kw">var</span> streams = [_]*std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>){</span>
-<span class="line" id="L496">            &amp;cie_stream,</span>
-<span class="line" id="L497">            &amp;fde_stream,</span>
-<span class="line" id="L498">        };</span>
-<span class="line" id="L499"></span>
-<span class="line" id="L500">        <span class="tok-kw">for</span> (&amp;streams, <span class="tok-number">0</span>..) |stream, i| {</span>
-<span class="line" id="L501">            <span class="tok-kw">while</span> (stream.pos &lt; stream.buffer.len) {</span>
-<span class="line" id="L502">                <span class="tok-kw">const</span> instruction = <span class="tok-kw">try</span> dwarf.call_frame.Instruction.read(stream, addr_size_bytes, endian);</span>
-<span class="line" id="L503">                prev_row = <span class="tok-kw">try</span> self.step(allocator, cie, i == <span class="tok-number">0</span>, instruction);</span>
-<span class="line" id="L504">                <span class="tok-kw">if</span> (pc &lt; fde.pc_begin + self.current_row.offset) <span class="tok-kw">return</span> prev_row;</span>
-<span class="line" id="L505">            }</span>
-<span class="line" id="L506">        }</span>
-<span class="line" id="L507"></span>
-<span class="line" id="L508">        <span class="tok-kw">return</span> self.current_row;</span>
-<span class="line" id="L509">    }</span>
-<span class="line" id="L510"></span>
-<span class="line" id="L511">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runToNative</span>(</span>
-<span class="line" id="L512">        self: *VirtualMachine,</span>
-<span class="line" id="L513">        allocator: std.mem.Allocator,</span>
-<span class="line" id="L514">        pc: <span class="tok-type">u64</span>,</span>
-<span class="line" id="L515">        cie: dwarf.CommonInformationEntry,</span>
-<span class="line" id="L516">        fde: dwarf.FrameDescriptionEntry,</span>
-<span class="line" id="L517">    ) !Row {</span>
-<span class="line" id="L518">        <span class="tok-kw">return</span> self.runTo(allocator, pc, cie, fde, <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>), builtin.target.cpu.arch.endian());</span>
-<span class="line" id="L519">    }</span>
-<span class="line" id="L520"></span>
-<span class="line" id="L521">    <span class="tok-kw">fn</span> <span class="tok-fn">resolveCopyOnWrite</span>(self: *VirtualMachine, allocator: std.mem.Allocator) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L522">        <span class="tok-kw">if</span> (!self.current_row.copy_on_write) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L523"></span>
-<span class="line" id="L524">        <span class="tok-kw">const</span> new_start = self.columns.items.len;</span>
-<span class="line" id="L525">        <span class="tok-kw">if</span> (self.current_row.columns.len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L526">            <span class="tok-kw">try</span> self.columns.ensureUnusedCapacity(allocator, self.current_row.columns.len);</span>
-<span class="line" id="L527">            self.columns.appendSliceAssumeCapacity(self.rowColumns(self.current_row));</span>
-<span class="line" id="L528">            self.current_row.columns.start = new_start;</span>
-<span class="line" id="L529">        }</span>
-<span class="line" id="L530">    }</span>
-<span class="line" id="L531"></span>
-<span class="line" id="L532">    <span class="tok-comment">/// Executes a single instruction.</span></span>
-<span class="line" id="L533">    <span class="tok-comment">/// If this instruction is from the CIE, `is_initial` should be set.</span></span>
-<span class="line" id="L534">    <span class="tok-comment">/// Returns the value of `current_row` before executing this instruction.</span></span>
-<span class="line" id="L535">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">step</span>(</span>
-<span class="line" id="L536">        self: *VirtualMachine,</span>
-<span class="line" id="L537">        allocator: std.mem.Allocator,</span>
-<span class="line" id="L538">        cie: dwarf.CommonInformationEntry,</span>
-<span class="line" id="L539">        is_initial: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L540">        instruction: Instruction,</span>
-<span class="line" id="L541">    ) !Row {</span>
-<span class="line" id="L542">        <span class="tok-comment">// CIE instructions must be run before FDE instructions</span>
+<span class="line" id="L455">        <span class="tok-kw">if</span> (row.columns.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> &amp;.{};</span>
+<span class="line" id="L456">        <span class="tok-kw">return</span> self.columns.items[row.columns.start..][<span class="tok-number">0</span>..row.columns.len];</span>
+<span class="line" id="L457">    }</span>
+<span class="line" id="L458"></span>
+<span class="line" id="L459">    <span class="tok-comment">/// Either retrieves or adds a column for `register` (non-CFA) in the current row.</span></span>
+<span class="line" id="L460">    <span class="tok-kw">fn</span> <span class="tok-fn">getOrAddColumn</span>(self: *VirtualMachine, allocator: std.mem.Allocator, register: <span class="tok-type">u8</span>) !*Column {</span>
+<span class="line" id="L461">        <span class="tok-kw">for</span> (self.rowColumns(self.current_row)) |*c| {</span>
+<span class="line" id="L462">            <span class="tok-kw">if</span> (c.register == register) <span class="tok-kw">return</span> c;</span>
+<span class="line" id="L463">        }</span>
+<span class="line" id="L464"></span>
+<span class="line" id="L465">        <span class="tok-kw">if</span> (self.current_row.columns.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L466">            self.current_row.columns.start = self.columns.items.len;</span>
+<span class="line" id="L467">        }</span>
+<span class="line" id="L468">        self.current_row.columns.len += <span class="tok-number">1</span>;</span>
+<span class="line" id="L469"></span>
+<span class="line" id="L470">        <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.columns.addOne(allocator);</span>
+<span class="line" id="L471">        column.* = .{</span>
+<span class="line" id="L472">            .register = register,</span>
+<span class="line" id="L473">        };</span>
+<span class="line" id="L474"></span>
+<span class="line" id="L475">        <span class="tok-kw">return</span> column;</span>
+<span class="line" id="L476">    }</span>
+<span class="line" id="L477"></span>
+<span class="line" id="L478">    <span class="tok-comment">/// Runs the CIE instructions, then the FDE instructions. Execution halts</span></span>
+<span class="line" id="L479">    <span class="tok-comment">/// once the row that corresponds to `pc` is known, and the row is returned.</span></span>
+<span class="line" id="L480">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runTo</span>(</span>
+<span class="line" id="L481">        self: *VirtualMachine,</span>
+<span class="line" id="L482">        allocator: std.mem.Allocator,</span>
+<span class="line" id="L483">        pc: <span class="tok-type">u64</span>,</span>
+<span class="line" id="L484">        cie: dwarf.CommonInformationEntry,</span>
+<span class="line" id="L485">        fde: dwarf.FrameDescriptionEntry,</span>
+<span class="line" id="L486">        addr_size_bytes: <span class="tok-type">u8</span>,</span>
+<span class="line" id="L487">        endian: std.builtin.Endian,</span>
+<span class="line" id="L488">    ) !Row {</span>
+<span class="line" id="L489">        assert(self.cie_row == <span class="tok-null">null</span>);</span>
+<span class="line" id="L490">        <span class="tok-kw">if</span> (pc &lt; fde.pc_begin <span class="tok-kw">or</span> pc &gt;= fde.pc_begin + fde.pc_range) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AddressOutOfRange;</span>
+<span class="line" id="L491"></span>
+<span class="line" id="L492">        <span class="tok-kw">var</span> prev_row: Row = self.current_row;</span>
+<span class="line" id="L493"></span>
+<span class="line" id="L494">        <span class="tok-kw">var</span> cie_stream = std.io.fixedBufferStream(cie.initial_instructions);</span>
+<span class="line" id="L495">        <span class="tok-kw">var</span> fde_stream = std.io.fixedBufferStream(fde.instructions);</span>
+<span class="line" id="L496">        <span class="tok-kw">var</span> streams = [_]*std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>){</span>
+<span class="line" id="L497">            &amp;cie_stream,</span>
+<span class="line" id="L498">            &amp;fde_stream,</span>
+<span class="line" id="L499">        };</span>
+<span class="line" id="L500"></span>
+<span class="line" id="L501">        <span class="tok-kw">for</span> (&amp;streams, <span class="tok-number">0</span>..) |stream, i| {</span>
+<span class="line" id="L502">            <span class="tok-kw">while</span> (stream.pos &lt; stream.buffer.len) {</span>
+<span class="line" id="L503">                <span class="tok-kw">const</span> instruction = <span class="tok-kw">try</span> dwarf.call_frame.Instruction.read(stream, addr_size_bytes, endian);</span>
+<span class="line" id="L504">                prev_row = <span class="tok-kw">try</span> self.step(allocator, cie, i == <span class="tok-number">0</span>, instruction);</span>
+<span class="line" id="L505">                <span class="tok-kw">if</span> (pc &lt; fde.pc_begin + self.current_row.offset) <span class="tok-kw">return</span> prev_row;</span>
+<span class="line" id="L506">            }</span>
+<span class="line" id="L507">        }</span>
+<span class="line" id="L508"></span>
+<span class="line" id="L509">        <span class="tok-kw">return</span> self.current_row;</span>
+<span class="line" id="L510">    }</span>
+<span class="line" id="L511"></span>
+<span class="line" id="L512">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">runToNative</span>(</span>
+<span class="line" id="L513">        self: *VirtualMachine,</span>
+<span class="line" id="L514">        allocator: std.mem.Allocator,</span>
+<span class="line" id="L515">        pc: <span class="tok-type">u64</span>,</span>
+<span class="line" id="L516">        cie: dwarf.CommonInformationEntry,</span>
+<span class="line" id="L517">        fde: dwarf.FrameDescriptionEntry,</span>
+<span class="line" id="L518">    ) !Row {</span>
+<span class="line" id="L519">        <span class="tok-kw">return</span> self.runTo(allocator, pc, cie, fde, <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">usize</span>), builtin.target.cpu.arch.endian());</span>
+<span class="line" id="L520">    }</span>
+<span class="line" id="L521"></span>
+<span class="line" id="L522">    <span class="tok-kw">fn</span> <span class="tok-fn">resolveCopyOnWrite</span>(self: *VirtualMachine, allocator: std.mem.Allocator) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L523">        <span class="tok-kw">if</span> (!self.current_row.copy_on_write) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L524"></span>
+<span class="line" id="L525">        <span class="tok-kw">const</span> new_start = self.columns.items.len;</span>
+<span class="line" id="L526">        <span class="tok-kw">if</span> (self.current_row.columns.len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L527">            <span class="tok-kw">try</span> self.columns.ensureUnusedCapacity(allocator, self.current_row.columns.len);</span>
+<span class="line" id="L528">            self.columns.appendSliceAssumeCapacity(self.rowColumns(self.current_row));</span>
+<span class="line" id="L529">            self.current_row.columns.start = new_start;</span>
+<span class="line" id="L530">        }</span>
+<span class="line" id="L531">    }</span>
+<span class="line" id="L532"></span>
+<span class="line" id="L533">    <span class="tok-comment">/// Executes a single instruction.</span></span>
+<span class="line" id="L534">    <span class="tok-comment">/// If this instruction is from the CIE, `is_initial` should be set.</span></span>
+<span class="line" id="L535">    <span class="tok-comment">/// Returns the value of `current_row` before executing this instruction.</span></span>
+<span class="line" id="L536">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">step</span>(</span>
+<span class="line" id="L537">        self: *VirtualMachine,</span>
+<span class="line" id="L538">        allocator: std.mem.Allocator,</span>
+<span class="line" id="L539">        cie: dwarf.CommonInformationEntry,</span>
+<span class="line" id="L540">        is_initial: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L541">        instruction: Instruction,</span>
+<span class="line" id="L542">    ) !Row {</span>
+<span class="line" id="L543">        <span class="tok-comment">// CIE instructions must be run before FDE instructions</span>
 </span>
-<span class="line" id="L543">        assert(!is_initial <span class="tok-kw">or</span> self.cie_row == <span class="tok-null">null</span>);</span>
-<span class="line" id="L544">        <span class="tok-kw">if</span> (!is_initial <span class="tok-kw">and</span> self.cie_row == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L545">            self.cie_row = self.current_row;</span>
-<span class="line" id="L546">            self.current_row.copy_on_write = <span class="tok-null">true</span>;</span>
-<span class="line" id="L547">        }</span>
-<span class="line" id="L548"></span>
-<span class="line" id="L549">        <span class="tok-kw">const</span> prev_row = self.current_row;</span>
-<span class="line" id="L550">        <span class="tok-kw">switch</span> (instruction) {</span>
-<span class="line" id="L551">            .set_loc =&gt; |i| {</span>
-<span class="line" id="L552">                <span class="tok-kw">if</span> (i.address &lt;= self.current_row.offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
-<span class="line" id="L553">                <span class="tok-comment">// TODO: Check cie.segment_selector_size != 0 for DWARFV4</span>
+<span class="line" id="L544">        assert(!is_initial <span class="tok-kw">or</span> self.cie_row == <span class="tok-null">null</span>);</span>
+<span class="line" id="L545">        <span class="tok-kw">if</span> (!is_initial <span class="tok-kw">and</span> self.cie_row == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L546">            self.cie_row = self.current_row;</span>
+<span class="line" id="L547">            self.current_row.copy_on_write = <span class="tok-null">true</span>;</span>
+<span class="line" id="L548">        }</span>
+<span class="line" id="L549"></span>
+<span class="line" id="L550">        <span class="tok-kw">const</span> prev_row = self.current_row;</span>
+<span class="line" id="L551">        <span class="tok-kw">switch</span> (instruction) {</span>
+<span class="line" id="L552">            .set_loc =&gt; |i| {</span>
+<span class="line" id="L553">                <span class="tok-kw">if</span> (i.address &lt;= self.current_row.offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
+<span class="line" id="L554">                <span class="tok-comment">// TODO: Check cie.segment_selector_size != 0 for DWARFV4</span>
 </span>
-<span class="line" id="L554">                self.current_row.offset = i.address;</span>
-<span class="line" id="L555">            },</span>
-<span class="line" id="L556">            <span class="tok-kw">inline</span> .advance_loc,</span>
-<span class="line" id="L557">            .advance_loc1,</span>
-<span class="line" id="L558">            .advance_loc2,</span>
-<span class="line" id="L559">            .advance_loc4,</span>
-<span class="line" id="L560">            =&gt; |i| {</span>
-<span class="line" id="L561">                self.current_row.offset += i.delta * cie.code_alignment_factor;</span>
-<span class="line" id="L562">                self.current_row.copy_on_write = <span class="tok-null">true</span>;</span>
-<span class="line" id="L563">            },</span>
-<span class="line" id="L564">            <span class="tok-kw">inline</span> .offset,</span>
-<span class="line" id="L565">            .offset_extended,</span>
-<span class="line" id="L566">            .offset_extended_sf,</span>
-<span class="line" id="L567">            =&gt; |i| {</span>
-<span class="line" id="L568">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L569">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L570">                column.rule = .{ .offset = <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(i.offset)) * cie.data_alignment_factor };</span>
-<span class="line" id="L571">            },</span>
-<span class="line" id="L572">            <span class="tok-kw">inline</span> .restore,</span>
-<span class="line" id="L573">            .restore_extended,</span>
-<span class="line" id="L574">            =&gt; |i| {</span>
-<span class="line" id="L575">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L576">                <span class="tok-kw">if</span> (self.cie_row) |cie_row| {</span>
-<span class="line" id="L577">                    <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L578">                    column.rule = <span class="tok-kw">for</span> (self.rowColumns(cie_row)) |cie_column| {</span>
-<span class="line" id="L579">                        <span class="tok-kw">if</span> (cie_column.register == i.register) <span class="tok-kw">break</span> cie_column.rule;</span>
-<span class="line" id="L580">                    } <span class="tok-kw">else</span> .{ .default = {} };</span>
-<span class="line" id="L581">                } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
-<span class="line" id="L582">            },</span>
-<span class="line" id="L583">            .nop =&gt; {},</span>
-<span class="line" id="L584">            .<span class="tok-null">undefined</span> =&gt; |i| {</span>
-<span class="line" id="L585">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L586">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L587">                column.rule = .{ .<span class="tok-null">undefined</span> = {} };</span>
-<span class="line" id="L588">            },</span>
-<span class="line" id="L589">            .same_value =&gt; |i| {</span>
-<span class="line" id="L590">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L591">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L592">                column.rule = .{ .same_value = {} };</span>
-<span class="line" id="L593">            },</span>
-<span class="line" id="L594">            .register =&gt; |i| {</span>
-<span class="line" id="L595">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L596">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L597">                column.rule = .{ .register = i.target_register };</span>
-<span class="line" id="L598">            },</span>
-<span class="line" id="L599">            .remember_state =&gt; {</span>
-<span class="line" id="L600">                <span class="tok-kw">try</span> self.stack.append(allocator, self.current_row.columns);</span>
-<span class="line" id="L601">                self.current_row.copy_on_write = <span class="tok-null">true</span>;</span>
-<span class="line" id="L602">            },</span>
-<span class="line" id="L603">            .restore_state =&gt; {</span>
-<span class="line" id="L604">                <span class="tok-kw">const</span> restored_columns = self.stack.popOrNull() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
-<span class="line" id="L605">                self.columns.shrinkRetainingCapacity(self.columns.items.len - self.current_row.columns.len);</span>
-<span class="line" id="L606">                <span class="tok-kw">try</span> self.columns.ensureUnusedCapacity(allocator, restored_columns.len);</span>
-<span class="line" id="L607"></span>
-<span class="line" id="L608">                self.current_row.columns.start = self.columns.items.len;</span>
-<span class="line" id="L609">                self.current_row.columns.len = restored_columns.len;</span>
-<span class="line" id="L610">                self.columns.appendSliceAssumeCapacity(self.columns.items[restored_columns.start..][<span class="tok-number">0</span>..restored_columns.len]);</span>
-<span class="line" id="L611">            },</span>
-<span class="line" id="L612">            .def_cfa =&gt; |i| {</span>
-<span class="line" id="L613">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L614">                self.current_row.cfa = .{</span>
-<span class="line" id="L615">                    .register = i.register,</span>
-<span class="line" id="L616">                    .rule = .{ .val_offset = <span class="tok-builtin">@intCast</span>(i.offset) },</span>
-<span class="line" id="L617">                };</span>
-<span class="line" id="L618">            },</span>
-<span class="line" id="L619">            .def_cfa_sf =&gt; |i| {</span>
-<span class="line" id="L620">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L621">                self.current_row.cfa = .{</span>
-<span class="line" id="L622">                    .register = i.register,</span>
-<span class="line" id="L623">                    .rule = .{ .val_offset = i.offset * cie.data_alignment_factor },</span>
-<span class="line" id="L624">                };</span>
-<span class="line" id="L625">            },</span>
-<span class="line" id="L626">            .def_cfa_register =&gt; |i| {</span>
-<span class="line" id="L627">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L628">                <span class="tok-kw">if</span> (self.current_row.cfa.register == <span class="tok-null">null</span> <span class="tok-kw">or</span> self.current_row.cfa.rule != .val_offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
-<span class="line" id="L629">                self.current_row.cfa.register = i.register;</span>
-<span class="line" id="L630">            },</span>
-<span class="line" id="L631">            .def_cfa_offset =&gt; |i| {</span>
-<span class="line" id="L632">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L633">                <span class="tok-kw">if</span> (self.current_row.cfa.register == <span class="tok-null">null</span> <span class="tok-kw">or</span> self.current_row.cfa.rule != .val_offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
-<span class="line" id="L634">                self.current_row.cfa.rule = .{</span>
-<span class="line" id="L635">                    .val_offset = <span class="tok-builtin">@intCast</span>(i.offset),</span>
-<span class="line" id="L636">                };</span>
-<span class="line" id="L637">            },</span>
-<span class="line" id="L638">            .def_cfa_offset_sf =&gt; |i| {</span>
-<span class="line" id="L639">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L640">                <span class="tok-kw">if</span> (self.current_row.cfa.register == <span class="tok-null">null</span> <span class="tok-kw">or</span> self.current_row.cfa.rule != .val_offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
-<span class="line" id="L641">                self.current_row.cfa.rule = .{</span>
-<span class="line" id="L642">                    .val_offset = i.offset * cie.data_alignment_factor,</span>
-<span class="line" id="L643">                };</span>
-<span class="line" id="L644">            },</span>
-<span class="line" id="L645">            .def_cfa_expression =&gt; |i| {</span>
-<span class="line" id="L646">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L647">                self.current_row.cfa.register = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L648">                self.current_row.cfa.rule = .{</span>
-<span class="line" id="L649">                    .expression = i.block,</span>
-<span class="line" id="L650">                };</span>
-<span class="line" id="L651">            },</span>
-<span class="line" id="L652">            .expression =&gt; |i| {</span>
-<span class="line" id="L653">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L654">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L655">                column.rule = .{</span>
-<span class="line" id="L656">                    .expression = i.block,</span>
-<span class="line" id="L657">                };</span>
-<span class="line" id="L658">            },</span>
-<span class="line" id="L659">            .val_offset =&gt; |i| {</span>
-<span class="line" id="L660">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L661">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L662">                column.rule = .{</span>
-<span class="line" id="L663">                    .val_offset = <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(i.offset)) * cie.data_alignment_factor,</span>
-<span class="line" id="L664">                };</span>
-<span class="line" id="L665">            },</span>
-<span class="line" id="L666">            .val_offset_sf =&gt; |i| {</span>
-<span class="line" id="L667">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L668">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L669">                column.rule = .{</span>
-<span class="line" id="L670">                    .val_offset = i.offset * cie.data_alignment_factor,</span>
-<span class="line" id="L671">                };</span>
-<span class="line" id="L672">            },</span>
-<span class="line" id="L673">            .val_expression =&gt; |i| {</span>
-<span class="line" id="L674">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
-<span class="line" id="L675">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
-<span class="line" id="L676">                column.rule = .{</span>
-<span class="line" id="L677">                    .val_expression = i.block,</span>
-<span class="line" id="L678">                };</span>
-<span class="line" id="L679">            },</span>
-<span class="line" id="L680">        }</span>
-<span class="line" id="L681"></span>
-<span class="line" id="L682">        <span class="tok-kw">return</span> prev_row;</span>
-<span class="line" id="L683">    }</span>
-<span class="line" id="L684">};</span>
-<span class="line" id="L685"></span>
+<span class="line" id="L555">                self.current_row.offset = i.address;</span>
+<span class="line" id="L556">            },</span>
+<span class="line" id="L557">            <span class="tok-kw">inline</span> .advance_loc,</span>
+<span class="line" id="L558">            .advance_loc1,</span>
+<span class="line" id="L559">            .advance_loc2,</span>
+<span class="line" id="L560">            .advance_loc4,</span>
+<span class="line" id="L561">            =&gt; |i| {</span>
+<span class="line" id="L562">                self.current_row.offset += i.delta * cie.code_alignment_factor;</span>
+<span class="line" id="L563">                self.current_row.copy_on_write = <span class="tok-null">true</span>;</span>
+<span class="line" id="L564">            },</span>
+<span class="line" id="L565">            <span class="tok-kw">inline</span> .offset,</span>
+<span class="line" id="L566">            .offset_extended,</span>
+<span class="line" id="L567">            .offset_extended_sf,</span>
+<span class="line" id="L568">            =&gt; |i| {</span>
+<span class="line" id="L569">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L570">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L571">                column.rule = .{ .offset = <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(i.offset)) * cie.data_alignment_factor };</span>
+<span class="line" id="L572">            },</span>
+<span class="line" id="L573">            <span class="tok-kw">inline</span> .restore,</span>
+<span class="line" id="L574">            .restore_extended,</span>
+<span class="line" id="L575">            =&gt; |i| {</span>
+<span class="line" id="L576">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L577">                <span class="tok-kw">if</span> (self.cie_row) |cie_row| {</span>
+<span class="line" id="L578">                    <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L579">                    column.rule = <span class="tok-kw">for</span> (self.rowColumns(cie_row)) |cie_column| {</span>
+<span class="line" id="L580">                        <span class="tok-kw">if</span> (cie_column.register == i.register) <span class="tok-kw">break</span> cie_column.rule;</span>
+<span class="line" id="L581">                    } <span class="tok-kw">else</span> .{ .default = {} };</span>
+<span class="line" id="L582">                } <span class="tok-kw">else</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
+<span class="line" id="L583">            },</span>
+<span class="line" id="L584">            .nop =&gt; {},</span>
+<span class="line" id="L585">            .<span class="tok-null">undefined</span> =&gt; |i| {</span>
+<span class="line" id="L586">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L587">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L588">                column.rule = .{ .<span class="tok-null">undefined</span> = {} };</span>
+<span class="line" id="L589">            },</span>
+<span class="line" id="L590">            .same_value =&gt; |i| {</span>
+<span class="line" id="L591">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L592">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L593">                column.rule = .{ .same_value = {} };</span>
+<span class="line" id="L594">            },</span>
+<span class="line" id="L595">            .register =&gt; |i| {</span>
+<span class="line" id="L596">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L597">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L598">                column.rule = .{ .register = i.target_register };</span>
+<span class="line" id="L599">            },</span>
+<span class="line" id="L600">            .remember_state =&gt; {</span>
+<span class="line" id="L601">                <span class="tok-kw">try</span> self.stack.append(allocator, self.current_row.columns);</span>
+<span class="line" id="L602">                self.current_row.copy_on_write = <span class="tok-null">true</span>;</span>
+<span class="line" id="L603">            },</span>
+<span class="line" id="L604">            .restore_state =&gt; {</span>
+<span class="line" id="L605">                <span class="tok-kw">const</span> restored_columns = self.stack.popOrNull() <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
+<span class="line" id="L606">                self.columns.shrinkRetainingCapacity(self.columns.items.len - self.current_row.columns.len);</span>
+<span class="line" id="L607">                <span class="tok-kw">try</span> self.columns.ensureUnusedCapacity(allocator, restored_columns.len);</span>
+<span class="line" id="L608"></span>
+<span class="line" id="L609">                self.current_row.columns.start = self.columns.items.len;</span>
+<span class="line" id="L610">                self.current_row.columns.len = restored_columns.len;</span>
+<span class="line" id="L611">                self.columns.appendSliceAssumeCapacity(self.columns.items[restored_columns.start..][<span class="tok-number">0</span>..restored_columns.len]);</span>
+<span class="line" id="L612">            },</span>
+<span class="line" id="L613">            .def_cfa =&gt; |i| {</span>
+<span class="line" id="L614">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L615">                self.current_row.cfa = .{</span>
+<span class="line" id="L616">                    .register = i.register,</span>
+<span class="line" id="L617">                    .rule = .{ .val_offset = <span class="tok-builtin">@intCast</span>(i.offset) },</span>
+<span class="line" id="L618">                };</span>
+<span class="line" id="L619">            },</span>
+<span class="line" id="L620">            .def_cfa_sf =&gt; |i| {</span>
+<span class="line" id="L621">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L622">                self.current_row.cfa = .{</span>
+<span class="line" id="L623">                    .register = i.register,</span>
+<span class="line" id="L624">                    .rule = .{ .val_offset = i.offset * cie.data_alignment_factor },</span>
+<span class="line" id="L625">                };</span>
+<span class="line" id="L626">            },</span>
+<span class="line" id="L627">            .def_cfa_register =&gt; |i| {</span>
+<span class="line" id="L628">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L629">                <span class="tok-kw">if</span> (self.current_row.cfa.register == <span class="tok-null">null</span> <span class="tok-kw">or</span> self.current_row.cfa.rule != .val_offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
+<span class="line" id="L630">                self.current_row.cfa.register = i.register;</span>
+<span class="line" id="L631">            },</span>
+<span class="line" id="L632">            .def_cfa_offset =&gt; |i| {</span>
+<span class="line" id="L633">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L634">                <span class="tok-kw">if</span> (self.current_row.cfa.register == <span class="tok-null">null</span> <span class="tok-kw">or</span> self.current_row.cfa.rule != .val_offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
+<span class="line" id="L635">                self.current_row.cfa.rule = .{</span>
+<span class="line" id="L636">                    .val_offset = <span class="tok-builtin">@intCast</span>(i.offset),</span>
+<span class="line" id="L637">                };</span>
+<span class="line" id="L638">            },</span>
+<span class="line" id="L639">            .def_cfa_offset_sf =&gt; |i| {</span>
+<span class="line" id="L640">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L641">                <span class="tok-kw">if</span> (self.current_row.cfa.register == <span class="tok-null">null</span> <span class="tok-kw">or</span> self.current_row.cfa.rule != .val_offset) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidOperation;</span>
+<span class="line" id="L642">                self.current_row.cfa.rule = .{</span>
+<span class="line" id="L643">                    .val_offset = i.offset * cie.data_alignment_factor,</span>
+<span class="line" id="L644">                };</span>
+<span class="line" id="L645">            },</span>
+<span class="line" id="L646">            .def_cfa_expression =&gt; |i| {</span>
+<span class="line" id="L647">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L648">                self.current_row.cfa.register = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L649">                self.current_row.cfa.rule = .{</span>
+<span class="line" id="L650">                    .expression = i.block,</span>
+<span class="line" id="L651">                };</span>
+<span class="line" id="L652">            },</span>
+<span class="line" id="L653">            .expression =&gt; |i| {</span>
+<span class="line" id="L654">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L655">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L656">                column.rule = .{</span>
+<span class="line" id="L657">                    .expression = i.block,</span>
+<span class="line" id="L658">                };</span>
+<span class="line" id="L659">            },</span>
+<span class="line" id="L660">            .val_offset =&gt; |i| {</span>
+<span class="line" id="L661">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L662">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L663">                column.rule = .{</span>
+<span class="line" id="L664">                    .val_offset = <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-builtin">@intCast</span>(i.offset)) * cie.data_alignment_factor,</span>
+<span class="line" id="L665">                };</span>
+<span class="line" id="L666">            },</span>
+<span class="line" id="L667">            .val_offset_sf =&gt; |i| {</span>
+<span class="line" id="L668">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L669">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L670">                column.rule = .{</span>
+<span class="line" id="L671">                    .val_offset = i.offset * cie.data_alignment_factor,</span>
+<span class="line" id="L672">                };</span>
+<span class="line" id="L673">            },</span>
+<span class="line" id="L674">            .val_expression =&gt; |i| {</span>
+<span class="line" id="L675">                <span class="tok-kw">try</span> self.resolveCopyOnWrite(allocator);</span>
+<span class="line" id="L676">                <span class="tok-kw">const</span> column = <span class="tok-kw">try</span> self.getOrAddColumn(allocator, i.register);</span>
+<span class="line" id="L677">                column.rule = .{</span>
+<span class="line" id="L678">                    .val_expression = i.block,</span>
+<span class="line" id="L679">                };</span>
+<span class="line" id="L680">            },</span>
+<span class="line" id="L681">        }</span>
+<span class="line" id="L682"></span>
+<span class="line" id="L683">        <span class="tok-kw">return</span> prev_row;</span>
+<span class="line" id="L684">    }</span>
+<span class="line" id="L685">};</span>
+<span class="line" id="L686"></span>
 </code></pre></body>
 </html>
