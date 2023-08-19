@@ -952,63 +952,62 @@
 <span class="line" id="L803"></span>
 <span class="line" id="L804"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadLinkError = <span class="tok-kw">error</span>{</span>
 <span class="line" id="L805">    FileNotFound,</span>
-<span class="line" id="L806">    AccessDenied,</span>
-<span class="line" id="L807">    Unexpected,</span>
-<span class="line" id="L808">    NameTooLong,</span>
-<span class="line" id="L809">    UnsupportedReparsePointType,</span>
-<span class="line" id="L810">};</span>
-<span class="line" id="L811"></span>
-<span class="line" id="L812"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ReadLink</span>(dir: ?HANDLE, sub_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, out_buffer: []<span class="tok-type">u8</span>) ReadLinkError![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L813">    <span class="tok-comment">// Here, we use `NtCreateFile` to shave off one syscall if we were to use `OpenFile` wrapper.</span>
+<span class="line" id="L806">    NetworkNotFound,</span>
+<span class="line" id="L807">    AccessDenied,</span>
+<span class="line" id="L808">    Unexpected,</span>
+<span class="line" id="L809">    NameTooLong,</span>
+<span class="line" id="L810">    UnsupportedReparsePointType,</span>
+<span class="line" id="L811">};</span>
+<span class="line" id="L812"></span>
+<span class="line" id="L813"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">ReadLink</span>(dir: ?HANDLE, sub_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, out_buffer: []<span class="tok-type">u8</span>) ReadLinkError![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L814">    <span class="tok-comment">// Here, we use `NtCreateFile` to shave off one syscall if we were to use `OpenFile` wrapper.</span>
 </span>
-<span class="line" id="L814">    <span class="tok-comment">// With the latter, we'd need to call `NtCreateFile` twice, once for file symlink, and if that</span>
+<span class="line" id="L815">    <span class="tok-comment">// With the latter, we'd need to call `NtCreateFile` twice, once for file symlink, and if that</span>
 </span>
-<span class="line" id="L815">    <span class="tok-comment">// failed, again for dir symlink. Omitting any mention of file/dir flags makes it possible</span>
+<span class="line" id="L816">    <span class="tok-comment">// failed, again for dir symlink. Omitting any mention of file/dir flags makes it possible</span>
 </span>
-<span class="line" id="L816">    <span class="tok-comment">// to open the symlink there and then.</span>
+<span class="line" id="L817">    <span class="tok-comment">// to open the symlink there and then.</span>
 </span>
-<span class="line" id="L817">    <span class="tok-kw">const</span> path_len_bytes = math.cast(<span class="tok-type">u16</span>, sub_path_w.len * <span class="tok-number">2</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L818">    <span class="tok-kw">var</span> nt_name = UNICODE_STRING{</span>
-<span class="line" id="L819">        .Length = path_len_bytes,</span>
-<span class="line" id="L820">        .MaximumLength = path_len_bytes,</span>
-<span class="line" id="L821">        .Buffer = <span class="tok-builtin">@constCast</span>(sub_path_w.ptr),</span>
-<span class="line" id="L822">    };</span>
-<span class="line" id="L823">    <span class="tok-kw">var</span> attr = OBJECT_ATTRIBUTES{</span>
-<span class="line" id="L824">        .Length = <span class="tok-builtin">@sizeOf</span>(OBJECT_ATTRIBUTES),</span>
-<span class="line" id="L825">        .RootDirectory = <span class="tok-kw">if</span> (std.fs.path.isAbsoluteWindowsWTF16(sub_path_w)) <span class="tok-null">null</span> <span class="tok-kw">else</span> dir,</span>
-<span class="line" id="L826">        .Attributes = <span class="tok-number">0</span>, <span class="tok-comment">// Note we do not use OBJ_CASE_INSENSITIVE here.</span>
+<span class="line" id="L818">    <span class="tok-kw">const</span> path_len_bytes = math.cast(<span class="tok-type">u16</span>, sub_path_w.len * <span class="tok-number">2</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L819">    <span class="tok-kw">var</span> nt_name = UNICODE_STRING{</span>
+<span class="line" id="L820">        .Length = path_len_bytes,</span>
+<span class="line" id="L821">        .MaximumLength = path_len_bytes,</span>
+<span class="line" id="L822">        .Buffer = <span class="tok-builtin">@constCast</span>(sub_path_w.ptr),</span>
+<span class="line" id="L823">    };</span>
+<span class="line" id="L824">    <span class="tok-kw">var</span> attr = OBJECT_ATTRIBUTES{</span>
+<span class="line" id="L825">        .Length = <span class="tok-builtin">@sizeOf</span>(OBJECT_ATTRIBUTES),</span>
+<span class="line" id="L826">        .RootDirectory = <span class="tok-kw">if</span> (std.fs.path.isAbsoluteWindowsWTF16(sub_path_w)) <span class="tok-null">null</span> <span class="tok-kw">else</span> dir,</span>
+<span class="line" id="L827">        .Attributes = <span class="tok-number">0</span>, <span class="tok-comment">// Note we do not use OBJ_CASE_INSENSITIVE here.</span>
 </span>
-<span class="line" id="L827">        .ObjectName = &amp;nt_name,</span>
-<span class="line" id="L828">        .SecurityDescriptor = <span class="tok-null">null</span>,</span>
-<span class="line" id="L829">        .SecurityQualityOfService = <span class="tok-null">null</span>,</span>
-<span class="line" id="L830">    };</span>
-<span class="line" id="L831">    <span class="tok-kw">var</span> result_handle: HANDLE = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L832">    <span class="tok-kw">var</span> io: IO_STATUS_BLOCK = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L833"></span>
-<span class="line" id="L834">    <span class="tok-kw">const</span> rc = ntdll.NtCreateFile(</span>
-<span class="line" id="L835">        &amp;result_handle,</span>
-<span class="line" id="L836">        FILE_READ_ATTRIBUTES,</span>
-<span class="line" id="L837">        &amp;attr,</span>
-<span class="line" id="L838">        &amp;io,</span>
-<span class="line" id="L839">        <span class="tok-null">null</span>,</span>
-<span class="line" id="L840">        FILE_ATTRIBUTE_NORMAL,</span>
-<span class="line" id="L841">        FILE_SHARE_READ,</span>
-<span class="line" id="L842">        FILE_OPEN,</span>
-<span class="line" id="L843">        FILE_OPEN_REPARSE_POINT,</span>
-<span class="line" id="L844">        <span class="tok-null">null</span>,</span>
-<span class="line" id="L845">        <span class="tok-number">0</span>,</span>
-<span class="line" id="L846">    );</span>
-<span class="line" id="L847">    <span class="tok-kw">switch</span> (rc) {</span>
-<span class="line" id="L848">        .SUCCESS =&gt; {},</span>
-<span class="line" id="L849">        .OBJECT_NAME_INVALID =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L850">        .OBJECT_NAME_NOT_FOUND =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
-<span class="line" id="L851">        .OBJECT_PATH_NOT_FOUND =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
-<span class="line" id="L852">        .NO_MEDIA_IN_DEVICE =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
-<span class="line" id="L853">        <span class="tok-comment">// TODO: Should BAD_NETWORK_* be translated to a different error?</span>
+<span class="line" id="L828">        .ObjectName = &amp;nt_name,</span>
+<span class="line" id="L829">        .SecurityDescriptor = <span class="tok-null">null</span>,</span>
+<span class="line" id="L830">        .SecurityQualityOfService = <span class="tok-null">null</span>,</span>
+<span class="line" id="L831">    };</span>
+<span class="line" id="L832">    <span class="tok-kw">var</span> result_handle: HANDLE = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L833">    <span class="tok-kw">var</span> io: IO_STATUS_BLOCK = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L834"></span>
+<span class="line" id="L835">    <span class="tok-kw">const</span> rc = ntdll.NtCreateFile(</span>
+<span class="line" id="L836">        &amp;result_handle,</span>
+<span class="line" id="L837">        FILE_READ_ATTRIBUTES,</span>
+<span class="line" id="L838">        &amp;attr,</span>
+<span class="line" id="L839">        &amp;io,</span>
+<span class="line" id="L840">        <span class="tok-null">null</span>,</span>
+<span class="line" id="L841">        FILE_ATTRIBUTE_NORMAL,</span>
+<span class="line" id="L842">        FILE_SHARE_READ,</span>
+<span class="line" id="L843">        FILE_OPEN,</span>
+<span class="line" id="L844">        FILE_OPEN_REPARSE_POINT,</span>
+<span class="line" id="L845">        <span class="tok-null">null</span>,</span>
+<span class="line" id="L846">        <span class="tok-number">0</span>,</span>
+<span class="line" id="L847">    );</span>
+<span class="line" id="L848">    <span class="tok-kw">switch</span> (rc) {</span>
+<span class="line" id="L849">        .SUCCESS =&gt; {},</span>
+<span class="line" id="L850">        .OBJECT_NAME_INVALID =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L851">        .OBJECT_NAME_NOT_FOUND =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
+<span class="line" id="L852">        .OBJECT_PATH_NOT_FOUND =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
+<span class="line" id="L853">        .NO_MEDIA_IN_DEVICE =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
+<span class="line" id="L854">        .BAD_NETWORK_PATH =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NetworkNotFound, <span class="tok-comment">// \\server was not found</span>
 </span>
-<span class="line" id="L854">        .BAD_NETWORK_PATH =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound, <span class="tok-comment">// \\server was not found</span>
-</span>
-<span class="line" id="L855">        .BAD_NETWORK_NAME =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound, <span class="tok-comment">// \\server was found but \\server\share wasn't</span>
+<span class="line" id="L855">        .BAD_NETWORK_NAME =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NetworkNotFound, <span class="tok-comment">// \\server was found but \\server\share wasn't</span>
 </span>
 <span class="line" id="L856">        .INVALID_PARAMETER =&gt; <span class="tok-kw">unreachable</span>,</span>
 <span class="line" id="L857">        .SHARING_VIOLATION =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AccessDenied,</span>
