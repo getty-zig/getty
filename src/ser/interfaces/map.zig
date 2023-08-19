@@ -1,23 +1,23 @@
 /// A `Map` serializes the entries of and ends the serialization process for Getty Maps.
 pub fn Map(
-    /// A namespace that owns the method implementations passed to the `methods` parameter.
-    comptime Context: type,
+    /// An implementing type.
+    comptime Impl: type,
     /// The successful return type of a `Map`'s `end` method.
     comptime O: type,
     /// The error set returned by a `Map`'s methods upon failure.
     comptime E: type,
-    /// A namespace containing the methods that implementations of `Map` can implement.
+    /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        serializeKey: ?fn (Context, anytype) E!void = null,
-        serializeValue: ?fn (Context, anytype) E!void = null,
-        serializeEntry: ?fn (Context, anytype, anytype) E!void = null,
-        end: ?fn (Context) E!O = null,
+        serializeKey: ?fn (Impl, anytype) E!void = null,
+        serializeValue: ?fn (Impl, anytype) E!void = null,
+        serializeEntry: ?fn (Impl, anytype, anytype) E!void = null,
+        end: ?fn (Impl) E!O = null,
     },
 ) type {
     return struct {
         /// An interface type.
         pub const @"getty.ser.Map" = struct {
-            context: Context,
+            impl: Impl,
 
             const Self = @This();
 
@@ -30,25 +30,25 @@ pub fn Map(
             /// Serialize a map key.
             pub fn serializeKey(self: Self, key: anytype) Error!void {
                 if (methods.serializeKey) |f| {
-                    try f(self.context, key);
+                    try f(self.impl, key);
                 } else {
-                    @compileError("serializeKey is not implemented by type: " ++ @typeName(Context));
+                    @compileError("serializeKey is not implemented by type: " ++ @typeName(Impl));
                 }
             }
 
             /// Serialize a map value.
             pub fn serializeValue(self: Self, value: anytype) Error!void {
                 if (methods.serializeValue) |f| {
-                    try f(self.context, value);
+                    try f(self.impl, value);
                 } else {
-                    @compileError("serializeValue is not implemented by type: " ++ @typeName(Context));
+                    @compileError("serializeValue is not implemented by type: " ++ @typeName(Impl));
                 }
             }
 
             /// Serialize a map entry consisting of a key and a value.
             pub fn serializeEntry(self: Self, key: anytype, value: anytype) Error!void {
                 if (methods.serializeEntry) |f| {
-                    try f(self.context, key, value);
+                    try f(self.impl, key, value);
                 } else {
                     try self.serializeKey(key);
                     try self.serializeValue(value);
@@ -58,16 +58,16 @@ pub fn Map(
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
                 if (methods.end) |f| {
-                    return try f(self.context);
+                    return try f(self.impl);
                 }
 
-                @compileError("end is not implemented by type: " ++ @typeName(Context));
+                @compileError("end is not implemented by type: " ++ @typeName(Impl));
             }
         };
 
         /// Returns a `Map` interface value.
-        pub fn map(self: Context) @"getty.ser.Map" {
-            return .{ .context = self };
+        pub fn map(impl: Impl) @"getty.ser.Map" {
+            return .{ .impl = impl };
         }
     };
 }

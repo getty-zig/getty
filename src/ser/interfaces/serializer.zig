@@ -5,8 +5,8 @@ const default_st = @import("../tuples.zig").st;
 
 /// A `Serializer` serializes values from Getty's data model into a data format.
 pub fn Serializer(
-    /// A namespace that owns the method implementations passed to the `methods` parameter.
-    comptime Context: type,
+    /// An implementing type.
+    comptime Impl: type,
     /// The successful return type of a `Serializer`'s `end` method.
     comptime O: type,
     /// The error set returned by a `Serializer`'s methods upon failure.
@@ -21,15 +21,15 @@ pub fn Serializer(
     comptime Seq: ?type,
     /// An optional type that implements `getty.ser.Structure`.
     comptime Structure: ?type,
-    /// A namespace containing the methods that implementations of `Serializer` can implement.
+    /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        serializeBool: ?fn (Context, bool) E!O = null,
-        serializeEnum: ?fn (Context, anytype, []const u8) E!O = null,
-        serializeFloat: ?fn (Context, anytype) E!O = null,
-        serializeInt: ?fn (Context, anytype) E!O = null,
+        serializeBool: ?fn (Impl, bool) E!O = null,
+        serializeEnum: ?fn (Impl, anytype, []const u8) E!O = null,
+        serializeFloat: ?fn (Impl, anytype) E!O = null,
+        serializeInt: ?fn (Impl, anytype) E!O = null,
         serializeMap: blk: {
             if (Map) |T| {
-                break :blk ?fn (Context, ?usize) E!T;
+                break :blk ?fn (Impl, ?usize) E!T;
             }
 
             // If Map is null, serializeMap will raise a compile error. The
@@ -38,10 +38,10 @@ pub fn Serializer(
             // compiler will error out as I've mentioned.
             break :blk E!?*const anyopaque;
         } = null,
-        serializeNull: ?fn (Context) E!O = null,
+        serializeNull: ?fn (Impl) E!O = null,
         serializeSeq: blk: {
             if (Seq) |T| {
-                break :blk ?fn (Context, ?usize) E!T;
+                break :blk ?fn (Impl, ?usize) E!T;
             }
 
             // If Seq is null, serializeSeq will raise a compile error. The
@@ -50,11 +50,11 @@ pub fn Serializer(
             // compiler will error out as I've mentioned.
             break :blk E!?*const anyopaque;
         } = null,
-        serializeSome: ?fn (Context, anytype) E!O = null,
-        serializeString: ?fn (Context, anytype) E!O = null,
+        serializeSome: ?fn (Impl, anytype) E!O = null,
+        serializeString: ?fn (Impl, anytype) E!O = null,
         serializeStruct: blk: {
             if (Structure) |T| {
-                break :blk ?fn (Context, comptime []const u8, usize) E!T;
+                break :blk ?fn (Impl, comptime []const u8, usize) E!T;
             }
 
             // If Structure is null, serializeStruct will raise a compile
@@ -63,13 +63,13 @@ pub fn Serializer(
             // since the compiler will error out as I've mentioned.
             break :blk E!?*const anyopaque;
         } = null,
-        serializeVoid: ?fn (Context) E!O = null,
+        serializeVoid: ?fn (Impl) E!O = null,
     },
 ) type {
     return struct {
         /// An interface type.
         pub const @"getty.Serializer" = struct {
-            context: Context,
+            impl: Impl,
 
             const Self = @This();
 
@@ -174,46 +174,46 @@ pub fn Serializer(
             /// Serializes a Getty Boolean value.
             pub fn serializeBool(self: Self, value: bool) Error!Ok {
                 if (methods.serializeBool) |f| {
-                    return try f(self.context, value);
+                    return try f(self.impl, value);
                 }
 
-                @compileError("serializeBool is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeBool is not implemented by type: " ++ @typeName(Impl));
             }
 
             // Serializes a Getty Enum value.
             pub fn serializeEnum(self: Self, index: anytype, name: []const u8) Error!Ok {
                 if (methods.serializeEnum) |f| {
                     switch (@typeInfo(@TypeOf(index))) {
-                        .Int, .ComptimeInt => return try f(self.context, index, name),
+                        .Int, .ComptimeInt => return try f(self.impl, index, name),
                         else => @compileError("expected integer, found: " ++ @typeName(@TypeOf(index))),
                     }
                 }
 
-                @compileError("serializeEnum is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeEnum is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Serializes a Getty Float value.
             pub fn serializeFloat(self: Self, value: anytype) Error!Ok {
                 if (methods.serializeFloat) |f| {
                     switch (@typeInfo(@TypeOf(value))) {
-                        .Float, .ComptimeFloat => return try f(self.context, value),
+                        .Float, .ComptimeFloat => return try f(self.impl, value),
                         else => @compileError("expected float, found: " ++ @typeName(@TypeOf(value))),
                     }
                 }
 
-                @compileError("serializeFloat is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeFloat is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Serializes a Getty Integer value.
             pub fn serializeInt(self: Self, value: anytype) Error!Ok {
                 if (methods.serializeInt) |f| {
                     switch (@typeInfo(@TypeOf(value))) {
-                        .Int, .ComptimeInt => return try f(self.context, value),
+                        .Int, .ComptimeInt => return try f(self.impl, value),
                         else => @compileError("expected integer, found: " ++ @typeName(@TypeOf(value))),
                     }
                 }
 
-                @compileError("serializeInt is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeInt is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Begins the serialization process for a Getty Map value.
@@ -224,29 +224,29 @@ pub fn Serializer(
 
                 // If Map is null, then this function will raise a compile
                 // error, so it doesn't really matter what the return type will
-                // be. However, we use Error!Context specifically for its clean
+                // be. However, we use Error!Impl specifically for its clean
                 // error messages. It'll result in errors such as "no field or
                 // member function named 'map' in 'ser.TestSerializer'
-                break :blk Error!Context;
+                break :blk Error!Impl;
             } {
                 if (Map == null) {
                     @compileError("serializeMap requires getty.ser.Map to be non-null");
                 }
 
                 if (methods.serializeMap) |f| {
-                    return try f(self.context, length);
+                    return try f(self.impl, length);
                 }
 
-                @compileError("serializeMap is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeMap is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Serializes a Getty Null value.
             pub fn serializeNull(self: Self) Error!Ok {
                 if (methods.serializeNull) |f| {
-                    return try f(self.context);
+                    return try f(self.impl);
                 }
 
-                @compileError("serializeNull is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeNull is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Begins the serialization process for a Getty Sequence value.
@@ -257,29 +257,29 @@ pub fn Serializer(
 
                 // If Seq is null, then this function will raise a compile
                 // error, so it doesn't really matter what the return type will
-                // be. However, we use Error!Context specifically for its clean
+                // be. However, we use Error!Impl specifically for its clean
                 // error messages. It'll result in errors such as "no field or
                 // member function named 'seq' in 'ser.TestSerializer'
-                break :blk Error!Context;
+                break :blk Error!Impl;
             } {
                 if (Seq == null) {
                     @compileError("serializeSeq requires getty.ser.Seq to be non-null");
                 }
 
                 if (methods.serializeSeq) |f| {
-                    return try f(self.context, length);
+                    return try f(self.impl, length);
                 }
 
-                @compileError("serializeSeq is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeSeq is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Serializes a Getty Optional value.
             pub fn serializeSome(self: Self, value: anytype) Error!Ok {
                 if (methods.serializeSome) |f| {
-                    return try f(self.context, value);
+                    return try f(self.impl, value);
                 }
 
-                @compileError("serializeSome is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeSome is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Serializes a Getty String value.
@@ -289,10 +289,10 @@ pub fn Serializer(
                         @compileError("expected string, found: " ++ @typeName(@TypeOf(value)));
                     }
 
-                    return try f(self.context, value);
+                    return try f(self.impl, value);
                 }
 
-                @compileError("serializeString is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeString is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Begins the serialization process for a Getty Struct value.
@@ -303,35 +303,35 @@ pub fn Serializer(
 
                 // If Structure is null, then this function will raise a
                 // compile error, so it doesn't really matter what the return
-                // type will be. However, we use Error!Context specifically for
+                // type will be. However, we use Error!Impl specifically for
                 // its clean error messages. It'll result in errors such as
                 // "no field or member function named 'structure' in 'ser.TestSerializer'
-                break :blk Error!Context;
+                break :blk Error!Impl;
             } {
                 if (Structure == null) {
                     @compileError("serializeStruct requires getty.ser.Structure to be non-null");
                 }
 
                 if (methods.serializeStruct) |f| {
-                    return try f(self.context, name, length);
+                    return try f(self.impl, name, length);
                 }
 
-                @compileError("serializeStruct is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeStruct is not implemented by type: " ++ @typeName(Impl));
             }
 
             /// Serializes a Getty Void value.
             pub fn serializeVoid(self: Self) Error!Ok {
                 if (methods.serializeVoid) |f| {
-                    return try f(self.context);
+                    return try f(self.impl);
                 }
 
-                @compileError("serializeVoid is not implemented by type: " ++ @typeName(Context));
+                @compileError("serializeVoid is not implemented by type: " ++ @typeName(Impl));
             }
         };
 
         /// Returns an interface value.
-        pub fn serializer(self: Context) @"getty.Serializer" {
-            return .{ .context = self };
+        pub fn serializer(impl: Impl) @"getty.Serializer" {
+            return .{ .impl = impl };
         }
     };
 }

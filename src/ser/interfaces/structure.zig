@@ -1,21 +1,21 @@
 /// A `Structure` serializes the fields of and ends the serialization process for Getty Structures.
 pub fn Structure(
-    /// A namespace that owns the method implementations passed to the `methods` parameter.
-    comptime Context: type,
+    /// An implementing type.
+    comptime Impl: type,
     /// The successful return type of a `Structure`'s `end` method.
     comptime O: type,
     /// The error set returned by a `Structure`'s methods upon failure.
     comptime E: type,
-    /// A namespace containing the methods that implementations of `Structure` can implement.
+    /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        serializeField: ?fn (Context, comptime []const u8, anytype) E!void = null,
-        end: ?fn (Context) E!O = null,
+        serializeField: ?fn (Impl, comptime []const u8, anytype) E!void = null,
+        end: ?fn (Impl) E!O = null,
     },
 ) type {
     return struct {
         /// An interface type.
         pub const @"getty.ser.Structure" = struct {
-            context: Context,
+            impl: Impl,
 
             const Self = @This();
 
@@ -28,25 +28,25 @@ pub fn Structure(
             /// Serialize a struct field.
             pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) Error!void {
                 if (methods.serializeField) |f| {
-                    try f(self.context, key, value);
+                    try f(self.impl, key, value);
                 } else {
-                    @compileError("serializeField is not implemented by type: " ++ @typeName(Context));
+                    @compileError("serializeField is not implemented by type: " ++ @typeName(Impl));
                 }
             }
 
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
                 if (methods.end) |f| {
-                    try f(self.context);
+                    try f(self.impl);
                 } else {
-                    @compileError("end is not implemented by type: " ++ @typeName(Context));
+                    @compileError("end is not implemented by type: " ++ @typeName(Impl));
                 }
             }
         };
 
         /// Returns a `Structure` interface value.
-        pub fn structure(self: Context) @"getty.ser.Structure" {
-            return .{ .context = self };
+        pub fn structure(impl: Impl) @"getty.ser.Structure" {
+            return .{ .impl = impl };
         }
     };
 }

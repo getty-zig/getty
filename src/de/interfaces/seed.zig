@@ -12,14 +12,14 @@ const std = @import("std");
 /// returned. However, by using a `Seed`, you could instead provide Getty with
 /// a pre-allocated `std.ArrayList(T)` for it to deserialize into.
 pub fn Seed(
-    /// A namespace that owns the method implementations passed to the `methods` parameter.
-    comptime Context: type,
+    /// An implementing type.
+    comptime Impl: type,
     /// The type produced by using this seed.
     comptime V: type,
-    /// A namespace containing the methods that implementations of `Seed` can implement.
+    /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
         deserialize: ?@TypeOf(struct {
-            fn f(_: Context, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
+            fn f(_: Impl, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
                 unreachable;
             }
         }.f) = null,
@@ -28,7 +28,7 @@ pub fn Seed(
     return struct {
         /// An interface type.
         pub const @"getty.de.Seed" = struct {
-            context: Context,
+            impl: Impl,
 
             const Self = @This();
 
@@ -36,16 +36,16 @@ pub fn Seed(
 
             pub fn deserialize(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
                 if (methods.deserialize) |f| {
-                    return try f(self.context, ally, deserializer);
+                    return try f(self.impl, ally, deserializer);
                 }
 
-                @compileError("deserialize is not implemented by type: " ++ @typeName(Context));
+                @compileError("deserialize is not implemented by type: " ++ @typeName(Impl));
             }
         };
 
         /// Returns an interface value.
-        pub fn seed(self: Context) @"getty.de.Seed" {
-            return .{ .context = self };
+        pub fn seed(impl: Impl) @"getty.de.Seed" {
+            return .{ .impl = impl };
         }
     };
 }
