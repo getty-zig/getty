@@ -125,14 +125,14 @@
 <span class="line" id="L12"><span class="tok-comment">/// returned. However, by using a `Seed`, you could instead provide Getty with</span></span>
 <span class="line" id="L13"><span class="tok-comment">/// a pre-allocated `std.ArrayList(T)` for it to deserialize into.</span></span>
 <span class="line" id="L14"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Seed</span>(</span>
-<span class="line" id="L15">    <span class="tok-comment">/// A namespace that owns the method implementations passed to the `methods` parameter.</span></span>
-<span class="line" id="L16">    <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>,</span>
+<span class="line" id="L15">    <span class="tok-comment">/// An implementing type.</span></span>
+<span class="line" id="L16">    <span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>,</span>
 <span class="line" id="L17">    <span class="tok-comment">/// The type produced by using this seed.</span></span>
 <span class="line" id="L18">    <span class="tok-kw">comptime</span> V: <span class="tok-type">type</span>,</span>
-<span class="line" id="L19">    <span class="tok-comment">/// A namespace containing the methods that implementations of `Seed` can implement.</span></span>
+<span class="line" id="L19">    <span class="tok-comment">/// A namespace containing methods that `Impl` must define or can override.</span></span>
 <span class="line" id="L20">    <span class="tok-kw">comptime</span> methods: <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L21">        deserialize: ?<span class="tok-builtin">@TypeOf</span>(<span class="tok-kw">struct</span> {</span>
-<span class="line" id="L22">            <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: Context, _: ?std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Error!V {</span>
+<span class="line" id="L22">            <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: Impl, _: ?std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Error!V {</span>
 <span class="line" id="L23">                <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L24">            }</span>
 <span class="line" id="L25">        }.f) = <span class="tok-null">null</span>,</span>
@@ -141,7 +141,7 @@
 <span class="line" id="L28">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L29">        <span class="tok-comment">/// An interface type.</span></span>
 <span class="line" id="L30">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.de.Seed&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L31">            context: Context,</span>
+<span class="line" id="L31">            impl: Impl,</span>
 <span class="line" id="L32"></span>
 <span class="line" id="L33">            <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
 <span class="line" id="L34"></span>
@@ -149,16 +149,16 @@
 <span class="line" id="L36"></span>
 <span class="line" id="L37">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(self: Self, ally: ?std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Error!V {</span>
 <span class="line" id="L38">                <span class="tok-kw">if</span> (methods.deserialize) |f| {</span>
-<span class="line" id="L39">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, ally, deserializer);</span>
+<span class="line" id="L39">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.impl, ally, deserializer);</span>
 <span class="line" id="L40">                }</span>
 <span class="line" id="L41"></span>
-<span class="line" id="L42">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deserialize is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L42">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deserialize is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Impl));</span>
 <span class="line" id="L43">            }</span>
 <span class="line" id="L44">        };</span>
 <span class="line" id="L45"></span>
 <span class="line" id="L46">        <span class="tok-comment">/// Returns an interface value.</span></span>
-<span class="line" id="L47">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seed</span>(self: Context) @&quot;getty.de.Seed&quot; {</span>
-<span class="line" id="L48">            <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L47">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">seed</span>(impl: Impl) @&quot;getty.de.Seed&quot; {</span>
+<span class="line" id="L48">            <span class="tok-kw">return</span> .{ .impl = impl };</span>
 <span class="line" id="L49">        }</span>
 <span class="line" id="L50">    };</span>
 <span class="line" id="L51">}</span>

@@ -117,14 +117,14 @@
 <span class="line" id="L4"></span>
 <span class="line" id="L5"><span class="tok-comment">/// Deserialization and access interface for Getty Unions.</span></span>
 <span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">UnionAccess</span>(</span>
-<span class="line" id="L7">    <span class="tok-comment">/// A namespace that owns the method implementations passed to the `methods` parameter.</span></span>
-<span class="line" id="L8">    <span class="tok-kw">comptime</span> Context: <span class="tok-type">type</span>,</span>
+<span class="line" id="L7">    <span class="tok-comment">/// An implementing type.</span></span>
+<span class="line" id="L8">    <span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>,</span>
 <span class="line" id="L9">    <span class="tok-comment">/// The error set returned by the interface's methods upon failure.</span></span>
 <span class="line" id="L10">    <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>,</span>
-<span class="line" id="L11">    <span class="tok-comment">/// A namespace containing the methods that implementations of `UnionAccess` can implement.</span></span>
+<span class="line" id="L11">    <span class="tok-comment">/// A namespace containing methods that `Impl` must define or can override.</span></span>
 <span class="line" id="L12">    <span class="tok-kw">comptime</span> methods: <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L13">        variantSeed: ?<span class="tok-builtin">@TypeOf</span>(<span class="tok-kw">struct</span> {</span>
-<span class="line" id="L14">            <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: Context, _: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) E!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L14">            <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: Impl, _: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) E!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L15">                <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L16">            }</span>
 <span class="line" id="L17">        }.f) = <span class="tok-null">null</span>,</span>
@@ -137,20 +137,20 @@
 </span>
 <span class="line" id="L22"></span>
 <span class="line" id="L23">        variant: ?<span class="tok-builtin">@TypeOf</span>(<span class="tok-kw">struct</span> {</span>
-<span class="line" id="L24">            <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: Context, _: ?std.mem.Allocator, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) E!T {</span>
+<span class="line" id="L24">            <span class="tok-kw">fn</span> <span class="tok-fn">f</span>(_: Impl, _: ?std.mem.Allocator, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) E!T {</span>
 <span class="line" id="L25">                <span class="tok-kw">unreachable</span>;</span>
 <span class="line" id="L26">            }</span>
 <span class="line" id="L27">        }.f) = <span class="tok-null">null</span>,</span>
 <span class="line" id="L28"></span>
 <span class="line" id="L29">        <span class="tok-comment">/// Returns true if the variant deserialized by variantSeed was</span></span>
 <span class="line" id="L30">        <span class="tok-comment">/// allocated on the heap. Otherwise, false is returned.</span></span>
-<span class="line" id="L31">        isVariantAllocated: ?<span class="tok-kw">fn</span> (Context, <span class="tok-kw">comptime</span> V: <span class="tok-type">type</span>) <span class="tok-type">bool</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L31">        isVariantAllocated: ?<span class="tok-kw">fn</span> (Impl, <span class="tok-kw">comptime</span> V: <span class="tok-type">type</span>) <span class="tok-type">bool</span> = <span class="tok-null">null</span>,</span>
 <span class="line" id="L32">    },</span>
 <span class="line" id="L33">) <span class="tok-type">type</span> {</span>
 <span class="line" id="L34">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
 <span class="line" id="L35">        <span class="tok-comment">/// An interface type.</span></span>
 <span class="line" id="L36">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.de.UnionAccess&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L37">            context: Context,</span>
+<span class="line" id="L37">            impl: Impl,</span>
 <span class="line" id="L38"></span>
 <span class="line" id="L39">            <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
 <span class="line" id="L40"></span>
@@ -158,15 +158,15 @@
 <span class="line" id="L42"></span>
 <span class="line" id="L43">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L44">                <span class="tok-kw">if</span> (methods.variantSeed) |f| {</span>
-<span class="line" id="L45">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, ally, seed);</span>
+<span class="line" id="L45">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.impl, ally, seed);</span>
 <span class="line" id="L46">                }</span>
 <span class="line" id="L47"></span>
-<span class="line" id="L48">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;variantSeed is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Context));</span>
+<span class="line" id="L48">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;variantSeed is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Impl));</span>
 <span class="line" id="L49">            }</span>
 <span class="line" id="L50"></span>
 <span class="line" id="L51">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">variant</span>(self: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) Error!T {</span>
 <span class="line" id="L52">                <span class="tok-kw">if</span> (methods.variant) |f| {</span>
-<span class="line" id="L53">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.context, ally, T);</span>
+<span class="line" id="L53">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> f(self.impl, ally, T);</span>
 <span class="line" id="L54">                } <span class="tok-kw">else</span> {</span>
 <span class="line" id="L55">                    <span class="tok-kw">var</span> ds = DefaultSeed(T){};</span>
 <span class="line" id="L56">                    <span class="tok-kw">const</span> seed = ds.seed();</span>
@@ -177,7 +177,7 @@
 <span class="line" id="L61"></span>
 <span class="line" id="L62">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isVariantAllocated</span>(self: Self, <span class="tok-kw">comptime</span> V: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
 <span class="line" id="L63">                <span class="tok-kw">if</span> (methods.isVariantAllocated) |f| {</span>
-<span class="line" id="L64">                    <span class="tok-kw">return</span> f(self.context, V);</span>
+<span class="line" id="L64">                    <span class="tok-kw">return</span> f(self.impl, V);</span>
 <span class="line" id="L65">                }</span>
 <span class="line" id="L66"></span>
 <span class="line" id="L67">                <span class="tok-kw">return</span> <span class="tok-builtin">@typeInfo</span>(V) == .Pointer;</span>
@@ -185,8 +185,8 @@
 <span class="line" id="L69">        };</span>
 <span class="line" id="L70"></span>
 <span class="line" id="L71">        <span class="tok-comment">/// Returns an interface value.</span></span>
-<span class="line" id="L72">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">unionAccess</span>(self: Context) @&quot;getty.de.UnionAccess&quot; {</span>
-<span class="line" id="L73">            <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L72">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">unionAccess</span>(impl: Impl) @&quot;getty.de.UnionAccess&quot; {</span>
+<span class="line" id="L73">            <span class="tok-kw">return</span> .{ .impl = impl };</span>
 <span class="line" id="L74">        }</span>
 <span class="line" id="L75">    };</span>
 <span class="line" id="L76">}</span>
