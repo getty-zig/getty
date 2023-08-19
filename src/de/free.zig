@@ -4,23 +4,24 @@ const attributes = @import("../attributes.zig");
 const blocks = @import("blocks.zig");
 const find_db = @import("find.zig").find_db;
 
-/// Frees resources allocated by Getty during deserialization.
+/// Frees `v` using an allocator `ally` according to the deserialization blocks
+/// specified in the `getty.Deserializer` type `D`.
 ///
-/// `free` assumes that all pointers passed to it are heap-allocated and
-/// will therefore attempt to free them. So be sure not to pass in any
-/// pointers pointing to values on the stack.
+/// `free` is intended to be used for freeing values deserialized by Getty. `v`
+/// must be a fully deserialized value. Attempts to free partially deserialized
+/// values will result in undefined behavior.
 pub fn free(
     /// A memory allocator.
     ally: std.mem.Allocator,
     /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
+    comptime D: type,
     /// A value to deallocate.
-    value: anytype,
+    v: anytype,
 ) void {
-    const T = @TypeOf(value);
+    const T = @TypeOf(v);
 
     const db = comptime blk: {
-        var db = find_db(T, Deserializer);
+        var db = find_db(T, D);
 
         if (attributes.has_attributes(T, db)) {
             db = switch (@typeInfo(T)) {
@@ -35,6 +36,6 @@ pub fn free(
     };
 
     if (@hasDecl(db, "free")) {
-        db.free(ally, Deserializer, value);
+        db.free(ally, D, v);
     }
 }
