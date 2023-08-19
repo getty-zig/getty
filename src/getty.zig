@@ -4,7 +4,10 @@
 // Types
 ////////////////////////////////////////////////////////////////////////////////
 
+/// A `Serializer` serializes values from Getty's data model into a data format.
 pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
+
+/// A `Deserializer` deserializes values from a data format into Getty's data model.
 pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 
 ////////////////////////////////////////////////////////////////////////////////
