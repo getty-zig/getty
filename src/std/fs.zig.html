@@ -3225,284 +3225,293 @@
 <span class="line" id="L2949">        <span class="tok-kw">return</span> openFileAbsoluteZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, flags);</span>
 <span class="line" id="L2950">    }</span>
 <span class="line" id="L2951">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L2952">        <span class="tok-kw">const</span> wide_slice = selfExePathW();</span>
-<span class="line" id="L2953">        <span class="tok-kw">const</span> prefixed_path_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, wide_slice);</span>
-<span class="line" id="L2954">        <span class="tok-kw">return</span> cwd().openFileW(prefixed_path_w.span(), flags);</span>
-<span class="line" id="L2955">    }</span>
-<span class="line" id="L2956">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the resulting path is immediately</span>
+<span class="line" id="L2952">        <span class="tok-comment">// If ImagePathName is a symlink, then it will contain the path of the symlink,</span>
 </span>
-<span class="line" id="L2957">    <span class="tok-comment">// opened with no modification.</span>
+<span class="line" id="L2953">        <span class="tok-comment">// not the path that the symlink points to. However, because we are opening</span>
 </span>
-<span class="line" id="L2958">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L2959">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(&amp;buf);</span>
-<span class="line" id="L2960">    buf[self_exe_path.len] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2961">    <span class="tok-kw">return</span> openFileAbsoluteZ(buf[<span class="tok-number">0</span>..self_exe_path.len :<span class="tok-number">0</span>].ptr, flags);</span>
-<span class="line" id="L2962">}</span>
-<span class="line" id="L2963"></span>
-<span class="line" id="L2964"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SelfExePathError = os.ReadLinkError || os.SysCtlError || os.RealPathError;</span>
-<span class="line" id="L2965"></span>
-<span class="line" id="L2966"><span class="tok-comment">/// `selfExePath` except allocates the result on the heap.</span></span>
-<span class="line" id="L2967"><span class="tok-comment">/// Caller owns returned memory.</span></span>
-<span class="line" id="L2968"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2969">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
+<span class="line" id="L2954">        <span class="tok-comment">// the file, we can let the openFileW call follow the symlink for us.</span>
 </span>
-<span class="line" id="L2970">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
+<span class="line" id="L2955">        <span class="tok-kw">const</span> image_path_unicode_string = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
+<span class="line" id="L2956">        <span class="tok-kw">const</span> image_path_name = image_path_unicode_string.Buffer[<span class="tok-number">0</span> .. image_path_unicode_string.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L2957">        <span class="tok-kw">const</span> prefixed_path_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
+<span class="line" id="L2958">        <span class="tok-kw">return</span> cwd().openFileW(prefixed_path_w.span(), flags);</span>
+<span class="line" id="L2959">    }</span>
+<span class="line" id="L2960">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the resulting path is immediately</span>
 </span>
-<span class="line" id="L2971">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
+<span class="line" id="L2961">    <span class="tok-comment">// opened with no modification.</span>
 </span>
-<span class="line" id="L2972">    <span class="tok-comment">// fundamentally impossible to get the selfExePath of a program running in</span>
+<span class="line" id="L2962">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2963">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(&amp;buf);</span>
+<span class="line" id="L2964">    buf[self_exe_path.len] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2965">    <span class="tok-kw">return</span> openFileAbsoluteZ(buf[<span class="tok-number">0</span>..self_exe_path.len :<span class="tok-number">0</span>].ptr, flags);</span>
+<span class="line" id="L2966">}</span>
+<span class="line" id="L2967"></span>
+<span class="line" id="L2968"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SelfExePathError = os.ReadLinkError || os.SysCtlError || os.RealPathError;</span>
+<span class="line" id="L2969"></span>
+<span class="line" id="L2970"><span class="tok-comment">/// `selfExePath` except allocates the result on the heap.</span></span>
+<span class="line" id="L2971"><span class="tok-comment">/// Caller owns returned memory.</span></span>
+<span class="line" id="L2972"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2973">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
 </span>
-<span class="line" id="L2973">    <span class="tok-comment">// a very deeply nested directory chain in this way.</span>
+<span class="line" id="L2974">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
 </span>
-<span class="line" id="L2974">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
+<span class="line" id="L2975">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
 </span>
-<span class="line" id="L2975">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
+<span class="line" id="L2976">    <span class="tok-comment">// fundamentally impossible to get the selfExePath of a program running in</span>
 </span>
-<span class="line" id="L2976">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L2977">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExePath(&amp;buf));</span>
-<span class="line" id="L2978">}</span>
-<span class="line" id="L2979"></span>
-<span class="line" id="L2980"><span class="tok-comment">/// Get the path to the current executable.</span></span>
-<span class="line" id="L2981"><span class="tok-comment">/// If you only need the directory, use selfExeDirPath.</span></span>
-<span class="line" id="L2982"><span class="tok-comment">/// If you only want an open file handle, use openSelfExe.</span></span>
-<span class="line" id="L2983"><span class="tok-comment">/// This function may return an error if the current executable</span></span>
-<span class="line" id="L2984"><span class="tok-comment">/// was deleted after spawning.</span></span>
-<span class="line" id="L2985"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
-<span class="line" id="L2986"><span class="tok-comment">///</span></span>
-<span class="line" id="L2987"><span class="tok-comment">/// On Linux, depends on procfs being mounted. If the currently executing binary has</span></span>
-<span class="line" id="L2988"><span class="tok-comment">/// been deleted, the file path looks something like `/a/b/c/exe (deleted)`.</span></span>
-<span class="line" id="L2989"><span class="tok-comment">/// TODO make the return type of this a null terminated pointer</span></span>
-<span class="line" id="L2990"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2991">    <span class="tok-kw">if</span> (is_darwin) {</span>
-<span class="line" id="L2992">        <span class="tok-comment">// Note that _NSGetExecutablePath() will return &quot;a path&quot; to</span>
+<span class="line" id="L2977">    <span class="tok-comment">// a very deeply nested directory chain in this way.</span>
 </span>
-<span class="line" id="L2993">        <span class="tok-comment">// the executable not a &quot;real path&quot; to the executable.</span>
+<span class="line" id="L2978">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
 </span>
-<span class="line" id="L2994">        <span class="tok-kw">var</span> symlink_path_buf: [MAX_PATH_BYTES:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L2995">        <span class="tok-kw">var</span> u32_len: <span class="tok-type">u32</span> = MAX_PATH_BYTES + <span class="tok-number">1</span>; <span class="tok-comment">// include the sentinel</span>
+<span class="line" id="L2979">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
 </span>
-<span class="line" id="L2996">        <span class="tok-kw">const</span> rc = std.c._NSGetExecutablePath(&amp;symlink_path_buf, &amp;u32_len);</span>
-<span class="line" id="L2997">        <span class="tok-kw">if</span> (rc != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L2998"></span>
-<span class="line" id="L2999">        <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3000">        <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> std.os.realpathZ(&amp;symlink_path_buf, &amp;real_path_buf);</span>
-<span class="line" id="L3001">        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3002">        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
-<span class="line" id="L3003">        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
-<span class="line" id="L3004">        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L3005">    }</span>
-<span class="line" id="L3006">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L3007">        .linux =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, out_buffer),</span>
-<span class="line" id="L3008">        .solaris =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/path/a.out&quot;</span>, out_buffer),</span>
-<span class="line" id="L3009">        .freebsd, .dragonfly =&gt; {</span>
-<span class="line" id="L3010">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC, os.KERN.PROC_PATHNAME, -<span class="tok-number">1</span> };</span>
-<span class="line" id="L3011">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
-<span class="line" id="L3012">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3013">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
+<span class="line" id="L2980">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2981">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExePath(&amp;buf));</span>
+<span class="line" id="L2982">}</span>
+<span class="line" id="L2983"></span>
+<span class="line" id="L2984"><span class="tok-comment">/// Get the path to the current executable. Follows symlinks.</span></span>
+<span class="line" id="L2985"><span class="tok-comment">/// If you only need the directory, use selfExeDirPath.</span></span>
+<span class="line" id="L2986"><span class="tok-comment">/// If you only want an open file handle, use openSelfExe.</span></span>
+<span class="line" id="L2987"><span class="tok-comment">/// This function may return an error if the current executable</span></span>
+<span class="line" id="L2988"><span class="tok-comment">/// was deleted after spawning.</span></span>
+<span class="line" id="L2989"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
+<span class="line" id="L2990"><span class="tok-comment">///</span></span>
+<span class="line" id="L2991"><span class="tok-comment">/// On Linux, depends on procfs being mounted. If the currently executing binary has</span></span>
+<span class="line" id="L2992"><span class="tok-comment">/// been deleted, the file path looks something like `/a/b/c/exe (deleted)`.</span></span>
+<span class="line" id="L2993"><span class="tok-comment">/// TODO make the return type of this a null terminated pointer</span></span>
+<span class="line" id="L2994"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2995">    <span class="tok-kw">if</span> (is_darwin) {</span>
+<span class="line" id="L2996">        <span class="tok-comment">// Note that _NSGetExecutablePath() will return &quot;a path&quot; to</span>
 </span>
-<span class="line" id="L3014">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3015">        },</span>
-<span class="line" id="L3016">        .netbsd =&gt; {</span>
-<span class="line" id="L3017">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC_ARGS, -<span class="tok-number">1</span>, os.KERN.PROC_PATHNAME };</span>
-<span class="line" id="L3018">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
-<span class="line" id="L3019">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3020">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
+<span class="line" id="L2997">        <span class="tok-comment">// the executable not a &quot;real path&quot; to the executable.</span>
 </span>
-<span class="line" id="L3021">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3022">        },</span>
-<span class="line" id="L3023">        .openbsd, .haiku =&gt; {</span>
-<span class="line" id="L3024">            <span class="tok-comment">// OpenBSD doesn't support getting the path of a running process, so try to guess it</span>
+<span class="line" id="L2998">        <span class="tok-kw">var</span> symlink_path_buf: [MAX_PATH_BYTES:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2999">        <span class="tok-kw">var</span> u32_len: <span class="tok-type">u32</span> = MAX_PATH_BYTES + <span class="tok-number">1</span>; <span class="tok-comment">// include the sentinel</span>
 </span>
-<span class="line" id="L3025">            <span class="tok-kw">if</span> (os.argv.len == <span class="tok-number">0</span>)</span>
-<span class="line" id="L3026">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L3027"></span>
-<span class="line" id="L3028">            <span class="tok-kw">const</span> argv0 = mem.span(os.argv[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L3029">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, argv0, <span class="tok-str">&quot;/&quot;</span>) != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L3030">                <span class="tok-comment">// argv[0] is a path (relative or absolute): use realpath(3) directly</span>
+<span class="line" id="L3000">        <span class="tok-kw">const</span> rc = std.c._NSGetExecutablePath(&amp;symlink_path_buf, &amp;u32_len);</span>
+<span class="line" id="L3001">        <span class="tok-kw">if</span> (rc != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3002"></span>
+<span class="line" id="L3003">        <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3004">        <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> std.os.realpathZ(&amp;symlink_path_buf, &amp;real_path_buf);</span>
+<span class="line" id="L3005">        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3006">        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
+<span class="line" id="L3007">        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
+<span class="line" id="L3008">        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L3009">    }</span>
+<span class="line" id="L3010">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L3011">        .linux =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, out_buffer),</span>
+<span class="line" id="L3012">        .solaris =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/path/a.out&quot;</span>, out_buffer),</span>
+<span class="line" id="L3013">        .freebsd, .dragonfly =&gt; {</span>
+<span class="line" id="L3014">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC, os.KERN.PROC_PATHNAME, -<span class="tok-number">1</span> };</span>
+<span class="line" id="L3015">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
+<span class="line" id="L3016">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3017">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
 </span>
-<span class="line" id="L3031">                <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3032">                <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> os.realpathZ(os.argv[<span class="tok-number">0</span>], &amp;real_path_buf);</span>
-<span class="line" id="L3033">                <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
-<span class="line" id="L3034">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3035">                <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
-<span class="line" id="L3036">                <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
-<span class="line" id="L3037">                <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L3038">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (argv0.len != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3039">                <span class="tok-comment">// argv[0] is not empty (and not a path): search it inside PATH</span>
+<span class="line" id="L3018">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3019">        },</span>
+<span class="line" id="L3020">        .netbsd =&gt; {</span>
+<span class="line" id="L3021">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC_ARGS, -<span class="tok-number">1</span>, os.KERN.PROC_PATHNAME };</span>
+<span class="line" id="L3022">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
+<span class="line" id="L3023">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3024">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
 </span>
-<span class="line" id="L3040">                <span class="tok-kw">const</span> PATH = std.os.getenvZ(<span class="tok-str">&quot;PATH&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L3041">                <span class="tok-kw">var</span> path_it = mem.tokenizeScalar(<span class="tok-type">u8</span>, PATH, path.delimiter);</span>
-<span class="line" id="L3042">                <span class="tok-kw">while</span> (path_it.next()) |a_path| {</span>
-<span class="line" id="L3043">                    <span class="tok-kw">var</span> resolved_path_buf: [MAX_PATH_BYTES - <span class="tok-number">1</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3044">                    <span class="tok-kw">const</span> resolved_path = std.fmt.bufPrintZ(&amp;resolved_path_buf, <span class="tok-str">&quot;{s}/{s}&quot;</span>, .{</span>
-<span class="line" id="L3045">                        a_path,</span>
-<span class="line" id="L3046">                        os.argv[<span class="tok-number">0</span>],</span>
-<span class="line" id="L3047">                    }) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L3048"></span>
-<span class="line" id="L3049">                    <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3050">                    <span class="tok-kw">if</span> (os.realpathZ(resolved_path, &amp;real_path_buf)) |real_path| {</span>
-<span class="line" id="L3051">                        <span class="tok-comment">// found a file, and hope it is the right file</span>
+<span class="line" id="L3025">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3026">        },</span>
+<span class="line" id="L3027">        .openbsd, .haiku =&gt; {</span>
+<span class="line" id="L3028">            <span class="tok-comment">// OpenBSD doesn't support getting the path of a running process, so try to guess it</span>
 </span>
-<span class="line" id="L3052">                        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
-<span class="line" id="L3053">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3054">                        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
-<span class="line" id="L3055">                        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
-<span class="line" id="L3056">                        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L3057">                    } <span class="tok-kw">else</span> |_| <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L3058">                }</span>
-<span class="line" id="L3059">            }</span>
-<span class="line" id="L3060">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L3061">        },</span>
-<span class="line" id="L3062">        .windows =&gt; {</span>
-<span class="line" id="L3063">            <span class="tok-kw">const</span> utf16le_slice = selfExePathW();</span>
-<span class="line" id="L3064">            <span class="tok-comment">// Trust that Windows gives us valid UTF-16LE.</span>
+<span class="line" id="L3029">            <span class="tok-kw">if</span> (os.argv.len == <span class="tok-number">0</span>)</span>
+<span class="line" id="L3030">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L3031"></span>
+<span class="line" id="L3032">            <span class="tok-kw">const</span> argv0 = mem.span(os.argv[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L3033">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, argv0, <span class="tok-str">&quot;/&quot;</span>) != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L3034">                <span class="tok-comment">// argv[0] is a path (relative or absolute): use realpath(3) directly</span>
 </span>
-<span class="line" id="L3065">            <span class="tok-kw">const</span> end_index = std.unicode.utf16leToUtf8(out_buffer, utf16le_slice) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L3066">            <span class="tok-kw">return</span> out_buffer[<span class="tok-number">0</span>..end_index];</span>
-<span class="line" id="L3067">        },</span>
-<span class="line" id="L3068">        .wasi =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for WASI. Use std.fs.selfExePathAlloc instead.&quot;</span>),</span>
-<span class="line" id="L3069">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for this target&quot;</span>),</span>
-<span class="line" id="L3070">    }</span>
-<span class="line" id="L3071">}</span>
-<span class="line" id="L3072"></span>
-<span class="line" id="L3073"><span class="tok-comment">/// The result is UTF16LE-encoded.</span></span>
-<span class="line" id="L3074"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePathW</span>() [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> {</span>
-<span class="line" id="L3075">    <span class="tok-kw">const</span> image_path_name = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
-<span class="line" id="L3076">    <span class="tok-kw">return</span> image_path_name.Buffer[<span class="tok-number">0</span> .. image_path_name.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L3077">}</span>
-<span class="line" id="L3078"></span>
-<span class="line" id="L3079"><span class="tok-comment">/// `selfExeDirPath` except allocates the result on the heap.</span></span>
-<span class="line" id="L3080"><span class="tok-comment">/// Caller owns returned memory.</span></span>
-<span class="line" id="L3081"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L3082">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
+<span class="line" id="L3035">                <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3036">                <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> os.realpathZ(os.argv[<span class="tok-number">0</span>], &amp;real_path_buf);</span>
+<span class="line" id="L3037">                <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
+<span class="line" id="L3038">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3039">                <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
+<span class="line" id="L3040">                <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
+<span class="line" id="L3041">                <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L3042">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (argv0.len != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3043">                <span class="tok-comment">// argv[0] is not empty (and not a path): search it inside PATH</span>
 </span>
-<span class="line" id="L3083">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
+<span class="line" id="L3044">                <span class="tok-kw">const</span> PATH = std.os.getenvZ(<span class="tok-str">&quot;PATH&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L3045">                <span class="tok-kw">var</span> path_it = mem.tokenizeScalar(<span class="tok-type">u8</span>, PATH, path.delimiter);</span>
+<span class="line" id="L3046">                <span class="tok-kw">while</span> (path_it.next()) |a_path| {</span>
+<span class="line" id="L3047">                    <span class="tok-kw">var</span> resolved_path_buf: [MAX_PATH_BYTES - <span class="tok-number">1</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3048">                    <span class="tok-kw">const</span> resolved_path = std.fmt.bufPrintZ(&amp;resolved_path_buf, <span class="tok-str">&quot;{s}/{s}&quot;</span>, .{</span>
+<span class="line" id="L3049">                        a_path,</span>
+<span class="line" id="L3050">                        os.argv[<span class="tok-number">0</span>],</span>
+<span class="line" id="L3051">                    }) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L3052"></span>
+<span class="line" id="L3053">                    <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3054">                    <span class="tok-kw">if</span> (os.realpathZ(resolved_path, &amp;real_path_buf)) |real_path| {</span>
+<span class="line" id="L3055">                        <span class="tok-comment">// found a file, and hope it is the right file</span>
 </span>
-<span class="line" id="L3084">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
+<span class="line" id="L3056">                        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
+<span class="line" id="L3057">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3058">                        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
+<span class="line" id="L3059">                        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
+<span class="line" id="L3060">                        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L3061">                    } <span class="tok-kw">else</span> |_| <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L3062">                }</span>
+<span class="line" id="L3063">            }</span>
+<span class="line" id="L3064">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L3065">        },</span>
+<span class="line" id="L3066">        .windows =&gt; {</span>
+<span class="line" id="L3067">            <span class="tok-kw">const</span> image_path_unicode_string = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
+<span class="line" id="L3068">            <span class="tok-kw">const</span> image_path_name = image_path_unicode_string.Buffer[<span class="tok-number">0</span> .. image_path_unicode_string.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L3069"></span>
+<span class="line" id="L3070">            <span class="tok-comment">// If ImagePathName is a symlink, then it will contain the path of the</span>
 </span>
-<span class="line" id="L3085">    <span class="tok-comment">// fundamentally impossible to get the selfExeDirPath of a program running</span>
+<span class="line" id="L3071">            <span class="tok-comment">// symlink, not the path that the symlink points to. We want the path</span>
 </span>
-<span class="line" id="L3086">    <span class="tok-comment">// in a very deeply nested directory chain in this way.</span>
+<span class="line" id="L3072">            <span class="tok-comment">// that the symlink points to, though, so we need to get the realpath.</span>
 </span>
-<span class="line" id="L3087">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
+<span class="line" id="L3073">            <span class="tok-kw">const</span> pathname_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
+<span class="line" id="L3074">            <span class="tok-kw">return</span> std.fs.cwd().realpathW(pathname_w.span(), out_buffer);</span>
+<span class="line" id="L3075">        },</span>
+<span class="line" id="L3076">        .wasi =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for WASI. Use std.fs.selfExePathAlloc instead.&quot;</span>),</span>
+<span class="line" id="L3077">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for this target&quot;</span>),</span>
+<span class="line" id="L3078">    }</span>
+<span class="line" id="L3079">}</span>
+<span class="line" id="L3080"></span>
+<span class="line" id="L3081"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> selfExePathW = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deprecated; use selfExePath instead&quot;</span>);</span>
+<span class="line" id="L3082"></span>
+<span class="line" id="L3083"><span class="tok-comment">/// `selfExeDirPath` except allocates the result on the heap.</span></span>
+<span class="line" id="L3084"><span class="tok-comment">/// Caller owns returned memory.</span></span>
+<span class="line" id="L3085"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L3086">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
 </span>
-<span class="line" id="L3088">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
+<span class="line" id="L3087">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
 </span>
-<span class="line" id="L3089">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3090">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExeDirPath(&amp;buf));</span>
-<span class="line" id="L3091">}</span>
-<span class="line" id="L3092"></span>
-<span class="line" id="L3093"><span class="tok-comment">/// Get the directory path that contains the current executable.</span></span>
-<span class="line" id="L3094"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
-<span class="line" id="L3095"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L3096">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(out_buffer);</span>
-<span class="line" id="L3097">    <span class="tok-comment">// Assume that the OS APIs return absolute paths, and therefore dirname</span>
+<span class="line" id="L3088">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
 </span>
-<span class="line" id="L3098">    <span class="tok-comment">// will not return null.</span>
+<span class="line" id="L3089">    <span class="tok-comment">// fundamentally impossible to get the selfExeDirPath of a program running</span>
 </span>
-<span class="line" id="L3099">    <span class="tok-kw">return</span> path.dirname(self_exe_path).?;</span>
-<span class="line" id="L3100">}</span>
-<span class="line" id="L3101"></span>
-<span class="line" id="L3102"><span class="tok-comment">/// `realpath`, except caller must free the returned memory.</span></span>
-<span class="line" id="L3103"><span class="tok-comment">/// See also `Dir.realpath`.</span></span>
-<span class="line" id="L3104"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realpathAlloc</span>(allocator: Allocator, pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L3105">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the realpath function does not</span>
+<span class="line" id="L3090">    <span class="tok-comment">// in a very deeply nested directory chain in this way.</span>
 </span>
-<span class="line" id="L3106">    <span class="tok-comment">// have a variant that takes an arbitrary-size buffer.</span>
+<span class="line" id="L3091">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
 </span>
-<span class="line" id="L3107">    <span class="tok-comment">// TODO(#4812): Consider reimplementing realpath or using the POSIX.1-2008</span>
+<span class="line" id="L3092">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
 </span>
-<span class="line" id="L3108">    <span class="tok-comment">// NULL out parameter (GNU's canonicalize_file_name) to handle overelong</span>
+<span class="line" id="L3093">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3094">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExeDirPath(&amp;buf));</span>
+<span class="line" id="L3095">}</span>
+<span class="line" id="L3096"></span>
+<span class="line" id="L3097"><span class="tok-comment">/// Get the directory path that contains the current executable.</span></span>
+<span class="line" id="L3098"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
+<span class="line" id="L3099"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L3100">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(out_buffer);</span>
+<span class="line" id="L3101">    <span class="tok-comment">// Assume that the OS APIs return absolute paths, and therefore dirname</span>
 </span>
-<span class="line" id="L3109">    <span class="tok-comment">// paths. musl supports passing NULL but restricts the output to PATH_MAX</span>
+<span class="line" id="L3102">    <span class="tok-comment">// will not return null.</span>
 </span>
-<span class="line" id="L3110">    <span class="tok-comment">// anyway.</span>
+<span class="line" id="L3103">    <span class="tok-kw">return</span> path.dirname(self_exe_path).?;</span>
+<span class="line" id="L3104">}</span>
+<span class="line" id="L3105"></span>
+<span class="line" id="L3106"><span class="tok-comment">/// `realpath`, except caller must free the returned memory.</span></span>
+<span class="line" id="L3107"><span class="tok-comment">/// See also `Dir.realpath`.</span></span>
+<span class="line" id="L3108"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realpathAlloc</span>(allocator: Allocator, pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L3109">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the realpath function does not</span>
 </span>
-<span class="line" id="L3111">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3112">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> os.realpath(pathname, &amp;buf));</span>
-<span class="line" id="L3113">}</span>
-<span class="line" id="L3114"></span>
-<span class="line" id="L3115"><span class="tok-kw">const</span> CopyFileRawError = <span class="tok-kw">error</span>{SystemResources} || os.CopyFileRangeError || os.SendFileError;</span>
-<span class="line" id="L3116"></span>
-<span class="line" id="L3117"><span class="tok-comment">// Transfer all the data between two file descriptors in the most efficient way.</span>
+<span class="line" id="L3110">    <span class="tok-comment">// have a variant that takes an arbitrary-size buffer.</span>
 </span>
-<span class="line" id="L3118"><span class="tok-comment">// The copy starts at offset 0, the initial offsets are preserved.</span>
+<span class="line" id="L3111">    <span class="tok-comment">// TODO(#4812): Consider reimplementing realpath or using the POSIX.1-2008</span>
 </span>
-<span class="line" id="L3119"><span class="tok-comment">// No metadata is transferred over.</span>
+<span class="line" id="L3112">    <span class="tok-comment">// NULL out parameter (GNU's canonicalize_file_name) to handle overelong</span>
 </span>
-<span class="line" id="L3120"><span class="tok-kw">fn</span> <span class="tok-fn">copy_file</span>(fd_in: os.fd_t, fd_out: os.fd_t, maybe_size: ?<span class="tok-type">u64</span>) CopyFileRawError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3121">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> builtin.target.isDarwin()) {</span>
-<span class="line" id="L3122">        <span class="tok-kw">const</span> rc = os.system.fcopyfile(fd_in, fd_out, <span class="tok-null">null</span>, os.system.COPYFILE_DATA);</span>
-<span class="line" id="L3123">        <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
-<span class="line" id="L3124">            .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
-<span class="line" id="L3125">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L3126">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
-<span class="line" id="L3127">            <span class="tok-comment">// The source file is not a directory, symbolic link, or regular file.</span>
+<span class="line" id="L3113">    <span class="tok-comment">// paths. musl supports passing NULL but restricts the output to PATH_MAX</span>
 </span>
-<span class="line" id="L3128">            <span class="tok-comment">// Try with the fallback path before giving up.</span>
+<span class="line" id="L3114">    <span class="tok-comment">// anyway.</span>
 </span>
-<span class="line" id="L3129">            .OPNOTSUPP =&gt; {},</span>
-<span class="line" id="L3130">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
-<span class="line" id="L3131">        }</span>
-<span class="line" id="L3132">    }</span>
-<span class="line" id="L3133"></span>
-<span class="line" id="L3134">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
-<span class="line" id="L3135">        <span class="tok-comment">// Try copy_file_range first as that works at the FS level and is the</span>
+<span class="line" id="L3115">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3116">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> os.realpath(pathname, &amp;buf));</span>
+<span class="line" id="L3117">}</span>
+<span class="line" id="L3118"></span>
+<span class="line" id="L3119"><span class="tok-kw">const</span> CopyFileRawError = <span class="tok-kw">error</span>{SystemResources} || os.CopyFileRangeError || os.SendFileError;</span>
+<span class="line" id="L3120"></span>
+<span class="line" id="L3121"><span class="tok-comment">// Transfer all the data between two file descriptors in the most efficient way.</span>
 </span>
-<span class="line" id="L3136">        <span class="tok-comment">// most efficient method (if available).</span>
+<span class="line" id="L3122"><span class="tok-comment">// The copy starts at offset 0, the initial offsets are preserved.</span>
 </span>
-<span class="line" id="L3137">        <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3138">        cfr_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3139">            <span class="tok-comment">// The kernel checks the u64 value `offset+count` for overflow, use</span>
+<span class="line" id="L3123"><span class="tok-comment">// No metadata is transferred over.</span>
 </span>
-<span class="line" id="L3140">            <span class="tok-comment">// a 32 bit value so that the syscall won't return EINVAL except for</span>
+<span class="line" id="L3124"><span class="tok-kw">fn</span> <span class="tok-fn">copy_file</span>(fd_in: os.fd_t, fd_out: os.fd_t, maybe_size: ?<span class="tok-type">u64</span>) CopyFileRawError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3125">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> builtin.target.isDarwin()) {</span>
+<span class="line" id="L3126">        <span class="tok-kw">const</span> rc = os.system.fcopyfile(fd_in, fd_out, <span class="tok-null">null</span>, os.system.COPYFILE_DATA);</span>
+<span class="line" id="L3127">        <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
+<span class="line" id="L3128">            .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
+<span class="line" id="L3129">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L3130">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
+<span class="line" id="L3131">            <span class="tok-comment">// The source file is not a directory, symbolic link, or regular file.</span>
 </span>
-<span class="line" id="L3141">            <span class="tok-comment">// impossibly large files (&gt; 2^64-1 - 2^32-1).</span>
+<span class="line" id="L3132">            <span class="tok-comment">// Try with the fallback path before giving up.</span>
 </span>
-<span class="line" id="L3142">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.copy_file_range(fd_in, offset, fd_out, offset, math.maxInt(<span class="tok-type">u32</span>), <span class="tok-number">0</span>);</span>
-<span class="line" id="L3143">            <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+<span class="line" id="L3133">            .OPNOTSUPP =&gt; {},</span>
+<span class="line" id="L3134">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
+<span class="line" id="L3135">        }</span>
+<span class="line" id="L3136">    }</span>
+<span class="line" id="L3137"></span>
+<span class="line" id="L3138">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
+<span class="line" id="L3139">        <span class="tok-comment">// Try copy_file_range first as that works at the FS level and is the</span>
 </span>
-<span class="line" id="L3144">            <span class="tok-kw">if</span> (maybe_size) |s| {</span>
-<span class="line" id="L3145">                <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :cfr_loop;</span>
-<span class="line" id="L3146">            }</span>
-<span class="line" id="L3147">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :cfr_loop;</span>
-<span class="line" id="L3148">            offset += amt;</span>
-<span class="line" id="L3149">        }</span>
-<span class="line" id="L3150">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3151">    }</span>
-<span class="line" id="L3152"></span>
-<span class="line" id="L3153">    <span class="tok-comment">// Sendfile is a zero-copy mechanism iff the OS supports it, otherwise the</span>
+<span class="line" id="L3140">        <span class="tok-comment">// most efficient method (if available).</span>
 </span>
-<span class="line" id="L3154">    <span class="tok-comment">// fallback code will copy the contents chunk by chunk.</span>
+<span class="line" id="L3141">        <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3142">        cfr_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3143">            <span class="tok-comment">// The kernel checks the u64 value `offset+count` for overflow, use</span>
 </span>
-<span class="line" id="L3155">    <span class="tok-kw">const</span> empty_iovec = [<span class="tok-number">0</span>]os.iovec_const{};</span>
-<span class="line" id="L3156">    <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3157">    sendfile_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3158">        <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.sendfile(fd_out, fd_in, offset, <span class="tok-number">0</span>, &amp;empty_iovec, &amp;empty_iovec, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3159">        <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+<span class="line" id="L3144">            <span class="tok-comment">// a 32 bit value so that the syscall won't return EINVAL except for</span>
 </span>
-<span class="line" id="L3160">        <span class="tok-kw">if</span> (maybe_size) |s| {</span>
-<span class="line" id="L3161">            <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :sendfile_loop;</span>
-<span class="line" id="L3162">        }</span>
-<span class="line" id="L3163">        <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :sendfile_loop;</span>
-<span class="line" id="L3164">        offset += amt;</span>
-<span class="line" id="L3165">    }</span>
-<span class="line" id="L3166">}</span>
-<span class="line" id="L3167"></span>
-<span class="line" id="L3168"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L3169">    <span class="tok-kw">if</span> (builtin.os.tag != .wasi) {</span>
-<span class="line" id="L3170">        _ = &amp;makeDirAbsolute;</span>
-<span class="line" id="L3171">        _ = &amp;makeDirAbsoluteZ;</span>
-<span class="line" id="L3172">        _ = &amp;copyFileAbsolute;</span>
-<span class="line" id="L3173">        _ = &amp;updateFileAbsolute;</span>
-<span class="line" id="L3174">    }</span>
-<span class="line" id="L3175">    _ = &amp;Dir.copyFile;</span>
-<span class="line" id="L3176">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/test.zig&quot;</span>);</span>
-<span class="line" id="L3177">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/path.zig&quot;</span>);</span>
-<span class="line" id="L3178">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/file.zig&quot;</span>);</span>
-<span class="line" id="L3179">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/get_app_data_dir.zig&quot;</span>);</span>
-<span class="line" id="L3180">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/watch.zig&quot;</span>);</span>
-<span class="line" id="L3181">}</span>
-<span class="line" id="L3182"></span>
+<span class="line" id="L3145">            <span class="tok-comment">// impossibly large files (&gt; 2^64-1 - 2^32-1).</span>
+</span>
+<span class="line" id="L3146">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.copy_file_range(fd_in, offset, fd_out, offset, math.maxInt(<span class="tok-type">u32</span>), <span class="tok-number">0</span>);</span>
+<span class="line" id="L3147">            <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+</span>
+<span class="line" id="L3148">            <span class="tok-kw">if</span> (maybe_size) |s| {</span>
+<span class="line" id="L3149">                <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :cfr_loop;</span>
+<span class="line" id="L3150">            }</span>
+<span class="line" id="L3151">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :cfr_loop;</span>
+<span class="line" id="L3152">            offset += amt;</span>
+<span class="line" id="L3153">        }</span>
+<span class="line" id="L3154">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3155">    }</span>
+<span class="line" id="L3156"></span>
+<span class="line" id="L3157">    <span class="tok-comment">// Sendfile is a zero-copy mechanism iff the OS supports it, otherwise the</span>
+</span>
+<span class="line" id="L3158">    <span class="tok-comment">// fallback code will copy the contents chunk by chunk.</span>
+</span>
+<span class="line" id="L3159">    <span class="tok-kw">const</span> empty_iovec = [<span class="tok-number">0</span>]os.iovec_const{};</span>
+<span class="line" id="L3160">    <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3161">    sendfile_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3162">        <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.sendfile(fd_out, fd_in, offset, <span class="tok-number">0</span>, &amp;empty_iovec, &amp;empty_iovec, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3163">        <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+</span>
+<span class="line" id="L3164">        <span class="tok-kw">if</span> (maybe_size) |s| {</span>
+<span class="line" id="L3165">            <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :sendfile_loop;</span>
+<span class="line" id="L3166">        }</span>
+<span class="line" id="L3167">        <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :sendfile_loop;</span>
+<span class="line" id="L3168">        offset += amt;</span>
+<span class="line" id="L3169">    }</span>
+<span class="line" id="L3170">}</span>
+<span class="line" id="L3171"></span>
+<span class="line" id="L3172"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L3173">    <span class="tok-kw">if</span> (builtin.os.tag != .wasi) {</span>
+<span class="line" id="L3174">        _ = &amp;makeDirAbsolute;</span>
+<span class="line" id="L3175">        _ = &amp;makeDirAbsoluteZ;</span>
+<span class="line" id="L3176">        _ = &amp;copyFileAbsolute;</span>
+<span class="line" id="L3177">        _ = &amp;updateFileAbsolute;</span>
+<span class="line" id="L3178">    }</span>
+<span class="line" id="L3179">    _ = &amp;Dir.copyFile;</span>
+<span class="line" id="L3180">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/test.zig&quot;</span>);</span>
+<span class="line" id="L3181">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/path.zig&quot;</span>);</span>
+<span class="line" id="L3182">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/file.zig&quot;</span>);</span>
+<span class="line" id="L3183">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/get_app_data_dir.zig&quot;</span>);</span>
+<span class="line" id="L3184">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/watch.zig&quot;</span>);</span>
+<span class="line" id="L3185">}</span>
+<span class="line" id="L3186"></span>
 </code></pre></body>
 </html>

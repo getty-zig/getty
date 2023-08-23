@@ -491,208 +491,207 @@
 <span class="line" id="L370">                    }</span>
 <span class="line" id="L371">                },</span>
 <span class="line" id="L372"></span>
-<span class="line" id="L373">                <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L374">                    <span class="tok-kw">break</span> :blk value;</span>
-<span class="line" id="L375">                },</span>
-<span class="line" id="L376">            }</span>
-<span class="line" id="L377">        };</span>
-<span class="line" id="L378"></span>
-<span class="line" id="L379">        <span class="tok-kw">if</span> (booldefine) {</span>
-<span class="line" id="L380">            value = blk: {</span>
-<span class="line" id="L381">                <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L382">                    .undef =&gt; {</span>
-<span class="line" id="L383">                        <span class="tok-kw">break</span> :blk Value{ .boolean = <span class="tok-null">false</span> };</span>
-<span class="line" id="L384">                    },</span>
-<span class="line" id="L385">                    .defined =&gt; {</span>
-<span class="line" id="L386">                        <span class="tok-kw">break</span> :blk Value{ .boolean = <span class="tok-null">false</span> };</span>
-<span class="line" id="L387">                    },</span>
-<span class="line" id="L388">                    .boolean =&gt; |b| {</span>
-<span class="line" id="L389">                        <span class="tok-kw">break</span> :blk Value{ .boolean = b };</span>
-<span class="line" id="L390">                    },</span>
-<span class="line" id="L391">                    .int =&gt; |i| {</span>
-<span class="line" id="L392">                        <span class="tok-kw">break</span> :blk Value{ .boolean = i != <span class="tok-number">0</span> };</span>
-<span class="line" id="L393">                    },</span>
-<span class="line" id="L394">                    .string =&gt; |string| {</span>
-<span class="line" id="L395">                        <span class="tok-kw">break</span> :blk Value{ .boolean = string.len != <span class="tok-number">0</span> };</span>
-<span class="line" id="L396">                    },</span>
-<span class="line" id="L397"></span>
-<span class="line" id="L398">                    <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L399">                        <span class="tok-kw">break</span> :blk Value{ .boolean = <span class="tok-null">false</span> };</span>
-<span class="line" id="L400">                    },</span>
-<span class="line" id="L401">                }</span>
-<span class="line" id="L402">            };</span>
-<span class="line" id="L403">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (value != Value.undef) {</span>
-<span class="line" id="L404">            value = Value{ .ident = it.rest() };</span>
-<span class="line" id="L405">        }</span>
-<span class="line" id="L406"></span>
-<span class="line" id="L407">        <span class="tok-kw">try</span> renderValueC(output, name, value);</span>
-<span class="line" id="L408">    }</span>
-<span class="line" id="L409"></span>
-<span class="line" id="L410">    <span class="tok-kw">if</span> (any_errors) {</span>
-<span class="line" id="L411">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HeaderConfigFailed;</span>
-<span class="line" id="L412">    }</span>
-<span class="line" id="L413">}</span>
-<span class="line" id="L414"></span>
-<span class="line" id="L415"><span class="tok-kw">fn</span> <span class="tok-fn">render_blank</span>(</span>
-<span class="line" id="L416">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
-<span class="line" id="L417">    defines: std.StringArrayHashMap(Value),</span>
-<span class="line" id="L418">    include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L419">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L420">    <span class="tok-kw">const</span> include_guard_name = <span class="tok-kw">try</span> output.allocator.dupe(<span class="tok-type">u8</span>, include_path);</span>
-<span class="line" id="L421">    <span class="tok-kw">for</span> (include_guard_name) |*byte| {</span>
-<span class="line" id="L422">        <span class="tok-kw">switch</span> (byte.*) {</span>
-<span class="line" id="L423">            <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span> =&gt; byte.* = byte.* - <span class="tok-str">'a'</span> + <span class="tok-str">'A'</span>,</span>
-<span class="line" id="L424">            <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L425">            <span class="tok-kw">else</span> =&gt; byte.* = <span class="tok-str">'_'</span>,</span>
-<span class="line" id="L426">        }</span>
-<span class="line" id="L427">    }</span>
-<span class="line" id="L428"></span>
-<span class="line" id="L429">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#ifndef &quot;</span>);</span>
-<span class="line" id="L430">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
-<span class="line" id="L431">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n#define &quot;</span>);</span>
-<span class="line" id="L432">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
-<span class="line" id="L433">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L434"></span>
-<span class="line" id="L435">    <span class="tok-kw">const</span> values = defines.values();</span>
-<span class="line" id="L436">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
-<span class="line" id="L437">        <span class="tok-kw">try</span> renderValueC(output, name, values[i]);</span>
-<span class="line" id="L438">    }</span>
-<span class="line" id="L439"></span>
-<span class="line" id="L440">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#endif /* &quot;</span>);</span>
-<span class="line" id="L441">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
-<span class="line" id="L442">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
-<span class="line" id="L443">}</span>
-<span class="line" id="L444"></span>
-<span class="line" id="L445"><span class="tok-kw">fn</span> <span class="tok-fn">render_nasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), defines: std.StringArrayHashMap(Value)) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L446">    <span class="tok-kw">const</span> values = defines.values();</span>
-<span class="line" id="L447">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
-<span class="line" id="L448">        <span class="tok-kw">try</span> renderValueNasm(output, name, values[i]);</span>
-<span class="line" id="L449">    }</span>
-<span class="line" id="L450">}</span>
-<span class="line" id="L451"></span>
-<span class="line" id="L452"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueC</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L453">    <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L454">        .undef =&gt; {</span>
-<span class="line" id="L455">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;/* #undef &quot;</span>);</span>
-<span class="line" id="L456">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L457">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
-<span class="line" id="L458">        },</span>
-<span class="line" id="L459">        .defined =&gt; {</span>
-<span class="line" id="L460">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
-<span class="line" id="L461">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L462">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L463">        },</span>
-<span class="line" id="L464">        .boolean =&gt; |b| {</span>
-<span class="line" id="L465">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
-<span class="line" id="L466">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L467">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot; 1\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot; 0\n&quot;</span>);</span>
-<span class="line" id="L468">        },</span>
-<span class="line" id="L469">        .int =&gt; |i| {</span>
-<span class="line" id="L470">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {d}\n&quot;</span>, .{ name, i });</span>
-<span class="line" id="L471">        },</span>
-<span class="line" id="L472">        .ident =&gt; |ident| {</span>
-<span class="line" id="L473">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {s}\n&quot;</span>, .{ name, ident });</span>
-<span class="line" id="L474">        },</span>
-<span class="line" id="L475">        .string =&gt; |string| {</span>
-<span class="line" id="L476">            <span class="tok-comment">// TODO: use C-specific escaping instead of zig string literals</span>
+<span class="line" id="L373">                <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L374">            }</span>
+<span class="line" id="L375">            <span class="tok-kw">break</span> :blk value;</span>
+<span class="line" id="L376">        };</span>
+<span class="line" id="L377"></span>
+<span class="line" id="L378">        <span class="tok-kw">if</span> (booldefine) {</span>
+<span class="line" id="L379">            value = blk: {</span>
+<span class="line" id="L380">                <span class="tok-kw">switch</span> (value) {</span>
+<span class="line" id="L381">                    .undef =&gt; {</span>
+<span class="line" id="L382">                        <span class="tok-kw">break</span> :blk Value{ .boolean = <span class="tok-null">false</span> };</span>
+<span class="line" id="L383">                    },</span>
+<span class="line" id="L384">                    .defined =&gt; {</span>
+<span class="line" id="L385">                        <span class="tok-kw">break</span> :blk Value{ .boolean = <span class="tok-null">false</span> };</span>
+<span class="line" id="L386">                    },</span>
+<span class="line" id="L387">                    .boolean =&gt; |b| {</span>
+<span class="line" id="L388">                        <span class="tok-kw">break</span> :blk Value{ .boolean = b };</span>
+<span class="line" id="L389">                    },</span>
+<span class="line" id="L390">                    .int =&gt; |i| {</span>
+<span class="line" id="L391">                        <span class="tok-kw">break</span> :blk Value{ .boolean = i != <span class="tok-number">0</span> };</span>
+<span class="line" id="L392">                    },</span>
+<span class="line" id="L393">                    .string =&gt; |string| {</span>
+<span class="line" id="L394">                        <span class="tok-kw">break</span> :blk Value{ .boolean = string.len != <span class="tok-number">0</span> };</span>
+<span class="line" id="L395">                    },</span>
+<span class="line" id="L396"></span>
+<span class="line" id="L397">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L398">                        <span class="tok-kw">break</span> :blk Value{ .boolean = <span class="tok-null">false</span> };</span>
+<span class="line" id="L399">                    },</span>
+<span class="line" id="L400">                }</span>
+<span class="line" id="L401">            };</span>
+<span class="line" id="L402">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (value != Value.undef) {</span>
+<span class="line" id="L403">            value = Value{ .ident = it.rest() };</span>
+<span class="line" id="L404">        }</span>
+<span class="line" id="L405"></span>
+<span class="line" id="L406">        <span class="tok-kw">try</span> renderValueC(output, name, value);</span>
+<span class="line" id="L407">    }</span>
+<span class="line" id="L408"></span>
+<span class="line" id="L409">    <span class="tok-kw">if</span> (any_errors) {</span>
+<span class="line" id="L410">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HeaderConfigFailed;</span>
+<span class="line" id="L411">    }</span>
+<span class="line" id="L412">}</span>
+<span class="line" id="L413"></span>
+<span class="line" id="L414"><span class="tok-kw">fn</span> <span class="tok-fn">render_blank</span>(</span>
+<span class="line" id="L415">    output: *std.ArrayList(<span class="tok-type">u8</span>),</span>
+<span class="line" id="L416">    defines: std.StringArrayHashMap(Value),</span>
+<span class="line" id="L417">    include_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L418">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L419">    <span class="tok-kw">const</span> include_guard_name = <span class="tok-kw">try</span> output.allocator.dupe(<span class="tok-type">u8</span>, include_path);</span>
+<span class="line" id="L420">    <span class="tok-kw">for</span> (include_guard_name) |*byte| {</span>
+<span class="line" id="L421">        <span class="tok-kw">switch</span> (byte.*) {</span>
+<span class="line" id="L422">            <span class="tok-str">'a'</span>...<span class="tok-str">'z'</span> =&gt; byte.* = byte.* - <span class="tok-str">'a'</span> + <span class="tok-str">'A'</span>,</span>
+<span class="line" id="L423">            <span class="tok-str">'A'</span>...<span class="tok-str">'Z'</span>, <span class="tok-str">'0'</span>...<span class="tok-str">'9'</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L424">            <span class="tok-kw">else</span> =&gt; byte.* = <span class="tok-str">'_'</span>,</span>
+<span class="line" id="L425">        }</span>
+<span class="line" id="L426">    }</span>
+<span class="line" id="L427"></span>
+<span class="line" id="L428">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#ifndef &quot;</span>);</span>
+<span class="line" id="L429">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
+<span class="line" id="L430">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n#define &quot;</span>);</span>
+<span class="line" id="L431">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
+<span class="line" id="L432">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L433"></span>
+<span class="line" id="L434">    <span class="tok-kw">const</span> values = defines.values();</span>
+<span class="line" id="L435">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
+<span class="line" id="L436">        <span class="tok-kw">try</span> renderValueC(output, name, values[i]);</span>
+<span class="line" id="L437">    }</span>
+<span class="line" id="L438"></span>
+<span class="line" id="L439">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#endif /* &quot;</span>);</span>
+<span class="line" id="L440">    <span class="tok-kw">try</span> output.appendSlice(include_guard_name);</span>
+<span class="line" id="L441">    <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
+<span class="line" id="L442">}</span>
+<span class="line" id="L443"></span>
+<span class="line" id="L444"><span class="tok-kw">fn</span> <span class="tok-fn">render_nasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), defines: std.StringArrayHashMap(Value)) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L445">    <span class="tok-kw">const</span> values = defines.values();</span>
+<span class="line" id="L446">    <span class="tok-kw">for</span> (defines.keys(), <span class="tok-number">0</span>..) |name, i| {</span>
+<span class="line" id="L447">        <span class="tok-kw">try</span> renderValueNasm(output, name, values[i]);</span>
+<span class="line" id="L448">    }</span>
+<span class="line" id="L449">}</span>
+<span class="line" id="L450"></span>
+<span class="line" id="L451"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueC</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L452">    <span class="tok-kw">switch</span> (value) {</span>
+<span class="line" id="L453">        .undef =&gt; {</span>
+<span class="line" id="L454">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;/* #undef &quot;</span>);</span>
+<span class="line" id="L455">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L456">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot; */\n&quot;</span>);</span>
+<span class="line" id="L457">        },</span>
+<span class="line" id="L458">        .defined =&gt; {</span>
+<span class="line" id="L459">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
+<span class="line" id="L460">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L461">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L462">        },</span>
+<span class="line" id="L463">        .boolean =&gt; |b| {</span>
+<span class="line" id="L464">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;#define &quot;</span>);</span>
+<span class="line" id="L465">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L466">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot; 1\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot; 0\n&quot;</span>);</span>
+<span class="line" id="L467">        },</span>
+<span class="line" id="L468">        .int =&gt; |i| {</span>
+<span class="line" id="L469">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {d}\n&quot;</span>, .{ name, i });</span>
+<span class="line" id="L470">        },</span>
+<span class="line" id="L471">        .ident =&gt; |ident| {</span>
+<span class="line" id="L472">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} {s}\n&quot;</span>, .{ name, ident });</span>
+<span class="line" id="L473">        },</span>
+<span class="line" id="L474">        .string =&gt; |string| {</span>
+<span class="line" id="L475">            <span class="tok-comment">// TODO: use C-specific escaping instead of zig string literals</span>
 </span>
-<span class="line" id="L477">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
-<span class="line" id="L478">        },</span>
-<span class="line" id="L479">    }</span>
-<span class="line" id="L480">}</span>
-<span class="line" id="L481"></span>
-<span class="line" id="L482"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueNasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L483">    <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L484">        .undef =&gt; {</span>
-<span class="line" id="L485">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;; %undef &quot;</span>);</span>
-<span class="line" id="L486">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L487">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L488">        },</span>
-<span class="line" id="L489">        .defined =&gt; {</span>
-<span class="line" id="L490">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
-<span class="line" id="L491">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L492">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L493">        },</span>
-<span class="line" id="L494">        .boolean =&gt; |b| {</span>
-<span class="line" id="L495">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
-<span class="line" id="L496">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
-<span class="line" id="L497">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot; 1\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot; 0\n&quot;</span>);</span>
-<span class="line" id="L498">        },</span>
-<span class="line" id="L499">        .int =&gt; |i| {</span>
-<span class="line" id="L500">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {d}\n&quot;</span>, .{ name, i });</span>
-<span class="line" id="L501">        },</span>
-<span class="line" id="L502">        .ident =&gt; |ident| {</span>
-<span class="line" id="L503">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {s}\n&quot;</span>, .{ name, ident });</span>
-<span class="line" id="L504">        },</span>
-<span class="line" id="L505">        .string =&gt; |string| {</span>
-<span class="line" id="L506">            <span class="tok-comment">// TODO: use nasm-specific escaping instead of zig string literals</span>
+<span class="line" id="L476">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;#define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
+<span class="line" id="L477">        },</span>
+<span class="line" id="L478">    }</span>
+<span class="line" id="L479">}</span>
+<span class="line" id="L480"></span>
+<span class="line" id="L481"><span class="tok-kw">fn</span> <span class="tok-fn">renderValueNasm</span>(output: *std.ArrayList(<span class="tok-type">u8</span>), name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, value: Value) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L482">    <span class="tok-kw">switch</span> (value) {</span>
+<span class="line" id="L483">        .undef =&gt; {</span>
+<span class="line" id="L484">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;; %undef &quot;</span>);</span>
+<span class="line" id="L485">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L486">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L487">        },</span>
+<span class="line" id="L488">        .defined =&gt; {</span>
+<span class="line" id="L489">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
+<span class="line" id="L490">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L491">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L492">        },</span>
+<span class="line" id="L493">        .boolean =&gt; |b| {</span>
+<span class="line" id="L494">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-str">&quot;%define &quot;</span>);</span>
+<span class="line" id="L495">            <span class="tok-kw">try</span> output.appendSlice(name);</span>
+<span class="line" id="L496">            <span class="tok-kw">try</span> output.appendSlice(<span class="tok-kw">if</span> (b) <span class="tok-str">&quot; 1\n&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot; 0\n&quot;</span>);</span>
+<span class="line" id="L497">        },</span>
+<span class="line" id="L498">        .int =&gt; |i| {</span>
+<span class="line" id="L499">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {d}\n&quot;</span>, .{ name, i });</span>
+<span class="line" id="L500">        },</span>
+<span class="line" id="L501">        .ident =&gt; |ident| {</span>
+<span class="line" id="L502">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} {s}\n&quot;</span>, .{ name, ident });</span>
+<span class="line" id="L503">        },</span>
+<span class="line" id="L504">        .string =&gt; |string| {</span>
+<span class="line" id="L505">            <span class="tok-comment">// TODO: use nasm-specific escaping instead of zig string literals</span>
 </span>
-<span class="line" id="L507">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
-<span class="line" id="L508">        },</span>
-<span class="line" id="L509">    }</span>
-<span class="line" id="L510">}</span>
-<span class="line" id="L511"></span>
-<span class="line" id="L512"><span class="tok-kw">fn</span> <span class="tok-fn">replace_variables</span>(</span>
-<span class="line" id="L513">    allocator: Allocator,</span>
-<span class="line" id="L514">    contents: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L515">    values: std.StringArrayHashMap(Value),</span>
-<span class="line" id="L516">    prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L517">    suffix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L518">) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L519">    <span class="tok-kw">var</span> content_buf = allocator.dupe(<span class="tok-type">u8</span>, contents) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
-<span class="line" id="L520"></span>
-<span class="line" id="L521">    <span class="tok-kw">var</span> last_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L522">    <span class="tok-kw">while</span> (std.mem.indexOfPos(<span class="tok-type">u8</span>, content_buf, last_index, prefix)) |prefix_index| {</span>
-<span class="line" id="L523">        <span class="tok-kw">const</span> start_index = prefix_index + prefix.len;</span>
-<span class="line" id="L524">        <span class="tok-kw">if</span> (std.mem.indexOfPos(<span class="tok-type">u8</span>, content_buf, start_index, suffix)) |suffix_index| {</span>
-<span class="line" id="L525">            <span class="tok-kw">const</span> end_index = suffix_index + suffix.len;</span>
-<span class="line" id="L526"></span>
-<span class="line" id="L527">            <span class="tok-kw">const</span> beginline = content_buf[<span class="tok-number">0</span>..prefix_index];</span>
-<span class="line" id="L528">            <span class="tok-kw">const</span> endline = content_buf[end_index..];</span>
-<span class="line" id="L529">            <span class="tok-kw">const</span> key = content_buf[start_index..suffix_index];</span>
-<span class="line" id="L530">            <span class="tok-kw">const</span> value = values.get(key) <span class="tok-kw">orelse</span> .undef;</span>
-<span class="line" id="L531"></span>
-<span class="line" id="L532">            <span class="tok-kw">switch</span> (value) {</span>
-<span class="line" id="L533">                .boolean =&gt; |b| {</span>
-<span class="line" id="L534">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{}{s}&quot;</span>, .{ beginline, <span class="tok-builtin">@intFromBool</span>(b), endline });</span>
-<span class="line" id="L535">                    last_index = start_index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L536"></span>
-<span class="line" id="L537">                    allocator.free(content_buf);</span>
-<span class="line" id="L538">                    content_buf = buf;</span>
-<span class="line" id="L539">                },</span>
-<span class="line" id="L540">                .int =&gt; |i| {</span>
-<span class="line" id="L541">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{}{s}&quot;</span>, .{ beginline, i, endline });</span>
-<span class="line" id="L542">                    <span class="tok-kw">const</span> isNegative = i &lt; <span class="tok-number">0</span>;</span>
-<span class="line" id="L543">                    <span class="tok-kw">const</span> digits = (<span class="tok-kw">if</span> (<span class="tok-number">0</span> &lt; i) std.math.log10(std.math.absCast(i)) <span class="tok-kw">else</span> <span class="tok-number">0</span>) + <span class="tok-number">1</span>;</span>
-<span class="line" id="L544">                    last_index = start_index + <span class="tok-builtin">@intFromBool</span>(isNegative) + digits + <span class="tok-number">1</span>;</span>
-<span class="line" id="L545"></span>
-<span class="line" id="L546">                    allocator.free(content_buf);</span>
-<span class="line" id="L547">                    content_buf = buf;</span>
-<span class="line" id="L548">                },</span>
-<span class="line" id="L549">                .string, .ident =&gt; |x| {</span>
-<span class="line" id="L550">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{s}{s}&quot;</span>, .{ beginline, x, endline });</span>
-<span class="line" id="L551">                    last_index = start_index + x.len + <span class="tok-number">1</span>;</span>
-<span class="line" id="L552"></span>
-<span class="line" id="L553">                    allocator.free(content_buf);</span>
-<span class="line" id="L554">                    content_buf = buf;</span>
-<span class="line" id="L555">                },</span>
-<span class="line" id="L556"></span>
-<span class="line" id="L557">                <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L558">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{s}&quot;</span>, .{ beginline, endline });</span>
-<span class="line" id="L559">                    last_index = start_index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L560"></span>
-<span class="line" id="L561">                    allocator.free(content_buf);</span>
-<span class="line" id="L562">                    content_buf = buf;</span>
-<span class="line" id="L563">                },</span>
-<span class="line" id="L564">            }</span>
-<span class="line" id="L565">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L566">        }</span>
-<span class="line" id="L567"></span>
-<span class="line" id="L568">        last_index = start_index + <span class="tok-number">1</span>;</span>
-<span class="line" id="L569">    }</span>
-<span class="line" id="L570"></span>
-<span class="line" id="L571">    <span class="tok-kw">return</span> content_buf;</span>
-<span class="line" id="L572">}</span>
-<span class="line" id="L573"></span>
+<span class="line" id="L506">            <span class="tok-kw">try</span> output.writer().print(<span class="tok-str">&quot;%define {s} \&quot;{}\&quot;\n&quot;</span>, .{ name, std.zig.fmtEscapes(string) });</span>
+<span class="line" id="L507">        },</span>
+<span class="line" id="L508">    }</span>
+<span class="line" id="L509">}</span>
+<span class="line" id="L510"></span>
+<span class="line" id="L511"><span class="tok-kw">fn</span> <span class="tok-fn">replace_variables</span>(</span>
+<span class="line" id="L512">    allocator: Allocator,</span>
+<span class="line" id="L513">    contents: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L514">    values: std.StringArrayHashMap(Value),</span>
+<span class="line" id="L515">    prefix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L516">    suffix: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L517">) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L518">    <span class="tok-kw">var</span> content_buf = allocator.dupe(<span class="tok-type">u8</span>, contents) <span class="tok-kw">catch</span> <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;OOM&quot;</span>);</span>
+<span class="line" id="L519"></span>
+<span class="line" id="L520">    <span class="tok-kw">var</span> last_index: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L521">    <span class="tok-kw">while</span> (std.mem.indexOfPos(<span class="tok-type">u8</span>, content_buf, last_index, prefix)) |prefix_index| {</span>
+<span class="line" id="L522">        <span class="tok-kw">const</span> start_index = prefix_index + prefix.len;</span>
+<span class="line" id="L523">        <span class="tok-kw">if</span> (std.mem.indexOfPos(<span class="tok-type">u8</span>, content_buf, start_index, suffix)) |suffix_index| {</span>
+<span class="line" id="L524">            <span class="tok-kw">const</span> end_index = suffix_index + suffix.len;</span>
+<span class="line" id="L525"></span>
+<span class="line" id="L526">            <span class="tok-kw">const</span> beginline = content_buf[<span class="tok-number">0</span>..prefix_index];</span>
+<span class="line" id="L527">            <span class="tok-kw">const</span> endline = content_buf[end_index..];</span>
+<span class="line" id="L528">            <span class="tok-kw">const</span> key = content_buf[start_index..suffix_index];</span>
+<span class="line" id="L529">            <span class="tok-kw">const</span> value = values.get(key) <span class="tok-kw">orelse</span> .undef;</span>
+<span class="line" id="L530"></span>
+<span class="line" id="L531">            <span class="tok-kw">switch</span> (value) {</span>
+<span class="line" id="L532">                .boolean =&gt; |b| {</span>
+<span class="line" id="L533">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{}{s}&quot;</span>, .{ beginline, <span class="tok-builtin">@intFromBool</span>(b), endline });</span>
+<span class="line" id="L534">                    last_index = start_index + <span class="tok-number">1</span>;</span>
+<span class="line" id="L535"></span>
+<span class="line" id="L536">                    allocator.free(content_buf);</span>
+<span class="line" id="L537">                    content_buf = buf;</span>
+<span class="line" id="L538">                },</span>
+<span class="line" id="L539">                .int =&gt; |i| {</span>
+<span class="line" id="L540">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{}{s}&quot;</span>, .{ beginline, i, endline });</span>
+<span class="line" id="L541">                    <span class="tok-kw">const</span> isNegative = i &lt; <span class="tok-number">0</span>;</span>
+<span class="line" id="L542">                    <span class="tok-kw">const</span> digits = (<span class="tok-kw">if</span> (<span class="tok-number">0</span> &lt; i) std.math.log10(std.math.absCast(i)) <span class="tok-kw">else</span> <span class="tok-number">0</span>) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L543">                    last_index = start_index + <span class="tok-builtin">@intFromBool</span>(isNegative) + digits + <span class="tok-number">1</span>;</span>
+<span class="line" id="L544"></span>
+<span class="line" id="L545">                    allocator.free(content_buf);</span>
+<span class="line" id="L546">                    content_buf = buf;</span>
+<span class="line" id="L547">                },</span>
+<span class="line" id="L548">                .string, .ident =&gt; |x| {</span>
+<span class="line" id="L549">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{s}{s}&quot;</span>, .{ beginline, x, endline });</span>
+<span class="line" id="L550">                    last_index = start_index + x.len + <span class="tok-number">1</span>;</span>
+<span class="line" id="L551"></span>
+<span class="line" id="L552">                    allocator.free(content_buf);</span>
+<span class="line" id="L553">                    content_buf = buf;</span>
+<span class="line" id="L554">                },</span>
+<span class="line" id="L555"></span>
+<span class="line" id="L556">                <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L557">                    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> std.fmt.allocPrint(allocator, <span class="tok-str">&quot;{s}{s}&quot;</span>, .{ beginline, endline });</span>
+<span class="line" id="L558">                    last_index = start_index + <span class="tok-number">1</span>;</span>
+<span class="line" id="L559"></span>
+<span class="line" id="L560">                    allocator.free(content_buf);</span>
+<span class="line" id="L561">                    content_buf = buf;</span>
+<span class="line" id="L562">                },</span>
+<span class="line" id="L563">            }</span>
+<span class="line" id="L564">            <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L565">        }</span>
+<span class="line" id="L566"></span>
+<span class="line" id="L567">        last_index = start_index + <span class="tok-number">1</span>;</span>
+<span class="line" id="L568">    }</span>
+<span class="line" id="L569"></span>
+<span class="line" id="L570">    <span class="tok-kw">return</span> content_buf;</span>
+<span class="line" id="L571">}</span>
+<span class="line" id="L572"></span>
 </code></pre></body>
 </html>
