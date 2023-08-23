@@ -37,7 +37,7 @@ pub fn Structure(
             /// Finish serializing a struct.
             pub fn end(self: Self) Error!Ok {
                 if (methods.end) |f| {
-                    try f(self.impl);
+                    return try f(self.impl);
                 } else {
                     @compileError("end is not implemented by type: " ++ @typeName(Impl));
                 }
