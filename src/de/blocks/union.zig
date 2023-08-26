@@ -665,7 +665,7 @@ test "deserialize - union" {
         bar: bool,
     };
 
-    const Untagged = union {
+    const Bare = union {
         foo: void,
         bar: bool,
     };
@@ -716,7 +716,7 @@ test "deserialize - union" {
     };
 
     inline for (tests) |t| {
-        try runTest(t, if (t.tagged) Tagged else Untagged);
+        try runTest(t, if (t.tagged) Tagged else Bare);
     }
 }
 
@@ -733,7 +733,7 @@ test "deserialize - union, attributes (rename)" {
         };
     };
 
-    const Untagged = union {
+    const Bare = union {
         foo: void,
         bar: bool,
 
@@ -831,7 +831,7 @@ test "deserialize - union, attributes (rename)" {
     };
 
     inline for (tests) |t| {
-        try runTest(t, if (t.tagged) Tagged else Untagged);
+        try runTest(t, if (t.tagged) Tagged else Bare);
     }
 }
 
@@ -848,7 +848,7 @@ test "deserialize - union, attributes (skip)" {
         };
     };
 
-    const Untagged = union {
+    const Bare = union {
         foo: void,
         bar: bool,
 
@@ -904,7 +904,7 @@ test "deserialize - union, attributes (skip)" {
     };
 
     inline for (tests) |t| {
-        try runTest(t, if (t.tagged) Tagged else Untagged);
+        try runTest(t, if (t.tagged) Tagged else Bare);
     }
 }
 
