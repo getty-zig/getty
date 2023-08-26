@@ -593,6 +593,10 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
         }
 
         fn payloadSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+            if (@TypeOf(seed).Value != Payload) {
+                return error.InvalidType;
+            }
+
             return self.payload;
         }
 
@@ -923,6 +927,7 @@ test "deserialize - union, attributes (tag, untagged)" {
         // deserialized into.
         UnionUntagged: union(enum) {
             Bools: [2]bool,
+            Ints: [2]i32,
 
             pub const @"getty.db" = struct {
                 pub const attributes = .{ .Container = .{ .tag = .untagged } };
@@ -1005,7 +1010,7 @@ test "deserialize - union, attributes (tag, untagged)" {
             .want = WantTagged{ .Union = .{ .foo = 1 } },
         },
         .{
-            .name = "tagged, union variant (untagged)",
+            .name = "tagged, union variant (untagged, I)",
             .tokens = &.{
                 .{ .Seq = .{ .len = 2 } },
                 .{ .Bool = true },
@@ -1013,6 +1018,16 @@ test "deserialize - union, attributes (tag, untagged)" {
                 .{ .SeqEnd = {} },
             },
             .want = WantTagged{ .UnionUntagged = .{ .Bools = [_]bool{ true, false } } },
+        },
+        .{
+            .name = "tagged, union variant (untagged, II)",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 2 } },
+                .{ .I32 = 1 },
+                .{ .I32 = 2 },
+                .{ .SeqEnd = {} },
+            },
+            .want = WantTagged{ .UnionUntagged = .{ .Ints = [_]i32{ 1, 2 } } },
         },
         .{
             .name = "tagged, void variant",
