@@ -114,6 +114,7 @@ test "deserialize - pointer" {
     };
     const UnionABUntagged = union(enum) {
         foo: i32,
+        bar: bool,
 
         pub const @"getty.db" = struct {
             pub const attributes = .{
@@ -127,7 +128,7 @@ test "deserialize - pointer" {
     var sab = StructAB{ .x = 1, .y = 2 };
     var uab = UnionAB{ .foo = 1 };
     var uab_untagged_1st = UnionABUntagged{ .foo = 123 };
-    //var uab_untagged_2nd = UnionABUntagged{ .bar = true };
+    var uab_untagged_2nd = UnionABUntagged{ .bar = true };
 
     const tests = .{
         .{
@@ -169,11 +170,11 @@ test "deserialize - pointer" {
             .tokens = &.{.{ .I32 = 123 }},
             .want = @as(*UnionABUntagged, &uab_untagged_1st),
         },
-        //.{
-        //.name = "union with AB (untagged, 2nd variant)",
-        //.tokens = &.{.{ .bool = true }},
-        //.want = @as(*UnionABUntagged, &uab_untagged_2nd),
-        //},
+        .{
+            .name = "union with AB (untagged, 2nd variant)",
+            .tokens = &.{.{ .Bool = true }},
+            .want = @as(*UnionABUntagged, &uab_untagged_2nd),
+        },
     };
 
     const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
