@@ -91,7 +91,14 @@ fn deserializeUntaggedUnion(
 
     inline for (std.meta.fields(T)) |field| {
         if (getty_deserialize(ally, field.type, d)) |value| {
-            return @unionInit(T, field.name, value);
+            var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(value)){
+                .variant = field.name,
+                .payload = value,
+            };
+            const ua = tuva.unionAccess();
+            const va = tuva.variantAccess();
+
+            return try visitor.visitUnion(ally, @TypeOf(d), ua, va);
         } else |err| switch (err) {
             error.DuplicateField,
             error.InvalidLength,
@@ -344,20 +351,10 @@ const ContentDeserializer = struct {
 
     fn deserializeAny(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
-            .Bool => |v| try visitor.visitBool(ally, De, v),
-            inline .F16, .F32, .F64, .F128 => |v| try visitor.visitFloat(ally, De, v),
-            .Int => |v| blk: {
-                comptime var Value = @TypeOf(visitor).Value;
-
-                if (@typeInfo(Value) == .Int) {
-                    break :blk try visitor.visitInt(ally, De, v.to(Value) catch unreachable);
-                }
-
-                if (v.isPositive()) {
-                    break :blk try visitor.visitInt(ally, De, v.to(u128) catch return error.InvalidValue);
-                } else {
-                    break :blk try visitor.visitInt(ally, De, v.to(i128) catch return error.InvalidValue);
-                }
+            .Bool => try self.deserializeBool(ally, visitor),
+            inline .F16, .F32, .F64, .F128 => try self.deserializeFloat(ally, visitor),
+            .Int => blk: {
+                break :blk try self.deserializeInt(ally, visitor);
             },
             .Map => |v| try visitContentMap(ally, v, visitor),
             .Null => try visitor.visitNull(ally, De),
@@ -366,8 +363,8 @@ const ContentDeserializer = struct {
                 var cd = Self{ .content = v.* };
                 break :blk try visitor.visitSome(ally, cd.deserializer());
             },
-            .String => |v| try visitor.visitString(ally, De, v),
-            .Void => try visitor.visitVoid(ally, De),
+            .String => try self.deserializeString(ally, visitor),
+            .Void => try self.deserializeVoid(ally, visitor),
         };
     }
 
@@ -403,8 +400,17 @@ const ContentDeserializer = struct {
     fn deserializeInt(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Int => |v| blk: {
-                const int = v.to(@TypeOf(visitor).Value) catch unreachable;
-                break :blk try visitor.visitInt(ally, De, int);
+                comptime var Value = @TypeOf(visitor).Value;
+
+                if (@typeInfo(Value) == .Int) {
+                    break :blk try visitor.visitInt(ally, De, v.to(Value) catch unreachable);
+                }
+
+                if (v.isPositive()) {
+                    break :blk try visitor.visitInt(ally, De, v.to(u128) catch return error.InvalidValue);
+                } else {
+                    break :blk try visitor.visitInt(ally, De, v.to(i128) catch return error.InvalidValue);
+                }
             },
             else => error.InvalidType,
         };
@@ -557,6 +563,48 @@ const SeqAccess = struct {
     }
 };
 
+fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type) type {
+    return struct {
+        variant: Variant,
+        payload: Payload,
+
+        const Self = @This();
+
+        pub usingnamespace UnionAccessInterface(
+            Self,
+            getty_error,
+            .{
+                .variantSeed = variantSeed,
+                .isVariantAllocated = isAllocated,
+            },
+        );
+
+        pub usingnamespace VariantAccessInterface(
+            Self,
+            getty_error,
+            .{
+                .payloadSeed = payloadSeed,
+                .isPayloadAllocated = isAllocated,
+            },
+        );
+
+        fn variantSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+            return self.variant;
+        }
+
+        fn payloadSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+            if (@TypeOf(seed).Value != Payload) {
+                return error.InvalidType;
+            }
+
+            return self.payload;
+        }
+
+        fn isAllocated(_: Self, comptime _: type) bool {
+            return false;
+        }
+    };
+}
 const UnionVariantAccess = struct {
     key: Content,
     value: Content,
@@ -621,7 +669,7 @@ test "deserialize - union" {
         bar: bool,
     };
 
-    const Untagged = union {
+    const Bare = union {
         foo: void,
         bar: bool,
     };
@@ -672,7 +720,7 @@ test "deserialize - union" {
     };
 
     inline for (tests) |t| {
-        try runTest(t, if (t.tagged) Tagged else Untagged);
+        try runTest(t, if (t.tagged) Tagged else Bare);
     }
 }
 
@@ -689,7 +737,7 @@ test "deserialize - union, attributes (rename)" {
         };
     };
 
-    const Untagged = union {
+    const Bare = union {
         foo: void,
         bar: bool,
 
@@ -787,7 +835,7 @@ test "deserialize - union, attributes (rename)" {
     };
 
     inline for (tests) |t| {
-        try runTest(t, if (t.tagged) Tagged else Untagged);
+        try runTest(t, if (t.tagged) Tagged else Bare);
     }
 }
 
@@ -804,7 +852,7 @@ test "deserialize - union, attributes (skip)" {
         };
     };
 
-    const Untagged = union {
+    const Bare = union {
         foo: void,
         bar: bool,
 
@@ -860,7 +908,7 @@ test "deserialize - union, attributes (skip)" {
     };
 
     inline for (tests) |t| {
-        try runTest(t, if (t.tagged) Tagged else Untagged);
+        try runTest(t, if (t.tagged) Tagged else Bare);
     }
 }
 
@@ -879,6 +927,7 @@ test "deserialize - union, attributes (tag, untagged)" {
         // deserialized into.
         UnionUntagged: union(enum) {
             Bools: [2]bool,
+            Ints: [2]i32,
 
             pub const @"getty.db" = struct {
                 pub const attributes = .{ .Container = .{ .tag = .untagged } };
@@ -961,7 +1010,7 @@ test "deserialize - union, attributes (tag, untagged)" {
             .want = WantTagged{ .Union = .{ .foo = 1 } },
         },
         .{
-            .name = "tagged, union variant (untagged)",
+            .name = "tagged, union variant (untagged, I)",
             .tokens = &.{
                 .{ .Seq = .{ .len = 2 } },
                 .{ .Bool = true },
@@ -969,6 +1018,16 @@ test "deserialize - union, attributes (tag, untagged)" {
                 .{ .SeqEnd = {} },
             },
             .want = WantTagged{ .UnionUntagged = .{ .Bools = [_]bool{ true, false } } },
+        },
+        .{
+            .name = "tagged, union variant (untagged, II)",
+            .tokens = &.{
+                .{ .Seq = .{ .len = 2 } },
+                .{ .I32 = 1 },
+                .{ .I32 = 2 },
+                .{ .SeqEnd = {} },
+            },
+            .want = WantTagged{ .UnionUntagged = .{ .Ints = [_]i32{ 1, 2 } } },
         },
         .{
             .name = "tagged, void variant",
