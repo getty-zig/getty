@@ -1212,306 +1212,316 @@
 <span class="line" id="L1048">    <span class="tok-kw">var</span> skip_count: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1049">    <span class="tok-kw">var</span> leak_count: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L1050">    <span class="tok-kw">var</span> test_count: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1051"></span>
-<span class="line" id="L1052">    <span class="tok-kw">var</span> metadata: ?TestMetadata = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1053"></span>
-<span class="line" id="L1054">    <span class="tok-kw">var</span> sub_prog_node: ?std.Progress.Node = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1055">    <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (sub_prog_node) |*n| n.end();</span>
-<span class="line" id="L1056"></span>
-<span class="line" id="L1057">    poll: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1058">        <span class="tok-kw">while</span> (stdout.readableLength() &lt; <span class="tok-builtin">@sizeOf</span>(Header)) {</span>
-<span class="line" id="L1059">            <span class="tok-kw">if</span> (!(<span class="tok-kw">try</span> poller.poll())) <span class="tok-kw">break</span> :poll;</span>
-<span class="line" id="L1060">        }</span>
-<span class="line" id="L1061">        <span class="tok-kw">const</span> header = stdout.reader().readStruct(Header) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1062">        <span class="tok-kw">while</span> (stdout.readableLength() &lt; header.bytes_len) {</span>
-<span class="line" id="L1063">            <span class="tok-kw">if</span> (!(<span class="tok-kw">try</span> poller.poll())) <span class="tok-kw">break</span> :poll;</span>
-<span class="line" id="L1064">        }</span>
-<span class="line" id="L1065">        <span class="tok-kw">const</span> body = stdout.readableSliceOfLen(header.bytes_len);</span>
-<span class="line" id="L1066"></span>
-<span class="line" id="L1067">        <span class="tok-kw">switch</span> (header.tag) {</span>
-<span class="line" id="L1068">            .zig_version =&gt; {</span>
-<span class="line" id="L1069">                <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, builtin.zig_version_string, body)) {</span>
-<span class="line" id="L1070">                    <span class="tok-kw">return</span> self.step.fail(</span>
-<span class="line" id="L1071">                        <span class="tok-str">&quot;zig version mismatch build runner vs compiler: '{s}' vs '{s}'&quot;</span>,</span>
-<span class="line" id="L1072">                        .{ builtin.zig_version_string, body },</span>
-<span class="line" id="L1073">                    );</span>
-<span class="line" id="L1074">                }</span>
-<span class="line" id="L1075">            },</span>
-<span class="line" id="L1076">            .test_metadata =&gt; {</span>
-<span class="line" id="L1077">                <span class="tok-kw">const</span> TmHdr = std.zig.Server.Message.TestMetadata;</span>
-<span class="line" id="L1078">                <span class="tok-kw">const</span> tm_hdr = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> TmHdr, <span class="tok-builtin">@ptrCast</span>(body));</span>
-<span class="line" id="L1079">                test_count = tm_hdr.tests_len;</span>
-<span class="line" id="L1080"></span>
-<span class="line" id="L1081">                <span class="tok-kw">const</span> names_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr)..][<span class="tok-number">0</span> .. test_count * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>)];</span>
-<span class="line" id="L1082">                <span class="tok-kw">const</span> async_frame_lens_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr) + names_bytes.len ..][<span class="tok-number">0</span> .. test_count * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>)];</span>
-<span class="line" id="L1083">                <span class="tok-kw">const</span> expected_panic_msgs_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr) + names_bytes.len + async_frame_lens_bytes.len ..][<span class="tok-number">0</span> .. test_count * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>)];</span>
-<span class="line" id="L1084">                <span class="tok-kw">const</span> string_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr) + names_bytes.len + async_frame_lens_bytes.len + expected_panic_msgs_bytes.len ..][<span class="tok-number">0</span>..tm_hdr.string_bytes_len];</span>
-<span class="line" id="L1085"></span>
-<span class="line" id="L1086">                <span class="tok-kw">const</span> names = std.mem.bytesAsSlice(<span class="tok-type">u32</span>, names_bytes);</span>
-<span class="line" id="L1087">                <span class="tok-kw">const</span> async_frame_lens = std.mem.bytesAsSlice(<span class="tok-type">u32</span>, async_frame_lens_bytes);</span>
-<span class="line" id="L1088">                <span class="tok-kw">const</span> expected_panic_msgs = std.mem.bytesAsSlice(<span class="tok-type">u32</span>, expected_panic_msgs_bytes);</span>
-<span class="line" id="L1089">                <span class="tok-kw">const</span> names_aligned = <span class="tok-kw">try</span> arena.alloc(<span class="tok-type">u32</span>, names.len);</span>
-<span class="line" id="L1090">                <span class="tok-kw">for</span> (names_aligned, names) |*dest, src| dest.* = src;</span>
-<span class="line" id="L1091"></span>
-<span class="line" id="L1092">                <span class="tok-kw">const</span> async_frame_lens_aligned = <span class="tok-kw">try</span> arena.alloc(<span class="tok-type">u32</span>, async_frame_lens.len);</span>
-<span class="line" id="L1093">                <span class="tok-kw">for</span> (async_frame_lens_aligned, async_frame_lens) |*dest, src| dest.* = src;</span>
-<span class="line" id="L1094"></span>
-<span class="line" id="L1095">                <span class="tok-kw">const</span> expected_panic_msgs_aligned = <span class="tok-kw">try</span> arena.alloc(<span class="tok-type">u32</span>, expected_panic_msgs.len);</span>
-<span class="line" id="L1096">                <span class="tok-kw">for</span> (expected_panic_msgs_aligned, expected_panic_msgs) |*dest, src| dest.* = src;</span>
-<span class="line" id="L1097"></span>
-<span class="line" id="L1098">                prog_node.setEstimatedTotalItems(names.len);</span>
-<span class="line" id="L1099">                metadata = .{</span>
-<span class="line" id="L1100">                    .string_bytes = <span class="tok-kw">try</span> arena.dupe(<span class="tok-type">u8</span>, string_bytes),</span>
-<span class="line" id="L1101">                    .names = names_aligned,</span>
-<span class="line" id="L1102">                    .async_frame_lens = async_frame_lens_aligned,</span>
-<span class="line" id="L1103">                    .expected_panic_msgs = expected_panic_msgs_aligned,</span>
-<span class="line" id="L1104">                    .next_index = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1105">                    .prog_node = prog_node,</span>
-<span class="line" id="L1106">                };</span>
-<span class="line" id="L1107"></span>
-<span class="line" id="L1108">                <span class="tok-kw">try</span> requestNextTest(child.stdin.?, &amp;metadata.?, &amp;sub_prog_node);</span>
-<span class="line" id="L1109">            },</span>
-<span class="line" id="L1110">            .test_results =&gt; {</span>
-<span class="line" id="L1111">                <span class="tok-kw">const</span> md = metadata.?;</span>
-<span class="line" id="L1112"></span>
-<span class="line" id="L1113">                <span class="tok-kw">const</span> TrHdr = std.zig.Server.Message.TestResults;</span>
-<span class="line" id="L1114">                <span class="tok-kw">const</span> tr_hdr = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> TrHdr, <span class="tok-builtin">@ptrCast</span>(body));</span>
-<span class="line" id="L1115">                fail_count += <span class="tok-builtin">@intFromBool</span>(tr_hdr.flags.fail);</span>
-<span class="line" id="L1116">                skip_count += <span class="tok-builtin">@intFromBool</span>(tr_hdr.flags.skip);</span>
-<span class="line" id="L1117">                leak_count += <span class="tok-builtin">@intFromBool</span>(tr_hdr.flags.leak);</span>
-<span class="line" id="L1118"></span>
-<span class="line" id="L1119">                <span class="tok-kw">if</span> (tr_hdr.flags.fail <span class="tok-kw">or</span> tr_hdr.flags.leak) {</span>
-<span class="line" id="L1120">                    <span class="tok-kw">const</span> name = std.mem.sliceTo(md.string_bytes[md.names[tr_hdr.index]..], <span class="tok-number">0</span>);</span>
-<span class="line" id="L1121">                    <span class="tok-kw">const</span> msg = std.mem.trim(<span class="tok-type">u8</span>, stderr.readableSlice(<span class="tok-number">0</span>), <span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L1122">                    <span class="tok-kw">const</span> label = <span class="tok-kw">if</span> (tr_hdr.flags.fail) <span class="tok-str">&quot;failed&quot;</span> <span class="tok-kw">else</span> <span class="tok-str">&quot;leaked&quot;</span>;</span>
-<span class="line" id="L1123">                    <span class="tok-kw">if</span> (msg.len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1124">                        <span class="tok-kw">try</span> self.step.addError(<span class="tok-str">&quot;'{s}' {s}: {s}&quot;</span>, .{ name, label, msg });</span>
-<span class="line" id="L1125">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1126">                        <span class="tok-kw">try</span> self.step.addError(<span class="tok-str">&quot;'{s}' {s}&quot;</span>, .{ name, label });</span>
-<span class="line" id="L1127">                    }</span>
-<span class="line" id="L1128">                    stderr.discard(msg.len);</span>
-<span class="line" id="L1129">                }</span>
-<span class="line" id="L1130"></span>
-<span class="line" id="L1131">                <span class="tok-kw">try</span> requestNextTest(child.stdin.?, &amp;metadata.?, &amp;sub_prog_node);</span>
-<span class="line" id="L1132">            },</span>
-<span class="line" id="L1133">            <span class="tok-kw">else</span> =&gt; {}, <span class="tok-comment">// ignore other messages</span>
+<span class="line" id="L1051">    <span class="tok-kw">var</span> log_err_count: <span class="tok-type">u32</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1052"></span>
+<span class="line" id="L1053">    <span class="tok-kw">var</span> metadata: ?TestMetadata = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1054"></span>
+<span class="line" id="L1055">    <span class="tok-kw">var</span> sub_prog_node: ?std.Progress.Node = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1056">    <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (sub_prog_node) |*n| n.end();</span>
+<span class="line" id="L1057"></span>
+<span class="line" id="L1058">    poll: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1059">        <span class="tok-kw">while</span> (stdout.readableLength() &lt; <span class="tok-builtin">@sizeOf</span>(Header)) {</span>
+<span class="line" id="L1060">            <span class="tok-kw">if</span> (!(<span class="tok-kw">try</span> poller.poll())) <span class="tok-kw">break</span> :poll;</span>
+<span class="line" id="L1061">        }</span>
+<span class="line" id="L1062">        <span class="tok-kw">const</span> header = stdout.reader().readStruct(Header) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1063">        <span class="tok-kw">while</span> (stdout.readableLength() &lt; header.bytes_len) {</span>
+<span class="line" id="L1064">            <span class="tok-kw">if</span> (!(<span class="tok-kw">try</span> poller.poll())) <span class="tok-kw">break</span> :poll;</span>
+<span class="line" id="L1065">        }</span>
+<span class="line" id="L1066">        <span class="tok-kw">const</span> body = stdout.readableSliceOfLen(header.bytes_len);</span>
+<span class="line" id="L1067"></span>
+<span class="line" id="L1068">        <span class="tok-kw">switch</span> (header.tag) {</span>
+<span class="line" id="L1069">            .zig_version =&gt; {</span>
+<span class="line" id="L1070">                <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, builtin.zig_version_string, body)) {</span>
+<span class="line" id="L1071">                    <span class="tok-kw">return</span> self.step.fail(</span>
+<span class="line" id="L1072">                        <span class="tok-str">&quot;zig version mismatch build runner vs compiler: '{s}' vs '{s}'&quot;</span>,</span>
+<span class="line" id="L1073">                        .{ builtin.zig_version_string, body },</span>
+<span class="line" id="L1074">                    );</span>
+<span class="line" id="L1075">                }</span>
+<span class="line" id="L1076">            },</span>
+<span class="line" id="L1077">            .test_metadata =&gt; {</span>
+<span class="line" id="L1078">                <span class="tok-kw">const</span> TmHdr = std.zig.Server.Message.TestMetadata;</span>
+<span class="line" id="L1079">                <span class="tok-kw">const</span> tm_hdr = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> TmHdr, <span class="tok-builtin">@ptrCast</span>(body));</span>
+<span class="line" id="L1080">                test_count = tm_hdr.tests_len;</span>
+<span class="line" id="L1081"></span>
+<span class="line" id="L1082">                <span class="tok-kw">const</span> names_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr)..][<span class="tok-number">0</span> .. test_count * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>)];</span>
+<span class="line" id="L1083">                <span class="tok-kw">const</span> async_frame_lens_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr) + names_bytes.len ..][<span class="tok-number">0</span> .. test_count * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>)];</span>
+<span class="line" id="L1084">                <span class="tok-kw">const</span> expected_panic_msgs_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr) + names_bytes.len + async_frame_lens_bytes.len ..][<span class="tok-number">0</span> .. test_count * <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">u32</span>)];</span>
+<span class="line" id="L1085">                <span class="tok-kw">const</span> string_bytes = body[<span class="tok-builtin">@sizeOf</span>(TmHdr) + names_bytes.len + async_frame_lens_bytes.len + expected_panic_msgs_bytes.len ..][<span class="tok-number">0</span>..tm_hdr.string_bytes_len];</span>
+<span class="line" id="L1086"></span>
+<span class="line" id="L1087">                <span class="tok-kw">const</span> names = std.mem.bytesAsSlice(<span class="tok-type">u32</span>, names_bytes);</span>
+<span class="line" id="L1088">                <span class="tok-kw">const</span> async_frame_lens = std.mem.bytesAsSlice(<span class="tok-type">u32</span>, async_frame_lens_bytes);</span>
+<span class="line" id="L1089">                <span class="tok-kw">const</span> expected_panic_msgs = std.mem.bytesAsSlice(<span class="tok-type">u32</span>, expected_panic_msgs_bytes);</span>
+<span class="line" id="L1090">                <span class="tok-kw">const</span> names_aligned = <span class="tok-kw">try</span> arena.alloc(<span class="tok-type">u32</span>, names.len);</span>
+<span class="line" id="L1091">                <span class="tok-kw">for</span> (names_aligned, names) |*dest, src| dest.* = src;</span>
+<span class="line" id="L1092"></span>
+<span class="line" id="L1093">                <span class="tok-kw">const</span> async_frame_lens_aligned = <span class="tok-kw">try</span> arena.alloc(<span class="tok-type">u32</span>, async_frame_lens.len);</span>
+<span class="line" id="L1094">                <span class="tok-kw">for</span> (async_frame_lens_aligned, async_frame_lens) |*dest, src| dest.* = src;</span>
+<span class="line" id="L1095"></span>
+<span class="line" id="L1096">                <span class="tok-kw">const</span> expected_panic_msgs_aligned = <span class="tok-kw">try</span> arena.alloc(<span class="tok-type">u32</span>, expected_panic_msgs.len);</span>
+<span class="line" id="L1097">                <span class="tok-kw">for</span> (expected_panic_msgs_aligned, expected_panic_msgs) |*dest, src| dest.* = src;</span>
+<span class="line" id="L1098"></span>
+<span class="line" id="L1099">                prog_node.setEstimatedTotalItems(names.len);</span>
+<span class="line" id="L1100">                metadata = .{</span>
+<span class="line" id="L1101">                    .string_bytes = <span class="tok-kw">try</span> arena.dupe(<span class="tok-type">u8</span>, string_bytes),</span>
+<span class="line" id="L1102">                    .names = names_aligned,</span>
+<span class="line" id="L1103">                    .async_frame_lens = async_frame_lens_aligned,</span>
+<span class="line" id="L1104">                    .expected_panic_msgs = expected_panic_msgs_aligned,</span>
+<span class="line" id="L1105">                    .next_index = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1106">                    .prog_node = prog_node,</span>
+<span class="line" id="L1107">                };</span>
+<span class="line" id="L1108"></span>
+<span class="line" id="L1109">                <span class="tok-kw">try</span> requestNextTest(child.stdin.?, &amp;metadata.?, &amp;sub_prog_node);</span>
+<span class="line" id="L1110">            },</span>
+<span class="line" id="L1111">            .test_results =&gt; {</span>
+<span class="line" id="L1112">                <span class="tok-kw">const</span> md = metadata.?;</span>
+<span class="line" id="L1113"></span>
+<span class="line" id="L1114">                <span class="tok-kw">const</span> TrHdr = std.zig.Server.Message.TestResults;</span>
+<span class="line" id="L1115">                <span class="tok-kw">const</span> tr_hdr = <span class="tok-builtin">@as</span>(*<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> TrHdr, <span class="tok-builtin">@ptrCast</span>(body));</span>
+<span class="line" id="L1116">                fail_count +|= <span class="tok-builtin">@intFromBool</span>(tr_hdr.flags.fail);</span>
+<span class="line" id="L1117">                skip_count +|= <span class="tok-builtin">@intFromBool</span>(tr_hdr.flags.skip);</span>
+<span class="line" id="L1118">                leak_count +|= <span class="tok-builtin">@intFromBool</span>(tr_hdr.flags.leak);</span>
+<span class="line" id="L1119">                log_err_count +|= tr_hdr.flags.log_err_count;</span>
+<span class="line" id="L1120"></span>
+<span class="line" id="L1121">                <span class="tok-kw">if</span> (tr_hdr.flags.fail <span class="tok-kw">or</span> tr_hdr.flags.leak <span class="tok-kw">or</span> tr_hdr.flags.log_err_count &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1122">                    <span class="tok-kw">const</span> name = std.mem.sliceTo(md.string_bytes[md.names[tr_hdr.index]..], <span class="tok-number">0</span>);</span>
+<span class="line" id="L1123">                    <span class="tok-kw">const</span> msg = std.mem.trim(<span class="tok-type">u8</span>, stderr.readableSlice(<span class="tok-number">0</span>), <span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L1124">                    <span class="tok-kw">const</span> label = <span class="tok-kw">if</span> (tr_hdr.flags.fail)</span>
+<span class="line" id="L1125">                        <span class="tok-str">&quot;failed&quot;</span></span>
+<span class="line" id="L1126">                    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (tr_hdr.flags.leak)</span>
+<span class="line" id="L1127">                        <span class="tok-str">&quot;leaked&quot;</span></span>
+<span class="line" id="L1128">                    <span class="tok-kw">else</span> <span class="tok-kw">if</span> (tr_hdr.flags.log_err_count &gt; <span class="tok-number">0</span>)</span>
+<span class="line" id="L1129">                        <span class="tok-str">&quot;logged errors&quot;</span></span>
+<span class="line" id="L1130">                    <span class="tok-kw">else</span></span>
+<span class="line" id="L1131">                        <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1132">                    <span class="tok-kw">if</span> (msg.len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1133">                        <span class="tok-kw">try</span> self.step.addError(<span class="tok-str">&quot;'{s}' {s}: {s}&quot;</span>, .{ name, label, msg });</span>
+<span class="line" id="L1134">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1135">                        <span class="tok-kw">try</span> self.step.addError(<span class="tok-str">&quot;'{s}' {s}&quot;</span>, .{ name, label });</span>
+<span class="line" id="L1136">                    }</span>
+<span class="line" id="L1137">                    stderr.discard(msg.len);</span>
+<span class="line" id="L1138">                }</span>
+<span class="line" id="L1139"></span>
+<span class="line" id="L1140">                <span class="tok-kw">try</span> requestNextTest(child.stdin.?, &amp;metadata.?, &amp;sub_prog_node);</span>
+<span class="line" id="L1141">            },</span>
+<span class="line" id="L1142">            <span class="tok-kw">else</span> =&gt; {}, <span class="tok-comment">// ignore other messages</span>
 </span>
-<span class="line" id="L1134">        }</span>
-<span class="line" id="L1135"></span>
-<span class="line" id="L1136">        stdout.discard(body.len);</span>
-<span class="line" id="L1137">    }</span>
-<span class="line" id="L1138"></span>
-<span class="line" id="L1139">    <span class="tok-kw">if</span> (stderr.readableLength() &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1140">        <span class="tok-kw">const</span> msg = std.mem.trim(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> stderr.toOwnedSlice(), <span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L1141">        <span class="tok-kw">if</span> (msg.len &gt; <span class="tok-number">0</span>) <span class="tok-kw">try</span> self.step.result_error_msgs.append(arena, msg);</span>
-<span class="line" id="L1142">    }</span>
-<span class="line" id="L1143"></span>
-<span class="line" id="L1144">    <span class="tok-comment">// Send EOF to stdin.</span>
-</span>
-<span class="line" id="L1145">    child.stdin.?.close();</span>
-<span class="line" id="L1146">    child.stdin = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1143">        }</span>
+<span class="line" id="L1144"></span>
+<span class="line" id="L1145">        stdout.discard(body.len);</span>
+<span class="line" id="L1146">    }</span>
 <span class="line" id="L1147"></span>
-<span class="line" id="L1148">    <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1149">        .stdout = <span class="tok-null">null</span>,</span>
-<span class="line" id="L1150">        .stderr = <span class="tok-null">null</span>,</span>
-<span class="line" id="L1151">        .test_results = .{</span>
-<span class="line" id="L1152">            .test_count = test_count,</span>
-<span class="line" id="L1153">            .fail_count = fail_count,</span>
-<span class="line" id="L1154">            .skip_count = skip_count,</span>
-<span class="line" id="L1155">            .leak_count = leak_count,</span>
-<span class="line" id="L1156">        },</span>
-<span class="line" id="L1157">        .test_metadata = metadata,</span>
-<span class="line" id="L1158">    };</span>
-<span class="line" id="L1159">}</span>
-<span class="line" id="L1160"></span>
-<span class="line" id="L1161"><span class="tok-kw">const</span> TestMetadata = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1162">    names: []<span class="tok-kw">const</span> <span class="tok-type">u32</span>,</span>
-<span class="line" id="L1163">    async_frame_lens: []<span class="tok-kw">const</span> <span class="tok-type">u32</span>,</span>
-<span class="line" id="L1164">    expected_panic_msgs: []<span class="tok-kw">const</span> <span class="tok-type">u32</span>,</span>
-<span class="line" id="L1165">    string_bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1166">    next_index: <span class="tok-type">u32</span>,</span>
-<span class="line" id="L1167">    prog_node: *std.Progress.Node,</span>
-<span class="line" id="L1168"></span>
-<span class="line" id="L1169">    <span class="tok-kw">fn</span> <span class="tok-fn">testName</span>(tm: TestMetadata, index: <span class="tok-type">u32</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L1170">        <span class="tok-kw">return</span> std.mem.sliceTo(tm.string_bytes[tm.names[index]..], <span class="tok-number">0</span>);</span>
-<span class="line" id="L1171">    }</span>
-<span class="line" id="L1172">};</span>
-<span class="line" id="L1173"></span>
-<span class="line" id="L1174"><span class="tok-kw">fn</span> <span class="tok-fn">requestNextTest</span>(in: fs.File, metadata: *TestMetadata, sub_prog_node: *?std.Progress.Node) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1175">    <span class="tok-kw">while</span> (metadata.next_index &lt; metadata.names.len) {</span>
-<span class="line" id="L1176">        <span class="tok-kw">const</span> i = metadata.next_index;</span>
-<span class="line" id="L1177">        metadata.next_index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1178"></span>
-<span class="line" id="L1179">        <span class="tok-kw">if</span> (metadata.async_frame_lens[i] != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1180">        <span class="tok-kw">if</span> (metadata.expected_panic_msgs[i] != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1181"></span>
-<span class="line" id="L1182">        <span class="tok-kw">const</span> name = metadata.testName(i);</span>
-<span class="line" id="L1183">        <span class="tok-kw">if</span> (sub_prog_node.*) |*n| n.end();</span>
-<span class="line" id="L1184">        sub_prog_node.* = metadata.prog_node.start(name, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1185"></span>
-<span class="line" id="L1186">        <span class="tok-kw">try</span> sendRunTestMessage(in, i);</span>
-<span class="line" id="L1187">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1188">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1189">        <span class="tok-kw">try</span> sendMessage(in, .exit);</span>
-<span class="line" id="L1190">    }</span>
-<span class="line" id="L1191">}</span>
-<span class="line" id="L1192"></span>
-<span class="line" id="L1193"><span class="tok-kw">fn</span> <span class="tok-fn">sendMessage</span>(file: std.fs.File, tag: std.zig.Client.Message.Tag) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1194">    <span class="tok-kw">const</span> header: std.zig.Client.Message.Header = .{</span>
-<span class="line" id="L1195">        .tag = tag,</span>
-<span class="line" id="L1196">        .bytes_len = <span class="tok-number">0</span>,</span>
-<span class="line" id="L1197">    };</span>
-<span class="line" id="L1198">    <span class="tok-kw">try</span> file.writeAll(std.mem.asBytes(&amp;header));</span>
-<span class="line" id="L1199">}</span>
-<span class="line" id="L1200"></span>
-<span class="line" id="L1201"><span class="tok-kw">fn</span> <span class="tok-fn">sendRunTestMessage</span>(file: std.fs.File, index: <span class="tok-type">u32</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1202">    <span class="tok-kw">const</span> header: std.zig.Client.Message.Header = .{</span>
-<span class="line" id="L1203">        .tag = .run_test,</span>
-<span class="line" id="L1204">        .bytes_len = <span class="tok-number">4</span>,</span>
-<span class="line" id="L1205">    };</span>
-<span class="line" id="L1206">    <span class="tok-kw">const</span> full_msg = std.mem.asBytes(&amp;header) ++ std.mem.asBytes(&amp;index);</span>
-<span class="line" id="L1207">    <span class="tok-kw">try</span> file.writeAll(full_msg);</span>
-<span class="line" id="L1208">}</span>
-<span class="line" id="L1209"></span>
-<span class="line" id="L1210"><span class="tok-kw">fn</span> <span class="tok-fn">evalGeneric</span>(self: *Run, child: *std.process.Child) !StdIoResult {</span>
-<span class="line" id="L1211">    <span class="tok-kw">const</span> arena = self.step.owner.allocator;</span>
-<span class="line" id="L1212"></span>
-<span class="line" id="L1213">    <span class="tok-kw">switch</span> (self.stdin) {</span>
-<span class="line" id="L1214">        .bytes =&gt; |bytes| {</span>
-<span class="line" id="L1215">            child.stdin.?.writeAll(bytes) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L1216">                <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to write stdin: {s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L1217">            };</span>
-<span class="line" id="L1218">            child.stdin.?.close();</span>
-<span class="line" id="L1219">            child.stdin = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1220">        },</span>
-<span class="line" id="L1221">        .lazy_path =&gt; |lazy_path| {</span>
-<span class="line" id="L1222">            <span class="tok-kw">const</span> path = lazy_path.getPath(self.step.owner);</span>
-<span class="line" id="L1223">            <span class="tok-kw">const</span> file = self.step.owner.build_root.handle.openFile(path, .{}) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L1224">                <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to open stdin file: {s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L1225">            };</span>
-<span class="line" id="L1226">            <span class="tok-kw">defer</span> file.close();</span>
-<span class="line" id="L1227">            child.stdin.?.writeFileAll(file, .{}) <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L1228">                <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to write file to stdin: {s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L1229">            };</span>
-<span class="line" id="L1230">            child.stdin.?.close();</span>
-<span class="line" id="L1231">            child.stdin = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1232">        },</span>
-<span class="line" id="L1233">        .none =&gt; {},</span>
-<span class="line" id="L1234">    }</span>
-<span class="line" id="L1235"></span>
-<span class="line" id="L1236">    <span class="tok-kw">var</span> stdout_bytes: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1237">    <span class="tok-kw">var</span> stderr_bytes: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1238"></span>
-<span class="line" id="L1239">    <span class="tok-kw">if</span> (child.stdout) |stdout| {</span>
-<span class="line" id="L1240">        <span class="tok-kw">if</span> (child.stderr) |stderr| {</span>
-<span class="line" id="L1241">            <span class="tok-kw">var</span> poller = std.io.poll(arena, <span class="tok-kw">enum</span> { stdout, stderr }, .{</span>
-<span class="line" id="L1242">                .stdout = stdout,</span>
-<span class="line" id="L1243">                .stderr = stderr,</span>
-<span class="line" id="L1244">            });</span>
-<span class="line" id="L1245">            <span class="tok-kw">defer</span> poller.deinit();</span>
-<span class="line" id="L1246"></span>
-<span class="line" id="L1247">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> poller.poll()) {</span>
-<span class="line" id="L1248">                <span class="tok-kw">if</span> (poller.fifo(.stdout).count &gt; self.max_stdio_size)</span>
-<span class="line" id="L1249">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.StdoutStreamTooLong;</span>
-<span class="line" id="L1250">                <span class="tok-kw">if</span> (poller.fifo(.stderr).count &gt; self.max_stdio_size)</span>
-<span class="line" id="L1251">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.StderrStreamTooLong;</span>
-<span class="line" id="L1252">            }</span>
-<span class="line" id="L1253"></span>
-<span class="line" id="L1254">            stdout_bytes = <span class="tok-kw">try</span> poller.fifo(.stdout).toOwnedSlice();</span>
-<span class="line" id="L1255">            stderr_bytes = <span class="tok-kw">try</span> poller.fifo(.stderr).toOwnedSlice();</span>
-<span class="line" id="L1256">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1257">            stdout_bytes = <span class="tok-kw">try</span> stdout.reader().readAllAlloc(arena, self.max_stdio_size);</span>
-<span class="line" id="L1258">        }</span>
-<span class="line" id="L1259">    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (child.stderr) |stderr| {</span>
-<span class="line" id="L1260">        stderr_bytes = <span class="tok-kw">try</span> stderr.reader().readAllAlloc(arena, self.max_stdio_size);</span>
-<span class="line" id="L1261">    }</span>
-<span class="line" id="L1262"></span>
-<span class="line" id="L1263">    <span class="tok-kw">if</span> (stderr_bytes) |bytes| <span class="tok-kw">if</span> (bytes.len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1264">        <span class="tok-comment">// Treat stderr as an error message.</span>
+<span class="line" id="L1148">    <span class="tok-kw">if</span> (stderr.readableLength() &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1149">        <span class="tok-kw">const</span> msg = std.mem.trim(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> stderr.toOwnedSlice(), <span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L1150">        <span class="tok-kw">if</span> (msg.len &gt; <span class="tok-number">0</span>) <span class="tok-kw">try</span> self.step.result_error_msgs.append(arena, msg);</span>
+<span class="line" id="L1151">    }</span>
+<span class="line" id="L1152"></span>
+<span class="line" id="L1153">    <span class="tok-comment">// Send EOF to stdin.</span>
 </span>
-<span class="line" id="L1265">        <span class="tok-kw">const</span> stderr_is_diagnostic = self.captured_stderr == <span class="tok-null">null</span> <span class="tok-kw">and</span> <span class="tok-kw">switch</span> (self.stdio) {</span>
-<span class="line" id="L1266">            .check =&gt; |checks| !checksContainStderr(checks.items),</span>
-<span class="line" id="L1267">            <span class="tok-kw">else</span> =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L1268">        };</span>
-<span class="line" id="L1269">        <span class="tok-kw">if</span> (stderr_is_diagnostic) {</span>
-<span class="line" id="L1270">            <span class="tok-kw">try</span> self.step.result_error_msgs.append(arena, bytes);</span>
-<span class="line" id="L1271">        }</span>
-<span class="line" id="L1272">    };</span>
-<span class="line" id="L1273"></span>
-<span class="line" id="L1274">    <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1275">        .stdout = stdout_bytes,</span>
-<span class="line" id="L1276">        .stderr = stderr_bytes,</span>
-<span class="line" id="L1277">        .test_results = .{},</span>
-<span class="line" id="L1278">        .test_metadata = <span class="tok-null">null</span>,</span>
-<span class="line" id="L1279">    };</span>
-<span class="line" id="L1280">}</span>
-<span class="line" id="L1281"></span>
-<span class="line" id="L1282"><span class="tok-kw">fn</span> <span class="tok-fn">addPathForDynLibs</span>(self: *Run, artifact: *Step.Compile) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1283">    <span class="tok-kw">const</span> b = self.step.owner;</span>
-<span class="line" id="L1284">    <span class="tok-kw">for</span> (artifact.link_objects.items) |link_object| {</span>
-<span class="line" id="L1285">        <span class="tok-kw">switch</span> (link_object) {</span>
-<span class="line" id="L1286">            .other_step =&gt; |other| {</span>
-<span class="line" id="L1287">                <span class="tok-kw">if</span> (other.target.isWindows() <span class="tok-kw">and</span> other.isDynamicLibrary()) {</span>
-<span class="line" id="L1288">                    addPathDir(self, fs.path.dirname(other.getEmittedBin().getPath(b)).?);</span>
-<span class="line" id="L1289">                    addPathForDynLibs(self, other);</span>
-<span class="line" id="L1290">                }</span>
-<span class="line" id="L1291">            },</span>
-<span class="line" id="L1292">            <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L1293">        }</span>
-<span class="line" id="L1294">    }</span>
-<span class="line" id="L1295">}</span>
-<span class="line" id="L1296"></span>
-<span class="line" id="L1297"><span class="tok-kw">fn</span> <span class="tok-fn">failForeign</span>(</span>
-<span class="line" id="L1298">    self: *Run,</span>
-<span class="line" id="L1299">    suggested_flag: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1300">    argv0: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1301">    exe: *Step.Compile,</span>
-<span class="line" id="L1302">) <span class="tok-kw">error</span>{ MakeFailed, MakeSkipped, OutOfMemory } {</span>
-<span class="line" id="L1303">    <span class="tok-kw">switch</span> (self.stdio) {</span>
-<span class="line" id="L1304">        .check, .zig_test =&gt; {</span>
-<span class="line" id="L1305">            <span class="tok-kw">if</span> (self.skip_foreign_checks)</span>
-<span class="line" id="L1306">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MakeSkipped;</span>
-<span class="line" id="L1307"></span>
-<span class="line" id="L1308">            <span class="tok-kw">const</span> b = self.step.owner;</span>
-<span class="line" id="L1309">            <span class="tok-kw">const</span> host_name = <span class="tok-kw">try</span> b.host.target.zigTriple(b.allocator);</span>
-<span class="line" id="L1310">            <span class="tok-kw">const</span> foreign_name = <span class="tok-kw">try</span> exe.target.zigTriple(b.allocator);</span>
-<span class="line" id="L1311"></span>
-<span class="line" id="L1312">            <span class="tok-kw">return</span> self.step.fail(</span>
-<span class="line" id="L1313">                <span class="tok-str">\\unable to spawn foreign binary '{s}' ({s}) on host system ({s})</span></span>
+<span class="line" id="L1154">    child.stdin.?.close();</span>
+<span class="line" id="L1155">    child.stdin = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1156"></span>
+<span class="line" id="L1157">    <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1158">        .stdout = <span class="tok-null">null</span>,</span>
+<span class="line" id="L1159">        .stderr = <span class="tok-null">null</span>,</span>
+<span class="line" id="L1160">        .test_results = .{</span>
+<span class="line" id="L1161">            .test_count = test_count,</span>
+<span class="line" id="L1162">            .fail_count = fail_count,</span>
+<span class="line" id="L1163">            .skip_count = skip_count,</span>
+<span class="line" id="L1164">            .leak_count = leak_count,</span>
+<span class="line" id="L1165">            .log_err_count = log_err_count,</span>
+<span class="line" id="L1166">        },</span>
+<span class="line" id="L1167">        .test_metadata = metadata,</span>
+<span class="line" id="L1168">    };</span>
+<span class="line" id="L1169">}</span>
+<span class="line" id="L1170"></span>
+<span class="line" id="L1171"><span class="tok-kw">const</span> TestMetadata = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1172">    names: []<span class="tok-kw">const</span> <span class="tok-type">u32</span>,</span>
+<span class="line" id="L1173">    async_frame_lens: []<span class="tok-kw">const</span> <span class="tok-type">u32</span>,</span>
+<span class="line" id="L1174">    expected_panic_msgs: []<span class="tok-kw">const</span> <span class="tok-type">u32</span>,</span>
+<span class="line" id="L1175">    string_bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1176">    next_index: <span class="tok-type">u32</span>,</span>
+<span class="line" id="L1177">    prog_node: *std.Progress.Node,</span>
+<span class="line" id="L1178"></span>
+<span class="line" id="L1179">    <span class="tok-kw">fn</span> <span class="tok-fn">testName</span>(tm: TestMetadata, index: <span class="tok-type">u32</span>) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1180">        <span class="tok-kw">return</span> std.mem.sliceTo(tm.string_bytes[tm.names[index]..], <span class="tok-number">0</span>);</span>
+<span class="line" id="L1181">    }</span>
+<span class="line" id="L1182">};</span>
+<span class="line" id="L1183"></span>
+<span class="line" id="L1184"><span class="tok-kw">fn</span> <span class="tok-fn">requestNextTest</span>(in: fs.File, metadata: *TestMetadata, sub_prog_node: *?std.Progress.Node) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1185">    <span class="tok-kw">while</span> (metadata.next_index &lt; metadata.names.len) {</span>
+<span class="line" id="L1186">        <span class="tok-kw">const</span> i = metadata.next_index;</span>
+<span class="line" id="L1187">        metadata.next_index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1188"></span>
+<span class="line" id="L1189">        <span class="tok-kw">if</span> (metadata.async_frame_lens[i] != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1190">        <span class="tok-kw">if</span> (metadata.expected_panic_msgs[i] != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1191"></span>
+<span class="line" id="L1192">        <span class="tok-kw">const</span> name = metadata.testName(i);</span>
+<span class="line" id="L1193">        <span class="tok-kw">if</span> (sub_prog_node.*) |*n| n.end();</span>
+<span class="line" id="L1194">        sub_prog_node.* = metadata.prog_node.start(name, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1195"></span>
+<span class="line" id="L1196">        <span class="tok-kw">try</span> sendRunTestMessage(in, i);</span>
+<span class="line" id="L1197">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1198">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1199">        <span class="tok-kw">try</span> sendMessage(in, .exit);</span>
+<span class="line" id="L1200">    }</span>
+<span class="line" id="L1201">}</span>
+<span class="line" id="L1202"></span>
+<span class="line" id="L1203"><span class="tok-kw">fn</span> <span class="tok-fn">sendMessage</span>(file: std.fs.File, tag: std.zig.Client.Message.Tag) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1204">    <span class="tok-kw">const</span> header: std.zig.Client.Message.Header = .{</span>
+<span class="line" id="L1205">        .tag = tag,</span>
+<span class="line" id="L1206">        .bytes_len = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1207">    };</span>
+<span class="line" id="L1208">    <span class="tok-kw">try</span> file.writeAll(std.mem.asBytes(&amp;header));</span>
+<span class="line" id="L1209">}</span>
+<span class="line" id="L1210"></span>
+<span class="line" id="L1211"><span class="tok-kw">fn</span> <span class="tok-fn">sendRunTestMessage</span>(file: std.fs.File, index: <span class="tok-type">u32</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1212">    <span class="tok-kw">const</span> header: std.zig.Client.Message.Header = .{</span>
+<span class="line" id="L1213">        .tag = .run_test,</span>
+<span class="line" id="L1214">        .bytes_len = <span class="tok-number">4</span>,</span>
+<span class="line" id="L1215">    };</span>
+<span class="line" id="L1216">    <span class="tok-kw">const</span> full_msg = std.mem.asBytes(&amp;header) ++ std.mem.asBytes(&amp;index);</span>
+<span class="line" id="L1217">    <span class="tok-kw">try</span> file.writeAll(full_msg);</span>
+<span class="line" id="L1218">}</span>
+<span class="line" id="L1219"></span>
+<span class="line" id="L1220"><span class="tok-kw">fn</span> <span class="tok-fn">evalGeneric</span>(self: *Run, child: *std.process.Child) !StdIoResult {</span>
+<span class="line" id="L1221">    <span class="tok-kw">const</span> arena = self.step.owner.allocator;</span>
+<span class="line" id="L1222"></span>
+<span class="line" id="L1223">    <span class="tok-kw">switch</span> (self.stdin) {</span>
+<span class="line" id="L1224">        .bytes =&gt; |bytes| {</span>
+<span class="line" id="L1225">            child.stdin.?.writeAll(bytes) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L1226">                <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to write stdin: {s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L1227">            };</span>
+<span class="line" id="L1228">            child.stdin.?.close();</span>
+<span class="line" id="L1229">            child.stdin = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1230">        },</span>
+<span class="line" id="L1231">        .lazy_path =&gt; |lazy_path| {</span>
+<span class="line" id="L1232">            <span class="tok-kw">const</span> path = lazy_path.getPath(self.step.owner);</span>
+<span class="line" id="L1233">            <span class="tok-kw">const</span> file = self.step.owner.build_root.handle.openFile(path, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L1234">                <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to open stdin file: {s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L1235">            };</span>
+<span class="line" id="L1236">            <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L1237">            child.stdin.?.writeFileAll(file, .{}) <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L1238">                <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to write file to stdin: {s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L1239">            };</span>
+<span class="line" id="L1240">            child.stdin.?.close();</span>
+<span class="line" id="L1241">            child.stdin = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1242">        },</span>
+<span class="line" id="L1243">        .none =&gt; {},</span>
+<span class="line" id="L1244">    }</span>
+<span class="line" id="L1245"></span>
+<span class="line" id="L1246">    <span class="tok-kw">var</span> stdout_bytes: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1247">    <span class="tok-kw">var</span> stderr_bytes: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1248"></span>
+<span class="line" id="L1249">    <span class="tok-kw">if</span> (child.stdout) |stdout| {</span>
+<span class="line" id="L1250">        <span class="tok-kw">if</span> (child.stderr) |stderr| {</span>
+<span class="line" id="L1251">            <span class="tok-kw">var</span> poller = std.io.poll(arena, <span class="tok-kw">enum</span> { stdout, stderr }, .{</span>
+<span class="line" id="L1252">                .stdout = stdout,</span>
+<span class="line" id="L1253">                .stderr = stderr,</span>
+<span class="line" id="L1254">            });</span>
+<span class="line" id="L1255">            <span class="tok-kw">defer</span> poller.deinit();</span>
+<span class="line" id="L1256"></span>
+<span class="line" id="L1257">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> poller.poll()) {</span>
+<span class="line" id="L1258">                <span class="tok-kw">if</span> (poller.fifo(.stdout).count &gt; self.max_stdio_size)</span>
+<span class="line" id="L1259">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.StdoutStreamTooLong;</span>
+<span class="line" id="L1260">                <span class="tok-kw">if</span> (poller.fifo(.stderr).count &gt; self.max_stdio_size)</span>
+<span class="line" id="L1261">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.StderrStreamTooLong;</span>
+<span class="line" id="L1262">            }</span>
+<span class="line" id="L1263"></span>
+<span class="line" id="L1264">            stdout_bytes = <span class="tok-kw">try</span> poller.fifo(.stdout).toOwnedSlice();</span>
+<span class="line" id="L1265">            stderr_bytes = <span class="tok-kw">try</span> poller.fifo(.stderr).toOwnedSlice();</span>
+<span class="line" id="L1266">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1267">            stdout_bytes = <span class="tok-kw">try</span> stdout.reader().readAllAlloc(arena, self.max_stdio_size);</span>
+<span class="line" id="L1268">        }</span>
+<span class="line" id="L1269">    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (child.stderr) |stderr| {</span>
+<span class="line" id="L1270">        stderr_bytes = <span class="tok-kw">try</span> stderr.reader().readAllAlloc(arena, self.max_stdio_size);</span>
+<span class="line" id="L1271">    }</span>
+<span class="line" id="L1272"></span>
+<span class="line" id="L1273">    <span class="tok-kw">if</span> (stderr_bytes) |bytes| <span class="tok-kw">if</span> (bytes.len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1274">        <span class="tok-comment">// Treat stderr as an error message.</span>
+</span>
+<span class="line" id="L1275">        <span class="tok-kw">const</span> stderr_is_diagnostic = self.captured_stderr == <span class="tok-null">null</span> <span class="tok-kw">and</span> <span class="tok-kw">switch</span> (self.stdio) {</span>
+<span class="line" id="L1276">            .check =&gt; |checks| !checksContainStderr(checks.items),</span>
+<span class="line" id="L1277">            <span class="tok-kw">else</span> =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L1278">        };</span>
+<span class="line" id="L1279">        <span class="tok-kw">if</span> (stderr_is_diagnostic) {</span>
+<span class="line" id="L1280">            <span class="tok-kw">try</span> self.step.result_error_msgs.append(arena, bytes);</span>
+<span class="line" id="L1281">        }</span>
+<span class="line" id="L1282">    };</span>
+<span class="line" id="L1283"></span>
+<span class="line" id="L1284">    <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L1285">        .stdout = stdout_bytes,</span>
+<span class="line" id="L1286">        .stderr = stderr_bytes,</span>
+<span class="line" id="L1287">        .test_results = .{},</span>
+<span class="line" id="L1288">        .test_metadata = <span class="tok-null">null</span>,</span>
+<span class="line" id="L1289">    };</span>
+<span class="line" id="L1290">}</span>
+<span class="line" id="L1291"></span>
+<span class="line" id="L1292"><span class="tok-kw">fn</span> <span class="tok-fn">addPathForDynLibs</span>(self: *Run, artifact: *Step.Compile) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1293">    <span class="tok-kw">const</span> b = self.step.owner;</span>
+<span class="line" id="L1294">    <span class="tok-kw">for</span> (artifact.link_objects.items) |link_object| {</span>
+<span class="line" id="L1295">        <span class="tok-kw">switch</span> (link_object) {</span>
+<span class="line" id="L1296">            .other_step =&gt; |other| {</span>
+<span class="line" id="L1297">                <span class="tok-kw">if</span> (other.target.isWindows() <span class="tok-kw">and</span> other.isDynamicLibrary()) {</span>
+<span class="line" id="L1298">                    addPathDir(self, fs.path.dirname(other.getEmittedBin().getPath(b)).?);</span>
+<span class="line" id="L1299">                    addPathForDynLibs(self, other);</span>
+<span class="line" id="L1300">                }</span>
+<span class="line" id="L1301">            },</span>
+<span class="line" id="L1302">            <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L1303">        }</span>
+<span class="line" id="L1304">    }</span>
+<span class="line" id="L1305">}</span>
+<span class="line" id="L1306"></span>
+<span class="line" id="L1307"><span class="tok-kw">fn</span> <span class="tok-fn">failForeign</span>(</span>
+<span class="line" id="L1308">    self: *Run,</span>
+<span class="line" id="L1309">    suggested_flag: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1310">    argv0: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1311">    exe: *Step.Compile,</span>
+<span class="line" id="L1312">) <span class="tok-kw">error</span>{ MakeFailed, MakeSkipped, OutOfMemory } {</span>
+<span class="line" id="L1313">    <span class="tok-kw">switch</span> (self.stdio) {</span>
+<span class="line" id="L1314">        .check, .zig_test =&gt; {</span>
+<span class="line" id="L1315">            <span class="tok-kw">if</span> (self.skip_foreign_checks)</span>
+<span class="line" id="L1316">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MakeSkipped;</span>
+<span class="line" id="L1317"></span>
+<span class="line" id="L1318">            <span class="tok-kw">const</span> b = self.step.owner;</span>
+<span class="line" id="L1319">            <span class="tok-kw">const</span> host_name = <span class="tok-kw">try</span> b.host.target.zigTriple(b.allocator);</span>
+<span class="line" id="L1320">            <span class="tok-kw">const</span> foreign_name = <span class="tok-kw">try</span> exe.target.zigTriple(b.allocator);</span>
+<span class="line" id="L1321"></span>
+<span class="line" id="L1322">            <span class="tok-kw">return</span> self.step.fail(</span>
+<span class="line" id="L1323">                <span class="tok-str">\\unable to spawn foreign binary '{s}' ({s}) on host system ({s})</span></span>
 
-<span class="line" id="L1314">                <span class="tok-str">\\  consider using {s} or enabling skip_foreign_checks in the Run step</span></span>
+<span class="line" id="L1324">                <span class="tok-str">\\  consider using {s} or enabling skip_foreign_checks in the Run step</span></span>
 
-<span class="line" id="L1315">            , .{ argv0, foreign_name, host_name, suggested_flag });</span>
-<span class="line" id="L1316">        },</span>
-<span class="line" id="L1317">        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1318">            <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to spawn foreign binary '{s}'&quot;</span>, .{argv0});</span>
-<span class="line" id="L1319">        },</span>
-<span class="line" id="L1320">    }</span>
-<span class="line" id="L1321">}</span>
-<span class="line" id="L1322"></span>
-<span class="line" id="L1323"><span class="tok-kw">fn</span> <span class="tok-fn">hashStdIo</span>(hh: *std.Build.Cache.HashHelper, stdio: StdIo) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1324">    <span class="tok-kw">switch</span> (stdio) {</span>
-<span class="line" id="L1325">        .infer_from_args, .inherit, .zig_test =&gt; {},</span>
-<span class="line" id="L1326">        .check =&gt; |checks| <span class="tok-kw">for</span> (checks.items) |check| {</span>
-<span class="line" id="L1327">            hh.add(<span class="tok-builtin">@as</span>(std.meta.Tag(StdIo.Check), check));</span>
-<span class="line" id="L1328">            <span class="tok-kw">switch</span> (check) {</span>
-<span class="line" id="L1329">                .expect_stderr_exact,</span>
-<span class="line" id="L1330">                .expect_stderr_match,</span>
-<span class="line" id="L1331">                .expect_stdout_exact,</span>
-<span class="line" id="L1332">                .expect_stdout_match,</span>
-<span class="line" id="L1333">                =&gt; |s| hh.addBytes(s),</span>
-<span class="line" id="L1334"></span>
-<span class="line" id="L1335">                .expect_term =&gt; |term| {</span>
-<span class="line" id="L1336">                    hh.add(<span class="tok-builtin">@as</span>(std.meta.Tag(std.process.Child.Term), term));</span>
-<span class="line" id="L1337">                    <span class="tok-kw">switch</span> (term) {</span>
-<span class="line" id="L1338">                        .Exited =&gt; |x| hh.add(x),</span>
-<span class="line" id="L1339">                        .Signal, .Stopped, .Unknown =&gt; |x| hh.add(x),</span>
-<span class="line" id="L1340">                    }</span>
-<span class="line" id="L1341">                },</span>
-<span class="line" id="L1342">            }</span>
-<span class="line" id="L1343">        },</span>
-<span class="line" id="L1344">    }</span>
-<span class="line" id="L1345">}</span>
-<span class="line" id="L1346"></span>
+<span class="line" id="L1325">            , .{ argv0, foreign_name, host_name, suggested_flag });</span>
+<span class="line" id="L1326">        },</span>
+<span class="line" id="L1327">        <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1328">            <span class="tok-kw">return</span> self.step.fail(<span class="tok-str">&quot;unable to spawn foreign binary '{s}'&quot;</span>, .{argv0});</span>
+<span class="line" id="L1329">        },</span>
+<span class="line" id="L1330">    }</span>
+<span class="line" id="L1331">}</span>
+<span class="line" id="L1332"></span>
+<span class="line" id="L1333"><span class="tok-kw">fn</span> <span class="tok-fn">hashStdIo</span>(hh: *std.Build.Cache.HashHelper, stdio: StdIo) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1334">    <span class="tok-kw">switch</span> (stdio) {</span>
+<span class="line" id="L1335">        .infer_from_args, .inherit, .zig_test =&gt; {},</span>
+<span class="line" id="L1336">        .check =&gt; |checks| <span class="tok-kw">for</span> (checks.items) |check| {</span>
+<span class="line" id="L1337">            hh.add(<span class="tok-builtin">@as</span>(std.meta.Tag(StdIo.Check), check));</span>
+<span class="line" id="L1338">            <span class="tok-kw">switch</span> (check) {</span>
+<span class="line" id="L1339">                .expect_stderr_exact,</span>
+<span class="line" id="L1340">                .expect_stderr_match,</span>
+<span class="line" id="L1341">                .expect_stdout_exact,</span>
+<span class="line" id="L1342">                .expect_stdout_match,</span>
+<span class="line" id="L1343">                =&gt; |s| hh.addBytes(s),</span>
+<span class="line" id="L1344"></span>
+<span class="line" id="L1345">                .expect_term =&gt; |term| {</span>
+<span class="line" id="L1346">                    hh.add(<span class="tok-builtin">@as</span>(std.meta.Tag(std.process.Child.Term), term));</span>
+<span class="line" id="L1347">                    <span class="tok-kw">switch</span> (term) {</span>
+<span class="line" id="L1348">                        .Exited =&gt; |x| hh.add(x),</span>
+<span class="line" id="L1349">                        .Signal, .Stopped, .Unknown =&gt; |x| hh.add(x),</span>
+<span class="line" id="L1350">                    }</span>
+<span class="line" id="L1351">                },</span>
+<span class="line" id="L1352">            }</span>
+<span class="line" id="L1353">        },</span>
+<span class="line" id="L1354">    }</span>
+<span class="line" id="L1355">}</span>
+<span class="line" id="L1356"></span>
 </code></pre></body>
 </html>
