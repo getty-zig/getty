@@ -240,501 +240,511 @@
 <span class="line" id="L118"></span>
 <span class="line" id="L119">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (std.meta.fields(T)) |field| {</span>
 <span class="line" id="L120">        <span class="tok-kw">if</span> (getty_deserialize(ally, field.<span class="tok-type">type</span>, d)) |value| {</span>
-<span class="line" id="L121">            <span class="tok-kw">var</span> tuva = TransparentUnionVariantAccess(<span class="tok-builtin">@TypeOf</span>(field.name), <span class="tok-builtin">@TypeOf</span>(value)){</span>
-<span class="line" id="L122">                .variant = field.name,</span>
-<span class="line" id="L123">                .payload = value,</span>
-<span class="line" id="L124">            };</span>
-<span class="line" id="L125">            <span class="tok-kw">const</span> ua = tuva.unionAccess();</span>
-<span class="line" id="L126">            <span class="tok-kw">const</span> va = tuva.variantAccess();</span>
-<span class="line" id="L127"></span>
-<span class="line" id="L128">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitUnion(ally, <span class="tok-builtin">@TypeOf</span>(d), ua, va);</span>
-<span class="line" id="L129">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L130">            <span class="tok-kw">error</span>.DuplicateField,</span>
-<span class="line" id="L131">            <span class="tok-kw">error</span>.InvalidLength,</span>
-<span class="line" id="L132">            <span class="tok-kw">error</span>.InvalidType,</span>
-<span class="line" id="L133">            <span class="tok-kw">error</span>.MissingField,</span>
-<span class="line" id="L134">            <span class="tok-kw">error</span>.MissingVariant,</span>
-<span class="line" id="L135">            <span class="tok-kw">error</span>.UnknownField,</span>
-<span class="line" id="L136">            <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L137">            =&gt; {},</span>
-<span class="line" id="L138">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
-<span class="line" id="L139">        }</span>
-<span class="line" id="L140">    }</span>
-<span class="line" id="L141"></span>
-<span class="line" id="L142">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingVariant;</span>
-<span class="line" id="L143">}</span>
-<span class="line" id="L144"></span>
-<span class="line" id="L145"><span class="tok-kw">fn</span> <span class="tok-fn">TransparentUnionVariantAccess</span>(<span class="tok-kw">comptime</span> Variant: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Payload: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L146">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L147">        variant: Variant,</span>
-<span class="line" id="L148">        payload: Payload,</span>
-<span class="line" id="L149"></span>
-<span class="line" id="L150">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L151"></span>
-<span class="line" id="L152">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> UnionAccessInterface(</span>
-<span class="line" id="L153">            Self,</span>
-<span class="line" id="L154">            getty_error,</span>
-<span class="line" id="L155">            .{</span>
-<span class="line" id="L156">                .variantSeed = variantSeed,</span>
-<span class="line" id="L157">                .isVariantAllocated = isAllocated,</span>
-<span class="line" id="L158">            },</span>
-<span class="line" id="L159">        );</span>
-<span class="line" id="L160"></span>
-<span class="line" id="L161">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VariantAccessInterface(</span>
-<span class="line" id="L162">            Self,</span>
-<span class="line" id="L163">            getty_error,</span>
-<span class="line" id="L164">            .{</span>
-<span class="line" id="L165">                .payloadSeed = payloadSeed,</span>
-<span class="line" id="L166">                .isPayloadAllocated = isAllocated,</span>
-<span class="line" id="L167">            },</span>
-<span class="line" id="L168">        );</span>
-<span class="line" id="L169"></span>
-<span class="line" id="L170">        <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: Self, _: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L171">            <span class="tok-kw">return</span> self.variant;</span>
-<span class="line" id="L172">        }</span>
+<span class="line" id="L121">            <span class="tok-kw">errdefer</span> <span class="tok-kw">if</span> (ally) |a| {</span>
+<span class="line" id="L122">                getty_free(a, <span class="tok-builtin">@TypeOf</span>(d), value);</span>
+<span class="line" id="L123">            };</span>
+<span class="line" id="L124"></span>
+<span class="line" id="L125">            <span class="tok-kw">var</span> tuva = TransparentUnionVariantAccess(<span class="tok-builtin">@TypeOf</span>(field.name), <span class="tok-builtin">@TypeOf</span>(value)){</span>
+<span class="line" id="L126">                .variant = field.name,</span>
+<span class="line" id="L127">                .payload = value,</span>
+<span class="line" id="L128">            };</span>
+<span class="line" id="L129">            <span class="tok-kw">const</span> ua = tuva.unionAccess();</span>
+<span class="line" id="L130">            <span class="tok-kw">const</span> va = tuva.variantAccess();</span>
+<span class="line" id="L131"></span>
+<span class="line" id="L132">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitUnion(ally, <span class="tok-builtin">@TypeOf</span>(d), ua, va);</span>
+<span class="line" id="L133">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L134">            <span class="tok-kw">error</span>.DuplicateField,</span>
+<span class="line" id="L135">            <span class="tok-kw">error</span>.InvalidLength,</span>
+<span class="line" id="L136">            <span class="tok-kw">error</span>.InvalidType,</span>
+<span class="line" id="L137">            <span class="tok-kw">error</span>.MissingField,</span>
+<span class="line" id="L138">            <span class="tok-kw">error</span>.MissingVariant,</span>
+<span class="line" id="L139">            <span class="tok-kw">error</span>.UnknownField,</span>
+<span class="line" id="L140">            <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L141">            =&gt; {},</span>
+<span class="line" id="L142">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
+<span class="line" id="L143">        }</span>
+<span class="line" id="L144">    }</span>
+<span class="line" id="L145"></span>
+<span class="line" id="L146">    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingVariant;</span>
+<span class="line" id="L147">}</span>
+<span class="line" id="L148"></span>
+<span class="line" id="L149"><span class="tok-kw">fn</span> <span class="tok-fn">TransparentUnionVariantAccess</span>(<span class="tok-kw">comptime</span> Variant: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Payload: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L150">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L151">        variant: Variant,</span>
+<span class="line" id="L152">        payload: Payload,</span>
+<span class="line" id="L153"></span>
+<span class="line" id="L154">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> UnionAccessInterface(</span>
+<span class="line" id="L157">            Self,</span>
+<span class="line" id="L158">            getty_error,</span>
+<span class="line" id="L159">            .{</span>
+<span class="line" id="L160">                .variantSeed = variantSeed,</span>
+<span class="line" id="L161">                .isVariantAllocated = isAllocated,</span>
+<span class="line" id="L162">            },</span>
+<span class="line" id="L163">        );</span>
+<span class="line" id="L164"></span>
+<span class="line" id="L165">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VariantAccessInterface(</span>
+<span class="line" id="L166">            Self,</span>
+<span class="line" id="L167">            getty_error,</span>
+<span class="line" id="L168">            .{</span>
+<span class="line" id="L169">                .payloadSeed = payloadSeed,</span>
+<span class="line" id="L170">                .isPayloadAllocated = isAllocated,</span>
+<span class="line" id="L171">            },</span>
+<span class="line" id="L172">        );</span>
 <span class="line" id="L173"></span>
-<span class="line" id="L174">        <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: Self, _: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L175">            <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(seed).Value != Payload) {</span>
-<span class="line" id="L176">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
-<span class="line" id="L177">            }</span>
-<span class="line" id="L178"></span>
-<span class="line" id="L179">            <span class="tok-kw">return</span> self.payload;</span>
-<span class="line" id="L180">        }</span>
-<span class="line" id="L181"></span>
-<span class="line" id="L182">        <span class="tok-kw">fn</span> <span class="tok-fn">isAllocated</span>(_: Self, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L183">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L184">        }</span>
-<span class="line" id="L185">    };</span>
-<span class="line" id="L186">}</span>
-<span class="line" id="L187"></span>
-<span class="line" id="L188"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union&quot;</span> {</span>
-<span class="line" id="L189">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L190">        foo: <span class="tok-type">void</span>,</span>
-<span class="line" id="L191">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L174">        <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: Self, _: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L175">            <span class="tok-kw">return</span> self.variant;</span>
+<span class="line" id="L176">        }</span>
+<span class="line" id="L177"></span>
+<span class="line" id="L178">        <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: Self, _: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L179">            <span class="tok-comment">// This check prevents deserializeUntaggedUnion from having</span>
+</span>
+<span class="line" id="L180">            <span class="tok-comment">// multiple return statements with different return types when its</span>
+</span>
+<span class="line" id="L181">            <span class="tok-comment">// inline loop is unrolled.</span>
+</span>
+<span class="line" id="L182">            <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(seed).Value != Payload) {</span>
+<span class="line" id="L183">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
+<span class="line" id="L184">            }</span>
+<span class="line" id="L185"></span>
+<span class="line" id="L186">            <span class="tok-kw">return</span> self.payload;</span>
+<span class="line" id="L187">        }</span>
+<span class="line" id="L188"></span>
+<span class="line" id="L189">        <span class="tok-kw">fn</span> <span class="tok-fn">isAllocated</span>(_: Self, <span class="tok-kw">comptime</span> _: <span class="tok-type">type</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L190">            <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L191">        }</span>
 <span class="line" id="L192">    };</span>
-<span class="line" id="L193"></span>
-<span class="line" id="L194">    <span class="tok-kw">const</span> Bare = <span class="tok-kw">union</span> {</span>
-<span class="line" id="L195">        foo: <span class="tok-type">void</span>,</span>
-<span class="line" id="L196">        bar: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L197">    };</span>
-<span class="line" id="L198"></span>
-<span class="line" id="L199">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L200">        .{</span>
-<span class="line" id="L201">            .name = <span class="tok-str">&quot;tagged, void variant&quot;</span>,</span>
-<span class="line" id="L202">            .tokens = &amp;.{</span>
-<span class="line" id="L203">                .{ .Union = {} },</span>
-<span class="line" id="L204">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L205">                .{ .Void = {} },</span>
-<span class="line" id="L206">            },</span>
-<span class="line" id="L207">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L208">            .want = Tagged{ .foo = {} },</span>
-<span class="line" id="L209">        },</span>
-<span class="line" id="L210">        .{</span>
-<span class="line" id="L211">            .name = <span class="tok-str">&quot;tagged, non-void variant&quot;</span>,</span>
-<span class="line" id="L212">            .tokens = &amp;.{</span>
-<span class="line" id="L213">                .{ .Union = {} },</span>
-<span class="line" id="L214">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L215">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L216">            },</span>
-<span class="line" id="L217">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L218">            .want = Tagged{ .bar = <span class="tok-null">true</span> },</span>
-<span class="line" id="L219">        },</span>
-<span class="line" id="L220">        .{</span>
-<span class="line" id="L221">            .name = <span class="tok-str">&quot;untagged, void variant&quot;</span>,</span>
-<span class="line" id="L222">            .tokens = &amp;.{</span>
-<span class="line" id="L223">                .{ .Union = {} },</span>
-<span class="line" id="L224">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L225">                .{ .Void = {} },</span>
-<span class="line" id="L226">            },</span>
-<span class="line" id="L227">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L228">            .tag = <span class="tok-str">&quot;foo&quot;</span>,</span>
-<span class="line" id="L229">            .want = {},</span>
-<span class="line" id="L230">        },</span>
-<span class="line" id="L231">        .{</span>
-<span class="line" id="L232">            .name = <span class="tok-str">&quot;untagged, non-void variant&quot;</span>,</span>
-<span class="line" id="L233">            .tokens = &amp;.{</span>
-<span class="line" id="L234">                .{ .Union = {} },</span>
-<span class="line" id="L235">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L236">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L237">            },</span>
-<span class="line" id="L238">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L239">            .tag = <span class="tok-str">&quot;bar&quot;</span>,</span>
-<span class="line" id="L240">            .want = <span class="tok-null">true</span>,</span>
-<span class="line" id="L241">        },</span>
-<span class="line" id="L242">    };</span>
-<span class="line" id="L243"></span>
-<span class="line" id="L244">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L245">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Bare);</span>
-<span class="line" id="L246">    }</span>
-<span class="line" id="L247">}</span>
-<span class="line" id="L248"></span>
-<span class="line" id="L249"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (rename)&quot;</span> {</span>
-<span class="line" id="L250">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L251">        foo: <span class="tok-type">void</span>,</span>
-<span class="line" id="L252">        bar: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L253"></span>
-<span class="line" id="L254">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L255">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L256">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L257">                .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
-<span class="line" id="L258">            };</span>
-<span class="line" id="L259">        };</span>
-<span class="line" id="L260">    };</span>
-<span class="line" id="L261"></span>
-<span class="line" id="L262">    <span class="tok-kw">const</span> Bare = <span class="tok-kw">union</span> {</span>
-<span class="line" id="L263">        foo: <span class="tok-type">void</span>,</span>
-<span class="line" id="L264">        bar: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L265"></span>
-<span class="line" id="L266">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L267">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L268">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L269">                .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
-<span class="line" id="L270">            };</span>
-<span class="line" id="L271">        };</span>
-<span class="line" id="L272">    };</span>
-<span class="line" id="L273"></span>
-<span class="line" id="L274">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L275">        .{</span>
-<span class="line" id="L276">            .name = <span class="tok-str">&quot;tagged, void variant (success)&quot;</span>,</span>
-<span class="line" id="L277">            .tokens = &amp;.{</span>
-<span class="line" id="L278">                .{ .Union = {} },</span>
-<span class="line" id="L279">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L280">                .{ .Void = {} },</span>
-<span class="line" id="L281">            },</span>
-<span class="line" id="L282">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L283">            .want = Tagged{ .foo = {} },</span>
-<span class="line" id="L284">        },</span>
-<span class="line" id="L285">        .{</span>
-<span class="line" id="L286">            .name = <span class="tok-str">&quot;tagged, void variant (fail)&quot;</span>,</span>
-<span class="line" id="L287">            .tokens = &amp;.{</span>
-<span class="line" id="L288">                .{ .Union = {} },</span>
-<span class="line" id="L289">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L290">                .{ .Void = {} },</span>
-<span class="line" id="L291">            },</span>
-<span class="line" id="L292">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L293">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L294">        },</span>
-<span class="line" id="L295">        .{</span>
-<span class="line" id="L296">            .name = <span class="tok-str">&quot;tagged, non-void variant (success)&quot;</span>,</span>
-<span class="line" id="L297">            .tokens = &amp;.{</span>
-<span class="line" id="L298">                .{ .Union = {} },</span>
-<span class="line" id="L299">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
-<span class="line" id="L300">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L301">            },</span>
-<span class="line" id="L302">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L303">            .want = Tagged{ .bar = <span class="tok-null">true</span> },</span>
-<span class="line" id="L304">        },</span>
-<span class="line" id="L305">        .{</span>
-<span class="line" id="L306">            .name = <span class="tok-str">&quot;tagged, non-void variant (fail)&quot;</span>,</span>
-<span class="line" id="L307">            .tokens = &amp;.{</span>
-<span class="line" id="L308">                .{ .Union = {} },</span>
-<span class="line" id="L309">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L310">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L311">            },</span>
-<span class="line" id="L312">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L313">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L314">        },</span>
-<span class="line" id="L315">        .{</span>
-<span class="line" id="L316">            .name = <span class="tok-str">&quot;untagged, void variant (success)&quot;</span>,</span>
-<span class="line" id="L317">            .tokens = &amp;.{</span>
-<span class="line" id="L318">                .{ .Union = {} },</span>
-<span class="line" id="L319">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
-<span class="line" id="L320">                .{ .Void = {} },</span>
-<span class="line" id="L321">            },</span>
-<span class="line" id="L322">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L323">            .tag = <span class="tok-str">&quot;foo&quot;</span>,</span>
-<span class="line" id="L324">            .want = {},</span>
-<span class="line" id="L325">        },</span>
-<span class="line" id="L326">        .{</span>
-<span class="line" id="L327">            .name = <span class="tok-str">&quot;untagged, void variant (fail)&quot;</span>,</span>
-<span class="line" id="L328">            .tokens = &amp;.{</span>
-<span class="line" id="L329">                .{ .Union = {} },</span>
-<span class="line" id="L330">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L331">                .{ .Void = {} },</span>
-<span class="line" id="L332">            },</span>
-<span class="line" id="L333">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L334">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L335">        },</span>
-<span class="line" id="L336">        .{</span>
-<span class="line" id="L337">            .name = <span class="tok-str">&quot;untagged, non-void variant (success)&quot;</span>,</span>
-<span class="line" id="L338">            .tokens = &amp;.{</span>
-<span class="line" id="L339">                .{ .Union = {} },</span>
-<span class="line" id="L340">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
-<span class="line" id="L341">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L342">            },</span>
-<span class="line" id="L343">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L344">            .tag = <span class="tok-str">&quot;bar&quot;</span>,</span>
-<span class="line" id="L345">            .want = <span class="tok-null">true</span>,</span>
-<span class="line" id="L346">        },</span>
-<span class="line" id="L347">        .{</span>
-<span class="line" id="L348">            .name = <span class="tok-str">&quot;untagged, non-void variant (fail)&quot;</span>,</span>
-<span class="line" id="L349">            .tokens = &amp;.{</span>
-<span class="line" id="L350">                .{ .Union = {} },</span>
-<span class="line" id="L351">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L352">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L353">            },</span>
-<span class="line" id="L354">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L355">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L356">        },</span>
-<span class="line" id="L357">    };</span>
-<span class="line" id="L358"></span>
-<span class="line" id="L359">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L360">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Bare);</span>
-<span class="line" id="L361">    }</span>
-<span class="line" id="L362">}</span>
-<span class="line" id="L363"></span>
-<span class="line" id="L364"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (skip)&quot;</span> {</span>
-<span class="line" id="L365">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L366">        foo: <span class="tok-type">void</span>,</span>
-<span class="line" id="L367">        bar: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L368"></span>
-<span class="line" id="L369">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L370">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L371">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L372">                .bar = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L373">            };</span>
-<span class="line" id="L374">        };</span>
-<span class="line" id="L375">    };</span>
-<span class="line" id="L376"></span>
-<span class="line" id="L377">    <span class="tok-kw">const</span> Bare = <span class="tok-kw">union</span> {</span>
-<span class="line" id="L378">        foo: <span class="tok-type">void</span>,</span>
-<span class="line" id="L379">        bar: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L380"></span>
-<span class="line" id="L381">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L382">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L383">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L384">                .bar = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L385">            };</span>
-<span class="line" id="L386">        };</span>
-<span class="line" id="L387">    };</span>
-<span class="line" id="L388"></span>
-<span class="line" id="L389">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L390">        .{</span>
-<span class="line" id="L391">            .name = <span class="tok-str">&quot;tagged, void variant (fail)&quot;</span>,</span>
-<span class="line" id="L392">            .tokens = &amp;.{</span>
-<span class="line" id="L393">                .{ .Union = {} },</span>
-<span class="line" id="L394">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L395">                .{ .Void = {} },</span>
-<span class="line" id="L396">            },</span>
-<span class="line" id="L397">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L398">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L399">        },</span>
-<span class="line" id="L400">        .{</span>
-<span class="line" id="L401">            .name = <span class="tok-str">&quot;tagged, non-void variant (fail)&quot;</span>,</span>
-<span class="line" id="L402">            .tokens = &amp;.{</span>
-<span class="line" id="L403">                .{ .Union = {} },</span>
-<span class="line" id="L404">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L405">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L406">            },</span>
-<span class="line" id="L407">            .tagged = <span class="tok-null">true</span>,</span>
-<span class="line" id="L408">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L409">        },</span>
-<span class="line" id="L410">        .{</span>
-<span class="line" id="L411">            .name = <span class="tok-str">&quot;untagged, void variant (fail)&quot;</span>,</span>
-<span class="line" id="L412">            .tokens = &amp;.{</span>
-<span class="line" id="L413">                .{ .Union = {} },</span>
-<span class="line" id="L414">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L415">                .{ .Void = {} },</span>
-<span class="line" id="L416">            },</span>
-<span class="line" id="L417">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L418">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L419">        },</span>
-<span class="line" id="L420">        .{</span>
-<span class="line" id="L421">            .name = <span class="tok-str">&quot;untagged, non-void variant (fail)&quot;</span>,</span>
-<span class="line" id="L422">            .tokens = &amp;.{</span>
-<span class="line" id="L423">                .{ .Union = {} },</span>
-<span class="line" id="L424">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
-<span class="line" id="L425">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L426">            },</span>
-<span class="line" id="L427">            .tagged = <span class="tok-null">false</span>,</span>
-<span class="line" id="L428">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L429">        },</span>
-<span class="line" id="L430">    };</span>
-<span class="line" id="L431"></span>
-<span class="line" id="L432">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L433">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Bare);</span>
-<span class="line" id="L434">    }</span>
-<span class="line" id="L435">}</span>
-<span class="line" id="L436"></span>
-<span class="line" id="L437"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (tag, untagged)&quot;</span> {</span>
-<span class="line" id="L438">    <span class="tok-kw">const</span> WantTagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L439">        Bool: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L440">        F32: <span class="tok-type">f32</span>,</span>
-<span class="line" id="L441">        I32: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L442">        Optional: ?<span class="tok-type">void</span>,</span>
-<span class="line" id="L443">        Map: <span class="tok-kw">struct</span> { A: <span class="tok-type">i32</span>, B: <span class="tok-type">i32</span>, C: <span class="tok-type">i32</span> },</span>
-<span class="line" id="L444">        Seq: [<span class="tok-number">3</span>]<span class="tok-type">i32</span>,</span>
-<span class="line" id="L445">        String: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L446">        Union: <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) { foo: <span class="tok-type">i32</span> },</span>
-<span class="line" id="L447">        <span class="tok-comment">// NOTE: The variant in this union needs to be different than all the</span>
+<span class="line" id="L193">}</span>
+<span class="line" id="L194"></span>
+<span class="line" id="L195"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union&quot;</span> {</span>
+<span class="line" id="L196">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L197">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L198">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L199">    };</span>
+<span class="line" id="L200"></span>
+<span class="line" id="L201">    <span class="tok-kw">const</span> Bare = <span class="tok-kw">union</span> {</span>
+<span class="line" id="L202">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L203">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L204">    };</span>
+<span class="line" id="L205"></span>
+<span class="line" id="L206">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L207">        .{</span>
+<span class="line" id="L208">            .name = <span class="tok-str">&quot;tagged, void variant&quot;</span>,</span>
+<span class="line" id="L209">            .tokens = &amp;.{</span>
+<span class="line" id="L210">                .{ .Union = {} },</span>
+<span class="line" id="L211">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L212">                .{ .Void = {} },</span>
+<span class="line" id="L213">            },</span>
+<span class="line" id="L214">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L215">            .want = Tagged{ .foo = {} },</span>
+<span class="line" id="L216">        },</span>
+<span class="line" id="L217">        .{</span>
+<span class="line" id="L218">            .name = <span class="tok-str">&quot;tagged, non-void variant&quot;</span>,</span>
+<span class="line" id="L219">            .tokens = &amp;.{</span>
+<span class="line" id="L220">                .{ .Union = {} },</span>
+<span class="line" id="L221">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L222">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L223">            },</span>
+<span class="line" id="L224">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L225">            .want = Tagged{ .bar = <span class="tok-null">true</span> },</span>
+<span class="line" id="L226">        },</span>
+<span class="line" id="L227">        .{</span>
+<span class="line" id="L228">            .name = <span class="tok-str">&quot;untagged, void variant&quot;</span>,</span>
+<span class="line" id="L229">            .tokens = &amp;.{</span>
+<span class="line" id="L230">                .{ .Union = {} },</span>
+<span class="line" id="L231">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L232">                .{ .Void = {} },</span>
+<span class="line" id="L233">            },</span>
+<span class="line" id="L234">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L235">            .tag = <span class="tok-str">&quot;foo&quot;</span>,</span>
+<span class="line" id="L236">            .want = {},</span>
+<span class="line" id="L237">        },</span>
+<span class="line" id="L238">        .{</span>
+<span class="line" id="L239">            .name = <span class="tok-str">&quot;untagged, non-void variant&quot;</span>,</span>
+<span class="line" id="L240">            .tokens = &amp;.{</span>
+<span class="line" id="L241">                .{ .Union = {} },</span>
+<span class="line" id="L242">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L243">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L244">            },</span>
+<span class="line" id="L245">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L246">            .tag = <span class="tok-str">&quot;bar&quot;</span>,</span>
+<span class="line" id="L247">            .want = <span class="tok-null">true</span>,</span>
+<span class="line" id="L248">        },</span>
+<span class="line" id="L249">    };</span>
+<span class="line" id="L250"></span>
+<span class="line" id="L251">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L252">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Bare);</span>
+<span class="line" id="L253">    }</span>
+<span class="line" id="L254">}</span>
+<span class="line" id="L255"></span>
+<span class="line" id="L256"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (rename)&quot;</span> {</span>
+<span class="line" id="L257">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L258">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L259">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L260"></span>
+<span class="line" id="L261">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L262">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L263">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L264">                .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L265">            };</span>
+<span class="line" id="L266">        };</span>
+<span class="line" id="L267">    };</span>
+<span class="line" id="L268"></span>
+<span class="line" id="L269">    <span class="tok-kw">const</span> Bare = <span class="tok-kw">union</span> {</span>
+<span class="line" id="L270">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L271">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L272"></span>
+<span class="line" id="L273">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L274">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L275">                .foo = .{ .rename = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L276">                .bar = .{ .rename = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L277">            };</span>
+<span class="line" id="L278">        };</span>
+<span class="line" id="L279">    };</span>
+<span class="line" id="L280"></span>
+<span class="line" id="L281">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L282">        .{</span>
+<span class="line" id="L283">            .name = <span class="tok-str">&quot;tagged, void variant (success)&quot;</span>,</span>
+<span class="line" id="L284">            .tokens = &amp;.{</span>
+<span class="line" id="L285">                .{ .Union = {} },</span>
+<span class="line" id="L286">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L287">                .{ .Void = {} },</span>
+<span class="line" id="L288">            },</span>
+<span class="line" id="L289">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L290">            .want = Tagged{ .foo = {} },</span>
+<span class="line" id="L291">        },</span>
+<span class="line" id="L292">        .{</span>
+<span class="line" id="L293">            .name = <span class="tok-str">&quot;tagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L294">            .tokens = &amp;.{</span>
+<span class="line" id="L295">                .{ .Union = {} },</span>
+<span class="line" id="L296">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L297">                .{ .Void = {} },</span>
+<span class="line" id="L298">            },</span>
+<span class="line" id="L299">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L300">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L301">        },</span>
+<span class="line" id="L302">        .{</span>
+<span class="line" id="L303">            .name = <span class="tok-str">&quot;tagged, non-void variant (success)&quot;</span>,</span>
+<span class="line" id="L304">            .tokens = &amp;.{</span>
+<span class="line" id="L305">                .{ .Union = {} },</span>
+<span class="line" id="L306">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L307">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L308">            },</span>
+<span class="line" id="L309">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L310">            .want = Tagged{ .bar = <span class="tok-null">true</span> },</span>
+<span class="line" id="L311">        },</span>
+<span class="line" id="L312">        .{</span>
+<span class="line" id="L313">            .name = <span class="tok-str">&quot;tagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L314">            .tokens = &amp;.{</span>
+<span class="line" id="L315">                .{ .Union = {} },</span>
+<span class="line" id="L316">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L317">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L318">            },</span>
+<span class="line" id="L319">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L320">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L321">        },</span>
+<span class="line" id="L322">        .{</span>
+<span class="line" id="L323">            .name = <span class="tok-str">&quot;untagged, void variant (success)&quot;</span>,</span>
+<span class="line" id="L324">            .tokens = &amp;.{</span>
+<span class="line" id="L325">                .{ .Union = {} },</span>
+<span class="line" id="L326">                .{ .String = <span class="tok-str">&quot;FOO&quot;</span> },</span>
+<span class="line" id="L327">                .{ .Void = {} },</span>
+<span class="line" id="L328">            },</span>
+<span class="line" id="L329">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L330">            .tag = <span class="tok-str">&quot;foo&quot;</span>,</span>
+<span class="line" id="L331">            .want = {},</span>
+<span class="line" id="L332">        },</span>
+<span class="line" id="L333">        .{</span>
+<span class="line" id="L334">            .name = <span class="tok-str">&quot;untagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L335">            .tokens = &amp;.{</span>
+<span class="line" id="L336">                .{ .Union = {} },</span>
+<span class="line" id="L337">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L338">                .{ .Void = {} },</span>
+<span class="line" id="L339">            },</span>
+<span class="line" id="L340">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L341">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L342">        },</span>
+<span class="line" id="L343">        .{</span>
+<span class="line" id="L344">            .name = <span class="tok-str">&quot;untagged, non-void variant (success)&quot;</span>,</span>
+<span class="line" id="L345">            .tokens = &amp;.{</span>
+<span class="line" id="L346">                .{ .Union = {} },</span>
+<span class="line" id="L347">                .{ .String = <span class="tok-str">&quot;BAR&quot;</span> },</span>
+<span class="line" id="L348">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L349">            },</span>
+<span class="line" id="L350">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L351">            .tag = <span class="tok-str">&quot;bar&quot;</span>,</span>
+<span class="line" id="L352">            .want = <span class="tok-null">true</span>,</span>
+<span class="line" id="L353">        },</span>
+<span class="line" id="L354">        .{</span>
+<span class="line" id="L355">            .name = <span class="tok-str">&quot;untagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L356">            .tokens = &amp;.{</span>
+<span class="line" id="L357">                .{ .Union = {} },</span>
+<span class="line" id="L358">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L359">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L360">            },</span>
+<span class="line" id="L361">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L362">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L363">        },</span>
+<span class="line" id="L364">    };</span>
+<span class="line" id="L365"></span>
+<span class="line" id="L366">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L367">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Bare);</span>
+<span class="line" id="L368">    }</span>
+<span class="line" id="L369">}</span>
+<span class="line" id="L370"></span>
+<span class="line" id="L371"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (skip)&quot;</span> {</span>
+<span class="line" id="L372">    <span class="tok-kw">const</span> Tagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L373">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L374">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L375"></span>
+<span class="line" id="L376">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L377">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L378">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L379">                .bar = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L380">            };</span>
+<span class="line" id="L381">        };</span>
+<span class="line" id="L382">    };</span>
+<span class="line" id="L383"></span>
+<span class="line" id="L384">    <span class="tok-kw">const</span> Bare = <span class="tok-kw">union</span> {</span>
+<span class="line" id="L385">        foo: <span class="tok-type">void</span>,</span>
+<span class="line" id="L386">        bar: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L387"></span>
+<span class="line" id="L388">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L389">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L390">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L391">                .bar = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L392">            };</span>
+<span class="line" id="L393">        };</span>
+<span class="line" id="L394">    };</span>
+<span class="line" id="L395"></span>
+<span class="line" id="L396">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L397">        .{</span>
+<span class="line" id="L398">            .name = <span class="tok-str">&quot;tagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L399">            .tokens = &amp;.{</span>
+<span class="line" id="L400">                .{ .Union = {} },</span>
+<span class="line" id="L401">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L402">                .{ .Void = {} },</span>
+<span class="line" id="L403">            },</span>
+<span class="line" id="L404">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L405">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L406">        },</span>
+<span class="line" id="L407">        .{</span>
+<span class="line" id="L408">            .name = <span class="tok-str">&quot;tagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L409">            .tokens = &amp;.{</span>
+<span class="line" id="L410">                .{ .Union = {} },</span>
+<span class="line" id="L411">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L412">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L413">            },</span>
+<span class="line" id="L414">            .tagged = <span class="tok-null">true</span>,</span>
+<span class="line" id="L415">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L416">        },</span>
+<span class="line" id="L417">        .{</span>
+<span class="line" id="L418">            .name = <span class="tok-str">&quot;untagged, void variant (fail)&quot;</span>,</span>
+<span class="line" id="L419">            .tokens = &amp;.{</span>
+<span class="line" id="L420">                .{ .Union = {} },</span>
+<span class="line" id="L421">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L422">                .{ .Void = {} },</span>
+<span class="line" id="L423">            },</span>
+<span class="line" id="L424">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L425">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L426">        },</span>
+<span class="line" id="L427">        .{</span>
+<span class="line" id="L428">            .name = <span class="tok-str">&quot;untagged, non-void variant (fail)&quot;</span>,</span>
+<span class="line" id="L429">            .tokens = &amp;.{</span>
+<span class="line" id="L430">                .{ .Union = {} },</span>
+<span class="line" id="L431">                .{ .String = <span class="tok-str">&quot;bar&quot;</span> },</span>
+<span class="line" id="L432">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L433">            },</span>
+<span class="line" id="L434">            .tagged = <span class="tok-null">false</span>,</span>
+<span class="line" id="L435">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L436">        },</span>
+<span class="line" id="L437">    };</span>
+<span class="line" id="L438"></span>
+<span class="line" id="L439">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L440">        <span class="tok-kw">try</span> runTest(t, <span class="tok-kw">if</span> (t.tagged) Tagged <span class="tok-kw">else</span> Bare);</span>
+<span class="line" id="L441">    }</span>
+<span class="line" id="L442">}</span>
+<span class="line" id="L443"></span>
+<span class="line" id="L444"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - union, attributes (tag, untagged)&quot;</span> {</span>
+<span class="line" id="L445">    <span class="tok-kw">const</span> WantTagged = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L446">        Bool: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L447">        F32: <span class="tok-type">f32</span>,</span>
+<span class="line" id="L448">        I32: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L449">        Optional: ?<span class="tok-type">void</span>,</span>
+<span class="line" id="L450">        Map: <span class="tok-kw">struct</span> { A: <span class="tok-type">i32</span>, B: <span class="tok-type">i32</span>, C: <span class="tok-type">i32</span> },</span>
+<span class="line" id="L451">        Seq: [<span class="tok-number">3</span>]<span class="tok-type">i32</span>,</span>
+<span class="line" id="L452">        String: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L453">        Union: <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) { foo: <span class="tok-type">i32</span> },</span>
+<span class="line" id="L454">        <span class="tok-comment">// NOTE: The variant in this union needs to be different than all the</span>
 </span>
-<span class="line" id="L448">        <span class="tok-comment">// other variants in WantTagged. Otherwise, an earlier variant will be</span>
+<span class="line" id="L455">        <span class="tok-comment">// other variants in WantTagged. Otherwise, an earlier variant will be</span>
 </span>
-<span class="line" id="L449">        <span class="tok-comment">// deserialized into.</span>
+<span class="line" id="L456">        <span class="tok-comment">// deserialized into.</span>
 </span>
-<span class="line" id="L450">        UnionUntagged: <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L451">            Bools: [<span class="tok-number">2</span>]<span class="tok-type">bool</span>,</span>
-<span class="line" id="L452">            Ints: [<span class="tok-number">2</span>]<span class="tok-type">i32</span>,</span>
-<span class="line" id="L453"></span>
-<span class="line" id="L454">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L455">                <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{ .Container = .{ .tag = .untagged } };</span>
-<span class="line" id="L456">            };</span>
-<span class="line" id="L457">        },</span>
-<span class="line" id="L458">        Void,</span>
-<span class="line" id="L459"></span>
-<span class="line" id="L460">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L461">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{ .Container = .{ .tag = .untagged } };</span>
-<span class="line" id="L462">        };</span>
-<span class="line" id="L463">    };</span>
-<span class="line" id="L464"></span>
-<span class="line" id="L465">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L466">        .{</span>
-<span class="line" id="L467">            .name = <span class="tok-str">&quot;tagged, bool variant&quot;</span>,</span>
-<span class="line" id="L468">            .tokens = &amp;.{.{ .Bool = <span class="tok-null">true</span> }},</span>
-<span class="line" id="L469">            .want = WantTagged{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L470">        },</span>
-<span class="line" id="L471">        .{</span>
-<span class="line" id="L472">            .name = <span class="tok-str">&quot;tagged, float variant&quot;</span>,</span>
-<span class="line" id="L473">            .tokens = &amp;.{.{ .F32 = <span class="tok-number">3.14</span> }},</span>
-<span class="line" id="L474">            .want = WantTagged{ .F32 = <span class="tok-number">3.14</span> },</span>
-<span class="line" id="L475">        },</span>
-<span class="line" id="L476">        .{</span>
-<span class="line" id="L477">            .name = <span class="tok-str">&quot;tagged, int variant&quot;</span>,</span>
-<span class="line" id="L478">            .tokens = &amp;.{.{ .I32 = <span class="tok-number">123</span> }},</span>
-<span class="line" id="L479">            .want = WantTagged{ .I32 = <span class="tok-number">123</span> },</span>
-<span class="line" id="L480">        },</span>
-<span class="line" id="L481">        .{</span>
-<span class="line" id="L482">            .name = <span class="tok-str">&quot;tagged, map variant&quot;</span>,</span>
-<span class="line" id="L483">            .tokens = &amp;.{</span>
-<span class="line" id="L484">                .{ .Map = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L485">                .{ .String = <span class="tok-str">&quot;A&quot;</span> },</span>
-<span class="line" id="L486">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L487">                .{ .String = <span class="tok-str">&quot;B&quot;</span> },</span>
-<span class="line" id="L488">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L489">                .{ .String = <span class="tok-str">&quot;C&quot;</span> },</span>
-<span class="line" id="L490">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L491">                .{ .MapEnd = {} },</span>
-<span class="line" id="L492">            },</span>
-<span class="line" id="L493">            .want = WantTagged{ .Map = .{ .A = <span class="tok-number">1</span>, .B = <span class="tok-number">2</span>, .C = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L494">        },</span>
-<span class="line" id="L495">        .{</span>
-<span class="line" id="L496">            .name = <span class="tok-str">&quot;tagged, optional variant (null)&quot;</span>,</span>
-<span class="line" id="L497">            .tokens = &amp;.{.{ .Null = {} }},</span>
-<span class="line" id="L498">            .want = WantTagged{ .Optional = <span class="tok-null">null</span> },</span>
-<span class="line" id="L499">        },</span>
-<span class="line" id="L500">        .{</span>
-<span class="line" id="L501">            .name = <span class="tok-str">&quot;tagged, optional variant (some)&quot;</span>,</span>
-<span class="line" id="L502">            .tokens = &amp;.{</span>
-<span class="line" id="L503">                .{ .Some = {} },</span>
-<span class="line" id="L504">                .{ .Void = {} },</span>
-<span class="line" id="L505">            },</span>
-<span class="line" id="L506">            .want = WantTagged{ .Optional = {} },</span>
-<span class="line" id="L507">        },</span>
-<span class="line" id="L508">        .{</span>
-<span class="line" id="L509">            .name = <span class="tok-str">&quot;tagged, sequence variant&quot;</span>,</span>
-<span class="line" id="L510">            .tokens = &amp;.{</span>
-<span class="line" id="L511">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L512">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L513">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L514">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L515">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L516">            },</span>
-<span class="line" id="L517">            .want = WantTagged{ .Seq = [_]<span class="tok-type">i32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> } },</span>
-<span class="line" id="L518">        },</span>
-<span class="line" id="L519">        .{</span>
-<span class="line" id="L520">            .name = <span class="tok-str">&quot;tagged, string variant&quot;</span>,</span>
-<span class="line" id="L521">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;abcdef&quot;</span> }},</span>
-<span class="line" id="L522">            .want = WantTagged{ .String = <span class="tok-str">&quot;abcdef&quot;</span> },</span>
-<span class="line" id="L523">        },</span>
-<span class="line" id="L524">        .{</span>
-<span class="line" id="L525">            .name = <span class="tok-str">&quot;tagged, union variant&quot;</span>,</span>
-<span class="line" id="L526">            .tokens = &amp;.{</span>
-<span class="line" id="L527">                .{ .Map = .{ .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L528">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
-<span class="line" id="L529">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L530">                .{ .MapEnd = {} },</span>
-<span class="line" id="L531">            },</span>
-<span class="line" id="L532">            .want = WantTagged{ .Union = .{ .foo = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L533">        },</span>
-<span class="line" id="L534">        .{</span>
-<span class="line" id="L535">            .name = <span class="tok-str">&quot;tagged, union variant (untagged, I)&quot;</span>,</span>
-<span class="line" id="L536">            .tokens = &amp;.{</span>
-<span class="line" id="L537">                .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L538">                .{ .Bool = <span class="tok-null">true</span> },</span>
-<span class="line" id="L539">                .{ .Bool = <span class="tok-null">false</span> },</span>
-<span class="line" id="L540">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L541">            },</span>
-<span class="line" id="L542">            .want = WantTagged{ .UnionUntagged = .{ .Bools = [_]<span class="tok-type">bool</span>{ <span class="tok-null">true</span>, <span class="tok-null">false</span> } } },</span>
-<span class="line" id="L543">        },</span>
-<span class="line" id="L544">        .{</span>
-<span class="line" id="L545">            .name = <span class="tok-str">&quot;tagged, union variant (untagged, II)&quot;</span>,</span>
-<span class="line" id="L546">            .tokens = &amp;.{</span>
-<span class="line" id="L547">                .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L548">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L549">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L550">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L551">            },</span>
-<span class="line" id="L552">            .want = WantTagged{ .UnionUntagged = .{ .Ints = [_]<span class="tok-type">i32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span> } } },</span>
-<span class="line" id="L553">        },</span>
-<span class="line" id="L554">        .{</span>
-<span class="line" id="L555">            .name = <span class="tok-str">&quot;tagged, void variant&quot;</span>,</span>
-<span class="line" id="L556">            .tokens = &amp;.{.{ .Void = {} }},</span>
-<span class="line" id="L557">            .want = WantTagged{ .Void = {} },</span>
-<span class="line" id="L558">        },</span>
-<span class="line" id="L559">    };</span>
-<span class="line" id="L560"></span>
-<span class="line" id="L561">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L562">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L563">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
-<span class="line" id="L564"></span>
-<span class="line" id="L565">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
-<span class="line" id="L566">            <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L567">                t.name,</span>
-<span class="line" id="L568">                t.want_err,</span>
-<span class="line" id="L569">                testing.deserializeErr(std.testing.allocator, <span class="tok-builtin">@This</span>(), Want, t.tokens),</span>
-<span class="line" id="L570">            );</span>
-<span class="line" id="L571">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L572">            <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, t.name, <span class="tok-builtin">@This</span>(), Want, t.tokens);</span>
-<span class="line" id="L573"></span>
-<span class="line" id="L574">            <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(t.want)).Union.tag_type) |_| {</span>
-<span class="line" id="L575">                <span class="tok-kw">switch</span> (t.want) {</span>
-<span class="line" id="L576">                    .String =&gt; |want| {</span>
-<span class="line" id="L577">                        <span class="tok-kw">defer</span> std.testing.allocator.free(got.String);</span>
-<span class="line" id="L578">                        <span class="tok-kw">try</span> testing.expectEqualSlices(t.name, <span class="tok-type">u8</span>, want, got.String);</span>
-<span class="line" id="L579">                    },</span>
-<span class="line" id="L580">                    <span class="tok-kw">else</span> =&gt; |want| <span class="tok-kw">try</span> testing.expectEqual(t.name, want, got),</span>
-<span class="line" id="L581">                }</span>
-<span class="line" id="L582">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L583">                <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.eql(<span class="tok-type">u8</span>, t.tag, <span class="tok-str">&quot;String&quot;</span>)) {</span>
-<span class="line" id="L584">                    <span class="tok-kw">defer</span> std.testing.allocator.free(got.String);</span>
-<span class="line" id="L585">                    <span class="tok-kw">try</span> testing.expectEqualSlices(t.name, <span class="tok-type">u8</span>, got.want, got.String);</span>
-<span class="line" id="L586">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L587">                    <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, <span class="tok-builtin">@field</span>(got, t.tag));</span>
+<span class="line" id="L457">        UnionUntagged: <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L458">            Bools: [<span class="tok-number">2</span>]<span class="tok-type">bool</span>,</span>
+<span class="line" id="L459">            Ints: [<span class="tok-number">2</span>]<span class="tok-type">i32</span>,</span>
+<span class="line" id="L460"></span>
+<span class="line" id="L461">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L462">                <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{ .Container = .{ .tag = .untagged } };</span>
+<span class="line" id="L463">            };</span>
+<span class="line" id="L464">        },</span>
+<span class="line" id="L465">        Void,</span>
+<span class="line" id="L466"></span>
+<span class="line" id="L467">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L468">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{ .Container = .{ .tag = .untagged } };</span>
+<span class="line" id="L469">        };</span>
+<span class="line" id="L470">    };</span>
+<span class="line" id="L471"></span>
+<span class="line" id="L472">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L473">        .{</span>
+<span class="line" id="L474">            .name = <span class="tok-str">&quot;tagged, bool variant&quot;</span>,</span>
+<span class="line" id="L475">            .tokens = &amp;.{.{ .Bool = <span class="tok-null">true</span> }},</span>
+<span class="line" id="L476">            .want = WantTagged{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L477">        },</span>
+<span class="line" id="L478">        .{</span>
+<span class="line" id="L479">            .name = <span class="tok-str">&quot;tagged, float variant&quot;</span>,</span>
+<span class="line" id="L480">            .tokens = &amp;.{.{ .F32 = <span class="tok-number">3.14</span> }},</span>
+<span class="line" id="L481">            .want = WantTagged{ .F32 = <span class="tok-number">3.14</span> },</span>
+<span class="line" id="L482">        },</span>
+<span class="line" id="L483">        .{</span>
+<span class="line" id="L484">            .name = <span class="tok-str">&quot;tagged, int variant&quot;</span>,</span>
+<span class="line" id="L485">            .tokens = &amp;.{.{ .I32 = <span class="tok-number">123</span> }},</span>
+<span class="line" id="L486">            .want = WantTagged{ .I32 = <span class="tok-number">123</span> },</span>
+<span class="line" id="L487">        },</span>
+<span class="line" id="L488">        .{</span>
+<span class="line" id="L489">            .name = <span class="tok-str">&quot;tagged, map variant&quot;</span>,</span>
+<span class="line" id="L490">            .tokens = &amp;.{</span>
+<span class="line" id="L491">                .{ .Map = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L492">                .{ .String = <span class="tok-str">&quot;A&quot;</span> },</span>
+<span class="line" id="L493">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L494">                .{ .String = <span class="tok-str">&quot;B&quot;</span> },</span>
+<span class="line" id="L495">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L496">                .{ .String = <span class="tok-str">&quot;C&quot;</span> },</span>
+<span class="line" id="L497">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L498">                .{ .MapEnd = {} },</span>
+<span class="line" id="L499">            },</span>
+<span class="line" id="L500">            .want = WantTagged{ .Map = .{ .A = <span class="tok-number">1</span>, .B = <span class="tok-number">2</span>, .C = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L501">        },</span>
+<span class="line" id="L502">        .{</span>
+<span class="line" id="L503">            .name = <span class="tok-str">&quot;tagged, optional variant (null)&quot;</span>,</span>
+<span class="line" id="L504">            .tokens = &amp;.{.{ .Null = {} }},</span>
+<span class="line" id="L505">            .want = WantTagged{ .Optional = <span class="tok-null">null</span> },</span>
+<span class="line" id="L506">        },</span>
+<span class="line" id="L507">        .{</span>
+<span class="line" id="L508">            .name = <span class="tok-str">&quot;tagged, optional variant (some)&quot;</span>,</span>
+<span class="line" id="L509">            .tokens = &amp;.{</span>
+<span class="line" id="L510">                .{ .Some = {} },</span>
+<span class="line" id="L511">                .{ .Void = {} },</span>
+<span class="line" id="L512">            },</span>
+<span class="line" id="L513">            .want = WantTagged{ .Optional = {} },</span>
+<span class="line" id="L514">        },</span>
+<span class="line" id="L515">        .{</span>
+<span class="line" id="L516">            .name = <span class="tok-str">&quot;tagged, sequence variant&quot;</span>,</span>
+<span class="line" id="L517">            .tokens = &amp;.{</span>
+<span class="line" id="L518">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L519">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L520">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L521">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L522">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L523">            },</span>
+<span class="line" id="L524">            .want = WantTagged{ .Seq = [_]<span class="tok-type">i32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> } },</span>
+<span class="line" id="L525">        },</span>
+<span class="line" id="L526">        .{</span>
+<span class="line" id="L527">            .name = <span class="tok-str">&quot;tagged, string variant&quot;</span>,</span>
+<span class="line" id="L528">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;abcdef&quot;</span> }},</span>
+<span class="line" id="L529">            .want = WantTagged{ .String = <span class="tok-str">&quot;abcdef&quot;</span> },</span>
+<span class="line" id="L530">        },</span>
+<span class="line" id="L531">        .{</span>
+<span class="line" id="L532">            .name = <span class="tok-str">&quot;tagged, union variant&quot;</span>,</span>
+<span class="line" id="L533">            .tokens = &amp;.{</span>
+<span class="line" id="L534">                .{ .Map = .{ .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L535">                .{ .String = <span class="tok-str">&quot;foo&quot;</span> },</span>
+<span class="line" id="L536">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L537">                .{ .MapEnd = {} },</span>
+<span class="line" id="L538">            },</span>
+<span class="line" id="L539">            .want = WantTagged{ .Union = .{ .foo = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L540">        },</span>
+<span class="line" id="L541">        .{</span>
+<span class="line" id="L542">            .name = <span class="tok-str">&quot;tagged, union variant (untagged, I)&quot;</span>,</span>
+<span class="line" id="L543">            .tokens = &amp;.{</span>
+<span class="line" id="L544">                .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L545">                .{ .Bool = <span class="tok-null">true</span> },</span>
+<span class="line" id="L546">                .{ .Bool = <span class="tok-null">false</span> },</span>
+<span class="line" id="L547">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L548">            },</span>
+<span class="line" id="L549">            .want = WantTagged{ .UnionUntagged = .{ .Bools = [_]<span class="tok-type">bool</span>{ <span class="tok-null">true</span>, <span class="tok-null">false</span> } } },</span>
+<span class="line" id="L550">        },</span>
+<span class="line" id="L551">        .{</span>
+<span class="line" id="L552">            .name = <span class="tok-str">&quot;tagged, union variant (untagged, II)&quot;</span>,</span>
+<span class="line" id="L553">            .tokens = &amp;.{</span>
+<span class="line" id="L554">                .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L555">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L556">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L557">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L558">            },</span>
+<span class="line" id="L559">            .want = WantTagged{ .UnionUntagged = .{ .Ints = [_]<span class="tok-type">i32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span> } } },</span>
+<span class="line" id="L560">        },</span>
+<span class="line" id="L561">        .{</span>
+<span class="line" id="L562">            .name = <span class="tok-str">&quot;tagged, void variant&quot;</span>,</span>
+<span class="line" id="L563">            .tokens = &amp;.{.{ .Void = {} }},</span>
+<span class="line" id="L564">            .want = WantTagged{ .Void = {} },</span>
+<span class="line" id="L565">        },</span>
+<span class="line" id="L566">    };</span>
+<span class="line" id="L567"></span>
+<span class="line" id="L568">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L569">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L570">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L571"></span>
+<span class="line" id="L572">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L573">            <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L574">                t.name,</span>
+<span class="line" id="L575">                t.want_err,</span>
+<span class="line" id="L576">                testing.deserializeErr(std.testing.allocator, <span class="tok-builtin">@This</span>(), Want, t.tokens),</span>
+<span class="line" id="L577">            );</span>
+<span class="line" id="L578">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L579">            <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, t.name, <span class="tok-builtin">@This</span>(), Want, t.tokens);</span>
+<span class="line" id="L580"></span>
+<span class="line" id="L581">            <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(t.want)).Union.tag_type) |_| {</span>
+<span class="line" id="L582">                <span class="tok-kw">switch</span> (t.want) {</span>
+<span class="line" id="L583">                    .String =&gt; |want| {</span>
+<span class="line" id="L584">                        <span class="tok-kw">defer</span> std.testing.allocator.free(got.String);</span>
+<span class="line" id="L585">                        <span class="tok-kw">try</span> testing.expectEqualSlices(t.name, <span class="tok-type">u8</span>, want, got.String);</span>
+<span class="line" id="L586">                    },</span>
+<span class="line" id="L587">                    <span class="tok-kw">else</span> =&gt; |want| <span class="tok-kw">try</span> testing.expectEqual(t.name, want, got),</span>
 <span class="line" id="L588">                }</span>
-<span class="line" id="L589">            }</span>
-<span class="line" id="L590">        }</span>
-<span class="line" id="L591">    }</span>
-<span class="line" id="L592">}</span>
-<span class="line" id="L593"></span>
-<span class="line" id="L594"><span class="tok-kw">fn</span> <span class="tok-fn">runTest</span>(t: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L595">    <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
-<span class="line" id="L596"></span>
-<span class="line" id="L597">    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
-<span class="line" id="L598">        <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L599">            t.name,</span>
-<span class="line" id="L600">            t.want_err,</span>
-<span class="line" id="L601">            testing.deserializeErr(std.testing.allocator, <span class="tok-builtin">@This</span>(), Want, t.tokens),</span>
-<span class="line" id="L602">        );</span>
-<span class="line" id="L603">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L604">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, t.name, <span class="tok-builtin">@This</span>(), Want, t.tokens);</span>
-<span class="line" id="L605"></span>
-<span class="line" id="L606">        <span class="tok-kw">if</span> (t.tagged) {</span>
-<span class="line" id="L607">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L608">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L609">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, <span class="tok-builtin">@field</span>(got, t.tag));</span>
-<span class="line" id="L610">        }</span>
-<span class="line" id="L611">    }</span>
-<span class="line" id="L612">}</span>
-<span class="line" id="L613"></span>
+<span class="line" id="L589">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L590">                <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> std.mem.eql(<span class="tok-type">u8</span>, t.tag, <span class="tok-str">&quot;String&quot;</span>)) {</span>
+<span class="line" id="L591">                    <span class="tok-kw">defer</span> std.testing.allocator.free(got.String);</span>
+<span class="line" id="L592">                    <span class="tok-kw">try</span> testing.expectEqualSlices(t.name, <span class="tok-type">u8</span>, got.want, got.String);</span>
+<span class="line" id="L593">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L594">                    <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, <span class="tok-builtin">@field</span>(got, t.tag));</span>
+<span class="line" id="L595">                }</span>
+<span class="line" id="L596">            }</span>
+<span class="line" id="L597">        }</span>
+<span class="line" id="L598">    }</span>
+<span class="line" id="L599">}</span>
+<span class="line" id="L600"></span>
+<span class="line" id="L601"><span class="tok-kw">fn</span> <span class="tok-fn">runTest</span>(t: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L602">    <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L603"></span>
+<span class="line" id="L604">    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L605">        <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L606">            t.name,</span>
+<span class="line" id="L607">            t.want_err,</span>
+<span class="line" id="L608">            testing.deserializeErr(std.testing.allocator, <span class="tok-builtin">@This</span>(), Want, t.tokens),</span>
+<span class="line" id="L609">        );</span>
+<span class="line" id="L610">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L611">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(std.testing.allocator, t.name, <span class="tok-builtin">@This</span>(), Want, t.tokens);</span>
+<span class="line" id="L612"></span>
+<span class="line" id="L613">        <span class="tok-kw">if</span> (t.tagged) {</span>
+<span class="line" id="L614">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
+<span class="line" id="L615">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L616">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, <span class="tok-builtin">@field</span>(got, t.tag));</span>
+<span class="line" id="L617">        }</span>
+<span class="line" id="L618">    }</span>
+<span class="line" id="L619">}</span>
+<span class="line" id="L620"></span>
 </code></pre></body>
 </html>
