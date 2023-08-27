@@ -172,6 +172,9 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
         }
 
         fn payloadSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+            // This check prevents deserializeUntaggedUnion from having
+            // multiple return statements with different return types when its
+            // inline loop is unrolled.
             if (@TypeOf(seed).Value != Payload) {
                 return error.InvalidType;
             }
