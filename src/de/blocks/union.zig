@@ -118,6 +118,10 @@ fn deserializeUntaggedUnion(
 
     inline for (std.meta.fields(T)) |field| {
         if (getty_deserialize(ally, field.type, d)) |value| {
+            errdefer if (ally) |a| {
+                getty_free(a, @TypeOf(d), value);
+            };
+
             var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(value)){
                 .variant = field.name,
                 .payload = value,
