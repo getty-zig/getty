@@ -54,6 +54,35 @@ pub fn deserialize(
     };
 }
 
+/// Returns a type that implements `getty.de.Visitor`.
+pub fn Visitor(
+    /// The type being deserialized into.
+    comptime T: type,
+) type {
+    return UnionVisitor(T);
+}
+
+/// Frees resources allocated by Getty during deserialization.
+pub fn free(
+    /// A memory allocator.
+    ally: std.mem.Allocator,
+    /// A `getty.Deserializer` interface type.
+    comptime Deserializer: type,
+    /// A value to deallocate.
+    value: anytype,
+) void {
+    const info = @typeInfo(@TypeOf(value)).Union;
+
+    if (info.tag_type) |T| {
+        inline for (info.fields) |field| {
+            if (value == @field(T, field.name)) {
+                getty_free(ally, Deserializer, @field(value, field.name));
+                break;
+            }
+        }
+    }
+}
+
 fn deserializeExternallyTaggedUnion(
     ally: ?std.mem.Allocator,
     deserializer: anytype,
@@ -633,35 +662,6 @@ const UnionVariantAccess = struct {
         return try seed.deserialize(ally, cd.deserializer());
     }
 };
-
-/// Returns a type that implements `getty.de.Visitor`.
-pub fn Visitor(
-    /// The type being deserialized into.
-    comptime T: type,
-) type {
-    return UnionVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const info = @typeInfo(@TypeOf(value)).Union;
-
-    if (info.tag_type) |T| {
-        inline for (info.fields) |field| {
-            if (value == @field(T, field.name)) {
-                getty_free(ally, Deserializer, @field(value, field.name));
-                break;
-            }
-        }
-    }
-}
 
 test "deserialize - union" {
     const Tagged = union(enum) {
