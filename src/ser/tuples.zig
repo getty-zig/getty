@@ -104,8 +104,8 @@ pub const st = .{
     blocks.PriorityQueue,
     blocks.PriorityDequeue,
     blocks.SinglyLinkedList,
+    blocks.DoublyLinkedList,
     blocks.SemanticVersion,
-    blocks.TailQueue,
     blocks.LinearFifo,
     blocks.SegmentedList,
 

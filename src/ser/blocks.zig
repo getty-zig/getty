@@ -93,6 +93,9 @@ pub const BufMap = @import("blocks/buf_map.zig");
 /// Serialization block for `std.BufSet` values.
 pub const BufSet = @import("blocks/buf_set.zig");
 
+/// Serialization block for `std.DoublyLinkedList`.
+pub const DoublyLinkedList = @import("blocks/doubly_linked_list.zig");
+
 /// Serialization block for `std.DynamicBitSet` values.
 pub const DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 
@@ -179,9 +182,6 @@ pub const StringHashMap = _HashMap;
 
 /// Serialization block for `std.StringHashMapUnmanaged` values.
 pub const StringHashMapUnmanaged = _HashMap;
-
-/// Serialization block for `std.TailQueue`.
-pub const TailQueue = @import("blocks/tail_queue.zig");
 
 /// Serialization block for `std.LinearFifo`.
 pub const LinearFifo = @import("blocks/linear_fifo.zig");

@@ -7,7 +7,7 @@ pub fn is(
     /// The type of a value being serialized.
     comptime T: type,
 ) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.TailQueue");
+    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.DoublyLinkedList");
 }
 
 /// Specifies the serialization process for values relevant to this block.
@@ -32,8 +32,8 @@ pub fn serialize(
     return try seq.end();
 }
 
-test "serialize - tail queue" {
-    var list = std.TailQueue(i32){};
+test "serialize - std.DoublyLinkedList" {
+    var list = std.DoublyLinkedList(i32){};
 
     try t.run(null, serialize, list, &.{
         .{ .Seq = .{ .len = 0 } },
