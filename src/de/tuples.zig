@@ -95,7 +95,7 @@ pub const dt = .{
     blocks.PriorityDequeue,
     blocks.SemanticVersion,
     blocks.SinglyLinkedList,
-    blocks.TailQueue,
+    blocks.DoublyLinkedList,
     blocks.LinearFifo,
     blocks.SegmentedList,
 

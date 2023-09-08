@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const getty_free = @import("../free.zig").free;
-const TailQueueVisitor = @import("../impls/visitor/tail_queue.zig").Visitor;
+const DoublyLinkedListVisitor = @import("../impls/visitor/doubly_linked_list.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -11,7 +11,7 @@ pub fn is(
     /// The type being deserialized into.
     comptime T: type,
 ) bool {
-    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.TailQueue");
+    return comptime std.mem.startsWith(u8, @typeName(T), "linked_list.DoublyLinkedList");
 }
 
 /// Specifies the deserialization process for types relevant to this block.
@@ -35,7 +35,7 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return TailQueueVisitor(T);
+    return DoublyLinkedListVisitor(T);
 }
 
 /// Frees resources allocated by Getty during deserialization.
@@ -55,8 +55,8 @@ pub fn free(
     }
 }
 
-test "deserialize - std.TailQueue" {
-    const List = std.TailQueue(i32);
+test "deserialize - std.DoublyLinkedList" {
+    const List = std.DoublyLinkedList(i32);
 
     var one = List.Node{ .data = 1 };
     var two = List.Node{ .data = 2 };
@@ -115,9 +115,9 @@ test "deserialize - std.TailQueue" {
     }
 }
 
-test "deserialize - std.TailQueue (recursive)" {
-    const Child = std.TailQueue(i32);
-    const Parent = std.TailQueue(Child);
+test "deserialize - std.DoublyLinkedList (recursive)" {
+    const Child = std.DoublyLinkedList(i32);
+    const Parent = std.DoublyLinkedList(Child);
 
     var expected = Parent{};
     var a = Child{};

@@ -3,7 +3,7 @@ const std = @import("std");
 const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
-pub fn Visitor(comptime TailQueue: type) type {
+pub fn Visitor(comptime DoublyLinkedList: type) type {
     return struct {
         const Self = @This();
 
@@ -13,7 +13,7 @@ pub fn Visitor(comptime TailQueue: type) type {
             .{ .visitSeq = visitSeq },
         );
 
-        const Value = TailQueue;
+        const Value = DoublyLinkedList;
 
         fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
             if (ally == null) {

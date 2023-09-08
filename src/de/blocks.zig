@@ -87,6 +87,9 @@ pub const BufMap = @import("blocks/buf_map.zig");
 /// Deserialization block for `std.BufSet` values.
 pub const BufSet = @import("blocks/buf_set.zig");
 
+/// Deserialization block for `std.DoublyLinkedList`.
+pub const DoublyLinkedList = @import("blocks/doubly_linked_list.zig");
+
 /// Deserialization block for `std.DynamicBitSet` values.
 pub const DynamicBitSet = _DynamicBitSet;
 
@@ -173,9 +176,6 @@ pub const StringHashMap = _HashMap;
 
 /// Deserialization block for `std.StringHashMapUnmanaged` values.
 pub const StringHashMapUnmanaged = _HashMap;
-
-/// Deserialization block for `std.TailQueue`.
-pub const TailQueue = @import("blocks/tail_queue.zig");
 
 /// Deserialization block for `std.LinearFifo`.
 pub const LinearFifo = @import("blocks/linear_fifo.zig");
