@@ -102,11 +102,87 @@ test "deserialize - integer" {
             .tokens = &.{.{ .U128 = 0 }},
             .want = @as(usize, 0),
         },
+        .{
+            .name = "i32 -> i8",
+            .tokens = &.{.{ .I32 = std.math.maxInt(i8) }},
+            .want = @as(i8, std.math.maxInt(i8)),
+        },
+        .{
+            .name = "i32 -> u8",
+            .tokens = &.{.{ .I32 = std.math.maxInt(u8) }},
+            .want = @as(u8, std.math.maxInt(u8)),
+        },
+        .{
+            .name = "i32 -> u32",
+            .tokens = &.{.{ .I32 = std.math.maxInt(i32) }},
+            .want = @as(u32, std.math.maxInt(i32)),
+        },
+        .{
+            .name = "u32 -> u8",
+            .tokens = &.{.{ .U32 = std.math.maxInt(u8) }},
+            .want = @as(u8, std.math.maxInt(u8)),
+        },
+        .{
+            .name = "u32 -> i8",
+            .tokens = &.{.{ .U32 = std.math.maxInt(i8) }},
+            .want = @as(i8, std.math.maxInt(i8)),
+        },
+        .{
+            .name = "u32 -> i32",
+            .tokens = &.{.{ .U32 = std.math.maxInt(i32) }},
+            .want = @as(i32, std.math.maxInt(i32)),
+        },
+        .{
+            .name = "i32 -> i8 (fail)",
+            .tokens = &.{.{ .I32 = std.math.maxInt(i32) }},
+            .Want = i8,
+            .want_err = error.Overflow,
+        },
+        .{
+            .name = "i32 -> u8 (fail)",
+            .tokens = &.{.{ .I32 = std.math.minInt(i32) }},
+            .Want = u8,
+            .want_err = error.Overflow,
+        },
+        .{
+            .name = "i32 -> u32 (fail)",
+            .tokens = &.{.{ .I32 = std.math.minInt(i32) }},
+            .Want = u32,
+            .want_err = error.Overflow,
+        },
+        .{
+            .name = "u32 -> u8 (fail)",
+            .tokens = &.{.{ .U32 = std.math.maxInt(u32) }},
+            .Want = u8,
+            .want_err = error.Overflow,
+        },
+        .{
+            .name = "u32 -> i8 (fail)",
+            .tokens = &.{.{ .U32 = std.math.maxInt(u32) }},
+            .Want = i8,
+            .want_err = error.Overflow,
+        },
+        .{
+            .name = "u32 -> i32 (fail)",
+            .tokens = &.{.{ .U32 = std.math.maxInt(u32) }},
+            .Want = i32,
+            .want_err = error.Overflow,
+        },
     };
 
     inline for (tests) |t| {
-        const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
-        try testing.expectEqual(t.name, t.want, got);
+        const Test = @TypeOf(t);
+        const Want = if (@hasField(Test, "Want")) t.Want else @TypeOf(t.want);
+
+        if (@hasField(Test, "want_err")) {
+            try testing.expectError(
+                t.name,
+                t.want_err,
+                testing.deserializeErr(null, Self, Want, t.tokens),
+            );
+        } else {
+            const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+            try testing.expectEqual(t.name, t.want, got);
+        }
     }
 }

@@ -15,7 +15,7 @@ pub fn Visitor(comptime Int: type) type {
         const Value = Int;
 
         fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
-            return @intCast(input);
+            return std.math.cast(Value, input) orelse error.Overflow;
         }
     };
 }
