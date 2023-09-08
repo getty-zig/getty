@@ -106,8 +106,8 @@ pub fn main() !void {
     const deserialized = try json.fromSlice(page_ally, Point, serialized);
 
     // Print results.
-    std.debug.print("{s}\n", .{serialized});
-    std.debug.print("{}\n", .{deserialized});
+    std.debug.print("{s}\n", .{serialized});  // {"x":1,"y":2}
+    std.debug.print("{}\n", .{deserialized}); // main.Point{ .x = 1, .y = 2 }
 }
 ```
 
