@@ -1728,229 +1728,217 @@
 <span class="line" id="L1587">}</span>
 <span class="line" id="L1588"></span>
 <span class="line" id="L1589"><span class="tok-kw">test</span> <span class="tok-str">&quot;shrink still sets length when resizing is disabled&quot;</span> {</span>
-<span class="line" id="L1590">    <span class="tok-comment">// Use the testing allocator but with resize disabled.</span>
-</span>
-<span class="line" id="L1591">    <span class="tok-kw">var</span> a = testing.allocator;</span>
-<span class="line" id="L1592">    a.vtable = &amp;.{</span>
-<span class="line" id="L1593">        .alloc = a.vtable.alloc,</span>
-<span class="line" id="L1594">        .resize = Allocator.noResize,</span>
-<span class="line" id="L1595">        .free = a.vtable.free,</span>
-<span class="line" id="L1596">    };</span>
-<span class="line" id="L1597"></span>
-<span class="line" id="L1598">    {</span>
-<span class="line" id="L1599">        <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">i32</span>).init(a);</span>
-<span class="line" id="L1600">        <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1601"></span>
-<span class="line" id="L1602">        <span class="tok-kw">try</span> list.append(<span class="tok-number">1</span>);</span>
-<span class="line" id="L1603">        <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
-<span class="line" id="L1604">        <span class="tok-kw">try</span> list.append(<span class="tok-number">3</span>);</span>
-<span class="line" id="L1605"></span>
-<span class="line" id="L1606">        list.shrinkAndFree(<span class="tok-number">1</span>);</span>
-<span class="line" id="L1607">        <span class="tok-kw">try</span> testing.expect(list.items.len == <span class="tok-number">1</span>);</span>
-<span class="line" id="L1608">    }</span>
-<span class="line" id="L1609">    {</span>
-<span class="line" id="L1610">        <span class="tok-kw">var</span> list = ArrayListUnmanaged(<span class="tok-type">i32</span>){};</span>
-<span class="line" id="L1611">        <span class="tok-kw">defer</span> list.deinit(a);</span>
-<span class="line" id="L1612"></span>
-<span class="line" id="L1613">        <span class="tok-kw">try</span> list.append(a, <span class="tok-number">1</span>);</span>
-<span class="line" id="L1614">        <span class="tok-kw">try</span> list.append(a, <span class="tok-number">2</span>);</span>
-<span class="line" id="L1615">        <span class="tok-kw">try</span> list.append(a, <span class="tok-number">3</span>);</span>
+<span class="line" id="L1590">    <span class="tok-kw">var</span> failing_allocator = testing.FailingAllocator.init(testing.allocator, .{ .resize_fail_index = <span class="tok-number">0</span> });</span>
+<span class="line" id="L1591">    <span class="tok-kw">const</span> a = failing_allocator.allocator();</span>
+<span class="line" id="L1592"></span>
+<span class="line" id="L1593">    {</span>
+<span class="line" id="L1594">        <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">i32</span>).init(a);</span>
+<span class="line" id="L1595">        <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1596"></span>
+<span class="line" id="L1597">        <span class="tok-kw">try</span> list.append(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1598">        <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
+<span class="line" id="L1599">        <span class="tok-kw">try</span> list.append(<span class="tok-number">3</span>);</span>
+<span class="line" id="L1600"></span>
+<span class="line" id="L1601">        list.shrinkAndFree(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1602">        <span class="tok-kw">try</span> testing.expect(list.items.len == <span class="tok-number">1</span>);</span>
+<span class="line" id="L1603">    }</span>
+<span class="line" id="L1604">    {</span>
+<span class="line" id="L1605">        <span class="tok-kw">var</span> list = ArrayListUnmanaged(<span class="tok-type">i32</span>){};</span>
+<span class="line" id="L1606">        <span class="tok-kw">defer</span> list.deinit(a);</span>
+<span class="line" id="L1607"></span>
+<span class="line" id="L1608">        <span class="tok-kw">try</span> list.append(a, <span class="tok-number">1</span>);</span>
+<span class="line" id="L1609">        <span class="tok-kw">try</span> list.append(a, <span class="tok-number">2</span>);</span>
+<span class="line" id="L1610">        <span class="tok-kw">try</span> list.append(a, <span class="tok-number">3</span>);</span>
+<span class="line" id="L1611"></span>
+<span class="line" id="L1612">        list.shrinkAndFree(a, <span class="tok-number">1</span>);</span>
+<span class="line" id="L1613">        <span class="tok-kw">try</span> testing.expect(list.items.len == <span class="tok-number">1</span>);</span>
+<span class="line" id="L1614">    }</span>
+<span class="line" id="L1615">}</span>
 <span class="line" id="L1616"></span>
-<span class="line" id="L1617">        list.shrinkAndFree(a, <span class="tok-number">1</span>);</span>
-<span class="line" id="L1618">        <span class="tok-kw">try</span> testing.expect(list.items.len == <span class="tok-number">1</span>);</span>
-<span class="line" id="L1619">    }</span>
-<span class="line" id="L1620">}</span>
-<span class="line" id="L1621"></span>
-<span class="line" id="L1622"><span class="tok-kw">test</span> <span class="tok-str">&quot;shrinkAndFree with a copy&quot;</span> {</span>
-<span class="line" id="L1623">    <span class="tok-comment">// Use the testing allocator but with resize disabled.</span>
-</span>
-<span class="line" id="L1624">    <span class="tok-kw">var</span> a = testing.allocator;</span>
-<span class="line" id="L1625">    a.vtable = &amp;.{</span>
-<span class="line" id="L1626">        .alloc = a.vtable.alloc,</span>
-<span class="line" id="L1627">        .resize = Allocator.noResize,</span>
-<span class="line" id="L1628">        .free = a.vtable.free,</span>
-<span class="line" id="L1629">    };</span>
-<span class="line" id="L1630">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">i32</span>).init(a);</span>
-<span class="line" id="L1631">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1632"></span>
-<span class="line" id="L1633">    <span class="tok-kw">try</span> list.appendNTimes(<span class="tok-number">3</span>, <span class="tok-number">16</span>);</span>
-<span class="line" id="L1634">    list.shrinkAndFree(<span class="tok-number">4</span>);</span>
-<span class="line" id="L1635">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">i32</span>, list.items, &amp;.{ <span class="tok-number">3</span>, <span class="tok-number">3</span>, <span class="tok-number">3</span>, <span class="tok-number">3</span> }));</span>
-<span class="line" id="L1636">}</span>
-<span class="line" id="L1637"></span>
-<span class="line" id="L1638"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.addManyAsArray&quot;</span> {</span>
-<span class="line" id="L1639">    <span class="tok-kw">const</span> a = std.testing.allocator;</span>
-<span class="line" id="L1640">    {</span>
-<span class="line" id="L1641">        <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
-<span class="line" id="L1642">        <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1643"></span>
-<span class="line" id="L1644">        (<span class="tok-kw">try</span> list.addManyAsArray(<span class="tok-number">4</span>)).* = <span class="tok-str">&quot;aoeu&quot;</span>.*;</span>
-<span class="line" id="L1645">        <span class="tok-kw">try</span> list.ensureTotalCapacity(<span class="tok-number">8</span>);</span>
-<span class="line" id="L1646">        list.addManyAsArrayAssumeCapacity(<span class="tok-number">4</span>).* = <span class="tok-str">&quot;asdf&quot;</span>.*;</span>
-<span class="line" id="L1647"></span>
-<span class="line" id="L1648">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, <span class="tok-str">&quot;aoeuasdf&quot;</span>);</span>
-<span class="line" id="L1649">    }</span>
-<span class="line" id="L1650">    {</span>
-<span class="line" id="L1651">        <span class="tok-kw">var</span> list = ArrayListUnmanaged(<span class="tok-type">u8</span>){};</span>
-<span class="line" id="L1652">        <span class="tok-kw">defer</span> list.deinit(a);</span>
-<span class="line" id="L1653"></span>
-<span class="line" id="L1654">        (<span class="tok-kw">try</span> list.addManyAsArray(a, <span class="tok-number">4</span>)).* = <span class="tok-str">&quot;aoeu&quot;</span>.*;</span>
-<span class="line" id="L1655">        <span class="tok-kw">try</span> list.ensureTotalCapacity(a, <span class="tok-number">8</span>);</span>
-<span class="line" id="L1656">        list.addManyAsArrayAssumeCapacity(<span class="tok-number">4</span>).* = <span class="tok-str">&quot;asdf&quot;</span>.*;</span>
-<span class="line" id="L1657"></span>
-<span class="line" id="L1658">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, <span class="tok-str">&quot;aoeuasdf&quot;</span>);</span>
-<span class="line" id="L1659">    }</span>
-<span class="line" id="L1660">}</span>
-<span class="line" id="L1661"></span>
-<span class="line" id="L1662"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayList.fromOwnedSliceSentinel&quot;</span> {</span>
-<span class="line" id="L1663">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1664"></span>
-<span class="line" id="L1665">    <span class="tok-kw">var</span> orig_list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
-<span class="line" id="L1666">    <span class="tok-kw">defer</span> orig_list.deinit();</span>
-<span class="line" id="L1667">    <span class="tok-kw">try</span> orig_list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1668">    <span class="tok-kw">const</span> sentinel_slice = <span class="tok-kw">try</span> orig_list.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1669"></span>
-<span class="line" id="L1670">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).fromOwnedSliceSentinel(a, <span class="tok-number">0</span>, sentinel_slice);</span>
-<span class="line" id="L1671">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1672">    <span class="tok-kw">try</span> testing.expectEqualStrings(list.items, <span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1673">}</span>
-<span class="line" id="L1674"></span>
-<span class="line" id="L1675"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.fromOwnedSlice&quot;</span> {</span>
-<span class="line" id="L1676">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1677"></span>
-<span class="line" id="L1678">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
-<span class="line" id="L1679">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1680">    <span class="tok-kw">try</span> list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1617"><span class="tok-kw">test</span> <span class="tok-str">&quot;shrinkAndFree with a copy&quot;</span> {</span>
+<span class="line" id="L1618">    <span class="tok-kw">var</span> failing_allocator = testing.FailingAllocator.init(testing.allocator, .{ .resize_fail_index = <span class="tok-number">0</span> });</span>
+<span class="line" id="L1619">    <span class="tok-kw">const</span> a = failing_allocator.allocator();</span>
+<span class="line" id="L1620"></span>
+<span class="line" id="L1621">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">i32</span>).init(a);</span>
+<span class="line" id="L1622">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1623"></span>
+<span class="line" id="L1624">    <span class="tok-kw">try</span> list.appendNTimes(<span class="tok-number">3</span>, <span class="tok-number">16</span>);</span>
+<span class="line" id="L1625">    list.shrinkAndFree(<span class="tok-number">4</span>);</span>
+<span class="line" id="L1626">    <span class="tok-kw">try</span> testing.expect(mem.eql(<span class="tok-type">i32</span>, list.items, &amp;.{ <span class="tok-number">3</span>, <span class="tok-number">3</span>, <span class="tok-number">3</span>, <span class="tok-number">3</span> }));</span>
+<span class="line" id="L1627">}</span>
+<span class="line" id="L1628"></span>
+<span class="line" id="L1629"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.addManyAsArray&quot;</span> {</span>
+<span class="line" id="L1630">    <span class="tok-kw">const</span> a = std.testing.allocator;</span>
+<span class="line" id="L1631">    {</span>
+<span class="line" id="L1632">        <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
+<span class="line" id="L1633">        <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1634"></span>
+<span class="line" id="L1635">        (<span class="tok-kw">try</span> list.addManyAsArray(<span class="tok-number">4</span>)).* = <span class="tok-str">&quot;aoeu&quot;</span>.*;</span>
+<span class="line" id="L1636">        <span class="tok-kw">try</span> list.ensureTotalCapacity(<span class="tok-number">8</span>);</span>
+<span class="line" id="L1637">        list.addManyAsArrayAssumeCapacity(<span class="tok-number">4</span>).* = <span class="tok-str">&quot;asdf&quot;</span>.*;</span>
+<span class="line" id="L1638"></span>
+<span class="line" id="L1639">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, <span class="tok-str">&quot;aoeuasdf&quot;</span>);</span>
+<span class="line" id="L1640">    }</span>
+<span class="line" id="L1641">    {</span>
+<span class="line" id="L1642">        <span class="tok-kw">var</span> list = ArrayListUnmanaged(<span class="tok-type">u8</span>){};</span>
+<span class="line" id="L1643">        <span class="tok-kw">defer</span> list.deinit(a);</span>
+<span class="line" id="L1644"></span>
+<span class="line" id="L1645">        (<span class="tok-kw">try</span> list.addManyAsArray(a, <span class="tok-number">4</span>)).* = <span class="tok-str">&quot;aoeu&quot;</span>.*;</span>
+<span class="line" id="L1646">        <span class="tok-kw">try</span> list.ensureTotalCapacity(a, <span class="tok-number">8</span>);</span>
+<span class="line" id="L1647">        list.addManyAsArrayAssumeCapacity(<span class="tok-number">4</span>).* = <span class="tok-str">&quot;asdf&quot;</span>.*;</span>
+<span class="line" id="L1648"></span>
+<span class="line" id="L1649">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, <span class="tok-str">&quot;aoeuasdf&quot;</span>);</span>
+<span class="line" id="L1650">    }</span>
+<span class="line" id="L1651">}</span>
+<span class="line" id="L1652"></span>
+<span class="line" id="L1653"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayList.fromOwnedSliceSentinel&quot;</span> {</span>
+<span class="line" id="L1654">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1655"></span>
+<span class="line" id="L1656">    <span class="tok-kw">var</span> orig_list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
+<span class="line" id="L1657">    <span class="tok-kw">defer</span> orig_list.deinit();</span>
+<span class="line" id="L1658">    <span class="tok-kw">try</span> orig_list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1659">    <span class="tok-kw">const</span> sentinel_slice = <span class="tok-kw">try</span> orig_list.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1660"></span>
+<span class="line" id="L1661">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).fromOwnedSliceSentinel(a, <span class="tok-number">0</span>, sentinel_slice);</span>
+<span class="line" id="L1662">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1663">    <span class="tok-kw">try</span> testing.expectEqualStrings(list.items, <span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1664">}</span>
+<span class="line" id="L1665"></span>
+<span class="line" id="L1666"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.fromOwnedSlice&quot;</span> {</span>
+<span class="line" id="L1667">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1668"></span>
+<span class="line" id="L1669">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
+<span class="line" id="L1670">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1671">    <span class="tok-kw">try</span> list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1672"></span>
+<span class="line" id="L1673">    <span class="tok-kw">const</span> slice = <span class="tok-kw">try</span> list.toOwnedSlice();</span>
+<span class="line" id="L1674">    <span class="tok-kw">var</span> unmanaged = ArrayListUnmanaged(<span class="tok-type">u8</span>).fromOwnedSlice(slice);</span>
+<span class="line" id="L1675">    <span class="tok-kw">defer</span> unmanaged.deinit(a);</span>
+<span class="line" id="L1676">    <span class="tok-kw">try</span> testing.expectEqualStrings(unmanaged.items, <span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1677">}</span>
+<span class="line" id="L1678"></span>
+<span class="line" id="L1679"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.fromOwnedSliceSentinel&quot;</span> {</span>
+<span class="line" id="L1680">    <span class="tok-kw">const</span> a = testing.allocator;</span>
 <span class="line" id="L1681"></span>
-<span class="line" id="L1682">    <span class="tok-kw">const</span> slice = <span class="tok-kw">try</span> list.toOwnedSlice();</span>
-<span class="line" id="L1683">    <span class="tok-kw">var</span> unmanaged = ArrayListUnmanaged(<span class="tok-type">u8</span>).fromOwnedSlice(slice);</span>
-<span class="line" id="L1684">    <span class="tok-kw">defer</span> unmanaged.deinit(a);</span>
-<span class="line" id="L1685">    <span class="tok-kw">try</span> testing.expectEqualStrings(unmanaged.items, <span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1686">}</span>
-<span class="line" id="L1687"></span>
-<span class="line" id="L1688"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.fromOwnedSliceSentinel&quot;</span> {</span>
-<span class="line" id="L1689">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1690"></span>
-<span class="line" id="L1691">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
-<span class="line" id="L1692">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1693">    <span class="tok-kw">try</span> list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1694"></span>
-<span class="line" id="L1695">    <span class="tok-kw">const</span> sentinel_slice = <span class="tok-kw">try</span> list.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1696">    <span class="tok-kw">var</span> unmanaged = ArrayListUnmanaged(<span class="tok-type">u8</span>).fromOwnedSliceSentinel(<span class="tok-number">0</span>, sentinel_slice);</span>
-<span class="line" id="L1697">    <span class="tok-kw">defer</span> unmanaged.deinit(a);</span>
-<span class="line" id="L1698">    <span class="tok-kw">try</span> testing.expectEqualStrings(unmanaged.items, <span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1699">}</span>
-<span class="line" id="L1700"></span>
-<span class="line" id="L1701"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.toOwnedSliceSentinel&quot;</span> {</span>
-<span class="line" id="L1702">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1703">    {</span>
-<span class="line" id="L1704">        <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
-<span class="line" id="L1705">        <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1706"></span>
-<span class="line" id="L1707">        <span class="tok-kw">try</span> list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1708"></span>
-<span class="line" id="L1709">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> list.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1710">        <span class="tok-kw">defer</span> a.free(result);</span>
-<span class="line" id="L1711">        <span class="tok-kw">try</span> testing.expectEqualStrings(result, mem.sliceTo(result.ptr, <span class="tok-number">0</span>));</span>
-<span class="line" id="L1712">    }</span>
-<span class="line" id="L1713">    {</span>
-<span class="line" id="L1714">        <span class="tok-kw">var</span> list = ArrayListUnmanaged(<span class="tok-type">u8</span>){};</span>
-<span class="line" id="L1715">        <span class="tok-kw">defer</span> list.deinit(a);</span>
-<span class="line" id="L1716"></span>
-<span class="line" id="L1717">        <span class="tok-kw">try</span> list.appendSlice(a, <span class="tok-str">&quot;foobar&quot;</span>);</span>
-<span class="line" id="L1718"></span>
-<span class="line" id="L1719">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> list.toOwnedSliceSentinel(a, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1720">        <span class="tok-kw">defer</span> a.free(result);</span>
-<span class="line" id="L1721">        <span class="tok-kw">try</span> testing.expectEqualStrings(result, mem.sliceTo(result.ptr, <span class="tok-number">0</span>));</span>
-<span class="line" id="L1722">    }</span>
-<span class="line" id="L1723">}</span>
-<span class="line" id="L1724"></span>
-<span class="line" id="L1725"><span class="tok-kw">test</span> <span class="tok-str">&quot;ArrayListAligned/ArrayListAlignedUnmanaged accepts unaligned slices&quot;</span> {</span>
-<span class="line" id="L1726">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1727">    {</span>
-<span class="line" id="L1728">        <span class="tok-kw">var</span> list = std.ArrayListAligned(<span class="tok-type">u8</span>, <span class="tok-number">8</span>).init(a);</span>
-<span class="line" id="L1729">        <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1730"></span>
-<span class="line" id="L1731">        <span class="tok-kw">try</span> list.appendSlice(&amp;.{ <span class="tok-number">0</span>, <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
-<span class="line" id="L1732">        <span class="tok-kw">try</span> list.insertSlice(<span class="tok-number">2</span>, &amp;.{ <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span> });</span>
-<span class="line" id="L1733">        <span class="tok-kw">try</span> list.replaceRange(<span class="tok-number">1</span>, <span class="tok-number">3</span>, &amp;.{ <span class="tok-number">8</span>, <span class="tok-number">9</span> });</span>
-<span class="line" id="L1734"></span>
-<span class="line" id="L1735">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, &amp;.{ <span class="tok-number">0</span>, <span class="tok-number">8</span>, <span class="tok-number">9</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
-<span class="line" id="L1736">    }</span>
-<span class="line" id="L1737">    {</span>
-<span class="line" id="L1738">        <span class="tok-kw">var</span> list = std.ArrayListAlignedUnmanaged(<span class="tok-type">u8</span>, <span class="tok-number">8</span>){};</span>
-<span class="line" id="L1739">        <span class="tok-kw">defer</span> list.deinit(a);</span>
-<span class="line" id="L1740"></span>
-<span class="line" id="L1741">        <span class="tok-kw">try</span> list.appendSlice(a, &amp;.{ <span class="tok-number">0</span>, <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
-<span class="line" id="L1742">        <span class="tok-kw">try</span> list.insertSlice(a, <span class="tok-number">2</span>, &amp;.{ <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span> });</span>
-<span class="line" id="L1743">        <span class="tok-kw">try</span> list.replaceRange(a, <span class="tok-number">1</span>, <span class="tok-number">3</span>, &amp;.{ <span class="tok-number">8</span>, <span class="tok-number">9</span> });</span>
-<span class="line" id="L1744"></span>
-<span class="line" id="L1745">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, &amp;.{ <span class="tok-number">0</span>, <span class="tok-number">8</span>, <span class="tok-number">9</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
-<span class="line" id="L1746">    }</span>
-<span class="line" id="L1747">}</span>
-<span class="line" id="L1748"></span>
-<span class="line" id="L1749"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(u0)&quot;</span> {</span>
-<span class="line" id="L1750">    <span class="tok-comment">// An ArrayList on zero-sized types should not need to allocate</span>
+<span class="line" id="L1682">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
+<span class="line" id="L1683">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1684">    <span class="tok-kw">try</span> list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1685"></span>
+<span class="line" id="L1686">    <span class="tok-kw">const</span> sentinel_slice = <span class="tok-kw">try</span> list.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1687">    <span class="tok-kw">var</span> unmanaged = ArrayListUnmanaged(<span class="tok-type">u8</span>).fromOwnedSliceSentinel(<span class="tok-number">0</span>, sentinel_slice);</span>
+<span class="line" id="L1688">    <span class="tok-kw">defer</span> unmanaged.deinit(a);</span>
+<span class="line" id="L1689">    <span class="tok-kw">try</span> testing.expectEqualStrings(unmanaged.items, <span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1690">}</span>
+<span class="line" id="L1691"></span>
+<span class="line" id="L1692"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList/ArrayListUnmanaged.toOwnedSliceSentinel&quot;</span> {</span>
+<span class="line" id="L1693">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1694">    {</span>
+<span class="line" id="L1695">        <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u8</span>).init(a);</span>
+<span class="line" id="L1696">        <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1697"></span>
+<span class="line" id="L1698">        <span class="tok-kw">try</span> list.appendSlice(<span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1699"></span>
+<span class="line" id="L1700">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> list.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1701">        <span class="tok-kw">defer</span> a.free(result);</span>
+<span class="line" id="L1702">        <span class="tok-kw">try</span> testing.expectEqualStrings(result, mem.sliceTo(result.ptr, <span class="tok-number">0</span>));</span>
+<span class="line" id="L1703">    }</span>
+<span class="line" id="L1704">    {</span>
+<span class="line" id="L1705">        <span class="tok-kw">var</span> list = ArrayListUnmanaged(<span class="tok-type">u8</span>){};</span>
+<span class="line" id="L1706">        <span class="tok-kw">defer</span> list.deinit(a);</span>
+<span class="line" id="L1707"></span>
+<span class="line" id="L1708">        <span class="tok-kw">try</span> list.appendSlice(a, <span class="tok-str">&quot;foobar&quot;</span>);</span>
+<span class="line" id="L1709"></span>
+<span class="line" id="L1710">        <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> list.toOwnedSliceSentinel(a, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1711">        <span class="tok-kw">defer</span> a.free(result);</span>
+<span class="line" id="L1712">        <span class="tok-kw">try</span> testing.expectEqualStrings(result, mem.sliceTo(result.ptr, <span class="tok-number">0</span>));</span>
+<span class="line" id="L1713">    }</span>
+<span class="line" id="L1714">}</span>
+<span class="line" id="L1715"></span>
+<span class="line" id="L1716"><span class="tok-kw">test</span> <span class="tok-str">&quot;ArrayListAligned/ArrayListAlignedUnmanaged accepts unaligned slices&quot;</span> {</span>
+<span class="line" id="L1717">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1718">    {</span>
+<span class="line" id="L1719">        <span class="tok-kw">var</span> list = std.ArrayListAligned(<span class="tok-type">u8</span>, <span class="tok-number">8</span>).init(a);</span>
+<span class="line" id="L1720">        <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1721"></span>
+<span class="line" id="L1722">        <span class="tok-kw">try</span> list.appendSlice(&amp;.{ <span class="tok-number">0</span>, <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
+<span class="line" id="L1723">        <span class="tok-kw">try</span> list.insertSlice(<span class="tok-number">2</span>, &amp;.{ <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span> });</span>
+<span class="line" id="L1724">        <span class="tok-kw">try</span> list.replaceRange(<span class="tok-number">1</span>, <span class="tok-number">3</span>, &amp;.{ <span class="tok-number">8</span>, <span class="tok-number">9</span> });</span>
+<span class="line" id="L1725"></span>
+<span class="line" id="L1726">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, &amp;.{ <span class="tok-number">0</span>, <span class="tok-number">8</span>, <span class="tok-number">9</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
+<span class="line" id="L1727">    }</span>
+<span class="line" id="L1728">    {</span>
+<span class="line" id="L1729">        <span class="tok-kw">var</span> list = std.ArrayListAlignedUnmanaged(<span class="tok-type">u8</span>, <span class="tok-number">8</span>){};</span>
+<span class="line" id="L1730">        <span class="tok-kw">defer</span> list.deinit(a);</span>
+<span class="line" id="L1731"></span>
+<span class="line" id="L1732">        <span class="tok-kw">try</span> list.appendSlice(a, &amp;.{ <span class="tok-number">0</span>, <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
+<span class="line" id="L1733">        <span class="tok-kw">try</span> list.insertSlice(a, <span class="tok-number">2</span>, &amp;.{ <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span> });</span>
+<span class="line" id="L1734">        <span class="tok-kw">try</span> list.replaceRange(a, <span class="tok-number">1</span>, <span class="tok-number">3</span>, &amp;.{ <span class="tok-number">8</span>, <span class="tok-number">9</span> });</span>
+<span class="line" id="L1735"></span>
+<span class="line" id="L1736">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, list.items, &amp;.{ <span class="tok-number">0</span>, <span class="tok-number">8</span>, <span class="tok-number">9</span>, <span class="tok-number">6</span>, <span class="tok-number">7</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> });</span>
+<span class="line" id="L1737">    }</span>
+<span class="line" id="L1738">}</span>
+<span class="line" id="L1739"></span>
+<span class="line" id="L1740"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(u0)&quot;</span> {</span>
+<span class="line" id="L1741">    <span class="tok-comment">// An ArrayList on zero-sized types should not need to allocate</span>
 </span>
-<span class="line" id="L1751">    <span class="tok-kw">var</span> failing_allocator = testing.FailingAllocator.init(testing.allocator, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1752">    <span class="tok-kw">const</span> a = failing_allocator.allocator();</span>
-<span class="line" id="L1753"></span>
-<span class="line" id="L1754">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u0</span>).init(a);</span>
-<span class="line" id="L1755">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1756"></span>
-<span class="line" id="L1757">    <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1758">    <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1759">    <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1760">    <span class="tok-kw">try</span> testing.expectEqual(list.items.len, <span class="tok-number">3</span>);</span>
-<span class="line" id="L1761"></span>
-<span class="line" id="L1762">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1763">    <span class="tok-kw">for</span> (list.items) |x| {</span>
-<span class="line" id="L1764">        <span class="tok-kw">try</span> testing.expectEqual(x, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1765">        count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1766">    }</span>
-<span class="line" id="L1767">    <span class="tok-kw">try</span> testing.expectEqual(count, <span class="tok-number">3</span>);</span>
-<span class="line" id="L1768">}</span>
-<span class="line" id="L1769"></span>
-<span class="line" id="L1770"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(?u32).popOrNull()&quot;</span> {</span>
-<span class="line" id="L1771">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1772"></span>
-<span class="line" id="L1773">    <span class="tok-kw">var</span> list = ArrayList(?<span class="tok-type">u32</span>).init(a);</span>
-<span class="line" id="L1774">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1775"></span>
-<span class="line" id="L1776">    <span class="tok-kw">try</span> list.append(<span class="tok-null">null</span>);</span>
-<span class="line" id="L1777">    <span class="tok-kw">try</span> list.append(<span class="tok-number">1</span>);</span>
-<span class="line" id="L1778">    <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
-<span class="line" id="L1779">    <span class="tok-kw">try</span> testing.expectEqual(list.items.len, <span class="tok-number">3</span>);</span>
-<span class="line" id="L1780"></span>
-<span class="line" id="L1781">    <span class="tok-kw">try</span> testing.expect(list.popOrNull().? == <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L1782">    <span class="tok-kw">try</span> testing.expect(list.popOrNull().? == <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L1783">    <span class="tok-kw">try</span> testing.expect(list.popOrNull().? == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1784">    <span class="tok-kw">try</span> testing.expect(list.popOrNull() == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1785">}</span>
-<span class="line" id="L1786"></span>
-<span class="line" id="L1787"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(u32).getLast()&quot;</span> {</span>
-<span class="line" id="L1788">    <span class="tok-kw">const</span> a = testing.allocator;</span>
-<span class="line" id="L1789"></span>
-<span class="line" id="L1790">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u32</span>).init(a);</span>
-<span class="line" id="L1791">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1792"></span>
-<span class="line" id="L1793">    <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
-<span class="line" id="L1794">    <span class="tok-kw">const</span> const_list = list;</span>
-<span class="line" id="L1795">    <span class="tok-kw">try</span> testing.expectEqual(const_list.getLast(), <span class="tok-number">2</span>);</span>
-<span class="line" id="L1796">}</span>
-<span class="line" id="L1797"></span>
-<span class="line" id="L1798"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(u32).getLastOrNull()&quot;</span> {</span>
-<span class="line" id="L1799">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1742">    <span class="tok-kw">const</span> a = testing.failing_allocator;</span>
+<span class="line" id="L1743"></span>
+<span class="line" id="L1744">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u0</span>).init(a);</span>
+<span class="line" id="L1745">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1746"></span>
+<span class="line" id="L1747">    <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1748">    <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1749">    <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1750">    <span class="tok-kw">try</span> testing.expectEqual(list.items.len, <span class="tok-number">3</span>);</span>
+<span class="line" id="L1751"></span>
+<span class="line" id="L1752">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1753">    <span class="tok-kw">for</span> (list.items) |x| {</span>
+<span class="line" id="L1754">        <span class="tok-kw">try</span> testing.expectEqual(x, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1755">        count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1756">    }</span>
+<span class="line" id="L1757">    <span class="tok-kw">try</span> testing.expectEqual(count, <span class="tok-number">3</span>);</span>
+<span class="line" id="L1758">}</span>
+<span class="line" id="L1759"></span>
+<span class="line" id="L1760"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(?u32).popOrNull()&quot;</span> {</span>
+<span class="line" id="L1761">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1762"></span>
+<span class="line" id="L1763">    <span class="tok-kw">var</span> list = ArrayList(?<span class="tok-type">u32</span>).init(a);</span>
+<span class="line" id="L1764">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1765"></span>
+<span class="line" id="L1766">    <span class="tok-kw">try</span> list.append(<span class="tok-null">null</span>);</span>
+<span class="line" id="L1767">    <span class="tok-kw">try</span> list.append(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1768">    <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
+<span class="line" id="L1769">    <span class="tok-kw">try</span> testing.expectEqual(list.items.len, <span class="tok-number">3</span>);</span>
+<span class="line" id="L1770"></span>
+<span class="line" id="L1771">    <span class="tok-kw">try</span> testing.expect(list.popOrNull().? == <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L1772">    <span class="tok-kw">try</span> testing.expect(list.popOrNull().? == <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L1773">    <span class="tok-kw">try</span> testing.expect(list.popOrNull().? == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1774">    <span class="tok-kw">try</span> testing.expect(list.popOrNull() == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1775">}</span>
+<span class="line" id="L1776"></span>
+<span class="line" id="L1777"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(u32).getLast()&quot;</span> {</span>
+<span class="line" id="L1778">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1779"></span>
+<span class="line" id="L1780">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u32</span>).init(a);</span>
+<span class="line" id="L1781">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1782"></span>
+<span class="line" id="L1783">    <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
+<span class="line" id="L1784">    <span class="tok-kw">const</span> const_list = list;</span>
+<span class="line" id="L1785">    <span class="tok-kw">try</span> testing.expectEqual(const_list.getLast(), <span class="tok-number">2</span>);</span>
+<span class="line" id="L1786">}</span>
+<span class="line" id="L1787"></span>
+<span class="line" id="L1788"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.ArrayList(u32).getLastOrNull()&quot;</span> {</span>
+<span class="line" id="L1789">    <span class="tok-kw">const</span> a = testing.allocator;</span>
+<span class="line" id="L1790"></span>
+<span class="line" id="L1791">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u32</span>).init(a);</span>
+<span class="line" id="L1792">    <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L1793"></span>
+<span class="line" id="L1794">    <span class="tok-kw">try</span> testing.expectEqual(list.getLastOrNull(), <span class="tok-null">null</span>);</span>
+<span class="line" id="L1795"></span>
+<span class="line" id="L1796">    <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
+<span class="line" id="L1797">    <span class="tok-kw">const</span> const_list = list;</span>
+<span class="line" id="L1798">    <span class="tok-kw">try</span> testing.expectEqual(const_list.getLastOrNull().?, <span class="tok-number">2</span>);</span>
+<span class="line" id="L1799">}</span>
 <span class="line" id="L1800"></span>
-<span class="line" id="L1801">    <span class="tok-kw">var</span> list = ArrayList(<span class="tok-type">u32</span>).init(a);</span>
-<span class="line" id="L1802">    <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L1803"></span>
-<span class="line" id="L1804">    <span class="tok-kw">try</span> testing.expectEqual(list.getLastOrNull(), <span class="tok-null">null</span>);</span>
-<span class="line" id="L1805"></span>
-<span class="line" id="L1806">    <span class="tok-kw">try</span> list.append(<span class="tok-number">2</span>);</span>
-<span class="line" id="L1807">    <span class="tok-kw">const</span> const_list = list;</span>
-<span class="line" id="L1808">    <span class="tok-kw">try</span> testing.expectEqual(const_list.getLastOrNull().?, <span class="tok-number">2</span>);</span>
-<span class="line" id="L1809">}</span>
-<span class="line" id="L1810"></span>
 </code></pre></body>
 </html>

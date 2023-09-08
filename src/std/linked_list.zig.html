@@ -117,7 +117,7 @@
 <span class="line" id="L4"><span class="tok-kw">const</span> testing = std.testing;</span>
 <span class="line" id="L5"></span>
 <span class="line" id="L6"><span class="tok-comment">/// A singly-linked list is headed by a single forward pointer. The elements</span></span>
-<span class="line" id="L7"><span class="tok-comment">/// are singly linked for minimum space and pointer manipulation overhead at</span></span>
+<span class="line" id="L7"><span class="tok-comment">/// are singly-linked for minimum space and pointer manipulation overhead at</span></span>
 <span class="line" id="L8"><span class="tok-comment">/// the expense of O(n) removal for arbitrary elements. New elements can be</span></span>
 <span class="line" id="L9"><span class="tok-comment">/// added to the list after an existing element or at the head of the list.</span></span>
 <span class="line" id="L10"><span class="tok-comment">/// A singly-linked list may only be traversed in the forward direction.</span></span>
@@ -293,312 +293,316 @@
 <span class="line" id="L171">    <span class="tok-kw">try</span> testing.expect(list.first.?.next.?.next == <span class="tok-null">null</span>);</span>
 <span class="line" id="L172">}</span>
 <span class="line" id="L173"></span>
-<span class="line" id="L174"><span class="tok-comment">/// A tail queue is headed by a pair of pointers, one to the head of the</span></span>
-<span class="line" id="L175"><span class="tok-comment">/// list and the other to the tail of the list. The elements are doubly</span></span>
-<span class="line" id="L176"><span class="tok-comment">/// linked so that an arbitrary element can be removed without a need to</span></span>
-<span class="line" id="L177"><span class="tok-comment">/// traverse the list. New elements can be added to the list before or</span></span>
-<span class="line" id="L178"><span class="tok-comment">/// after an existing element, at the head of the list, or at the end of</span></span>
-<span class="line" id="L179"><span class="tok-comment">/// the list. A tail queue may be traversed in either direction.</span></span>
-<span class="line" id="L180"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">TailQueue</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L181">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L182">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L183"></span>
-<span class="line" id="L184">        <span class="tok-comment">/// Node inside the linked list wrapping the actual data.</span></span>
-<span class="line" id="L185">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Node = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L186">            prev: ?*Node = <span class="tok-null">null</span>,</span>
-<span class="line" id="L187">            next: ?*Node = <span class="tok-null">null</span>,</span>
-<span class="line" id="L188">            data: T,</span>
-<span class="line" id="L189">        };</span>
-<span class="line" id="L190"></span>
-<span class="line" id="L191">        first: ?*Node = <span class="tok-null">null</span>,</span>
-<span class="line" id="L192">        last: ?*Node = <span class="tok-null">null</span>,</span>
-<span class="line" id="L193">        len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L174"><span class="tok-comment">/// A doubly-linked list has a pair of pointers to both the head and</span></span>
+<span class="line" id="L175"><span class="tok-comment">/// tail of the list. List elements have pointers to both the previous</span></span>
+<span class="line" id="L176"><span class="tok-comment">/// and next elements in the sequence. The list can be traversed both</span></span>
+<span class="line" id="L177"><span class="tok-comment">/// forward and backward. Some operations that take linear O(n) time</span></span>
+<span class="line" id="L178"><span class="tok-comment">/// with a singly-linked list can be done without traversal in constant</span></span>
+<span class="line" id="L179"><span class="tok-comment">/// O(1) time with a doubly-linked list:</span></span>
+<span class="line" id="L180"><span class="tok-comment">///</span></span>
+<span class="line" id="L181"><span class="tok-comment">/// - Removing an element.</span></span>
+<span class="line" id="L182"><span class="tok-comment">/// - Inserting a new element before an existing element.</span></span>
+<span class="line" id="L183"><span class="tok-comment">/// - Pushing or popping an element from the end of the list.</span></span>
+<span class="line" id="L184"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">DoublyLinkedList</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L185">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L186">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L187"></span>
+<span class="line" id="L188">        <span class="tok-comment">/// Node inside the linked list wrapping the actual data.</span></span>
+<span class="line" id="L189">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Node = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L190">            prev: ?*Node = <span class="tok-null">null</span>,</span>
+<span class="line" id="L191">            next: ?*Node = <span class="tok-null">null</span>,</span>
+<span class="line" id="L192">            data: T,</span>
+<span class="line" id="L193">        };</span>
 <span class="line" id="L194"></span>
-<span class="line" id="L195">        <span class="tok-comment">/// Insert a new node after an existing one.</span></span>
-<span class="line" id="L196">        <span class="tok-comment">///</span></span>
-<span class="line" id="L197">        <span class="tok-comment">/// Arguments:</span></span>
-<span class="line" id="L198">        <span class="tok-comment">///     node: Pointer to a node in the list.</span></span>
-<span class="line" id="L199">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
-<span class="line" id="L200">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">insertAfter</span>(list: *Self, node: *Node, new_node: *Node) <span class="tok-type">void</span> {</span>
-<span class="line" id="L201">            new_node.prev = node;</span>
-<span class="line" id="L202">            <span class="tok-kw">if</span> (node.next) |next_node| {</span>
-<span class="line" id="L203">                <span class="tok-comment">// Intermediate node.</span>
+<span class="line" id="L195">        first: ?*Node = <span class="tok-null">null</span>,</span>
+<span class="line" id="L196">        last: ?*Node = <span class="tok-null">null</span>,</span>
+<span class="line" id="L197">        len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L198"></span>
+<span class="line" id="L199">        <span class="tok-comment">/// Insert a new node after an existing one.</span></span>
+<span class="line" id="L200">        <span class="tok-comment">///</span></span>
+<span class="line" id="L201">        <span class="tok-comment">/// Arguments:</span></span>
+<span class="line" id="L202">        <span class="tok-comment">///     node: Pointer to a node in the list.</span></span>
+<span class="line" id="L203">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
+<span class="line" id="L204">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">insertAfter</span>(list: *Self, node: *Node, new_node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L205">            new_node.prev = node;</span>
+<span class="line" id="L206">            <span class="tok-kw">if</span> (node.next) |next_node| {</span>
+<span class="line" id="L207">                <span class="tok-comment">// Intermediate node.</span>
 </span>
-<span class="line" id="L204">                new_node.next = next_node;</span>
-<span class="line" id="L205">                next_node.prev = new_node;</span>
-<span class="line" id="L206">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L207">                <span class="tok-comment">// Last element of the list.</span>
+<span class="line" id="L208">                new_node.next = next_node;</span>
+<span class="line" id="L209">                next_node.prev = new_node;</span>
+<span class="line" id="L210">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L211">                <span class="tok-comment">// Last element of the list.</span>
 </span>
-<span class="line" id="L208">                new_node.next = <span class="tok-null">null</span>;</span>
-<span class="line" id="L209">                list.last = new_node;</span>
-<span class="line" id="L210">            }</span>
-<span class="line" id="L211">            node.next = new_node;</span>
-<span class="line" id="L212"></span>
-<span class="line" id="L213">            list.len += <span class="tok-number">1</span>;</span>
-<span class="line" id="L214">        }</span>
-<span class="line" id="L215"></span>
-<span class="line" id="L216">        <span class="tok-comment">/// Insert a new node before an existing one.</span></span>
-<span class="line" id="L217">        <span class="tok-comment">///</span></span>
-<span class="line" id="L218">        <span class="tok-comment">/// Arguments:</span></span>
-<span class="line" id="L219">        <span class="tok-comment">///     node: Pointer to a node in the list.</span></span>
-<span class="line" id="L220">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
-<span class="line" id="L221">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">insertBefore</span>(list: *Self, node: *Node, new_node: *Node) <span class="tok-type">void</span> {</span>
-<span class="line" id="L222">            new_node.next = node;</span>
-<span class="line" id="L223">            <span class="tok-kw">if</span> (node.prev) |prev_node| {</span>
-<span class="line" id="L224">                <span class="tok-comment">// Intermediate node.</span>
+<span class="line" id="L212">                new_node.next = <span class="tok-null">null</span>;</span>
+<span class="line" id="L213">                list.last = new_node;</span>
+<span class="line" id="L214">            }</span>
+<span class="line" id="L215">            node.next = new_node;</span>
+<span class="line" id="L216"></span>
+<span class="line" id="L217">            list.len += <span class="tok-number">1</span>;</span>
+<span class="line" id="L218">        }</span>
+<span class="line" id="L219"></span>
+<span class="line" id="L220">        <span class="tok-comment">/// Insert a new node before an existing one.</span></span>
+<span class="line" id="L221">        <span class="tok-comment">///</span></span>
+<span class="line" id="L222">        <span class="tok-comment">/// Arguments:</span></span>
+<span class="line" id="L223">        <span class="tok-comment">///     node: Pointer to a node in the list.</span></span>
+<span class="line" id="L224">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
+<span class="line" id="L225">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">insertBefore</span>(list: *Self, node: *Node, new_node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L226">            new_node.next = node;</span>
+<span class="line" id="L227">            <span class="tok-kw">if</span> (node.prev) |prev_node| {</span>
+<span class="line" id="L228">                <span class="tok-comment">// Intermediate node.</span>
 </span>
-<span class="line" id="L225">                new_node.prev = prev_node;</span>
-<span class="line" id="L226">                prev_node.next = new_node;</span>
-<span class="line" id="L227">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L228">                <span class="tok-comment">// First element of the list.</span>
+<span class="line" id="L229">                new_node.prev = prev_node;</span>
+<span class="line" id="L230">                prev_node.next = new_node;</span>
+<span class="line" id="L231">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L232">                <span class="tok-comment">// First element of the list.</span>
 </span>
-<span class="line" id="L229">                new_node.prev = <span class="tok-null">null</span>;</span>
-<span class="line" id="L230">                list.first = new_node;</span>
-<span class="line" id="L231">            }</span>
-<span class="line" id="L232">            node.prev = new_node;</span>
-<span class="line" id="L233"></span>
-<span class="line" id="L234">            list.len += <span class="tok-number">1</span>;</span>
-<span class="line" id="L235">        }</span>
-<span class="line" id="L236"></span>
-<span class="line" id="L237">        <span class="tok-comment">/// Concatenate list2 onto the end of list1, removing all entries from the former.</span></span>
-<span class="line" id="L238">        <span class="tok-comment">///</span></span>
-<span class="line" id="L239">        <span class="tok-comment">/// Arguments:</span></span>
-<span class="line" id="L240">        <span class="tok-comment">///     list1: the list to concatenate onto</span></span>
-<span class="line" id="L241">        <span class="tok-comment">///     list2: the list to be concatenated</span></span>
-<span class="line" id="L242">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">concatByMoving</span>(list1: *Self, list2: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L243">            <span class="tok-kw">const</span> l2_first = list2.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span>;</span>
-<span class="line" id="L244">            <span class="tok-kw">if</span> (list1.last) |l1_last| {</span>
-<span class="line" id="L245">                l1_last.next = list2.first;</span>
-<span class="line" id="L246">                l2_first.prev = list1.last;</span>
-<span class="line" id="L247">                list1.len += list2.len;</span>
-<span class="line" id="L248">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L249">                <span class="tok-comment">// list1 was empty</span>
+<span class="line" id="L233">                new_node.prev = <span class="tok-null">null</span>;</span>
+<span class="line" id="L234">                list.first = new_node;</span>
+<span class="line" id="L235">            }</span>
+<span class="line" id="L236">            node.prev = new_node;</span>
+<span class="line" id="L237"></span>
+<span class="line" id="L238">            list.len += <span class="tok-number">1</span>;</span>
+<span class="line" id="L239">        }</span>
+<span class="line" id="L240"></span>
+<span class="line" id="L241">        <span class="tok-comment">/// Concatenate list2 onto the end of list1, removing all entries from the former.</span></span>
+<span class="line" id="L242">        <span class="tok-comment">///</span></span>
+<span class="line" id="L243">        <span class="tok-comment">/// Arguments:</span></span>
+<span class="line" id="L244">        <span class="tok-comment">///     list1: the list to concatenate onto</span></span>
+<span class="line" id="L245">        <span class="tok-comment">///     list2: the list to be concatenated</span></span>
+<span class="line" id="L246">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">concatByMoving</span>(list1: *Self, list2: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L247">            <span class="tok-kw">const</span> l2_first = list2.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span>;</span>
+<span class="line" id="L248">            <span class="tok-kw">if</span> (list1.last) |l1_last| {</span>
+<span class="line" id="L249">                l1_last.next = list2.first;</span>
+<span class="line" id="L250">                l2_first.prev = list1.last;</span>
+<span class="line" id="L251">                list1.len += list2.len;</span>
+<span class="line" id="L252">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L253">                <span class="tok-comment">// list1 was empty</span>
 </span>
-<span class="line" id="L250">                list1.first = list2.first;</span>
-<span class="line" id="L251">                list1.len = list2.len;</span>
-<span class="line" id="L252">            }</span>
-<span class="line" id="L253">            list1.last = list2.last;</span>
-<span class="line" id="L254">            list2.first = <span class="tok-null">null</span>;</span>
-<span class="line" id="L255">            list2.last = <span class="tok-null">null</span>;</span>
-<span class="line" id="L256">            list2.len = <span class="tok-number">0</span>;</span>
-<span class="line" id="L257">        }</span>
-<span class="line" id="L258"></span>
-<span class="line" id="L259">        <span class="tok-comment">/// Insert a new node at the end of the list.</span></span>
-<span class="line" id="L260">        <span class="tok-comment">///</span></span>
-<span class="line" id="L261">        <span class="tok-comment">/// Arguments:</span></span>
-<span class="line" id="L262">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
-<span class="line" id="L263">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">append</span>(list: *Self, new_node: *Node) <span class="tok-type">void</span> {</span>
-<span class="line" id="L264">            <span class="tok-kw">if</span> (list.last) |last| {</span>
-<span class="line" id="L265">                <span class="tok-comment">// Insert after last.</span>
+<span class="line" id="L254">                list1.first = list2.first;</span>
+<span class="line" id="L255">                list1.len = list2.len;</span>
+<span class="line" id="L256">            }</span>
+<span class="line" id="L257">            list1.last = list2.last;</span>
+<span class="line" id="L258">            list2.first = <span class="tok-null">null</span>;</span>
+<span class="line" id="L259">            list2.last = <span class="tok-null">null</span>;</span>
+<span class="line" id="L260">            list2.len = <span class="tok-number">0</span>;</span>
+<span class="line" id="L261">        }</span>
+<span class="line" id="L262"></span>
+<span class="line" id="L263">        <span class="tok-comment">/// Insert a new node at the end of the list.</span></span>
+<span class="line" id="L264">        <span class="tok-comment">///</span></span>
+<span class="line" id="L265">        <span class="tok-comment">/// Arguments:</span></span>
+<span class="line" id="L266">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
+<span class="line" id="L267">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">append</span>(list: *Self, new_node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L268">            <span class="tok-kw">if</span> (list.last) |last| {</span>
+<span class="line" id="L269">                <span class="tok-comment">// Insert after last.</span>
 </span>
-<span class="line" id="L266">                list.insertAfter(last, new_node);</span>
-<span class="line" id="L267">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L268">                <span class="tok-comment">// Empty list.</span>
+<span class="line" id="L270">                list.insertAfter(last, new_node);</span>
+<span class="line" id="L271">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L272">                <span class="tok-comment">// Empty list.</span>
 </span>
-<span class="line" id="L269">                list.prepend(new_node);</span>
-<span class="line" id="L270">            }</span>
-<span class="line" id="L271">        }</span>
-<span class="line" id="L272"></span>
-<span class="line" id="L273">        <span class="tok-comment">/// Insert a new node at the beginning of the list.</span></span>
-<span class="line" id="L274">        <span class="tok-comment">///</span></span>
-<span class="line" id="L275">        <span class="tok-comment">/// Arguments:</span></span>
-<span class="line" id="L276">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
-<span class="line" id="L277">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">prepend</span>(list: *Self, new_node: *Node) <span class="tok-type">void</span> {</span>
-<span class="line" id="L278">            <span class="tok-kw">if</span> (list.first) |first| {</span>
-<span class="line" id="L279">                <span class="tok-comment">// Insert before first.</span>
+<span class="line" id="L273">                list.prepend(new_node);</span>
+<span class="line" id="L274">            }</span>
+<span class="line" id="L275">        }</span>
+<span class="line" id="L276"></span>
+<span class="line" id="L277">        <span class="tok-comment">/// Insert a new node at the beginning of the list.</span></span>
+<span class="line" id="L278">        <span class="tok-comment">///</span></span>
+<span class="line" id="L279">        <span class="tok-comment">/// Arguments:</span></span>
+<span class="line" id="L280">        <span class="tok-comment">///     new_node: Pointer to the new node to insert.</span></span>
+<span class="line" id="L281">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">prepend</span>(list: *Self, new_node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L282">            <span class="tok-kw">if</span> (list.first) |first| {</span>
+<span class="line" id="L283">                <span class="tok-comment">// Insert before first.</span>
 </span>
-<span class="line" id="L280">                list.insertBefore(first, new_node);</span>
-<span class="line" id="L281">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L282">                <span class="tok-comment">// Empty list.</span>
+<span class="line" id="L284">                list.insertBefore(first, new_node);</span>
+<span class="line" id="L285">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L286">                <span class="tok-comment">// Empty list.</span>
 </span>
-<span class="line" id="L283">                list.first = new_node;</span>
-<span class="line" id="L284">                list.last = new_node;</span>
-<span class="line" id="L285">                new_node.prev = <span class="tok-null">null</span>;</span>
-<span class="line" id="L286">                new_node.next = <span class="tok-null">null</span>;</span>
-<span class="line" id="L287"></span>
-<span class="line" id="L288">                list.len = <span class="tok-number">1</span>;</span>
-<span class="line" id="L289">            }</span>
-<span class="line" id="L290">        }</span>
+<span class="line" id="L287">                list.first = new_node;</span>
+<span class="line" id="L288">                list.last = new_node;</span>
+<span class="line" id="L289">                new_node.prev = <span class="tok-null">null</span>;</span>
+<span class="line" id="L290">                new_node.next = <span class="tok-null">null</span>;</span>
 <span class="line" id="L291"></span>
-<span class="line" id="L292">        <span class="tok-comment">/// Remove a node from the list.</span></span>
-<span class="line" id="L293">        <span class="tok-comment">///</span></span>
-<span class="line" id="L294">        <span class="tok-comment">/// Arguments:</span></span>
-<span class="line" id="L295">        <span class="tok-comment">///     node: Pointer to the node to be removed.</span></span>
-<span class="line" id="L296">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">remove</span>(list: *Self, node: *Node) <span class="tok-type">void</span> {</span>
-<span class="line" id="L297">            <span class="tok-kw">if</span> (node.prev) |prev_node| {</span>
-<span class="line" id="L298">                <span class="tok-comment">// Intermediate node.</span>
+<span class="line" id="L292">                list.len = <span class="tok-number">1</span>;</span>
+<span class="line" id="L293">            }</span>
+<span class="line" id="L294">        }</span>
+<span class="line" id="L295"></span>
+<span class="line" id="L296">        <span class="tok-comment">/// Remove a node from the list.</span></span>
+<span class="line" id="L297">        <span class="tok-comment">///</span></span>
+<span class="line" id="L298">        <span class="tok-comment">/// Arguments:</span></span>
+<span class="line" id="L299">        <span class="tok-comment">///     node: Pointer to the node to be removed.</span></span>
+<span class="line" id="L300">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">remove</span>(list: *Self, node: *Node) <span class="tok-type">void</span> {</span>
+<span class="line" id="L301">            <span class="tok-kw">if</span> (node.prev) |prev_node| {</span>
+<span class="line" id="L302">                <span class="tok-comment">// Intermediate node.</span>
 </span>
-<span class="line" id="L299">                prev_node.next = node.next;</span>
-<span class="line" id="L300">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L301">                <span class="tok-comment">// First element of the list.</span>
+<span class="line" id="L303">                prev_node.next = node.next;</span>
+<span class="line" id="L304">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L305">                <span class="tok-comment">// First element of the list.</span>
 </span>
-<span class="line" id="L302">                list.first = node.next;</span>
-<span class="line" id="L303">            }</span>
-<span class="line" id="L304"></span>
-<span class="line" id="L305">            <span class="tok-kw">if</span> (node.next) |next_node| {</span>
-<span class="line" id="L306">                <span class="tok-comment">// Intermediate node.</span>
+<span class="line" id="L306">                list.first = node.next;</span>
+<span class="line" id="L307">            }</span>
+<span class="line" id="L308"></span>
+<span class="line" id="L309">            <span class="tok-kw">if</span> (node.next) |next_node| {</span>
+<span class="line" id="L310">                <span class="tok-comment">// Intermediate node.</span>
 </span>
-<span class="line" id="L307">                next_node.prev = node.prev;</span>
-<span class="line" id="L308">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L309">                <span class="tok-comment">// Last element of the list.</span>
+<span class="line" id="L311">                next_node.prev = node.prev;</span>
+<span class="line" id="L312">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L313">                <span class="tok-comment">// Last element of the list.</span>
 </span>
-<span class="line" id="L310">                list.last = node.prev;</span>
-<span class="line" id="L311">            }</span>
-<span class="line" id="L312"></span>
-<span class="line" id="L313">            list.len -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L314">            assert(list.len == <span class="tok-number">0</span> <span class="tok-kw">or</span> (list.first != <span class="tok-null">null</span> <span class="tok-kw">and</span> list.last != <span class="tok-null">null</span>));</span>
-<span class="line" id="L315">        }</span>
+<span class="line" id="L314">                list.last = node.prev;</span>
+<span class="line" id="L315">            }</span>
 <span class="line" id="L316"></span>
-<span class="line" id="L317">        <span class="tok-comment">/// Remove and return the last node in the list.</span></span>
-<span class="line" id="L318">        <span class="tok-comment">///</span></span>
-<span class="line" id="L319">        <span class="tok-comment">/// Returns:</span></span>
-<span class="line" id="L320">        <span class="tok-comment">///     A pointer to the last node in the list.</span></span>
-<span class="line" id="L321">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pop</span>(list: *Self) ?*Node {</span>
-<span class="line" id="L322">            <span class="tok-kw">const</span> last = list.last <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L323">            list.remove(last);</span>
-<span class="line" id="L324">            <span class="tok-kw">return</span> last;</span>
-<span class="line" id="L325">        }</span>
-<span class="line" id="L326"></span>
-<span class="line" id="L327">        <span class="tok-comment">/// Remove and return the first node in the list.</span></span>
-<span class="line" id="L328">        <span class="tok-comment">///</span></span>
-<span class="line" id="L329">        <span class="tok-comment">/// Returns:</span></span>
-<span class="line" id="L330">        <span class="tok-comment">///     A pointer to the first node in the list.</span></span>
-<span class="line" id="L331">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">popFirst</span>(list: *Self) ?*Node {</span>
-<span class="line" id="L332">            <span class="tok-kw">const</span> first = list.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L333">            list.remove(first);</span>
-<span class="line" id="L334">            <span class="tok-kw">return</span> first;</span>
-<span class="line" id="L335">        }</span>
-<span class="line" id="L336">    };</span>
-<span class="line" id="L337">}</span>
-<span class="line" id="L338"></span>
-<span class="line" id="L339"><span class="tok-kw">test</span> <span class="tok-str">&quot;basic TailQueue test&quot;</span> {</span>
-<span class="line" id="L340">    <span class="tok-kw">const</span> L = TailQueue(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L341">    <span class="tok-kw">var</span> list = L{};</span>
+<span class="line" id="L317">            list.len -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L318">            assert(list.len == <span class="tok-number">0</span> <span class="tok-kw">or</span> (list.first != <span class="tok-null">null</span> <span class="tok-kw">and</span> list.last != <span class="tok-null">null</span>));</span>
+<span class="line" id="L319">        }</span>
+<span class="line" id="L320"></span>
+<span class="line" id="L321">        <span class="tok-comment">/// Remove and return the last node in the list.</span></span>
+<span class="line" id="L322">        <span class="tok-comment">///</span></span>
+<span class="line" id="L323">        <span class="tok-comment">/// Returns:</span></span>
+<span class="line" id="L324">        <span class="tok-comment">///     A pointer to the last node in the list.</span></span>
+<span class="line" id="L325">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pop</span>(list: *Self) ?*Node {</span>
+<span class="line" id="L326">            <span class="tok-kw">const</span> last = list.last <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L327">            list.remove(last);</span>
+<span class="line" id="L328">            <span class="tok-kw">return</span> last;</span>
+<span class="line" id="L329">        }</span>
+<span class="line" id="L330"></span>
+<span class="line" id="L331">        <span class="tok-comment">/// Remove and return the first node in the list.</span></span>
+<span class="line" id="L332">        <span class="tok-comment">///</span></span>
+<span class="line" id="L333">        <span class="tok-comment">/// Returns:</span></span>
+<span class="line" id="L334">        <span class="tok-comment">///     A pointer to the first node in the list.</span></span>
+<span class="line" id="L335">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">popFirst</span>(list: *Self) ?*Node {</span>
+<span class="line" id="L336">            <span class="tok-kw">const</span> first = list.first <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L337">            list.remove(first);</span>
+<span class="line" id="L338">            <span class="tok-kw">return</span> first;</span>
+<span class="line" id="L339">        }</span>
+<span class="line" id="L340">    };</span>
+<span class="line" id="L341">}</span>
 <span class="line" id="L342"></span>
-<span class="line" id="L343">    <span class="tok-kw">var</span> one = L.Node{ .data = <span class="tok-number">1</span> };</span>
-<span class="line" id="L344">    <span class="tok-kw">var</span> two = L.Node{ .data = <span class="tok-number">2</span> };</span>
-<span class="line" id="L345">    <span class="tok-kw">var</span> three = L.Node{ .data = <span class="tok-number">3</span> };</span>
-<span class="line" id="L346">    <span class="tok-kw">var</span> four = L.Node{ .data = <span class="tok-number">4</span> };</span>
-<span class="line" id="L347">    <span class="tok-kw">var</span> five = L.Node{ .data = <span class="tok-number">5</span> };</span>
-<span class="line" id="L348"></span>
-<span class="line" id="L349">    list.append(&amp;two); <span class="tok-comment">// {2}</span>
+<span class="line" id="L343"><span class="tok-kw">test</span> <span class="tok-str">&quot;basic DoublyLinkedList test&quot;</span> {</span>
+<span class="line" id="L344">    <span class="tok-kw">const</span> L = DoublyLinkedList(<span class="tok-type">u32</span>);</span>
+<span class="line" id="L345">    <span class="tok-kw">var</span> list = L{};</span>
+<span class="line" id="L346"></span>
+<span class="line" id="L347">    <span class="tok-kw">var</span> one = L.Node{ .data = <span class="tok-number">1</span> };</span>
+<span class="line" id="L348">    <span class="tok-kw">var</span> two = L.Node{ .data = <span class="tok-number">2</span> };</span>
+<span class="line" id="L349">    <span class="tok-kw">var</span> three = L.Node{ .data = <span class="tok-number">3</span> };</span>
+<span class="line" id="L350">    <span class="tok-kw">var</span> four = L.Node{ .data = <span class="tok-number">4</span> };</span>
+<span class="line" id="L351">    <span class="tok-kw">var</span> five = L.Node{ .data = <span class="tok-number">5</span> };</span>
+<span class="line" id="L352"></span>
+<span class="line" id="L353">    list.append(&amp;two); <span class="tok-comment">// {2}</span>
 </span>
-<span class="line" id="L350">    list.append(&amp;five); <span class="tok-comment">// {2, 5}</span>
+<span class="line" id="L354">    list.append(&amp;five); <span class="tok-comment">// {2, 5}</span>
 </span>
-<span class="line" id="L351">    list.prepend(&amp;one); <span class="tok-comment">// {1, 2, 5}</span>
+<span class="line" id="L355">    list.prepend(&amp;one); <span class="tok-comment">// {1, 2, 5}</span>
 </span>
-<span class="line" id="L352">    list.insertBefore(&amp;five, &amp;four); <span class="tok-comment">// {1, 2, 4, 5}</span>
+<span class="line" id="L356">    list.insertBefore(&amp;five, &amp;four); <span class="tok-comment">// {1, 2, 4, 5}</span>
 </span>
-<span class="line" id="L353">    list.insertAfter(&amp;two, &amp;three); <span class="tok-comment">// {1, 2, 3, 4, 5}</span>
+<span class="line" id="L357">    list.insertAfter(&amp;two, &amp;three); <span class="tok-comment">// {1, 2, 3, 4, 5}</span>
 </span>
-<span class="line" id="L354"></span>
-<span class="line" id="L355">    <span class="tok-comment">// Traverse forwards.</span>
+<span class="line" id="L358"></span>
+<span class="line" id="L359">    <span class="tok-comment">// Traverse forwards.</span>
 </span>
-<span class="line" id="L356">    {</span>
-<span class="line" id="L357">        <span class="tok-kw">var</span> it = list.first;</span>
-<span class="line" id="L358">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L359">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L360">            <span class="tok-kw">try</span> testing.expect(node.data == index);</span>
-<span class="line" id="L361">            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L362">        }</span>
-<span class="line" id="L363">    }</span>
-<span class="line" id="L364"></span>
-<span class="line" id="L365">    <span class="tok-comment">// Traverse backwards.</span>
+<span class="line" id="L360">    {</span>
+<span class="line" id="L361">        <span class="tok-kw">var</span> it = list.first;</span>
+<span class="line" id="L362">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L363">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L364">            <span class="tok-kw">try</span> testing.expect(node.data == index);</span>
+<span class="line" id="L365">            index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L366">        }</span>
+<span class="line" id="L367">    }</span>
+<span class="line" id="L368"></span>
+<span class="line" id="L369">    <span class="tok-comment">// Traverse backwards.</span>
 </span>
-<span class="line" id="L366">    {</span>
-<span class="line" id="L367">        <span class="tok-kw">var</span> it = list.last;</span>
-<span class="line" id="L368">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L369">        <span class="tok-kw">while</span> (it) |node| : (it = node.prev) {</span>
-<span class="line" id="L370">            <span class="tok-kw">try</span> testing.expect(node.data == (<span class="tok-number">6</span> - index));</span>
-<span class="line" id="L371">            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L372">        }</span>
-<span class="line" id="L373">    }</span>
-<span class="line" id="L374"></span>
-<span class="line" id="L375">    _ = list.popFirst(); <span class="tok-comment">// {2, 3, 4, 5}</span>
-</span>
-<span class="line" id="L376">    _ = list.pop(); <span class="tok-comment">// {2, 3, 4}</span>
-</span>
-<span class="line" id="L377">    list.remove(&amp;three); <span class="tok-comment">// {2, 4}</span>
-</span>
+<span class="line" id="L370">    {</span>
+<span class="line" id="L371">        <span class="tok-kw">var</span> it = list.last;</span>
+<span class="line" id="L372">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L373">        <span class="tok-kw">while</span> (it) |node| : (it = node.prev) {</span>
+<span class="line" id="L374">            <span class="tok-kw">try</span> testing.expect(node.data == (<span class="tok-number">6</span> - index));</span>
+<span class="line" id="L375">            index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L376">        }</span>
+<span class="line" id="L377">    }</span>
 <span class="line" id="L378"></span>
-<span class="line" id="L379">    <span class="tok-kw">try</span> testing.expect(list.first.?.data == <span class="tok-number">2</span>);</span>
-<span class="line" id="L380">    <span class="tok-kw">try</span> testing.expect(list.last.?.data == <span class="tok-number">4</span>);</span>
-<span class="line" id="L381">    <span class="tok-kw">try</span> testing.expect(list.len == <span class="tok-number">2</span>);</span>
-<span class="line" id="L382">}</span>
-<span class="line" id="L383"></span>
-<span class="line" id="L384"><span class="tok-kw">test</span> <span class="tok-str">&quot;TailQueue concatenation&quot;</span> {</span>
-<span class="line" id="L385">    <span class="tok-kw">const</span> L = TailQueue(<span class="tok-type">u32</span>);</span>
-<span class="line" id="L386">    <span class="tok-kw">var</span> list1 = L{};</span>
-<span class="line" id="L387">    <span class="tok-kw">var</span> list2 = L{};</span>
-<span class="line" id="L388"></span>
-<span class="line" id="L389">    <span class="tok-kw">var</span> one = L.Node{ .data = <span class="tok-number">1</span> };</span>
-<span class="line" id="L390">    <span class="tok-kw">var</span> two = L.Node{ .data = <span class="tok-number">2</span> };</span>
-<span class="line" id="L391">    <span class="tok-kw">var</span> three = L.Node{ .data = <span class="tok-number">3</span> };</span>
-<span class="line" id="L392">    <span class="tok-kw">var</span> four = L.Node{ .data = <span class="tok-number">4</span> };</span>
-<span class="line" id="L393">    <span class="tok-kw">var</span> five = L.Node{ .data = <span class="tok-number">5</span> };</span>
-<span class="line" id="L394"></span>
-<span class="line" id="L395">    list1.append(&amp;one);</span>
-<span class="line" id="L396">    list1.append(&amp;two);</span>
-<span class="line" id="L397">    list2.append(&amp;three);</span>
-<span class="line" id="L398">    list2.append(&amp;four);</span>
-<span class="line" id="L399">    list2.append(&amp;five);</span>
-<span class="line" id="L400"></span>
-<span class="line" id="L401">    list1.concatByMoving(&amp;list2);</span>
-<span class="line" id="L402"></span>
-<span class="line" id="L403">    <span class="tok-kw">try</span> testing.expect(list1.last == &amp;five);</span>
-<span class="line" id="L404">    <span class="tok-kw">try</span> testing.expect(list1.len == <span class="tok-number">5</span>);</span>
-<span class="line" id="L405">    <span class="tok-kw">try</span> testing.expect(list2.first == <span class="tok-null">null</span>);</span>
-<span class="line" id="L406">    <span class="tok-kw">try</span> testing.expect(list2.last == <span class="tok-null">null</span>);</span>
-<span class="line" id="L407">    <span class="tok-kw">try</span> testing.expect(list2.len == <span class="tok-number">0</span>);</span>
-<span class="line" id="L408"></span>
-<span class="line" id="L409">    <span class="tok-comment">// Traverse forwards.</span>
+<span class="line" id="L379">    _ = list.popFirst(); <span class="tok-comment">// {2, 3, 4, 5}</span>
 </span>
-<span class="line" id="L410">    {</span>
-<span class="line" id="L411">        <span class="tok-kw">var</span> it = list1.first;</span>
-<span class="line" id="L412">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L413">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L414">            <span class="tok-kw">try</span> testing.expect(node.data == index);</span>
-<span class="line" id="L415">            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L416">        }</span>
-<span class="line" id="L417">    }</span>
-<span class="line" id="L418"></span>
-<span class="line" id="L419">    <span class="tok-comment">// Traverse backwards.</span>
+<span class="line" id="L380">    _ = list.pop(); <span class="tok-comment">// {2, 3, 4}</span>
 </span>
-<span class="line" id="L420">    {</span>
-<span class="line" id="L421">        <span class="tok-kw">var</span> it = list1.last;</span>
-<span class="line" id="L422">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L423">        <span class="tok-kw">while</span> (it) |node| : (it = node.prev) {</span>
-<span class="line" id="L424">            <span class="tok-kw">try</span> testing.expect(node.data == (<span class="tok-number">6</span> - index));</span>
-<span class="line" id="L425">            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L426">        }</span>
-<span class="line" id="L427">    }</span>
-<span class="line" id="L428"></span>
-<span class="line" id="L429">    <span class="tok-comment">// Swap them back, this verifies that concatenating to an empty list works.</span>
+<span class="line" id="L381">    list.remove(&amp;three); <span class="tok-comment">// {2, 4}</span>
 </span>
-<span class="line" id="L430">    list2.concatByMoving(&amp;list1);</span>
-<span class="line" id="L431"></span>
-<span class="line" id="L432">    <span class="tok-comment">// Traverse forwards.</span>
+<span class="line" id="L382"></span>
+<span class="line" id="L383">    <span class="tok-kw">try</span> testing.expect(list.first.?.data == <span class="tok-number">2</span>);</span>
+<span class="line" id="L384">    <span class="tok-kw">try</span> testing.expect(list.last.?.data == <span class="tok-number">4</span>);</span>
+<span class="line" id="L385">    <span class="tok-kw">try</span> testing.expect(list.len == <span class="tok-number">2</span>);</span>
+<span class="line" id="L386">}</span>
+<span class="line" id="L387"></span>
+<span class="line" id="L388"><span class="tok-kw">test</span> <span class="tok-str">&quot;DoublyLinkedList concatenation&quot;</span> {</span>
+<span class="line" id="L389">    <span class="tok-kw">const</span> L = DoublyLinkedList(<span class="tok-type">u32</span>);</span>
+<span class="line" id="L390">    <span class="tok-kw">var</span> list1 = L{};</span>
+<span class="line" id="L391">    <span class="tok-kw">var</span> list2 = L{};</span>
+<span class="line" id="L392"></span>
+<span class="line" id="L393">    <span class="tok-kw">var</span> one = L.Node{ .data = <span class="tok-number">1</span> };</span>
+<span class="line" id="L394">    <span class="tok-kw">var</span> two = L.Node{ .data = <span class="tok-number">2</span> };</span>
+<span class="line" id="L395">    <span class="tok-kw">var</span> three = L.Node{ .data = <span class="tok-number">3</span> };</span>
+<span class="line" id="L396">    <span class="tok-kw">var</span> four = L.Node{ .data = <span class="tok-number">4</span> };</span>
+<span class="line" id="L397">    <span class="tok-kw">var</span> five = L.Node{ .data = <span class="tok-number">5</span> };</span>
+<span class="line" id="L398"></span>
+<span class="line" id="L399">    list1.append(&amp;one);</span>
+<span class="line" id="L400">    list1.append(&amp;two);</span>
+<span class="line" id="L401">    list2.append(&amp;three);</span>
+<span class="line" id="L402">    list2.append(&amp;four);</span>
+<span class="line" id="L403">    list2.append(&amp;five);</span>
+<span class="line" id="L404"></span>
+<span class="line" id="L405">    list1.concatByMoving(&amp;list2);</span>
+<span class="line" id="L406"></span>
+<span class="line" id="L407">    <span class="tok-kw">try</span> testing.expect(list1.last == &amp;five);</span>
+<span class="line" id="L408">    <span class="tok-kw">try</span> testing.expect(list1.len == <span class="tok-number">5</span>);</span>
+<span class="line" id="L409">    <span class="tok-kw">try</span> testing.expect(list2.first == <span class="tok-null">null</span>);</span>
+<span class="line" id="L410">    <span class="tok-kw">try</span> testing.expect(list2.last == <span class="tok-null">null</span>);</span>
+<span class="line" id="L411">    <span class="tok-kw">try</span> testing.expect(list2.len == <span class="tok-number">0</span>);</span>
+<span class="line" id="L412"></span>
+<span class="line" id="L413">    <span class="tok-comment">// Traverse forwards.</span>
 </span>
-<span class="line" id="L433">    {</span>
-<span class="line" id="L434">        <span class="tok-kw">var</span> it = list2.first;</span>
-<span class="line" id="L435">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L436">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L437">            <span class="tok-kw">try</span> testing.expect(node.data == index);</span>
-<span class="line" id="L438">            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L439">        }</span>
-<span class="line" id="L440">    }</span>
-<span class="line" id="L441"></span>
-<span class="line" id="L442">    <span class="tok-comment">// Traverse backwards.</span>
+<span class="line" id="L414">    {</span>
+<span class="line" id="L415">        <span class="tok-kw">var</span> it = list1.first;</span>
+<span class="line" id="L416">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L417">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L418">            <span class="tok-kw">try</span> testing.expect(node.data == index);</span>
+<span class="line" id="L419">            index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L420">        }</span>
+<span class="line" id="L421">    }</span>
+<span class="line" id="L422"></span>
+<span class="line" id="L423">    <span class="tok-comment">// Traverse backwards.</span>
 </span>
-<span class="line" id="L443">    {</span>
-<span class="line" id="L444">        <span class="tok-kw">var</span> it = list2.last;</span>
-<span class="line" id="L445">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L446">        <span class="tok-kw">while</span> (it) |node| : (it = node.prev) {</span>
-<span class="line" id="L447">            <span class="tok-kw">try</span> testing.expect(node.data == (<span class="tok-number">6</span> - index));</span>
-<span class="line" id="L448">            index += <span class="tok-number">1</span>;</span>
-<span class="line" id="L449">        }</span>
-<span class="line" id="L450">    }</span>
-<span class="line" id="L451">}</span>
-<span class="line" id="L452"></span>
+<span class="line" id="L424">    {</span>
+<span class="line" id="L425">        <span class="tok-kw">var</span> it = list1.last;</span>
+<span class="line" id="L426">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L427">        <span class="tok-kw">while</span> (it) |node| : (it = node.prev) {</span>
+<span class="line" id="L428">            <span class="tok-kw">try</span> testing.expect(node.data == (<span class="tok-number">6</span> - index));</span>
+<span class="line" id="L429">            index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L430">        }</span>
+<span class="line" id="L431">    }</span>
+<span class="line" id="L432"></span>
+<span class="line" id="L433">    <span class="tok-comment">// Swap them back, this verifies that concatenating to an empty list works.</span>
+</span>
+<span class="line" id="L434">    list2.concatByMoving(&amp;list1);</span>
+<span class="line" id="L435"></span>
+<span class="line" id="L436">    <span class="tok-comment">// Traverse forwards.</span>
+</span>
+<span class="line" id="L437">    {</span>
+<span class="line" id="L438">        <span class="tok-kw">var</span> it = list2.first;</span>
+<span class="line" id="L439">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L440">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L441">            <span class="tok-kw">try</span> testing.expect(node.data == index);</span>
+<span class="line" id="L442">            index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L443">        }</span>
+<span class="line" id="L444">    }</span>
+<span class="line" id="L445"></span>
+<span class="line" id="L446">    <span class="tok-comment">// Traverse backwards.</span>
+</span>
+<span class="line" id="L447">    {</span>
+<span class="line" id="L448">        <span class="tok-kw">var</span> it = list2.last;</span>
+<span class="line" id="L449">        <span class="tok-kw">var</span> index: <span class="tok-type">u32</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L450">        <span class="tok-kw">while</span> (it) |node| : (it = node.prev) {</span>
+<span class="line" id="L451">            <span class="tok-kw">try</span> testing.expect(node.data == (<span class="tok-number">6</span> - index));</span>
+<span class="line" id="L452">            index += <span class="tok-number">1</span>;</span>
+<span class="line" id="L453">        }</span>
+<span class="line" id="L454">    }</span>
+<span class="line" id="L455">}</span>
+<span class="line" id="L456"></span>
 </code></pre></body>
 </html>

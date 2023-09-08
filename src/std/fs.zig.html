@@ -2928,590 +2928,586 @@
 <span class="line" id="L2653">    <span class="tok-comment">///</span></span>
 <span class="line" id="L2654">    <span class="tok-comment">/// `sub_path` may be absolute, in which case `self` is ignored.</span></span>
 <span class="line" id="L2655">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">statFile</span>(self: Dir, sub_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) StatFileError!Stat {</span>
-<span class="line" id="L2656">        <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L2657">            .windows =&gt; {</span>
-<span class="line" id="L2658">                <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> self.openFile(sub_path, .{});</span>
-<span class="line" id="L2659">                <span class="tok-kw">defer</span> file.close();</span>
-<span class="line" id="L2660">                <span class="tok-kw">return</span> file.stat();</span>
-<span class="line" id="L2661">            },</span>
-<span class="line" id="L2662">            .wasi =&gt; {</span>
-<span class="line" id="L2663">                <span class="tok-kw">const</span> st = <span class="tok-kw">try</span> os.fstatatWasi(self.fd, sub_path, os.wasi.LOOKUP_SYMLINK_FOLLOW);</span>
-<span class="line" id="L2664">                <span class="tok-kw">return</span> Stat.fromSystem(st);</span>
-<span class="line" id="L2665">            },</span>
-<span class="line" id="L2666">            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L2667">                <span class="tok-kw">const</span> st = <span class="tok-kw">try</span> os.fstatat(self.fd, sub_path, <span class="tok-number">0</span>);</span>
-<span class="line" id="L2668">                <span class="tok-kw">return</span> Stat.fromSystem(st);</span>
-<span class="line" id="L2669">            },</span>
-<span class="line" id="L2670">        }</span>
-<span class="line" id="L2671">    }</span>
-<span class="line" id="L2672"></span>
-<span class="line" id="L2673">    <span class="tok-kw">const</span> Permissions = File.Permissions;</span>
-<span class="line" id="L2674">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SetPermissionsError = File.SetPermissionsError;</span>
-<span class="line" id="L2675"></span>
-<span class="line" id="L2676">    <span class="tok-comment">/// Sets permissions according to the provided `Permissions` struct.</span></span>
-<span class="line" id="L2677">    <span class="tok-comment">/// This method is *NOT* available on WASI</span></span>
-<span class="line" id="L2678">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">setPermissions</span>(self: Dir, permissions: Permissions) SetPermissionsError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2679">        <span class="tok-kw">const</span> file: File = .{</span>
-<span class="line" id="L2680">            .handle = self.fd,</span>
-<span class="line" id="L2681">            .capable_io_mode = .blocking,</span>
-<span class="line" id="L2682">        };</span>
-<span class="line" id="L2683">        <span class="tok-kw">try</span> file.setPermissions(permissions);</span>
-<span class="line" id="L2684">    }</span>
-<span class="line" id="L2685"></span>
-<span class="line" id="L2686">    <span class="tok-kw">const</span> Metadata = File.Metadata;</span>
-<span class="line" id="L2687">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> MetadataError = File.MetadataError;</span>
-<span class="line" id="L2688"></span>
-<span class="line" id="L2689">    <span class="tok-comment">/// Returns a `Metadata` struct, representing the permissions on the directory</span></span>
-<span class="line" id="L2690">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">metadata</span>(self: Dir) MetadataError!Metadata {</span>
-<span class="line" id="L2691">        <span class="tok-kw">const</span> file: File = .{</span>
-<span class="line" id="L2692">            .handle = self.fd,</span>
-<span class="line" id="L2693">            .capable_io_mode = .blocking,</span>
-<span class="line" id="L2694">        };</span>
-<span class="line" id="L2695">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> file.metadata();</span>
-<span class="line" id="L2696">    }</span>
-<span class="line" id="L2697">};</span>
-<span class="line" id="L2698"></span>
-<span class="line" id="L2699"><span class="tok-comment">/// Returns a handle to the current working directory. It is not opened with iteration capability.</span></span>
-<span class="line" id="L2700"><span class="tok-comment">/// Closing the returned `Dir` is checked illegal behavior. Iterating over the result is illegal behavior.</span></span>
-<span class="line" id="L2701"><span class="tok-comment">/// On POSIX targets, this function is comptime-callable.</span></span>
-<span class="line" id="L2702"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cwd</span>() Dir {</span>
-<span class="line" id="L2703">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L2704">        <span class="tok-kw">return</span> Dir{ .fd = os.windows.peb().ProcessParameters.CurrentDirectory.Handle };</span>
-<span class="line" id="L2705">    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.os.tag == .wasi) {</span>
-<span class="line" id="L2706">        <span class="tok-kw">return</span> std.options.wasiCwd();</span>
-<span class="line" id="L2707">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L2708">        <span class="tok-kw">return</span> Dir{ .fd = os.AT.FDCWD };</span>
-<span class="line" id="L2709">    }</span>
-<span class="line" id="L2710">}</span>
-<span class="line" id="L2711"></span>
-<span class="line" id="L2712"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">defaultWasiCwd</span>() Dir {</span>
-<span class="line" id="L2713">    <span class="tok-comment">// Expect the first preopen to be current working directory.</span>
+<span class="line" id="L2656">        <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L2657">            <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> self.openFile(sub_path, .{});</span>
+<span class="line" id="L2658">            <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L2659">            <span class="tok-kw">return</span> file.stat();</span>
+<span class="line" id="L2660">        }</span>
+<span class="line" id="L2661">        <span class="tok-kw">if</span> (builtin.os.tag == .wasi <span class="tok-kw">and</span> !builtin.link_libc) {</span>
+<span class="line" id="L2662">            <span class="tok-kw">const</span> st = <span class="tok-kw">try</span> os.fstatatWasi(self.fd, sub_path, os.wasi.LOOKUP_SYMLINK_FOLLOW);</span>
+<span class="line" id="L2663">            <span class="tok-kw">return</span> Stat.fromSystem(st);</span>
+<span class="line" id="L2664">        }</span>
+<span class="line" id="L2665">        <span class="tok-kw">const</span> st = <span class="tok-kw">try</span> os.fstatat(self.fd, sub_path, <span class="tok-number">0</span>);</span>
+<span class="line" id="L2666">        <span class="tok-kw">return</span> Stat.fromSystem(st);</span>
+<span class="line" id="L2667">    }</span>
+<span class="line" id="L2668"></span>
+<span class="line" id="L2669">    <span class="tok-kw">const</span> Permissions = File.Permissions;</span>
+<span class="line" id="L2670">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> SetPermissionsError = File.SetPermissionsError;</span>
+<span class="line" id="L2671"></span>
+<span class="line" id="L2672">    <span class="tok-comment">/// Sets permissions according to the provided `Permissions` struct.</span></span>
+<span class="line" id="L2673">    <span class="tok-comment">/// This method is *NOT* available on WASI</span></span>
+<span class="line" id="L2674">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">setPermissions</span>(self: Dir, permissions: Permissions) SetPermissionsError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2675">        <span class="tok-kw">const</span> file: File = .{</span>
+<span class="line" id="L2676">            .handle = self.fd,</span>
+<span class="line" id="L2677">            .capable_io_mode = .blocking,</span>
+<span class="line" id="L2678">        };</span>
+<span class="line" id="L2679">        <span class="tok-kw">try</span> file.setPermissions(permissions);</span>
+<span class="line" id="L2680">    }</span>
+<span class="line" id="L2681"></span>
+<span class="line" id="L2682">    <span class="tok-kw">const</span> Metadata = File.Metadata;</span>
+<span class="line" id="L2683">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> MetadataError = File.MetadataError;</span>
+<span class="line" id="L2684"></span>
+<span class="line" id="L2685">    <span class="tok-comment">/// Returns a `Metadata` struct, representing the permissions on the directory</span></span>
+<span class="line" id="L2686">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">metadata</span>(self: Dir) MetadataError!Metadata {</span>
+<span class="line" id="L2687">        <span class="tok-kw">const</span> file: File = .{</span>
+<span class="line" id="L2688">            .handle = self.fd,</span>
+<span class="line" id="L2689">            .capable_io_mode = .blocking,</span>
+<span class="line" id="L2690">        };</span>
+<span class="line" id="L2691">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> file.metadata();</span>
+<span class="line" id="L2692">    }</span>
+<span class="line" id="L2693">};</span>
+<span class="line" id="L2694"></span>
+<span class="line" id="L2695"><span class="tok-comment">/// Returns a handle to the current working directory. It is not opened with iteration capability.</span></span>
+<span class="line" id="L2696"><span class="tok-comment">/// Closing the returned `Dir` is checked illegal behavior. Iterating over the result is illegal behavior.</span></span>
+<span class="line" id="L2697"><span class="tok-comment">/// On POSIX targets, this function is comptime-callable.</span></span>
+<span class="line" id="L2698"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">cwd</span>() Dir {</span>
+<span class="line" id="L2699">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L2700">        <span class="tok-kw">return</span> Dir{ .fd = os.windows.peb().ProcessParameters.CurrentDirectory.Handle };</span>
+<span class="line" id="L2701">    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (builtin.os.tag == .wasi) {</span>
+<span class="line" id="L2702">        <span class="tok-kw">return</span> std.options.wasiCwd();</span>
+<span class="line" id="L2703">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L2704">        <span class="tok-kw">return</span> Dir{ .fd = os.AT.FDCWD };</span>
+<span class="line" id="L2705">    }</span>
+<span class="line" id="L2706">}</span>
+<span class="line" id="L2707"></span>
+<span class="line" id="L2708"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">defaultWasiCwd</span>() Dir {</span>
+<span class="line" id="L2709">    <span class="tok-comment">// Expect the first preopen to be current working directory.</span>
 </span>
-<span class="line" id="L2714">    <span class="tok-kw">return</span> .{ .fd = <span class="tok-number">3</span> };</span>
-<span class="line" id="L2715">}</span>
-<span class="line" id="L2716"></span>
-<span class="line" id="L2717"><span class="tok-comment">/// Opens a directory at the given path. The directory is a system resource that remains</span></span>
-<span class="line" id="L2718"><span class="tok-comment">/// open until `close` is called on the result.</span></span>
-<span class="line" id="L2719"><span class="tok-comment">/// See `openDirAbsoluteZ` for a function that accepts a null-terminated path.</span></span>
-<span class="line" id="L2720"><span class="tok-comment">///</span></span>
-<span class="line" id="L2721"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
-<span class="line" id="L2722"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDirAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!Dir {</span>
-<span class="line" id="L2723">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2724">    <span class="tok-kw">return</span> cwd().openDir(absolute_path, flags);</span>
-<span class="line" id="L2725">}</span>
-<span class="line" id="L2726"></span>
-<span class="line" id="L2727"><span class="tok-comment">/// Same as `openDirAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2728"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDirAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!Dir {</span>
-<span class="line" id="L2729">    assert(path.isAbsoluteZ(absolute_path_c));</span>
-<span class="line" id="L2730">    <span class="tok-kw">return</span> cwd().openDirZ(absolute_path_c, flags, <span class="tok-null">false</span>);</span>
-<span class="line" id="L2731">}</span>
-<span class="line" id="L2732"><span class="tok-comment">/// Same as `openDirAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2733"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDirAbsoluteW</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: Dir.OpenDirOptions) File.OpenError!Dir {</span>
-<span class="line" id="L2734">    assert(path.isAbsoluteWindowsW(absolute_path_c));</span>
-<span class="line" id="L2735">    <span class="tok-kw">return</span> cwd().openDirW(absolute_path_c, flags, <span class="tok-null">false</span>);</span>
-<span class="line" id="L2736">}</span>
-<span class="line" id="L2737"></span>
-<span class="line" id="L2738"><span class="tok-comment">/// Opens a directory at the given path. The directory is a system resource that remains</span></span>
-<span class="line" id="L2739"><span class="tok-comment">/// open until `close` is called on the result.</span></span>
-<span class="line" id="L2740"><span class="tok-comment">/// See `openIterableDirAbsoluteZ` for a function that accepts a null-terminated path.</span></span>
-<span class="line" id="L2741"><span class="tok-comment">///</span></span>
-<span class="line" id="L2742"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
-<span class="line" id="L2743"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openIterableDirAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!IterableDir {</span>
-<span class="line" id="L2744">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2745">    <span class="tok-kw">return</span> cwd().openIterableDir(absolute_path, flags);</span>
-<span class="line" id="L2746">}</span>
-<span class="line" id="L2747"></span>
-<span class="line" id="L2748"><span class="tok-comment">/// Same as `openIterableDirAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2749"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openIterableDirAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!IterableDir {</span>
-<span class="line" id="L2750">    assert(path.isAbsoluteZ(absolute_path_c));</span>
-<span class="line" id="L2751">    <span class="tok-kw">return</span> IterableDir{ .dir = <span class="tok-kw">try</span> cwd().openDirZ(absolute_path_c, flags, <span class="tok-null">true</span>) };</span>
-<span class="line" id="L2752">}</span>
-<span class="line" id="L2753"><span class="tok-comment">/// Same as `openIterableDirAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2754"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openIterableDirAbsoluteW</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: Dir.OpenDirOptions) File.OpenError!IterableDir {</span>
-<span class="line" id="L2755">    assert(path.isAbsoluteWindowsW(absolute_path_c));</span>
-<span class="line" id="L2756">    <span class="tok-kw">return</span> IterableDir{ .dir = <span class="tok-kw">try</span> cwd().openDirW(absolute_path_c, flags, <span class="tok-null">true</span>) };</span>
-<span class="line" id="L2757">}</span>
-<span class="line" id="L2758"></span>
-<span class="line" id="L2759"><span class="tok-comment">/// Opens a file for reading or writing, without attempting to create a new file, based on an absolute path.</span></span>
-<span class="line" id="L2760"><span class="tok-comment">/// Call `File.close` to release the resource.</span></span>
-<span class="line" id="L2761"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.openFile` for a function that</span></span>
-<span class="line" id="L2762"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
-<span class="line" id="L2763"><span class="tok-comment">/// Asserts that the path parameter has no null bytes. See `openFileAbsoluteZ` for a function</span></span>
-<span class="line" id="L2764"><span class="tok-comment">/// that accepts a null-terminated path.</span></span>
-<span class="line" id="L2765"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openFileAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) File.OpenError!File {</span>
-<span class="line" id="L2766">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2767">    <span class="tok-kw">return</span> cwd().openFile(absolute_path, flags);</span>
-<span class="line" id="L2768">}</span>
-<span class="line" id="L2769"></span>
-<span class="line" id="L2770"><span class="tok-comment">/// Same as `openFileAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2771"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openFileAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) File.OpenError!File {</span>
-<span class="line" id="L2772">    assert(path.isAbsoluteZ(absolute_path_c));</span>
-<span class="line" id="L2773">    <span class="tok-kw">return</span> cwd().openFileZ(absolute_path_c, flags);</span>
-<span class="line" id="L2774">}</span>
-<span class="line" id="L2775"></span>
-<span class="line" id="L2776"><span class="tok-comment">/// Same as `openFileAbsolute` but the path parameter is WTF-16-encoded.</span></span>
-<span class="line" id="L2777"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openFileAbsoluteW</span>(absolute_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: File.OpenFlags) File.OpenError!File {</span>
-<span class="line" id="L2778">    assert(path.isAbsoluteWindowsWTF16(absolute_path_w));</span>
-<span class="line" id="L2779">    <span class="tok-kw">return</span> cwd().openFileW(absolute_path_w, flags);</span>
-<span class="line" id="L2780">}</span>
-<span class="line" id="L2781"></span>
-<span class="line" id="L2782"><span class="tok-comment">/// Test accessing `path`.</span></span>
-<span class="line" id="L2783"><span class="tok-comment">/// `path` is UTF-8-encoded.</span></span>
-<span class="line" id="L2784"><span class="tok-comment">/// Be careful of Time-Of-Check-Time-Of-Use race conditions when using this function.</span></span>
-<span class="line" id="L2785"><span class="tok-comment">/// For example, instead of testing if a file exists and then opening it, just</span></span>
-<span class="line" id="L2786"><span class="tok-comment">/// open it and handle the error for file not found.</span></span>
-<span class="line" id="L2787"><span class="tok-comment">/// See `accessAbsoluteZ` for a function that accepts a null-terminated path.</span></span>
-<span class="line" id="L2788"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accessAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) Dir.AccessError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2789">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2790">    <span class="tok-kw">try</span> cwd().access(absolute_path, flags);</span>
-<span class="line" id="L2791">}</span>
-<span class="line" id="L2792"><span class="tok-comment">/// Same as `accessAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2793"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accessAbsoluteZ</span>(absolute_path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) Dir.AccessError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2794">    assert(path.isAbsoluteZ(absolute_path));</span>
-<span class="line" id="L2795">    <span class="tok-kw">try</span> cwd().accessZ(absolute_path, flags);</span>
-<span class="line" id="L2796">}</span>
-<span class="line" id="L2797"><span class="tok-comment">/// Same as `accessAbsolute` but the path parameter is WTF-16 encoded.</span></span>
-<span class="line" id="L2798"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accessAbsoluteW</span>(absolute_path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-number">16</span>, flags: File.OpenFlags) Dir.AccessError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2799">    assert(path.isAbsoluteWindowsW(absolute_path));</span>
-<span class="line" id="L2800">    <span class="tok-kw">try</span> cwd().accessW(absolute_path, flags);</span>
-<span class="line" id="L2801">}</span>
-<span class="line" id="L2802"></span>
-<span class="line" id="L2803"><span class="tok-comment">/// Creates, opens, or overwrites a file with write access, based on an absolute path.</span></span>
-<span class="line" id="L2804"><span class="tok-comment">/// Call `File.close` to release the resource.</span></span>
-<span class="line" id="L2805"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.createFile` for a function that</span></span>
-<span class="line" id="L2806"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
-<span class="line" id="L2807"><span class="tok-comment">/// Asserts that the path parameter has no null bytes. See `createFileAbsoluteC` for a function</span></span>
-<span class="line" id="L2808"><span class="tok-comment">/// that accepts a null-terminated path.</span></span>
-<span class="line" id="L2809"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createFileAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.CreateFlags) File.OpenError!File {</span>
-<span class="line" id="L2810">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2811">    <span class="tok-kw">return</span> cwd().createFile(absolute_path, flags);</span>
-<span class="line" id="L2812">}</span>
-<span class="line" id="L2813"></span>
-<span class="line" id="L2814"><span class="tok-comment">/// Same as `createFileAbsolute` but the path parameter is null-terminated.</span></span>
-<span class="line" id="L2815"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createFileAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.CreateFlags) File.OpenError!File {</span>
-<span class="line" id="L2816">    assert(path.isAbsoluteZ(absolute_path_c));</span>
-<span class="line" id="L2817">    <span class="tok-kw">return</span> cwd().createFileZ(absolute_path_c, flags);</span>
-<span class="line" id="L2818">}</span>
-<span class="line" id="L2819"></span>
-<span class="line" id="L2820"><span class="tok-comment">/// Same as `createFileAbsolute` but the path parameter is WTF-16 encoded.</span></span>
-<span class="line" id="L2821"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createFileAbsoluteW</span>(absolute_path_w: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: File.CreateFlags) File.OpenError!File {</span>
-<span class="line" id="L2822">    assert(path.isAbsoluteWindowsW(absolute_path_w));</span>
-<span class="line" id="L2823">    <span class="tok-kw">return</span> cwd().createFileW(absolute_path_w, flags);</span>
-<span class="line" id="L2824">}</span>
-<span class="line" id="L2825"></span>
-<span class="line" id="L2826"><span class="tok-comment">/// Delete a file name and possibly the file it refers to, based on an absolute path.</span></span>
-<span class="line" id="L2827"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.deleteFile` for a function that</span></span>
-<span class="line" id="L2828"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
-<span class="line" id="L2829"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
-<span class="line" id="L2830"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteFileAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Dir.DeleteFileError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2831">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2832">    <span class="tok-kw">return</span> cwd().deleteFile(absolute_path);</span>
-<span class="line" id="L2833">}</span>
-<span class="line" id="L2834"></span>
-<span class="line" id="L2835"><span class="tok-comment">/// Same as `deleteFileAbsolute` except the parameter is null-terminated.</span></span>
-<span class="line" id="L2836"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteFileAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Dir.DeleteFileError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2837">    assert(path.isAbsoluteZ(absolute_path_c));</span>
-<span class="line" id="L2838">    <span class="tok-kw">return</span> cwd().deleteFileZ(absolute_path_c);</span>
-<span class="line" id="L2839">}</span>
-<span class="line" id="L2840"></span>
-<span class="line" id="L2841"><span class="tok-comment">/// Same as `deleteFileAbsolute` except the parameter is WTF-16 encoded.</span></span>
-<span class="line" id="L2842"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteFileAbsoluteW</span>(absolute_path_w: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>) Dir.DeleteFileError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L2843">    assert(path.isAbsoluteWindowsW(absolute_path_w));</span>
-<span class="line" id="L2844">    <span class="tok-kw">return</span> cwd().deleteFileW(absolute_path_w);</span>
-<span class="line" id="L2845">}</span>
-<span class="line" id="L2846"></span>
-<span class="line" id="L2847"><span class="tok-comment">/// Removes a symlink, file, or directory.</span></span>
-<span class="line" id="L2848"><span class="tok-comment">/// This is equivalent to `Dir.deleteTree` with the base directory.</span></span>
-<span class="line" id="L2849"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.deleteTree` for a function that</span></span>
-<span class="line" id="L2850"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
-<span class="line" id="L2851"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
-<span class="line" id="L2852"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteTreeAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L2853">    assert(path.isAbsolute(absolute_path));</span>
-<span class="line" id="L2854">    <span class="tok-kw">const</span> dirname = path.dirname(absolute_path) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>{</span>
-<span class="line" id="L2855">        <span class="tok-comment">/// Attempt to remove the root file system path.</span></span>
-<span class="line" id="L2856">        <span class="tok-comment">/// This error is unreachable if `absolute_path` is relative.</span></span>
-<span class="line" id="L2857">        CannotDeleteRootDirectory,</span>
-<span class="line" id="L2858">    }.CannotDeleteRootDirectory;</span>
-<span class="line" id="L2859"></span>
-<span class="line" id="L2860">    <span class="tok-kw">var</span> dir = <span class="tok-kw">try</span> cwd().openDir(dirname, .{});</span>
-<span class="line" id="L2861">    <span class="tok-kw">defer</span> dir.close();</span>
-<span class="line" id="L2862"></span>
-<span class="line" id="L2863">    <span class="tok-kw">return</span> dir.deleteTree(path.basename(absolute_path));</span>
-<span class="line" id="L2864">}</span>
-<span class="line" id="L2865"></span>
-<span class="line" id="L2866"><span class="tok-comment">/// Same as `Dir.readLink`, except it asserts the path is absolute.</span></span>
-<span class="line" id="L2867"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readLinkAbsolute</span>(pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, buffer: *[MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2868">    assert(path.isAbsolute(pathname));</span>
-<span class="line" id="L2869">    <span class="tok-kw">return</span> os.readlink(pathname, buffer);</span>
-<span class="line" id="L2870">}</span>
-<span class="line" id="L2871"></span>
-<span class="line" id="L2872"><span class="tok-comment">/// Windows-only. Same as `readlinkW`, except the path parameter is null-terminated, WTF16</span></span>
-<span class="line" id="L2873"><span class="tok-comment">/// encoded.</span></span>
-<span class="line" id="L2874"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readlinkAbsoluteW</span>(pathname_w: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, buffer: *[MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2875">    assert(path.isAbsoluteWindowsW(pathname_w));</span>
-<span class="line" id="L2876">    <span class="tok-kw">return</span> os.readlinkW(pathname_w, buffer);</span>
-<span class="line" id="L2877">}</span>
-<span class="line" id="L2878"></span>
-<span class="line" id="L2879"><span class="tok-comment">/// Same as `readLink`, except the path parameter is null-terminated.</span></span>
-<span class="line" id="L2880"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readLinkAbsoluteZ</span>(pathname_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, buffer: *[MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2881">    assert(path.isAbsoluteZ(pathname_c));</span>
-<span class="line" id="L2882">    <span class="tok-kw">return</span> os.readlinkZ(pathname_c, buffer);</span>
-<span class="line" id="L2883">}</span>
-<span class="line" id="L2884"></span>
-<span class="line" id="L2885"><span class="tok-comment">/// Use with `Dir.symLink` and `symLinkAbsolute` to specify whether the symlink</span></span>
-<span class="line" id="L2886"><span class="tok-comment">/// will point to a file or a directory. This value is ignored on all hosts</span></span>
-<span class="line" id="L2887"><span class="tok-comment">/// except Windows where creating symlinks to different resource types, requires</span></span>
-<span class="line" id="L2888"><span class="tok-comment">/// different flags. By default, `symLinkAbsolute` is assumed to point to a file.</span></span>
-<span class="line" id="L2889"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SymLinkFlags = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L2890">    is_directory: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L2891">};</span>
-<span class="line" id="L2892"></span>
-<span class="line" id="L2893"><span class="tok-comment">/// Creates a symbolic link named `sym_link_path` which contains the string `target_path`.</span></span>
-<span class="line" id="L2894"><span class="tok-comment">/// A symbolic link (also known as a soft link) may point to an existing file or to a nonexistent</span></span>
-<span class="line" id="L2895"><span class="tok-comment">/// one; the latter case is known as a dangling link.</span></span>
-<span class="line" id="L2896"><span class="tok-comment">/// If `sym_link_path` exists, it will not be overwritten.</span></span>
-<span class="line" id="L2897"><span class="tok-comment">/// See also `symLinkAbsoluteZ` and `symLinkAbsoluteW`.</span></span>
-<span class="line" id="L2898"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">symLinkAbsolute</span>(target_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, sym_link_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: SymLinkFlags) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L2899">    assert(path.isAbsolute(target_path));</span>
-<span class="line" id="L2900">    assert(path.isAbsolute(sym_link_path));</span>
-<span class="line" id="L2901">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L2902">        <span class="tok-kw">const</span> target_path_w = <span class="tok-kw">try</span> os.windows.sliceToPrefixedFileW(<span class="tok-null">null</span>, target_path);</span>
-<span class="line" id="L2903">        <span class="tok-kw">const</span> sym_link_path_w = <span class="tok-kw">try</span> os.windows.sliceToPrefixedFileW(<span class="tok-null">null</span>, sym_link_path);</span>
-<span class="line" id="L2904">        <span class="tok-kw">return</span> os.windows.CreateSymbolicLink(<span class="tok-null">null</span>, sym_link_path_w.span(), target_path_w.span(), flags.is_directory);</span>
-<span class="line" id="L2905">    }</span>
-<span class="line" id="L2906">    <span class="tok-kw">return</span> os.symlink(target_path, sym_link_path);</span>
-<span class="line" id="L2907">}</span>
-<span class="line" id="L2908"></span>
-<span class="line" id="L2909"><span class="tok-comment">/// Windows-only. Same as `symLinkAbsolute` except the parameters are null-terminated, WTF16 encoded.</span></span>
-<span class="line" id="L2910"><span class="tok-comment">/// Note that this function will by default try creating a symbolic link to a file. If you would</span></span>
-<span class="line" id="L2911"><span class="tok-comment">/// like to create a symbolic link to a directory, specify this with `SymLinkFlags{ .is_directory = true }`.</span></span>
-<span class="line" id="L2912"><span class="tok-comment">/// See also `symLinkAbsolute`, `symLinkAbsoluteZ`.</span></span>
-<span class="line" id="L2913"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">symLinkAbsoluteW</span>(target_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, sym_link_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: SymLinkFlags) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L2914">    assert(path.isAbsoluteWindowsWTF16(target_path_w));</span>
-<span class="line" id="L2915">    assert(path.isAbsoluteWindowsWTF16(sym_link_path_w));</span>
-<span class="line" id="L2916">    <span class="tok-kw">return</span> os.windows.CreateSymbolicLink(<span class="tok-null">null</span>, sym_link_path_w, target_path_w, flags.is_directory);</span>
-<span class="line" id="L2917">}</span>
-<span class="line" id="L2918"></span>
-<span class="line" id="L2919"><span class="tok-comment">/// Same as `symLinkAbsolute` except the parameters are null-terminated pointers.</span></span>
-<span class="line" id="L2920"><span class="tok-comment">/// See also `symLinkAbsolute`.</span></span>
-<span class="line" id="L2921"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">symLinkAbsoluteZ</span>(target_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, sym_link_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: SymLinkFlags) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L2922">    assert(path.isAbsoluteZ(target_path_c));</span>
-<span class="line" id="L2923">    assert(path.isAbsoluteZ(sym_link_path_c));</span>
-<span class="line" id="L2924">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L2925">        <span class="tok-kw">const</span> target_path_w = <span class="tok-kw">try</span> os.windows.cStrToWin32PrefixedFileW(target_path_c);</span>
-<span class="line" id="L2926">        <span class="tok-kw">const</span> sym_link_path_w = <span class="tok-kw">try</span> os.windows.cStrToWin32PrefixedFileW(sym_link_path_c);</span>
-<span class="line" id="L2927">        <span class="tok-kw">return</span> os.windows.CreateSymbolicLink(sym_link_path_w.span(), target_path_w.span(), flags.is_directory);</span>
-<span class="line" id="L2928">    }</span>
-<span class="line" id="L2929">    <span class="tok-kw">return</span> os.symlinkZ(target_path_c, sym_link_path_c);</span>
-<span class="line" id="L2930">}</span>
-<span class="line" id="L2931"></span>
-<span class="line" id="L2932"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> OpenSelfExeError = <span class="tok-kw">error</span>{</span>
-<span class="line" id="L2933">    SharingViolation,</span>
-<span class="line" id="L2934">    PathAlreadyExists,</span>
-<span class="line" id="L2935">    FileNotFound,</span>
-<span class="line" id="L2936">    AccessDenied,</span>
-<span class="line" id="L2937">    PipeBusy,</span>
-<span class="line" id="L2938">    NameTooLong,</span>
-<span class="line" id="L2939">    <span class="tok-comment">/// On Windows, file paths must be valid Unicode.</span></span>
-<span class="line" id="L2940">    InvalidUtf8,</span>
-<span class="line" id="L2941">    <span class="tok-comment">/// On Windows, file paths cannot contain these characters:</span></span>
-<span class="line" id="L2942">    <span class="tok-comment">/// '/', '*', '?', '&quot;', '&lt;', '&gt;', '|'</span></span>
-<span class="line" id="L2943">    BadPathName,</span>
-<span class="line" id="L2944">    Unexpected,</span>
-<span class="line" id="L2945">} || os.OpenError || SelfExePathError || os.FlockError;</span>
-<span class="line" id="L2946"></span>
-<span class="line" id="L2947"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openSelfExe</span>(flags: File.OpenFlags) OpenSelfExeError!File {</span>
-<span class="line" id="L2948">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
-<span class="line" id="L2949">        <span class="tok-kw">return</span> openFileAbsoluteZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, flags);</span>
-<span class="line" id="L2950">    }</span>
-<span class="line" id="L2951">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
-<span class="line" id="L2952">        <span class="tok-comment">// If ImagePathName is a symlink, then it will contain the path of the symlink,</span>
+<span class="line" id="L2710">    <span class="tok-kw">return</span> .{ .fd = <span class="tok-number">3</span> };</span>
+<span class="line" id="L2711">}</span>
+<span class="line" id="L2712"></span>
+<span class="line" id="L2713"><span class="tok-comment">/// Opens a directory at the given path. The directory is a system resource that remains</span></span>
+<span class="line" id="L2714"><span class="tok-comment">/// open until `close` is called on the result.</span></span>
+<span class="line" id="L2715"><span class="tok-comment">/// See `openDirAbsoluteZ` for a function that accepts a null-terminated path.</span></span>
+<span class="line" id="L2716"><span class="tok-comment">///</span></span>
+<span class="line" id="L2717"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
+<span class="line" id="L2718"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDirAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!Dir {</span>
+<span class="line" id="L2719">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2720">    <span class="tok-kw">return</span> cwd().openDir(absolute_path, flags);</span>
+<span class="line" id="L2721">}</span>
+<span class="line" id="L2722"></span>
+<span class="line" id="L2723"><span class="tok-comment">/// Same as `openDirAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2724"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDirAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!Dir {</span>
+<span class="line" id="L2725">    assert(path.isAbsoluteZ(absolute_path_c));</span>
+<span class="line" id="L2726">    <span class="tok-kw">return</span> cwd().openDirZ(absolute_path_c, flags, <span class="tok-null">false</span>);</span>
+<span class="line" id="L2727">}</span>
+<span class="line" id="L2728"><span class="tok-comment">/// Same as `openDirAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2729"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openDirAbsoluteW</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: Dir.OpenDirOptions) File.OpenError!Dir {</span>
+<span class="line" id="L2730">    assert(path.isAbsoluteWindowsW(absolute_path_c));</span>
+<span class="line" id="L2731">    <span class="tok-kw">return</span> cwd().openDirW(absolute_path_c, flags, <span class="tok-null">false</span>);</span>
+<span class="line" id="L2732">}</span>
+<span class="line" id="L2733"></span>
+<span class="line" id="L2734"><span class="tok-comment">/// Opens a directory at the given path. The directory is a system resource that remains</span></span>
+<span class="line" id="L2735"><span class="tok-comment">/// open until `close` is called on the result.</span></span>
+<span class="line" id="L2736"><span class="tok-comment">/// See `openIterableDirAbsoluteZ` for a function that accepts a null-terminated path.</span></span>
+<span class="line" id="L2737"><span class="tok-comment">///</span></span>
+<span class="line" id="L2738"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
+<span class="line" id="L2739"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openIterableDirAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!IterableDir {</span>
+<span class="line" id="L2740">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2741">    <span class="tok-kw">return</span> cwd().openIterableDir(absolute_path, flags);</span>
+<span class="line" id="L2742">}</span>
+<span class="line" id="L2743"></span>
+<span class="line" id="L2744"><span class="tok-comment">/// Same as `openIterableDirAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2745"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openIterableDirAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: Dir.OpenDirOptions) File.OpenError!IterableDir {</span>
+<span class="line" id="L2746">    assert(path.isAbsoluteZ(absolute_path_c));</span>
+<span class="line" id="L2747">    <span class="tok-kw">return</span> IterableDir{ .dir = <span class="tok-kw">try</span> cwd().openDirZ(absolute_path_c, flags, <span class="tok-null">true</span>) };</span>
+<span class="line" id="L2748">}</span>
+<span class="line" id="L2749"><span class="tok-comment">/// Same as `openIterableDirAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2750"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openIterableDirAbsoluteW</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: Dir.OpenDirOptions) File.OpenError!IterableDir {</span>
+<span class="line" id="L2751">    assert(path.isAbsoluteWindowsW(absolute_path_c));</span>
+<span class="line" id="L2752">    <span class="tok-kw">return</span> IterableDir{ .dir = <span class="tok-kw">try</span> cwd().openDirW(absolute_path_c, flags, <span class="tok-null">true</span>) };</span>
+<span class="line" id="L2753">}</span>
+<span class="line" id="L2754"></span>
+<span class="line" id="L2755"><span class="tok-comment">/// Opens a file for reading or writing, without attempting to create a new file, based on an absolute path.</span></span>
+<span class="line" id="L2756"><span class="tok-comment">/// Call `File.close` to release the resource.</span></span>
+<span class="line" id="L2757"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.openFile` for a function that</span></span>
+<span class="line" id="L2758"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
+<span class="line" id="L2759"><span class="tok-comment">/// Asserts that the path parameter has no null bytes. See `openFileAbsoluteZ` for a function</span></span>
+<span class="line" id="L2760"><span class="tok-comment">/// that accepts a null-terminated path.</span></span>
+<span class="line" id="L2761"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openFileAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) File.OpenError!File {</span>
+<span class="line" id="L2762">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2763">    <span class="tok-kw">return</span> cwd().openFile(absolute_path, flags);</span>
+<span class="line" id="L2764">}</span>
+<span class="line" id="L2765"></span>
+<span class="line" id="L2766"><span class="tok-comment">/// Same as `openFileAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2767"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openFileAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) File.OpenError!File {</span>
+<span class="line" id="L2768">    assert(path.isAbsoluteZ(absolute_path_c));</span>
+<span class="line" id="L2769">    <span class="tok-kw">return</span> cwd().openFileZ(absolute_path_c, flags);</span>
+<span class="line" id="L2770">}</span>
+<span class="line" id="L2771"></span>
+<span class="line" id="L2772"><span class="tok-comment">/// Same as `openFileAbsolute` but the path parameter is WTF-16-encoded.</span></span>
+<span class="line" id="L2773"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openFileAbsoluteW</span>(absolute_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: File.OpenFlags) File.OpenError!File {</span>
+<span class="line" id="L2774">    assert(path.isAbsoluteWindowsWTF16(absolute_path_w));</span>
+<span class="line" id="L2775">    <span class="tok-kw">return</span> cwd().openFileW(absolute_path_w, flags);</span>
+<span class="line" id="L2776">}</span>
+<span class="line" id="L2777"></span>
+<span class="line" id="L2778"><span class="tok-comment">/// Test accessing `path`.</span></span>
+<span class="line" id="L2779"><span class="tok-comment">/// `path` is UTF-8-encoded.</span></span>
+<span class="line" id="L2780"><span class="tok-comment">/// Be careful of Time-Of-Check-Time-Of-Use race conditions when using this function.</span></span>
+<span class="line" id="L2781"><span class="tok-comment">/// For example, instead of testing if a file exists and then opening it, just</span></span>
+<span class="line" id="L2782"><span class="tok-comment">/// open it and handle the error for file not found.</span></span>
+<span class="line" id="L2783"><span class="tok-comment">/// See `accessAbsoluteZ` for a function that accepts a null-terminated path.</span></span>
+<span class="line" id="L2784"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accessAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) Dir.AccessError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2785">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2786">    <span class="tok-kw">try</span> cwd().access(absolute_path, flags);</span>
+<span class="line" id="L2787">}</span>
+<span class="line" id="L2788"><span class="tok-comment">/// Same as `accessAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2789"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accessAbsoluteZ</span>(absolute_path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.OpenFlags) Dir.AccessError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2790">    assert(path.isAbsoluteZ(absolute_path));</span>
+<span class="line" id="L2791">    <span class="tok-kw">try</span> cwd().accessZ(absolute_path, flags);</span>
+<span class="line" id="L2792">}</span>
+<span class="line" id="L2793"><span class="tok-comment">/// Same as `accessAbsolute` but the path parameter is WTF-16 encoded.</span></span>
+<span class="line" id="L2794"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accessAbsoluteW</span>(absolute_path: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: File.OpenFlags) Dir.AccessError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2795">    assert(path.isAbsoluteWindowsW(absolute_path));</span>
+<span class="line" id="L2796">    <span class="tok-kw">try</span> cwd().accessW(absolute_path, flags);</span>
+<span class="line" id="L2797">}</span>
+<span class="line" id="L2798"></span>
+<span class="line" id="L2799"><span class="tok-comment">/// Creates, opens, or overwrites a file with write access, based on an absolute path.</span></span>
+<span class="line" id="L2800"><span class="tok-comment">/// Call `File.close` to release the resource.</span></span>
+<span class="line" id="L2801"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.createFile` for a function that</span></span>
+<span class="line" id="L2802"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
+<span class="line" id="L2803"><span class="tok-comment">/// Asserts that the path parameter has no null bytes. See `createFileAbsoluteC` for a function</span></span>
+<span class="line" id="L2804"><span class="tok-comment">/// that accepts a null-terminated path.</span></span>
+<span class="line" id="L2805"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createFileAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.CreateFlags) File.OpenError!File {</span>
+<span class="line" id="L2806">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2807">    <span class="tok-kw">return</span> cwd().createFile(absolute_path, flags);</span>
+<span class="line" id="L2808">}</span>
+<span class="line" id="L2809"></span>
+<span class="line" id="L2810"><span class="tok-comment">/// Same as `createFileAbsolute` but the path parameter is null-terminated.</span></span>
+<span class="line" id="L2811"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createFileAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: File.CreateFlags) File.OpenError!File {</span>
+<span class="line" id="L2812">    assert(path.isAbsoluteZ(absolute_path_c));</span>
+<span class="line" id="L2813">    <span class="tok-kw">return</span> cwd().createFileZ(absolute_path_c, flags);</span>
+<span class="line" id="L2814">}</span>
+<span class="line" id="L2815"></span>
+<span class="line" id="L2816"><span class="tok-comment">/// Same as `createFileAbsolute` but the path parameter is WTF-16 encoded.</span></span>
+<span class="line" id="L2817"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createFileAbsoluteW</span>(absolute_path_w: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: File.CreateFlags) File.OpenError!File {</span>
+<span class="line" id="L2818">    assert(path.isAbsoluteWindowsW(absolute_path_w));</span>
+<span class="line" id="L2819">    <span class="tok-kw">return</span> cwd().createFileW(absolute_path_w, flags);</span>
+<span class="line" id="L2820">}</span>
+<span class="line" id="L2821"></span>
+<span class="line" id="L2822"><span class="tok-comment">/// Delete a file name and possibly the file it refers to, based on an absolute path.</span></span>
+<span class="line" id="L2823"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.deleteFile` for a function that</span></span>
+<span class="line" id="L2824"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
+<span class="line" id="L2825"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
+<span class="line" id="L2826"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteFileAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Dir.DeleteFileError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2827">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2828">    <span class="tok-kw">return</span> cwd().deleteFile(absolute_path);</span>
+<span class="line" id="L2829">}</span>
+<span class="line" id="L2830"></span>
+<span class="line" id="L2831"><span class="tok-comment">/// Same as `deleteFileAbsolute` except the parameter is null-terminated.</span></span>
+<span class="line" id="L2832"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteFileAbsoluteZ</span>(absolute_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Dir.DeleteFileError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2833">    assert(path.isAbsoluteZ(absolute_path_c));</span>
+<span class="line" id="L2834">    <span class="tok-kw">return</span> cwd().deleteFileZ(absolute_path_c);</span>
+<span class="line" id="L2835">}</span>
+<span class="line" id="L2836"></span>
+<span class="line" id="L2837"><span class="tok-comment">/// Same as `deleteFileAbsolute` except the parameter is WTF-16 encoded.</span></span>
+<span class="line" id="L2838"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteFileAbsoluteW</span>(absolute_path_w: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>) Dir.DeleteFileError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L2839">    assert(path.isAbsoluteWindowsW(absolute_path_w));</span>
+<span class="line" id="L2840">    <span class="tok-kw">return</span> cwd().deleteFileW(absolute_path_w);</span>
+<span class="line" id="L2841">}</span>
+<span class="line" id="L2842"></span>
+<span class="line" id="L2843"><span class="tok-comment">/// Removes a symlink, file, or directory.</span></span>
+<span class="line" id="L2844"><span class="tok-comment">/// This is equivalent to `Dir.deleteTree` with the base directory.</span></span>
+<span class="line" id="L2845"><span class="tok-comment">/// Asserts that the path is absolute. See `Dir.deleteTree` for a function that</span></span>
+<span class="line" id="L2846"><span class="tok-comment">/// operates on both absolute and relative paths.</span></span>
+<span class="line" id="L2847"><span class="tok-comment">/// Asserts that the path parameter has no null bytes.</span></span>
+<span class="line" id="L2848"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deleteTreeAbsolute</span>(absolute_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L2849">    assert(path.isAbsolute(absolute_path));</span>
+<span class="line" id="L2850">    <span class="tok-kw">const</span> dirname = path.dirname(absolute_path) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>{</span>
+<span class="line" id="L2851">        <span class="tok-comment">/// Attempt to remove the root file system path.</span></span>
+<span class="line" id="L2852">        <span class="tok-comment">/// This error is unreachable if `absolute_path` is relative.</span></span>
+<span class="line" id="L2853">        CannotDeleteRootDirectory,</span>
+<span class="line" id="L2854">    }.CannotDeleteRootDirectory;</span>
+<span class="line" id="L2855"></span>
+<span class="line" id="L2856">    <span class="tok-kw">var</span> dir = <span class="tok-kw">try</span> cwd().openDir(dirname, .{});</span>
+<span class="line" id="L2857">    <span class="tok-kw">defer</span> dir.close();</span>
+<span class="line" id="L2858"></span>
+<span class="line" id="L2859">    <span class="tok-kw">return</span> dir.deleteTree(path.basename(absolute_path));</span>
+<span class="line" id="L2860">}</span>
+<span class="line" id="L2861"></span>
+<span class="line" id="L2862"><span class="tok-comment">/// Same as `Dir.readLink`, except it asserts the path is absolute.</span></span>
+<span class="line" id="L2863"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readLinkAbsolute</span>(pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, buffer: *[MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2864">    assert(path.isAbsolute(pathname));</span>
+<span class="line" id="L2865">    <span class="tok-kw">return</span> os.readlink(pathname, buffer);</span>
+<span class="line" id="L2866">}</span>
+<span class="line" id="L2867"></span>
+<span class="line" id="L2868"><span class="tok-comment">/// Windows-only. Same as `readlinkW`, except the path parameter is null-terminated, WTF16</span></span>
+<span class="line" id="L2869"><span class="tok-comment">/// encoded.</span></span>
+<span class="line" id="L2870"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readlinkAbsoluteW</span>(pathname_w: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>, buffer: *[MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2871">    assert(path.isAbsoluteWindowsW(pathname_w));</span>
+<span class="line" id="L2872">    <span class="tok-kw">return</span> os.readlinkW(pathname_w, buffer);</span>
+<span class="line" id="L2873">}</span>
+<span class="line" id="L2874"></span>
+<span class="line" id="L2875"><span class="tok-comment">/// Same as `readLink`, except the path parameter is null-terminated.</span></span>
+<span class="line" id="L2876"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readLinkAbsoluteZ</span>(pathname_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, buffer: *[MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2877">    assert(path.isAbsoluteZ(pathname_c));</span>
+<span class="line" id="L2878">    <span class="tok-kw">return</span> os.readlinkZ(pathname_c, buffer);</span>
+<span class="line" id="L2879">}</span>
+<span class="line" id="L2880"></span>
+<span class="line" id="L2881"><span class="tok-comment">/// Use with `Dir.symLink` and `symLinkAbsolute` to specify whether the symlink</span></span>
+<span class="line" id="L2882"><span class="tok-comment">/// will point to a file or a directory. This value is ignored on all hosts</span></span>
+<span class="line" id="L2883"><span class="tok-comment">/// except Windows where creating symlinks to different resource types, requires</span></span>
+<span class="line" id="L2884"><span class="tok-comment">/// different flags. By default, `symLinkAbsolute` is assumed to point to a file.</span></span>
+<span class="line" id="L2885"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SymLinkFlags = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L2886">    is_directory: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L2887">};</span>
+<span class="line" id="L2888"></span>
+<span class="line" id="L2889"><span class="tok-comment">/// Creates a symbolic link named `sym_link_path` which contains the string `target_path`.</span></span>
+<span class="line" id="L2890"><span class="tok-comment">/// A symbolic link (also known as a soft link) may point to an existing file or to a nonexistent</span></span>
+<span class="line" id="L2891"><span class="tok-comment">/// one; the latter case is known as a dangling link.</span></span>
+<span class="line" id="L2892"><span class="tok-comment">/// If `sym_link_path` exists, it will not be overwritten.</span></span>
+<span class="line" id="L2893"><span class="tok-comment">/// See also `symLinkAbsoluteZ` and `symLinkAbsoluteW`.</span></span>
+<span class="line" id="L2894"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">symLinkAbsolute</span>(target_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, sym_link_path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: SymLinkFlags) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L2895">    assert(path.isAbsolute(target_path));</span>
+<span class="line" id="L2896">    assert(path.isAbsolute(sym_link_path));</span>
+<span class="line" id="L2897">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L2898">        <span class="tok-kw">const</span> target_path_w = <span class="tok-kw">try</span> os.windows.sliceToPrefixedFileW(<span class="tok-null">null</span>, target_path);</span>
+<span class="line" id="L2899">        <span class="tok-kw">const</span> sym_link_path_w = <span class="tok-kw">try</span> os.windows.sliceToPrefixedFileW(<span class="tok-null">null</span>, sym_link_path);</span>
+<span class="line" id="L2900">        <span class="tok-kw">return</span> os.windows.CreateSymbolicLink(<span class="tok-null">null</span>, sym_link_path_w.span(), target_path_w.span(), flags.is_directory);</span>
+<span class="line" id="L2901">    }</span>
+<span class="line" id="L2902">    <span class="tok-kw">return</span> os.symlink(target_path, sym_link_path);</span>
+<span class="line" id="L2903">}</span>
+<span class="line" id="L2904"></span>
+<span class="line" id="L2905"><span class="tok-comment">/// Windows-only. Same as `symLinkAbsolute` except the parameters are null-terminated, WTF16 encoded.</span></span>
+<span class="line" id="L2906"><span class="tok-comment">/// Note that this function will by default try creating a symbolic link to a file. If you would</span></span>
+<span class="line" id="L2907"><span class="tok-comment">/// like to create a symbolic link to a directory, specify this with `SymLinkFlags{ .is_directory = true }`.</span></span>
+<span class="line" id="L2908"><span class="tok-comment">/// See also `symLinkAbsolute`, `symLinkAbsoluteZ`.</span></span>
+<span class="line" id="L2909"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">symLinkAbsoluteW</span>(target_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, sym_link_path_w: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>, flags: SymLinkFlags) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L2910">    assert(path.isAbsoluteWindowsWTF16(target_path_w));</span>
+<span class="line" id="L2911">    assert(path.isAbsoluteWindowsWTF16(sym_link_path_w));</span>
+<span class="line" id="L2912">    <span class="tok-kw">return</span> os.windows.CreateSymbolicLink(<span class="tok-null">null</span>, sym_link_path_w, target_path_w, flags.is_directory);</span>
+<span class="line" id="L2913">}</span>
+<span class="line" id="L2914"></span>
+<span class="line" id="L2915"><span class="tok-comment">/// Same as `symLinkAbsolute` except the parameters are null-terminated pointers.</span></span>
+<span class="line" id="L2916"><span class="tok-comment">/// See also `symLinkAbsolute`.</span></span>
+<span class="line" id="L2917"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">symLinkAbsoluteZ</span>(target_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, sym_link_path_c: [*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, flags: SymLinkFlags) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L2918">    assert(path.isAbsoluteZ(target_path_c));</span>
+<span class="line" id="L2919">    assert(path.isAbsoluteZ(sym_link_path_c));</span>
+<span class="line" id="L2920">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L2921">        <span class="tok-kw">const</span> target_path_w = <span class="tok-kw">try</span> os.windows.cStrToWin32PrefixedFileW(target_path_c);</span>
+<span class="line" id="L2922">        <span class="tok-kw">const</span> sym_link_path_w = <span class="tok-kw">try</span> os.windows.cStrToWin32PrefixedFileW(sym_link_path_c);</span>
+<span class="line" id="L2923">        <span class="tok-kw">return</span> os.windows.CreateSymbolicLink(sym_link_path_w.span(), target_path_w.span(), flags.is_directory);</span>
+<span class="line" id="L2924">    }</span>
+<span class="line" id="L2925">    <span class="tok-kw">return</span> os.symlinkZ(target_path_c, sym_link_path_c);</span>
+<span class="line" id="L2926">}</span>
+<span class="line" id="L2927"></span>
+<span class="line" id="L2928"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> OpenSelfExeError = <span class="tok-kw">error</span>{</span>
+<span class="line" id="L2929">    SharingViolation,</span>
+<span class="line" id="L2930">    PathAlreadyExists,</span>
+<span class="line" id="L2931">    FileNotFound,</span>
+<span class="line" id="L2932">    AccessDenied,</span>
+<span class="line" id="L2933">    PipeBusy,</span>
+<span class="line" id="L2934">    NameTooLong,</span>
+<span class="line" id="L2935">    <span class="tok-comment">/// On Windows, file paths must be valid Unicode.</span></span>
+<span class="line" id="L2936">    InvalidUtf8,</span>
+<span class="line" id="L2937">    <span class="tok-comment">/// On Windows, file paths cannot contain these characters:</span></span>
+<span class="line" id="L2938">    <span class="tok-comment">/// '/', '*', '?', '&quot;', '&lt;', '&gt;', '|'</span></span>
+<span class="line" id="L2939">    BadPathName,</span>
+<span class="line" id="L2940">    Unexpected,</span>
+<span class="line" id="L2941">} || os.OpenError || SelfExePathError || os.FlockError;</span>
+<span class="line" id="L2942"></span>
+<span class="line" id="L2943"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">openSelfExe</span>(flags: File.OpenFlags) OpenSelfExeError!File {</span>
+<span class="line" id="L2944">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
+<span class="line" id="L2945">        <span class="tok-kw">return</span> openFileAbsoluteZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, flags);</span>
+<span class="line" id="L2946">    }</span>
+<span class="line" id="L2947">    <span class="tok-kw">if</span> (builtin.os.tag == .windows) {</span>
+<span class="line" id="L2948">        <span class="tok-comment">// If ImagePathName is a symlink, then it will contain the path of the symlink,</span>
 </span>
-<span class="line" id="L2953">        <span class="tok-comment">// not the path that the symlink points to. However, because we are opening</span>
+<span class="line" id="L2949">        <span class="tok-comment">// not the path that the symlink points to. However, because we are opening</span>
 </span>
-<span class="line" id="L2954">        <span class="tok-comment">// the file, we can let the openFileW call follow the symlink for us.</span>
+<span class="line" id="L2950">        <span class="tok-comment">// the file, we can let the openFileW call follow the symlink for us.</span>
 </span>
-<span class="line" id="L2955">        <span class="tok-kw">const</span> image_path_unicode_string = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
-<span class="line" id="L2956">        <span class="tok-kw">const</span> image_path_name = image_path_unicode_string.Buffer[<span class="tok-number">0</span> .. image_path_unicode_string.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L2957">        <span class="tok-kw">const</span> prefixed_path_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
-<span class="line" id="L2958">        <span class="tok-kw">return</span> cwd().openFileW(prefixed_path_w.span(), flags);</span>
-<span class="line" id="L2959">    }</span>
-<span class="line" id="L2960">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the resulting path is immediately</span>
+<span class="line" id="L2951">        <span class="tok-kw">const</span> image_path_unicode_string = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
+<span class="line" id="L2952">        <span class="tok-kw">const</span> image_path_name = image_path_unicode_string.Buffer[<span class="tok-number">0</span> .. image_path_unicode_string.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L2953">        <span class="tok-kw">const</span> prefixed_path_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
+<span class="line" id="L2954">        <span class="tok-kw">return</span> cwd().openFileW(prefixed_path_w.span(), flags);</span>
+<span class="line" id="L2955">    }</span>
+<span class="line" id="L2956">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the resulting path is immediately</span>
 </span>
-<span class="line" id="L2961">    <span class="tok-comment">// opened with no modification.</span>
+<span class="line" id="L2957">    <span class="tok-comment">// opened with no modification.</span>
 </span>
-<span class="line" id="L2962">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L2963">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(&amp;buf);</span>
-<span class="line" id="L2964">    buf[self_exe_path.len] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L2965">    <span class="tok-kw">return</span> openFileAbsoluteZ(buf[<span class="tok-number">0</span>..self_exe_path.len :<span class="tok-number">0</span>].ptr, flags);</span>
-<span class="line" id="L2966">}</span>
-<span class="line" id="L2967"></span>
-<span class="line" id="L2968"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SelfExePathError = os.ReadLinkError || os.SysCtlError || os.RealPathError;</span>
-<span class="line" id="L2969"></span>
-<span class="line" id="L2970"><span class="tok-comment">/// `selfExePath` except allocates the result on the heap.</span></span>
-<span class="line" id="L2971"><span class="tok-comment">/// Caller owns returned memory.</span></span>
-<span class="line" id="L2972"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2973">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
+<span class="line" id="L2958">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2959">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(&amp;buf);</span>
+<span class="line" id="L2960">    buf[self_exe_path.len] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L2961">    <span class="tok-kw">return</span> openFileAbsoluteZ(buf[<span class="tok-number">0</span>..self_exe_path.len :<span class="tok-number">0</span>].ptr, flags);</span>
+<span class="line" id="L2962">}</span>
+<span class="line" id="L2963"></span>
+<span class="line" id="L2964"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SelfExePathError = os.ReadLinkError || os.SysCtlError || os.RealPathError;</span>
+<span class="line" id="L2965"></span>
+<span class="line" id="L2966"><span class="tok-comment">/// `selfExePath` except allocates the result on the heap.</span></span>
+<span class="line" id="L2967"><span class="tok-comment">/// Caller owns returned memory.</span></span>
+<span class="line" id="L2968"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2969">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
 </span>
-<span class="line" id="L2974">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
+<span class="line" id="L2970">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
 </span>
-<span class="line" id="L2975">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
+<span class="line" id="L2971">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
 </span>
-<span class="line" id="L2976">    <span class="tok-comment">// fundamentally impossible to get the selfExePath of a program running in</span>
+<span class="line" id="L2972">    <span class="tok-comment">// fundamentally impossible to get the selfExePath of a program running in</span>
 </span>
-<span class="line" id="L2977">    <span class="tok-comment">// a very deeply nested directory chain in this way.</span>
+<span class="line" id="L2973">    <span class="tok-comment">// a very deeply nested directory chain in this way.</span>
 </span>
-<span class="line" id="L2978">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
+<span class="line" id="L2974">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
 </span>
-<span class="line" id="L2979">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
+<span class="line" id="L2975">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
 </span>
-<span class="line" id="L2980">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L2981">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExePath(&amp;buf));</span>
-<span class="line" id="L2982">}</span>
-<span class="line" id="L2983"></span>
-<span class="line" id="L2984"><span class="tok-comment">/// Get the path to the current executable. Follows symlinks.</span></span>
-<span class="line" id="L2985"><span class="tok-comment">/// If you only need the directory, use selfExeDirPath.</span></span>
-<span class="line" id="L2986"><span class="tok-comment">/// If you only want an open file handle, use openSelfExe.</span></span>
-<span class="line" id="L2987"><span class="tok-comment">/// This function may return an error if the current executable</span></span>
-<span class="line" id="L2988"><span class="tok-comment">/// was deleted after spawning.</span></span>
-<span class="line" id="L2989"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
-<span class="line" id="L2990"><span class="tok-comment">///</span></span>
-<span class="line" id="L2991"><span class="tok-comment">/// On Linux, depends on procfs being mounted. If the currently executing binary has</span></span>
-<span class="line" id="L2992"><span class="tok-comment">/// been deleted, the file path looks something like `/a/b/c/exe (deleted)`.</span></span>
-<span class="line" id="L2993"><span class="tok-comment">/// TODO make the return type of this a null terminated pointer</span></span>
-<span class="line" id="L2994"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L2995">    <span class="tok-kw">if</span> (is_darwin) {</span>
-<span class="line" id="L2996">        <span class="tok-comment">// Note that _NSGetExecutablePath() will return &quot;a path&quot; to</span>
+<span class="line" id="L2976">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2977">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExePath(&amp;buf));</span>
+<span class="line" id="L2978">}</span>
+<span class="line" id="L2979"></span>
+<span class="line" id="L2980"><span class="tok-comment">/// Get the path to the current executable. Follows symlinks.</span></span>
+<span class="line" id="L2981"><span class="tok-comment">/// If you only need the directory, use selfExeDirPath.</span></span>
+<span class="line" id="L2982"><span class="tok-comment">/// If you only want an open file handle, use openSelfExe.</span></span>
+<span class="line" id="L2983"><span class="tok-comment">/// This function may return an error if the current executable</span></span>
+<span class="line" id="L2984"><span class="tok-comment">/// was deleted after spawning.</span></span>
+<span class="line" id="L2985"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
+<span class="line" id="L2986"><span class="tok-comment">///</span></span>
+<span class="line" id="L2987"><span class="tok-comment">/// On Linux, depends on procfs being mounted. If the currently executing binary has</span></span>
+<span class="line" id="L2988"><span class="tok-comment">/// been deleted, the file path looks something like `/a/b/c/exe (deleted)`.</span></span>
+<span class="line" id="L2989"><span class="tok-comment">/// TODO make the return type of this a null terminated pointer</span></span>
+<span class="line" id="L2990"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExePath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L2991">    <span class="tok-kw">if</span> (is_darwin) {</span>
+<span class="line" id="L2992">        <span class="tok-comment">// Note that _NSGetExecutablePath() will return &quot;a path&quot; to</span>
 </span>
-<span class="line" id="L2997">        <span class="tok-comment">// the executable not a &quot;real path&quot; to the executable.</span>
+<span class="line" id="L2993">        <span class="tok-comment">// the executable not a &quot;real path&quot; to the executable.</span>
 </span>
-<span class="line" id="L2998">        <span class="tok-kw">var</span> symlink_path_buf: [MAX_PATH_BYTES:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L2999">        <span class="tok-kw">var</span> u32_len: <span class="tok-type">u32</span> = MAX_PATH_BYTES + <span class="tok-number">1</span>; <span class="tok-comment">// include the sentinel</span>
+<span class="line" id="L2994">        <span class="tok-kw">var</span> symlink_path_buf: [MAX_PATH_BYTES:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2995">        <span class="tok-kw">var</span> u32_len: <span class="tok-type">u32</span> = MAX_PATH_BYTES + <span class="tok-number">1</span>; <span class="tok-comment">// include the sentinel</span>
 </span>
-<span class="line" id="L3000">        <span class="tok-kw">const</span> rc = std.c._NSGetExecutablePath(&amp;symlink_path_buf, &amp;u32_len);</span>
-<span class="line" id="L3001">        <span class="tok-kw">if</span> (rc != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3002"></span>
-<span class="line" id="L3003">        <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3004">        <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> std.os.realpathZ(&amp;symlink_path_buf, &amp;real_path_buf);</span>
-<span class="line" id="L3005">        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3006">        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
-<span class="line" id="L3007">        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
-<span class="line" id="L3008">        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L3009">    }</span>
-<span class="line" id="L3010">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
-<span class="line" id="L3011">        .linux =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, out_buffer),</span>
-<span class="line" id="L3012">        .solaris =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/path/a.out&quot;</span>, out_buffer),</span>
-<span class="line" id="L3013">        .freebsd, .dragonfly =&gt; {</span>
-<span class="line" id="L3014">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC, os.KERN.PROC_PATHNAME, -<span class="tok-number">1</span> };</span>
-<span class="line" id="L3015">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
-<span class="line" id="L3016">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3017">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
+<span class="line" id="L2996">        <span class="tok-kw">const</span> rc = std.c._NSGetExecutablePath(&amp;symlink_path_buf, &amp;u32_len);</span>
+<span class="line" id="L2997">        <span class="tok-kw">if</span> (rc != <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L2998"></span>
+<span class="line" id="L2999">        <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3000">        <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> std.os.realpathZ(&amp;symlink_path_buf, &amp;real_path_buf);</span>
+<span class="line" id="L3001">        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3002">        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
+<span class="line" id="L3003">        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
+<span class="line" id="L3004">        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L3005">    }</span>
+<span class="line" id="L3006">    <span class="tok-kw">switch</span> (builtin.os.tag) {</span>
+<span class="line" id="L3007">        .linux =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/exe&quot;</span>, out_buffer),</span>
+<span class="line" id="L3008">        .solaris =&gt; <span class="tok-kw">return</span> os.readlinkZ(<span class="tok-str">&quot;/proc/self/path/a.out&quot;</span>, out_buffer),</span>
+<span class="line" id="L3009">        .freebsd, .dragonfly =&gt; {</span>
+<span class="line" id="L3010">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC, os.KERN.PROC_PATHNAME, -<span class="tok-number">1</span> };</span>
+<span class="line" id="L3011">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
+<span class="line" id="L3012">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3013">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
 </span>
-<span class="line" id="L3018">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3019">        },</span>
-<span class="line" id="L3020">        .netbsd =&gt; {</span>
-<span class="line" id="L3021">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC_ARGS, -<span class="tok-number">1</span>, os.KERN.PROC_PATHNAME };</span>
-<span class="line" id="L3022">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
-<span class="line" id="L3023">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3024">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
+<span class="line" id="L3014">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3015">        },</span>
+<span class="line" id="L3016">        .netbsd =&gt; {</span>
+<span class="line" id="L3017">            <span class="tok-kw">var</span> mib = [<span class="tok-number">4</span>]<span class="tok-type">c_int</span>{ os.CTL.KERN, os.KERN.PROC_ARGS, -<span class="tok-number">1</span>, os.KERN.PROC_PATHNAME };</span>
+<span class="line" id="L3018">            <span class="tok-kw">var</span> out_len: <span class="tok-type">usize</span> = out_buffer.len;</span>
+<span class="line" id="L3019">            <span class="tok-kw">try</span> os.sysctl(&amp;mib, out_buffer.ptr, &amp;out_len, <span class="tok-null">null</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3020">            <span class="tok-comment">// TODO could this slice from 0 to out_len instead?</span>
 </span>
-<span class="line" id="L3025">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3026">        },</span>
-<span class="line" id="L3027">        .openbsd, .haiku =&gt; {</span>
-<span class="line" id="L3028">            <span class="tok-comment">// OpenBSD doesn't support getting the path of a running process, so try to guess it</span>
+<span class="line" id="L3021">            <span class="tok-kw">return</span> mem.sliceTo(out_buffer, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3022">        },</span>
+<span class="line" id="L3023">        .openbsd, .haiku =&gt; {</span>
+<span class="line" id="L3024">            <span class="tok-comment">// OpenBSD doesn't support getting the path of a running process, so try to guess it</span>
 </span>
-<span class="line" id="L3029">            <span class="tok-kw">if</span> (os.argv.len == <span class="tok-number">0</span>)</span>
-<span class="line" id="L3030">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L3031"></span>
-<span class="line" id="L3032">            <span class="tok-kw">const</span> argv0 = mem.span(os.argv[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L3033">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, argv0, <span class="tok-str">&quot;/&quot;</span>) != <span class="tok-null">null</span>) {</span>
-<span class="line" id="L3034">                <span class="tok-comment">// argv[0] is a path (relative or absolute): use realpath(3) directly</span>
+<span class="line" id="L3025">            <span class="tok-kw">if</span> (os.argv.len == <span class="tok-number">0</span>)</span>
+<span class="line" id="L3026">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L3027"></span>
+<span class="line" id="L3028">            <span class="tok-kw">const</span> argv0 = mem.span(os.argv[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L3029">            <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, argv0, <span class="tok-str">&quot;/&quot;</span>) != <span class="tok-null">null</span>) {</span>
+<span class="line" id="L3030">                <span class="tok-comment">// argv[0] is a path (relative or absolute): use realpath(3) directly</span>
 </span>
-<span class="line" id="L3035">                <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3036">                <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> os.realpathZ(os.argv[<span class="tok-number">0</span>], &amp;real_path_buf);</span>
-<span class="line" id="L3037">                <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
-<span class="line" id="L3038">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3039">                <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
-<span class="line" id="L3040">                <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
-<span class="line" id="L3041">                <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L3042">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (argv0.len != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3043">                <span class="tok-comment">// argv[0] is not empty (and not a path): search it inside PATH</span>
+<span class="line" id="L3031">                <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3032">                <span class="tok-kw">const</span> real_path = <span class="tok-kw">try</span> os.realpathZ(os.argv[<span class="tok-number">0</span>], &amp;real_path_buf);</span>
+<span class="line" id="L3033">                <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
+<span class="line" id="L3034">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3035">                <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
+<span class="line" id="L3036">                <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
+<span class="line" id="L3037">                <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L3038">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (argv0.len != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3039">                <span class="tok-comment">// argv[0] is not empty (and not a path): search it inside PATH</span>
 </span>
-<span class="line" id="L3044">                <span class="tok-kw">const</span> PATH = std.os.getenvZ(<span class="tok-str">&quot;PATH&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L3045">                <span class="tok-kw">var</span> path_it = mem.tokenizeScalar(<span class="tok-type">u8</span>, PATH, path.delimiter);</span>
-<span class="line" id="L3046">                <span class="tok-kw">while</span> (path_it.next()) |a_path| {</span>
-<span class="line" id="L3047">                    <span class="tok-kw">var</span> resolved_path_buf: [MAX_PATH_BYTES - <span class="tok-number">1</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3048">                    <span class="tok-kw">const</span> resolved_path = std.fmt.bufPrintZ(&amp;resolved_path_buf, <span class="tok-str">&quot;{s}/{s}&quot;</span>, .{</span>
-<span class="line" id="L3049">                        a_path,</span>
-<span class="line" id="L3050">                        os.argv[<span class="tok-number">0</span>],</span>
-<span class="line" id="L3051">                    }) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L3052"></span>
-<span class="line" id="L3053">                    <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3054">                    <span class="tok-kw">if</span> (os.realpathZ(resolved_path, &amp;real_path_buf)) |real_path| {</span>
-<span class="line" id="L3055">                        <span class="tok-comment">// found a file, and hope it is the right file</span>
+<span class="line" id="L3040">                <span class="tok-kw">const</span> PATH = std.os.getenvZ(<span class="tok-str">&quot;PATH&quot;</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L3041">                <span class="tok-kw">var</span> path_it = mem.tokenizeScalar(<span class="tok-type">u8</span>, PATH, path.delimiter);</span>
+<span class="line" id="L3042">                <span class="tok-kw">while</span> (path_it.next()) |a_path| {</span>
+<span class="line" id="L3043">                    <span class="tok-kw">var</span> resolved_path_buf: [MAX_PATH_BYTES - <span class="tok-number">1</span>:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3044">                    <span class="tok-kw">const</span> resolved_path = std.fmt.bufPrintZ(&amp;resolved_path_buf, <span class="tok-str">&quot;{s}/{s}&quot;</span>, .{</span>
+<span class="line" id="L3045">                        a_path,</span>
+<span class="line" id="L3046">                        os.argv[<span class="tok-number">0</span>],</span>
+<span class="line" id="L3047">                    }) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L3048"></span>
+<span class="line" id="L3049">                    <span class="tok-kw">var</span> real_path_buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3050">                    <span class="tok-kw">if</span> (os.realpathZ(resolved_path, &amp;real_path_buf)) |real_path| {</span>
+<span class="line" id="L3051">                        <span class="tok-comment">// found a file, and hope it is the right file</span>
 </span>
-<span class="line" id="L3056">                        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
-<span class="line" id="L3057">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L3058">                        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
-<span class="line" id="L3059">                        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
-<span class="line" id="L3060">                        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L3061">                    } <span class="tok-kw">else</span> |_| <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L3062">                }</span>
-<span class="line" id="L3063">            }</span>
-<span class="line" id="L3064">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L3065">        },</span>
-<span class="line" id="L3066">        .windows =&gt; {</span>
-<span class="line" id="L3067">            <span class="tok-kw">const</span> image_path_unicode_string = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
-<span class="line" id="L3068">            <span class="tok-kw">const</span> image_path_name = image_path_unicode_string.Buffer[<span class="tok-number">0</span> .. image_path_unicode_string.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L3069"></span>
-<span class="line" id="L3070">            <span class="tok-comment">// If ImagePathName is a symlink, then it will contain the path of the</span>
+<span class="line" id="L3052">                        <span class="tok-kw">if</span> (real_path.len &gt; out_buffer.len)</span>
+<span class="line" id="L3053">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L3054">                        <span class="tok-kw">const</span> result = out_buffer[<span class="tok-number">0</span>..real_path.len];</span>
+<span class="line" id="L3055">                        <span class="tok-builtin">@memcpy</span>(result, real_path);</span>
+<span class="line" id="L3056">                        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L3057">                    } <span class="tok-kw">else</span> |_| <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L3058">                }</span>
+<span class="line" id="L3059">            }</span>
+<span class="line" id="L3060">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L3061">        },</span>
+<span class="line" id="L3062">        .windows =&gt; {</span>
+<span class="line" id="L3063">            <span class="tok-kw">const</span> image_path_unicode_string = &amp;os.windows.peb().ProcessParameters.ImagePathName;</span>
+<span class="line" id="L3064">            <span class="tok-kw">const</span> image_path_name = image_path_unicode_string.Buffer[<span class="tok-number">0</span> .. image_path_unicode_string.Length / <span class="tok-number">2</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L3065"></span>
+<span class="line" id="L3066">            <span class="tok-comment">// If ImagePathName is a symlink, then it will contain the path of the</span>
 </span>
-<span class="line" id="L3071">            <span class="tok-comment">// symlink, not the path that the symlink points to. We want the path</span>
+<span class="line" id="L3067">            <span class="tok-comment">// symlink, not the path that the symlink points to. We want the path</span>
 </span>
-<span class="line" id="L3072">            <span class="tok-comment">// that the symlink points to, though, so we need to get the realpath.</span>
+<span class="line" id="L3068">            <span class="tok-comment">// that the symlink points to, though, so we need to get the realpath.</span>
 </span>
-<span class="line" id="L3073">            <span class="tok-kw">const</span> pathname_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
-<span class="line" id="L3074">            <span class="tok-kw">return</span> std.fs.cwd().realpathW(pathname_w.span(), out_buffer);</span>
-<span class="line" id="L3075">        },</span>
-<span class="line" id="L3076">        .wasi =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for WASI. Use std.fs.selfExePathAlloc instead.&quot;</span>),</span>
-<span class="line" id="L3077">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for this target&quot;</span>),</span>
-<span class="line" id="L3078">    }</span>
-<span class="line" id="L3079">}</span>
-<span class="line" id="L3080"></span>
-<span class="line" id="L3081"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> selfExePathW = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deprecated; use selfExePath instead&quot;</span>);</span>
-<span class="line" id="L3082"></span>
-<span class="line" id="L3083"><span class="tok-comment">/// `selfExeDirPath` except allocates the result on the heap.</span></span>
-<span class="line" id="L3084"><span class="tok-comment">/// Caller owns returned memory.</span></span>
-<span class="line" id="L3085"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L3086">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
+<span class="line" id="L3069">            <span class="tok-kw">const</span> pathname_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
+<span class="line" id="L3070">            <span class="tok-kw">return</span> std.fs.cwd().realpathW(pathname_w.span(), out_buffer);</span>
+<span class="line" id="L3071">        },</span>
+<span class="line" id="L3072">        .wasi =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for WASI. Use std.fs.selfExePathAlloc instead.&quot;</span>),</span>
+<span class="line" id="L3073">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for this target&quot;</span>),</span>
+<span class="line" id="L3074">    }</span>
+<span class="line" id="L3075">}</span>
+<span class="line" id="L3076"></span>
+<span class="line" id="L3077"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> selfExePathW = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deprecated; use selfExePath instead&quot;</span>);</span>
+<span class="line" id="L3078"></span>
+<span class="line" id="L3079"><span class="tok-comment">/// `selfExeDirPath` except allocates the result on the heap.</span></span>
+<span class="line" id="L3080"><span class="tok-comment">/// Caller owns returned memory.</span></span>
+<span class="line" id="L3081"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L3082">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
 </span>
-<span class="line" id="L3087">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
+<span class="line" id="L3083">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
 </span>
-<span class="line" id="L3088">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
+<span class="line" id="L3084">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
 </span>
-<span class="line" id="L3089">    <span class="tok-comment">// fundamentally impossible to get the selfExeDirPath of a program running</span>
+<span class="line" id="L3085">    <span class="tok-comment">// fundamentally impossible to get the selfExeDirPath of a program running</span>
 </span>
-<span class="line" id="L3090">    <span class="tok-comment">// in a very deeply nested directory chain in this way.</span>
+<span class="line" id="L3086">    <span class="tok-comment">// in a very deeply nested directory chain in this way.</span>
 </span>
-<span class="line" id="L3091">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
+<span class="line" id="L3087">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
 </span>
-<span class="line" id="L3092">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
+<span class="line" id="L3088">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
 </span>
-<span class="line" id="L3093">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3094">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExeDirPath(&amp;buf));</span>
-<span class="line" id="L3095">}</span>
-<span class="line" id="L3096"></span>
-<span class="line" id="L3097"><span class="tok-comment">/// Get the directory path that contains the current executable.</span></span>
-<span class="line" id="L3098"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
-<span class="line" id="L3099"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L3100">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(out_buffer);</span>
-<span class="line" id="L3101">    <span class="tok-comment">// Assume that the OS APIs return absolute paths, and therefore dirname</span>
+<span class="line" id="L3089">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3090">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExeDirPath(&amp;buf));</span>
+<span class="line" id="L3091">}</span>
+<span class="line" id="L3092"></span>
+<span class="line" id="L3093"><span class="tok-comment">/// Get the directory path that contains the current executable.</span></span>
+<span class="line" id="L3094"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
+<span class="line" id="L3095"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L3096">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(out_buffer);</span>
+<span class="line" id="L3097">    <span class="tok-comment">// Assume that the OS APIs return absolute paths, and therefore dirname</span>
 </span>
-<span class="line" id="L3102">    <span class="tok-comment">// will not return null.</span>
+<span class="line" id="L3098">    <span class="tok-comment">// will not return null.</span>
 </span>
-<span class="line" id="L3103">    <span class="tok-kw">return</span> path.dirname(self_exe_path).?;</span>
-<span class="line" id="L3104">}</span>
-<span class="line" id="L3105"></span>
-<span class="line" id="L3106"><span class="tok-comment">/// `realpath`, except caller must free the returned memory.</span></span>
-<span class="line" id="L3107"><span class="tok-comment">/// See also `Dir.realpath`.</span></span>
-<span class="line" id="L3108"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realpathAlloc</span>(allocator: Allocator, pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L3109">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the realpath function does not</span>
+<span class="line" id="L3099">    <span class="tok-kw">return</span> path.dirname(self_exe_path).?;</span>
+<span class="line" id="L3100">}</span>
+<span class="line" id="L3101"></span>
+<span class="line" id="L3102"><span class="tok-comment">/// `realpath`, except caller must free the returned memory.</span></span>
+<span class="line" id="L3103"><span class="tok-comment">/// See also `Dir.realpath`.</span></span>
+<span class="line" id="L3104"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realpathAlloc</span>(allocator: Allocator, pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L3105">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the realpath function does not</span>
 </span>
-<span class="line" id="L3110">    <span class="tok-comment">// have a variant that takes an arbitrary-size buffer.</span>
+<span class="line" id="L3106">    <span class="tok-comment">// have a variant that takes an arbitrary-size buffer.</span>
 </span>
-<span class="line" id="L3111">    <span class="tok-comment">// TODO(#4812): Consider reimplementing realpath or using the POSIX.1-2008</span>
+<span class="line" id="L3107">    <span class="tok-comment">// TODO(#4812): Consider reimplementing realpath or using the POSIX.1-2008</span>
 </span>
-<span class="line" id="L3112">    <span class="tok-comment">// NULL out parameter (GNU's canonicalize_file_name) to handle overelong</span>
+<span class="line" id="L3108">    <span class="tok-comment">// NULL out parameter (GNU's canonicalize_file_name) to handle overelong</span>
 </span>
-<span class="line" id="L3113">    <span class="tok-comment">// paths. musl supports passing NULL but restricts the output to PATH_MAX</span>
+<span class="line" id="L3109">    <span class="tok-comment">// paths. musl supports passing NULL but restricts the output to PATH_MAX</span>
 </span>
-<span class="line" id="L3114">    <span class="tok-comment">// anyway.</span>
+<span class="line" id="L3110">    <span class="tok-comment">// anyway.</span>
 </span>
-<span class="line" id="L3115">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3116">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> os.realpath(pathname, &amp;buf));</span>
-<span class="line" id="L3117">}</span>
-<span class="line" id="L3118"></span>
-<span class="line" id="L3119"><span class="tok-kw">const</span> CopyFileRawError = <span class="tok-kw">error</span>{SystemResources} || os.CopyFileRangeError || os.SendFileError;</span>
-<span class="line" id="L3120"></span>
-<span class="line" id="L3121"><span class="tok-comment">// Transfer all the data between two file descriptors in the most efficient way.</span>
+<span class="line" id="L3111">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3112">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> os.realpath(pathname, &amp;buf));</span>
+<span class="line" id="L3113">}</span>
+<span class="line" id="L3114"></span>
+<span class="line" id="L3115"><span class="tok-kw">const</span> CopyFileRawError = <span class="tok-kw">error</span>{SystemResources} || os.CopyFileRangeError || os.SendFileError;</span>
+<span class="line" id="L3116"></span>
+<span class="line" id="L3117"><span class="tok-comment">// Transfer all the data between two file descriptors in the most efficient way.</span>
 </span>
-<span class="line" id="L3122"><span class="tok-comment">// The copy starts at offset 0, the initial offsets are preserved.</span>
+<span class="line" id="L3118"><span class="tok-comment">// The copy starts at offset 0, the initial offsets are preserved.</span>
 </span>
-<span class="line" id="L3123"><span class="tok-comment">// No metadata is transferred over.</span>
+<span class="line" id="L3119"><span class="tok-comment">// No metadata is transferred over.</span>
 </span>
-<span class="line" id="L3124"><span class="tok-kw">fn</span> <span class="tok-fn">copy_file</span>(fd_in: os.fd_t, fd_out: os.fd_t, maybe_size: ?<span class="tok-type">u64</span>) CopyFileRawError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3125">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> builtin.target.isDarwin()) {</span>
-<span class="line" id="L3126">        <span class="tok-kw">const</span> rc = os.system.fcopyfile(fd_in, fd_out, <span class="tok-null">null</span>, os.system.COPYFILE_DATA);</span>
-<span class="line" id="L3127">        <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
-<span class="line" id="L3128">            .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
-<span class="line" id="L3129">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L3130">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
-<span class="line" id="L3131">            <span class="tok-comment">// The source file is not a directory, symbolic link, or regular file.</span>
+<span class="line" id="L3120"><span class="tok-kw">fn</span> <span class="tok-fn">copy_file</span>(fd_in: os.fd_t, fd_out: os.fd_t, maybe_size: ?<span class="tok-type">u64</span>) CopyFileRawError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3121">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> builtin.target.isDarwin()) {</span>
+<span class="line" id="L3122">        <span class="tok-kw">const</span> rc = os.system.fcopyfile(fd_in, fd_out, <span class="tok-null">null</span>, os.system.COPYFILE_DATA);</span>
+<span class="line" id="L3123">        <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
+<span class="line" id="L3124">            .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
+<span class="line" id="L3125">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L3126">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
+<span class="line" id="L3127">            <span class="tok-comment">// The source file is not a directory, symbolic link, or regular file.</span>
 </span>
-<span class="line" id="L3132">            <span class="tok-comment">// Try with the fallback path before giving up.</span>
+<span class="line" id="L3128">            <span class="tok-comment">// Try with the fallback path before giving up.</span>
 </span>
-<span class="line" id="L3133">            .OPNOTSUPP =&gt; {},</span>
-<span class="line" id="L3134">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
-<span class="line" id="L3135">        }</span>
-<span class="line" id="L3136">    }</span>
-<span class="line" id="L3137"></span>
-<span class="line" id="L3138">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
-<span class="line" id="L3139">        <span class="tok-comment">// Try copy_file_range first as that works at the FS level and is the</span>
+<span class="line" id="L3129">            .OPNOTSUPP =&gt; {},</span>
+<span class="line" id="L3130">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
+<span class="line" id="L3131">        }</span>
+<span class="line" id="L3132">    }</span>
+<span class="line" id="L3133"></span>
+<span class="line" id="L3134">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
+<span class="line" id="L3135">        <span class="tok-comment">// Try copy_file_range first as that works at the FS level and is the</span>
 </span>
-<span class="line" id="L3140">        <span class="tok-comment">// most efficient method (if available).</span>
+<span class="line" id="L3136">        <span class="tok-comment">// most efficient method (if available).</span>
 </span>
-<span class="line" id="L3141">        <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3142">        cfr_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3143">            <span class="tok-comment">// The kernel checks the u64 value `offset+count` for overflow, use</span>
+<span class="line" id="L3137">        <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3138">        cfr_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3139">            <span class="tok-comment">// The kernel checks the u64 value `offset+count` for overflow, use</span>
 </span>
-<span class="line" id="L3144">            <span class="tok-comment">// a 32 bit value so that the syscall won't return EINVAL except for</span>
+<span class="line" id="L3140">            <span class="tok-comment">// a 32 bit value so that the syscall won't return EINVAL except for</span>
 </span>
-<span class="line" id="L3145">            <span class="tok-comment">// impossibly large files (&gt; 2^64-1 - 2^32-1).</span>
+<span class="line" id="L3141">            <span class="tok-comment">// impossibly large files (&gt; 2^64-1 - 2^32-1).</span>
 </span>
-<span class="line" id="L3146">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.copy_file_range(fd_in, offset, fd_out, offset, math.maxInt(<span class="tok-type">u32</span>), <span class="tok-number">0</span>);</span>
-<span class="line" id="L3147">            <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+<span class="line" id="L3142">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.copy_file_range(fd_in, offset, fd_out, offset, math.maxInt(<span class="tok-type">u32</span>), <span class="tok-number">0</span>);</span>
+<span class="line" id="L3143">            <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
 </span>
-<span class="line" id="L3148">            <span class="tok-kw">if</span> (maybe_size) |s| {</span>
-<span class="line" id="L3149">                <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :cfr_loop;</span>
-<span class="line" id="L3150">            }</span>
-<span class="line" id="L3151">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :cfr_loop;</span>
-<span class="line" id="L3152">            offset += amt;</span>
-<span class="line" id="L3153">        }</span>
-<span class="line" id="L3154">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3155">    }</span>
-<span class="line" id="L3156"></span>
-<span class="line" id="L3157">    <span class="tok-comment">// Sendfile is a zero-copy mechanism iff the OS supports it, otherwise the</span>
+<span class="line" id="L3144">            <span class="tok-kw">if</span> (maybe_size) |s| {</span>
+<span class="line" id="L3145">                <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :cfr_loop;</span>
+<span class="line" id="L3146">            }</span>
+<span class="line" id="L3147">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :cfr_loop;</span>
+<span class="line" id="L3148">            offset += amt;</span>
+<span class="line" id="L3149">        }</span>
+<span class="line" id="L3150">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3151">    }</span>
+<span class="line" id="L3152"></span>
+<span class="line" id="L3153">    <span class="tok-comment">// Sendfile is a zero-copy mechanism iff the OS supports it, otherwise the</span>
 </span>
-<span class="line" id="L3158">    <span class="tok-comment">// fallback code will copy the contents chunk by chunk.</span>
+<span class="line" id="L3154">    <span class="tok-comment">// fallback code will copy the contents chunk by chunk.</span>
 </span>
-<span class="line" id="L3159">    <span class="tok-kw">const</span> empty_iovec = [<span class="tok-number">0</span>]os.iovec_const{};</span>
-<span class="line" id="L3160">    <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3161">    sendfile_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3162">        <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.sendfile(fd_out, fd_in, offset, <span class="tok-number">0</span>, &amp;empty_iovec, &amp;empty_iovec, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3163">        <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+<span class="line" id="L3155">    <span class="tok-kw">const</span> empty_iovec = [<span class="tok-number">0</span>]os.iovec_const{};</span>
+<span class="line" id="L3156">    <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3157">    sendfile_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3158">        <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.sendfile(fd_out, fd_in, offset, <span class="tok-number">0</span>, &amp;empty_iovec, &amp;empty_iovec, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3159">        <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
 </span>
-<span class="line" id="L3164">        <span class="tok-kw">if</span> (maybe_size) |s| {</span>
-<span class="line" id="L3165">            <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :sendfile_loop;</span>
-<span class="line" id="L3166">        }</span>
-<span class="line" id="L3167">        <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :sendfile_loop;</span>
-<span class="line" id="L3168">        offset += amt;</span>
-<span class="line" id="L3169">    }</span>
-<span class="line" id="L3170">}</span>
-<span class="line" id="L3171"></span>
-<span class="line" id="L3172"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L3173">    <span class="tok-kw">if</span> (builtin.os.tag != .wasi) {</span>
-<span class="line" id="L3174">        _ = &amp;makeDirAbsolute;</span>
-<span class="line" id="L3175">        _ = &amp;makeDirAbsoluteZ;</span>
-<span class="line" id="L3176">        _ = &amp;copyFileAbsolute;</span>
-<span class="line" id="L3177">        _ = &amp;updateFileAbsolute;</span>
-<span class="line" id="L3178">    }</span>
-<span class="line" id="L3179">    _ = &amp;Dir.copyFile;</span>
-<span class="line" id="L3180">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/test.zig&quot;</span>);</span>
-<span class="line" id="L3181">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/path.zig&quot;</span>);</span>
-<span class="line" id="L3182">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/file.zig&quot;</span>);</span>
-<span class="line" id="L3183">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/get_app_data_dir.zig&quot;</span>);</span>
-<span class="line" id="L3184">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/watch.zig&quot;</span>);</span>
-<span class="line" id="L3185">}</span>
-<span class="line" id="L3186"></span>
+<span class="line" id="L3160">        <span class="tok-kw">if</span> (maybe_size) |s| {</span>
+<span class="line" id="L3161">            <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :sendfile_loop;</span>
+<span class="line" id="L3162">        }</span>
+<span class="line" id="L3163">        <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :sendfile_loop;</span>
+<span class="line" id="L3164">        offset += amt;</span>
+<span class="line" id="L3165">    }</span>
+<span class="line" id="L3166">}</span>
+<span class="line" id="L3167"></span>
+<span class="line" id="L3168"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L3169">    <span class="tok-kw">if</span> (builtin.os.tag != .wasi) {</span>
+<span class="line" id="L3170">        _ = &amp;makeDirAbsolute;</span>
+<span class="line" id="L3171">        _ = &amp;makeDirAbsoluteZ;</span>
+<span class="line" id="L3172">        _ = &amp;copyFileAbsolute;</span>
+<span class="line" id="L3173">        _ = &amp;updateFileAbsolute;</span>
+<span class="line" id="L3174">    }</span>
+<span class="line" id="L3175">    _ = &amp;Dir.copyFile;</span>
+<span class="line" id="L3176">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/test.zig&quot;</span>);</span>
+<span class="line" id="L3177">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/path.zig&quot;</span>);</span>
+<span class="line" id="L3178">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/file.zig&quot;</span>);</span>
+<span class="line" id="L3179">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/get_app_data_dir.zig&quot;</span>);</span>
+<span class="line" id="L3180">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/watch.zig&quot;</span>);</span>
+<span class="line" id="L3181">}</span>
+<span class="line" id="L3182"></span>
 </code></pre></body>
 </html>
