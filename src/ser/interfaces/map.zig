@@ -10,8 +10,8 @@ pub fn Map(
     comptime methods: struct {
         serializeKey: SerializeKVFn(Impl, E) = null,
         serializeValue: SerializeKVFn(Impl, E) = null,
-        serializeEntry: ?SerializeEntryFn(Impl, E) = null,
         end: EndFn(Impl, T, E) = null,
+        serializeEntry: ?SerializeEntryFn(Impl, E) = null,
     },
 ) type {
     return struct {
@@ -45,6 +45,15 @@ pub fn Map(
                 }
             }
 
+            /// Finish serializing a struct.
+            pub fn end(self: Self) E!T {
+                if (methods.end) |func| {
+                    return try func(self.impl);
+                }
+
+                @compileError("end is not implemented by type: " ++ @typeName(Impl));
+            }
+
             /// Serialize a map entry consisting of a key and a value.
             pub fn serializeEntry(self: Self, key: anytype, value: anytype) E!void {
                 if (methods.serializeEntry) |func| {
@@ -53,15 +62,6 @@ pub fn Map(
                     try self.serializeKey(key);
                     try self.serializeValue(value);
                 }
-            }
-
-            /// Finish serializing a struct.
-            pub fn end(self: Self) E!T {
-                if (methods.end) |func| {
-                    return try func(self.impl);
-                }
-
-                @compileError("end is not implemented by type: " ++ @typeName(Impl));
             }
         };
 
@@ -76,10 +76,10 @@ fn SerializeKVFn(comptime Impl: type, comptime Err: type) type {
     return ?fn (impl: Impl, key: anytype) Err!void;
 }
 
-fn SerializeEntryFn(comptime Impl: type, comptime Err: type) type {
-    return fn (impl: Impl, key: anytype, value: anytype) Err!void;
-}
-
 fn EndFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
     return ?fn (impl: Impl) Err!Ok;
+}
+
+fn SerializeEntryFn(comptime Impl: type, comptime Err: type) type {
+    return fn (impl: Impl, key: anytype, value: anytype) Err!void;
 }
