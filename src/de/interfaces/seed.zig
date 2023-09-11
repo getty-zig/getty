@@ -18,7 +18,7 @@ pub fn Seed(
     comptime V: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        deserialize: ?DeserializeFn(Impl, V) = null,
+        deserialize: DeserializeFn(Impl, V) = null,
     },
 ) type {
     return struct {
@@ -53,5 +53,5 @@ fn DeserializeFn(comptime Impl: type, comptime Value: type) type {
         }
     };
 
-    return @TypeOf(Lambda.func);
+    return ?@TypeOf(Lambda.func);
 }

@@ -10,7 +10,7 @@ pub fn SeqAccess(
     comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        nextElementSeed: ?NextElementSeedFn(Impl, Err) = null,
+        nextElementSeed: NextElementSeedFn(Impl, Err) = null,
         nextElement: ?NextElementFn(Impl, Err) = null,
         isElementAllocated: ?IsElementAllocatedFn(Impl) = null,
     },
@@ -66,7 +66,7 @@ fn NextElementSeedFn(comptime Impl: type, comptime Err: type) type {
         }
     };
 
-    return @TypeOf(Lambda.func);
+    return ?@TypeOf(Lambda.func);
 }
 
 fn NextElementFn(comptime Impl: type, comptime Err: type) type {

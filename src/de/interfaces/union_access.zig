@@ -10,7 +10,7 @@ pub fn UnionAccess(
     comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        variantSeed: ?VariantSeedFn(Impl, Err) = null,
+        variantSeed: VariantSeedFn(Impl, Err) = null,
         variant: ?VariantFn(Impl, Err) = null,
         isVariantAllocated: ?IsVariantAllocatedFn(Impl) = null,
     },
@@ -66,7 +66,7 @@ fn VariantSeedFn(comptime Impl: type, comptime Err: type) type {
         }
     };
 
-    return @TypeOf(Lambda.func);
+    return ?@TypeOf(Lambda.func);
 }
 
 fn VariantFn(comptime Impl: type, comptime Err: type) type {

@@ -10,8 +10,8 @@ pub fn MapAccess(
     comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        nextKeySeed: ?NextKeySeedFn(Impl, Err) = null,
-        nextValueSeed: ?NextValueSeedFn(Impl, Err) = null,
+        nextKeySeed: NextKeySeedFn(Impl, Err) = null,
+        nextValueSeed: NextValueSeedFn(Impl, Err) = null,
         nextKey: ?NextKeyFn(Impl, Err) = null,
         nextValue: ?NextValueFn(Impl, Err) = null,
         isKeyAllocated: ?IsAllocatedFn(Impl) = null,
@@ -96,26 +96,22 @@ fn NextKeySeedFn(comptime Impl: type, comptime Err: type) type {
         }
     };
 
-    return @TypeOf(Lambda.func);
-}
-
-fn NextKeyFn(comptime Impl: type, comptime Err: type) type {
-    const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, comptime Key: type) Err!?Key {
-            unreachable;
-        }
-    };
-
-    return @TypeOf(Lambda.func);
-}
-
-fn IsAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime KV: type) bool;
+    return ?@TypeOf(Lambda.func);
 }
 
 fn NextValueSeedFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
         fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            unreachable;
+        }
+    };
+
+    return ?@TypeOf(Lambda.func);
+}
+
+fn NextKeyFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, comptime Key: type) Err!?Key {
             unreachable;
         }
     };
@@ -131,4 +127,8 @@ fn NextValueFn(comptime Impl: type, comptime Err: type) type {
     };
 
     return @TypeOf(Lambda.func);
+}
+
+fn IsAllocatedFn(comptime Impl: type) type {
+    return fn (Impl, comptime KV: type) bool;
 }
