@@ -80,6 +80,7 @@ var scrollHistory = {};
   const domSearchKeys = document.getElementById("searchKeys");
   const domPrefsModal = document.getElementById("prefsModal");
   const domSearchPlaceholder = document.getElementById("searchPlaceholder");
+  const domSearchPlaceholderText = document.getElementById("searchPlaceholderText");
   const sourceFileUrlTemplate = "src/{{mod}}/{{file}}.html#L{{line}}"
   const domLangRefLink = document.getElementById("langRefLink");
 
@@ -4013,9 +4014,10 @@ Happy writing!
       return;
     }
 
-    let liDom = domListSearchResults.children[curSearchIndex];
-    if (liDom == null && domListSearchResults.children.length !== 0) {
-      liDom = domListSearchResults.children[0];
+    const searchResults = domListSearchResults.getElementsByTagName("li");
+    let liDom = searchResults[curSearchIndex];
+    if (liDom == null && searchResults.length !== 0) {
+      liDom = searchResults[0];
     }
     if (liDom != null) {
       let aDom = liDom.children[0];
@@ -4110,14 +4112,15 @@ Happy writing!
   }
 
   function moveSearchCursor(dir) {
+    const searchResults = domListSearchResults.getElementsByTagName("li");
     if (
       curSearchIndex < 0 ||
-      curSearchIndex >= domListSearchResults.children.length
+      curSearchIndex >= searchResults.length
     ) {
       if (dir > 0) {
         curSearchIndex = -1 + dir;
       } else if (dir < 0) {
-        curSearchIndex = domListSearchResults.children.length + dir;
+        curSearchIndex = searchResults.length + dir;
       }
     } else {
       curSearchIndex += dir;
@@ -4125,8 +4128,8 @@ Happy writing!
     if (curSearchIndex < 0) {
       curSearchIndex = 0;
     }
-    if (curSearchIndex >= domListSearchResults.children.length) {
-      curSearchIndex = domListSearchResults.children.length - 1;
+    if (curSearchIndex >= searchResults.length) {
+      curSearchIndex = searchResults.length - 1;
     }
     renderSearchCursor();
   }
@@ -4465,8 +4468,9 @@ Happy writing!
   
 
   function renderSearchCursor() {
-    for (let i = 0; i < domListSearchResults.children.length; i += 1) {
-      let liDom = domListSearchResults.children[i];
+    const searchResults = domListSearchResults.getElementsByTagName("li");
+    for (let i = 0; i < searchResults.length; i += 1) {
+      let liDom = searchResults[i];
       if (curSearchIndex === i) {
         liDom.classList.add("selected");
       } else {
@@ -4736,7 +4740,7 @@ Happy writing!
     domPrefSlashSearch.checked = enabled;
     const searchKeys = enabled ? "<kbd>/</kbd> or <kbd>s</kbd>" : "<kbd>s</kbd>";
     domSearchKeys.innerHTML = searchKeys;
-    domSearchPlaceholder.innerHTML = searchKeys + " to search, <kbd>?</kbd> for more options";
+    domSearchPlaceholderText.innerHTML = searchKeys + " to search, <kbd>?</kbd> for more options";
   }
 })();
 

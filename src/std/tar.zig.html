@@ -161,7 +161,7 @@
 <span class="line" id="L48">    <span class="tok-comment">/// Return value may point into Header buffer, or might point into the</span></span>
 <span class="line" id="L49">    <span class="tok-comment">/// argument buffer.</span></span>
 <span class="line" id="L50">    <span class="tok-comment">/// TODO: check against &quot;../&quot; and other nefarious things</span></span>
-<span class="line" id="L51">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fullFileName</span>(header: Header, buffer: *[<span class="tok-number">255</span>]<span class="tok-type">u8</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L51">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fullFileName</span>(header: Header, buffer: *[std.fs.MAX_PATH_BYTES]<span class="tok-type">u8</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
 <span class="line" id="L52">        <span class="tok-kw">const</span> n = name(header);</span>
 <span class="line" id="L53">        <span class="tok-kw">if</span> (!is_ustar(header))</span>
 <span class="line" id="L54">            <span class="tok-kw">return</span> n;</span>
@@ -196,130 +196,223 @@
 <span class="line" id="L83">    }</span>
 <span class="line" id="L84">};</span>
 <span class="line" id="L85"></span>
-<span class="line" id="L86"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pipeToFileSystem</span>(dir: std.fs.Dir, reader: <span class="tok-kw">anytype</span>, options: Options) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L87">    <span class="tok-kw">switch</span> (options.mode_mode) {</span>
-<span class="line" id="L88">        .ignore =&gt; {},</span>
-<span class="line" id="L89">        .executable_bit_only =&gt; {</span>
-<span class="line" id="L90">            <span class="tok-comment">// This code does not look at the mode bits yet. To implement this feature,</span>
+<span class="line" id="L86"><span class="tok-kw">const</span> Buffer = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L87">    buffer: [<span class="tok-number">512</span> * <span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L88">    start: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L89">    end: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L90"></span>
+<span class="line" id="L91">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readChunk</span>(b: *Buffer, reader: <span class="tok-kw">anytype</span>, count: <span class="tok-type">usize</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L92">        b.ensureCapacity(<span class="tok-number">1024</span>);</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94">        <span class="tok-kw">const</span> ask = <span class="tok-builtin">@min</span>(b.buffer.len - b.end, count -| (b.end - b.start));</span>
+<span class="line" id="L95">        b.end += <span class="tok-kw">try</span> reader.readAtLeast(b.buffer[b.end..], ask);</span>
+<span class="line" id="L96"></span>
+<span class="line" id="L97">        <span class="tok-kw">return</span> b.buffer[b.start..b.end];</span>
+<span class="line" id="L98">    }</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">advance</span>(b: *Buffer, count: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L101">        b.start += count;</span>
+<span class="line" id="L102">        assert(b.start &lt;= b.end);</span>
+<span class="line" id="L103">    }</span>
+<span class="line" id="L104"></span>
+<span class="line" id="L105">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">skip</span>(b: *Buffer, reader: <span class="tok-kw">anytype</span>, count: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L106">        <span class="tok-kw">if</span> (b.start + count &gt; b.end) {</span>
+<span class="line" id="L107">            <span class="tok-kw">try</span> reader.skipBytes(b.start + count - b.end, .{});</span>
+<span class="line" id="L108">            b.start = b.end;</span>
+<span class="line" id="L109">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L110">            b.advance(count);</span>
+<span class="line" id="L111">        }</span>
+<span class="line" id="L112">    }</span>
+<span class="line" id="L113"></span>
+<span class="line" id="L114">    <span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">ensureCapacity</span>(b: *Buffer, count: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L115">        <span class="tok-kw">if</span> (b.buffer.len - b.start &lt; count) {</span>
+<span class="line" id="L116">            <span class="tok-kw">const</span> dest_end = b.end - b.start;</span>
+<span class="line" id="L117">            <span class="tok-builtin">@memcpy</span>(b.buffer[<span class="tok-number">0</span>..dest_end], b.buffer[b.start..b.end]);</span>
+<span class="line" id="L118">            b.end = dest_end;</span>
+<span class="line" id="L119">            b.start = <span class="tok-number">0</span>;</span>
+<span class="line" id="L120">        }</span>
+<span class="line" id="L121">    }</span>
+<span class="line" id="L122">};</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pipeToFileSystem</span>(dir: std.fs.Dir, reader: <span class="tok-kw">anytype</span>, options: Options) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L125">    <span class="tok-kw">switch</span> (options.mode_mode) {</span>
+<span class="line" id="L126">        .ignore =&gt; {},</span>
+<span class="line" id="L127">        .executable_bit_only =&gt; {</span>
+<span class="line" id="L128">            <span class="tok-comment">// This code does not look at the mode bits yet. To implement this feature,</span>
 </span>
-<span class="line" id="L91">            <span class="tok-comment">// the implementation must be adjusted to look at the mode, and check the</span>
+<span class="line" id="L129">            <span class="tok-comment">// the implementation must be adjusted to look at the mode, and check the</span>
 </span>
-<span class="line" id="L92">            <span class="tok-comment">// user executable bit, then call fchmod on newly created files when</span>
+<span class="line" id="L130">            <span class="tok-comment">// user executable bit, then call fchmod on newly created files when</span>
 </span>
-<span class="line" id="L93">            <span class="tok-comment">// the executable bit is supposed to be set.</span>
+<span class="line" id="L131">            <span class="tok-comment">// the executable bit is supposed to be set.</span>
 </span>
-<span class="line" id="L94">            <span class="tok-comment">// It also needs to properly deal with ACLs on Windows.</span>
+<span class="line" id="L132">            <span class="tok-comment">// It also needs to properly deal with ACLs on Windows.</span>
 </span>
-<span class="line" id="L95">            <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;TODO: unimplemented: tar ModeMode.executable_bit_only&quot;</span>);</span>
-<span class="line" id="L96">        },</span>
-<span class="line" id="L97">    }</span>
-<span class="line" id="L98">    <span class="tok-kw">var</span> file_name_buffer: [<span class="tok-number">255</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L99">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">512</span> * <span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L100">    <span class="tok-kw">var</span> start: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L101">    <span class="tok-kw">var</span> end: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L102">    header: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L103">        <span class="tok-kw">if</span> (buffer.len - start &lt; <span class="tok-number">1024</span>) {</span>
-<span class="line" id="L104">            <span class="tok-kw">const</span> dest_end = end - start;</span>
-<span class="line" id="L105">            <span class="tok-builtin">@memcpy</span>(buffer[<span class="tok-number">0</span>..dest_end], buffer[start..end]);</span>
-<span class="line" id="L106">            end = dest_end;</span>
-<span class="line" id="L107">            start = <span class="tok-number">0</span>;</span>
-<span class="line" id="L108">        }</span>
-<span class="line" id="L109">        <span class="tok-kw">const</span> ask_header = <span class="tok-builtin">@min</span>(buffer.len - end, <span class="tok-number">1024</span> -| (end - start));</span>
-<span class="line" id="L110">        end += <span class="tok-kw">try</span> reader.readAtLeast(buffer[end..], ask_header);</span>
-<span class="line" id="L111">        <span class="tok-kw">switch</span> (end - start) {</span>
-<span class="line" id="L112">            <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span>,</span>
-<span class="line" id="L113">            <span class="tok-number">1</span>...<span class="tok-number">511</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream,</span>
-<span class="line" id="L114">            <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L115">        }</span>
-<span class="line" id="L116">        <span class="tok-kw">const</span> header: Header = .{ .bytes = buffer[start..][<span class="tok-number">0</span>..<span class="tok-number">512</span>] };</span>
-<span class="line" id="L117">        start += <span class="tok-number">512</span>;</span>
-<span class="line" id="L118">        <span class="tok-kw">const</span> file_size = <span class="tok-kw">try</span> header.fileSize();</span>
-<span class="line" id="L119">        <span class="tok-kw">const</span> rounded_file_size = std.mem.alignForward(<span class="tok-type">u64</span>, file_size, <span class="tok-number">512</span>);</span>
-<span class="line" id="L120">        <span class="tok-kw">const</span> pad_len = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(rounded_file_size - file_size));</span>
-<span class="line" id="L121">        <span class="tok-kw">const</span> unstripped_file_name = <span class="tok-kw">try</span> header.fullFileName(&amp;file_name_buffer);</span>
-<span class="line" id="L122">        <span class="tok-kw">switch</span> (header.fileType()) {</span>
-<span class="line" id="L123">            .directory =&gt; {</span>
-<span class="line" id="L124">                <span class="tok-kw">const</span> file_name = <span class="tok-kw">try</span> stripComponents(unstripped_file_name, options.strip_components);</span>
-<span class="line" id="L125">                <span class="tok-kw">if</span> (file_name.len != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L126">                    <span class="tok-kw">try</span> dir.makePath(file_name);</span>
-<span class="line" id="L127">                }</span>
-<span class="line" id="L128">            },</span>
-<span class="line" id="L129">            .normal =&gt; {</span>
-<span class="line" id="L130">                <span class="tok-kw">if</span> (file_size == <span class="tok-number">0</span> <span class="tok-kw">and</span> unstripped_file_name.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L131">                <span class="tok-kw">const</span> file_name = <span class="tok-kw">try</span> stripComponents(unstripped_file_name, options.strip_components);</span>
-<span class="line" id="L132"></span>
-<span class="line" id="L133">                <span class="tok-kw">if</span> (std.fs.path.dirname(file_name)) |dir_name| {</span>
-<span class="line" id="L134">                    <span class="tok-kw">try</span> dir.makePath(dir_name);</span>
-<span class="line" id="L135">                }</span>
-<span class="line" id="L136">                <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> dir.createFile(file_name, .{});</span>
-<span class="line" id="L137">                <span class="tok-kw">defer</span> file.close();</span>
-<span class="line" id="L138"></span>
-<span class="line" id="L139">                <span class="tok-kw">var</span> file_off: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L140">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L141">                    <span class="tok-kw">if</span> (buffer.len - start &lt; <span class="tok-number">1024</span>) {</span>
-<span class="line" id="L142">                        <span class="tok-kw">const</span> dest_end = end - start;</span>
-<span class="line" id="L143">                        <span class="tok-builtin">@memcpy</span>(buffer[<span class="tok-number">0</span>..dest_end], buffer[start..end]);</span>
-<span class="line" id="L144">                        end = dest_end;</span>
-<span class="line" id="L145">                        start = <span class="tok-number">0</span>;</span>
-<span class="line" id="L146">                    }</span>
-<span class="line" id="L147">                    <span class="tok-comment">// Ask for the rounded up file size + 512 for the next header.</span>
-</span>
-<span class="line" id="L148">                    <span class="tok-comment">// TODO: https://github.com/ziglang/zig/issues/14039</span>
-</span>
-<span class="line" id="L149">                    <span class="tok-kw">const</span> ask = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(</span>
-<span class="line" id="L150">                        buffer.len - end,</span>
-<span class="line" id="L151">                        rounded_file_size + <span class="tok-number">512</span> - file_off -| (end - start),</span>
-<span class="line" id="L152">                    )));</span>
-<span class="line" id="L153">                    end += <span class="tok-kw">try</span> reader.readAtLeast(buffer[end..], ask);</span>
-<span class="line" id="L154">                    <span class="tok-kw">if</span> (end - start &lt; ask) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream;</span>
-<span class="line" id="L155">                    <span class="tok-comment">// TODO: https://github.com/ziglang/zig/issues/14039</span>
-</span>
-<span class="line" id="L156">                    <span class="tok-kw">const</span> slice = buffer[start..<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(file_size - file_off + start, end)))];</span>
-<span class="line" id="L157">                    <span class="tok-kw">try</span> file.writeAll(slice);</span>
-<span class="line" id="L158">                    file_off += slice.len;</span>
-<span class="line" id="L159">                    start += slice.len;</span>
-<span class="line" id="L160">                    <span class="tok-kw">if</span> (file_off &gt;= file_size) {</span>
-<span class="line" id="L161">                        start += pad_len;</span>
-<span class="line" id="L162">                        <span class="tok-comment">// Guaranteed since we use a buffer divisible by 512.</span>
-</span>
-<span class="line" id="L163">                        assert(start &lt;= end);</span>
-<span class="line" id="L164">                        <span class="tok-kw">continue</span> :header;</span>
-<span class="line" id="L165">                    }</span>
-<span class="line" id="L166">                }</span>
-<span class="line" id="L167">            },</span>
-<span class="line" id="L168">            .global_extended_header, .extended_header =&gt; {</span>
-<span class="line" id="L169">                <span class="tok-kw">if</span> (start + rounded_file_size &gt; end) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarHeadersTooBig;</span>
-<span class="line" id="L170">                start = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(start + rounded_file_size));</span>
-<span class="line" id="L171">            },</span>
-<span class="line" id="L172">            .hard_link =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarUnsupportedFileType,</span>
-<span class="line" id="L173">            .symbolic_link =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarUnsupportedFileType,</span>
-<span class="line" id="L174">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarUnsupportedFileType,</span>
-<span class="line" id="L175">        }</span>
-<span class="line" id="L176">    }</span>
-<span class="line" id="L177">}</span>
-<span class="line" id="L178"></span>
-<span class="line" id="L179"><span class="tok-kw">fn</span> <span class="tok-fn">stripComponents</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, count: <span class="tok-type">u32</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L180">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L181">    <span class="tok-kw">var</span> c = count;</span>
-<span class="line" id="L182">    <span class="tok-kw">while</span> (c &gt; <span class="tok-number">0</span>) : (c -= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L183">        <span class="tok-kw">if</span> (std.mem.indexOfScalarPos(<span class="tok-type">u8</span>, path, i, <span class="tok-str">'/'</span>)) |pos| {</span>
-<span class="line" id="L184">            i = pos + <span class="tok-number">1</span>;</span>
-<span class="line" id="L185">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L186">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarComponentsOutsideStrippedPrefix;</span>
-<span class="line" id="L187">        }</span>
-<span class="line" id="L188">    }</span>
-<span class="line" id="L189">    <span class="tok-kw">return</span> path[i..];</span>
-<span class="line" id="L190">}</span>
-<span class="line" id="L191"></span>
-<span class="line" id="L192"><span class="tok-kw">test</span> stripComponents {</span>
-<span class="line" id="L193">    <span class="tok-kw">const</span> expectEqualStrings = std.testing.expectEqualStrings;</span>
-<span class="line" id="L194">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-kw">try</span> stripComponents(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-number">0</span>));</span>
-<span class="line" id="L195">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;b/c&quot;</span>, <span class="tok-kw">try</span> stripComponents(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L196">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;c&quot;</span>, <span class="tok-kw">try</span> stripComponents(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L197">}</span>
-<span class="line" id="L198"></span>
-<span class="line" id="L199"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std.zig&quot;</span>);</span>
-<span class="line" id="L200"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
-<span class="line" id="L201"></span>
+<span class="line" id="L133">            <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;TODO: unimplemented: tar ModeMode.executable_bit_only&quot;</span>);</span>
+<span class="line" id="L134">        },</span>
+<span class="line" id="L135">    }</span>
+<span class="line" id="L136">    <span class="tok-kw">var</span> file_name_buffer: [std.fs.MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L137">    <span class="tok-kw">var</span> file_name_override_len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L138">    <span class="tok-kw">var</span> buffer: Buffer = .{};</span>
+<span class="line" id="L139">    header: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L140">        <span class="tok-kw">const</span> chunk = <span class="tok-kw">try</span> buffer.readChunk(reader, <span class="tok-number">1024</span>);</span>
+<span class="line" id="L141">        <span class="tok-kw">switch</span> (chunk.len) {</span>
+<span class="line" id="L142">            <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span>,</span>
+<span class="line" id="L143">            <span class="tok-number">1</span>...<span class="tok-number">511</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream,</span>
+<span class="line" id="L144">            <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L145">        }</span>
+<span class="line" id="L146">        buffer.advance(<span class="tok-number">512</span>);</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">        <span class="tok-kw">const</span> header: Header = .{ .bytes = chunk[<span class="tok-number">0</span>..<span class="tok-number">512</span>] };</span>
+<span class="line" id="L149">        <span class="tok-kw">const</span> file_size = <span class="tok-kw">try</span> header.fileSize();</span>
+<span class="line" id="L150">        <span class="tok-kw">const</span> rounded_file_size = std.mem.alignForward(<span class="tok-type">u64</span>, file_size, <span class="tok-number">512</span>);</span>
+<span class="line" id="L151">        <span class="tok-kw">const</span> pad_len = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(rounded_file_size - file_size));</span>
+<span class="line" id="L152">        <span class="tok-kw">const</span> unstripped_file_name = <span class="tok-kw">if</span> (file_name_override_len &gt; <span class="tok-number">0</span>)</span>
+<span class="line" id="L153">            file_name_buffer[<span class="tok-number">0</span>..file_name_override_len]</span>
+<span class="line" id="L154">        <span class="tok-kw">else</span></span>
+<span class="line" id="L155">            <span class="tok-kw">try</span> header.fullFileName(&amp;file_name_buffer);</span>
+<span class="line" id="L156">        file_name_override_len = <span class="tok-number">0</span>;</span>
+<span class="line" id="L157">        <span class="tok-kw">switch</span> (header.fileType()) {</span>
+<span class="line" id="L158">            .directory =&gt; {</span>
+<span class="line" id="L159">                <span class="tok-kw">const</span> file_name = <span class="tok-kw">try</span> stripComponents(unstripped_file_name, options.strip_components);</span>
+<span class="line" id="L160">                <span class="tok-kw">if</span> (file_name.len != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L161">                    <span class="tok-kw">try</span> dir.makePath(file_name);</span>
+<span class="line" id="L162">                }</span>
+<span class="line" id="L163">            },</span>
+<span class="line" id="L164">            .normal =&gt; {</span>
+<span class="line" id="L165">                <span class="tok-kw">if</span> (file_size == <span class="tok-number">0</span> <span class="tok-kw">and</span> unstripped_file_name.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L166">                <span class="tok-kw">const</span> file_name = <span class="tok-kw">try</span> stripComponents(unstripped_file_name, options.strip_components);</span>
+<span class="line" id="L167"></span>
+<span class="line" id="L168">                <span class="tok-kw">if</span> (std.fs.path.dirname(file_name)) |dir_name| {</span>
+<span class="line" id="L169">                    <span class="tok-kw">try</span> dir.makePath(dir_name);</span>
+<span class="line" id="L170">                }</span>
+<span class="line" id="L171">                <span class="tok-kw">var</span> file = <span class="tok-kw">try</span> dir.createFile(file_name, .{});</span>
+<span class="line" id="L172">                <span class="tok-kw">defer</span> file.close();</span>
+<span class="line" id="L173"></span>
+<span class="line" id="L174">                <span class="tok-kw">var</span> file_off: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L175">                <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L176">                    <span class="tok-kw">const</span> temp = <span class="tok-kw">try</span> buffer.readChunk(reader, <span class="tok-builtin">@intCast</span>(rounded_file_size + <span class="tok-number">512</span> - file_off));</span>
+<span class="line" id="L177">                    <span class="tok-kw">if</span> (temp.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream;</span>
+<span class="line" id="L178">                    <span class="tok-kw">const</span> slice = temp[<span class="tok-number">0</span>..<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(file_size - file_off, temp.len)))];</span>
+<span class="line" id="L179">                    <span class="tok-kw">try</span> file.writeAll(slice);</span>
+<span class="line" id="L180"></span>
+<span class="line" id="L181">                    file_off += slice.len;</span>
+<span class="line" id="L182">                    buffer.advance(slice.len);</span>
+<span class="line" id="L183">                    <span class="tok-kw">if</span> (file_off &gt;= file_size) {</span>
+<span class="line" id="L184">                        buffer.advance(pad_len);</span>
+<span class="line" id="L185">                        <span class="tok-kw">continue</span> :header;</span>
+<span class="line" id="L186">                    }</span>
+<span class="line" id="L187">                }</span>
+<span class="line" id="L188">            },</span>
+<span class="line" id="L189">            .extended_header =&gt; {</span>
+<span class="line" id="L190">                <span class="tok-kw">if</span> (file_size == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L191">                    buffer.advance(<span class="tok-builtin">@intCast</span>(rounded_file_size));</span>
+<span class="line" id="L192">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L193">                }</span>
+<span class="line" id="L194"></span>
+<span class="line" id="L195">                <span class="tok-kw">const</span> chunk_size: <span class="tok-type">usize</span> = <span class="tok-builtin">@intCast</span>(rounded_file_size + <span class="tok-number">512</span>);</span>
+<span class="line" id="L196">                <span class="tok-kw">var</span> data_off: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L197">                file_name_override_len = <span class="tok-kw">while</span> (data_off &lt; file_size) {</span>
+<span class="line" id="L198">                    <span class="tok-kw">const</span> slice = <span class="tok-kw">try</span> buffer.readChunk(reader, chunk_size - data_off);</span>
+<span class="line" id="L199">                    <span class="tok-kw">if</span> (slice.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream;</span>
+<span class="line" id="L200">                    <span class="tok-kw">const</span> remaining_size: <span class="tok-type">usize</span> = <span class="tok-builtin">@intCast</span>(file_size - data_off);</span>
+<span class="line" id="L201">                    <span class="tok-kw">const</span> attr_info = <span class="tok-kw">try</span> parsePaxAttribute(slice[<span class="tok-number">0</span>..<span class="tok-builtin">@min</span>(remaining_size, slice.len)], remaining_size);</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">                    <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, attr_info.key, <span class="tok-str">&quot;path&quot;</span>)) {</span>
+<span class="line" id="L204">                        <span class="tok-kw">if</span> (attr_info.value_len &gt; file_name_buffer.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L205">                        buffer.advance(attr_info.value_off);</span>
+<span class="line" id="L206">                        data_off += attr_info.value_off;</span>
+<span class="line" id="L207">                        <span class="tok-kw">break</span> attr_info.value_len;</span>
+<span class="line" id="L208">                    }</span>
+<span class="line" id="L209"></span>
+<span class="line" id="L210">                    <span class="tok-kw">try</span> buffer.skip(reader, attr_info.size);</span>
+<span class="line" id="L211">                    data_off += attr_info.size;</span>
+<span class="line" id="L212">                } <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L213"></span>
+<span class="line" id="L214">                <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L215">                <span class="tok-kw">while</span> (i &lt; file_name_override_len) {</span>
+<span class="line" id="L216">                    <span class="tok-kw">const</span> slice = <span class="tok-kw">try</span> buffer.readChunk(reader, chunk_size - data_off - i);</span>
+<span class="line" id="L217">                    <span class="tok-kw">if</span> (slice.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedEndOfStream;</span>
+<span class="line" id="L218">                    <span class="tok-kw">const</span> copy_size: <span class="tok-type">usize</span> = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(file_name_override_len - i, slice.len));</span>
+<span class="line" id="L219">                    <span class="tok-builtin">@memcpy</span>(file_name_buffer[i .. i + copy_size], slice[<span class="tok-number">0</span>..copy_size]);</span>
+<span class="line" id="L220">                    buffer.advance(copy_size);</span>
+<span class="line" id="L221">                    i += copy_size;</span>
+<span class="line" id="L222">                }</span>
+<span class="line" id="L223"></span>
+<span class="line" id="L224">                <span class="tok-kw">try</span> buffer.skip(reader, <span class="tok-builtin">@intCast</span>(rounded_file_size - data_off - file_name_override_len));</span>
+<span class="line" id="L225">                <span class="tok-kw">continue</span> :header;</span>
+<span class="line" id="L226">            },</span>
+<span class="line" id="L227">            .global_extended_header =&gt; {</span>
+<span class="line" id="L228">                buffer.skip(reader, <span class="tok-builtin">@intCast</span>(rounded_file_size)) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarHeadersTooBig;</span>
+<span class="line" id="L229">            },</span>
+<span class="line" id="L230">            .hard_link =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarUnsupportedFileType,</span>
+<span class="line" id="L231">            .symbolic_link =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarUnsupportedFileType,</span>
+<span class="line" id="L232">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarUnsupportedFileType,</span>
+<span class="line" id="L233">        }</span>
+<span class="line" id="L234">    }</span>
+<span class="line" id="L235">}</span>
+<span class="line" id="L236"></span>
+<span class="line" id="L237"><span class="tok-kw">fn</span> <span class="tok-fn">stripComponents</span>(path: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, count: <span class="tok-type">u32</span>) ![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L238">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L239">    <span class="tok-kw">var</span> c = count;</span>
+<span class="line" id="L240">    <span class="tok-kw">while</span> (c &gt; <span class="tok-number">0</span>) : (c -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L241">        <span class="tok-kw">if</span> (std.mem.indexOfScalarPos(<span class="tok-type">u8</span>, path, i, <span class="tok-str">'/'</span>)) |pos| {</span>
+<span class="line" id="L242">            i = pos + <span class="tok-number">1</span>;</span>
+<span class="line" id="L243">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L244">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.TarComponentsOutsideStrippedPrefix;</span>
+<span class="line" id="L245">        }</span>
+<span class="line" id="L246">    }</span>
+<span class="line" id="L247">    <span class="tok-kw">return</span> path[i..];</span>
+<span class="line" id="L248">}</span>
+<span class="line" id="L249"></span>
+<span class="line" id="L250"><span class="tok-kw">test</span> stripComponents {</span>
+<span class="line" id="L251">    <span class="tok-kw">const</span> expectEqualStrings = std.testing.expectEqualStrings;</span>
+<span class="line" id="L252">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-kw">try</span> stripComponents(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L253">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;b/c&quot;</span>, <span class="tok-kw">try</span> stripComponents(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L254">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;c&quot;</span>, <span class="tok-kw">try</span> stripComponents(<span class="tok-str">&quot;a/b/c&quot;</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L255">}</span>
+<span class="line" id="L256"></span>
+<span class="line" id="L257"><span class="tok-kw">const</span> PaxAttributeInfo = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L258">    size: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L259">    key: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L260">    value_off: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L261">    value_len: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L262">};</span>
+<span class="line" id="L263"></span>
+<span class="line" id="L264"><span class="tok-kw">fn</span> <span class="tok-fn">parsePaxAttribute</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, max_size: <span class="tok-type">usize</span>) !PaxAttributeInfo {</span>
+<span class="line" id="L265">    <span class="tok-kw">const</span> pos_space = std.mem.indexOfScalar(<span class="tok-type">u8</span>, data, <span class="tok-str">' '</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPaxAttribute;</span>
+<span class="line" id="L266">    <span class="tok-kw">const</span> pos_equals = std.mem.indexOfScalarPos(<span class="tok-type">u8</span>, data, pos_space, <span class="tok-str">'='</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPaxAttribute;</span>
+<span class="line" id="L267">    <span class="tok-kw">const</span> kv_size = <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">usize</span>, data[<span class="tok-number">0</span>..pos_space], <span class="tok-number">10</span>);</span>
+<span class="line" id="L268">    <span class="tok-kw">if</span> (kv_size &gt; max_size) {</span>
+<span class="line" id="L269">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPaxAttribute;</span>
+<span class="line" id="L270">    }</span>
+<span class="line" id="L271">    <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L272">        .size = kv_size,</span>
+<span class="line" id="L273">        .key = data[pos_space + <span class="tok-number">1</span> .. pos_equals],</span>
+<span class="line" id="L274">        .value_off = pos_equals + <span class="tok-number">1</span>,</span>
+<span class="line" id="L275">        .value_len = kv_size - pos_equals - <span class="tok-number">2</span>,</span>
+<span class="line" id="L276">    };</span>
+<span class="line" id="L277">}</span>
+<span class="line" id="L278"></span>
+<span class="line" id="L279"><span class="tok-kw">test</span> parsePaxAttribute {</span>
+<span class="line" id="L280">    <span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
+<span class="line" id="L281">    <span class="tok-kw">const</span> expectEqualStrings = std.testing.expectEqualStrings;</span>
+<span class="line" id="L282">    <span class="tok-kw">const</span> expectError = std.testing.expectError;</span>
+<span class="line" id="L283">    <span class="tok-kw">const</span> prefix = <span class="tok-str">&quot;1011 path=&quot;</span>;</span>
+<span class="line" id="L284">    <span class="tok-kw">const</span> file_name = <span class="tok-str">&quot;0123456789&quot;</span> ** <span class="tok-number">100</span>;</span>
+<span class="line" id="L285">    <span class="tok-kw">const</span> header = prefix ++ file_name ++ <span class="tok-str">&quot;\n&quot;</span>;</span>
+<span class="line" id="L286">    <span class="tok-kw">const</span> attr_info = <span class="tok-kw">try</span> parsePaxAttribute(header, <span class="tok-number">1011</span>);</span>
+<span class="line" id="L287">    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1011</span>), attr_info.size);</span>
+<span class="line" id="L288">    <span class="tok-kw">try</span> expectEqualStrings(<span class="tok-str">&quot;path&quot;</span>, attr_info.key);</span>
+<span class="line" id="L289">    <span class="tok-kw">try</span> expectEqual(prefix.len, attr_info.value_off);</span>
+<span class="line" id="L290">    <span class="tok-kw">try</span> expectEqual(file_name.len, attr_info.value_len);</span>
+<span class="line" id="L291">    <span class="tok-kw">try</span> expectEqual(attr_info, <span class="tok-kw">try</span> parsePaxAttribute(header, <span class="tok-number">1012</span>));</span>
+<span class="line" id="L292">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.InvalidPaxAttribute, parsePaxAttribute(header, <span class="tok-number">1010</span>));</span>
+<span class="line" id="L293">    <span class="tok-kw">try</span> expectError(<span class="tok-kw">error</span>.InvalidPaxAttribute, parsePaxAttribute(<span class="tok-str">&quot;&quot;</span>, <span class="tok-number">0</span>));</span>
+<span class="line" id="L294">}</span>
+<span class="line" id="L295"></span>
+<span class="line" id="L296"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std.zig&quot;</span>);</span>
+<span class="line" id="L297"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
+<span class="line" id="L298"></span>
 </code></pre></body>
 </html>

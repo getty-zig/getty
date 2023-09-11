@@ -3369,145 +3369,144 @@
 <span class="line" id="L3069">            <span class="tok-kw">const</span> pathname_w = <span class="tok-kw">try</span> os.windows.wToPrefixedFileW(<span class="tok-null">null</span>, image_path_name);</span>
 <span class="line" id="L3070">            <span class="tok-kw">return</span> std.fs.cwd().realpathW(pathname_w.span(), out_buffer);</span>
 <span class="line" id="L3071">        },</span>
-<span class="line" id="L3072">        .wasi =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for WASI. Use std.fs.selfExePathAlloc instead.&quot;</span>),</span>
-<span class="line" id="L3073">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for this target&quot;</span>),</span>
-<span class="line" id="L3074">    }</span>
-<span class="line" id="L3075">}</span>
-<span class="line" id="L3076"></span>
-<span class="line" id="L3077"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> selfExePathW = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deprecated; use selfExePath instead&quot;</span>);</span>
-<span class="line" id="L3078"></span>
-<span class="line" id="L3079"><span class="tok-comment">/// `selfExeDirPath` except allocates the result on the heap.</span></span>
-<span class="line" id="L3080"><span class="tok-comment">/// Caller owns returned memory.</span></span>
-<span class="line" id="L3081"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L3082">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
+<span class="line" id="L3072">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;std.fs.selfExePath not supported for this target&quot;</span>),</span>
+<span class="line" id="L3073">    }</span>
+<span class="line" id="L3074">}</span>
+<span class="line" id="L3075"></span>
+<span class="line" id="L3076"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> selfExePathW = <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;deprecated; use selfExePath instead&quot;</span>);</span>
+<span class="line" id="L3077"></span>
+<span class="line" id="L3078"><span class="tok-comment">/// `selfExeDirPath` except allocates the result on the heap.</span></span>
+<span class="line" id="L3079"><span class="tok-comment">/// Caller owns returned memory.</span></span>
+<span class="line" id="L3080"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPathAlloc</span>(allocator: Allocator) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L3081">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is justified as, at least on one tested Linux</span>
 </span>
-<span class="line" id="L3083">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
+<span class="line" id="L3082">    <span class="tok-comment">// system, readlink will completely fail to return a result larger than</span>
 </span>
-<span class="line" id="L3084">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
+<span class="line" id="L3083">    <span class="tok-comment">// PATH_MAX even if given a sufficiently large buffer. This makes it</span>
 </span>
-<span class="line" id="L3085">    <span class="tok-comment">// fundamentally impossible to get the selfExeDirPath of a program running</span>
+<span class="line" id="L3084">    <span class="tok-comment">// fundamentally impossible to get the selfExeDirPath of a program running</span>
 </span>
-<span class="line" id="L3086">    <span class="tok-comment">// in a very deeply nested directory chain in this way.</span>
+<span class="line" id="L3085">    <span class="tok-comment">// in a very deeply nested directory chain in this way.</span>
 </span>
-<span class="line" id="L3087">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
+<span class="line" id="L3086">    <span class="tok-comment">// TODO(#4812): Investigate other systems and whether it is possible to get</span>
 </span>
-<span class="line" id="L3088">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
+<span class="line" id="L3087">    <span class="tok-comment">// this path by trying larger and larger buffers until one succeeds.</span>
 </span>
-<span class="line" id="L3089">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3090">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExeDirPath(&amp;buf));</span>
-<span class="line" id="L3091">}</span>
-<span class="line" id="L3092"></span>
-<span class="line" id="L3093"><span class="tok-comment">/// Get the directory path that contains the current executable.</span></span>
-<span class="line" id="L3094"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
-<span class="line" id="L3095"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L3096">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(out_buffer);</span>
-<span class="line" id="L3097">    <span class="tok-comment">// Assume that the OS APIs return absolute paths, and therefore dirname</span>
+<span class="line" id="L3088">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3089">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> selfExeDirPath(&amp;buf));</span>
+<span class="line" id="L3090">}</span>
+<span class="line" id="L3091"></span>
+<span class="line" id="L3092"><span class="tok-comment">/// Get the directory path that contains the current executable.</span></span>
+<span class="line" id="L3093"><span class="tok-comment">/// Returned value is a slice of out_buffer.</span></span>
+<span class="line" id="L3094"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">selfExeDirPath</span>(out_buffer: []<span class="tok-type">u8</span>) SelfExePathError![]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L3095">    <span class="tok-kw">const</span> self_exe_path = <span class="tok-kw">try</span> selfExePath(out_buffer);</span>
+<span class="line" id="L3096">    <span class="tok-comment">// Assume that the OS APIs return absolute paths, and therefore dirname</span>
 </span>
-<span class="line" id="L3098">    <span class="tok-comment">// will not return null.</span>
+<span class="line" id="L3097">    <span class="tok-comment">// will not return null.</span>
 </span>
-<span class="line" id="L3099">    <span class="tok-kw">return</span> path.dirname(self_exe_path).?;</span>
-<span class="line" id="L3100">}</span>
-<span class="line" id="L3101"></span>
-<span class="line" id="L3102"><span class="tok-comment">/// `realpath`, except caller must free the returned memory.</span></span>
-<span class="line" id="L3103"><span class="tok-comment">/// See also `Dir.realpath`.</span></span>
-<span class="line" id="L3104"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realpathAlloc</span>(allocator: Allocator, pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L3105">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the realpath function does not</span>
+<span class="line" id="L3098">    <span class="tok-kw">return</span> path.dirname(self_exe_path).?;</span>
+<span class="line" id="L3099">}</span>
+<span class="line" id="L3100"></span>
+<span class="line" id="L3101"><span class="tok-comment">/// `realpath`, except caller must free the returned memory.</span></span>
+<span class="line" id="L3102"><span class="tok-comment">/// See also `Dir.realpath`.</span></span>
+<span class="line" id="L3103"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">realpathAlloc</span>(allocator: Allocator, pathname: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L3104">    <span class="tok-comment">// Use of MAX_PATH_BYTES here is valid as the realpath function does not</span>
 </span>
-<span class="line" id="L3106">    <span class="tok-comment">// have a variant that takes an arbitrary-size buffer.</span>
+<span class="line" id="L3105">    <span class="tok-comment">// have a variant that takes an arbitrary-size buffer.</span>
 </span>
-<span class="line" id="L3107">    <span class="tok-comment">// TODO(#4812): Consider reimplementing realpath or using the POSIX.1-2008</span>
+<span class="line" id="L3106">    <span class="tok-comment">// TODO(#4812): Consider reimplementing realpath or using the POSIX.1-2008</span>
 </span>
-<span class="line" id="L3108">    <span class="tok-comment">// NULL out parameter (GNU's canonicalize_file_name) to handle overelong</span>
+<span class="line" id="L3107">    <span class="tok-comment">// NULL out parameter (GNU's canonicalize_file_name) to handle overelong</span>
 </span>
-<span class="line" id="L3109">    <span class="tok-comment">// paths. musl supports passing NULL but restricts the output to PATH_MAX</span>
+<span class="line" id="L3108">    <span class="tok-comment">// paths. musl supports passing NULL but restricts the output to PATH_MAX</span>
 </span>
-<span class="line" id="L3110">    <span class="tok-comment">// anyway.</span>
+<span class="line" id="L3109">    <span class="tok-comment">// anyway.</span>
 </span>
-<span class="line" id="L3111">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3112">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> os.realpath(pathname, &amp;buf));</span>
-<span class="line" id="L3113">}</span>
-<span class="line" id="L3114"></span>
-<span class="line" id="L3115"><span class="tok-kw">const</span> CopyFileRawError = <span class="tok-kw">error</span>{SystemResources} || os.CopyFileRangeError || os.SendFileError;</span>
-<span class="line" id="L3116"></span>
-<span class="line" id="L3117"><span class="tok-comment">// Transfer all the data between two file descriptors in the most efficient way.</span>
+<span class="line" id="L3110">    <span class="tok-kw">var</span> buf: [MAX_PATH_BYTES]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3111">    <span class="tok-kw">return</span> allocator.dupe(<span class="tok-type">u8</span>, <span class="tok-kw">try</span> os.realpath(pathname, &amp;buf));</span>
+<span class="line" id="L3112">}</span>
+<span class="line" id="L3113"></span>
+<span class="line" id="L3114"><span class="tok-kw">const</span> CopyFileRawError = <span class="tok-kw">error</span>{SystemResources} || os.CopyFileRangeError || os.SendFileError;</span>
+<span class="line" id="L3115"></span>
+<span class="line" id="L3116"><span class="tok-comment">// Transfer all the data between two file descriptors in the most efficient way.</span>
 </span>
-<span class="line" id="L3118"><span class="tok-comment">// The copy starts at offset 0, the initial offsets are preserved.</span>
+<span class="line" id="L3117"><span class="tok-comment">// The copy starts at offset 0, the initial offsets are preserved.</span>
 </span>
-<span class="line" id="L3119"><span class="tok-comment">// No metadata is transferred over.</span>
+<span class="line" id="L3118"><span class="tok-comment">// No metadata is transferred over.</span>
 </span>
-<span class="line" id="L3120"><span class="tok-kw">fn</span> <span class="tok-fn">copy_file</span>(fd_in: os.fd_t, fd_out: os.fd_t, maybe_size: ?<span class="tok-type">u64</span>) CopyFileRawError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3121">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> builtin.target.isDarwin()) {</span>
-<span class="line" id="L3122">        <span class="tok-kw">const</span> rc = os.system.fcopyfile(fd_in, fd_out, <span class="tok-null">null</span>, os.system.COPYFILE_DATA);</span>
-<span class="line" id="L3123">        <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
-<span class="line" id="L3124">            .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
-<span class="line" id="L3125">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L3126">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
-<span class="line" id="L3127">            <span class="tok-comment">// The source file is not a directory, symbolic link, or regular file.</span>
+<span class="line" id="L3119"><span class="tok-kw">fn</span> <span class="tok-fn">copy_file</span>(fd_in: os.fd_t, fd_out: os.fd_t, maybe_size: ?<span class="tok-type">u64</span>) CopyFileRawError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3120">    <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> builtin.target.isDarwin()) {</span>
+<span class="line" id="L3121">        <span class="tok-kw">const</span> rc = os.system.fcopyfile(fd_in, fd_out, <span class="tok-null">null</span>, os.system.COPYFILE_DATA);</span>
+<span class="line" id="L3122">        <span class="tok-kw">switch</span> (os.errno(rc)) {</span>
+<span class="line" id="L3123">            .SUCCESS =&gt; <span class="tok-kw">return</span>,</span>
+<span class="line" id="L3124">            .INVAL =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L3125">            .NOMEM =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources,</span>
+<span class="line" id="L3126">            <span class="tok-comment">// The source file is not a directory, symbolic link, or regular file.</span>
 </span>
-<span class="line" id="L3128">            <span class="tok-comment">// Try with the fallback path before giving up.</span>
+<span class="line" id="L3127">            <span class="tok-comment">// Try with the fallback path before giving up.</span>
 </span>
-<span class="line" id="L3129">            .OPNOTSUPP =&gt; {},</span>
-<span class="line" id="L3130">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
-<span class="line" id="L3131">        }</span>
-<span class="line" id="L3132">    }</span>
-<span class="line" id="L3133"></span>
-<span class="line" id="L3134">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
-<span class="line" id="L3135">        <span class="tok-comment">// Try copy_file_range first as that works at the FS level and is the</span>
+<span class="line" id="L3128">            .OPNOTSUPP =&gt; {},</span>
+<span class="line" id="L3129">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> os.unexpectedErrno(err),</span>
+<span class="line" id="L3130">        }</span>
+<span class="line" id="L3131">    }</span>
+<span class="line" id="L3132"></span>
+<span class="line" id="L3133">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
+<span class="line" id="L3134">        <span class="tok-comment">// Try copy_file_range first as that works at the FS level and is the</span>
 </span>
-<span class="line" id="L3136">        <span class="tok-comment">// most efficient method (if available).</span>
+<span class="line" id="L3135">        <span class="tok-comment">// most efficient method (if available).</span>
 </span>
-<span class="line" id="L3137">        <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3138">        cfr_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3139">            <span class="tok-comment">// The kernel checks the u64 value `offset+count` for overflow, use</span>
+<span class="line" id="L3136">        <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3137">        cfr_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3138">            <span class="tok-comment">// The kernel checks the u64 value `offset+count` for overflow, use</span>
 </span>
-<span class="line" id="L3140">            <span class="tok-comment">// a 32 bit value so that the syscall won't return EINVAL except for</span>
+<span class="line" id="L3139">            <span class="tok-comment">// a 32 bit value so that the syscall won't return EINVAL except for</span>
 </span>
-<span class="line" id="L3141">            <span class="tok-comment">// impossibly large files (&gt; 2^64-1 - 2^32-1).</span>
+<span class="line" id="L3140">            <span class="tok-comment">// impossibly large files (&gt; 2^64-1 - 2^32-1).</span>
 </span>
-<span class="line" id="L3142">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.copy_file_range(fd_in, offset, fd_out, offset, math.maxInt(<span class="tok-type">u32</span>), <span class="tok-number">0</span>);</span>
-<span class="line" id="L3143">            <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+<span class="line" id="L3141">            <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.copy_file_range(fd_in, offset, fd_out, offset, math.maxInt(<span class="tok-type">u32</span>), <span class="tok-number">0</span>);</span>
+<span class="line" id="L3142">            <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
 </span>
-<span class="line" id="L3144">            <span class="tok-kw">if</span> (maybe_size) |s| {</span>
-<span class="line" id="L3145">                <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :cfr_loop;</span>
-<span class="line" id="L3146">            }</span>
-<span class="line" id="L3147">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :cfr_loop;</span>
-<span class="line" id="L3148">            offset += amt;</span>
-<span class="line" id="L3149">        }</span>
-<span class="line" id="L3150">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3151">    }</span>
-<span class="line" id="L3152"></span>
-<span class="line" id="L3153">    <span class="tok-comment">// Sendfile is a zero-copy mechanism iff the OS supports it, otherwise the</span>
+<span class="line" id="L3143">            <span class="tok-kw">if</span> (maybe_size) |s| {</span>
+<span class="line" id="L3144">                <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :cfr_loop;</span>
+<span class="line" id="L3145">            }</span>
+<span class="line" id="L3146">            <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :cfr_loop;</span>
+<span class="line" id="L3147">            offset += amt;</span>
+<span class="line" id="L3148">        }</span>
+<span class="line" id="L3149">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3150">    }</span>
+<span class="line" id="L3151"></span>
+<span class="line" id="L3152">    <span class="tok-comment">// Sendfile is a zero-copy mechanism iff the OS supports it, otherwise the</span>
 </span>
-<span class="line" id="L3154">    <span class="tok-comment">// fallback code will copy the contents chunk by chunk.</span>
+<span class="line" id="L3153">    <span class="tok-comment">// fallback code will copy the contents chunk by chunk.</span>
 </span>
-<span class="line" id="L3155">    <span class="tok-kw">const</span> empty_iovec = [<span class="tok-number">0</span>]os.iovec_const{};</span>
-<span class="line" id="L3156">    <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3157">    sendfile_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3158">        <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.sendfile(fd_out, fd_in, offset, <span class="tok-number">0</span>, &amp;empty_iovec, &amp;empty_iovec, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3159">        <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
+<span class="line" id="L3154">    <span class="tok-kw">const</span> empty_iovec = [<span class="tok-number">0</span>]os.iovec_const{};</span>
+<span class="line" id="L3155">    <span class="tok-kw">var</span> offset: <span class="tok-type">u64</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3156">    sendfile_loop: <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3157">        <span class="tok-kw">const</span> amt = <span class="tok-kw">try</span> os.sendfile(fd_out, fd_in, offset, <span class="tok-number">0</span>, &amp;empty_iovec, &amp;empty_iovec, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3158">        <span class="tok-comment">// Terminate as soon as we have copied size bytes or no bytes</span>
 </span>
-<span class="line" id="L3160">        <span class="tok-kw">if</span> (maybe_size) |s| {</span>
-<span class="line" id="L3161">            <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :sendfile_loop;</span>
-<span class="line" id="L3162">        }</span>
-<span class="line" id="L3163">        <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :sendfile_loop;</span>
-<span class="line" id="L3164">        offset += amt;</span>
-<span class="line" id="L3165">    }</span>
-<span class="line" id="L3166">}</span>
-<span class="line" id="L3167"></span>
-<span class="line" id="L3168"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L3169">    <span class="tok-kw">if</span> (builtin.os.tag != .wasi) {</span>
-<span class="line" id="L3170">        _ = &amp;makeDirAbsolute;</span>
-<span class="line" id="L3171">        _ = &amp;makeDirAbsoluteZ;</span>
-<span class="line" id="L3172">        _ = &amp;copyFileAbsolute;</span>
-<span class="line" id="L3173">        _ = &amp;updateFileAbsolute;</span>
-<span class="line" id="L3174">    }</span>
-<span class="line" id="L3175">    _ = &amp;Dir.copyFile;</span>
-<span class="line" id="L3176">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/test.zig&quot;</span>);</span>
-<span class="line" id="L3177">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/path.zig&quot;</span>);</span>
-<span class="line" id="L3178">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/file.zig&quot;</span>);</span>
-<span class="line" id="L3179">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/get_app_data_dir.zig&quot;</span>);</span>
-<span class="line" id="L3180">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/watch.zig&quot;</span>);</span>
-<span class="line" id="L3181">}</span>
-<span class="line" id="L3182"></span>
+<span class="line" id="L3159">        <span class="tok-kw">if</span> (maybe_size) |s| {</span>
+<span class="line" id="L3160">            <span class="tok-kw">if</span> (s == amt) <span class="tok-kw">break</span> :sendfile_loop;</span>
+<span class="line" id="L3161">        }</span>
+<span class="line" id="L3162">        <span class="tok-kw">if</span> (amt == <span class="tok-number">0</span>) <span class="tok-kw">break</span> :sendfile_loop;</span>
+<span class="line" id="L3163">        offset += amt;</span>
+<span class="line" id="L3164">    }</span>
+<span class="line" id="L3165">}</span>
+<span class="line" id="L3166"></span>
+<span class="line" id="L3167"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L3168">    <span class="tok-kw">if</span> (builtin.os.tag != .wasi) {</span>
+<span class="line" id="L3169">        _ = &amp;makeDirAbsolute;</span>
+<span class="line" id="L3170">        _ = &amp;makeDirAbsoluteZ;</span>
+<span class="line" id="L3171">        _ = &amp;copyFileAbsolute;</span>
+<span class="line" id="L3172">        _ = &amp;updateFileAbsolute;</span>
+<span class="line" id="L3173">    }</span>
+<span class="line" id="L3174">    _ = &amp;Dir.copyFile;</span>
+<span class="line" id="L3175">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/test.zig&quot;</span>);</span>
+<span class="line" id="L3176">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/path.zig&quot;</span>);</span>
+<span class="line" id="L3177">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/file.zig&quot;</span>);</span>
+<span class="line" id="L3178">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/get_app_data_dir.zig&quot;</span>);</span>
+<span class="line" id="L3179">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;fs/watch.zig&quot;</span>);</span>
+<span class="line" id="L3180">}</span>
+<span class="line" id="L3181"></span>
 </code></pre></body>
 </html>
