@@ -15,7 +15,7 @@ pub fn Visitor(comptime HashMap: type) type {
 
         const Value = HashMap;
 
-        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             if (ally == null) {
                 return error.MissingAllocator;
             }

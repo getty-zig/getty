@@ -16,7 +16,7 @@ pub fn deserialize(
     comptime T: type,
     /// A `getty.Deserializer` interface value.
     d: anytype,
-) @TypeOf(d).Error!T {
+) @TypeOf(d).Err!T {
     const db = comptime find_db(T, @TypeOf(d));
 
     if (comptime attributes.has_attributes(T, db)) {
@@ -56,7 +56,7 @@ fn PointVisitor(comptime Value: type) type {
             ally: ?std.mem.Allocator,
             comptime De: type,
             seq: anytype,
-        ) De.Error!Value {
+        ) De.Err!Value {
             var point: Value = undefined;
 
             inline for (std.meta.fields(Value)) |field| {
@@ -87,7 +87,7 @@ test "deserialize - success, normal" {
             return T == Point;
         }
 
-        pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Error!@TypeOf(v).Value {
+        pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
             return try d.deserializeSeq(ally, v);
         }
 
@@ -101,7 +101,7 @@ test "deserialize - success, normal" {
         const Self = @This();
 
         pub const @"getty.db" = struct {
-            pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Error!@TypeOf(v).Value {
+            pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
                 return try d.deserializeSeq(ally, v);
             }
 

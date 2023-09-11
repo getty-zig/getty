@@ -15,7 +15,7 @@ pub fn Visitor(comptime IndexedSet: type) type {
 
         const Value = IndexedSet;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var set = Value.initEmpty();
             errdefer free(ally.?, Deserializer, set);
 

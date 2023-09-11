@@ -17,11 +17,11 @@ pub fn Visitor(comptime Float: type) type {
 
         const Value = Float;
 
-        fn visitFloat(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+        fn visitFloat(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             return @floatCast(input);
         }
 
-        fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+        fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             return @floatFromInt(input);
         }
     };

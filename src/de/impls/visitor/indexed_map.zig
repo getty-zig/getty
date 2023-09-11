@@ -15,7 +15,7 @@ pub fn Visitor(comptime IndexedMap: type) type {
 
         const Value = IndexedMap;
 
-        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Error!Value {
+        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             var m = Value{};
             errdefer free(ally.?, Deserializer, m);
 

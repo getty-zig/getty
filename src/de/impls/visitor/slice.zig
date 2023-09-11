@@ -18,7 +18,7 @@ pub fn Visitor(comptime Slice: type) type {
 
         const Value = Slice;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             if (ally == null) {
                 return error.MissingAllocator;
             }
@@ -40,7 +40,7 @@ pub fn Visitor(comptime Slice: type) type {
             return try list.toOwnedSlice();
         }
 
-        fn visitString(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+        fn visitString(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             if (ally == null) {
                 return error.MissingAllocator;
             }

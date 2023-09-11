@@ -15,7 +15,7 @@ pub fn Visitor(comptime LinearFifo: type) type {
 
         const Value = LinearFifo;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             if (is_buffer_static) {
                 var fifo = Value.init();
                 errdefer free(ally.?, Deserializer, fifo);

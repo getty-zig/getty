@@ -42,7 +42,7 @@ pub fn Deserializer(
             const Self = @This();
 
             /// Error set used upon failure.
-            pub const Error = E;
+            pub const Err = E;
 
             /// User-defined Deserialization Tuple.
             pub const user_dt = blk: {

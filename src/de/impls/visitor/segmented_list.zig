@@ -15,7 +15,7 @@ pub fn Visitor(comptime SegmentedList: type) type {
 
         const Value = SegmentedList;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = SegmentedList{};
             errdefer free(ally.?, Deserializer, list);
 

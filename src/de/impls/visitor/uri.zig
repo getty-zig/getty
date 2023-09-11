@@ -15,7 +15,7 @@ pub usingnamespace VisitorInterface(
 
 const Value = std.Uri;
 
-fn visitString(_: Visitor, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+fn visitString(_: Visitor, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
     if (ally == null) {
         return error.MissingAllocator;
     }

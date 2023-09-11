@@ -15,7 +15,7 @@ pub fn Visitor(comptime DoublyLinkedList: type) type {
 
         const Value = DoublyLinkedList;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Error!Value {
+        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             if (ally == null) {
                 return error.MissingAllocator;
             }

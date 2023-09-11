@@ -16,7 +16,7 @@ pub fn Visitor(comptime NetAddress: type) type {
 
         const Value = NetAddress;
 
-        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Value {
+        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             const max_ipv6_chars = 47;
             const max_port_chars = 6;
 

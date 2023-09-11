@@ -22,7 +22,7 @@ pub fn UnionAccess(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Err = E;
 
             pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.variantSeed) |func| {

@@ -30,7 +30,7 @@ pub fn deserialize(
     deserializer: anytype,
     /// A `getty.de.Visitor` interface value.
     visitor: anytype,
-) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
     const tag: Tag = comptime blk: {
         const attributes = getAttributes(T, @TypeOf(deserializer));
 
@@ -85,7 +85,7 @@ fn deserializeExternallyTaggedUnion(
     ally: ?std.mem.Allocator,
     deserializer: anytype,
     visitor: anytype,
-) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
     return try deserializer.deserializeUnion(ally, visitor);
 }
 
@@ -95,7 +95,7 @@ fn deserializeUntaggedUnion(
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,
-) @TypeOf(deserializer).Error!@TypeOf(visitor).Value {
+) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
     // Deserialize the input data into a Content value.
     //
     // This intermediate value allows us to repeatedly attempt deserialization

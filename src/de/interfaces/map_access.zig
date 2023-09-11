@@ -25,7 +25,7 @@ pub fn MapAccess(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Err = E;
 
             pub fn nextKeySeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 if (methods.nextKeySeed) |func| {

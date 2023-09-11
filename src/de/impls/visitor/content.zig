@@ -27,11 +27,11 @@ pub usingnamespace VisitorInterface(
 
 const Value = Content;
 
-fn visitBool(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Error!Content {
+fn visitBool(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!Content {
     return .{ .Bool = input };
 }
 
-fn visitFloat(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Content {
+fn visitFloat(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
     return switch (@TypeOf(input)) {
         f16 => .{ .F16 = input },
         f32 => .{ .F32 = input },
@@ -42,7 +42,7 @@ fn visitFloat(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type, in
     };
 }
 
-fn visitInt(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Content {
+fn visitInt(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
     if (ally == null) {
         return error.MissingAllocator;
     }
@@ -54,7 +54,7 @@ fn visitInt(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, i
     };
 }
 
-fn visitMap(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, mapAccess: anytype) Deserializer.Error!Content {
+fn visitMap(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, mapAccess: anytype) Deserializer.Err!Content {
     if (ally == null) {
         return error.MissingAllocator;
     }
@@ -79,11 +79,11 @@ fn visitMap(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, m
     return .{ .Map = map };
 }
 
-fn visitNull(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Content {
+fn visitNull(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!Content {
     return .{ .Null = {} };
 }
 
-fn visitSeq(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, seqAccess: anytype) Deserializer.Error!Content {
+fn visitSeq(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, seqAccess: anytype) Deserializer.Err!Content {
     if (ally == null) {
         return error.MissingAllocator;
     }
@@ -98,18 +98,18 @@ fn visitSeq(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, s
     return .{ .Seq = list };
 }
 
-fn visitSome(_: @This(), ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Content {
+fn visitSome(_: @This(), ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Content {
     return .{ .Some = try getty_deserialize(ally, *Content, deserializer) };
 }
 
-fn visitString(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Error!Content {
+fn visitString(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
     const output = try ally.?.alloc(u8, input.len);
     std.mem.copy(u8, output, input);
 
     return .{ .String = output };
 }
 
-fn visitUnion(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Content {
+fn visitUnion(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Content {
     if (ally == null) {
         return error.MissingAllocator;
     }
@@ -133,6 +133,6 @@ fn visitUnion(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type,
     return .{ .Map = map };
 }
 
-fn visitVoid(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Error!Content {
+fn visitVoid(_: @This(), _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!Content {
     return .{ .Void = {} };
 }

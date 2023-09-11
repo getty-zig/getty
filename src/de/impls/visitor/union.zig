@@ -16,7 +16,7 @@ pub fn Visitor(comptime Union: type) type {
 
         const Value = Union;
 
-        fn visitUnion(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Error!Value {
+        fn visitUnion(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const attributes = comptime getAttributes(Value, Deserializer);
