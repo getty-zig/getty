@@ -6,45 +6,16 @@ const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 pub fn MapAccess(
     /// An implementing type.
     comptime Impl: type,
-    /// The error set returned by the interface's methods upon failure.
-    comptime E: type,
+    /// The error set to be returned by the interface's methods upon failure.
+    comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        nextKeySeed: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
-                unreachable;
-            }
-        }.f) = null,
-
-        nextValueSeed: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
-                unreachable;
-            }
-        }.f) = null,
-
-        ////////////////////////////////////////////////////////////////////////
-        // Provided methods.
-        ////////////////////////////////////////////////////////////////////////
-
-        nextKey: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, comptime K: type) E!?K {
-                unreachable;
-            }
-        }.f) = null,
-
-        nextValue: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, comptime V: type) E!V {
-                unreachable;
-            }
-        }.f) = null,
-
-        /// Returns true if the latest key deserialized by nextKeySeed was
-        /// allocated on the heap. Otherwise, false is returned.
-        isKeyAllocated: ?fn (Impl, comptime K: type) bool = null,
-
-        /// Returns true if the latest value deserialized by nextValueSeed was
-        /// allocated on the heap. Otherwise, false is returned.
-        isValueAllocated: ?fn (Impl, comptime V: type) bool = null,
+        nextKeySeed: ?NextKeySeedFn(Impl, Err) = null,
+        nextValueSeed: ?NextValueSeedFn(Impl, Err) = null,
+        nextKey: ?NextKeyFn(Impl, Err) = null,
+        nextValue: ?NextValueFn(Impl, Err) = null,
+        isKeyAllocated: ?IsAllocatedFn(Impl) = null,
+        isValueAllocated: ?IsAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -54,68 +25,60 @@ pub fn MapAccess(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Error = Err;
 
             pub fn nextKeySeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
-                if (methods.nextKeySeed) |f| {
-                    return try f(self.impl, ally, seed);
+                if (methods.nextKeySeed) |func| {
+                    return try func(self.impl, ally, seed);
                 }
 
                 @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Impl));
             }
 
             pub fn nextValueSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                if (methods.nextValueSeed) |f| {
-                    return try f(self.impl, ally, seed);
+                if (methods.nextValueSeed) |func| {
+                    return try func(self.impl, ally, seed);
                 }
 
                 @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            //pub fn nextEntrySeed(self: Self, kseed: anytype, vseed: anytype) Error!?std.meta.Tuple(.{ @TypeOf(kseed).Value, @TypeOf(vseed).Value }) {
-            //_ = self;
-            //}
-
-            pub fn nextKey(self: Self, ally: ?std.mem.Allocator, comptime K: type) Error!?K {
-                if (methods.nextKey) |f| {
-                    return try f(self.impl, ally, K);
-                } else {
-                    var seed = DefaultSeed(K){};
-                    const ds = seed.seed();
-
-                    return try self.nextKeySeed(ally, ds);
+            pub fn nextKey(self: Self, ally: ?std.mem.Allocator, comptime Key: type) Error!?Key {
+                if (methods.nextKey) |func| {
+                    return try func(self.impl, ally, Key);
                 }
+
+                var seed = DefaultSeed(Key){};
+                const ds = seed.seed();
+
+                return try self.nextKeySeed(ally, ds);
             }
 
-            pub fn nextValue(self: Self, ally: ?std.mem.Allocator, comptime V: type) Error!V {
-                if (methods.nextValue) |f| {
-                    return try f(self.impl, ally, V);
-                } else {
-                    var seed = DefaultSeed(V){};
-                    const ds = seed.seed();
-
-                    return try self.nextValueSeed(ally, ds);
+            pub fn nextValue(self: Self, ally: ?std.mem.Allocator, comptime Value: type) Error!Value {
+                if (methods.nextValue) |func| {
+                    return try func(self.impl, ally, Value);
                 }
+
+                var seed = DefaultSeed(Value){};
+                const ds = seed.seed();
+
+                return try self.nextValueSeed(ally, ds);
             }
 
-            //pub fn nextEntry(self: Self, comptime K: type, comptime V: type) !?std.meta.Tuple(.{ K, V }) {
-            //_ = self;
-            //}
-
-            pub fn isKeyAllocated(self: Self, comptime K: type) bool {
-                if (methods.isKeyAllocated) |f| {
-                    return f(self.impl, K);
+            pub fn isKeyAllocated(self: Self, comptime Key: type) bool {
+                if (methods.isKeyAllocated) |func| {
+                    return func(self.impl, Key);
                 }
 
-                return @typeInfo(K) == .Pointer;
+                return @typeInfo(Key) == .Pointer;
             }
 
-            pub fn isValueAllocated(self: Self, comptime V: type) bool {
-                if (methods.isValueAllocated) |f| {
-                    return f(self.impl, V);
+            pub fn isValueAllocated(self: Self, comptime Value: type) bool {
+                if (methods.isValueAllocated) |func| {
+                    return func(self.impl, Value);
                 }
 
-                return @typeInfo(V) == .Pointer;
+                return @typeInfo(Value) == .Pointer;
             }
         };
 
@@ -124,4 +87,48 @@ pub fn MapAccess(
             return .{ .impl = impl };
         }
     };
+}
+
+fn NextKeySeedFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn NextKeyFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, comptime Key: type) Err!?Key {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn IsAllocatedFn(comptime Impl: type) type {
+    return fn (Impl, comptime KV: type) bool;
+}
+
+fn NextValueSeedFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn NextValueFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, comptime Value: type) Err!Value {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
 }
