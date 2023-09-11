@@ -133,101 +133,102 @@
 <span class="line" id="L20">    <span class="tok-comment">/// An optional memory allocator.</span></span>
 <span class="line" id="L21">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L22">    <span class="tok-comment">/// A value being serialized.</span></span>
-<span class="line" id="L23">    value: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L23">    v: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L24">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
-<span class="line" id="L25">    serializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L26">) <span class="tok-builtin">@TypeOf</span>(serializer).Err!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L25">    s: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L26">) <span class="tok-builtin">@TypeOf</span>(s).Err!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
 <span class="line" id="L27">    _ = ally;</span>
-<span class="line" id="L28">    <span class="tok-kw">const</span> K = std.meta.FieldType(<span class="tok-builtin">@TypeOf</span>(value), .counts).Key;</span>
-<span class="line" id="L29">    <span class="tok-kw">const</span> fields = std.meta.fields(K);</span>
-<span class="line" id="L30"></span>
-<span class="line" id="L31">    <span class="tok-comment">// Store the keys contained in the multiset so we don't need to find them again.</span>
+<span class="line" id="L28"></span>
+<span class="line" id="L29">    <span class="tok-kw">const</span> K = std.meta.FieldType(<span class="tok-builtin">@TypeOf</span>(v), .counts).Key;</span>
+<span class="line" id="L30">    <span class="tok-kw">const</span> fields = std.meta.fields(K);</span>
+<span class="line" id="L31"></span>
+<span class="line" id="L32">    <span class="tok-comment">// Store the keys contained in the multiset so we don't need to find them again.</span>
 </span>
-<span class="line" id="L32">    <span class="tok-kw">var</span> keys: [fields.len]K = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L33">    <span class="tok-comment">// Count the number of non-zero entries.</span>
+<span class="line" id="L33">    <span class="tok-kw">var</span> keys: [fields.len]K = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L34">    <span class="tok-comment">// Count the number of non-zero entries.</span>
 </span>
-<span class="line" id="L34">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L35">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
-<span class="line" id="L36">        <span class="tok-kw">const</span> key = <span class="tok-builtin">@as</span>(K, <span class="tok-builtin">@enumFromInt</span>(field.value));</span>
-<span class="line" id="L37">        <span class="tok-kw">if</span> (value.contains(key)) {</span>
-<span class="line" id="L38">            keys[count] = key;</span>
-<span class="line" id="L39">            count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L40">        }</span>
-<span class="line" id="L41">    }</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43">    <span class="tok-kw">var</span> m = <span class="tok-kw">try</span> serializer.serializeMap(count);</span>
-<span class="line" id="L44">    <span class="tok-kw">const</span> map = m.map();</span>
-<span class="line" id="L45"></span>
-<span class="line" id="L46">    <span class="tok-kw">for</span> (keys[<span class="tok-number">0</span>..count]) |key| {</span>
-<span class="line" id="L47">        <span class="tok-kw">try</span> map.serializeEntry(key, value.getCount(key));</span>
-<span class="line" id="L48">    }</span>
-<span class="line" id="L49"></span>
-<span class="line" id="L50">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> map.end();</span>
-<span class="line" id="L51">}</span>
-<span class="line" id="L52"></span>
-<span class="line" id="L53"><span class="tok-kw">const</span> Color = <span class="tok-kw">enum</span> { red, blue, yellow, green, orange, violet };</span>
-<span class="line" id="L54"></span>
-<span class="line" id="L55"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - std.BoundedEnumMultiset&quot;</span> {</span>
-<span class="line" id="L56">    <span class="tok-kw">var</span> multiset = std.enums.BoundedEnumMultiset(Color, <span class="tok-type">u8</span>).initEmpty();</span>
-<span class="line" id="L57"></span>
-<span class="line" id="L58">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
-<span class="line" id="L59">        .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L60">        .{ .MapEnd = {} },</span>
-<span class="line" id="L61">    });</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63">    <span class="tok-kw">try</span> multiset.add(.red, <span class="tok-number">1</span>);</span>
-<span class="line" id="L64">    <span class="tok-kw">try</span> multiset.add(.blue, <span class="tok-number">2</span>);</span>
-<span class="line" id="L65">    <span class="tok-kw">try</span> multiset.add(.yellow, <span class="tok-number">3</span>);</span>
-<span class="line" id="L66">    <span class="tok-kw">try</span> multiset.add(.orange, <span class="tok-number">2</span>);</span>
-<span class="line" id="L67"></span>
-<span class="line" id="L68">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
-<span class="line" id="L69">        .{ .Map = .{ .len = <span class="tok-number">4</span> } },</span>
-<span class="line" id="L70">        .{ .Enum = {} },</span>
-<span class="line" id="L71">        .{ .String = <span class="tok-str">&quot;red&quot;</span> },</span>
-<span class="line" id="L72">        .{ .U8 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L73">        .{ .Enum = {} },</span>
-<span class="line" id="L74">        .{ .String = <span class="tok-str">&quot;blue&quot;</span> },</span>
-<span class="line" id="L75">        .{ .U8 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L76">        .{ .Enum = {} },</span>
-<span class="line" id="L77">        .{ .String = <span class="tok-str">&quot;yellow&quot;</span> },</span>
-<span class="line" id="L78">        .{ .U8 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L79">        .{ .Enum = {} },</span>
-<span class="line" id="L80">        .{ .String = <span class="tok-str">&quot;orange&quot;</span> },</span>
-<span class="line" id="L81">        .{ .U8 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L82">        .{ .MapEnd = {} },</span>
-<span class="line" id="L83">    });</span>
-<span class="line" id="L84">}</span>
-<span class="line" id="L85"></span>
-<span class="line" id="L86"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - std.EnumMultiset&quot;</span> {</span>
-<span class="line" id="L87">    <span class="tok-kw">var</span> multiset = std.enums.EnumMultiset(Color).initEmpty();</span>
-<span class="line" id="L88"></span>
-<span class="line" id="L89">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
-<span class="line" id="L90">        .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L91">        .{ .MapEnd = {} },</span>
-<span class="line" id="L92">    });</span>
-<span class="line" id="L93"></span>
-<span class="line" id="L94">    <span class="tok-kw">try</span> multiset.add(.red, <span class="tok-number">1</span>);</span>
-<span class="line" id="L95">    <span class="tok-kw">try</span> multiset.add(.blue, <span class="tok-number">2</span>);</span>
-<span class="line" id="L96">    <span class="tok-kw">try</span> multiset.add(.yellow, <span class="tok-number">4</span>);</span>
-<span class="line" id="L97">    <span class="tok-kw">try</span> multiset.add(.violet, <span class="tok-number">3</span>);</span>
-<span class="line" id="L98"></span>
-<span class="line" id="L99">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
-<span class="line" id="L100">        .{ .Map = .{ .len = <span class="tok-number">4</span> } },</span>
-<span class="line" id="L101">        .{ .Enum = {} },</span>
-<span class="line" id="L102">        .{ .String = <span class="tok-str">&quot;red&quot;</span> },</span>
-<span class="line" id="L103">        .{ .U64 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L104">        .{ .Enum = {} },</span>
-<span class="line" id="L105">        .{ .String = <span class="tok-str">&quot;blue&quot;</span> },</span>
-<span class="line" id="L106">        .{ .U64 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L107">        .{ .Enum = {} },</span>
-<span class="line" id="L108">        .{ .String = <span class="tok-str">&quot;yellow&quot;</span> },</span>
-<span class="line" id="L109">        .{ .U64 = <span class="tok-number">4</span> },</span>
-<span class="line" id="L110">        .{ .Enum = {} },</span>
-<span class="line" id="L111">        .{ .String = <span class="tok-str">&quot;violet&quot;</span> },</span>
-<span class="line" id="L112">        .{ .U64 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L113">        .{ .MapEnd = {} },</span>
-<span class="line" id="L114">    });</span>
-<span class="line" id="L115">}</span>
-<span class="line" id="L116"></span>
+<span class="line" id="L35">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L36">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
+<span class="line" id="L37">        <span class="tok-kw">const</span> key = <span class="tok-builtin">@as</span>(K, <span class="tok-builtin">@enumFromInt</span>(field.value));</span>
+<span class="line" id="L38">        <span class="tok-kw">if</span> (v.contains(key)) {</span>
+<span class="line" id="L39">            keys[count] = key;</span>
+<span class="line" id="L40">            count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L41">        }</span>
+<span class="line" id="L42">    }</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44">    <span class="tok-kw">var</span> m = <span class="tok-kw">try</span> s.serializeMap(count);</span>
+<span class="line" id="L45">    <span class="tok-kw">const</span> map = m.map();</span>
+<span class="line" id="L46"></span>
+<span class="line" id="L47">    <span class="tok-kw">for</span> (keys[<span class="tok-number">0</span>..count]) |key| {</span>
+<span class="line" id="L48">        <span class="tok-kw">try</span> map.serializeEntry(key, v.getCount(key));</span>
+<span class="line" id="L49">    }</span>
+<span class="line" id="L50"></span>
+<span class="line" id="L51">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> map.end();</span>
+<span class="line" id="L52">}</span>
+<span class="line" id="L53"></span>
+<span class="line" id="L54"><span class="tok-kw">const</span> Color = <span class="tok-kw">enum</span> { red, blue, yellow, green, orange, violet };</span>
+<span class="line" id="L55"></span>
+<span class="line" id="L56"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - std.BoundedEnumMultiset&quot;</span> {</span>
+<span class="line" id="L57">    <span class="tok-kw">var</span> multiset = std.enums.BoundedEnumMultiset(Color, <span class="tok-type">u8</span>).initEmpty();</span>
+<span class="line" id="L58"></span>
+<span class="line" id="L59">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
+<span class="line" id="L60">        .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L61">        .{ .MapEnd = {} },</span>
+<span class="line" id="L62">    });</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64">    <span class="tok-kw">try</span> multiset.add(.red, <span class="tok-number">1</span>);</span>
+<span class="line" id="L65">    <span class="tok-kw">try</span> multiset.add(.blue, <span class="tok-number">2</span>);</span>
+<span class="line" id="L66">    <span class="tok-kw">try</span> multiset.add(.yellow, <span class="tok-number">3</span>);</span>
+<span class="line" id="L67">    <span class="tok-kw">try</span> multiset.add(.orange, <span class="tok-number">2</span>);</span>
+<span class="line" id="L68"></span>
+<span class="line" id="L69">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
+<span class="line" id="L70">        .{ .Map = .{ .len = <span class="tok-number">4</span> } },</span>
+<span class="line" id="L71">        .{ .Enum = {} },</span>
+<span class="line" id="L72">        .{ .String = <span class="tok-str">&quot;red&quot;</span> },</span>
+<span class="line" id="L73">        .{ .U8 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L74">        .{ .Enum = {} },</span>
+<span class="line" id="L75">        .{ .String = <span class="tok-str">&quot;blue&quot;</span> },</span>
+<span class="line" id="L76">        .{ .U8 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L77">        .{ .Enum = {} },</span>
+<span class="line" id="L78">        .{ .String = <span class="tok-str">&quot;yellow&quot;</span> },</span>
+<span class="line" id="L79">        .{ .U8 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L80">        .{ .Enum = {} },</span>
+<span class="line" id="L81">        .{ .String = <span class="tok-str">&quot;orange&quot;</span> },</span>
+<span class="line" id="L82">        .{ .U8 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L83">        .{ .MapEnd = {} },</span>
+<span class="line" id="L84">    });</span>
+<span class="line" id="L85">}</span>
+<span class="line" id="L86"></span>
+<span class="line" id="L87"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - std.EnumMultiset&quot;</span> {</span>
+<span class="line" id="L88">    <span class="tok-kw">var</span> multiset = std.enums.EnumMultiset(Color).initEmpty();</span>
+<span class="line" id="L89"></span>
+<span class="line" id="L90">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
+<span class="line" id="L91">        .{ .Map = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L92">        .{ .MapEnd = {} },</span>
+<span class="line" id="L93">    });</span>
+<span class="line" id="L94"></span>
+<span class="line" id="L95">    <span class="tok-kw">try</span> multiset.add(.red, <span class="tok-number">1</span>);</span>
+<span class="line" id="L96">    <span class="tok-kw">try</span> multiset.add(.blue, <span class="tok-number">2</span>);</span>
+<span class="line" id="L97">    <span class="tok-kw">try</span> multiset.add(.yellow, <span class="tok-number">4</span>);</span>
+<span class="line" id="L98">    <span class="tok-kw">try</span> multiset.add(.violet, <span class="tok-number">3</span>);</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, multiset, &amp;.{</span>
+<span class="line" id="L101">        .{ .Map = .{ .len = <span class="tok-number">4</span> } },</span>
+<span class="line" id="L102">        .{ .Enum = {} },</span>
+<span class="line" id="L103">        .{ .String = <span class="tok-str">&quot;red&quot;</span> },</span>
+<span class="line" id="L104">        .{ .U64 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L105">        .{ .Enum = {} },</span>
+<span class="line" id="L106">        .{ .String = <span class="tok-str">&quot;blue&quot;</span> },</span>
+<span class="line" id="L107">        .{ .U64 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L108">        .{ .Enum = {} },</span>
+<span class="line" id="L109">        .{ .String = <span class="tok-str">&quot;yellow&quot;</span> },</span>
+<span class="line" id="L110">        .{ .U64 = <span class="tok-number">4</span> },</span>
+<span class="line" id="L111">        .{ .Enum = {} },</span>
+<span class="line" id="L112">        .{ .String = <span class="tok-str">&quot;violet&quot;</span> },</span>
+<span class="line" id="L113">        .{ .U64 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L114">        .{ .MapEnd = {} },</span>
+<span class="line" id="L115">    });</span>
+<span class="line" id="L116">}</span>
+<span class="line" id="L117"></span>
 </code></pre></body>
 </html>

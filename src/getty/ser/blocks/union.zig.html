@@ -131,11 +131,11 @@
 <span class="line" id="L18">    <span class="tok-comment">/// An optional memory allocator.</span></span>
 <span class="line" id="L19">    ally: ?std.mem.Allocator,</span>
 <span class="line" id="L20">    <span class="tok-comment">/// A value being serialized.</span></span>
-<span class="line" id="L21">    value: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L21">    v: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L22">    <span class="tok-comment">/// A `getty.Serializer` interface value.</span></span>
-<span class="line" id="L23">    serializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L24">) <span class="tok-builtin">@TypeOf</span>(serializer).Err!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
-<span class="line" id="L25">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(value);</span>
+<span class="line" id="L23">    s: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L24">) <span class="tok-builtin">@TypeOf</span>(s).Err!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
+<span class="line" id="L25">    <span class="tok-kw">const</span> T = <span class="tok-builtin">@TypeOf</span>(v);</span>
 <span class="line" id="L26">    <span class="tok-kw">const</span> info = <span class="tok-builtin">@typeInfo</span>(T).Union;</span>
 <span class="line" id="L27"></span>
 <span class="line" id="L28">    <span class="tok-kw">if</span> (info.tag_type == <span class="tok-null">null</span>) {</span>
@@ -151,10 +151,10 @@
 <span class="line" id="L35">    <span class="tok-comment">// instead.</span>
 </span>
 <span class="line" id="L36">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (info.fields) |field| {</span>
-<span class="line" id="L37">        <span class="tok-kw">const</span> tag_matches = value == <span class="tok-builtin">@field</span>(T, field.name);</span>
+<span class="line" id="L37">        <span class="tok-kw">const</span> tag_matches = v == <span class="tok-builtin">@field</span>(T, field.name);</span>
 <span class="line" id="L38"></span>
 <span class="line" id="L39">        <span class="tok-kw">if</span> (tag_matches) {</span>
-<span class="line" id="L40">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializeVariant(ally, value, serializer, field);</span>
+<span class="line" id="L40">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializeVariant(ally, v, s, field);</span>
 <span class="line" id="L41">        }</span>
 <span class="line" id="L42">    }</span>
 <span class="line" id="L43"></span>
@@ -169,12 +169,12 @@
 <span class="line" id="L49"></span>
 <span class="line" id="L50"><span class="tok-kw">fn</span> <span class="tok-fn">serializeVariant</span>(</span>
 <span class="line" id="L51">    ally: ?std.mem.Allocator,</span>
-<span class="line" id="L52">    value: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L53">    serializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L52">    v: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L53">    s: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L54">    <span class="tok-kw">comptime</span> field: std.builtin.Type.UnionField,</span>
-<span class="line" id="L55">) <span class="tok-builtin">@TypeOf</span>(serializer).Err!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L55">) <span class="tok-builtin">@TypeOf</span>(s).Err!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
 <span class="line" id="L56">    <span class="tok-kw">const</span> tag: Tag = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L57">        <span class="tok-kw">const</span> attributes = getAttributes(<span class="tok-builtin">@TypeOf</span>(value), <span class="tok-builtin">@TypeOf</span>(serializer));</span>
+<span class="line" id="L57">        <span class="tok-kw">const</span> attributes = getAttributes(<span class="tok-builtin">@TypeOf</span>(v), <span class="tok-builtin">@TypeOf</span>(s));</span>
 <span class="line" id="L58"></span>
 <span class="line" id="L59">        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
 <span class="line" id="L60">            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), <span class="tok-str">&quot;Container&quot;</span>)) {</span>
@@ -188,19 +188,19 @@
 <span class="line" id="L68">    };</span>
 <span class="line" id="L69"></span>
 <span class="line" id="L70">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
-<span class="line" id="L71">        .external =&gt; <span class="tok-kw">try</span> serializeExternallyTaggedVariant(value, serializer, field),</span>
-<span class="line" id="L72">        .untagged =&gt; <span class="tok-kw">try</span> serializeUntaggedVariant(ally, value, serializer, field),</span>
+<span class="line" id="L71">        .external =&gt; <span class="tok-kw">try</span> serializeExternallyTaggedVariant(v, s, field),</span>
+<span class="line" id="L72">        .untagged =&gt; <span class="tok-kw">try</span> serializeUntaggedVariant(ally, v, s, field),</span>
 <span class="line" id="L73">        .internal =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: internally tagged representation&quot;</span>),</span>
 <span class="line" id="L74">    };</span>
 <span class="line" id="L75">}</span>
 <span class="line" id="L76"></span>
 <span class="line" id="L77"><span class="tok-kw">fn</span> <span class="tok-fn">serializeExternallyTaggedVariant</span>(</span>
-<span class="line" id="L78">    value: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L79">    serializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L78">    v: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L79">    s: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L80">    <span class="tok-kw">comptime</span> field: std.builtin.Type.UnionField,</span>
-<span class="line" id="L81">) <span class="tok-builtin">@TypeOf</span>(serializer).Err!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
+<span class="line" id="L81">) <span class="tok-builtin">@TypeOf</span>(s).Err!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
 <span class="line" id="L82">    <span class="tok-kw">const</span> attrs = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L83">        <span class="tok-kw">const</span> attributes = getAttributes(<span class="tok-builtin">@TypeOf</span>(value), <span class="tok-builtin">@TypeOf</span>(serializer));</span>
+<span class="line" id="L83">        <span class="tok-kw">const</span> attributes = getAttributes(<span class="tok-builtin">@TypeOf</span>(v), <span class="tok-builtin">@TypeOf</span>(s));</span>
 <span class="line" id="L84"></span>
 <span class="line" id="L85">        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
 <span class="line" id="L86">            <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
@@ -219,7 +219,7 @@
 <span class="line" id="L99">        <span class="tok-kw">if</span> (skipped) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownVariant;</span>
 <span class="line" id="L100">    }</span>
 <span class="line" id="L101"></span>
-<span class="line" id="L102">    <span class="tok-kw">var</span> m = <span class="tok-kw">try</span> serializer.serializeMap(<span class="tok-number">1</span>);</span>
+<span class="line" id="L102">    <span class="tok-kw">var</span> m = <span class="tok-kw">try</span> s.serializeMap(<span class="tok-number">1</span>);</span>
 <span class="line" id="L103">    <span class="tok-kw">const</span> map = m.map();</span>
 <span class="line" id="L104"></span>
 <span class="line" id="L105">    <span class="tok-kw">comptime</span> <span class="tok-kw">var</span> name = field.name;</span>
@@ -229,18 +229,18 @@
 <span class="line" id="L109">        <span class="tok-kw">if</span> (renamed) name = a.rename;</span>
 <span class="line" id="L110">    }</span>
 <span class="line" id="L111"></span>
-<span class="line" id="L112">    <span class="tok-kw">try</span> map.serializeEntry(name, <span class="tok-builtin">@field</span>(value, field.name));</span>
+<span class="line" id="L112">    <span class="tok-kw">try</span> map.serializeEntry(name, <span class="tok-builtin">@field</span>(v, field.name));</span>
 <span class="line" id="L113"></span>
 <span class="line" id="L114">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> map.end();</span>
 <span class="line" id="L115">}</span>
 <span class="line" id="L116"></span>
 <span class="line" id="L117"><span class="tok-kw">fn</span> <span class="tok-fn">serializeUntaggedVariant</span>(</span>
 <span class="line" id="L118">    ally: ?std.mem.Allocator,</span>
-<span class="line" id="L119">    value: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L120">    serializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L119">    v: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L120">    s: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L121">    <span class="tok-kw">comptime</span> field: std.builtin.Type.UnionField,</span>
-<span class="line" id="L122">) <span class="tok-builtin">@TypeOf</span>(serializer).Err!<span class="tok-builtin">@TypeOf</span>(serializer).Ok {</span>
-<span class="line" id="L123">    <span class="tok-kw">return</span> getty_serialize(ally, <span class="tok-builtin">@field</span>(value, field.name), serializer);</span>
+<span class="line" id="L122">) <span class="tok-builtin">@TypeOf</span>(s).Err!<span class="tok-builtin">@TypeOf</span>(s).Ok {</span>
+<span class="line" id="L123">    <span class="tok-kw">return</span> getty_serialize(ally, <span class="tok-builtin">@field</span>(v, field.name), s);</span>
 <span class="line" id="L124">}</span>
 <span class="line" id="L125"></span>
 <span class="line" id="L126"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - union&quot;</span> {</span>
