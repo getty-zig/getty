@@ -33,19 +33,19 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
     var arr = [_]u8{0} ** (max_ipv6_chars + max_port_chars);
 
     // UNREACHABLE: With the size values used in the array's declaration, there
     // should always be enough space for an IPv4 or IPv6 address.
-    var buf = std.fmt.bufPrint(&arr, "{}", .{value}) catch unreachable;
+    var buf = std.fmt.bufPrint(&arr, "{}", .{v}) catch unreachable;
 
-    return try serializer.serializeString(buf);
+    return try s.serializeString(buf);
 }
 
 test "serialize - std.net.Address" {

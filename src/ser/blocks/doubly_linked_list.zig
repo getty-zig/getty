@@ -15,16 +15,16 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    var s = try serializer.serializeSeq(value.len);
-    const seq = s.seq();
+    var ss = try s.serializeSeq(v.len);
+    const seq = ss.seq();
     {
-        var iterator = value.first;
+        var iterator = v.first;
         while (iterator) |node| : (iterator = node.next) {
             try seq.serializeElement(node.data);
         }

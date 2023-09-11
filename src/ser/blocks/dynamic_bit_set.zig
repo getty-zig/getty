@@ -17,11 +17,11 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
-    return try blocks.DynamicBitSetUnmanaged.serialize(ally, value.unmanaged, serializer);
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
+    return try blocks.DynamicBitSetUnmanaged.serialize(ally, v.unmanaged, s);
 }
 
 test "serialize - std.DynamicBitSet" {

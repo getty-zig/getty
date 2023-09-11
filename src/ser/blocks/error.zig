@@ -16,12 +16,11 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
-    const String = []const u8;
-    return try getty_serialize(ally, @as(String, @errorName(value)), serializer);
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
+    return try getty_serialize(ally, @as([]const u8, @errorName(v)), s);
 }
 
 test "serialize - error" {

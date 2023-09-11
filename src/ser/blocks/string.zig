@@ -15,23 +15,23 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    const T = @TypeOf(value);
+    const T = @TypeOf(v);
 
     comptime std.debug.assert(std.meta.trait.isZigString(T));
 
     // If there is a sentinel value, avoid serializing anything after it.
     if (comptime std.meta.sentinel(T)) |sentinel| {
-        const i = std.mem.indexOfSentinel(u8, sentinel, value);
-        return try serializer.serializeString(value[0..i]);
+        const i = std.mem.indexOfSentinel(u8, sentinel, v);
+        return try s.serializeString(v[0..i]);
     }
 
-    return try serializer.serializeString(value);
+    return try s.serializeString(v);
 }
 
 test "serialize - string" {

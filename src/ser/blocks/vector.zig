@@ -16,14 +16,14 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
-    const info = @typeInfo(@TypeOf(value)).Vector;
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
+    const info = @typeInfo(@TypeOf(v)).Vector;
 
     const Array = [info.len]info.child;
-    return try getty_serialize(ally, @as(Array, value), serializer);
+    return try getty_serialize(ally, @as(Array, v), s);
 }
 
 test "serialize - vector" {

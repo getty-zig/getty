@@ -19,17 +19,17 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    const T = @TypeOf(value);
+    const T = @TypeOf(v);
     const is_literal = @typeInfo(T) == .EnumLiteral;
 
-    var name = @tagName(value);
-    const index = if (is_literal) 0 else @intFromEnum(value);
+    var name = @tagName(v);
+    const index = if (is_literal) 0 else @intFromEnum(v);
 
     // Process attributes.
     //
@@ -37,11 +37,11 @@ pub fn serialize(
     // information), hence why this if statement is here.
     if (!is_literal) {
         const fields = std.meta.fields(T);
-        const attributes = comptime getAttributes(T, @TypeOf(serializer));
+        const attributes = comptime getAttributes(T, @TypeOf(s));
 
         if (attributes) |attrs| {
             inline for (fields) |field| {
-                const tag_matches = value == @field(T, field.name);
+                const tag_matches = v == @field(T, field.name);
 
                 if (tag_matches) {
                     const attrs_exist = @hasField(@TypeOf(attrs), field.name);
@@ -62,7 +62,7 @@ pub fn serialize(
         }
     }
 
-    return try serializer.serializeEnum(index, name);
+    return try s.serializeEnum(index, name);
 }
 
 test "serialize - enum" {

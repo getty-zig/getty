@@ -16,15 +16,15 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    const T = @TypeOf(value);
+    const T = @TypeOf(v);
     const fields = std.meta.fields(T);
-    const attributes = comptime getAttributes(T, @TypeOf(serializer));
+    const attributes = comptime getAttributes(T, @TypeOf(s));
 
     // The number of fields that will be serialized.
     //
@@ -45,8 +45,8 @@ pub fn serialize(
         break :blk len;
     };
 
-    var s = try serializer.serializeStruct(@typeName(T), length);
-    const st = s.structure();
+    var ss = try s.serializeStruct(@typeName(T), length);
+    const st = ss.structure();
 
     inline for (fields) |field| {
         const attrs = comptime blk: {
@@ -82,7 +82,7 @@ pub fn serialize(
             break :blk n;
         };
 
-        try st.serializeField(name, @field(value, field.name));
+        try st.serializeField(name, @field(v, field.name));
     }
 
     return try st.end();

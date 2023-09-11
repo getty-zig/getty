@@ -20,16 +20,16 @@ pub fn serialize(
     /// An optional memory allocator.
     allocator: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = allocator;
 
-    var m = try serializer.serializeMap(value.count());
+    var m = try s.serializeMap(v.count());
     const map = m.map();
 
-    var mut = value;
+    var mut = v;
     var it = mut.iterator();
     while (it.next()) |entry| {
         try map.serializeEntry(entry.key, entry.value.*);

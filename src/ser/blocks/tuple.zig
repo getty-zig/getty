@@ -15,18 +15,18 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    const T = @TypeOf(value);
+    const T = @TypeOf(v);
 
-    var s = try serializer.serializeSeq(std.meta.fields(T).len);
-    const seq = s.seq();
+    var ss = try s.serializeSeq(std.meta.fields(T).len);
+    const seq = ss.seq();
     inline for (@typeInfo(T).Struct.fields) |field| {
-        try seq.serializeElement(@field(value, field.name));
+        try seq.serializeElement(@field(v, field.name));
     }
     return try seq.end();
 }

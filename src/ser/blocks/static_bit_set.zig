@@ -19,19 +19,19 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
-    const T = @TypeOf(value);
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
+    const T = @TypeOf(v);
 
     const is_int_bitset = comptime std.mem.startsWith(u8, @typeName(T), "bit_set.IntegerBitSet");
     const is_array_bitset = comptime std.mem.startsWith(u8, @typeName(T), "bit_set.ArrayBitSet");
 
     if (is_int_bitset) {
-        return try blocks.IntegerBitSet.serialize(ally, value, serializer);
+        return try blocks.IntegerBitSet.serialize(ally, v, s);
     } else if (is_array_bitset) {
-        return try blocks.ArrayBitSet.serialize(ally, value, serializer);
+        return try blocks.ArrayBitSet.serialize(ally, v, s);
     } else {
         // UNREACHABLE: The is function should guarantee that only
         // std.IntegerBitSet or std.ArrayBitSet values are passed to this

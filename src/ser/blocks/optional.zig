@@ -15,13 +15,13 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    return try if (value) |v| serializer.serializeSome(v) else serializer.serializeNull();
+    return try if (v) |some| s.serializeSome(some) else s.serializeNull();
 }
 
 test "serialize - optional" {

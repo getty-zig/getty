@@ -16,22 +16,22 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    value: anytype,
+    v: anytype,
     /// A `getty.Serializer` interface value.
-    serializer: anytype,
-) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    s: anytype,
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     _ = ally;
 
-    const cap = value.capacity();
+    const cap = v.capacity();
 
-    var s = try serializer.serializeSeq(cap);
-    const seq = s.seq();
+    var ss = try s.serializeSeq(cap);
+    const seq = ss.seq();
 
     if (cap == 0) {
         return try seq.end();
     }
 
-    const MaskInt = @TypeOf(value).MaskInt;
+    const MaskInt = @TypeOf(v).MaskInt;
     const zero = @as(MaskInt, 0);
     const one = @as(MaskInt, 1);
 
@@ -41,7 +41,7 @@ pub fn serialize(
     // Serialize bits from N to M, where N is value's bit length and M is
     // the position of the last set bit in value.
     {
-        var it = value.iterator(.{ .direction = .reverse });
+        var it = v.iterator(.{ .direction = .reverse });
         var i: usize = cap - 1;
 
         while (it.next()) |pos| {
