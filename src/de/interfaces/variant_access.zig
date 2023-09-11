@@ -7,11 +7,11 @@ pub fn VariantAccess(
     /// An implementing type.
     comptime Impl: type,
     /// The error set to be returned by the interface's methods upon failure.
-    comptime Err: type,
+    comptime E: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        payloadSeed: PayloadSeedFn(Impl, Err) = null,
-        payload: ?PayloadFn(Impl, Err) = null,
+        payloadSeed: PayloadSeedFn(Impl, E) = null,
+        payload: ?PayloadFn(Impl, E) = null,
         isPayloadAllocated: ?IsPayloadAllocatedFn(Impl) = null,
     },
 ) type {
@@ -22,9 +22,9 @@ pub fn VariantAccess(
 
             const Self = @This();
 
-            pub const Error = Err;
+            pub const Error = E;
 
-            pub fn payloadSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            pub fn payloadSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.payloadSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn VariantAccess(
                 @compileError("payloadSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime Payload: type) Err!Payload {
+            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime Payload: type) E!Payload {
                 if (methods.payload) |func| {
                     return try func(self.impl, ally, Payload);
                 }
@@ -59,9 +59,9 @@ pub fn VariantAccess(
     };
 }
 
-fn PayloadSeedFn(comptime Impl: type, comptime Err: type) type {
+fn PayloadSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -72,9 +72,9 @@ fn PayloadSeedFn(comptime Impl: type, comptime Err: type) type {
     return ?@TypeOf(Lambda.func);
 }
 
-fn PayloadFn(comptime Impl: type, comptime Err: type) type {
+fn PayloadFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Payload: type) Err!Payload {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Payload: type) E!Payload {
             _ = impl;
             _ = ally;
 
