@@ -61,7 +61,10 @@ pub fn UnionAccess(
 
 fn VariantSeedFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };
@@ -71,7 +74,10 @@ fn VariantSeedFn(comptime Impl: type, comptime Err: type) type {
 
 fn VariantFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, comptime T: type) Err!T {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime T: type) Err!T {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };

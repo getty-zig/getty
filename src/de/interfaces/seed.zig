@@ -48,7 +48,10 @@ pub fn Seed(
 
 fn DeserializeFn(comptime Impl: type, comptime Value: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };

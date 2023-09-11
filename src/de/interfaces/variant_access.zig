@@ -61,7 +61,10 @@ pub fn VariantAccess(
 
 fn PayloadSeedFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };
@@ -71,7 +74,10 @@ fn PayloadSeedFn(comptime Impl: type, comptime Err: type) type {
 
 fn PayloadFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, comptime Payload: type) Err!Payload {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Payload: type) Err!Payload {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };

@@ -261,7 +261,10 @@ pub fn Deserializer(
 
 fn DeserializeFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, visitor: anytype) Err!@TypeOf(visitor).Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, visitor: anytype) Err!@TypeOf(visitor).Value {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };

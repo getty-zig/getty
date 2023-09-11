@@ -61,7 +61,10 @@ pub fn SeqAccess(
 
 fn NextElementSeedFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };
@@ -71,7 +74,10 @@ fn NextElementSeedFn(comptime Impl: type, comptime Err: type) type {
 
 fn NextElementFn(comptime Impl: type, comptime Err: type) type {
     const Lambda = struct {
-        fn func(_: Impl, _: ?std.mem.Allocator, comptime Elem: type) Err!?Elem {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Elem: type) Err!?Elem {
+            _ = impl;
+            _ = ally;
+
             unreachable;
         }
     };
