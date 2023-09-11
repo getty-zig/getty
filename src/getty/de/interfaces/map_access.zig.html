@@ -120,13 +120,13 @@
 <span class="line" id="L7">    <span class="tok-comment">/// An implementing type.</span></span>
 <span class="line" id="L8">    <span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>,</span>
 <span class="line" id="L9">    <span class="tok-comment">/// The error set to be returned by the interface's methods upon failure.</span></span>
-<span class="line" id="L10">    <span class="tok-kw">comptime</span> Err: <span class="tok-type">type</span>,</span>
+<span class="line" id="L10">    <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>,</span>
 <span class="line" id="L11">    <span class="tok-comment">/// A namespace containing methods that `Impl` must define or can override.</span></span>
 <span class="line" id="L12">    <span class="tok-kw">comptime</span> methods: <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L13">        nextKeySeed: NextKeySeedFn(Impl, Err) = <span class="tok-null">null</span>,</span>
-<span class="line" id="L14">        nextValueSeed: NextValueSeedFn(Impl, Err) = <span class="tok-null">null</span>,</span>
-<span class="line" id="L15">        nextKey: ?NextKeyFn(Impl, Err) = <span class="tok-null">null</span>,</span>
-<span class="line" id="L16">        nextValue: ?NextValueFn(Impl, Err) = <span class="tok-null">null</span>,</span>
+<span class="line" id="L13">        nextKeySeed: NextKeySeedFn(Impl, E) = <span class="tok-null">null</span>,</span>
+<span class="line" id="L14">        nextValueSeed: NextValueSeedFn(Impl, E) = <span class="tok-null">null</span>,</span>
+<span class="line" id="L15">        nextKey: ?NextKeyFn(Impl, E) = <span class="tok-null">null</span>,</span>
+<span class="line" id="L16">        nextValue: ?NextValueFn(Impl, E) = <span class="tok-null">null</span>,</span>
 <span class="line" id="L17">        isKeyAllocated: ?IsAllocatedFn(Impl) = <span class="tok-null">null</span>,</span>
 <span class="line" id="L18">        isValueAllocated: ?IsAllocatedFn(Impl) = <span class="tok-null">null</span>,</span>
 <span class="line" id="L19">    },</span>
@@ -138,9 +138,9 @@
 <span class="line" id="L25"></span>
 <span class="line" id="L26">            <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
 <span class="line" id="L27"></span>
-<span class="line" id="L28">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Error = Err;</span>
+<span class="line" id="L28">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Error = E;</span>
 <span class="line" id="L29"></span>
-<span class="line" id="L30">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextKeySeed</span>(self: Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Err!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L30">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextKeySeed</span>(self: Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) E!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L31">                <span class="tok-kw">if</span> (methods.nextKeySeed) |func| {</span>
 <span class="line" id="L32">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> func(self.impl, ally, seed);</span>
 <span class="line" id="L33">                }</span>
@@ -148,7 +148,7 @@
 <span class="line" id="L35">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;nextKeySeed is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Impl));</span>
 <span class="line" id="L36">            }</span>
 <span class="line" id="L37"></span>
-<span class="line" id="L38">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Err!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L38">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: Self, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) E!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L39">                <span class="tok-kw">if</span> (methods.nextValueSeed) |func| {</span>
 <span class="line" id="L40">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> func(self.impl, ally, seed);</span>
 <span class="line" id="L41">                }</span>
@@ -156,7 +156,7 @@
 <span class="line" id="L43">                <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;nextValueSeed is not implemented by type: &quot;</span> ++ <span class="tok-builtin">@typeName</span>(Impl));</span>
 <span class="line" id="L44">            }</span>
 <span class="line" id="L45"></span>
-<span class="line" id="L46">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextKey</span>(self: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Key: <span class="tok-type">type</span>) Err!?Key {</span>
+<span class="line" id="L46">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextKey</span>(self: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Key: <span class="tok-type">type</span>) E!?Key {</span>
 <span class="line" id="L47">                <span class="tok-kw">if</span> (methods.nextKey) |func| {</span>
 <span class="line" id="L48">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> func(self.impl, ally, Key);</span>
 <span class="line" id="L49">                }</span>
@@ -167,7 +167,7 @@
 <span class="line" id="L54">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> self.nextKeySeed(ally, ds);</span>
 <span class="line" id="L55">            }</span>
 <span class="line" id="L56"></span>
-<span class="line" id="L57">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextValue</span>(self: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Value: <span class="tok-type">type</span>) Err!Value {</span>
+<span class="line" id="L57">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextValue</span>(self: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Value: <span class="tok-type">type</span>) E!Value {</span>
 <span class="line" id="L58">                <span class="tok-kw">if</span> (methods.nextValue) |func| {</span>
 <span class="line" id="L59">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> func(self.impl, ally, Value);</span>
 <span class="line" id="L60">                }</span>
@@ -202,9 +202,9 @@
 <span class="line" id="L89">    };</span>
 <span class="line" id="L90">}</span>
 <span class="line" id="L91"></span>
-<span class="line" id="L92"><span class="tok-kw">fn</span> <span class="tok-fn">NextKeySeedFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Err: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L92"><span class="tok-kw">fn</span> <span class="tok-fn">NextKeySeedFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L93">    <span class="tok-kw">const</span> Lambda = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L94">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Err!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L94">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) E!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L95">            _ = impl;</span>
 <span class="line" id="L96">            _ = ally;</span>
 <span class="line" id="L97"></span>
@@ -215,9 +215,9 @@
 <span class="line" id="L102">    <span class="tok-kw">return</span> ?<span class="tok-builtin">@TypeOf</span>(Lambda.func);</span>
 <span class="line" id="L103">}</span>
 <span class="line" id="L104"></span>
-<span class="line" id="L105"><span class="tok-kw">fn</span> <span class="tok-fn">NextValueSeedFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Err: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L105"><span class="tok-kw">fn</span> <span class="tok-fn">NextValueSeedFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L106">    <span class="tok-kw">const</span> Lambda = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L107">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Err!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L107">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) E!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
 <span class="line" id="L108">            _ = impl;</span>
 <span class="line" id="L109">            _ = ally;</span>
 <span class="line" id="L110"></span>
@@ -228,9 +228,9 @@
 <span class="line" id="L115">    <span class="tok-kw">return</span> ?<span class="tok-builtin">@TypeOf</span>(Lambda.func);</span>
 <span class="line" id="L116">}</span>
 <span class="line" id="L117"></span>
-<span class="line" id="L118"><span class="tok-kw">fn</span> <span class="tok-fn">NextKeyFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Err: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L118"><span class="tok-kw">fn</span> <span class="tok-fn">NextKeyFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L119">    <span class="tok-kw">const</span> Lambda = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L120">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Key: <span class="tok-type">type</span>) Err!?Key {</span>
+<span class="line" id="L120">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Key: <span class="tok-type">type</span>) E!?Key {</span>
 <span class="line" id="L121">            _ = impl;</span>
 <span class="line" id="L122">            _ = ally;</span>
 <span class="line" id="L123"></span>
@@ -241,9 +241,9 @@
 <span class="line" id="L128">    <span class="tok-kw">return</span> <span class="tok-builtin">@TypeOf</span>(Lambda.func);</span>
 <span class="line" id="L129">}</span>
 <span class="line" id="L130"></span>
-<span class="line" id="L131"><span class="tok-kw">fn</span> <span class="tok-fn">NextValueFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> Err: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L131"><span class="tok-kw">fn</span> <span class="tok-fn">NextValueFn</span>(<span class="tok-kw">comptime</span> Impl: <span class="tok-type">type</span>, <span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L132">    <span class="tok-kw">const</span> Lambda = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L133">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Value: <span class="tok-type">type</span>) Err!Value {</span>
+<span class="line" id="L133">        <span class="tok-kw">fn</span> <span class="tok-fn">func</span>(impl: Impl, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Value: <span class="tok-type">type</span>) E!Value {</span>
 <span class="line" id="L134">            _ = impl;</span>
 <span class="line" id="L135">            _ = ally;</span>
 <span class="line" id="L136"></span>
