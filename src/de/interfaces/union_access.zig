@@ -6,29 +6,13 @@ const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 pub fn UnionAccess(
     /// An implementing type.
     comptime Impl: type,
-    /// The error set returned by the interface's methods upon failure.
-    comptime E: type,
+    /// The error set to be returned by the interface's methods upon failure.
+    comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        variantSeed: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
-                unreachable;
-            }
-        }.f) = null,
-
-        ////////////////////////////////////////////////////////////////////////
-        // Provided methods.
-        ////////////////////////////////////////////////////////////////////////
-
-        variant: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, comptime T: type) E!T {
-                unreachable;
-            }
-        }.f) = null,
-
-        /// Returns true if the variant deserialized by variantSeed was
-        /// allocated on the heap. Otherwise, false is returned.
-        isVariantAllocated: ?fn (Impl, comptime V: type) bool = null,
+        variantSeed: ?VariantSeedFn(Impl, Err) = null,
+        variant: ?VariantFn(Impl, Err) = null,
+        isVariantAllocated: ?IsVariantAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -38,33 +22,33 @@ pub fn UnionAccess(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Error = Err;
 
             pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                if (methods.variantSeed) |f| {
-                    return try f(self.impl, ally, seed);
+                if (methods.variantSeed) |func| {
+                    return try func(self.impl, ally, seed);
                 }
 
                 @compileError("variantSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime T: type) Error!T {
-                if (methods.variant) |f| {
-                    return try f(self.impl, ally, T);
-                } else {
-                    var ds = DefaultSeed(T){};
-                    const seed = ds.seed();
-
-                    return try self.variantSeed(ally, seed);
+            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime Variant: type) Error!Variant {
+                if (methods.variant) |func| {
+                    return try func(self.impl, ally, Variant);
                 }
+
+                var ds = DefaultSeed(Variant){};
+                const seed = ds.seed();
+
+                return try self.variantSeed(ally, seed);
             }
 
-            pub fn isVariantAllocated(self: Self, comptime V: type) bool {
-                if (methods.isVariantAllocated) |f| {
-                    return f(self.impl, V);
+            pub fn isVariantAllocated(self: Self, comptime Variant: type) bool {
+                if (methods.isVariantAllocated) |func| {
+                    return func(self.impl, Variant);
                 }
 
-                return @typeInfo(V) == .Pointer;
+                return @typeInfo(Variant) == .Pointer;
             }
         };
 
@@ -73,4 +57,28 @@ pub fn UnionAccess(
             return .{ .impl = impl };
         }
     };
+}
+
+fn VariantSeedFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn VariantFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, comptime T: type) Err!T {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn IsVariantAllocatedFn(comptime Impl: type) type {
+    return fn (Impl, comptime Variant: type) bool;
 }
