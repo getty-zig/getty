@@ -15,10 +15,10 @@ pub fn Seed(
     /// An implementing type.
     comptime Impl: type,
     /// The type produced by this seed.
-    comptime V: type,
+    comptime T: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        deserialize: DeserializeFn(Impl, V) = null,
+        deserialize: DeserializeFn(Impl, T) = null,
     },
 ) type {
     return struct {
@@ -28,9 +28,9 @@ pub fn Seed(
 
             const Self = @This();
 
-            pub const Value = V;
+            pub const Value = T;
 
-            pub fn deserialize(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
+            pub fn deserialize(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!T {
                 if (methods.deserialize) |func| {
                     return try func(self.impl, ally, deserializer);
                 }

@@ -7,11 +7,11 @@ pub fn UnionAccess(
     /// An implementing type.
     comptime Impl: type,
     /// The error set to be returned by the interface's methods upon failure.
-    comptime Err: type,
+    comptime E: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        variantSeed: VariantSeedFn(Impl, Err) = null,
-        variant: ?VariantFn(Impl, Err) = null,
+        variantSeed: VariantSeedFn(Impl, E) = null,
+        variant: ?VariantFn(Impl, E) = null,
         isVariantAllocated: ?IsVariantAllocatedFn(Impl) = null,
     },
 ) type {
@@ -22,9 +22,9 @@ pub fn UnionAccess(
 
             const Self = @This();
 
-            pub const Error = Err;
+            pub const Error = E;
 
-            pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.variantSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn UnionAccess(
                 @compileError("variantSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime Variant: type) Err!Variant {
+            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime Variant: type) E!Variant {
                 if (methods.variant) |func| {
                     return try func(self.impl, ally, Variant);
                 }
@@ -59,9 +59,9 @@ pub fn UnionAccess(
     };
 }
 
-fn VariantSeedFn(comptime Impl: type, comptime Err: type) type {
+fn VariantSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -72,9 +72,9 @@ fn VariantSeedFn(comptime Impl: type, comptime Err: type) type {
     return ?@TypeOf(Lambda.func);
 }
 
-fn VariantFn(comptime Impl: type, comptime Err: type) type {
+fn VariantFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime T: type) Err!T {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime T: type) E!T {
             _ = impl;
             _ = ally;
 
