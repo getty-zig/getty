@@ -51,7 +51,7 @@ pub fn Serializer(
             pub const Ok = T;
 
             /// Error set used upon failure.
-            pub const Error = E;
+            pub const Err = E;
 
             /// User-defined Serialization Tuple.
             pub const user_st = blk: {
@@ -192,8 +192,8 @@ pub fn Serializer(
 
                 // If Map is null, then this function will raise a compile
                 // error, so it doesn't really matter what the return type will
-                // be. However, we use Error!Impl specifically for its clean
-                // error messages.
+                // be. However, we use E!Impl specifically for its clean error
+                // messages.
                 break :blk E!Impl;
             } {
                 if (Map == null) {
@@ -224,8 +224,8 @@ pub fn Serializer(
 
                 // If Seq is null, then this function will raise a compile
                 // error, so it doesn't really matter what the return type will
-                // be. However, we use Error!Impl specifically for its clean
-                // error messages.
+                // be. However, we use E!Impl specifically for its clean error
+                // messages.
                 break :blk E!Impl;
             } {
                 if (Seq == null) {
@@ -269,8 +269,8 @@ pub fn Serializer(
 
                 // If Struct is null, then this function will raise a compile
                 // error, so it doesn't really matter what the return type will
-                // be. However, we use Error!Impl specifically for its clean
-                // error messages.
+                // be. However, we use E!Impl specifically for its clean error
+                // messages.
                 break :blk E!Impl;
             } {
                 if (Struct == null) {
@@ -301,44 +301,44 @@ pub fn Serializer(
     };
 }
 
-fn SerializeAnyFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
-    return ?fn (impl: Impl, value: anytype) Err!Ok;
+fn SerializeAnyFn(comptime Impl: type, comptime T: type, comptime E: type) type {
+    return ?fn (impl: Impl, value: anytype) E!T;
 }
 
-fn SerializeBoolFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
-    return ?fn (impl: Impl, value: bool) Err!Ok;
+fn SerializeBoolFn(comptime Impl: type, comptime T: type, comptime E: type) type {
+    return ?fn (impl: Impl, value: bool) E!T;
 }
 
-fn SerializeEnumFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
-    return ?fn (impl: Impl, index: anytype, name: []const u8) Err!Ok;
+fn SerializeEnumFn(comptime Impl: type, comptime T: type, comptime E: type) type {
+    return ?fn (impl: Impl, index: anytype, name: []const u8) E!T;
 }
 
-fn SerializeMapSeqFn(comptime Impl: type, comptime MapSeq: ?type, comptime Err: type) type {
+fn SerializeMapSeqFn(comptime Impl: type, comptime MapSeq: ?type, comptime E: type) type {
     return ?fn (impl: Impl, length: ?usize) blk: {
         if (MapSeq) |T| {
-            break :blk Err!T;
+            break :blk E!T;
         }
 
-        // If MapSeq is null, then this function will raise a compile error,
-        // so it doesn't really matter what the return type will be. However,
-        // we use Error!Impl specifically for its clean error messages.
-        break :blk Err!Impl;
+        // If MapSeq is null, then this function will raise a compile error, so
+        // it doesn't really matter what the return type will be. However, we
+        // use E!Impl specifically for its clean error messages.
+        break :blk E!Impl;
     };
 }
 
-fn SerializeNothingFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
-    return ?fn (impl: Impl) Err!Ok;
+fn SerializeNothingFn(comptime Impl: type, comptime T: type, comptime E: type) type {
+    return ?fn (impl: Impl) E!T;
 }
 
-fn SerializeStructFn(comptime Impl: type, comptime Struct: ?type, comptime Err: type) type {
+fn SerializeStructFn(comptime Impl: type, comptime Struct: ?type, comptime E: type) type {
     return ?fn (impl: Impl, comptime name: []const u8, length: usize) blk: {
         if (Struct) |T| {
-            break :blk Err!T;
+            break :blk E!T;
         }
 
-        // If Struct is null, then this function will raise a compile error,
-        // so it doesn't really matter what the return type will be. However,
-        // we use Error!Impl specifically for its clean error messages.
-        break :blk Err!Impl;
+        // If Struct is null, then this function will raise a compile error, so
+        // it doesn't really matter what the return type will be. However, we
+        // use E!Impl specifically for its clean error messages.
+        break :blk E!Impl;
     };
 }

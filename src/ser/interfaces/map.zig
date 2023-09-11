@@ -25,7 +25,7 @@ pub fn Map(
             pub const Ok = T;
 
             /// The error set used upon failure.
-            pub const Error = E;
+            pub const Err = E;
 
             /// Serialize a map key.
             pub fn serializeKey(self: Self, key: anytype) E!void {

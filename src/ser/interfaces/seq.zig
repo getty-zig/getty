@@ -23,7 +23,7 @@ pub fn Seq(
             pub const Ok = T;
 
             /// The error set used upon failure.
-            pub const Error = E;
+            pub const Err = E;
 
             /// Serialize a sequence element.
             pub fn serializeElement(self: Self, elem: anytype) E!void {

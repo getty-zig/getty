@@ -23,7 +23,7 @@ pub fn Structure(
             pub const Ok = T;
 
             /// The error set used upon failure.
-            pub const Error = E;
+            pub const Err = E;
 
             /// Serialize a struct field.
             pub fn serializeField(self: Self, comptime key: []const u8, value: anytype) E!void {
@@ -51,10 +51,10 @@ pub fn Structure(
     };
 }
 
-fn SerializeFieldFn(comptime Impl: type, comptime Err: type) type {
-    return ?fn (impl: Impl, comptime key: []const u8, value: anytype) Err!void;
+fn SerializeFieldFn(comptime Impl: type, comptime E: type) type {
+    return ?fn (impl: Impl, comptime key: []const u8, value: anytype) E!void;
 }
 
-fn EndFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
-    return ?fn (impl: Impl) Err!Ok;
+fn EndFn(comptime Impl: type, comptime T: type, comptime E: type) type {
+    return ?fn (impl: Impl) E!T;
 }
