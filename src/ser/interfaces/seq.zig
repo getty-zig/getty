@@ -2,9 +2,9 @@
 pub fn Seq(
     /// An implementing type.
     comptime Impl: type,
-    /// The successful return type of a `Seq`'s `end` method.
+    /// The successful return type of the interface's `end` method.
     comptime O: type,
-    /// The error set returned by a `Seq`'s methods upon failure.
+    /// The error set to be returned by the interface's methods upon failure.
     comptime E: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
