@@ -6,26 +6,13 @@ const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 pub fn SeqAccess(
     /// An implementing type.
     comptime Impl: type,
-    /// The error set returned by the interface's methods upon failure.
-    comptime E: type,
+    /// The error set to be returned by the interface's methods upon failure.
+    comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        nextElementSeed: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
-                unreachable;
-            }
-        }.f) = null,
-
-        // Provided method.
-        nextElement: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, comptime Value: type) E!?Value {
-                unreachable;
-            }
-        }.f) = null,
-
-        /// Returns true if the latest value deserialized by nextElementSeed was
-        /// allocated on the heap. Otherwise, false is returned.
-        isElementAllocated: ?fn (Impl, comptime T: type) bool = null,
+        nextElementSeed: NextElementSeedFn(Impl, Err) = null,
+        nextElement: ?NextElementFn(Impl, Err) = null,
+        isElementAllocated: ?IsElementAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -35,33 +22,33 @@ pub fn SeqAccess(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Error = Err;
 
-            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
-                if (methods.nextElementSeed) |f| {
-                    return try f(self.impl, ally, seed);
+            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
+                if (methods.nextElementSeed) |func| {
+                    return try func(self.impl, ally, seed);
                 }
 
                 @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Value: type) Error!?Value {
-                if (methods.nextElement) |f| {
-                    return try f(self.impl, ally, Value);
-                } else {
-                    var seed = DefaultSeed(Value){};
-                    const ds = seed.seed();
-
-                    return try self.nextElementSeed(ally, ds);
+            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Elem: type) Err!?Elem {
+                if (methods.nextElement) |func| {
+                    return try func(self.impl, ally, Elem);
                 }
+
+                var seed = DefaultSeed(Elem){};
+                const ds = seed.seed();
+
+                return try self.nextElementSeed(ally, ds);
             }
 
-            pub fn isElementAllocated(self: Self, comptime T: type) bool {
-                if (methods.isElementAllocated) |f| {
-                    return f(self.impl, T);
+            pub fn isElementAllocated(self: Self, comptime Elem: type) bool {
+                if (methods.isElementAllocated) |func| {
+                    return func(self.impl, Elem);
                 }
 
-                return @typeInfo(T) == .Pointer;
+                return @typeInfo(Elem) == .Pointer;
             }
         };
 
@@ -70,4 +57,34 @@ pub fn SeqAccess(
             return .{ .impl = impl };
         }
     };
+}
+
+fn NextElementSeedFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
+            _ = impl;
+            _ = ally;
+
+            unreachable;
+        }
+    };
+
+    return ?@TypeOf(Lambda.func);
+}
+
+fn NextElementFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Elem: type) Err!?Elem {
+            _ = impl;
+            _ = ally;
+
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn IsElementAllocatedFn(comptime Impl: type) type {
+    return fn (Impl, comptime Elem: type) bool;
 }
