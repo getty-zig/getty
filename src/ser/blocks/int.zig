@@ -18,13 +18,13 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     _ = ally;
 
-    return try s.serializeInt(v);
+    return try serializer.serializeInt(value);
 }
 
 test "serialize - integer" {

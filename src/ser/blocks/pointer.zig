@@ -16,19 +16,19 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
-    const info = @typeInfo(@TypeOf(v)).Pointer;
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    const info = @typeInfo(@TypeOf(value)).Pointer;
 
     // Serialize array pointers as slices so that strings are handled properly.
     if (@typeInfo(info.child) == .Array) {
         const Slice = []const std.meta.Elem(info.child);
-        return try getty_serialize(ally, @as(Slice, v), s);
+        return try getty_serialize(ally, @as(Slice, value), serializer);
     }
 
-    return try getty_serialize(ally, v.*, s);
+    return try getty_serialize(ally, value.*, serializer);
 }
 
 test "serialize - pointer" {

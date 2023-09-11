@@ -16,11 +16,11 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
-    return try getty_serialize(ally, v.hash_map, s);
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    return try getty_serialize(ally, value.hash_map, serializer);
 }
 
 test "serialize - buf map" {

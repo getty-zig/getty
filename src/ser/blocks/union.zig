@@ -18,11 +18,11 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
-    const T = @TypeOf(v);
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    const T = @TypeOf(value);
     const info = @typeInfo(T).Union;
 
     if (info.tag_type == null) {
@@ -34,10 +34,10 @@ pub fn serialize(
     // for loop here so that we can use the field name provided by @typeInfo
     // instead.
     inline for (info.fields) |field| {
-        const tag_matches = v == @field(T, field.name);
+        const tag_matches = value == @field(T, field.name);
 
         if (tag_matches) {
-            return try serializeVariant(ally, v, s, field);
+            return try serializeVariant(ally, value, serializer, field);
         }
     }
 
@@ -49,12 +49,12 @@ pub fn serialize(
 
 fn serializeVariant(
     ally: ?std.mem.Allocator,
-    v: anytype,
-    s: anytype,
+    value: anytype,
+    serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const tag: Tag = comptime blk: {
-        const attributes = getAttributes(@TypeOf(v), @TypeOf(s));
+        const attributes = getAttributes(@TypeOf(value), @TypeOf(serializer));
 
         if (attributes) |attrs| {
             if (@hasField(@TypeOf(attrs), "Container")) {
@@ -68,19 +68,19 @@ fn serializeVariant(
     };
 
     return switch (tag) {
-        .external => try serializeExternallyTaggedVariant(v, s, field),
-        .untagged => try serializeUntaggedVariant(ally, v, s, field),
+        .external => try serializeExternallyTaggedVariant(value, serializer, field),
+        .untagged => try serializeUntaggedVariant(ally, value, serializer, field),
         .internal => @compileError("TODO: internally tagged representation"),
     };
 }
 
 fn serializeExternallyTaggedVariant(
-    v: anytype,
-    s: anytype,
+    value: anytype,
+    serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const attrs = comptime blk: {
-        const attributes = getAttributes(@TypeOf(v), @TypeOf(s));
+        const attributes = getAttributes(@TypeOf(value), @TypeOf(serializer));
 
         if (attributes) |attrs| {
             if (@hasField(@TypeOf(attrs), field.name)) {
@@ -99,7 +99,7 @@ fn serializeExternallyTaggedVariant(
         if (skipped) return error.UnknownVariant;
     }
 
-    var m = try s.serializeMap(1);
+    var m = try serializer.serializeMap(1);
     const map = m.map();
 
     comptime var name = field.name;
@@ -109,18 +109,18 @@ fn serializeExternallyTaggedVariant(
         if (renamed) name = a.rename;
     }
 
-    try map.serializeEntry(name, @field(v, field.name));
+    try map.serializeEntry(name, @field(value, field.name));
 
     return try map.end();
 }
 
 fn serializeUntaggedVariant(
     ally: ?std.mem.Allocator,
-    v: anytype,
-    s: anytype,
+    value: anytype,
+    serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
-    return getty_serialize(ally, @field(v, field.name), s);
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    return getty_serialize(ally, @field(value, field.name), serializer);
 }
 
 test "serialize - union" {

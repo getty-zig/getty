@@ -20,13 +20,12 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     _ = ally;
-
-    const K = std.meta.FieldType(@TypeOf(v), .counts).Key;
+    const K = std.meta.FieldType(@TypeOf(value), .counts).Key;
     const fields = std.meta.fields(K);
 
     // Store the keys contained in the multiset so we don't need to find them again.
@@ -35,17 +34,17 @@ pub fn serialize(
     var count: usize = 0;
     inline for (fields) |field| {
         const key = @as(K, @enumFromInt(field.value));
-        if (v.contains(key)) {
+        if (value.contains(key)) {
             keys[count] = key;
             count += 1;
         }
     }
 
-    var m = try s.serializeMap(count);
+    var m = try serializer.serializeMap(count);
     const map = m.map();
 
     for (keys[0..count]) |key| {
-        try map.serializeEntry(key, v.getCount(key));
+        try map.serializeEntry(key, value.getCount(key));
     }
 
     return try map.end();

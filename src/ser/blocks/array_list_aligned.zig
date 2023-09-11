@@ -15,15 +15,15 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     _ = ally;
 
-    var ss = try s.serializeSeq(v.items.len);
-    const seq = ss.seq();
-    for (v.items) |elem| {
+    var s = try serializer.serializeSeq(value.items.len);
+    const seq = s.seq();
+    for (value.items) |elem| {
         try seq.serializeElement(elem);
     }
     return try seq.end();

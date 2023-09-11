@@ -15,16 +15,16 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     _ = ally;
 
-    const bit_length = @TypeOf(v).bit_length;
+    const bit_length = @TypeOf(value).bit_length;
 
-    var ss = try s.serializeSeq(bit_length);
-    const seq = ss.seq();
+    var s = try serializer.serializeSeq(bit_length);
+    const seq = s.seq();
 
     if (bit_length == 0) {
         return try seq.end();
@@ -36,12 +36,12 @@ pub fn serialize(
     // errors related to the shift bit being too large or something.
     comptime var i: usize = bit_length - 1;
     inline while (i > 0) : (i -= 1) {
-        const bit = (v.mask & (1 << i)) >> i;
+        const bit = (value.mask & (1 << i)) >> i;
         try seq.serializeElement(bit);
     }
 
     // Serialize 0th bit.
-    const bit = (v.mask & (1 << 0)) >> 0;
+    const bit = (value.mask & (1 << 0)) >> 0;
     try seq.serializeElement(bit);
 
     return try seq.end();

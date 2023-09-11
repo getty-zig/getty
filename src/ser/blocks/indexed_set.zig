@@ -20,11 +20,11 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
-    return try getty_serialize(ally, v.bits, s);
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
+    return try getty_serialize(ally, value.bits, serializer);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {

@@ -15,15 +15,15 @@ pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,
     /// A value being serialized.
-    v: anytype,
+    value: anytype,
     /// A `getty.Serializer` interface value.
-    s: anytype,
-) @TypeOf(s).Err!@TypeOf(s).Ok {
+    serializer: anytype,
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     if (ally) |a| {
-        const str = try std.fmt.allocPrint(a, "{+/#}", .{v});
+        const str = try std.fmt.allocPrint(a, "{+/#}", .{value});
         defer a.free(str);
 
-        return try s.serializeString(str);
+        return try serializer.serializeString(str);
     }
 
     return error.MissingAllocator;
