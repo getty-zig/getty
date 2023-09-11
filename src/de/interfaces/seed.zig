@@ -14,15 +14,11 @@ const std = @import("std");
 pub fn Seed(
     /// An implementing type.
     comptime Impl: type,
-    /// The type produced by using this seed.
+    /// The type produced by this seed.
     comptime V: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        deserialize: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
-                unreachable;
-            }
-        }.f) = null,
+        deserialize: ?DeserializeFn(Impl, V) = null,
     },
 ) type {
     return struct {
@@ -35,8 +31,8 @@ pub fn Seed(
             pub const Value = V;
 
             pub fn deserialize(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!V {
-                if (methods.deserialize) |f| {
-                    return try f(self.impl, ally, deserializer);
+                if (methods.deserialize) |func| {
+                    return try func(self.impl, ally, deserializer);
                 }
 
                 @compileError("deserialize is not implemented by type: " ++ @typeName(Impl));
@@ -48,4 +44,14 @@ pub fn Seed(
             return .{ .impl = impl };
         }
     };
+}
+
+fn DeserializeFn(comptime Impl: type, comptime Value: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Error!Value {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
 }
