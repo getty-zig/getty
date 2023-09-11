@@ -6,26 +6,13 @@ const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
 pub fn VariantAccess(
     /// An implementing type.
     comptime Impl: type,
-    /// The error set returned by the interface's methods upon failure.
-    comptime E: type,
+    /// The error set to be returned by the interface's methods upon failure.
+    comptime Err: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        payloadSeed: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
-                unreachable;
-            }
-        }.f) = null,
-
-        // Provided method.
-        payload: ?@TypeOf(struct {
-            fn f(_: Impl, _: ?std.mem.Allocator, comptime T: type) E!T {
-                unreachable;
-            }
-        }.f) = null,
-
-        /// Returns true if the latest value deserialized by payloadSeed was
-        /// allocated on the heap. Otherwise, false is returned.
-        isPayloadAllocated: ?fn (Impl, comptime T: type) bool = null,
+        payloadSeed: ?PayloadSeedFn(Impl, Err) = null,
+        payload: ?PayloadFn(Impl, Err) = null,
+        isPayloadAllocated: ?IsPayloadAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -35,33 +22,33 @@ pub fn VariantAccess(
 
             const Self = @This();
 
-            pub const Error = E;
+            pub const Error = Err;
 
             pub fn payloadSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                if (methods.payloadSeed) |f| {
-                    return try f(self.impl, ally, seed);
+                if (methods.payloadSeed) |func| {
+                    return try func(self.impl, ally, seed);
                 }
 
                 @compileError("payloadSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime T: type) Error!T {
-                if (methods.payload) |f| {
-                    return try f(self.impl, ally, T);
-                } else {
-                    var ds = DefaultSeed(T){};
-                    const seed = ds.seed();
-
-                    return try self.payloadSeed(ally, seed);
+            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime Payload: type) Error!Payload {
+                if (methods.payload) |func| {
+                    return try func(self.impl, ally, Payload);
                 }
+
+                var ds = DefaultSeed(Payload){};
+                const seed = ds.seed();
+
+                return try self.payloadSeed(ally, seed);
             }
 
-            pub fn isPayloadAllocated(self: Self, comptime T: type) bool {
-                if (methods.isPayloadAllocated) |f| {
-                    return f(self.impl, T);
+            pub fn isPayloadAllocated(self: Self, comptime Payload: type) bool {
+                if (methods.isPayloadAllocated) |func| {
+                    return func(self.impl, Payload);
                 }
 
-                return @typeInfo(T) == .Pointer;
+                return @typeInfo(Payload) == .Pointer;
             }
         };
 
@@ -70,4 +57,28 @@ pub fn VariantAccess(
             return .{ .impl = impl };
         }
     };
+}
+
+fn PayloadSeedFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn PayloadFn(comptime Impl: type, comptime Err: type) type {
+    const Lambda = struct {
+        fn func(_: Impl, _: ?std.mem.Allocator, comptime Payload: type) Err!Payload {
+            unreachable;
+        }
+    };
+
+    return @TypeOf(Lambda.func);
+}
+
+fn IsPayloadAllocatedFn(comptime Impl: type) type {
+    return fn (Impl, comptime Payload: type) bool;
 }
