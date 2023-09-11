@@ -24,7 +24,7 @@ pub fn SeqAccess(
 
             pub const Error = Err;
 
-            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
                 if (methods.nextElementSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn SeqAccess(
                 @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Elem: type) Error!?Elem {
+            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Elem: type) Err!?Elem {
                 if (methods.nextElement) |func| {
                     return try func(self.impl, ally, Elem);
                 }

@@ -27,7 +27,7 @@ pub fn MapAccess(
 
             pub const Error = Err;
 
-            pub fn nextKeySeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            pub fn nextKeySeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!?@TypeOf(seed).Value {
                 if (methods.nextKeySeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -35,7 +35,7 @@ pub fn MapAccess(
                 @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextValueSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn nextValueSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
                 if (methods.nextValueSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -43,7 +43,7 @@ pub fn MapAccess(
                 @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextKey(self: Self, ally: ?std.mem.Allocator, comptime Key: type) Error!?Key {
+            pub fn nextKey(self: Self, ally: ?std.mem.Allocator, comptime Key: type) Err!?Key {
                 if (methods.nextKey) |func| {
                     return try func(self.impl, ally, Key);
                 }
@@ -54,7 +54,7 @@ pub fn MapAccess(
                 return try self.nextKeySeed(ally, ds);
             }
 
-            pub fn nextValue(self: Self, ally: ?std.mem.Allocator, comptime Value: type) Error!Value {
+            pub fn nextValue(self: Self, ally: ?std.mem.Allocator, comptime Value: type) Err!Value {
                 if (methods.nextValue) |func| {
                     return try func(self.impl, ally, Value);
                 }

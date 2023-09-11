@@ -24,7 +24,7 @@ pub fn UnionAccess(
 
             pub const Error = Err;
 
-            pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
                 if (methods.variantSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn UnionAccess(
                 @compileError("variantSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime Variant: type) Error!Variant {
+            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime Variant: type) Err!Variant {
                 if (methods.variant) |func| {
                     return try func(self.impl, ally, Variant);
                 }

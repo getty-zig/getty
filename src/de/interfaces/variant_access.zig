@@ -24,7 +24,7 @@ pub fn VariantAccess(
 
             pub const Error = Err;
 
-            pub fn payloadSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            pub fn payloadSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) Err!@TypeOf(seed).Value {
                 if (methods.payloadSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn VariantAccess(
                 @compileError("payloadSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime Payload: type) Error!Payload {
+            pub fn payload(self: Self, ally: ?std.mem.Allocator, comptime Payload: type) Err!Payload {
                 if (methods.payload) |func| {
                     return try func(self.impl, ally, Payload);
                 }
