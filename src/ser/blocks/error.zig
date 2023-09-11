@@ -19,7 +19,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const String = []const u8;
     return try getty_serialize(ally, @as(String, @errorName(value)), serializer);
 }

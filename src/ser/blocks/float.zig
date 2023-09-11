@@ -21,7 +21,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     _ = ally;
 
     return try serializer.serializeFloat(value);

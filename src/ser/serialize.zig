@@ -15,7 +15,7 @@ pub fn serialize(
     v: anytype,
     /// A `getty.Serializer` interface value.
     s: anytype,
-) @TypeOf(s).Error!@TypeOf(s).Ok {
+) @TypeOf(s).Err!@TypeOf(s).Ok {
     const T = @TypeOf(v);
 
     const block = comptime blk: {
@@ -71,7 +71,7 @@ test "serialize - success, normal" {
         y: i32,
 
         pub const @"getty.sb" = struct {
-            pub fn serialize(_: ?std.mem.Allocator, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+            pub fn serialize(_: ?std.mem.Allocator, value: anytype, serializer: anytype) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
                 var s = try serializer.serializeSeq(2);
                 const seq = s.seq();
 
@@ -88,7 +88,7 @@ test "serialize - success, normal" {
             return T == Point;
         }
 
-        pub fn serialize(_: ?std.mem.Allocator, value: anytype, serializer: anytype) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+        pub fn serialize(_: ?std.mem.Allocator, value: anytype, serializer: anytype) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
             var s = try serializer.serializeSeq(2);
             const seq = s.seq();
 

@@ -21,7 +21,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
     const info = @typeInfo(T).Union;
 
@@ -52,7 +52,7 @@ fn serializeVariant(
     value: anytype,
     serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const tag: Tag = comptime blk: {
         const attributes = getAttributes(@TypeOf(value), @TypeOf(serializer));
 
@@ -78,7 +78,7 @@ fn serializeExternallyTaggedVariant(
     value: anytype,
     serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const attrs = comptime blk: {
         const attributes = getAttributes(@TypeOf(value), @TypeOf(serializer));
 
@@ -119,7 +119,7 @@ fn serializeUntaggedVariant(
     value: anytype,
     serializer: anytype,
     comptime field: std.builtin.Type.UnionField,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     return getty_serialize(ally, @field(value, field.name), serializer);
 }
 

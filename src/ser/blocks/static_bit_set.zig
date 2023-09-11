@@ -22,7 +22,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     const T = @TypeOf(value);
 
     const is_int_bitset = comptime std.mem.startsWith(u8, @typeName(T), "bit_set.IntegerBitSet");

@@ -36,7 +36,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     _ = ally;
 
     var arr = [_]u8{0} ** (max_ipv6_chars + max_port_chars);

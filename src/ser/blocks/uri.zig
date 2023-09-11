@@ -18,7 +18,7 @@ pub fn serialize(
     value: anytype,
     /// A `getty.Serializer` interface value.
     serializer: anytype,
-) @TypeOf(serializer).Error!@TypeOf(serializer).Ok {
+) @TypeOf(serializer).Err!@TypeOf(serializer).Ok {
     if (ally) |a| {
         const str = try std.fmt.allocPrint(a, "{+/#}", .{value});
         defer a.free(str);
