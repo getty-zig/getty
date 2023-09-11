@@ -3,13 +3,13 @@ pub fn Seq(
     /// An implementing type.
     comptime Impl: type,
     /// The successful return type of the interface's `end` method.
-    comptime O: type,
+    comptime T: type,
     /// The error set to be returned by the interface's methods upon failure.
     comptime E: type,
     /// A namespace containing methods that `Impl` must define or can override.
     comptime methods: struct {
-        serializeElement: ?fn (Impl, anytype) E!void = null,
-        end: ?fn (Impl) E!O = null,
+        serializeElement: SerializeElementFn(Impl, E) = null,
+        end: EndFn(Impl, T, E) = null,
     },
 ) type {
     return struct {
@@ -20,24 +20,24 @@ pub fn Seq(
             const Self = @This();
 
             /// Successful return type.
-            pub const Ok = O;
+            pub const Ok = T;
 
             /// The error set used upon failure.
             pub const Error = E;
 
             /// Serialize a sequence element.
-            pub fn serializeElement(self: Self, value: anytype) Error!void {
-                if (methods.serializeElement) |f| {
-                    try f(self.impl, value);
+            pub fn serializeElement(self: Self, elem: anytype) E!void {
+                if (methods.serializeElement) |func| {
+                    try func(self.impl, elem);
                 } else {
                     @compileError("serializeElement is not implemented by type: " ++ @typeName(Impl));
                 }
             }
 
             /// Finish serializing a sequence.
-            pub fn end(self: Self) Error!Ok {
-                if (methods.end) |f| {
-                    return try f(self.impl);
+            pub fn end(self: Self) E!T {
+                if (methods.end) |func| {
+                    return try func(self.impl);
                 }
 
                 @compileError("end is not implemented by type: " ++ @typeName(Impl));
@@ -49,4 +49,12 @@ pub fn Seq(
             return .{ .impl = impl };
         }
     };
+}
+
+fn SerializeElementFn(comptime Impl: type, comptime Err: type) type {
+    return ?fn (impl: Impl, elem: anytype) Err!void;
+}
+
+fn EndFn(comptime Impl: type, comptime Ok: type, comptime Err: type) type {
+    return ?fn (impl: Impl) Err!Ok;
 }
