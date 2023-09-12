@@ -2,7 +2,7 @@
 pub fn has_block(
     /// A type to check.
     comptime T: type,
-    /// Indicates type type of block is being checked for.
+    /// Indicates the type of block being checked for.
     comptime serde: enum { ser, de },
 ) bool {
     comptime {
