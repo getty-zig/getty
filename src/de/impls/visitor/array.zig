@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const free = @import("../../free.zig").free;
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Array: type) type {
@@ -51,13 +52,19 @@ pub fn Visitor(comptime Array: type) type {
             return array;
         }
 
-        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitString(
+            _: Self,
+            _: ?std.mem.Allocator,
+            comptime Deserializer: type,
+            input: anytype,
+            _: StringLifetime,
+        ) Deserializer.Err!Value {
             if (Child == u8) {
-                var string: Value = undefined;
+                var array: Value = undefined;
 
-                if (input.len == string.len) {
-                    @memcpy(&string, input);
-                    return string;
+                if (input.len == array.len) {
+                    @memcpy(&array, input);
+                    return array;
                 }
             }
 

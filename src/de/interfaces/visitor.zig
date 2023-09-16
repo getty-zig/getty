@@ -1,6 +1,8 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
+const StringLifetime = @import("../lifetime.zig").StringLifetime;
+
 /// A `Visitor` deserializes values from Getty's data model into Zig.
 pub fn Visitor(
     /// An implementing type.
@@ -16,7 +18,7 @@ pub fn Visitor(
         visitNull: VisitNothingFn(Impl, T) = null,
         visitSeq: VisitAnyFn(Impl, T) = null,
         visitSome: VisitSomeFn(Impl, T) = null,
-        visitString: VisitAnyFn(Impl, T) = null,
+        visitString: VisitStringFn(Impl, T) = null,
         visitUnion: VisitUnionFn(Impl, T) = null,
         visitVoid: VisitNothingFn(Impl, T) = null,
     },
@@ -108,7 +110,13 @@ pub fn Visitor(
             ///
             ///
             /// The visitor is responsible for visiting the entire slice.
-            pub fn visitString(self: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
+            pub fn visitString(
+                self: Self,
+                ally: ?std.mem.Allocator,
+                comptime Deserializer: type,
+                input: anytype,
+                lifetime: StringLifetime,
+            ) Deserializer.Err!T {
                 if (methods.visitString) |func| {
                     comptime {
                         if (!std.meta.trait.isZigString(@TypeOf(input))) {
@@ -116,7 +124,7 @@ pub fn Visitor(
                         }
                     }
 
-                    return try func(self.impl, ally, Deserializer, input);
+                    return try func(self.impl, ally, Deserializer, input, lifetime);
                 }
 
                 return error.Unsupported;
@@ -146,20 +154,6 @@ pub fn Visitor(
     };
 }
 
-fn VisitBoolFn(comptime Impl: type, comptime T: type) type {
-    const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!T {
-            _ = impl;
-            _ = ally;
-            _ = input;
-
-            unreachable;
-        }
-    };
-
-    return ?@TypeOf(Lambda.func);
-}
-
 fn VisitAnyFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
         fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
@@ -174,13 +168,25 @@ fn VisitAnyFn(comptime Impl: type, comptime T: type) type {
     return ?@TypeOf(Lambda.func);
 }
 
-fn VisitUnionFn(comptime Impl: type, comptime T: type) type {
+fn VisitBoolFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!T {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!T {
             _ = impl;
             _ = ally;
-            _ = ua;
-            _ = va;
+            _ = input;
+
+            unreachable;
+        }
+    };
+
+    return ?@TypeOf(Lambda.func);
+}
+
+fn VisitNothingFn(comptime Impl: type, comptime T: type) type {
+    const Lambda = struct {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
+            _ = impl;
+            _ = ally;
 
             unreachable;
         }
@@ -202,11 +208,34 @@ fn VisitSomeFn(comptime Impl: type, comptime T: type) type {
     return ?@TypeOf(Lambda.func);
 }
 
-fn VisitNothingFn(comptime Impl: type, comptime T: type) type {
+fn VisitStringFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
+        fn func(
+            impl: Impl,
+            ally: ?std.mem.Allocator,
+            comptime Deserializer: type,
+            input: anytype,
+            lifetime: StringLifetime,
+        ) Deserializer.Err!T {
             _ = impl;
             _ = ally;
+            _ = input;
+            _ = lifetime;
+
+            unreachable;
+        }
+    };
+
+    return ?@TypeOf(Lambda.func);
+}
+
+fn VisitUnionFn(comptime Impl: type, comptime T: type) type {
+    const Lambda = struct {
+        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!T {
+            _ = impl;
+            _ = ally;
+            _ = ua;
+            _ = va;
 
             unreachable;
         }

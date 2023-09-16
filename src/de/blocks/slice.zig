@@ -62,31 +62,42 @@ test "deserialize - slice, string" {
 
     const tests = .{
         .{
-            .name = "no sentinel",
+            .name = "no sentinel (copied)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([]u8, &no_sentinel),
+            .lifetime = .stack,
         },
         .{
-            .name = "no sentinel, const",
+            .name = "no sentinel, const (direct)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([]const u8, &no_sentinel),
+            .lifetime = .heap,
         },
         .{
-            .name = "sentinel",
+            .name = "sentinel (copied, input has no sentinel, const -> mut)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([:0]u8, &sentinel),
+            .lifetime = .stack,
         },
         .{
-            .name = "sentinel, const",
+            .name = "sentinel, (copied, input has no sentinel)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([:0]const u8, &sentinel),
+            .lifetime = .stack,
         },
+        .{
+            .name = "sentinel (direct, input has a sentinel)",
+            .tokens = &.{.{ .StringZ = "abc" }},
+            .want = @as([:0]const u8, &sentinel),
+            .lifetime = .heap,
+        },
+        // TODO: Add test case for []u8 input to []const u8 output with and without sentinel.
     };
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer std.testing.allocator.free(got);
+        const got = try testing.deserializeWithLifetime(std.testing.allocator, t.name, Self, Want, t.tokens, t.lifetime);
+        defer if (t.lifetime != .heap) std.testing.allocator.free(got);
 
         try testing.expectEqualStrings(t.name, t.want, got);
     }

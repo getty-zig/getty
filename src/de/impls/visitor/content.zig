@@ -4,6 +4,7 @@ const Content = @import("../../content.zig").Content;
 const ContentMultiArrayList = @import("../../content.zig").ContentMultiArrayList;
 const getty_deserialize = @import("../../deserialize.zig").deserialize;
 const getty_free = @import("../../free.zig").free;
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 const Visitor = @This();
@@ -102,7 +103,11 @@ fn visitSome(_: @This(), ally: ?std.mem.Allocator, deserializer: anytype) @TypeO
     return .{ .Some = try getty_deserialize(ally, *Content, deserializer) };
 }
 
-fn visitString(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
+fn visitString(_: @This(), ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype, lifetime: StringLifetime) Deserializer.Err!Content {
+    if (lifetime == .heap) {
+        return .{ .String = @as([]const u8, input) };
+    }
+
     const output = try ally.?.alloc(u8, input.len);
     std.mem.copy(u8, output, input);
 

@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime NetAddress: type) type {
@@ -16,7 +17,13 @@ pub fn Visitor(comptime NetAddress: type) type {
 
         const Value = NetAddress;
 
-        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitString(
+            _: Self,
+            _: ?std.mem.Allocator,
+            comptime Deserializer: type,
+            input: anytype,
+            _: StringLifetime,
+        ) Deserializer.Err!Value {
             const max_ipv6_chars = 47;
             const max_port_chars = 6;
 
