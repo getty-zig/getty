@@ -30,6 +30,12 @@ pub const de = struct {
     /// An implementation of `getty.de.Seed` that ignores values.
     pub const Ignored = @import("impls/seed/ignored.zig").Ignored;
 
+    /// Specifies the lifetime of a Getty String.
+    pub const StringLifetime = @import("lifetime.zig").StringLifetime;
+
+    /// Specifies the lifetime of an access method's return value.
+    pub const ValueLifetime = @import("lifetime.zig").ValueLifetime;
+
     ////////////////////////////////////////////////////////////////////////////////
     // Namespaces
     ////////////////////////////////////////////////////////////////////////////////
