@@ -649,9 +649,9 @@
 <span class="line" id="L534"></span>
 <span class="line" id="L535">                        <span class="tok-kw">if</span> (r.next_chunk_length == <span class="tok-number">0</span>) r.done = <span class="tok-null">true</span>;</span>
 <span class="line" id="L536"></span>
-<span class="line" id="L537">                        <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L538">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L539">                        <span class="tok-kw">const</span> out_avail = buffer.len;</span>
+<span class="line" id="L537">                        <span class="tok-kw">return</span> out_index;</span>
+<span class="line" id="L538">                    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (out_index &lt; buffer.len) {</span>
+<span class="line" id="L539">                        <span class="tok-kw">const</span> out_avail = buffer.len - out_index;</span>
 <span class="line" id="L540"></span>
 <span class="line" id="L541">                        <span class="tok-kw">const</span> can_read = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(data_avail, out_avail)));</span>
 <span class="line" id="L542">                        <span class="tok-kw">const</span> nread = <span class="tok-kw">try</span> conn.read(buffer[<span class="tok-number">0</span>..can_read]);</span>
@@ -660,314 +660,317 @@
 <span class="line" id="L545">                        <span class="tok-kw">if</span> (r.next_chunk_length == <span class="tok-number">0</span>) r.done = <span class="tok-null">true</span>;</span>
 <span class="line" id="L546"></span>
 <span class="line" id="L547">                        <span class="tok-kw">return</span> nread;</span>
-<span class="line" id="L548">                    }</span>
-<span class="line" id="L549">                },</span>
-<span class="line" id="L550">                .chunk_data_suffix, .chunk_data_suffix_r, .chunk_head_size, .chunk_head_ext, .chunk_head_r =&gt; {</span>
-<span class="line" id="L551">                    <span class="tok-kw">try</span> conn.fill();</span>
-<span class="line" id="L552"></span>
-<span class="line" id="L553">                    <span class="tok-kw">const</span> i = r.findChunkedLen(conn.peek());</span>
-<span class="line" id="L554">                    conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(i)));</span>
-<span class="line" id="L555"></span>
-<span class="line" id="L556">                    <span class="tok-kw">switch</span> (r.state) {</span>
-<span class="line" id="L557">                        .invalid =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpChunkInvalid,</span>
-<span class="line" id="L558">                        .chunk_data =&gt; <span class="tok-kw">if</span> (r.next_chunk_length == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L559">                            <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, conn.peek(), <span class="tok-str">&quot;\r\n&quot;</span>)) {</span>
-<span class="line" id="L560">                                r.state = .finished;</span>
-<span class="line" id="L561">                            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L562">                                <span class="tok-comment">// The trailer section is formatted identically to the header section.</span>
+<span class="line" id="L548">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L549">                        <span class="tok-kw">return</span> out_index;</span>
+<span class="line" id="L550">                    }</span>
+<span class="line" id="L551">                },</span>
+<span class="line" id="L552">                .chunk_data_suffix, .chunk_data_suffix_r, .chunk_head_size, .chunk_head_ext, .chunk_head_r =&gt; {</span>
+<span class="line" id="L553">                    <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L554"></span>
+<span class="line" id="L555">                    <span class="tok-kw">const</span> i = r.findChunkedLen(conn.peek());</span>
+<span class="line" id="L556">                    conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(i)));</span>
+<span class="line" id="L557"></span>
+<span class="line" id="L558">                    <span class="tok-kw">switch</span> (r.state) {</span>
+<span class="line" id="L559">                        .invalid =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.HttpChunkInvalid,</span>
+<span class="line" id="L560">                        .chunk_data =&gt; <span class="tok-kw">if</span> (r.next_chunk_length == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L561">                            <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, conn.peek(), <span class="tok-str">&quot;\r\n&quot;</span>)) {</span>
+<span class="line" id="L562">                                r.state = .finished;</span>
+<span class="line" id="L563">                                r.done = <span class="tok-null">true</span>;</span>
+<span class="line" id="L564">                            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L565">                                <span class="tok-comment">// The trailer section is formatted identically to the header section.</span>
 </span>
-<span class="line" id="L563">                                r.state = .seen_rn;</span>
-<span class="line" id="L564">                            }</span>
-<span class="line" id="L565">                            r.done = <span class="tok-null">true</span>;</span>
-<span class="line" id="L566"></span>
-<span class="line" id="L567">                            <span class="tok-kw">return</span> out_index;</span>
-<span class="line" id="L568">                        },</span>
-<span class="line" id="L569">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> out_index,</span>
-<span class="line" id="L570">                    }</span>
-<span class="line" id="L571"></span>
-<span class="line" id="L572">                    <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L573">                },</span>
-<span class="line" id="L574">                .chunk_data =&gt; {</span>
-<span class="line" id="L575">                    <span class="tok-kw">const</span> data_avail = r.next_chunk_length;</span>
-<span class="line" id="L576">                    <span class="tok-kw">const</span> out_avail = buffer.len - out_index;</span>
-<span class="line" id="L577"></span>
-<span class="line" id="L578">                    <span class="tok-kw">if</span> (skip) {</span>
-<span class="line" id="L579">                        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L566">                                r.state = .seen_rn;</span>
+<span class="line" id="L567">                            }</span>
+<span class="line" id="L568">                            r.done = <span class="tok-null">true</span>;</span>
+<span class="line" id="L569"></span>
+<span class="line" id="L570">                            <span class="tok-kw">return</span> out_index;</span>
+<span class="line" id="L571">                        },</span>
+<span class="line" id="L572">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> out_index,</span>
+<span class="line" id="L573">                    }</span>
+<span class="line" id="L574"></span>
+<span class="line" id="L575">                    <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L576">                },</span>
+<span class="line" id="L577">                .chunk_data =&gt; {</span>
+<span class="line" id="L578">                    <span class="tok-kw">const</span> data_avail = r.next_chunk_length;</span>
+<span class="line" id="L579">                    <span class="tok-kw">const</span> out_avail = buffer.len - out_index;</span>
 <span class="line" id="L580"></span>
-<span class="line" id="L581">                        <span class="tok-kw">const</span> nread = <span class="tok-builtin">@min</span>(conn.peek().len, data_avail);</span>
-<span class="line" id="L582">                        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nread)));</span>
-<span class="line" id="L583">                        r.next_chunk_length -= nread;</span>
-<span class="line" id="L584">                    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (out_avail &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L585">                        <span class="tok-kw">const</span> can_read: <span class="tok-type">usize</span> = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(data_avail, out_avail));</span>
-<span class="line" id="L586">                        <span class="tok-kw">const</span> nread = <span class="tok-kw">try</span> conn.read(buffer[out_index..][<span class="tok-number">0</span>..can_read]);</span>
-<span class="line" id="L587">                        r.next_chunk_length -= nread;</span>
-<span class="line" id="L588">                        out_index += nread;</span>
-<span class="line" id="L589">                    }</span>
-<span class="line" id="L590"></span>
-<span class="line" id="L591">                    <span class="tok-kw">if</span> (r.next_chunk_length == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L592">                        r.state = .chunk_data_suffix;</span>
-<span class="line" id="L593">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L594">                    }</span>
-<span class="line" id="L595"></span>
-<span class="line" id="L596">                    <span class="tok-kw">return</span> out_index;</span>
-<span class="line" id="L597">                },</span>
-<span class="line" id="L598">            }</span>
-<span class="line" id="L599">        }</span>
-<span class="line" id="L600">    }</span>
-<span class="line" id="L601">};</span>
-<span class="line" id="L602"></span>
-<span class="line" id="L603"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int16</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">2</span>]<span class="tok-type">u8</span>) <span class="tok-type">u16</span> {</span>
-<span class="line" id="L604">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
-<span class="line" id="L605">}</span>
-<span class="line" id="L606"></span>
-<span class="line" id="L607"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int24</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">3</span>]<span class="tok-type">u8</span>) <span class="tok-type">u24</span> {</span>
-<span class="line" id="L608">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u24</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
-<span class="line" id="L609">}</span>
-<span class="line" id="L610"></span>
-<span class="line" id="L611"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int32</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">4</span>]<span class="tok-type">u8</span>) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L612">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
-<span class="line" id="L613">}</span>
-<span class="line" id="L614"></span>
-<span class="line" id="L615"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">intShift</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, x: <span class="tok-kw">anytype</span>) T {</span>
-<span class="line" id="L616">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>).cpu.arch.endian()) {</span>
-<span class="line" id="L617">        .Little =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@truncate</span>(x &gt;&gt; (<span class="tok-builtin">@bitSizeOf</span>(<span class="tok-builtin">@TypeOf</span>(x)) - <span class="tok-builtin">@bitSizeOf</span>(T)))),</span>
-<span class="line" id="L618">        .Big =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@truncate</span>(x)),</span>
-<span class="line" id="L619">    }</span>
-<span class="line" id="L620">}</span>
-<span class="line" id="L621"></span>
-<span class="line" id="L622"><span class="tok-comment">/// A buffered (and peekable) Connection.</span></span>
-<span class="line" id="L623"><span class="tok-kw">const</span> MockBufferedConnection = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L624">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> buffer_size = <span class="tok-number">0x2000</span>;</span>
-<span class="line" id="L625"></span>
-<span class="line" id="L626">    conn: std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
-<span class="line" id="L627">    buf: [buffer_size]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L628">    start: <span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L629">    end: <span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L630"></span>
-<span class="line" id="L631">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fill</span>(conn: *MockBufferedConnection) ReadError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L632">        <span class="tok-kw">if</span> (conn.end != conn.start) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L581">                    <span class="tok-kw">if</span> (skip) {</span>
+<span class="line" id="L582">                        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L583"></span>
+<span class="line" id="L584">                        <span class="tok-kw">const</span> nread = <span class="tok-builtin">@min</span>(conn.peek().len, data_avail);</span>
+<span class="line" id="L585">                        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nread)));</span>
+<span class="line" id="L586">                        r.next_chunk_length -= nread;</span>
+<span class="line" id="L587">                    } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (out_avail &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L588">                        <span class="tok-kw">const</span> can_read: <span class="tok-type">usize</span> = <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@min</span>(data_avail, out_avail));</span>
+<span class="line" id="L589">                        <span class="tok-kw">const</span> nread = <span class="tok-kw">try</span> conn.read(buffer[out_index..][<span class="tok-number">0</span>..can_read]);</span>
+<span class="line" id="L590">                        r.next_chunk_length -= nread;</span>
+<span class="line" id="L591">                        out_index += nread;</span>
+<span class="line" id="L592">                    }</span>
+<span class="line" id="L593"></span>
+<span class="line" id="L594">                    <span class="tok-kw">if</span> (r.next_chunk_length == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L595">                        r.state = .chunk_data_suffix;</span>
+<span class="line" id="L596">                        <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L597">                    }</span>
+<span class="line" id="L598"></span>
+<span class="line" id="L599">                    <span class="tok-kw">return</span> out_index;</span>
+<span class="line" id="L600">                },</span>
+<span class="line" id="L601">            }</span>
+<span class="line" id="L602">        }</span>
+<span class="line" id="L603">    }</span>
+<span class="line" id="L604">};</span>
+<span class="line" id="L605"></span>
+<span class="line" id="L606"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int16</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">2</span>]<span class="tok-type">u8</span>) <span class="tok-type">u16</span> {</span>
+<span class="line" id="L607">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
+<span class="line" id="L608">}</span>
+<span class="line" id="L609"></span>
+<span class="line" id="L610"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int24</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">3</span>]<span class="tok-type">u8</span>) <span class="tok-type">u24</span> {</span>
+<span class="line" id="L611">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u24</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
+<span class="line" id="L612">}</span>
+<span class="line" id="L613"></span>
+<span class="line" id="L614"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">int32</span>(array: *<span class="tok-kw">const</span> [<span class="tok-number">4</span>]<span class="tok-type">u8</span>) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L615">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@bitCast</span>(array.*));</span>
+<span class="line" id="L616">}</span>
+<span class="line" id="L617"></span>
+<span class="line" id="L618"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">intShift</span>(<span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>, x: <span class="tok-kw">anytype</span>) T {</span>
+<span class="line" id="L619">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>).cpu.arch.endian()) {</span>
+<span class="line" id="L620">        .Little =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@truncate</span>(x &gt;&gt; (<span class="tok-builtin">@bitSizeOf</span>(<span class="tok-builtin">@TypeOf</span>(x)) - <span class="tok-builtin">@bitSizeOf</span>(T)))),</span>
+<span class="line" id="L621">        .Big =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(T, <span class="tok-builtin">@truncate</span>(x)),</span>
+<span class="line" id="L622">    }</span>
+<span class="line" id="L623">}</span>
+<span class="line" id="L624"></span>
+<span class="line" id="L625"><span class="tok-comment">/// A buffered (and peekable) Connection.</span></span>
+<span class="line" id="L626"><span class="tok-kw">const</span> MockBufferedConnection = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L627">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> buffer_size = <span class="tok-number">0x2000</span>;</span>
+<span class="line" id="L628"></span>
+<span class="line" id="L629">    conn: std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>),</span>
+<span class="line" id="L630">    buf: [buffer_size]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L631">    start: <span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L632">    end: <span class="tok-type">u16</span> = <span class="tok-number">0</span>,</span>
 <span class="line" id="L633"></span>
-<span class="line" id="L634">        <span class="tok-kw">const</span> nread = <span class="tok-kw">try</span> conn.conn.read(conn.buf[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L635">        <span class="tok-kw">if</span> (nread == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EndOfStream;</span>
-<span class="line" id="L636">        conn.start = <span class="tok-number">0</span>;</span>
-<span class="line" id="L637">        conn.end = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@truncate</span>(nread));</span>
-<span class="line" id="L638">    }</span>
-<span class="line" id="L639"></span>
-<span class="line" id="L640">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(conn: *MockBufferedConnection) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L641">        <span class="tok-kw">return</span> conn.buf[conn.start..conn.end];</span>
-<span class="line" id="L642">    }</span>
-<span class="line" id="L643"></span>
-<span class="line" id="L644">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">drop</span>(conn: *MockBufferedConnection, num: <span class="tok-type">u16</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L645">        conn.start += num;</span>
-<span class="line" id="L646">    }</span>
-<span class="line" id="L647"></span>
-<span class="line" id="L648">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L649">        <span class="tok-kw">var</span> out_index: <span class="tok-type">u16</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L650">        <span class="tok-kw">while</span> (out_index &lt; len) {</span>
-<span class="line" id="L651">            <span class="tok-kw">const</span> available = conn.end - conn.start;</span>
-<span class="line" id="L652">            <span class="tok-kw">const</span> left = buffer.len - out_index;</span>
-<span class="line" id="L653"></span>
-<span class="line" id="L654">            <span class="tok-kw">if</span> (available &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L655">                <span class="tok-kw">const</span> can_read = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@min</span>(available, left)));</span>
+<span class="line" id="L634">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fill</span>(conn: *MockBufferedConnection) ReadError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L635">        <span class="tok-kw">if</span> (conn.end != conn.start) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L636"></span>
+<span class="line" id="L637">        <span class="tok-kw">const</span> nread = <span class="tok-kw">try</span> conn.conn.read(conn.buf[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L638">        <span class="tok-kw">if</span> (nread == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.EndOfStream;</span>
+<span class="line" id="L639">        conn.start = <span class="tok-number">0</span>;</span>
+<span class="line" id="L640">        conn.end = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@truncate</span>(nread));</span>
+<span class="line" id="L641">    }</span>
+<span class="line" id="L642"></span>
+<span class="line" id="L643">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">peek</span>(conn: *MockBufferedConnection) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L644">        <span class="tok-kw">return</span> conn.buf[conn.start..conn.end];</span>
+<span class="line" id="L645">    }</span>
+<span class="line" id="L646"></span>
+<span class="line" id="L647">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">drop</span>(conn: *MockBufferedConnection, num: <span class="tok-type">u16</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L648">        conn.start += num;</span>
+<span class="line" id="L649">    }</span>
+<span class="line" id="L650"></span>
+<span class="line" id="L651">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">readAtLeast</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-type">u8</span>, len: <span class="tok-type">usize</span>) ReadError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L652">        <span class="tok-kw">var</span> out_index: <span class="tok-type">u16</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L653">        <span class="tok-kw">while</span> (out_index &lt; len) {</span>
+<span class="line" id="L654">            <span class="tok-kw">const</span> available = conn.end - conn.start;</span>
+<span class="line" id="L655">            <span class="tok-kw">const</span> left = buffer.len - out_index;</span>
 <span class="line" id="L656"></span>
-<span class="line" id="L657">                <span class="tok-builtin">@memcpy</span>(buffer[out_index..][<span class="tok-number">0</span>..can_read], conn.buf[conn.start..][<span class="tok-number">0</span>..can_read]);</span>
-<span class="line" id="L658">                out_index += can_read;</span>
-<span class="line" id="L659">                conn.start += can_read;</span>
-<span class="line" id="L660"></span>
-<span class="line" id="L661">                <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L662">            }</span>
+<span class="line" id="L657">            <span class="tok-kw">if</span> (available &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L658">                <span class="tok-kw">const</span> can_read = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@truncate</span>(<span class="tok-builtin">@min</span>(available, left)));</span>
+<span class="line" id="L659"></span>
+<span class="line" id="L660">                <span class="tok-builtin">@memcpy</span>(buffer[out_index..][<span class="tok-number">0</span>..can_read], conn.buf[conn.start..][<span class="tok-number">0</span>..can_read]);</span>
+<span class="line" id="L661">                out_index += can_read;</span>
+<span class="line" id="L662">                conn.start += can_read;</span>
 <span class="line" id="L663"></span>
-<span class="line" id="L664">            <span class="tok-kw">if</span> (left &gt; conn.buf.len) {</span>
-<span class="line" id="L665">                <span class="tok-comment">// skip the buffer if the output is large enough</span>
+<span class="line" id="L664">                <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L665">            }</span>
+<span class="line" id="L666"></span>
+<span class="line" id="L667">            <span class="tok-kw">if</span> (left &gt; conn.buf.len) {</span>
+<span class="line" id="L668">                <span class="tok-comment">// skip the buffer if the output is large enough</span>
 </span>
-<span class="line" id="L666">                <span class="tok-kw">return</span> conn.conn.read(buffer[out_index..]);</span>
-<span class="line" id="L667">            }</span>
-<span class="line" id="L668"></span>
-<span class="line" id="L669">            <span class="tok-kw">try</span> conn.fill();</span>
-<span class="line" id="L670">        }</span>
+<span class="line" id="L669">                <span class="tok-kw">return</span> conn.conn.read(buffer[out_index..]);</span>
+<span class="line" id="L670">            }</span>
 <span class="line" id="L671"></span>
-<span class="line" id="L672">        <span class="tok-kw">return</span> out_index;</span>
-<span class="line" id="L673">    }</span>
+<span class="line" id="L672">            <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L673">        }</span>
 <span class="line" id="L674"></span>
-<span class="line" id="L675">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L676">        <span class="tok-kw">return</span> conn.readAtLeast(buffer, <span class="tok-number">1</span>);</span>
-<span class="line" id="L677">    }</span>
-<span class="line" id="L678"></span>
-<span class="line" id="L679">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadError = std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).ReadError || <span class="tok-kw">error</span>{EndOfStream};</span>
-<span class="line" id="L680">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = std.io.Reader(*MockBufferedConnection, ReadError, read);</span>
+<span class="line" id="L675">        <span class="tok-kw">return</span> out_index;</span>
+<span class="line" id="L676">    }</span>
+<span class="line" id="L677"></span>
+<span class="line" id="L678">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">read</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-type">u8</span>) ReadError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L679">        <span class="tok-kw">return</span> conn.readAtLeast(buffer, <span class="tok-number">1</span>);</span>
+<span class="line" id="L680">    }</span>
 <span class="line" id="L681"></span>
-<span class="line" id="L682">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(conn: *MockBufferedConnection) Reader {</span>
-<span class="line" id="L683">        <span class="tok-kw">return</span> Reader{ .context = conn };</span>
-<span class="line" id="L684">    }</span>
-<span class="line" id="L685"></span>
-<span class="line" id="L686">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeAll</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L687">        <span class="tok-kw">return</span> conn.conn.writeAll(buffer);</span>
-<span class="line" id="L688">    }</span>
-<span class="line" id="L689"></span>
-<span class="line" id="L690">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L691">        <span class="tok-kw">return</span> conn.conn.write(buffer);</span>
-<span class="line" id="L692">    }</span>
-<span class="line" id="L693"></span>
-<span class="line" id="L694">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).WriteError;</span>
-<span class="line" id="L695">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = std.io.Writer(*MockBufferedConnection, WriteError, write);</span>
+<span class="line" id="L682">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> ReadError = std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).ReadError || <span class="tok-kw">error</span>{EndOfStream};</span>
+<span class="line" id="L683">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Reader = std.io.Reader(*MockBufferedConnection, ReadError, read);</span>
+<span class="line" id="L684"></span>
+<span class="line" id="L685">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(conn: *MockBufferedConnection) Reader {</span>
+<span class="line" id="L686">        <span class="tok-kw">return</span> Reader{ .context = conn };</span>
+<span class="line" id="L687">    }</span>
+<span class="line" id="L688"></span>
+<span class="line" id="L689">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writeAll</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L690">        <span class="tok-kw">return</span> conn.conn.writeAll(buffer);</span>
+<span class="line" id="L691">    }</span>
+<span class="line" id="L692"></span>
+<span class="line" id="L693">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(conn: *MockBufferedConnection, buffer: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L694">        <span class="tok-kw">return</span> conn.conn.write(buffer);</span>
+<span class="line" id="L695">    }</span>
 <span class="line" id="L696"></span>
-<span class="line" id="L697">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(conn: *MockBufferedConnection) Writer {</span>
-<span class="line" id="L698">        <span class="tok-kw">return</span> Writer{ .context = conn };</span>
-<span class="line" id="L699">    }</span>
-<span class="line" id="L700">};</span>
-<span class="line" id="L701"></span>
-<span class="line" id="L702"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.findHeadersEnd&quot;</span> {</span>
-<span class="line" id="L703">    <span class="tok-kw">var</span> r: HeadersParser = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L704">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\nHello&quot;</span>;</span>
-<span class="line" id="L705"></span>
-<span class="line" id="L706">    <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-number">36</span>) |i| {</span>
-<span class="line" id="L707">        r = HeadersParser.initDynamic(<span class="tok-number">0</span>);</span>
-<span class="line" id="L708">        <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(i)), r.findHeadersEnd(data[<span class="tok-number">0</span>..i]));</span>
-<span class="line" id="L709">        <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-number">35</span> - i)), r.findHeadersEnd(data[i..]));</span>
-<span class="line" id="L710">    }</span>
-<span class="line" id="L711">}</span>
-<span class="line" id="L712"></span>
-<span class="line" id="L713"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.findChunkedLen&quot;</span> {</span>
-<span class="line" id="L714">    <span class="tok-kw">var</span> r: HeadersParser = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L715">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;Ff\r\nf0f000 ; ext\n0\r\nffffffffffffffffffffffffffffffffffffffff\r\n&quot;</span>;</span>
-<span class="line" id="L716"></span>
-<span class="line" id="L717">    r = HeadersParser.initDynamic(<span class="tok-number">0</span>);</span>
-<span class="line" id="L718">    r.state = .chunk_head_size;</span>
-<span class="line" id="L719">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
-<span class="line" id="L720"></span>
-<span class="line" id="L721">    <span class="tok-kw">const</span> first = r.findChunkedLen(data[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L722">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">4</span>), first);</span>
-<span class="line" id="L723">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0xff</span>), r.next_chunk_length);</span>
-<span class="line" id="L724">    <span class="tok-kw">try</span> testing.expectEqual(State.chunk_data, r.state);</span>
-<span class="line" id="L725">    r.state = .chunk_head_size;</span>
-<span class="line" id="L726">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
-<span class="line" id="L727"></span>
-<span class="line" id="L728">    <span class="tok-kw">const</span> second = r.findChunkedLen(data[first..]);</span>
-<span class="line" id="L729">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">13</span>), second);</span>
-<span class="line" id="L730">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0xf0f000</span>), r.next_chunk_length);</span>
-<span class="line" id="L731">    <span class="tok-kw">try</span> testing.expectEqual(State.chunk_data, r.state);</span>
-<span class="line" id="L732">    r.state = .chunk_head_size;</span>
-<span class="line" id="L733">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
-<span class="line" id="L734"></span>
-<span class="line" id="L735">    <span class="tok-kw">const</span> third = r.findChunkedLen(data[first + second ..]);</span>
-<span class="line" id="L736">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">3</span>), third);</span>
-<span class="line" id="L737">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>), r.next_chunk_length);</span>
-<span class="line" id="L738">    <span class="tok-kw">try</span> testing.expectEqual(State.chunk_data, r.state);</span>
-<span class="line" id="L739">    r.state = .chunk_head_size;</span>
-<span class="line" id="L740">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
-<span class="line" id="L741"></span>
-<span class="line" id="L742">    <span class="tok-kw">const</span> fourth = r.findChunkedLen(data[first + second + third ..]);</span>
-<span class="line" id="L743">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">16</span>), fourth);</span>
-<span class="line" id="L744">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0xffffffffffffffff</span>), r.next_chunk_length);</span>
-<span class="line" id="L745">    <span class="tok-kw">try</span> testing.expectEqual(State.invalid, r.state);</span>
-<span class="line" id="L746">}</span>
-<span class="line" id="L747"></span>
-<span class="line" id="L748"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.read length&quot;</span> {</span>
-<span class="line" id="L749">    <span class="tok-comment">// mock BufferedConnection for read</span>
-</span>
+<span class="line" id="L697">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = std.io.FixedBufferStream([]<span class="tok-kw">const</span> <span class="tok-type">u8</span>).WriteError;</span>
+<span class="line" id="L698">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = std.io.Writer(*MockBufferedConnection, WriteError, write);</span>
+<span class="line" id="L699"></span>
+<span class="line" id="L700">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(conn: *MockBufferedConnection) Writer {</span>
+<span class="line" id="L701">        <span class="tok-kw">return</span> Writer{ .context = conn };</span>
+<span class="line" id="L702">    }</span>
+<span class="line" id="L703">};</span>
+<span class="line" id="L704"></span>
+<span class="line" id="L705"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.findHeadersEnd&quot;</span> {</span>
+<span class="line" id="L706">    <span class="tok-kw">var</span> r: HeadersParser = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L707">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\nHello&quot;</span>;</span>
+<span class="line" id="L708"></span>
+<span class="line" id="L709">    <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-number">36</span>) |i| {</span>
+<span class="line" id="L710">        r = HeadersParser.initDynamic(<span class="tok-number">0</span>);</span>
+<span class="line" id="L711">        <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(i)), r.findHeadersEnd(data[<span class="tok-number">0</span>..i]));</span>
+<span class="line" id="L712">        <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-number">35</span> - i)), r.findHeadersEnd(data[i..]));</span>
+<span class="line" id="L713">    }</span>
+<span class="line" id="L714">}</span>
+<span class="line" id="L715"></span>
+<span class="line" id="L716"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.findChunkedLen&quot;</span> {</span>
+<span class="line" id="L717">    <span class="tok-kw">var</span> r: HeadersParser = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L718">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;Ff\r\nf0f000 ; ext\n0\r\nffffffffffffffffffffffffffffffffffffffff\r\n&quot;</span>;</span>
+<span class="line" id="L719"></span>
+<span class="line" id="L720">    r = HeadersParser.initDynamic(<span class="tok-number">0</span>);</span>
+<span class="line" id="L721">    r.state = .chunk_head_size;</span>
+<span class="line" id="L722">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
+<span class="line" id="L723"></span>
+<span class="line" id="L724">    <span class="tok-kw">const</span> first = r.findChunkedLen(data[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L725">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">4</span>), first);</span>
+<span class="line" id="L726">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0xff</span>), r.next_chunk_length);</span>
+<span class="line" id="L727">    <span class="tok-kw">try</span> testing.expectEqual(State.chunk_data, r.state);</span>
+<span class="line" id="L728">    r.state = .chunk_head_size;</span>
+<span class="line" id="L729">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
+<span class="line" id="L730"></span>
+<span class="line" id="L731">    <span class="tok-kw">const</span> second = r.findChunkedLen(data[first..]);</span>
+<span class="line" id="L732">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">13</span>), second);</span>
+<span class="line" id="L733">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0xf0f000</span>), r.next_chunk_length);</span>
+<span class="line" id="L734">    <span class="tok-kw">try</span> testing.expectEqual(State.chunk_data, r.state);</span>
+<span class="line" id="L735">    r.state = .chunk_head_size;</span>
+<span class="line" id="L736">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
+<span class="line" id="L737"></span>
+<span class="line" id="L738">    <span class="tok-kw">const</span> third = r.findChunkedLen(data[first + second ..]);</span>
+<span class="line" id="L739">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">3</span>), third);</span>
+<span class="line" id="L740">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>), r.next_chunk_length);</span>
+<span class="line" id="L741">    <span class="tok-kw">try</span> testing.expectEqual(State.chunk_data, r.state);</span>
+<span class="line" id="L742">    r.state = .chunk_head_size;</span>
+<span class="line" id="L743">    r.next_chunk_length = <span class="tok-number">0</span>;</span>
+<span class="line" id="L744"></span>
+<span class="line" id="L745">    <span class="tok-kw">const</span> fourth = r.findChunkedLen(data[first + second + third ..]);</span>
+<span class="line" id="L746">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">16</span>), fourth);</span>
+<span class="line" id="L747">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0xffffffffffffffff</span>), r.next_chunk_length);</span>
+<span class="line" id="L748">    <span class="tok-kw">try</span> testing.expectEqual(State.invalid, r.state);</span>
+<span class="line" id="L749">}</span>
 <span class="line" id="L750"></span>
-<span class="line" id="L751">    <span class="tok-kw">var</span> r = HeadersParser.initDynamic(<span class="tok-number">256</span>);</span>
-<span class="line" id="L752">    <span class="tok-kw">defer</span> r.header_bytes.deinit(std.testing.allocator);</span>
-<span class="line" id="L753">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\nHello&quot;</span>;</span>
-<span class="line" id="L754">    <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
-<span class="line" id="L755"></span>
-<span class="line" id="L756">    <span class="tok-kw">var</span> conn = MockBufferedConnection{</span>
-<span class="line" id="L757">        .conn = fbs,</span>
-<span class="line" id="L758">    };</span>
-<span class="line" id="L759"></span>
-<span class="line" id="L760">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+<span class="line" id="L751"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.read length&quot;</span> {</span>
+<span class="line" id="L752">    <span class="tok-comment">// mock BufferedConnection for read</span>
 </span>
-<span class="line" id="L761">        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L753"></span>
+<span class="line" id="L754">    <span class="tok-kw">var</span> r = HeadersParser.initDynamic(<span class="tok-number">256</span>);</span>
+<span class="line" id="L755">    <span class="tok-kw">defer</span> r.header_bytes.deinit(std.testing.allocator);</span>
+<span class="line" id="L756">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\nHello&quot;</span>;</span>
+<span class="line" id="L757">    <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
+<span class="line" id="L758"></span>
+<span class="line" id="L759">    <span class="tok-kw">var</span> conn = MockBufferedConnection{</span>
+<span class="line" id="L760">        .conn = fbs,</span>
+<span class="line" id="L761">    };</span>
 <span class="line" id="L762"></span>
-<span class="line" id="L763">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
-<span class="line" id="L764">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
+<span class="line" id="L763">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+</span>
+<span class="line" id="L764">        <span class="tok-kw">try</span> conn.fill();</span>
 <span class="line" id="L765"></span>
-<span class="line" id="L766">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L767">    }</span>
+<span class="line" id="L766">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
+<span class="line" id="L767">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
 <span class="line" id="L768"></span>
-<span class="line" id="L769">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L770"></span>
-<span class="line" id="L771">    r.next_chunk_length = <span class="tok-number">5</span>;</span>
-<span class="line" id="L772">    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> r.read(&amp;conn, &amp;buf, <span class="tok-null">false</span>);</span>
-<span class="line" id="L773">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), len);</span>
-<span class="line" id="L774">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;Hello&quot;</span>, buf[<span class="tok-number">0</span>..len]);</span>
-<span class="line" id="L775"></span>
-<span class="line" id="L776">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\n&quot;</span>, r.header_bytes.items);</span>
-<span class="line" id="L777">}</span>
+<span class="line" id="L769">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L770">    }</span>
+<span class="line" id="L771"></span>
+<span class="line" id="L772">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L773"></span>
+<span class="line" id="L774">    r.next_chunk_length = <span class="tok-number">5</span>;</span>
+<span class="line" id="L775">    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> r.read(&amp;conn, &amp;buf, <span class="tok-null">false</span>);</span>
+<span class="line" id="L776">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), len);</span>
+<span class="line" id="L777">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;Hello&quot;</span>, buf[<span class="tok-number">0</span>..len]);</span>
 <span class="line" id="L778"></span>
-<span class="line" id="L779"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.read chunked&quot;</span> {</span>
-<span class="line" id="L780">    <span class="tok-comment">// mock BufferedConnection for read</span>
-</span>
+<span class="line" id="L779">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\n&quot;</span>, r.header_bytes.items);</span>
+<span class="line" id="L780">}</span>
 <span class="line" id="L781"></span>
-<span class="line" id="L782">    <span class="tok-kw">var</span> r = HeadersParser.initDynamic(<span class="tok-number">256</span>);</span>
-<span class="line" id="L783">    <span class="tok-kw">defer</span> r.header_bytes.deinit(std.testing.allocator);</span>
-<span class="line" id="L784">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\n2\r\nHe\r\n2\r\nll\r\n1\r\no\r\n0\r\n\r\n&quot;</span>;</span>
-<span class="line" id="L785">    <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
-<span class="line" id="L786"></span>
-<span class="line" id="L787">    <span class="tok-kw">var</span> conn = MockBufferedConnection{</span>
-<span class="line" id="L788">        .conn = fbs,</span>
-<span class="line" id="L789">    };</span>
-<span class="line" id="L790"></span>
-<span class="line" id="L791">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+<span class="line" id="L782"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.read chunked&quot;</span> {</span>
+<span class="line" id="L783">    <span class="tok-comment">// mock BufferedConnection for read</span>
 </span>
-<span class="line" id="L792">        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L784"></span>
+<span class="line" id="L785">    <span class="tok-kw">var</span> r = HeadersParser.initDynamic(<span class="tok-number">256</span>);</span>
+<span class="line" id="L786">    <span class="tok-kw">defer</span> r.header_bytes.deinit(std.testing.allocator);</span>
+<span class="line" id="L787">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\n2\r\nHe\r\n2\r\nll\r\n1\r\no\r\n0\r\n\r\n&quot;</span>;</span>
+<span class="line" id="L788">    <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
+<span class="line" id="L789"></span>
+<span class="line" id="L790">    <span class="tok-kw">var</span> conn = MockBufferedConnection{</span>
+<span class="line" id="L791">        .conn = fbs,</span>
+<span class="line" id="L792">    };</span>
 <span class="line" id="L793"></span>
-<span class="line" id="L794">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
-<span class="line" id="L795">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
+<span class="line" id="L794">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+</span>
+<span class="line" id="L795">        <span class="tok-kw">try</span> conn.fill();</span>
 <span class="line" id="L796"></span>
-<span class="line" id="L797">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L798">    }</span>
-<span class="line" id="L799">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L800"></span>
-<span class="line" id="L801">    r.state = .chunk_head_size;</span>
-<span class="line" id="L802">    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> r.read(&amp;conn, &amp;buf, <span class="tok-null">false</span>);</span>
-<span class="line" id="L803">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), len);</span>
-<span class="line" id="L804">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;Hello&quot;</span>, buf[<span class="tok-number">0</span>..len]);</span>
-<span class="line" id="L805"></span>
-<span class="line" id="L806">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\n&quot;</span>, r.header_bytes.items);</span>
-<span class="line" id="L807">}</span>
+<span class="line" id="L797">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
+<span class="line" id="L798">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
+<span class="line" id="L799"></span>
+<span class="line" id="L800">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L801">    }</span>
+<span class="line" id="L802">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L803"></span>
+<span class="line" id="L804">    r.state = .chunk_head_size;</span>
+<span class="line" id="L805">    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> r.read(&amp;conn, &amp;buf, <span class="tok-null">false</span>);</span>
+<span class="line" id="L806">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), len);</span>
+<span class="line" id="L807">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;Hello&quot;</span>, buf[<span class="tok-number">0</span>..len]);</span>
 <span class="line" id="L808"></span>
-<span class="line" id="L809"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.read chunked trailer&quot;</span> {</span>
-<span class="line" id="L810">    <span class="tok-comment">// mock BufferedConnection for read</span>
-</span>
+<span class="line" id="L809">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\n&quot;</span>, r.header_bytes.items);</span>
+<span class="line" id="L810">}</span>
 <span class="line" id="L811"></span>
-<span class="line" id="L812">    <span class="tok-kw">var</span> r = HeadersParser.initDynamic(<span class="tok-number">256</span>);</span>
-<span class="line" id="L813">    <span class="tok-kw">defer</span> r.header_bytes.deinit(std.testing.allocator);</span>
-<span class="line" id="L814">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\n2\r\nHe\r\n2\r\nll\r\n1\r\no\r\n0\r\nContent-Type: text/plain\r\n\r\n&quot;</span>;</span>
-<span class="line" id="L815">    <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
-<span class="line" id="L816"></span>
-<span class="line" id="L817">    <span class="tok-kw">var</span> conn = MockBufferedConnection{</span>
-<span class="line" id="L818">        .conn = fbs,</span>
-<span class="line" id="L819">    };</span>
-<span class="line" id="L820"></span>
-<span class="line" id="L821">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+<span class="line" id="L812"><span class="tok-kw">test</span> <span class="tok-str">&quot;HeadersParser.read chunked trailer&quot;</span> {</span>
+<span class="line" id="L813">    <span class="tok-comment">// mock BufferedConnection for read</span>
 </span>
-<span class="line" id="L822">        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L814"></span>
+<span class="line" id="L815">    <span class="tok-kw">var</span> r = HeadersParser.initDynamic(<span class="tok-number">256</span>);</span>
+<span class="line" id="L816">    <span class="tok-kw">defer</span> r.header_bytes.deinit(std.testing.allocator);</span>
+<span class="line" id="L817">    <span class="tok-kw">const</span> data = <span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\n2\r\nHe\r\n2\r\nll\r\n1\r\no\r\n0\r\nContent-Type: text/plain\r\n\r\n&quot;</span>;</span>
+<span class="line" id="L818">    <span class="tok-kw">var</span> fbs = std.io.fixedBufferStream(data);</span>
+<span class="line" id="L819"></span>
+<span class="line" id="L820">    <span class="tok-kw">var</span> conn = MockBufferedConnection{</span>
+<span class="line" id="L821">        .conn = fbs,</span>
+<span class="line" id="L822">    };</span>
 <span class="line" id="L823"></span>
-<span class="line" id="L824">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
-<span class="line" id="L825">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
-<span class="line" id="L826"></span>
-<span class="line" id="L827">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L828">    }</span>
-<span class="line" id="L829">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L830"></span>
-<span class="line" id="L831">    r.state = .chunk_head_size;</span>
-<span class="line" id="L832">    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> r.read(&amp;conn, &amp;buf, <span class="tok-null">false</span>);</span>
-<span class="line" id="L833">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), len);</span>
-<span class="line" id="L834">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;Hello&quot;</span>, buf[<span class="tok-number">0</span>..len]);</span>
-<span class="line" id="L835"></span>
-<span class="line" id="L836">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+<span class="line" id="L824">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
 </span>
-<span class="line" id="L837">        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L825">        <span class="tok-kw">try</span> conn.fill();</span>
+<span class="line" id="L826"></span>
+<span class="line" id="L827">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
+<span class="line" id="L828">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
+<span class="line" id="L829"></span>
+<span class="line" id="L830">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L831">    }</span>
+<span class="line" id="L832">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L833"></span>
+<span class="line" id="L834">    r.state = .chunk_head_size;</span>
+<span class="line" id="L835">    <span class="tok-kw">const</span> len = <span class="tok-kw">try</span> r.read(&amp;conn, &amp;buf, <span class="tok-null">false</span>);</span>
+<span class="line" id="L836">    <span class="tok-kw">try</span> std.testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), len);</span>
+<span class="line" id="L837">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;Hello&quot;</span>, buf[<span class="tok-number">0</span>..len]);</span>
 <span class="line" id="L838"></span>
-<span class="line" id="L839">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
-<span class="line" id="L840">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
+<span class="line" id="L839">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) { <span class="tok-comment">// read headers</span>
+</span>
+<span class="line" id="L840">        <span class="tok-kw">try</span> conn.fill();</span>
 <span class="line" id="L841"></span>
-<span class="line" id="L842">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L843">    }</span>
+<span class="line" id="L842">        <span class="tok-kw">const</span> nchecked = <span class="tok-kw">try</span> r.checkCompleteHead(std.testing.allocator, conn.peek());</span>
+<span class="line" id="L843">        conn.drop(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(nchecked)));</span>
 <span class="line" id="L844"></span>
-<span class="line" id="L845">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\nContent-Type: text/plain\r\n\r\n&quot;</span>, r.header_bytes.items);</span>
-<span class="line" id="L846">}</span>
+<span class="line" id="L845">        <span class="tok-kw">if</span> (r.state.isContent()) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L846">    }</span>
 <span class="line" id="L847"></span>
+<span class="line" id="L848">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(<span class="tok-str">&quot;GET / HTTP/1.1\r\nHost: localhost\r\n\r\nContent-Type: text/plain\r\n\r\n&quot;</span>, r.header_bytes.items);</span>
+<span class="line" id="L849">}</span>
+<span class="line" id="L850"></span>
 </code></pre></body>
 </html>

@@ -181,7 +181,7 @@
 <span class="line" id="L66">    }</span>
 <span class="line" id="L67"></span>
 <span class="line" id="L68">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">final</span>(self: *Wyhash) <span class="tok-type">u64</span> {</span>
-<span class="line" id="L69">        <span class="tok-kw">var</span> input = self.buf[<span class="tok-number">0</span>..self.buf_len];</span>
+<span class="line" id="L69">        <span class="tok-kw">var</span> input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span> = self.buf[<span class="tok-number">0</span>..self.buf_len];</span>
 <span class="line" id="L70">        <span class="tok-kw">var</span> newSelf = self.shallowCopy(); <span class="tok-comment">// ensure idempotency</span>
 </span>
 <span class="line" id="L71"></span>
@@ -317,102 +317,78 @@
 <span class="line" id="L196">    }</span>
 <span class="line" id="L197">};</span>
 <span class="line" id="L198"></span>
-<span class="line" id="L199"><span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
-<span class="line" id="L200"></span>
-<span class="line" id="L201"><span class="tok-kw">const</span> TestVector = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L202">    expected: <span class="tok-type">u64</span>,</span>
-<span class="line" id="L203">    seed: <span class="tok-type">u64</span>,</span>
-<span class="line" id="L204">    input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L205">};</span>
-<span class="line" id="L206"></span>
-<span class="line" id="L207"><span class="tok-comment">// Run https://github.com/wangyi-fudan/wyhash/blob/77e50f267fbc7b8e2d09f2d455219adb70ad4749/test_vector.cpp directly.</span>
+<span class="line" id="L199"><span class="tok-kw">const</span> verify = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;verify.zig&quot;</span>);</span>
+<span class="line" id="L200"><span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
+<span class="line" id="L201"></span>
+<span class="line" id="L202"><span class="tok-kw">const</span> TestVector = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L203">    expected: <span class="tok-type">u64</span>,</span>
+<span class="line" id="L204">    seed: <span class="tok-type">u64</span>,</span>
+<span class="line" id="L205">    input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L206">};</span>
+<span class="line" id="L207"></span>
+<span class="line" id="L208"><span class="tok-comment">// Run https://github.com/wangyi-fudan/wyhash/blob/77e50f267fbc7b8e2d09f2d455219adb70ad4749/test_vector.cpp directly.</span>
 </span>
-<span class="line" id="L208"><span class="tok-kw">const</span> vectors = [_]TestVector{</span>
-<span class="line" id="L209">    .{ .seed = <span class="tok-number">0</span>, .expected = <span class="tok-number">0x409638ee2bde459</span>, .input = <span class="tok-str">&quot;&quot;</span> },</span>
-<span class="line" id="L210">    .{ .seed = <span class="tok-number">1</span>, .expected = <span class="tok-number">0xa8412d091b5fe0a9</span>, .input = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L211">    .{ .seed = <span class="tok-number">2</span>, .expected = <span class="tok-number">0x32dd92e4b2915153</span>, .input = <span class="tok-str">&quot;abc&quot;</span> },</span>
-<span class="line" id="L212">    .{ .seed = <span class="tok-number">3</span>, .expected = <span class="tok-number">0x8619124089a3a16b</span>, .input = <span class="tok-str">&quot;message digest&quot;</span> },</span>
-<span class="line" id="L213">    .{ .seed = <span class="tok-number">4</span>, .expected = <span class="tok-number">0x7a43afb61d7f5f40</span>, .input = <span class="tok-str">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span> },</span>
-<span class="line" id="L214">    .{ .seed = <span class="tok-number">5</span>, .expected = <span class="tok-number">0xff42329b90e50d58</span>, .input = <span class="tok-str">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span> },</span>
-<span class="line" id="L215">    .{ .seed = <span class="tok-number">6</span>, .expected = <span class="tok-number">0xc39cab13b115aad3</span>, .input = <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span> },</span>
-<span class="line" id="L216">};</span>
-<span class="line" id="L217"></span>
-<span class="line" id="L218"><span class="tok-kw">test</span> <span class="tok-str">&quot;test vectors&quot;</span> {</span>
-<span class="line" id="L219">    <span class="tok-kw">for</span> (vectors) |e| {</span>
-<span class="line" id="L220">        <span class="tok-kw">try</span> expectEqual(e.expected, Wyhash.hash(e.seed, e.input));</span>
-<span class="line" id="L221">    }</span>
-<span class="line" id="L222">}</span>
-<span class="line" id="L223"></span>
-<span class="line" id="L224"><span class="tok-kw">test</span> <span class="tok-str">&quot;test vectors at comptime&quot;</span> {</span>
-<span class="line" id="L225">    <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L226">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (vectors) |e| {</span>
-<span class="line" id="L227">            <span class="tok-kw">try</span> expectEqual(e.expected, Wyhash.hash(e.seed, e.input));</span>
-<span class="line" id="L228">        }</span>
-<span class="line" id="L229">    }</span>
-<span class="line" id="L230">}</span>
-<span class="line" id="L231"></span>
-<span class="line" id="L232"><span class="tok-kw">test</span> <span class="tok-str">&quot;test vectors streaming&quot;</span> {</span>
-<span class="line" id="L233">    <span class="tok-kw">const</span> step = <span class="tok-number">5</span>;</span>
-<span class="line" id="L234"></span>
-<span class="line" id="L235">    <span class="tok-kw">for</span> (vectors) |e| {</span>
-<span class="line" id="L236">        <span class="tok-kw">var</span> wh = Wyhash.init(e.seed);</span>
-<span class="line" id="L237">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L238">        <span class="tok-kw">while</span> (i &lt; e.input.len) : (i += step) {</span>
-<span class="line" id="L239">            <span class="tok-kw">const</span> len = <span class="tok-kw">if</span> (i + step &gt; e.input.len) e.input.len - i <span class="tok-kw">else</span> step;</span>
-<span class="line" id="L240">            wh.update(e.input[i..][<span class="tok-number">0</span>..len]);</span>
-<span class="line" id="L241">        }</span>
-<span class="line" id="L242">        <span class="tok-kw">try</span> expectEqual(e.expected, wh.final());</span>
-<span class="line" id="L243">    }</span>
-<span class="line" id="L244">}</span>
-<span class="line" id="L245"></span>
-<span class="line" id="L246"><span class="tok-kw">test</span> <span class="tok-str">&quot;test ensure idempotent final call&quot;</span> {</span>
-<span class="line" id="L247">    <span class="tok-kw">const</span> e: TestVector = .{ .seed = <span class="tok-number">6</span>, .expected = <span class="tok-number">0xc39cab13b115aad3</span>, .input = <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span> };</span>
-<span class="line" id="L248">    <span class="tok-kw">var</span> wh = Wyhash.init(e.seed);</span>
-<span class="line" id="L249">    wh.update(e.input);</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251">    <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-number">10</span>) |_| {</span>
-<span class="line" id="L252">        <span class="tok-kw">try</span> expectEqual(e.expected, wh.final());</span>
-<span class="line" id="L253">    }</span>
-<span class="line" id="L254">}</span>
-<span class="line" id="L255"></span>
-<span class="line" id="L256"><span class="tok-kw">test</span> <span class="tok-str">&quot;iterative non-divisible update&quot;</span> {</span>
-<span class="line" id="L257">    <span class="tok-kw">var</span> buf: [<span class="tok-number">8192</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L258">    <span class="tok-kw">for</span> (&amp;buf, <span class="tok-number">0</span>..) |*e, i| {</span>
-<span class="line" id="L259">        e.* = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-builtin">@truncate</span>(i));</span>
-<span class="line" id="L260">    }</span>
-<span class="line" id="L261"></span>
-<span class="line" id="L262">    <span class="tok-kw">const</span> seed = <span class="tok-number">0x128dad08f</span>;</span>
-<span class="line" id="L263"></span>
-<span class="line" id="L264">    <span class="tok-kw">var</span> end: <span class="tok-type">usize</span> = <span class="tok-number">32</span>;</span>
-<span class="line" id="L265">    <span class="tok-kw">while</span> (end &lt; buf.len) : (end += <span class="tok-number">32</span>) {</span>
-<span class="line" id="L266">        <span class="tok-kw">const</span> non_iterative_hash = Wyhash.hash(seed, buf[<span class="tok-number">0</span>..end]);</span>
-<span class="line" id="L267"></span>
-<span class="line" id="L268">        <span class="tok-kw">var</span> wy = Wyhash.init(seed);</span>
-<span class="line" id="L269">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L270">        <span class="tok-kw">while</span> (i &lt; end) : (i += <span class="tok-number">33</span>) {</span>
-<span class="line" id="L271">            wy.update(buf[i..<span class="tok-builtin">@min</span>(i + <span class="tok-number">33</span>, end)]);</span>
-<span class="line" id="L272">        }</span>
-<span class="line" id="L273">        <span class="tok-kw">const</span> iterative_hash = wy.final();</span>
-<span class="line" id="L274"></span>
-<span class="line" id="L275">        <span class="tok-kw">try</span> std.testing.expectEqual(iterative_hash, non_iterative_hash);</span>
-<span class="line" id="L276">    }</span>
-<span class="line" id="L277">}</span>
-<span class="line" id="L278"></span>
-<span class="line" id="L279"><span class="tok-kw">test</span> <span class="tok-str">&quot;iterative maintains last sixteen&quot;</span> {</span>
-<span class="line" id="L280">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;Z&quot;</span> ** <span class="tok-number">48</span> ++ <span class="tok-str">&quot;01234567890abcdefg&quot;</span>;</span>
-<span class="line" id="L281">    <span class="tok-kw">const</span> seed = <span class="tok-number">0</span>;</span>
-<span class="line" id="L282"></span>
-<span class="line" id="L283">    <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-number">17</span>) |i| {</span>
-<span class="line" id="L284">        <span class="tok-kw">const</span> payload = input[<span class="tok-number">0</span> .. input.len - i];</span>
-<span class="line" id="L285">        <span class="tok-kw">const</span> non_iterative_hash = Wyhash.hash(seed, payload);</span>
-<span class="line" id="L286"></span>
-<span class="line" id="L287">        <span class="tok-kw">var</span> wh = Wyhash.init(seed);</span>
-<span class="line" id="L288">        wh.update(payload);</span>
-<span class="line" id="L289">        <span class="tok-kw">const</span> iterative_hash = wh.final();</span>
-<span class="line" id="L290"></span>
-<span class="line" id="L291">        <span class="tok-kw">try</span> expectEqual(non_iterative_hash, iterative_hash);</span>
-<span class="line" id="L292">    }</span>
-<span class="line" id="L293">}</span>
-<span class="line" id="L294"></span>
+<span class="line" id="L209"><span class="tok-kw">const</span> vectors = [_]TestVector{</span>
+<span class="line" id="L210">    .{ .seed = <span class="tok-number">0</span>, .expected = <span class="tok-number">0x409638ee2bde459</span>, .input = <span class="tok-str">&quot;&quot;</span> },</span>
+<span class="line" id="L211">    .{ .seed = <span class="tok-number">1</span>, .expected = <span class="tok-number">0xa8412d091b5fe0a9</span>, .input = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L212">    .{ .seed = <span class="tok-number">2</span>, .expected = <span class="tok-number">0x32dd92e4b2915153</span>, .input = <span class="tok-str">&quot;abc&quot;</span> },</span>
+<span class="line" id="L213">    .{ .seed = <span class="tok-number">3</span>, .expected = <span class="tok-number">0x8619124089a3a16b</span>, .input = <span class="tok-str">&quot;message digest&quot;</span> },</span>
+<span class="line" id="L214">    .{ .seed = <span class="tok-number">4</span>, .expected = <span class="tok-number">0x7a43afb61d7f5f40</span>, .input = <span class="tok-str">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span> },</span>
+<span class="line" id="L215">    .{ .seed = <span class="tok-number">5</span>, .expected = <span class="tok-number">0xff42329b90e50d58</span>, .input = <span class="tok-str">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span> },</span>
+<span class="line" id="L216">    .{ .seed = <span class="tok-number">6</span>, .expected = <span class="tok-number">0xc39cab13b115aad3</span>, .input = <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span> },</span>
+<span class="line" id="L217">};</span>
+<span class="line" id="L218"></span>
+<span class="line" id="L219"><span class="tok-kw">test</span> <span class="tok-str">&quot;test vectors&quot;</span> {</span>
+<span class="line" id="L220">    <span class="tok-kw">for</span> (vectors) |e| {</span>
+<span class="line" id="L221">        <span class="tok-kw">try</span> expectEqual(e.expected, Wyhash.hash(e.seed, e.input));</span>
+<span class="line" id="L222">    }</span>
+<span class="line" id="L223">}</span>
+<span class="line" id="L224"></span>
+<span class="line" id="L225"><span class="tok-kw">test</span> <span class="tok-str">&quot;test vectors at comptime&quot;</span> {</span>
+<span class="line" id="L226">    <span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L227">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (vectors) |e| {</span>
+<span class="line" id="L228">            <span class="tok-kw">try</span> expectEqual(e.expected, Wyhash.hash(e.seed, e.input));</span>
+<span class="line" id="L229">        }</span>
+<span class="line" id="L230">    }</span>
+<span class="line" id="L231">}</span>
+<span class="line" id="L232"></span>
+<span class="line" id="L233"><span class="tok-kw">test</span> <span class="tok-str">&quot;smhasher&quot;</span> {</span>
+<span class="line" id="L234">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L235">        <span class="tok-kw">fn</span> <span class="tok-fn">do</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L236">            <span class="tok-kw">try</span> expectEqual(verify.smhasher(Wyhash.hash), <span class="tok-number">0xBD5E840C</span>);</span>
+<span class="line" id="L237">        }</span>
+<span class="line" id="L238">    };</span>
+<span class="line" id="L239">    <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L240">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">50000</span>);</span>
+<span class="line" id="L241">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> Test.do();</span>
+<span class="line" id="L242">}</span>
+<span class="line" id="L243"></span>
+<span class="line" id="L244"><span class="tok-kw">test</span> <span class="tok-str">&quot;iterative api&quot;</span> {</span>
+<span class="line" id="L245">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L246">        <span class="tok-kw">fn</span> <span class="tok-fn">do</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L247">            <span class="tok-kw">try</span> verify.iterativeApi(Wyhash);</span>
+<span class="line" id="L248">        }</span>
+<span class="line" id="L249">    };</span>
+<span class="line" id="L250">    <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L251">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">50000</span>);</span>
+<span class="line" id="L252">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> Test.do();</span>
+<span class="line" id="L253">}</span>
+<span class="line" id="L254"></span>
+<span class="line" id="L255"><span class="tok-kw">test</span> <span class="tok-str">&quot;iterative maintains last sixteen&quot;</span> {</span>
+<span class="line" id="L256">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;Z&quot;</span> ** <span class="tok-number">48</span> ++ <span class="tok-str">&quot;01234567890abcdefg&quot;</span>;</span>
+<span class="line" id="L257">    <span class="tok-kw">const</span> seed = <span class="tok-number">0</span>;</span>
+<span class="line" id="L258"></span>
+<span class="line" id="L259">    <span class="tok-kw">for</span> (<span class="tok-number">0</span>..<span class="tok-number">17</span>) |i| {</span>
+<span class="line" id="L260">        <span class="tok-kw">const</span> payload = input[<span class="tok-number">0</span> .. input.len - i];</span>
+<span class="line" id="L261">        <span class="tok-kw">const</span> non_iterative_hash = Wyhash.hash(seed, payload);</span>
+<span class="line" id="L262"></span>
+<span class="line" id="L263">        <span class="tok-kw">var</span> wh = Wyhash.init(seed);</span>
+<span class="line" id="L264">        wh.update(payload);</span>
+<span class="line" id="L265">        <span class="tok-kw">const</span> iterative_hash = wh.final();</span>
+<span class="line" id="L266"></span>
+<span class="line" id="L267">        <span class="tok-kw">try</span> expectEqual(non_iterative_hash, iterative_hash);</span>
+<span class="line" id="L268">    }</span>
+<span class="line" id="L269">}</span>
+<span class="line" id="L270"></span>
 </code></pre></body>
 </html>

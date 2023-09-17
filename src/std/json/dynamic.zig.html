@@ -194,120 +194,119 @@
 <span class="line" id="L81">    }</span>
 <span class="line" id="L82"></span>
 <span class="line" id="L83">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParse</span>(allocator: Allocator, source: <span class="tok-kw">anytype</span>, options: ParseOptions) ParseError(<span class="tok-builtin">@TypeOf</span>(source.*))!<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L84">        _ = options;</span>
-<span class="line" id="L85">        <span class="tok-comment">// The grammar of the stack is:</span>
+<span class="line" id="L84">        <span class="tok-comment">// The grammar of the stack is:</span>
 </span>
-<span class="line" id="L86">        <span class="tok-comment">//  (.array | .object .string)*</span>
+<span class="line" id="L85">        <span class="tok-comment">//  (.array | .object .string)*</span>
 </span>
-<span class="line" id="L87">        <span class="tok-kw">var</span> stack = Array.init(allocator);</span>
-<span class="line" id="L88">        <span class="tok-kw">defer</span> stack.deinit();</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L91">            <span class="tok-comment">// Assert the stack grammar at the top of the stack.</span>
+<span class="line" id="L86">        <span class="tok-kw">var</span> stack = Array.init(allocator);</span>
+<span class="line" id="L87">        <span class="tok-kw">defer</span> stack.deinit();</span>
+<span class="line" id="L88"></span>
+<span class="line" id="L89">        <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L90">            <span class="tok-comment">// Assert the stack grammar at the top of the stack.</span>
 </span>
-<span class="line" id="L92">            debug.assert(stack.items.len == <span class="tok-number">0</span> <span class="tok-kw">or</span></span>
-<span class="line" id="L93">                stack.items[stack.items.len - <span class="tok-number">1</span>] == .array <span class="tok-kw">or</span></span>
-<span class="line" id="L94">                (stack.items[stack.items.len - <span class="tok-number">2</span>] == .object <span class="tok-kw">and</span> stack.items[stack.items.len - <span class="tok-number">1</span>] == .string));</span>
-<span class="line" id="L95"></span>
-<span class="line" id="L96">            <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> source.nextAlloc(allocator, .alloc_always)) {</span>
-<span class="line" id="L97">                .allocated_string =&gt; |s| {</span>
-<span class="line" id="L98">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .string = s }) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L99">                },</span>
-<span class="line" id="L100">                .allocated_number =&gt; |slice| {</span>
-<span class="line" id="L101">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value.parseFromNumberSlice(slice)) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L102">                },</span>
-<span class="line" id="L103"></span>
-<span class="line" id="L104">                .<span class="tok-null">null</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, .<span class="tok-null">null</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L105">                .<span class="tok-null">true</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .<span class="tok-type">bool</span> = <span class="tok-null">true</span> }) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L106">                .<span class="tok-null">false</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .<span class="tok-type">bool</span> = <span class="tok-null">false</span> }) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L107"></span>
-<span class="line" id="L108">                .object_begin =&gt; {</span>
-<span class="line" id="L109">                    <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> source.nextAlloc(allocator, .alloc_always)) {</span>
-<span class="line" id="L110">                        .object_end =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .object = ObjectMap.init(allocator) }) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L111">                        .allocated_string =&gt; |key| {</span>
-<span class="line" id="L112">                            <span class="tok-kw">try</span> stack.appendSlice(&amp;[_]Value{</span>
-<span class="line" id="L113">                                Value{ .object = ObjectMap.init(allocator) },</span>
-<span class="line" id="L114">                                Value{ .string = key },</span>
-<span class="line" id="L115">                            });</span>
-<span class="line" id="L116">                        },</span>
-<span class="line" id="L117">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L118">                    }</span>
-<span class="line" id="L119">                },</span>
-<span class="line" id="L120">                .array_begin =&gt; {</span>
-<span class="line" id="L121">                    <span class="tok-kw">try</span> stack.append(Value{ .array = Array.init(allocator) });</span>
-<span class="line" id="L122">                },</span>
-<span class="line" id="L123">                .array_end =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, stack.pop()) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L124"></span>
-<span class="line" id="L125">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L126">            }</span>
-<span class="line" id="L127">        }</span>
-<span class="line" id="L128">    }</span>
-<span class="line" id="L129"></span>
-<span class="line" id="L130">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParseFromValue</span>(allocator: Allocator, source: Value, options: ParseOptions) !<span class="tok-builtin">@This</span>() {</span>
-<span class="line" id="L131">        _ = allocator;</span>
-<span class="line" id="L132">        _ = options;</span>
-<span class="line" id="L133">        <span class="tok-kw">return</span> source;</span>
-<span class="line" id="L134">    }</span>
-<span class="line" id="L135">};</span>
-<span class="line" id="L136"></span>
-<span class="line" id="L137"><span class="tok-kw">fn</span> <span class="tok-fn">handleCompleteValue</span>(stack: *Array, allocator: Allocator, source: <span class="tok-kw">anytype</span>, value_: Value) !?Value {</span>
-<span class="line" id="L138">    <span class="tok-kw">if</span> (stack.items.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> value_;</span>
-<span class="line" id="L139">    <span class="tok-kw">var</span> value = value_;</span>
-<span class="line" id="L140">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L141">        <span class="tok-comment">// Assert the stack grammar at the top of the stack.</span>
+<span class="line" id="L91">            debug.assert(stack.items.len == <span class="tok-number">0</span> <span class="tok-kw">or</span></span>
+<span class="line" id="L92">                stack.items[stack.items.len - <span class="tok-number">1</span>] == .array <span class="tok-kw">or</span></span>
+<span class="line" id="L93">                (stack.items[stack.items.len - <span class="tok-number">2</span>] == .object <span class="tok-kw">and</span> stack.items[stack.items.len - <span class="tok-number">1</span>] == .string));</span>
+<span class="line" id="L94"></span>
+<span class="line" id="L95">            <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> source.nextAllocMax(allocator, .alloc_always, options.max_value_len.?)) {</span>
+<span class="line" id="L96">                .allocated_string =&gt; |s| {</span>
+<span class="line" id="L97">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .string = s }, options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L98">                },</span>
+<span class="line" id="L99">                .allocated_number =&gt; |slice| {</span>
+<span class="line" id="L100">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value.parseFromNumberSlice(slice), options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L101">                },</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">                .<span class="tok-null">null</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, .<span class="tok-null">null</span>, options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L104">                .<span class="tok-null">true</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .<span class="tok-type">bool</span> = <span class="tok-null">true</span> }, options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L105">                .<span class="tok-null">false</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .<span class="tok-type">bool</span> = <span class="tok-null">false</span> }, options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L106"></span>
+<span class="line" id="L107">                .object_begin =&gt; {</span>
+<span class="line" id="L108">                    <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> source.nextAllocMax(allocator, .alloc_always, options.max_value_len.?)) {</span>
+<span class="line" id="L109">                        .object_end =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, Value{ .object = ObjectMap.init(allocator) }, options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L110">                        .allocated_string =&gt; |key| {</span>
+<span class="line" id="L111">                            <span class="tok-kw">try</span> stack.appendSlice(&amp;[_]Value{</span>
+<span class="line" id="L112">                                Value{ .object = ObjectMap.init(allocator) },</span>
+<span class="line" id="L113">                                Value{ .string = key },</span>
+<span class="line" id="L114">                            });</span>
+<span class="line" id="L115">                        },</span>
+<span class="line" id="L116">                        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L117">                    }</span>
+<span class="line" id="L118">                },</span>
+<span class="line" id="L119">                .array_begin =&gt; {</span>
+<span class="line" id="L120">                    <span class="tok-kw">try</span> stack.append(Value{ .array = Array.init(allocator) });</span>
+<span class="line" id="L121">                },</span>
+<span class="line" id="L122">                .array_end =&gt; <span class="tok-kw">return</span> <span class="tok-kw">try</span> handleCompleteValue(&amp;stack, allocator, source, stack.pop(), options) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L125">            }</span>
+<span class="line" id="L126">        }</span>
+<span class="line" id="L127">    }</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">jsonParseFromValue</span>(allocator: Allocator, source: Value, options: ParseOptions) !<span class="tok-builtin">@This</span>() {</span>
+<span class="line" id="L130">        _ = allocator;</span>
+<span class="line" id="L131">        _ = options;</span>
+<span class="line" id="L132">        <span class="tok-kw">return</span> source;</span>
+<span class="line" id="L133">    }</span>
+<span class="line" id="L134">};</span>
+<span class="line" id="L135"></span>
+<span class="line" id="L136"><span class="tok-kw">fn</span> <span class="tok-fn">handleCompleteValue</span>(stack: *Array, allocator: Allocator, source: <span class="tok-kw">anytype</span>, value_: Value, options: ParseOptions) !?Value {</span>
+<span class="line" id="L137">    <span class="tok-kw">if</span> (stack.items.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> value_;</span>
+<span class="line" id="L138">    <span class="tok-kw">var</span> value = value_;</span>
+<span class="line" id="L139">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L140">        <span class="tok-comment">// Assert the stack grammar at the top of the stack.</span>
 </span>
-<span class="line" id="L142">        debug.assert(stack.items[stack.items.len - <span class="tok-number">1</span>] == .array <span class="tok-kw">or</span></span>
-<span class="line" id="L143">            (stack.items[stack.items.len - <span class="tok-number">2</span>] == .object <span class="tok-kw">and</span> stack.items[stack.items.len - <span class="tok-number">1</span>] == .string));</span>
-<span class="line" id="L144">        <span class="tok-kw">switch</span> (stack.items[stack.items.len - <span class="tok-number">1</span>]) {</span>
-<span class="line" id="L145">            .string =&gt; |key| {</span>
-<span class="line" id="L146">                <span class="tok-comment">// stack: [..., .object, .string]</span>
+<span class="line" id="L141">        debug.assert(stack.items[stack.items.len - <span class="tok-number">1</span>] == .array <span class="tok-kw">or</span></span>
+<span class="line" id="L142">            (stack.items[stack.items.len - <span class="tok-number">2</span>] == .object <span class="tok-kw">and</span> stack.items[stack.items.len - <span class="tok-number">1</span>] == .string));</span>
+<span class="line" id="L143">        <span class="tok-kw">switch</span> (stack.items[stack.items.len - <span class="tok-number">1</span>]) {</span>
+<span class="line" id="L144">            .string =&gt; |key| {</span>
+<span class="line" id="L145">                <span class="tok-comment">// stack: [..., .object, .string]</span>
 </span>
-<span class="line" id="L147">                _ = stack.pop();</span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149">                <span class="tok-comment">// stack: [..., .object]</span>
+<span class="line" id="L146">                _ = stack.pop();</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">                <span class="tok-comment">// stack: [..., .object]</span>
 </span>
-<span class="line" id="L150">                <span class="tok-kw">var</span> object = &amp;stack.items[stack.items.len - <span class="tok-number">1</span>].object;</span>
-<span class="line" id="L151">                <span class="tok-kw">try</span> object.put(key, value);</span>
-<span class="line" id="L152"></span>
-<span class="line" id="L153">                <span class="tok-comment">// This is an invalid state to leave the stack in,</span>
+<span class="line" id="L149">                <span class="tok-kw">var</span> object = &amp;stack.items[stack.items.len - <span class="tok-number">1</span>].object;</span>
+<span class="line" id="L150">                <span class="tok-kw">try</span> object.put(key, value);</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">                <span class="tok-comment">// This is an invalid state to leave the stack in,</span>
 </span>
-<span class="line" id="L154">                <span class="tok-comment">// so we have to process the next token before we return.</span>
+<span class="line" id="L153">                <span class="tok-comment">// so we have to process the next token before we return.</span>
 </span>
-<span class="line" id="L155">                <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> source.nextAlloc(allocator, .alloc_always)) {</span>
-<span class="line" id="L156">                    .object_end =&gt; {</span>
-<span class="line" id="L157">                        <span class="tok-comment">// This object is complete.</span>
+<span class="line" id="L154">                <span class="tok-kw">switch</span> (<span class="tok-kw">try</span> source.nextAllocMax(allocator, .alloc_always, options.max_value_len.?)) {</span>
+<span class="line" id="L155">                    .object_end =&gt; {</span>
+<span class="line" id="L156">                        <span class="tok-comment">// This object is complete.</span>
 </span>
-<span class="line" id="L158">                        value = stack.pop();</span>
-<span class="line" id="L159">                        <span class="tok-comment">// Effectively recurse now that we have a complete value.</span>
+<span class="line" id="L157">                        value = stack.pop();</span>
+<span class="line" id="L158">                        <span class="tok-comment">// Effectively recurse now that we have a complete value.</span>
 </span>
-<span class="line" id="L160">                        <span class="tok-kw">if</span> (stack.items.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L161">                        <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L162">                    },</span>
-<span class="line" id="L163">                    .allocated_string =&gt; |next_key| {</span>
-<span class="line" id="L164">                        <span class="tok-comment">// We've got another key.</span>
+<span class="line" id="L159">                        <span class="tok-kw">if</span> (stack.items.len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L160">                        <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L161">                    },</span>
+<span class="line" id="L162">                    .allocated_string =&gt; |next_key| {</span>
+<span class="line" id="L163">                        <span class="tok-comment">// We've got another key.</span>
 </span>
-<span class="line" id="L165">                        <span class="tok-kw">try</span> stack.append(Value{ .string = next_key });</span>
-<span class="line" id="L166">                        <span class="tok-comment">// stack: [..., .object, .string]</span>
+<span class="line" id="L164">                        <span class="tok-kw">try</span> stack.append(Value{ .string = next_key });</span>
+<span class="line" id="L165">                        <span class="tok-comment">// stack: [..., .object, .string]</span>
 </span>
-<span class="line" id="L167">                        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L168">                    },</span>
-<span class="line" id="L169">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L170">                }</span>
-<span class="line" id="L171">            },</span>
-<span class="line" id="L172">            .array =&gt; |*array| {</span>
-<span class="line" id="L173">                <span class="tok-comment">// stack: [..., .array]</span>
+<span class="line" id="L166">                        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L167">                    },</span>
+<span class="line" id="L168">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L169">                }</span>
+<span class="line" id="L170">            },</span>
+<span class="line" id="L171">            .array =&gt; |*array| {</span>
+<span class="line" id="L172">                <span class="tok-comment">// stack: [..., .array]</span>
 </span>
-<span class="line" id="L174">                <span class="tok-kw">try</span> array.append(value);</span>
-<span class="line" id="L175">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L176">            },</span>
-<span class="line" id="L177">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L178">        }</span>
-<span class="line" id="L179">    }</span>
-<span class="line" id="L180">}</span>
-<span class="line" id="L181"></span>
-<span class="line" id="L182"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L183">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;dynamic_test.zig&quot;</span>);</span>
-<span class="line" id="L184">}</span>
-<span class="line" id="L185"></span>
+<span class="line" id="L173">                <span class="tok-kw">try</span> array.append(value);</span>
+<span class="line" id="L174">                <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L175">            },</span>
+<span class="line" id="L176">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L177">        }</span>
+<span class="line" id="L178">    }</span>
+<span class="line" id="L179">}</span>
+<span class="line" id="L180"></span>
+<span class="line" id="L181"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L182">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;dynamic_test.zig&quot;</span>);</span>
+<span class="line" id="L183">}</span>
+<span class="line" id="L184"></span>
 </code></pre></body>
 </html>

@@ -561,36 +561,82 @@
 <span class="line" id="L438">    }</span>
 <span class="line" id="L439">}</span>
 <span class="line" id="L440"></span>
-<span class="line" id="L441"><span class="tok-kw">fn</span> <span class="tok-fn">testExpect</span>(<span class="tok-kw">comptime</span> H: <span class="tok-type">type</span>, seed: <span class="tok-kw">anytype</span>, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected: <span class="tok-type">u64</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L442">    <span class="tok-kw">try</span> expectEqual(expected, H.hash(<span class="tok-number">0</span>, input));</span>
-<span class="line" id="L443"></span>
-<span class="line" id="L444">    <span class="tok-kw">var</span> hasher = H.init(seed);</span>
-<span class="line" id="L445">    hasher.update(input);</span>
-<span class="line" id="L446">    <span class="tok-kw">try</span> expectEqual(expected, hasher.final());</span>
-<span class="line" id="L447">}</span>
-<span class="line" id="L448"></span>
-<span class="line" id="L449"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash64&quot;</span> {</span>
-<span class="line" id="L450">    <span class="tok-kw">const</span> H = XxHash64;</span>
-<span class="line" id="L451">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;&quot;</span>, <span class="tok-number">0xef46db3751d8e999</span>);</span>
-<span class="line" id="L452">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;a&quot;</span>, <span class="tok-number">0xd24ec4f1a98c6e5b</span>);</span>
-<span class="line" id="L453">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abc&quot;</span>, <span class="tok-number">0x44bc2cf5ad770999</span>);</span>
-<span class="line" id="L454">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;message digest&quot;</span>, <span class="tok-number">0x066ed728fceeb3be</span>);</span>
-<span class="line" id="L455">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>, <span class="tok-number">0xcfe1f278fa89835c</span>);</span>
-<span class="line" id="L456">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span>, <span class="tok-number">0xaaa46907d3047814</span>);</span>
-<span class="line" id="L457">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span>, <span class="tok-number">0xe04a477f19ee145d</span>);</span>
-<span class="line" id="L458">}</span>
-<span class="line" id="L459"></span>
-<span class="line" id="L460"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash32&quot;</span> {</span>
-<span class="line" id="L461">    <span class="tok-kw">const</span> H = XxHash32;</span>
-<span class="line" id="L462"></span>
-<span class="line" id="L463">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;&quot;</span>, <span class="tok-number">0x02cc5d05</span>);</span>
-<span class="line" id="L464">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;a&quot;</span>, <span class="tok-number">0x550d7456</span>);</span>
-<span class="line" id="L465">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abc&quot;</span>, <span class="tok-number">0x32d153ff</span>);</span>
-<span class="line" id="L466">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;message digest&quot;</span>, <span class="tok-number">0x7c948494</span>);</span>
-<span class="line" id="L467">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>, <span class="tok-number">0x63a14d5f</span>);</span>
-<span class="line" id="L468">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span>, <span class="tok-number">0x9c285e64</span>);</span>
-<span class="line" id="L469">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span>, <span class="tok-number">0x9c05f475</span>);</span>
-<span class="line" id="L470">}</span>
-<span class="line" id="L471"></span>
+<span class="line" id="L441"><span class="tok-kw">const</span> verify = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;verify.zig&quot;</span>);</span>
+<span class="line" id="L442"></span>
+<span class="line" id="L443"><span class="tok-kw">fn</span> <span class="tok-fn">testExpect</span>(<span class="tok-kw">comptime</span> H: <span class="tok-type">type</span>, seed: <span class="tok-kw">anytype</span>, input: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected: <span class="tok-type">u64</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L444">    <span class="tok-kw">try</span> expectEqual(expected, H.hash(<span class="tok-number">0</span>, input));</span>
+<span class="line" id="L445"></span>
+<span class="line" id="L446">    <span class="tok-kw">var</span> hasher = H.init(seed);</span>
+<span class="line" id="L447">    hasher.update(input);</span>
+<span class="line" id="L448">    <span class="tok-kw">try</span> expectEqual(expected, hasher.final());</span>
+<span class="line" id="L449">}</span>
+<span class="line" id="L450"></span>
+<span class="line" id="L451"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash64&quot;</span> {</span>
+<span class="line" id="L452">    <span class="tok-kw">const</span> H = XxHash64;</span>
+<span class="line" id="L453">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;&quot;</span>, <span class="tok-number">0xef46db3751d8e999</span>);</span>
+<span class="line" id="L454">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;a&quot;</span>, <span class="tok-number">0xd24ec4f1a98c6e5b</span>);</span>
+<span class="line" id="L455">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abc&quot;</span>, <span class="tok-number">0x44bc2cf5ad770999</span>);</span>
+<span class="line" id="L456">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;message digest&quot;</span>, <span class="tok-number">0x066ed728fceeb3be</span>);</span>
+<span class="line" id="L457">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>, <span class="tok-number">0xcfe1f278fa89835c</span>);</span>
+<span class="line" id="L458">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span>, <span class="tok-number">0xaaa46907d3047814</span>);</span>
+<span class="line" id="L459">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span>, <span class="tok-number">0xe04a477f19ee145d</span>);</span>
+<span class="line" id="L460">}</span>
+<span class="line" id="L461"></span>
+<span class="line" id="L462"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash64 smhasher&quot;</span> {</span>
+<span class="line" id="L463">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L464">        <span class="tok-kw">fn</span> <span class="tok-fn">do</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L465">            <span class="tok-kw">try</span> expectEqual(verify.smhasher(XxHash64.hash), <span class="tok-number">0x024B7CF4</span>);</span>
+<span class="line" id="L466">        }</span>
+<span class="line" id="L467">    };</span>
+<span class="line" id="L468">    <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L469">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">75000</span>);</span>
+<span class="line" id="L470">    <span class="tok-kw">comptime</span> <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L471">}</span>
+<span class="line" id="L472"></span>
+<span class="line" id="L473"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash64 iterative api&quot;</span> {</span>
+<span class="line" id="L474">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L475">        <span class="tok-kw">fn</span> <span class="tok-fn">do</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L476">            <span class="tok-kw">try</span> verify.iterativeApi(XxHash64);</span>
+<span class="line" id="L477">        }</span>
+<span class="line" id="L478">    };</span>
+<span class="line" id="L479">    <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L480">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">30000</span>);</span>
+<span class="line" id="L481">    <span class="tok-kw">comptime</span> <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L482">}</span>
+<span class="line" id="L483"></span>
+<span class="line" id="L484"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash32&quot;</span> {</span>
+<span class="line" id="L485">    <span class="tok-kw">const</span> H = XxHash32;</span>
+<span class="line" id="L486"></span>
+<span class="line" id="L487">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;&quot;</span>, <span class="tok-number">0x02cc5d05</span>);</span>
+<span class="line" id="L488">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;a&quot;</span>, <span class="tok-number">0x550d7456</span>);</span>
+<span class="line" id="L489">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abc&quot;</span>, <span class="tok-number">0x32d153ff</span>);</span>
+<span class="line" id="L490">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;message digest&quot;</span>, <span class="tok-number">0x7c948494</span>);</span>
+<span class="line" id="L491">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>, <span class="tok-number">0x63a14d5f</span>);</span>
+<span class="line" id="L492">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&quot;</span>, <span class="tok-number">0x9c285e64</span>);</span>
+<span class="line" id="L493">    <span class="tok-kw">try</span> testExpect(H, <span class="tok-number">0</span>, <span class="tok-str">&quot;12345678901234567890123456789012345678901234567890123456789012345678901234567890&quot;</span>, <span class="tok-number">0x9c05f475</span>);</span>
+<span class="line" id="L494">}</span>
+<span class="line" id="L495"></span>
+<span class="line" id="L496"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash32 smhasher&quot;</span> {</span>
+<span class="line" id="L497">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L498">        <span class="tok-kw">fn</span> <span class="tok-fn">do</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L499">            <span class="tok-kw">try</span> expectEqual(verify.smhasher(XxHash32.hash), <span class="tok-number">0xBA88B743</span>);</span>
+<span class="line" id="L500">        }</span>
+<span class="line" id="L501">    };</span>
+<span class="line" id="L502">    <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L503">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">75000</span>);</span>
+<span class="line" id="L504">    <span class="tok-kw">comptime</span> <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L505">}</span>
+<span class="line" id="L506"></span>
+<span class="line" id="L507"><span class="tok-kw">test</span> <span class="tok-str">&quot;xxhash32 iterative api&quot;</span> {</span>
+<span class="line" id="L508">    <span class="tok-kw">const</span> Test = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L509">        <span class="tok-kw">fn</span> <span class="tok-fn">do</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L510">            <span class="tok-kw">try</span> verify.iterativeApi(XxHash32);</span>
+<span class="line" id="L511">        }</span>
+<span class="line" id="L512">    };</span>
+<span class="line" id="L513">    <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L514">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">30000</span>);</span>
+<span class="line" id="L515">    <span class="tok-kw">comptime</span> <span class="tok-kw">try</span> Test.do();</span>
+<span class="line" id="L516">}</span>
+<span class="line" id="L517"></span>
 </code></pre></body>
 </html>
