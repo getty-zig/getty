@@ -6,6 +6,7 @@ const free = @import("../../free.zig").free;
 const has_attributes = @import("../../../attributes.zig").has_attributes;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Pointer: type) type {
     if (@typeInfo(Pointer) != .Pointer or @typeInfo(Pointer).Pointer.size != .One) {
@@ -139,15 +140,16 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             input: anytype,
             lifetime: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             if (ally) |a| {
                 const value = try a.create(Child);
                 errdefer a.destroy(value);
 
                 var cv = ChildVisitor(Deserializer){};
-                value.* = try cv.visitor().visitString(a, Deserializer, input, lifetime);
+                const result = try cv.visitor().visitString(a, Deserializer, input, lifetime);
+                value.* = result.value;
 
-                return value;
+                return .{ .value = value, .used = result.used };
             }
 
             return error.MissingAllocator;
