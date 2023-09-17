@@ -33,7 +33,7 @@ pub fn getAttributes(
         }
     }
 
-    // Process user SBs.
+    // Process serializer SBs.
     for (S.serializer_st) |sb| {
         if (sb.is(T) and has_attributes(T, sb)) {
             break :blk ?@TypeOf(sb.attributes);
