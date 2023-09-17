@@ -2,6 +2,7 @@ const std = @import("std");
 
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime NetAddress: type) type {
     return struct {
@@ -23,7 +24,7 @@ pub fn Visitor(comptime NetAddress: type) type {
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             const max_ipv6_chars = 47;
             const max_port_chars = 6;
 
@@ -100,7 +101,8 @@ pub fn Visitor(comptime NetAddress: type) type {
             }
 
             const end = addr_port_len - port_len - 1; // The 1 is for the colon separator.
-            return std.net.Address.resolveIp(addr_port_str[0..end], port) catch error.InvalidValue;
+            const value = std.net.Address.resolveIp(addr_port_str[0..end], port) catch error.InvalidValue;
+            return .{ .value = value };
         }
 
         const Child = std.meta.Child(Value);
