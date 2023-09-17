@@ -192,7 +192,7 @@ const ContainerAttributes = struct {
 const VariantAttributes = struct {
     // Deserialize this variant from the given names *or* its type
     // name.
-    //aliases: ?[][]const u8 = null,
+    aliases: ?[]const []const u8 = null,
 
     // Deserialize this variant using a function that is different
     // from the normal deserialization implementation.

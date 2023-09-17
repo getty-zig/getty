@@ -34,27 +34,51 @@ pub fn Visitor(comptime Union: type) type {
             };
 
             inline for (std.meta.fields(Value)) |f| {
-                const attrs = comptime blk: {
+                const attrs = comptime attrs: {
                     if (attributes) |attrs| {
                         if (@hasField(@TypeOf(attrs), f.name)) {
-                            const a = @field(attrs, f.name);
-                            const A = @TypeOf(a);
-
-                            break :blk @as(?A, a);
+                            const attr = @field(attrs, f.name);
+                            break :attrs @as(?@TypeOf(attr), attr);
                         }
                     }
 
-                    break :blk null;
+                    break :attrs null;
                 };
 
-                comptime var name = f.name;
+                comptime var name = name: {
+                    var name = f.name;
 
-                if (attrs) |a| {
-                    const renamed = @hasField(@TypeOf(a), "rename");
-                    if (renamed) name = a.rename;
-                }
+                    if (attrs) |a| {
+                        const renamed = @hasField(@TypeOf(a), "rename");
+                        if (renamed) name = a.rename;
+                    }
 
-                if (std.mem.eql(u8, name, variant)) {
+                    break :name name;
+                };
+
+                // If key matches field's name, rename attribute, or
+                // any of its aliases, deserialize the field.
+                const name_cmp = std.mem.eql(u8, name, variant);
+                const aliases_cmp = aliases_cmp: {
+                    var aliases = aliases: {
+                        if (attrs) |a| {
+                            const aliased = @hasField(@TypeOf(a), "aliases");
+                            if (aliased) break :aliases a.aliases;
+                        }
+
+                        break :aliases_cmp false;
+                    };
+
+                    for (aliases) |a| {
+                        if (std.mem.eql(u8, a, variant)) {
+                            break :aliases_cmp true;
+                        }
+                    }
+
+                    break :aliases_cmp false;
+                };
+
+                if (name_cmp or aliases_cmp) {
                     if (attrs) |a| {
                         const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
                         if (skipped) return error.UnknownVariant;
