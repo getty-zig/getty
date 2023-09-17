@@ -598,6 +598,64 @@ test "deserialize - union, attributes (tag, untagged)" {
     }
 }
 
+test "deserialize - union, attributes (aliases)" {
+    const block = struct {
+        pub const attributes = .{
+            .foo = .{ .aliases = &[_][]const u8{ "Foo", "FoO", "FOO" } },
+        };
+    };
+
+    const Tagged = union(enum) {
+        foo: void,
+
+        pub const @"getty.db" = block;
+    };
+
+    const Bare = union {
+        foo: void,
+
+        pub const @"getty.db" = block;
+    };
+    _ = Bare;
+
+    const tests = .{
+        .{
+            .name = "success, name",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "foo" },
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want = Tagged{ .foo = {} },
+        },
+        .{
+            .name = "success, alias",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "FoO" },
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want = Tagged{ .foo = {} },
+        },
+        .{
+            .name = "fail, UnknownVariant",
+            .tokens = &.{
+                .{ .Union = {} },
+                .{ .String = "fOo" },
+                .{ .Void = {} },
+            },
+            .tagged = true,
+            .want_err = error.UnknownVariant,
+        },
+    };
+
+    inline for (tests) |t| {
+        try runTest(t, Tagged);
+    }
+}
+
 fn runTest(t: anytype, comptime Want: type) !void {
     const Test = @TypeOf(t);
 

@@ -70,17 +70,15 @@ pub fn Visitor(comptime Struct: type) type {
                 var found = false;
 
                 inline for (fields, 0..) |field, i| {
-                    const attrs = comptime blk: {
+                    const attrs = comptime attrs: {
                         if (attributes) |attrs| {
                             if (@hasField(@TypeOf(attrs), field.name)) {
-                                const a = @field(attrs, field.name);
-                                const A = @TypeOf(a);
-
-                                break :blk @as(?A, a);
+                                const attr = @field(attrs, field.name);
+                                break :attrs @as(?@TypeOf(attr), attr);
                             }
                         }
 
-                        break :blk null;
+                        break :attrs null;
                     };
 
                     // The name that will be used to compare key against.
@@ -88,20 +86,40 @@ pub fn Visitor(comptime Struct: type) type {
                     // Initially, name is set to field's name. But field has
                     // the "rename" attribute set, name is set to the
                     // attribute's value.
-                    var name = blk: {
-                        var n = field.name;
+                    comptime var name = name: {
+                        var name = field.name;
 
                         if (attrs) |a| {
                             const renamed = @hasField(@TypeOf(a), "rename");
-                            if (renamed) n = a.rename;
+                            if (renamed) name = a.rename;
                         }
 
-                        break :blk n;
+                        break :name name;
                     };
 
-                    // If key matches field's name or its rename attribute,
-                    // deserialize the field.
-                    if (std.mem.eql(u8, name, key)) {
+                    // If key matches field's name, rename attribute, or
+                    // any of its aliases, deserialize the field.
+                    const name_cmp = std.mem.eql(u8, name, key);
+                    const aliases_cmp = aliases_cmp: {
+                        var aliases = aliases: {
+                            if (attrs) |a| {
+                                const aliased = @hasField(@TypeOf(a), "aliases");
+                                if (aliased) break :aliases a.aliases;
+                            }
+
+                            break :aliases_cmp false;
+                        };
+
+                        for (aliases) |a| {
+                            if (std.mem.eql(u8, a, key)) {
+                                break :aliases_cmp true;
+                            }
+                        }
+
+                        break :aliases_cmp false;
+                    };
+
+                    if (name_cmp or aliases_cmp) {
                         if (field.is_comptime) {
                             @compileError("TODO: DESERIALIZATION OF COMPTIME FIELD");
                         }
