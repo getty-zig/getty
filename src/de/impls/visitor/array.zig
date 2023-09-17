@@ -3,6 +3,7 @@ const std = @import("std");
 const free = @import("../../free.zig").free;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Array: type) type {
     return struct {
@@ -58,13 +59,13 @@ pub fn Visitor(comptime Array: type) type {
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             if (Child == u8) {
                 var array: Value = undefined;
 
                 if (input.len == array.len) {
                     @memcpy(&array, input);
-                    return array;
+                    return .{ .value = array };
                 }
             }
 
