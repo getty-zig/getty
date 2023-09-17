@@ -192,7 +192,7 @@ const ContainerAttributes = struct {
 const VariantAttributes = struct {
     // Deserialize this variant from the given names *or* its type
     // name.
-    //alias: ?[][]const u8 = null,
+    //aliases: ?[][]const u8 = null,
 
     // Deserialize this variant using a function that is different
     // from the normal deserialization implementation.
@@ -217,7 +217,7 @@ fn FieldAttributes(comptime Field: type) type {
     return struct {
         // Deserialize this field from the given names *or* its type
         // name.
-        //alias: ?[][]const u8 = null,
+        aliases: ?[]const []const u8 = null,
 
         // If the value is not present when deserializing, use the
         // field's default value.

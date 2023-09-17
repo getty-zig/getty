@@ -149,6 +149,22 @@ test "deserialize - struct, attributes" {
         };
     };
 
+    const Aliases = struct {
+        a: i32,
+        b: i32,
+        c: i32,
+        d: i32,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .a = .{ .aliases = &[_][]const u8{} },
+                .b = .{ .aliases = &[_][]const u8{"B"} },
+                .c = .{ .aliases = &[_][]const u8{ "C", "CC" } },
+                .d = .{ .aliases = &[_][]const u8{ "D", "DD", "DDD" } },
+            };
+        };
+    };
+
     const tests = .{
         .{
             .name = "ignore_unknown_fields",
@@ -240,6 +256,22 @@ test "deserialize - struct, attributes" {
                 .{ .StructEnd = {} },
             },
             .want = Default{ .a = 1, .b = 20, .c = 30 },
+        },
+        .{
+            .name = "aliases",
+            .tokens = &.{
+                .{ .Struct = .{ .name = @typeName(Aliases), .len = 4 } },
+                .{ .String = "a" },
+                .{ .I32 = 1 },
+                .{ .String = "B" },
+                .{ .I32 = 2 },
+                .{ .String = "CC" },
+                .{ .I32 = 3 },
+                .{ .String = "DDD" },
+                .{ .I32 = 4 },
+                .{ .StructEnd = {} },
+            },
+            .want = Aliases{ .a = 1, .b = 2, .c = 3, .d = 4 },
         },
     };
 
