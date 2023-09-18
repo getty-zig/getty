@@ -182,3 +182,34 @@ test "deserialize - enum, attributes (skip)" {
         }
     }
 }
+
+test "deserialize - enum, attributes (aliases)" {
+    const T = enum {
+        foo,
+
+        pub const @"getty.db" = struct {
+            pub const attributes = .{
+                .foo = .{ .aliases = &[_][]const u8{ "One", "Two", "Three" } },
+            };
+        };
+    };
+
+    const tests = .{
+        .{
+            .name = "success (name)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "foo" } },
+            .want = T.foo,
+        },
+        .{
+            .name = "success (alias)",
+            .tokens = &.{ .{ .Enum = {} }, .{ .String = "Two" } },
+            .want = T.foo,
+        },
+    };
+
+    inline for (tests) |t| {
+        const Want = @TypeOf(t.want);
+        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        try testing.expectEqual(t.name, t.want, got);
+    }
+}
