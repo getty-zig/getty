@@ -172,9 +172,9 @@ const ContainerAttributes = struct {
     // its type name.
     rename: ?[]const u8 = null,
 
-    // Rename all fields or variants of this container according to the given
-    // case convention.
-    rename_all: ?Case = null,
+    // Serialize and deserialize all fields/variants of this container
+    // according to the given case convention.
+    case: ?Case = null,
 
     // Use the specified representation for this union.
     tag: Tag = .external,
@@ -211,8 +211,7 @@ const VariantAttributes = struct {
 
 fn FieldAttributes(comptime Field: type) type {
     return struct {
-        // Deserialize this field from the given names *or* its type
-        // name.
+        // Deserialize this field from the given names *or* its type name.
         aliases: ?[]const []const u8 = null,
 
         // When deserializing, if a value for this field is not present, use
@@ -225,32 +224,31 @@ fn FieldAttributes(comptime Field: type) type {
         // Overrides the `default` attribute.
         //default_path: ?[]const u8 = null,
 
-        // Deserialize this field using a function that is different
-        // from the normal deserialization implementation.
+        // Deserialize this field using a function that is different from the
+        // normal deserialization implementation.
         //deserialize_with: ?[]const u8 = null,
 
-        // Flatten the contents of this field into the container it is
-        // defined in.
+        // Flatten the contents of this field into the container it is defined
+        // in.
         //
         // This attribute is not compatible with the ignore_unknown_fields
         // attribute.
         //flatten: bool = false,
 
-        // Serialize and deserialize this field with the given name
-        // instead of its type name.
+        // Serialize and deserialize this field with the given name instead of
+        // its type name.
         //
-        // Overrides ContainerAttributes.rename_all.
+        // Overrides ContainerAttributes.case.
         rename: ?[]const u8 = null,
 
         // Skip this field during serialization and deserialziation.
         skip: bool = false,
 
-        // Call a function to determine whether to skip serializing
-        // this field.
+        // Call a function to determine whether to skip serializing this field.
         //skip_ser_if: ?[]const u8 = null,
 
-        // Serialize this field using a function that is different from
-        // the normal serialization implementation.
+        // Serialize this field using a function that is different from the
+        // normal serialization implementation.
         //serialize_with: ?[]const u8 = null,
 
         // Combination of serialize_with and deserialize_with.
