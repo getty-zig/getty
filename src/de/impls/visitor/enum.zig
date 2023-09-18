@@ -54,23 +54,48 @@ pub fn Visitor(comptime Enum: type) type {
             const attributes = comptime getAttributes(Value, Deserializer);
 
             inline for (fields) |field| {
+                const attrs = comptime attrs: {
+                    if (attributes) |attrs| {
+                        if (@hasField(@TypeOf(attrs), field.name)) {
+                            const attr = @field(attrs, field.name);
+                            break :attrs @as(?@TypeOf(attr), attr);
+                        }
+                    }
+
+                    break :attrs null;
+                };
+
                 comptime var name = field.name;
 
-                if (attributes) |attrs| {
-                    const attrs_exist = @hasField(@TypeOf(attrs), field.name);
+                comptime if (attrs) |a| {
+                    const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+                    if (skipped) continue;
 
-                    if (attrs_exist) {
-                        const attr = @field(attrs, field.name);
+                    const renamed = @hasField(@TypeOf(a), "rename");
+                    if (renamed) name = a.rename;
+                };
 
-                        const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
-                        if (skipped) continue;
+                const name_cmp = std.mem.eql(u8, name, input);
+                const aliases_cmp = aliases_cmp: {
+                    var aliases = aliases: {
+                        if (attrs) |a| {
+                            const aliased = @hasField(@TypeOf(a), "aliases");
+                            if (aliased) break :aliases a.aliases;
+                        }
 
-                        const renamed = @hasField(@TypeOf(attr), "rename");
-                        if (renamed) name = attr.rename;
+                        break :aliases_cmp false;
+                    };
+
+                    for (aliases) |a| {
+                        if (std.mem.eql(u8, a, input)) {
+                            break :aliases_cmp true;
+                        }
                     }
-                }
 
-                if (std.mem.eql(u8, name, input)) {
+                    break :aliases_cmp false;
+                };
+
+                if (name_cmp or aliases_cmp) {
                     return std.meta.stringToEnum(Value, field.name) orelse error.UnknownVariant;
                 }
             }

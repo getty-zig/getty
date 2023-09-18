@@ -33,8 +33,7 @@ pub fn serialize(
 
     // Process attributes.
     //
-    // Only non-literal enums can define attributes (and have type
-    // information), hence why this if statement is here.
+    // Only non-literal enums can define attributes.
     if (!is_literal) {
         const fields = std.meta.fields(T);
         const attributes = comptime getAttributes(T, @TypeOf(serializer));
