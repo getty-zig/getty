@@ -144,67 +144,65 @@ pub fn is_attributes(
 }
 
 const ContainerAttributes = struct {
-    //content: ?[]const u8 = null,
-
-    // When deserializing, any missing fields should be filled in from the
-    // field's default value.
+    // When deserializing, missing fields or variants should be filled in with
+    // the given value.
     //default: bool = false,
 
-    // When deserializing, any missing fields should be filled in from the
-    // object returned by the given function.
+    // When deserializing, missing fields or variants should be filled in from
+    // the value returned by the given function.
     //
-    // Overrides ContainerAttributes.default.
+    // Overrides the `default` attribute.
     //default_path: ?[]const u8 = null,
 
-    // Always error during deserialization when encountering unknown fields.
+    // Always error during deserialization when encountering unknown fields or
+    // variants.
     //
-    // This attribute isn't compatible with `flatten`.
+    // This attribute isn't compatible with the `flatten` attribute.
     ignore_unknown_fields: bool = false,
 
-    // Deserialize this type by deserializing into the given type, then
+    // Deserialize this container by deserializing into the given type, then
     // converting.
     //from: ?[]const u8 = null,
 
-    // Serialize this type by converting it into the specified type and
+    // Serialize this container by converting it into the specified type and
     // serializing that.
     //into: ?[]const u8 = null,
 
-    // Serialize and deserialize this struct with the given name instead of
+    // Serialize and deserialize this container with the given name instead of
     // its type name.
     rename: ?[]const u8 = null,
 
-    // Rename all the fields of this struct according to the given case
-    // convention.
+    // Rename all fields or variants of this container according to the given
+    // case convention.
     rename_all: ?Case = null,
 
     // Use the specified representation for this union.
     tag: Tag = .external,
 
-    // Deserialize this type by deserializing into the given type, then
+    // Deserialize this container by deserializing into the given type, then
     // converting fallibly.
     //try_from: ?[]const u8 = null,
 };
 
 const VariantAttributes = struct {
-    // Deserialize this variant from the given names *or* its type
-    // name.
+    // Deserialize this variant from the given names *or* its type name.
     aliases: ?[]const []const u8 = null,
 
-    // Deserialize this variant using a function that is different
-    // from the normal deserialization implementation.
+    // Deserialize this variant using a function that is different from the
+    // normal deserialization implementation.
     //deserialize_with: ?[]const u8 = null,
 
-    // Serialize and deserialize this variant with the given name
-    // instead of its type name.
+    // Serialize and deserialize this variant with the given name instead of
+    // its type name.
     //
-    // Overrides ContainerAttributes.rename_all.
+    // Overrides the `rename_all` attribute.
     rename: ?[]const u8 = null,
 
     // Never serialize or deserialize this variant.
     skip: bool = false,
 
-    // Serialize this variant using a function that is different from
-    // the normal serialization implementation.
+    // Serialize this variant using a function that is different from the
+    // normal serialization implementation.
     //serialize_with: ?[]const u8 = null,
 
     // Combination of serialize_with and deserialize_with.
@@ -217,14 +215,14 @@ fn FieldAttributes(comptime Field: type) type {
         // name.
         aliases: ?[]const []const u8 = null,
 
-        // If the value is not present when deserializing, use the
-        // field's default value.
+        // When deserializing, if a value for this field is not present, use
+        // the given value.
         default: ?Field = null,
 
-        // If the value is not present when deserializing, call a
-        // function to get a default value.
+        // When deserializing, if a value for this field is not present, use
+        // the value returned by the given function.
         //
-        // Overrides FieldAttributes.default.
+        // Overrides the `default` attribute.
         //default_path: ?[]const u8 = null,
 
         // Deserialize this field using a function that is different
@@ -245,9 +243,6 @@ fn FieldAttributes(comptime Field: type) type {
         rename: ?[]const u8 = null,
 
         // Skip this field during serialization and deserialziation.
-        //
-        // During deserialization, the field's default value will be
-        // used.
         skip: bool = false,
 
         // Call a function to determine whether to skip serializing
