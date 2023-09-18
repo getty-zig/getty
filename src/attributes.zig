@@ -171,7 +171,6 @@ const ContainerAttributes = struct {
 
     // Serialize and deserialize this struct with the given name instead of
     // its type name.
-    //rename: []const u8 = @typeName(T),
     rename: ?[]const u8 = null,
 
     // Rename all the fields of this struct according to the given case
