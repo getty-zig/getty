@@ -148,86 +148,84 @@
 </span>
 <span class="line" id="L35">    <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L36">    <span class="tok-comment">// Only non-literal enums can define attributes (and have type</span>
+<span class="line" id="L36">    <span class="tok-comment">// Only non-literal enums can define attributes.</span>
 </span>
-<span class="line" id="L37">    <span class="tok-comment">// information), hence why this if statement is here.</span>
+<span class="line" id="L37">    <span class="tok-kw">if</span> (!is_literal) {</span>
+<span class="line" id="L38">        <span class="tok-kw">const</span> fields = std.meta.fields(T);</span>
+<span class="line" id="L39">        <span class="tok-kw">const</span> attributes = <span class="tok-kw">comptime</span> getAttributes(T, <span class="tok-builtin">@TypeOf</span>(serializer));</span>
+<span class="line" id="L40"></span>
+<span class="line" id="L41">        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L42">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
+<span class="line" id="L43">                <span class="tok-kw">const</span> tag_matches = value == <span class="tok-builtin">@field</span>(T, field.name);</span>
+<span class="line" id="L44"></span>
+<span class="line" id="L45">                <span class="tok-kw">if</span> (tag_matches) {</span>
+<span class="line" id="L46">                    <span class="tok-kw">const</span> attrs_exist = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name);</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">                    <span class="tok-kw">if</span> (attrs_exist) {</span>
+<span class="line" id="L49">                        <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L50"></span>
+<span class="line" id="L51">                        <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> attr.skip;</span>
+<span class="line" id="L52">                        <span class="tok-kw">if</span> (skipped) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownVariant;</span>
+<span class="line" id="L53"></span>
+<span class="line" id="L54">                        <span class="tok-kw">const</span> renamed = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;rename&quot;</span>);</span>
+<span class="line" id="L55">                        <span class="tok-kw">if</span> (renamed) name = attr.rename;</span>
+<span class="line" id="L56"></span>
+<span class="line" id="L57">                        <span class="tok-kw">break</span>;</span>
+<span class="line" id="L58">                    }</span>
+<span class="line" id="L59">                }</span>
+<span class="line" id="L60">            }</span>
+<span class="line" id="L61">        }</span>
+<span class="line" id="L62">    }</span>
+<span class="line" id="L63"></span>
+<span class="line" id="L64">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializer.serializeEnum(index, name);</span>
+<span class="line" id="L65">}</span>
+<span class="line" id="L66"></span>
+<span class="line" id="L67"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - enum&quot;</span> {</span>
+<span class="line" id="L68">    <span class="tok-comment">// literal</span>
 </span>
-<span class="line" id="L38">    <span class="tok-kw">if</span> (!is_literal) {</span>
-<span class="line" id="L39">        <span class="tok-kw">const</span> fields = std.meta.fields(T);</span>
-<span class="line" id="L40">        <span class="tok-kw">const</span> attributes = <span class="tok-kw">comptime</span> getAttributes(T, <span class="tok-builtin">@TypeOf</span>(serializer));</span>
-<span class="line" id="L41"></span>
-<span class="line" id="L42">        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L43">            <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
-<span class="line" id="L44">                <span class="tok-kw">const</span> tag_matches = value == <span class="tok-builtin">@field</span>(T, field.name);</span>
-<span class="line" id="L45"></span>
-<span class="line" id="L46">                <span class="tok-kw">if</span> (tag_matches) {</span>
-<span class="line" id="L47">                    <span class="tok-kw">const</span> attrs_exist = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name);</span>
-<span class="line" id="L48"></span>
-<span class="line" id="L49">                    <span class="tok-kw">if</span> (attrs_exist) {</span>
-<span class="line" id="L50">                        <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
-<span class="line" id="L51"></span>
-<span class="line" id="L52">                        <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> attr.skip;</span>
-<span class="line" id="L53">                        <span class="tok-kw">if</span> (skipped) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownVariant;</span>
-<span class="line" id="L54"></span>
-<span class="line" id="L55">                        <span class="tok-kw">const</span> renamed = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;rename&quot;</span>);</span>
-<span class="line" id="L56">                        <span class="tok-kw">if</span> (renamed) name = attr.rename;</span>
-<span class="line" id="L57"></span>
-<span class="line" id="L58">                        <span class="tok-kw">break</span>;</span>
-<span class="line" id="L59">                    }</span>
-<span class="line" id="L60">                }</span>
-<span class="line" id="L61">            }</span>
-<span class="line" id="L62">        }</span>
-<span class="line" id="L63">    }</span>
-<span class="line" id="L64"></span>
-<span class="line" id="L65">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> serializer.serializeEnum(index, name);</span>
-<span class="line" id="L66">}</span>
-<span class="line" id="L67"></span>
-<span class="line" id="L68"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - enum&quot;</span> {</span>
-<span class="line" id="L69">    <span class="tok-comment">// literal</span>
+<span class="line" id="L69">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, .foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } });</span>
+<span class="line" id="L70">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, .bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } });</span>
+<span class="line" id="L71"></span>
+<span class="line" id="L72">    <span class="tok-comment">// non-literal</span>
 </span>
-<span class="line" id="L70">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, .foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } });</span>
-<span class="line" id="L71">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, .bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } });</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">    <span class="tok-comment">// non-literal</span>
-</span>
-<span class="line" id="L74">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> { foo, bar };</span>
-<span class="line" id="L75">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } });</span>
-<span class="line" id="L76">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } });</span>
-<span class="line" id="L77">}</span>
-<span class="line" id="L78"></span>
-<span class="line" id="L79"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - enum, attributes (rename)&quot;</span> {</span>
-<span class="line" id="L80">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L81">        foo,</span>
-<span class="line" id="L82">        bar,</span>
-<span class="line" id="L83"></span>
-<span class="line" id="L84">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L85">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L86">                .foo = .{ .rename = <span class="tok-str">&quot;baz&quot;</span> },</span>
-<span class="line" id="L87">                .bar = .{ .rename = <span class="tok-str">&quot;qux&quot;</span> },</span>
-<span class="line" id="L88">            };</span>
-<span class="line" id="L89">        };</span>
-<span class="line" id="L90">    };</span>
-<span class="line" id="L91"></span>
-<span class="line" id="L92">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;baz&quot;</span> } });</span>
-<span class="line" id="L93">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;qux&quot;</span> } });</span>
-<span class="line" id="L94">}</span>
-<span class="line" id="L95"></span>
-<span class="line" id="L96"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - enum, attributes (skip)&quot;</span> {</span>
-<span class="line" id="L97">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L98">        foo,</span>
-<span class="line" id="L99">        bar,</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L102">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L103">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L104">                .bar = .{ .skip = <span class="tok-null">false</span> },</span>
-<span class="line" id="L105">            };</span>
-<span class="line" id="L106">        };</span>
-<span class="line" id="L107">    };</span>
-<span class="line" id="L108"></span>
-<span class="line" id="L109">    <span class="tok-kw">try</span> t.runErr(<span class="tok-null">null</span>, serialize, <span class="tok-kw">error</span>.UnknownVariant, T.foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } });</span>
-<span class="line" id="L110">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } });</span>
-<span class="line" id="L111">}</span>
-<span class="line" id="L112"></span>
+<span class="line" id="L73">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> { foo, bar };</span>
+<span class="line" id="L74">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } });</span>
+<span class="line" id="L75">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } });</span>
+<span class="line" id="L76">}</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - enum, attributes (rename)&quot;</span> {</span>
+<span class="line" id="L79">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L80">        foo,</span>
+<span class="line" id="L81">        bar,</span>
+<span class="line" id="L82"></span>
+<span class="line" id="L83">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L84">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L85">                .foo = .{ .rename = <span class="tok-str">&quot;baz&quot;</span> },</span>
+<span class="line" id="L86">                .bar = .{ .rename = <span class="tok-str">&quot;qux&quot;</span> },</span>
+<span class="line" id="L87">            };</span>
+<span class="line" id="L88">        };</span>
+<span class="line" id="L89">    };</span>
+<span class="line" id="L90"></span>
+<span class="line" id="L91">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;baz&quot;</span> } });</span>
+<span class="line" id="L92">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;qux&quot;</span> } });</span>
+<span class="line" id="L93">}</span>
+<span class="line" id="L94"></span>
+<span class="line" id="L95"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - enum, attributes (skip)&quot;</span> {</span>
+<span class="line" id="L96">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L97">        foo,</span>
+<span class="line" id="L98">        bar,</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L101">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L102">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L103">                .bar = .{ .skip = <span class="tok-null">false</span> },</span>
+<span class="line" id="L104">            };</span>
+<span class="line" id="L105">        };</span>
+<span class="line" id="L106">    };</span>
+<span class="line" id="L107"></span>
+<span class="line" id="L108">    <span class="tok-kw">try</span> t.runErr(<span class="tok-null">null</span>, serialize, <span class="tok-kw">error</span>.UnknownVariant, T.foo, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } });</span>
+<span class="line" id="L109">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, T.bar, &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } });</span>
+<span class="line" id="L110">}</span>
+<span class="line" id="L111"></span>
 </code></pre></body>
 </html>
