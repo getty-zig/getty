@@ -153,7 +153,7 @@ const ContainerAttributes = struct {
     // When deserializing, any missing fields should be filled in from the
     // object returned by the given function.
     //
-    // Overrides `default`.
+    // Overrides ContainerAttributes.default.
     //default_path: ?[]const u8 = null,
 
     // Always error during deserialization when encountering unknown fields.
@@ -175,7 +175,7 @@ const ContainerAttributes = struct {
 
     // Rename all the fields of this struct according to the given case
     // convention.
-    //rename_all: ?Case = null,
+    rename_all: ?Case = null,
 
     // Use the specified representation for this union.
     tag: Tag = .external,
@@ -196,6 +196,8 @@ const VariantAttributes = struct {
 
     // Serialize and deserialize this variant with the given name
     // instead of its type name.
+    //
+    // Overrides ContainerAttributes.rename_all.
     rename: ?[]const u8 = null,
 
     // Never serialize or deserialize this variant.
@@ -222,7 +224,7 @@ fn FieldAttributes(comptime Field: type) type {
         // If the value is not present when deserializing, call a
         // function to get a default value.
         //
-        // Overrides `default`.
+        // Overrides FieldAttributes.default.
         //default_path: ?[]const u8 = null,
 
         // Deserialize this field using a function that is different
@@ -238,6 +240,8 @@ fn FieldAttributes(comptime Field: type) type {
 
         // Serialize and deserialize this field with the given name
         // instead of its type name.
+        //
+        // Overrides ContainerAttributes.rename_all.
         rename: ?[]const u8 = null,
 
         // Skip this field during serialization and deserialziation.
