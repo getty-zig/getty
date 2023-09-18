@@ -184,9 +184,6 @@ const ContainerAttributes = struct {
     // Deserialize this type by deserializing into the given type, then
     // converting fallibly.
     //try_from: ?[]const u8 = null,
-
-    // Use the untagged enum representation for this enum.
-    //untagged: bool = false,
 };
 
 const VariantAttributes = struct {
