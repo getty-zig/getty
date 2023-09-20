@@ -24,7 +24,7 @@ pub fn UnionAccess(
 
             pub const Err = E;
 
-            pub fn variantSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+            pub fn variantSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.variantSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn UnionAccess(
                 @compileError("variantSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn variant(self: Self, ally: ?std.mem.Allocator, comptime Variant: type) E!Variant {
+            pub fn variant(self: Self, ally: std.mem.Allocator, comptime Variant: type) E!Variant {
                 if (methods.variant) |func| {
                     return try func(self.impl, ally, Variant);
                 }
@@ -61,7 +61,7 @@ pub fn UnionAccess(
 
 fn VariantSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -74,7 +74,7 @@ fn VariantSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn VariantFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime T: type) E!T {
+        fn func(impl: Impl, ally: std.mem.Allocator, comptime T: type) E!T {
             _ = impl;
             _ = ally;
 

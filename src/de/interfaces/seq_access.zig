@@ -24,7 +24,7 @@ pub fn SeqAccess(
 
             pub const Err = E;
 
-            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+            pub fn nextElementSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 if (methods.nextElementSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +32,7 @@ pub fn SeqAccess(
                 @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Elem: type) E!?Elem {
+            pub fn nextElement(self: Self, ally: std.mem.Allocator, comptime Elem: type) E!?Elem {
                 if (methods.nextElement) |func| {
                     return try func(self.impl, ally, Elem);
                 }
@@ -61,7 +61,7 @@ pub fn SeqAccess(
 
 fn NextElementSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -74,7 +74,7 @@ fn NextElementSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextElementFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Elem: type) E!?Elem {
+        fn func(impl: Impl, ally: std.mem.Allocator, comptime Elem: type) E!?Elem {
             _ = impl;
             _ = ally;
 

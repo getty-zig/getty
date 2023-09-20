@@ -48,7 +48,7 @@ pub const ContentDeserializer = struct {
 
     const De = Self.@"getty.Deserializer";
 
-    fn deserializeAny(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeAny(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Bool => try self.deserializeBool(ally, visitor),
             inline .F16, .F32, .F64, .F128 => try self.deserializeFloat(ally, visitor),
@@ -67,14 +67,14 @@ pub const ContentDeserializer = struct {
         };
     }
 
-    fn deserializeBool(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeBool(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Bool => |v| try visitor.visitBool(ally, De, v),
             else => error.InvalidType,
         };
     }
 
-    fn deserializeEnum(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeEnum(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Int => |v| blk: {
                 const int = v.to(@TypeOf(visitor).Value) catch unreachable;
@@ -85,18 +85,18 @@ pub const ContentDeserializer = struct {
         };
     }
 
-    fn deserializeFloat(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeFloat(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             inline .F16, .F32, .F64, .F128 => |v| try visitor.visitFloat(ally, De, v),
             else => error.InvalidType,
         };
     }
 
-    fn deserializeIgnored(_: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeIgnored(_: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return try visitor.visitVoid(ally, De);
     }
 
-    fn deserializeInt(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeInt(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Int => |v| blk: {
                 comptime var Value = @TypeOf(visitor).Value;
@@ -115,14 +115,14 @@ pub const ContentDeserializer = struct {
         };
     }
 
-    fn deserializeMap(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeMap(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Map => |v| try visitContentMap(ally, v, visitor),
             else => error.InvalidType,
         };
     }
 
-    fn deserializeOptional(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeOptional(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Null => try visitor.visitNull(ally, De),
             .Some => |v| blk: {
@@ -133,21 +133,21 @@ pub const ContentDeserializer = struct {
         };
     }
 
-    fn deserializeSeq(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeSeq(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Seq => |v| try visitContentSeq(ally, v, visitor),
             else => error.InvalidType,
         };
     }
 
-    fn deserializeString(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeString(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .String => |v| try visitor.visitString(ally, De, v),
             else => error.InvalidType,
         };
     }
 
-    fn deserializeUnion(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeUnion(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Map => |mal| blk: {
                 const keys = mal.items(.key);
@@ -167,21 +167,17 @@ pub const ContentDeserializer = struct {
         };
     }
 
-    fn deserializeVoid(self: Self, ally: ?std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
+    fn deserializeVoid(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
             .Void => try visitor.visitVoid(ally, De),
             else => error.InvalidType,
         };
     }
 
-    fn visitContentMap(ally: ?std.mem.Allocator, content: ContentMultiArrayList, visitor: anytype) getty_error!@TypeOf(visitor).Value {
-        if (ally == null) {
-            return error.MissingAllocator;
-        }
-
+    fn visitContentMap(ally: std.mem.Allocator, content: ContentMultiArrayList, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         var map = ContentDeserializerMultiArrayList{};
-        try map.ensureTotalCapacity(ally.?, content.len);
-        defer map.deinit(ally.?);
+        try map.ensureTotalCapacity(ally, content.len);
+        defer map.deinit(ally);
 
         for (content.items(.key), content.items(.value)) |k, v| {
             map.appendAssumeCapacity(.{
@@ -191,15 +187,11 @@ pub const ContentDeserializer = struct {
         }
 
         var ma = MapAccess{ .deserializers = map };
-        return try visitor.visitMap(ally.?, De, ma.mapAccess());
+        return try visitor.visitMap(ally, De, ma.mapAccess());
     }
 
-    fn visitContentSeq(ally: ?std.mem.Allocator, content: std.ArrayList(Content), visitor: anytype) getty_error!@TypeOf(visitor).Value {
-        if (ally == null) {
-            return error.MissingAllocator;
-        }
-
-        var seq = try std.ArrayList(ContentDeserializer).initCapacity(ally.?, content.items.len);
+    fn visitContentSeq(ally: std.mem.Allocator, content: std.ArrayList(Content), visitor: anytype) getty_error!@TypeOf(visitor).Value {
+        var seq = try std.ArrayList(ContentDeserializer).initCapacity(ally, content.items.len);
         defer seq.deinit();
 
         for (content.items) |c| {
@@ -207,7 +199,7 @@ pub const ContentDeserializer = struct {
         }
 
         var sa = SeqAccess{ .deserializers = seq };
-        return try visitor.visitSeq(ally.?, De, sa.seqAccess());
+        return try visitor.visitSeq(ally, De, sa.seqAccess());
     }
 };
 
@@ -224,7 +216,7 @@ const MapAccess = struct {
         },
     );
 
-    fn nextKeySeed(self: *@This(), ally: ?std.mem.Allocator, seed: anytype) getty_error!?@TypeOf(seed).Value {
+    fn nextKeySeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) getty_error!?@TypeOf(seed).Value {
         if (self.pos >= self.deserializers.items(.key).len) {
             return null;
         }
@@ -233,7 +225,7 @@ const MapAccess = struct {
         return try seed.deserialize(ally, d.deserializer());
     }
 
-    fn nextValueSeed(self: *@This(), ally: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+    fn nextValueSeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
         var d = self.deserializers.items(.value)[self.pos];
         self.pos += 1;
         return try seed.deserialize(ally, d.deserializer());
@@ -250,7 +242,7 @@ const SeqAccess = struct {
         .{ .nextElementSeed = nextElementSeed },
     );
 
-    fn nextElementSeed(self: *@This(), ally: ?std.mem.Allocator, seed: anytype) getty_error!?@TypeOf(seed).Value {
+    fn nextElementSeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) getty_error!?@TypeOf(seed).Value {
         if (self.pos >= self.deserializers.items.len) {
             return null;
         }
@@ -280,12 +272,12 @@ const UnionVariantAccess = struct {
         .{ .payloadSeed = payloadSeed },
     );
 
-    fn variantSeed(self: *Self, ally: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+    fn variantSeed(self: *Self, ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
         var cd = ContentDeserializer{ .content = self.key };
         return try seed.deserialize(ally, cd.deserializer());
     }
 
-    fn payloadSeed(self: *Self, ally: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+    fn payloadSeed(self: *Self, ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
         var cd = ContentDeserializer{ .content = self.value };
         return try seed.deserialize(ally, cd.deserializer());
     }

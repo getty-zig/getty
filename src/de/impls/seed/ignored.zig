@@ -15,7 +15,7 @@ pub const Ignored = struct {
         .{ .deserialize = deserialize },
     );
 
-    fn deserialize(i: Value, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
+    fn deserialize(i: Value, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
         return try deserializer.deserializeIgnored(ally, i.visitor());
     }
 };

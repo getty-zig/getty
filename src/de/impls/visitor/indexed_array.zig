@@ -15,7 +15,7 @@ pub fn Visitor(comptime IndexedArray: type) type {
 
         const Value = IndexedArray;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var array = Value.initUndefined();
             var seen: usize = 0;
 

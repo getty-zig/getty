@@ -15,33 +15,27 @@ pub usingnamespace VisitorInterface(
 
 const Value = std.Uri;
 
-fn visitString(_: Visitor, ally: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
-    if (ally == null) {
-        return error.MissingAllocator;
-    }
-
-    const a = ally.?;
-
+fn visitString(_: Visitor, ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
     var uri = std.Uri.parse(input) catch return error.InvalidValue;
-    errdefer free(a, Deserializer, uri);
+    errdefer free(ally, Deserializer, uri);
 
-    uri.scheme = try a.dupe(u8, uri.scheme);
-    uri.path = try a.dupe(u8, uri.path);
+    uri.scheme = try ally.dupe(u8, uri.scheme);
+    uri.path = try ally.dupe(u8, uri.path);
 
     if (uri.host) |host| {
-        uri.host = try a.dupe(u8, host);
+        uri.host = try ally.dupe(u8, host);
     }
     if (uri.user) |user| {
-        uri.user = try a.dupe(u8, user);
+        uri.user = try ally.dupe(u8, user);
     }
     if (uri.password) |password| {
-        uri.password = try a.dupe(u8, password);
+        uri.password = try ally.dupe(u8, password);
     }
     if (uri.query) |query| {
-        uri.query = try a.dupe(u8, query);
+        uri.query = try ally.dupe(u8, query);
     }
     if (uri.fragment) |fragment| {
-        uri.fragment = try a.dupe(u8, fragment);
+        uri.fragment = try ally.dupe(u8, fragment);
     }
 
     return uri;

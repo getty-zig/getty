@@ -22,8 +22,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -82,7 +82,7 @@ pub fn free(
 }
 
 fn deserializeExternallyTaggedUnion(
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     deserializer: anytype,
     visitor: anytype,
 ) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
@@ -91,7 +91,7 @@ fn deserializeExternallyTaggedUnion(
 
 // Untagged unions are only supported in self-describing formats.
 fn deserializeUntaggedUnion(
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,
@@ -107,7 +107,7 @@ fn deserializeUntaggedUnion(
             // If content was successfully deserialized, and we're here, then
             // that means allocator must've not been null.
             std.debug.assert(ally != null);
-            getty_free(ally.?, @TypeOf(deserializer), content);
+            getty_free(ally, @TypeOf(deserializer), content);
         },
         else => {},
     };
@@ -171,11 +171,11 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
             },
         );
 
-        fn variantSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+        fn variantSeed(self: Self, _: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
             return self.variant;
         }
 
-        fn payloadSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+        fn payloadSeed(self: Self, _: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
             // This check prevents deserializeUntaggedUnion from having
             // multiple return statements with different return types when its
             // inline loop is unrolled.

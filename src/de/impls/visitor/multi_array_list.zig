@@ -15,19 +15,13 @@ pub fn Visitor(comptime MultiArrayList: type) type {
 
         const Value = MultiArrayList;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
-            if (ally == null) {
-                return error.MissingAllocator;
-            }
-
-            const a = ally.?;
-
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = Value{};
-            errdefer free(a, Deserializer, list);
+            errdefer free(ally, Deserializer, list);
 
-            while (try seq.nextElement(a, Value.Elem)) |elem| {
-                errdefer free(a, Deserializer, elem);
-                try list.append(a, elem);
+            while (try seq.nextElement(ally, Value.Elem)) |elem| {
+                errdefer free(ally, Deserializer, elem);
+                try list.append(ally, elem);
             }
 
             return list;

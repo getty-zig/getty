@@ -15,7 +15,7 @@ const VariantAccessInterface = @import("interfaces/variant_access.zig").VariantA
 pub usingnamespace testing;
 
 pub fn deserialize(
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     comptime test_case: ?[]const u8,
     comptime block: type,
     comptime Want: type,
@@ -31,7 +31,7 @@ pub fn deserialize(
 }
 
 pub fn deserializeErr(
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
@@ -128,7 +128,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
         const De = Self.@"getty.Deserializer";
 
-        fn deserializeAny(self: *Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeAny(self: *Self, ally: std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
                 .Bool => |v| try visitor.visitBool(ally, De, v),
                 .I8 => |v| try visitor.visitInt(ally, De, v),
@@ -195,7 +195,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             };
         }
 
-        fn deserializeIgnored(self: *Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeIgnored(self: *Self, ally: std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             _ = self.nextTokenOpt();
             return try visitor.visitVoid(ally, De);
         }
@@ -231,7 +231,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .nextElementSeed = nextElementSeed },
             );
 
-            fn nextElementSeed(self: *Seq, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextElementSeed(self: *Seq, ally: std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // All elements have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -261,7 +261,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
             );
 
-            fn nextKeySeed(self: *Map, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextKeySeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // All entries have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -278,7 +278,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 return try seed.deserialize(ally, self.de.deserializer());
             }
 
-            fn nextValueSeed(self: *Map, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn nextValueSeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 return try seed.deserialize(ally, self.de.deserializer());
             }
         };
@@ -298,7 +298,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .payloadSeed = payloadSeed },
             );
 
-            fn variantSeed(self: *Union, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn variantSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (self.de.peekTokenOpt()) |token| {
                     if (token == .String) {
                         return try seed.deserialize(ally, self.de.deserializer());
@@ -308,7 +308,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 return error.InvalidType;
             }
 
-            fn payloadSeed(self: *Union, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn payloadSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (@TypeOf(seed).Value != void) {
                     return try seed.deserialize(ally, self.de.deserializer());
                 }

@@ -15,29 +15,23 @@ pub fn Visitor(comptime HashMap: type) type {
 
         const Value = HashMap;
 
-        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
-            if (ally == null) {
-                return error.MissingAllocator;
-            }
-
-            const a = ally.?;
-
+        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             const K = std.meta.fieldInfo(Value.KV, .key).type;
             const V = std.meta.fieldInfo(Value.KV, .value).type;
             const unmanaged = is_hash_map_unmanaged or is_array_hash_map_unmanaged;
 
-            var hash_map = if (unmanaged) HashMap{} else HashMap.init(a);
-            errdefer free(a, Deserializer, hash_map);
+            var hash_map = if (unmanaged) HashMap{} else HashMap.init(ally);
+            errdefer free(ally, Deserializer, hash_map);
 
-            while (try map.nextKey(a, K)) |key| {
+            while (try map.nextKey(ally, K)) |key| {
                 errdefer if (map.isKeyAllocated(@TypeOf(key))) {
-                    free(a, Deserializer, key);
+                    free(ally, Deserializer, key);
                 };
 
-                const value = try map.nextValue(a, V);
-                errdefer free(a, Deserializer, value);
+                const value = try map.nextValue(ally, V);
+                errdefer free(ally, Deserializer, value);
 
-                try if (unmanaged) hash_map.put(a, key, value) else hash_map.put(key, value);
+                try if (unmanaged) hash_map.put(ally, key, value) else hash_map.put(key, value);
             }
 
             return hash_map;

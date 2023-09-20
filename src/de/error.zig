@@ -11,7 +11,6 @@ pub const Error = std.mem.Allocator.Error || error{
     InvalidLength,
     InvalidType,
     InvalidValue,
-    MissingAllocator,
     MissingField,
     MissingVariant,
     UnknownField,

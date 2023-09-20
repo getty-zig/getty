@@ -15,19 +15,13 @@ pub fn Visitor(comptime SinglyLinkedList: type) type {
 
         const Value = SinglyLinkedList;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
-            if (ally == null) {
-                return error.MissingAllocator;
-            }
-
-            const a = ally.?;
-
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = Value{};
-            errdefer free(a, Deserializer, list);
+            errdefer free(ally, Deserializer, list);
 
             var current: ?*Value.Node = null;
-            while (try seq.nextElement(a, Value.Node.Data)) |value| {
-                var node = try a.create(Value.Node);
+            while (try seq.nextElement(ally, Value.Node.Data)) |value| {
+                var node = try ally.create(Value.Node);
                 node.* = .{ .data = value };
 
                 if (current) |c| {

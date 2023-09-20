@@ -18,11 +18,11 @@ pub fn Visitor(comptime Optional: type) type {
 
         const Value = Optional;
 
-        fn visitNull(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!Value {
+        fn visitNull(_: Self, _: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!Value {
             return null;
         }
 
-        fn visitSome(_: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
+        fn visitSome(_: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
             return try getty_deserialize(ally, std.meta.Child(Value), deserializer);
         }
     };

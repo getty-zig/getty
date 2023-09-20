@@ -22,7 +22,7 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
+    /// A memory allocator.
     ally: ?Allocator,
     /// The type being deserialized into.
     comptime T: type,

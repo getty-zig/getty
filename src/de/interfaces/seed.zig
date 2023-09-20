@@ -30,7 +30,7 @@ pub fn Seed(
 
             pub const Value = T;
 
-            pub fn deserialize(self: Self, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!T {
+            pub fn deserialize(self: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!T {
                 if (methods.deserialize) |func| {
                     return try func(self.impl, ally, deserializer);
                 }
@@ -48,7 +48,7 @@ pub fn Seed(
 
 fn DeserializeFn(comptime Impl: type, comptime Value: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
             _ = impl;
             _ = ally;
 

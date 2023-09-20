@@ -15,12 +15,12 @@ pub fn Visitor(comptime IndexedSet: type) type {
 
         const Value = IndexedSet;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var set = Value.initEmpty();
-            errdefer free(ally.?, Deserializer, set);
+            errdefer free(ally, Deserializer, set);
 
             while (try seq.nextElement(ally, Value.Key)) |k| {
-                defer free(ally.?, Deserializer, k);
+                defer free(ally, Deserializer, k);
                 set.insert(k);
             }
 

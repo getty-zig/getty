@@ -53,7 +53,7 @@ pub const Content = union(enum) {
 
     pub const @"getty.db" = struct {
         pub fn deserialize(
-            ally: ?std.mem.Allocator,
+            ally: std.mem.Allocator,
             comptime _: type,
             deserializer: anytype,
             visitor: anytype,

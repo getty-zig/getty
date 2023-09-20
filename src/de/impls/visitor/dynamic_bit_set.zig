@@ -14,11 +14,7 @@ pub fn Visitor(comptime Value: type) type {
             },
         );
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
-            if (ally == null) {
-                return error.MissingAllocator;
-            }
-
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             // A DynamicBitSet can only be resized towards its LSB. That is,
             // making [1,1,0,0]'s length = 2 gives [0,0], not [1,1]. And, as
             // far as I know, there's no sane way to copy bits from one bitset
@@ -27,7 +23,7 @@ pub fn Visitor(comptime Value: type) type {
             // To avoid messing around with resizing bitsets, we instead
             // deserialize into an ArrayList initially. Then, the list's
             // elements are simply copied over to a properly sized bitset.
-            var list = try std.ArrayList(Value.MaskInt).initCapacity(ally.?, 8);
+            var list = try std.ArrayList(Value.MaskInt).initCapacity(ally, 8);
             defer list.deinit();
 
             while (try seq.nextElement(ally, Value.MaskInt)) |bit| {
@@ -38,8 +34,8 @@ pub fn Visitor(comptime Value: type) type {
                 }
             }
 
-            var bitset = try Value.initEmpty(ally.?, list.items.len);
-            errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(ally.?);
+            var bitset = try Value.initEmpty(ally, list.items.len);
+            errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(ally);
 
             for (list.items, 0..) |bit, i| {
                 if (bit == 1) bitset.set(list.items.len - 1 - i);

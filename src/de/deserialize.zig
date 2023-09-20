@@ -10,7 +10,7 @@ const Visitor = @import("interfaces/visitor.zig").Visitor;
 
 /// Deserializes data from a `getty.Deserializer` `d` into a value of type `T`.
 pub fn deserialize(
-    /// An optional memory allocator.
+    /// A memory allocator.
     ally: std.mem.Allocator,
     /// The type of the value to deserialize into.
     comptime T: type,
@@ -83,7 +83,7 @@ fn PointVisitor(comptime Value: type) type {
 
         fn visitSeq(
             _: Self,
-            ally: ?std.mem.Allocator,
+            ally: std.mem.Allocator,
             comptime De: type,
             seq: anytype,
         ) De.Err!Value {
@@ -117,7 +117,7 @@ test "deserialize - success, normal" {
             return T == Point;
         }
 
-        pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
+        pub fn deserialize(ally: std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
             return try d.deserializeSeq(ally, v);
         }
 
@@ -131,7 +131,7 @@ test "deserialize - success, normal" {
         const Self = @This();
 
         pub const @"getty.db" = struct {
-            pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
+            pub fn deserialize(ally: std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
                 return try d.deserializeSeq(ally, v);
             }
 

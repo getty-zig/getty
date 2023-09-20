@@ -18,7 +18,7 @@ pub fn Visitor(comptime Array: type) type {
 
         const Value = Array;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var array: Value = undefined;
             var seen: usize = 0;
 
@@ -51,7 +51,7 @@ pub fn Visitor(comptime Array: type) type {
             return array;
         }
 
-        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitString(_: Self, _: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             if (Child == u8) {
                 var string: Value = undefined;
 

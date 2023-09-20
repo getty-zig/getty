@@ -15,23 +15,17 @@ pub fn Visitor(comptime BufMap: type) type {
 
         const Value = BufMap;
 
-        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
-            if (ally == null) {
-                return error.MissingAllocator;
-            }
+        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+            var m = BufMap.init(ally);
+            errdefer free(ally, Deserializer, m);
 
-            const a = ally.?;
-
-            var m = BufMap.init(a);
-            errdefer free(a, Deserializer, m);
-
-            while (try map.nextKey(a, []const u8)) |k| {
+            while (try map.nextKey(ally, []const u8)) |k| {
                 defer if (map.isKeyAllocated(@TypeOf(k))) {
-                    free(a, Deserializer, k);
+                    free(ally, Deserializer, k);
                 };
 
-                const v = try map.nextValue(a, []const u8);
-                defer free(a, Deserializer, v);
+                const v = try map.nextValue(ally, []const u8);
+                defer free(ally, Deserializer, v);
 
                 try m.put(k, v);
             }

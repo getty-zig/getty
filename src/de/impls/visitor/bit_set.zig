@@ -17,7 +17,7 @@ pub fn Visitor(comptime BitSet: type) type {
 
         const Value = BitSet;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var bitset = Value.initEmpty();
 
             if (Value.bit_length == 0) {

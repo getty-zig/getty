@@ -12,6 +12,6 @@ pub usingnamespace VisitorInterface(
 
 const Value = bool;
 
-fn visitBool(_: Visitor, _: ?std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!Value {
+fn visitBool(_: Visitor, _: std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!Value {
     return input;
 }

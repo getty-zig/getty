@@ -18,7 +18,7 @@ pub fn Visitor(comptime Enum: type) type {
 
         const Value = Enum;
 
-        fn visitInt(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitInt(_: Self, _: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -47,7 +47,7 @@ pub fn Visitor(comptime Enum: type) type {
             return result;
         }
 
-        fn visitString(_: Self, _: ?std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitString(_: Self, _: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
