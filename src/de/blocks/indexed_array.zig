@@ -163,7 +163,7 @@ test "deserialize - std.IndexedArray" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         for (t.want.values, 0..) |want, i| {
             try testing.expectEqual(t.name, want, got.values[i]);
         }
@@ -249,7 +249,7 @@ test "deserialize - std.EnumArray" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         for (t.want.values, 0..) |want, i| {
             try testing.expectEqual(t.name, want, got.values[i]);
         }

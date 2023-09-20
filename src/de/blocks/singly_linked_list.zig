@@ -95,7 +95,7 @@ test "deserialize - std.SinglyLinkedList" {
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        var got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         // Check that the lists' lengths match.
@@ -155,7 +155,7 @@ test "deserialize - linked list (recursive)" {
 
     const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
 
-    var got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
+    var got = try testing.deserialize(null, Self, Parent, tokens);
     defer free(std.testing.allocator, Deserializer, got);
 
     // Check that the lists' lengths match.

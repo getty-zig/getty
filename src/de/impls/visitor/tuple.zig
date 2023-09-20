@@ -25,17 +25,13 @@ pub fn Visitor(comptime Tuple: type) type {
             var tuple: Value = undefined;
             comptime var seen: usize = 0;
 
-            errdefer {
-                if (ally) |a| {
-                    if (len > 0) {
-                        inline for (tuple, 0..) |v, i| {
-                            if (i < seen) {
-                                free(a, Deserializer, v);
-                            }
-                        }
+            errdefer if (len > 0) {
+                inline for (tuple, 0..) |v, i| {
+                    if (i < seen) {
+                        free(ally, Deserializer, v);
                     }
                 }
-            }
+            };
 
             switch (len) {
                 0 => tuple = .{},

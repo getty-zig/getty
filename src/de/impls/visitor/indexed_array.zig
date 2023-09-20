@@ -21,13 +21,9 @@ pub fn Visitor(comptime IndexedArray: type) type {
 
             const V = Value.Value;
 
-            errdefer {
-                if (ally) |a| {
-                    for (array.values[0..seen]) |v| {
-                        free(a, Deserializer, v);
-                    }
-                }
-            }
+            errdefer for (array.values[0..seen]) |v| {
+                free(ally, Deserializer, v);
+            };
 
             for (&array.values) |*value| {
                 if (try seq.nextElement(ally, V)) |v| {

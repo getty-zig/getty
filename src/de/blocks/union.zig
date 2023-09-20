@@ -101,30 +101,25 @@ fn deserializeUntaggedUnion(
     // This intermediate value allows us to repeatedly attempt deserialization
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
-    var content = try getty_deserialize(ally, Content, deserializer);
-    defer switch (content) {
+    const result = try getty_deserialize(ally, Content, deserializer);
+    defer switch (result.value) {
         .Int, .Map, .Seq, .String, .Some => {
-            // If content was successfully deserialized, and we're here, then
-            // that means allocator must've not been null.
-            std.debug.assert(ally != null);
-            getty_free(ally, @TypeOf(deserializer), content);
+            getty_free(ally, @TypeOf(deserializer), result.value);
         },
         else => {},
     };
 
     // Deserialize the Content value into a value of type T.
-    var cd = ContentDeserializer{ .content = content };
+    var cd = ContentDeserializer{ .content = result.value };
     const d = cd.deserializer();
 
     inline for (std.meta.fields(T)) |field| {
-        if (getty_deserialize(ally, field.type, d)) |value| {
-            errdefer if (ally) |a| {
-                getty_free(a, @TypeOf(d), value);
-            };
+        if (getty_deserialize(ally, field.type, d)) |res| {
+            errdefer getty_free(ally, @TypeOf(d), res.value);
 
-            var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(value)){
+            var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(res.value)){
                 .variant = field.name,
-                .payload = value,
+                .payload = res.value,
             };
             const ua = tuva.unionAccess();
             const va = tuva.variantAccess();
@@ -573,10 +568,10 @@ test "deserialize - union, attributes (tag, untagged)" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, @This(), Want, t.tokens),
+                testing.deserializeErr(@This(), Want, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(std.testing.allocator, t.name, @This(), Want, t.tokens);
+            const got = try testing.deserialize(t.name, @This(), Want, t.tokens);
 
             if (@typeInfo(@TypeOf(t.want)).Union.tag_type) |_| {
                 switch (t.want) {
@@ -663,10 +658,10 @@ fn runTest(t: anytype, comptime Want: type) !void {
         try testing.expectError(
             t.name,
             t.want_err,
-            testing.deserializeErr(std.testing.allocator, @This(), Want, t.tokens),
+            testing.deserializeErr(@This(), Want, t.tokens),
         );
     } else {
-        const got = try testing.deserialize(std.testing.allocator, t.name, @This(), Want, t.tokens);
+        const got = try testing.deserialize(t.name, @This(), Want, t.tokens);
 
         if (t.tagged) {
             try testing.expectEqual(t.name, t.want, got);

@@ -100,7 +100,7 @@ test "deserialize - std.LinearFifo (static)" {
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
 
         try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
 
@@ -151,7 +151,7 @@ test "deserialize - std.LinearFifo (slice)" {
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
@@ -203,7 +203,7 @@ test "deserialize - std.LinearFifo (dynamic)" {
 
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());

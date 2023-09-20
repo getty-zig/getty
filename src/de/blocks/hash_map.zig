@@ -204,7 +204,7 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
         defer free(test_ally, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(test_ally, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
@@ -283,7 +283,7 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         defer want.deinit();
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(test_ally, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());
@@ -346,7 +346,7 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
         defer want.deinit(test_ally);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
+        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(test_ally, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.count(), got.count());

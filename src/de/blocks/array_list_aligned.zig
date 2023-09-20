@@ -100,7 +100,7 @@ test "deserialize - array list" {
         const Want = @TypeOf(t.want);
         const Child = std.meta.Child(Want.Slice);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer got.deinit();
 
         try testing.expectEqual(t.name, t.want.capacity, got.capacity);
@@ -146,7 +146,7 @@ test "deserialize - array list (recursive)" {
 
     const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
 
-    const got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
+    const got = try testing.deserialize(null, Self, Parent, tokens);
     defer free(std.testing.allocator, Deserializer, got);
 
     try std.testing.expectEqual(want.capacity, got.capacity);

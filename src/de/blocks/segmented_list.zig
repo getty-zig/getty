@@ -92,7 +92,7 @@ test "deserialize - segmented list" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.len, got.len);

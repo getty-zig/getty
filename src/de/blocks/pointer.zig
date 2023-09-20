@@ -1,5 +1,4 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
 
 const blocks = @import("../blocks.zig");
 const find_db = @import("../find.zig").find_db;
@@ -23,7 +22,7 @@ pub fn is(
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
     /// A memory allocator.
-    ally: ?Allocator,
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -181,7 +180,7 @@ test "deserialize - pointer" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqual(t.name, t.want.*, got.*);
@@ -266,7 +265,7 @@ test "deserialize - pointer, string" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         try testing.expectEqualStrings(t.name, t.want, got);
@@ -279,7 +278,7 @@ test "deserialize - pointer (recursive)" {
     const Want = **i32;
     const want: i32 = 1;
 
-    const got = try testing.deserialize(std.testing.allocator, null, Self, Want, &.{.{ .I32 = 1 }});
+    const got = try testing.deserialize(null, Self, Want, &.{.{ .I32 = 1 }});
     defer free(std.testing.allocator, Deserializer, got);
 
     try std.testing.expectEqual(Want, @TypeOf(got));

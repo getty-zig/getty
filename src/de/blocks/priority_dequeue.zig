@@ -99,7 +99,7 @@ test "deserialize - std.PriorityDequeue" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer free(std.testing.allocator, Deserializer, got);
 
         // Check that the deques' lengths match.

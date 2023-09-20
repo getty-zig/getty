@@ -68,7 +68,7 @@ test "deserialize - optional" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
         try testing.expectEqual(t.name, t.want, got);
     }
 }

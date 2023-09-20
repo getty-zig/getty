@@ -15,13 +15,12 @@ const VariantAccessInterface = @import("interfaces/variant_access.zig").VariantA
 pub usingnamespace testing;
 
 pub fn deserialize(
-    ally: std.mem.Allocator,
     comptime test_case: ?[]const u8,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
 ) !Want {
-    return deserializeErr(ally, block, Want, input) catch |e| {
+    return deserializeErr(block, Want, input) catch |e| {
         if (test_case) |t| {
             return testing.logErr(t, e);
         }
@@ -31,7 +30,6 @@ pub fn deserialize(
 }
 
 pub fn deserializeErr(
-    ally: std.mem.Allocator,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
@@ -47,7 +45,7 @@ pub fn deserializeErr(
     var v = block.Visitor(Want){};
     const visitor = v.visitor();
 
-    const got = try block.deserialize(ally, Want, deserializer, visitor);
+    const got = try block.deserialize(std.testing.allocator, Want, deserializer, visitor);
 
     try std.testing.expect(d.remaining() == 0);
 
@@ -243,7 +241,8 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                return try seed.deserialize(ally, self.de.deserializer());
+                const result = try seed.deserialize(ally, self.de.deserializer());
+                return result.value;
             }
         };
 
@@ -275,11 +274,13 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                return try seed.deserialize(ally, self.de.deserializer());
+                const result = try seed.deserialize(ally, self.de.deserializer());
+                return result.value;
             }
 
             fn nextValueSeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                return try seed.deserialize(ally, self.de.deserializer());
+                const result = try seed.deserialize(ally, self.de.deserializer());
+                return result.value;
             }
         };
 
@@ -301,7 +302,8 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             fn variantSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (self.de.peekTokenOpt()) |token| {
                     if (token == .String) {
-                        return try seed.deserialize(ally, self.de.deserializer());
+                        const result = try seed.deserialize(ally, self.de.deserializer());
+                        return result.value;
                     }
                 }
 
@@ -310,7 +312,8 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
             fn payloadSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (@TypeOf(seed).Value != void) {
-                    return try seed.deserialize(ally, self.de.deserializer());
+                    const result = try seed.deserialize(ally, self.de.deserializer());
+                    return result.value;
                 }
 
                 if (self.de.nextToken() != .Void) {

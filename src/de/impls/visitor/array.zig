@@ -22,13 +22,9 @@ pub fn Visitor(comptime Array: type) type {
             var array: Value = undefined;
             var seen: usize = 0;
 
-            errdefer {
-                if (ally) |a| {
-                    for (array[0..seen]) |v| {
-                        free(a, Deserializer, v);
-                    }
-                }
-            }
+            errdefer for (array[0..seen]) |v| {
+                free(ally, Deserializer, v);
+            };
 
             switch (array.len) {
                 0 => array = .{},

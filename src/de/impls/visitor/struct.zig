@@ -27,11 +27,9 @@ pub fn Visitor(comptime Struct: type) type {
             var seen = [_]bool{false} ** fields.len;
 
             errdefer {
-                if (ally) |a| {
-                    inline for (fields, 0..) |field, i| {
-                        if (!field.is_comptime and seen[i]) {
-                            free(a, Deserializer, @field(structure, field.name));
-                        }
+                inline for (fields, 0..) |field, i| {
+                    if (!field.is_comptime and seen[i]) {
+                        free(ally, Deserializer, @field(structure, field.name));
                     }
                 }
             }

@@ -222,13 +222,16 @@ const MapAccess = struct {
         }
 
         var d = self.deserializers.items(.key)[self.pos];
-        return try seed.deserialize(ally, d.deserializer());
+        const result = try seed.deserialize(ally, d.deserializer());
+        return result.value;
     }
 
     fn nextValueSeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
         var d = self.deserializers.items(.value)[self.pos];
         self.pos += 1;
-        return try seed.deserialize(ally, d.deserializer());
+
+        const result = try seed.deserialize(ally, d.deserializer());
+        return result.value;
     }
 };
 
@@ -250,7 +253,8 @@ const SeqAccess = struct {
         var d = self.deserializers.items[self.pos];
         self.pos += 1;
 
-        return try seed.deserialize(ally, d.deserializer());
+        const result = try seed.deserialize(ally, d.deserializer());
+        return result.value;
     }
 };
 
@@ -274,11 +278,13 @@ const UnionVariantAccess = struct {
 
     fn variantSeed(self: *Self, ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
         var cd = ContentDeserializer{ .content = self.key };
-        return try seed.deserialize(ally, cd.deserializer());
+        const result = try seed.deserialize(ally, cd.deserializer());
+        return result.value;
     }
 
     fn payloadSeed(self: *Self, ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
         var cd = ContentDeserializer{ .content = self.value };
-        return try seed.deserialize(ally, cd.deserializer());
+        const result = try seed.deserialize(ally, cd.deserializer());
+        return result.value;
     }
 };

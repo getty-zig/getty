@@ -116,7 +116,7 @@ test "deserialize - multi array list" {
             mut.deinit(std.testing.allocator);
         }
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, List, t.tokens);
+        const got = try testing.deserialize(t.name, Self, List, t.tokens);
         defer {
             var mut = got;
             mut.deinit(std.testing.allocator);

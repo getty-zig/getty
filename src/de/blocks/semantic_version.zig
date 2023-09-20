@@ -118,12 +118,12 @@ test "deserialize - std.SemanticVersion" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, Self, std.SemanticVersion, t.tokens),
+                testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
         } else {
             const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
 
-            const got = try testing.deserialize(std.testing.allocator, t.name, Self, @TypeOf(t.want), t.tokens);
+            const got = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
             defer free(std.testing.allocator, Deserializer, got);
 
             try testing.expectEqual(t.name, t.want.major, got.major);

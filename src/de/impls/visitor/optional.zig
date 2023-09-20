@@ -23,7 +23,8 @@ pub fn Visitor(comptime Optional: type) type {
         }
 
         fn visitSome(_: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
-            return try getty_deserialize(ally, std.meta.Child(Value), deserializer);
+            const result = try getty_deserialize(ally, std.meta.Child(Value), deserializer);
+            return result.value;
         }
     };
 }

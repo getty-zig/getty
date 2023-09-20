@@ -178,10 +178,10 @@ test "deserialize - integer" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(null, Self, Want, t.tokens),
+                testing.deserializeErr(Self, Want, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+            const got = try testing.deserialize(t.name, Self, Want, t.tokens);
             try testing.expectEqual(t.name, t.want, got);
         }
     }

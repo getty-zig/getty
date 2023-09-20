@@ -96,12 +96,12 @@ test "deserialize - std.Uri" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, Self, std.SemanticVersion, t.tokens),
+                testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
         } else {
             const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
 
-            const got = try testing.deserialize(std.testing.allocator, t.name, Self, @TypeOf(t.want), t.tokens);
+            const got = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
             defer free(std.testing.allocator, Deserializer, got);
 
             try testing.expectEqualStrings(t.name, t.want.scheme, got.scheme);
