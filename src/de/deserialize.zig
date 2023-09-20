@@ -11,35 +11,65 @@ const Visitor = @import("interfaces/visitor.zig").Visitor;
 /// Deserializes data from a `getty.Deserializer` `d` into a value of type `T`.
 pub fn deserialize(
     /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     /// The type of the value to deserialize into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
     d: anytype,
-) @TypeOf(d).Err!T {
+) @TypeOf(d).Err!Result(T) {
     const db = comptime find_db(T, @TypeOf(d));
+
+    var result = Result(T){
+        .arena = arena: {
+            var arena = try ally.create(std.heap.ArenaAllocator);
+            arena.* = std.heap.ArenaAllocator.init(ally);
+
+            break :arena arena;
+        },
+        .value = undefined,
+    };
+    errdefer {
+        result.arena.deinit();
+        ally.destroy(result.arena);
+    }
+
+    const arena_ally = result.arena.allocator();
 
     if (comptime attributes.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
             .Enum => {
                 var v = blocks.Enum.Visitor(T){};
-                return try blocks.Enum.deserialize(ally, T, d, v.visitor());
+                result.value = try blocks.Enum.deserialize(arena_ally, T, d, v.visitor());
             },
             .Struct => {
                 var v = blocks.Struct.Visitor(T){};
-                return try blocks.Struct.deserialize(ally, T, d, v.visitor());
+                result.value = try blocks.Struct.deserialize(arena_ally, T, d, v.visitor());
             },
             .Union => {
                 var v = blocks.Union.Visitor(T){};
-                return try blocks.Union.deserialize(ally, T, d, v.visitor());
+                result.value = try blocks.Union.deserialize(arena_ally, T, d, v.visitor());
             },
             else => unreachable, // UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.
         }
+
+        return result;
     }
 
     var v = db.Visitor(T){};
-    return try db.deserialize(ally, T, d, v.visitor());
+    result.value = try db.deserialize(arena_ally, T, d, v.visitor());
+    return result;
 }
+
+fn Result(comptime T: type) type {
+    return struct {
+        arena: *std.heap.ArenaAllocator,
+        value: T,
+    };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// TESTS
+////////////////////////////////////////////////////////////////////////////////
 
 fn PointVisitor(comptime Value: type) type {
     return struct {
