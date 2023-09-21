@@ -368,475 +368,486 @@
 <span class="line" id="L240">            : [tos] <span class="tok-str">&quot;={rax}&quot;</span> (-&gt; *std.os.plan9.Tos),</span>
 <span class="line" id="L241">        );</span>
 <span class="line" id="L242">    }</span>
-<span class="line" id="L243">    <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-kw">switch</span> (native_arch) {</span>
-<span class="line" id="L244">            .x86_64 =&gt;</span>
-<span class="line" id="L245">            <span class="tok-str">\\ xorl %%ebp, %%ebp</span></span>
-
-<span class="line" id="L246">            <span class="tok-str">\\ movq %%rsp, %[argc_argv_ptr]</span></span>
-
-<span class="line" id="L247">            <span class="tok-str">\\ andq $-16, %%rsp</span></span>
-
-<span class="line" id="L248">            <span class="tok-str">\\ callq %[posixCallMainAndExit:P]</span></span>
-
-<span class="line" id="L249">            ,</span>
-<span class="line" id="L250">            .x86 =&gt;</span>
-<span class="line" id="L251">            <span class="tok-str">\\ xorl %%ebp, %%ebp</span></span>
-
-<span class="line" id="L252">            <span class="tok-str">\\ movl %%esp, %[argc_argv_ptr]</span></span>
-
-<span class="line" id="L253">            <span class="tok-str">\\ andl $-16, %%esp</span></span>
-
-<span class="line" id="L254">            <span class="tok-str">\\ calll %[posixCallMainAndExit:P]</span></span>
-
-<span class="line" id="L255">            ,</span>
-<span class="line" id="L256">            .aarch64, .aarch64_be =&gt;</span>
-<span class="line" id="L257">            <span class="tok-str">\\ mov fp, #0</span></span>
-
-<span class="line" id="L258">            <span class="tok-str">\\ mov lr, #0</span></span>
-
-<span class="line" id="L259">            <span class="tok-str">\\ mov x0, sp</span></span>
-
-<span class="line" id="L260">            <span class="tok-str">\\ str x0, %[argc_argv_ptr]</span></span>
-
-<span class="line" id="L261">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
-
-<span class="line" id="L262">            ,</span>
-<span class="line" id="L263">            .arm, .armeb, .thumb, .thumbeb =&gt;</span>
-<span class="line" id="L264">            <span class="tok-str">\\ mov fp, #0</span></span>
-
-<span class="line" id="L265">            <span class="tok-str">\\ mov lr, #0</span></span>
-
-<span class="line" id="L266">            <span class="tok-str">\\ str sp, %[argc_argv_ptr]</span></span>
-
-<span class="line" id="L267">            <span class="tok-str">\\ and sp, #-16</span></span>
-
-<span class="line" id="L268">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
-
-<span class="line" id="L269">            ,</span>
-<span class="line" id="L270">            .riscv64 =&gt;</span>
-<span class="line" id="L271">            <span class="tok-str">\\ li s0, 0</span></span>
-
-<span class="line" id="L272">            <span class="tok-str">\\ li ra, 0</span></span>
-
-<span class="line" id="L273">            <span class="tok-str">\\ sd sp, %[argc_argv_ptr]</span></span>
-
-<span class="line" id="L274">            <span class="tok-str">\\ andi sp, sp, -16</span></span>
-
-<span class="line" id="L275">            <span class="tok-str">\\ tail %[posixCallMainAndExit]@plt</span></span>
-
-<span class="line" id="L276">            ,</span>
-<span class="line" id="L277">            .mips, .mipsel =&gt;</span>
-<span class="line" id="L278">            <span class="tok-comment">// The lr is already zeroed on entry, as specified by the ABI.</span>
+<span class="line" id="L243">    <span class="tok-kw">switch</span> (native_arch) {</span>
+<span class="line" id="L244">        <span class="tok-comment">// https://github.com/ziglang/zig/issues/16799</span>
 </span>
-<span class="line" id="L279">            <span class="tok-str">\\ addiu $fp, $zero, 0</span></span>
+<span class="line" id="L245">        .riscv64 =&gt; <span class="tok-builtin">@export</span>(argc_argv_ptr, .{</span>
+<span class="line" id="L246">            .name = <span class="tok-str">&quot;__zig_argc_argv_ptr&quot;</span>,</span>
+<span class="line" id="L247">            .visibility = .hidden,</span>
+<span class="line" id="L248">        }),</span>
+<span class="line" id="L249">        <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L250">    }</span>
+<span class="line" id="L251">    <span class="tok-kw">asm</span> <span class="tok-kw">volatile</span> (<span class="tok-kw">switch</span> (native_arch) {</span>
+<span class="line" id="L252">            .x86_64 =&gt;</span>
+<span class="line" id="L253">            <span class="tok-str">\\ xorl %%ebp, %%ebp</span></span>
 
-<span class="line" id="L280">            <span class="tok-str">\\ sw $sp, %[argc_argv_ptr]</span></span>
+<span class="line" id="L254">            <span class="tok-str">\\ movq %%rsp, %[argc_argv_ptr]</span></span>
 
-<span class="line" id="L281">            <span class="tok-str">\\ .set push</span></span>
+<span class="line" id="L255">            <span class="tok-str">\\ andq $-16, %%rsp</span></span>
 
-<span class="line" id="L282">            <span class="tok-str">\\ .set noat</span></span>
+<span class="line" id="L256">            <span class="tok-str">\\ callq %[posixCallMainAndExit:P]</span></span>
 
-<span class="line" id="L283">            <span class="tok-str">\\ addiu $1, $zero, -16</span></span>
+<span class="line" id="L257">            ,</span>
+<span class="line" id="L258">            .x86 =&gt;</span>
+<span class="line" id="L259">            <span class="tok-str">\\ xorl %%ebp, %%ebp</span></span>
 
-<span class="line" id="L284">            <span class="tok-str">\\ and $sp, $sp, $1</span></span>
+<span class="line" id="L260">            <span class="tok-str">\\ movl %%esp, %[argc_argv_ptr]</span></span>
 
-<span class="line" id="L285">            <span class="tok-str">\\ .set pop</span></span>
+<span class="line" id="L261">            <span class="tok-str">\\ andl $-16, %%esp</span></span>
 
-<span class="line" id="L286">            <span class="tok-str">\\ j %[posixCallMainAndExit]</span></span>
+<span class="line" id="L262">            <span class="tok-str">\\ calll %[posixCallMainAndExit:P]</span></span>
 
-<span class="line" id="L287">            ,</span>
-<span class="line" id="L288">            .mips64, .mips64el =&gt;</span>
-<span class="line" id="L289">            <span class="tok-comment">// The lr is already zeroed on entry, as specified by the ABI.</span>
+<span class="line" id="L263">            ,</span>
+<span class="line" id="L264">            .aarch64, .aarch64_be =&gt;</span>
+<span class="line" id="L265">            <span class="tok-str">\\ mov fp, #0</span></span>
+
+<span class="line" id="L266">            <span class="tok-str">\\ mov lr, #0</span></span>
+
+<span class="line" id="L267">            <span class="tok-str">\\ mov x0, sp</span></span>
+
+<span class="line" id="L268">            <span class="tok-str">\\ str x0, %[argc_argv_ptr]</span></span>
+
+<span class="line" id="L269">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
+
+<span class="line" id="L270">            ,</span>
+<span class="line" id="L271">            .arm, .armeb, .thumb, .thumbeb =&gt;</span>
+<span class="line" id="L272">            <span class="tok-str">\\ mov fp, #0</span></span>
+
+<span class="line" id="L273">            <span class="tok-str">\\ mov lr, #0</span></span>
+
+<span class="line" id="L274">            <span class="tok-str">\\ str sp, %[argc_argv_ptr]</span></span>
+
+<span class="line" id="L275">            <span class="tok-str">\\ and sp, #-16</span></span>
+
+<span class="line" id="L276">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
+
+<span class="line" id="L277">            ,</span>
+<span class="line" id="L278">            .riscv64 =&gt;</span>
+<span class="line" id="L279">            <span class="tok-str">\\ li s0, 0</span></span>
+
+<span class="line" id="L280">            <span class="tok-str">\\ li ra, 0</span></span>
+
+<span class="line" id="L281">            <span class="tok-str">\\ lui a0, %hi(__zig_argc_argv_ptr)</span></span>
+
+<span class="line" id="L282">            <span class="tok-str">\\ sd sp, %lo(__zig_argc_argv_ptr)(a0)</span></span>
+
+<span class="line" id="L283">            <span class="tok-str">\\ andi sp, sp, -16</span></span>
+
+<span class="line" id="L284">            <span class="tok-str">\\ tail %[posixCallMainAndExit]@plt</span></span>
+
+<span class="line" id="L285">            ,</span>
+<span class="line" id="L286">            .mips, .mipsel =&gt;</span>
+<span class="line" id="L287">            <span class="tok-comment">// The lr is already zeroed on entry, as specified by the ABI.</span>
 </span>
-<span class="line" id="L290">            <span class="tok-str">\\ addiu $fp, $zero, 0</span></span>
+<span class="line" id="L288">            <span class="tok-str">\\ addiu $fp, $zero, 0</span></span>
 
-<span class="line" id="L291">            <span class="tok-str">\\ sd $sp, %[argc_argv_ptr]</span></span>
+<span class="line" id="L289">            <span class="tok-str">\\ sw $sp, %[argc_argv_ptr]</span></span>
 
-<span class="line" id="L292">            <span class="tok-str">\\ .set push</span></span>
+<span class="line" id="L290">            <span class="tok-str">\\ .set push</span></span>
 
-<span class="line" id="L293">            <span class="tok-str">\\ .set noat</span></span>
+<span class="line" id="L291">            <span class="tok-str">\\ .set noat</span></span>
 
-<span class="line" id="L294">            <span class="tok-str">\\ daddiu $1, $zero, -16</span></span>
+<span class="line" id="L292">            <span class="tok-str">\\ addiu $1, $zero, -16</span></span>
 
-<span class="line" id="L295">            <span class="tok-str">\\ and $sp, $sp, $1</span></span>
+<span class="line" id="L293">            <span class="tok-str">\\ and $sp, $sp, $1</span></span>
 
-<span class="line" id="L296">            <span class="tok-str">\\ .set pop</span></span>
+<span class="line" id="L294">            <span class="tok-str">\\ .set pop</span></span>
 
-<span class="line" id="L297">            <span class="tok-str">\\ j %[posixCallMainAndExit]</span></span>
+<span class="line" id="L295">            <span class="tok-str">\\ j %[posixCallMainAndExit]</span></span>
 
-<span class="line" id="L298">            ,</span>
-<span class="line" id="L299">            .powerpc, .powerpcle =&gt;</span>
-<span class="line" id="L300">            <span class="tok-comment">// Setup the initial stack frame and clear the back chain pointer.</span>
+<span class="line" id="L296">            ,</span>
+<span class="line" id="L297">            .mips64, .mips64el =&gt;</span>
+<span class="line" id="L298">            <span class="tok-comment">// The lr is already zeroed on entry, as specified by the ABI.</span>
 </span>
-<span class="line" id="L301">            <span class="tok-str">\\ stw 1, %[argc_argv_ptr]</span></span>
+<span class="line" id="L299">            <span class="tok-str">\\ addiu $fp, $zero, 0</span></span>
 
-<span class="line" id="L302">            <span class="tok-str">\\ li 0, 0</span></span>
+<span class="line" id="L300">            <span class="tok-str">\\ sd $sp, %[argc_argv_ptr]</span></span>
 
-<span class="line" id="L303">            <span class="tok-str">\\ stwu 1, -16(1)</span></span>
+<span class="line" id="L301">            <span class="tok-str">\\ .set push</span></span>
 
-<span class="line" id="L304">            <span class="tok-str">\\ stw 0, 0(1)</span></span>
+<span class="line" id="L302">            <span class="tok-str">\\ .set noat</span></span>
 
-<span class="line" id="L305">            <span class="tok-str">\\ mtlr 0</span></span>
+<span class="line" id="L303">            <span class="tok-str">\\ daddiu $1, $zero, -16</span></span>
 
-<span class="line" id="L306">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
+<span class="line" id="L304">            <span class="tok-str">\\ and $sp, $sp, $1</span></span>
+
+<span class="line" id="L305">            <span class="tok-str">\\ .set pop</span></span>
+
+<span class="line" id="L306">            <span class="tok-str">\\ j %[posixCallMainAndExit]</span></span>
 
 <span class="line" id="L307">            ,</span>
-<span class="line" id="L308">            .powerpc64, .powerpc64le =&gt;</span>
+<span class="line" id="L308">            .powerpc, .powerpcle =&gt;</span>
 <span class="line" id="L309">            <span class="tok-comment">// Setup the initial stack frame and clear the back chain pointer.</span>
 </span>
-<span class="line" id="L310">            <span class="tok-comment">// TODO: Support powerpc64 (big endian) on ELFv2.</span>
-</span>
-<span class="line" id="L311">            <span class="tok-str">\\ std 1, %[argc_argv_ptr]</span></span>
+<span class="line" id="L310">            <span class="tok-str">\\ stw 1, %[argc_argv_ptr]</span></span>
 
-<span class="line" id="L312">            <span class="tok-str">\\ li 0, 0</span></span>
+<span class="line" id="L311">            <span class="tok-str">\\ li 0, 0</span></span>
 
-<span class="line" id="L313">            <span class="tok-str">\\ stdu 0, -32(1)</span></span>
+<span class="line" id="L312">            <span class="tok-str">\\ stwu 1, -16(1)</span></span>
+
+<span class="line" id="L313">            <span class="tok-str">\\ stw 0, 0(1)</span></span>
 
 <span class="line" id="L314">            <span class="tok-str">\\ mtlr 0</span></span>
 
 <span class="line" id="L315">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
 
 <span class="line" id="L316">            ,</span>
-<span class="line" id="L317">            .sparc64 =&gt;</span>
-<span class="line" id="L318">            <span class="tok-comment">// argc is stored after a register window (16 registers) plus stack bias</span>
+<span class="line" id="L317">            .powerpc64, .powerpc64le =&gt;</span>
+<span class="line" id="L318">            <span class="tok-comment">// Setup the initial stack frame and clear the back chain pointer.</span>
 </span>
-<span class="line" id="L319">            <span class="tok-str">\\ mov %%g0, %%i6</span></span>
+<span class="line" id="L319">            <span class="tok-comment">// TODO: Support powerpc64 (big endian) on ELFv2.</span>
+</span>
+<span class="line" id="L320">            <span class="tok-str">\\ std 1, %[argc_argv_ptr]</span></span>
 
-<span class="line" id="L320">            <span class="tok-str">\\ add %%o6, 2175, %%l0</span></span>
+<span class="line" id="L321">            <span class="tok-str">\\ li 0, 0</span></span>
 
-<span class="line" id="L321">            <span class="tok-str">\\ stx %%l0, %[argc_argv_ptr]</span></span>
+<span class="line" id="L322">            <span class="tok-str">\\ stdu 0, -32(1)</span></span>
 
-<span class="line" id="L322">            <span class="tok-str">\\ ba %[posixCallMainAndExit]</span></span>
+<span class="line" id="L323">            <span class="tok-str">\\ mtlr 0</span></span>
 
-<span class="line" id="L323">            ,</span>
-<span class="line" id="L324">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported arch&quot;</span>),</span>
-<span class="line" id="L325">        }</span>
-<span class="line" id="L326">        : [argc_argv_ptr] <span class="tok-str">&quot;=m&quot;</span> (argc_argv_ptr),</span>
-<span class="line" id="L327">        : [posixCallMainAndExit] <span class="tok-str">&quot;X&quot;</span> (&amp;posixCallMainAndExit),</span>
-<span class="line" id="L328">    );</span>
-<span class="line" id="L329">}</span>
-<span class="line" id="L330"></span>
-<span class="line" id="L331"><span class="tok-kw">fn</span> <span class="tok-fn">WinStartup</span>() <span class="tok-kw">callconv</span>(std.os.windows.WINAPI) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L332">    <span class="tok-builtin">@setAlignStack</span>(<span class="tok-number">16</span>);</span>
-<span class="line" id="L333">    <span class="tok-kw">if</span> (!builtin.single_threaded <span class="tok-kw">and</span> !builtin.link_libc) {</span>
-<span class="line" id="L334">        _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;start_windows_tls.zig&quot;</span>);</span>
-<span class="line" id="L335">    }</span>
-<span class="line" id="L336"></span>
-<span class="line" id="L337">    std.debug.maybeEnableSegfaultHandler();</span>
-<span class="line" id="L338"></span>
-<span class="line" id="L339">    std.os.windows.kernel32.ExitProcess(initEventLoopAndCallMain());</span>
-<span class="line" id="L340">}</span>
-<span class="line" id="L341"></span>
-<span class="line" id="L342"><span class="tok-kw">fn</span> <span class="tok-fn">wWinMainCRTStartup</span>() <span class="tok-kw">callconv</span>(std.os.windows.WINAPI) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L343">    <span class="tok-builtin">@setAlignStack</span>(<span class="tok-number">16</span>);</span>
-<span class="line" id="L344">    <span class="tok-kw">if</span> (!builtin.single_threaded <span class="tok-kw">and</span> !builtin.link_libc) {</span>
-<span class="line" id="L345">        _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;start_windows_tls.zig&quot;</span>);</span>
-<span class="line" id="L346">    }</span>
+<span class="line" id="L324">            <span class="tok-str">\\ b %[posixCallMainAndExit]</span></span>
+
+<span class="line" id="L325">            ,</span>
+<span class="line" id="L326">            .sparc64 =&gt;</span>
+<span class="line" id="L327">            <span class="tok-comment">// argc is stored after a register window (16 registers) plus stack bias</span>
+</span>
+<span class="line" id="L328">            <span class="tok-str">\\ mov %%g0, %%i6</span></span>
+
+<span class="line" id="L329">            <span class="tok-str">\\ add %%o6, 2175, %%l0</span></span>
+
+<span class="line" id="L330">            <span class="tok-str">\\ stx %%l0, %[argc_argv_ptr]</span></span>
+
+<span class="line" id="L331">            <span class="tok-str">\\ ba %[posixCallMainAndExit]</span></span>
+
+<span class="line" id="L332">            ,</span>
+<span class="line" id="L333">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;unsupported arch&quot;</span>),</span>
+<span class="line" id="L334">        }</span>
+<span class="line" id="L335">        : [argc_argv_ptr] <span class="tok-str">&quot;=m&quot;</span> (argc_argv_ptr),</span>
+<span class="line" id="L336">        : [posixCallMainAndExit] <span class="tok-str">&quot;X&quot;</span> (&amp;posixCallMainAndExit),</span>
+<span class="line" id="L337">    );</span>
+<span class="line" id="L338">}</span>
+<span class="line" id="L339"></span>
+<span class="line" id="L340"><span class="tok-kw">fn</span> <span class="tok-fn">WinStartup</span>() <span class="tok-kw">callconv</span>(std.os.windows.WINAPI) <span class="tok-type">noreturn</span> {</span>
+<span class="line" id="L341">    <span class="tok-builtin">@setAlignStack</span>(<span class="tok-number">16</span>);</span>
+<span class="line" id="L342">    <span class="tok-kw">if</span> (!builtin.single_threaded <span class="tok-kw">and</span> !builtin.link_libc) {</span>
+<span class="line" id="L343">        _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;start_windows_tls.zig&quot;</span>);</span>
+<span class="line" id="L344">    }</span>
+<span class="line" id="L345"></span>
+<span class="line" id="L346">    std.debug.maybeEnableSegfaultHandler();</span>
 <span class="line" id="L347"></span>
-<span class="line" id="L348">    std.debug.maybeEnableSegfaultHandler();</span>
-<span class="line" id="L349"></span>
-<span class="line" id="L350">    <span class="tok-kw">const</span> result: std.os.windows.INT = initEventLoopAndCallWinMain();</span>
-<span class="line" id="L351">    std.os.windows.kernel32.ExitProcess(<span class="tok-builtin">@as</span>(std.os.windows.UINT, <span class="tok-builtin">@bitCast</span>(result)));</span>
-<span class="line" id="L352">}</span>
-<span class="line" id="L353"></span>
-<span class="line" id="L354"><span class="tok-kw">fn</span> <span class="tok-fn">posixCallMainAndExit</span>() <span class="tok-kw">callconv</span>(.C) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L355">    <span class="tok-kw">const</span> argc = argc_argv_ptr[<span class="tok-number">0</span>];</span>
-<span class="line" id="L356">    <span class="tok-kw">const</span> argv = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(argc_argv_ptr + <span class="tok-number">1</span>));</span>
-<span class="line" id="L357"></span>
-<span class="line" id="L358">    <span class="tok-kw">const</span> envp_optional: [*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(argv + argc + <span class="tok-number">1</span>));</span>
-<span class="line" id="L359">    <span class="tok-kw">var</span> envp_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L360">    <span class="tok-kw">while</span> (envp_optional[envp_count]) |_| : (envp_count += <span class="tok-number">1</span>) {}</span>
-<span class="line" id="L361">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(envp_optional))[<span class="tok-number">0</span>..envp_count];</span>
+<span class="line" id="L348">    std.os.windows.kernel32.ExitProcess(initEventLoopAndCallMain());</span>
+<span class="line" id="L349">}</span>
+<span class="line" id="L350"></span>
+<span class="line" id="L351"><span class="tok-kw">fn</span> <span class="tok-fn">wWinMainCRTStartup</span>() <span class="tok-kw">callconv</span>(std.os.windows.WINAPI) <span class="tok-type">noreturn</span> {</span>
+<span class="line" id="L352">    <span class="tok-builtin">@setAlignStack</span>(<span class="tok-number">16</span>);</span>
+<span class="line" id="L353">    <span class="tok-kw">if</span> (!builtin.single_threaded <span class="tok-kw">and</span> !builtin.link_libc) {</span>
+<span class="line" id="L354">        _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;start_windows_tls.zig&quot;</span>);</span>
+<span class="line" id="L355">    }</span>
+<span class="line" id="L356"></span>
+<span class="line" id="L357">    std.debug.maybeEnableSegfaultHandler();</span>
+<span class="line" id="L358"></span>
+<span class="line" id="L359">    <span class="tok-kw">const</span> result: std.os.windows.INT = initEventLoopAndCallWinMain();</span>
+<span class="line" id="L360">    std.os.windows.kernel32.ExitProcess(<span class="tok-builtin">@as</span>(std.os.windows.UINT, <span class="tok-builtin">@bitCast</span>(result)));</span>
+<span class="line" id="L361">}</span>
 <span class="line" id="L362"></span>
-<span class="line" id="L363">    <span class="tok-kw">if</span> (native_os == .linux) {</span>
-<span class="line" id="L364">        <span class="tok-comment">// Find the beginning of the auxiliary vector</span>
+<span class="line" id="L363"><span class="tok-kw">fn</span> <span class="tok-fn">posixCallMainAndExit</span>() <span class="tok-kw">callconv</span>(.C) <span class="tok-type">noreturn</span> {</span>
+<span class="line" id="L364">    <span class="tok-kw">const</span> argc = argc_argv_ptr[<span class="tok-number">0</span>];</span>
+<span class="line" id="L365">    <span class="tok-kw">const</span> argv = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(argc_argv_ptr + <span class="tok-number">1</span>));</span>
+<span class="line" id="L366"></span>
+<span class="line" id="L367">    <span class="tok-kw">const</span> envp_optional: [*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span> = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(argv + argc + <span class="tok-number">1</span>));</span>
+<span class="line" id="L368">    <span class="tok-kw">var</span> envp_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L369">    <span class="tok-kw">while</span> (envp_optional[envp_count]) |_| : (envp_count += <span class="tok-number">1</span>) {}</span>
+<span class="line" id="L370">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(envp_optional))[<span class="tok-number">0</span>..envp_count];</span>
+<span class="line" id="L371"></span>
+<span class="line" id="L372">    <span class="tok-kw">if</span> (native_os == .linux) {</span>
+<span class="line" id="L373">        <span class="tok-comment">// Find the beginning of the auxiliary vector</span>
 </span>
-<span class="line" id="L365">        <span class="tok-kw">const</span> auxv: [*]elf.Auxv = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(envp.ptr + envp_count + <span class="tok-number">1</span>));</span>
-<span class="line" id="L366">        std.os.linux.elf_aux_maybe = auxv;</span>
-<span class="line" id="L367"></span>
-<span class="line" id="L368">        <span class="tok-kw">var</span> at_hwcap: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L369">        <span class="tok-kw">const</span> phdrs = init: {</span>
-<span class="line" id="L370">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L371">            <span class="tok-kw">var</span> at_phdr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L372">            <span class="tok-kw">var</span> at_phnum: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L373">            <span class="tok-kw">while</span> (auxv[i].a_type != elf.AT_NULL) : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L374">                <span class="tok-kw">switch</span> (auxv[i].a_type) {</span>
-<span class="line" id="L375">                    elf.AT_PHNUM =&gt; at_phnum = auxv[i].a_un.a_val,</span>
-<span class="line" id="L376">                    elf.AT_PHDR =&gt; at_phdr = auxv[i].a_un.a_val,</span>
-<span class="line" id="L377">                    elf.AT_HWCAP =&gt; at_hwcap = auxv[i].a_un.a_val,</span>
-<span class="line" id="L378">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L379">                }</span>
-<span class="line" id="L380">            }</span>
-<span class="line" id="L381">            <span class="tok-kw">break</span> :init <span class="tok-builtin">@as</span>([*]elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(at_phdr))[<span class="tok-number">0</span>..at_phnum];</span>
-<span class="line" id="L382">        };</span>
-<span class="line" id="L383"></span>
-<span class="line" id="L384">        <span class="tok-comment">// Apply the initial relocations as early as possible in the startup</span>
+<span class="line" id="L374">        <span class="tok-kw">const</span> auxv: [*]elf.Auxv = <span class="tok-builtin">@ptrCast</span>(<span class="tok-builtin">@alignCast</span>(envp.ptr + envp_count + <span class="tok-number">1</span>));</span>
+<span class="line" id="L375">        std.os.linux.elf_aux_maybe = auxv;</span>
+<span class="line" id="L376"></span>
+<span class="line" id="L377">        <span class="tok-kw">var</span> at_hwcap: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L378">        <span class="tok-kw">const</span> phdrs = init: {</span>
+<span class="line" id="L379">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L380">            <span class="tok-kw">var</span> at_phdr: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L381">            <span class="tok-kw">var</span> at_phnum: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L382">            <span class="tok-kw">while</span> (auxv[i].a_type != elf.AT_NULL) : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L383">                <span class="tok-kw">switch</span> (auxv[i].a_type) {</span>
+<span class="line" id="L384">                    elf.AT_PHNUM =&gt; at_phnum = auxv[i].a_un.a_val,</span>
+<span class="line" id="L385">                    elf.AT_PHDR =&gt; at_phdr = auxv[i].a_un.a_val,</span>
+<span class="line" id="L386">                    elf.AT_HWCAP =&gt; at_hwcap = auxv[i].a_un.a_val,</span>
+<span class="line" id="L387">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L388">                }</span>
+<span class="line" id="L389">            }</span>
+<span class="line" id="L390">            <span class="tok-kw">break</span> :init <span class="tok-builtin">@as</span>([*]elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(at_phdr))[<span class="tok-number">0</span>..at_phnum];</span>
+<span class="line" id="L391">        };</span>
+<span class="line" id="L392"></span>
+<span class="line" id="L393">        <span class="tok-comment">// Apply the initial relocations as early as possible in the startup</span>
 </span>
-<span class="line" id="L385">        <span class="tok-comment">// process.</span>
+<span class="line" id="L394">        <span class="tok-comment">// process.</span>
 </span>
-<span class="line" id="L386">        <span class="tok-kw">if</span> (builtin.position_independent_executable) {</span>
-<span class="line" id="L387">            std.os.linux.pie.relocate(phdrs);</span>
-<span class="line" id="L388">        }</span>
-<span class="line" id="L389"></span>
-<span class="line" id="L390">        <span class="tok-kw">if</span> (!builtin.single_threaded) {</span>
-<span class="line" id="L391">            <span class="tok-comment">// ARMv6 targets (and earlier) have no support for TLS in hardware.</span>
+<span class="line" id="L395">        <span class="tok-kw">if</span> (builtin.position_independent_executable) {</span>
+<span class="line" id="L396">            std.os.linux.pie.relocate(phdrs);</span>
+<span class="line" id="L397">        }</span>
+<span class="line" id="L398"></span>
+<span class="line" id="L399">        <span class="tok-kw">if</span> (!builtin.single_threaded) {</span>
+<span class="line" id="L400">            <span class="tok-comment">// ARMv6 targets (and earlier) have no support for TLS in hardware.</span>
 </span>
-<span class="line" id="L392">            <span class="tok-comment">// FIXME: Elide the check for targets &gt;= ARMv7 when the target feature API</span>
+<span class="line" id="L401">            <span class="tok-comment">// FIXME: Elide the check for targets &gt;= ARMv7 when the target feature API</span>
 </span>
-<span class="line" id="L393">            <span class="tok-comment">// becomes less verbose (and more usable).</span>
+<span class="line" id="L402">            <span class="tok-comment">// becomes less verbose (and more usable).</span>
 </span>
-<span class="line" id="L394">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> native_arch.isARM()) {</span>
-<span class="line" id="L395">                <span class="tok-kw">if</span> (at_hwcap &amp; std.os.linux.HWCAP.TLS == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L396">                    <span class="tok-comment">// FIXME: Make __aeabi_read_tp call the kernel helper kuser_get_tls</span>
+<span class="line" id="L403">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> native_arch.isARM()) {</span>
+<span class="line" id="L404">                <span class="tok-kw">if</span> (at_hwcap &amp; std.os.linux.HWCAP.TLS == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L405">                    <span class="tok-comment">// FIXME: Make __aeabi_read_tp call the kernel helper kuser_get_tls</span>
 </span>
-<span class="line" id="L397">                    <span class="tok-comment">// For the time being use a simple abort instead of a @panic call to</span>
+<span class="line" id="L406">                    <span class="tok-comment">// For the time being use a simple abort instead of a @panic call to</span>
 </span>
-<span class="line" id="L398">                    <span class="tok-comment">// keep the binary bloat under control.</span>
+<span class="line" id="L407">                    <span class="tok-comment">// keep the binary bloat under control.</span>
 </span>
-<span class="line" id="L399">                    std.os.abort();</span>
-<span class="line" id="L400">                }</span>
-<span class="line" id="L401">            }</span>
-<span class="line" id="L402"></span>
-<span class="line" id="L403">            <span class="tok-comment">// Initialize the TLS area.</span>
+<span class="line" id="L408">                    std.os.abort();</span>
+<span class="line" id="L409">                }</span>
+<span class="line" id="L410">            }</span>
+<span class="line" id="L411"></span>
+<span class="line" id="L412">            <span class="tok-comment">// Initialize the TLS area.</span>
 </span>
-<span class="line" id="L404">            std.os.linux.tls.initStaticTLS(phdrs);</span>
-<span class="line" id="L405">        }</span>
-<span class="line" id="L406"></span>
-<span class="line" id="L407">        <span class="tok-comment">// The way Linux executables represent stack size is via the PT_GNU_STACK</span>
+<span class="line" id="L413">            std.os.linux.tls.initStaticTLS(phdrs);</span>
+<span class="line" id="L414">        }</span>
+<span class="line" id="L415"></span>
+<span class="line" id="L416">        <span class="tok-comment">// The way Linux executables represent stack size is via the PT_GNU_STACK</span>
 </span>
-<span class="line" id="L408">        <span class="tok-comment">// program header. However the kernel does not recognize it; it always gives 8 MiB.</span>
+<span class="line" id="L417">        <span class="tok-comment">// program header. However the kernel does not recognize it; it always gives 8 MiB.</span>
 </span>
-<span class="line" id="L409">        <span class="tok-comment">// Here we look for the stack size in our program headers and use setrlimit</span>
+<span class="line" id="L418">        <span class="tok-comment">// Here we look for the stack size in our program headers and use setrlimit</span>
 </span>
-<span class="line" id="L410">        <span class="tok-comment">// to ask for more stack space.</span>
+<span class="line" id="L419">        <span class="tok-comment">// to ask for more stack space.</span>
 </span>
-<span class="line" id="L411">        expandStackSize(phdrs);</span>
-<span class="line" id="L412">    }</span>
-<span class="line" id="L413"></span>
-<span class="line" id="L414">    std.os.exit(<span class="tok-builtin">@call</span>(.always_inline, callMainWithArgs, .{ argc, argv, envp }));</span>
-<span class="line" id="L415">}</span>
-<span class="line" id="L416"></span>
-<span class="line" id="L417"><span class="tok-kw">fn</span> <span class="tok-fn">expandStackSize</span>(phdrs: []elf.Phdr) <span class="tok-type">void</span> {</span>
-<span class="line" id="L418">    <span class="tok-kw">for</span> (phdrs) |*phdr| {</span>
-<span class="line" id="L419">        <span class="tok-kw">switch</span> (phdr.p_type) {</span>
-<span class="line" id="L420">            elf.PT_GNU_STACK =&gt; {</span>
-<span class="line" id="L421">                assert(phdr.p_memsz % std.mem.page_size == <span class="tok-number">0</span>);</span>
+<span class="line" id="L420">        expandStackSize(phdrs);</span>
+<span class="line" id="L421">    }</span>
 <span class="line" id="L422"></span>
-<span class="line" id="L423">                <span class="tok-comment">// Silently fail if we are unable to get limits.</span>
-</span>
-<span class="line" id="L424">                <span class="tok-kw">const</span> limits = std.os.getrlimit(.STACK) <span class="tok-kw">catch</span> <span class="tok-kw">break</span>;</span>
+<span class="line" id="L423">    std.os.exit(<span class="tok-builtin">@call</span>(.always_inline, callMainWithArgs, .{ argc, argv, envp }));</span>
+<span class="line" id="L424">}</span>
 <span class="line" id="L425"></span>
-<span class="line" id="L426">                <span class="tok-comment">// Clamp to limits.max .</span>
+<span class="line" id="L426"><span class="tok-kw">fn</span> <span class="tok-fn">expandStackSize</span>(phdrs: []elf.Phdr) <span class="tok-type">void</span> {</span>
+<span class="line" id="L427">    <span class="tok-kw">for</span> (phdrs) |*phdr| {</span>
+<span class="line" id="L428">        <span class="tok-kw">switch</span> (phdr.p_type) {</span>
+<span class="line" id="L429">            elf.PT_GNU_STACK =&gt; {</span>
+<span class="line" id="L430">                assert(phdr.p_memsz % std.mem.page_size == <span class="tok-number">0</span>);</span>
+<span class="line" id="L431"></span>
+<span class="line" id="L432">                <span class="tok-comment">// Silently fail if we are unable to get limits.</span>
 </span>
-<span class="line" id="L427">                <span class="tok-kw">const</span> wanted_stack_size = <span class="tok-builtin">@min</span>(phdr.p_memsz, limits.max);</span>
-<span class="line" id="L428"></span>
-<span class="line" id="L429">                <span class="tok-kw">if</span> (wanted_stack_size &gt; limits.cur) {</span>
-<span class="line" id="L430">                    std.os.setrlimit(.STACK, .{</span>
-<span class="line" id="L431">                        .cur = wanted_stack_size,</span>
-<span class="line" id="L432">                        .max = limits.max,</span>
-<span class="line" id="L433">                    }) <span class="tok-kw">catch</span> {</span>
-<span class="line" id="L434">                        <span class="tok-comment">// Because we could not increase the stack size to the upper bound,</span>
+<span class="line" id="L433">                <span class="tok-kw">const</span> limits = std.os.getrlimit(.STACK) <span class="tok-kw">catch</span> <span class="tok-kw">break</span>;</span>
+<span class="line" id="L434"></span>
+<span class="line" id="L435">                <span class="tok-comment">// Clamp to limits.max .</span>
 </span>
-<span class="line" id="L435">                        <span class="tok-comment">// depending on what happens at runtime, a stack overflow may occur.</span>
+<span class="line" id="L436">                <span class="tok-kw">const</span> wanted_stack_size = <span class="tok-builtin">@min</span>(phdr.p_memsz, limits.max);</span>
+<span class="line" id="L437"></span>
+<span class="line" id="L438">                <span class="tok-kw">if</span> (wanted_stack_size &gt; limits.cur) {</span>
+<span class="line" id="L439">                    std.os.setrlimit(.STACK, .{</span>
+<span class="line" id="L440">                        .cur = wanted_stack_size,</span>
+<span class="line" id="L441">                        .max = limits.max,</span>
+<span class="line" id="L442">                    }) <span class="tok-kw">catch</span> {</span>
+<span class="line" id="L443">                        <span class="tok-comment">// Because we could not increase the stack size to the upper bound,</span>
 </span>
-<span class="line" id="L436">                        <span class="tok-comment">// However it would cause a segmentation fault, thanks to stack probing,</span>
+<span class="line" id="L444">                        <span class="tok-comment">// depending on what happens at runtime, a stack overflow may occur.</span>
 </span>
-<span class="line" id="L437">                        <span class="tok-comment">// so we do not have a memory safety issue here.</span>
+<span class="line" id="L445">                        <span class="tok-comment">// However it would cause a segmentation fault, thanks to stack probing,</span>
 </span>
-<span class="line" id="L438">                        <span class="tok-comment">// This is intentional silent failure.</span>
+<span class="line" id="L446">                        <span class="tok-comment">// so we do not have a memory safety issue here.</span>
 </span>
-<span class="line" id="L439">                        <span class="tok-comment">// This logic should be revisited when the following issues are addressed:</span>
+<span class="line" id="L447">                        <span class="tok-comment">// This is intentional silent failure.</span>
 </span>
-<span class="line" id="L440">                        <span class="tok-comment">// https://github.com/ziglang/zig/issues/157</span>
+<span class="line" id="L448">                        <span class="tok-comment">// This logic should be revisited when the following issues are addressed:</span>
 </span>
-<span class="line" id="L441">                        <span class="tok-comment">// https://github.com/ziglang/zig/issues/1006</span>
+<span class="line" id="L449">                        <span class="tok-comment">// https://github.com/ziglang/zig/issues/157</span>
 </span>
-<span class="line" id="L442">                    };</span>
-<span class="line" id="L443">                }</span>
-<span class="line" id="L444">                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L445">            },</span>
-<span class="line" id="L446">            <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L447">        }</span>
-<span class="line" id="L448">    }</span>
-<span class="line" id="L449">}</span>
-<span class="line" id="L450"></span>
-<span class="line" id="L451"><span class="tok-kw">fn</span> <span class="tok-fn">callMainWithArgs</span>(argc: <span class="tok-type">usize</span>, argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, envp: [][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L452">    std.os.argv = argv[<span class="tok-number">0</span>..argc];</span>
-<span class="line" id="L453">    std.os.environ = envp;</span>
-<span class="line" id="L454"></span>
-<span class="line" id="L455">    std.debug.maybeEnableSegfaultHandler();</span>
-<span class="line" id="L456">    std.os.maybeIgnoreSigpipe();</span>
-<span class="line" id="L457"></span>
-<span class="line" id="L458">    <span class="tok-kw">return</span> initEventLoopAndCallMain();</span>
-<span class="line" id="L459">}</span>
-<span class="line" id="L460"></span>
-<span class="line" id="L461"><span class="tok-kw">fn</span> <span class="tok-fn">main</span>(c_argc: <span class="tok-type">c_int</span>, c_argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>, c_envp: [*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">c_int</span> {</span>
-<span class="line" id="L462">    <span class="tok-kw">var</span> env_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L463">    <span class="tok-kw">while</span> (c_envp[env_count] != <span class="tok-null">null</span>) : (env_count += <span class="tok-number">1</span>) {}</span>
-<span class="line" id="L464">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_envp))[<span class="tok-number">0</span>..env_count];</span>
-<span class="line" id="L465"></span>
-<span class="line" id="L466">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
-<span class="line" id="L467">        <span class="tok-kw">const</span> at_phdr = std.c.getauxval(elf.AT_PHDR);</span>
-<span class="line" id="L468">        <span class="tok-kw">const</span> at_phnum = std.c.getauxval(elf.AT_PHNUM);</span>
-<span class="line" id="L469">        <span class="tok-kw">const</span> phdrs = (<span class="tok-builtin">@as</span>([*]elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(at_phdr)))[<span class="tok-number">0</span>..at_phnum];</span>
-<span class="line" id="L470">        expandStackSize(phdrs);</span>
-<span class="line" id="L471">    }</span>
-<span class="line" id="L472"></span>
-<span class="line" id="L473">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMainWithArgs, .{ <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(c_argc)), <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_argv)), envp });</span>
-<span class="line" id="L474">}</span>
-<span class="line" id="L475"></span>
-<span class="line" id="L476"><span class="tok-kw">fn</span> <span class="tok-fn">mainWithoutEnv</span>(c_argc: <span class="tok-type">c_int</span>, c_argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">c_int</span> {</span>
-<span class="line" id="L477">    std.os.argv = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_argv))[<span class="tok-number">0</span>..<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(c_argc))];</span>
-<span class="line" id="L478">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMain, .{});</span>
-<span class="line" id="L479">}</span>
-<span class="line" id="L480"></span>
-<span class="line" id="L481"><span class="tok-comment">// General error message for a malformed return type</span>
+<span class="line" id="L450">                        <span class="tok-comment">// https://github.com/ziglang/zig/issues/1006</span>
 </span>
-<span class="line" id="L482"><span class="tok-kw">const</span> bad_main_ret = <span class="tok-str">&quot;expected return type of main to be 'void', '!void', 'noreturn', 'u8', or '!u8'&quot;</span>;</span>
-<span class="line" id="L483"></span>
-<span class="line" id="L484"><span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
+<span class="line" id="L451">                    };</span>
+<span class="line" id="L452">                }</span>
+<span class="line" id="L453">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L454">            },</span>
+<span class="line" id="L455">            <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L456">        }</span>
+<span class="line" id="L457">    }</span>
+<span class="line" id="L458">}</span>
+<span class="line" id="L459"></span>
+<span class="line" id="L460"><span class="tok-kw">fn</span> <span class="tok-fn">callMainWithArgs</span>(argc: <span class="tok-type">usize</span>, argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, envp: [][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>) <span class="tok-type">u8</span> {</span>
+<span class="line" id="L461">    std.os.argv = argv[<span class="tok-number">0</span>..argc];</span>
+<span class="line" id="L462">    std.os.environ = envp;</span>
+<span class="line" id="L463"></span>
+<span class="line" id="L464">    std.debug.maybeEnableSegfaultHandler();</span>
+<span class="line" id="L465">    std.os.maybeIgnoreSigpipe();</span>
+<span class="line" id="L466"></span>
+<span class="line" id="L467">    <span class="tok-kw">return</span> initEventLoopAndCallMain();</span>
+<span class="line" id="L468">}</span>
+<span class="line" id="L469"></span>
+<span class="line" id="L470"><span class="tok-kw">fn</span> <span class="tok-fn">main</span>(c_argc: <span class="tok-type">c_int</span>, c_argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>, c_envp: [*:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">c_int</span> {</span>
+<span class="line" id="L471">    <span class="tok-kw">var</span> env_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L472">    <span class="tok-kw">while</span> (c_envp[env_count] != <span class="tok-null">null</span>) : (env_count += <span class="tok-number">1</span>) {}</span>
+<span class="line" id="L473">    <span class="tok-kw">const</span> envp = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_envp))[<span class="tok-number">0</span>..env_count];</span>
+<span class="line" id="L474"></span>
+<span class="line" id="L475">    <span class="tok-kw">if</span> (builtin.os.tag == .linux) {</span>
+<span class="line" id="L476">        <span class="tok-kw">const</span> at_phdr = std.c.getauxval(elf.AT_PHDR);</span>
+<span class="line" id="L477">        <span class="tok-kw">const</span> at_phnum = std.c.getauxval(elf.AT_PHNUM);</span>
+<span class="line" id="L478">        <span class="tok-kw">const</span> phdrs = (<span class="tok-builtin">@as</span>([*]elf.Phdr, <span class="tok-builtin">@ptrFromInt</span>(at_phdr)))[<span class="tok-number">0</span>..at_phnum];</span>
+<span class="line" id="L479">        expandStackSize(phdrs);</span>
+<span class="line" id="L480">    }</span>
+<span class="line" id="L481"></span>
+<span class="line" id="L482">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMainWithArgs, .{ <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(c_argc)), <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_argv)), envp });</span>
+<span class="line" id="L483">}</span>
+<span class="line" id="L484"></span>
+<span class="line" id="L485"><span class="tok-kw">fn</span> <span class="tok-fn">mainWithoutEnv</span>(c_argc: <span class="tok-type">c_int</span>, c_argv: [*][*:<span class="tok-number">0</span>]<span class="tok-type">c_char</span>) <span class="tok-kw">callconv</span>(.C) <span class="tok-type">c_int</span> {</span>
+<span class="line" id="L486">    std.os.argv = <span class="tok-builtin">@as</span>([*][*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(c_argv))[<span class="tok-number">0</span>..<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(c_argc))];</span>
+<span class="line" id="L487">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMain, .{});</span>
+<span class="line" id="L488">}</span>
+<span class="line" id="L489"></span>
+<span class="line" id="L490"><span class="tok-comment">// General error message for a malformed return type</span>
 </span>
-<span class="line" id="L485"><span class="tok-comment">// and we want fewer call frames in stack traces.</span>
+<span class="line" id="L491"><span class="tok-kw">const</span> bad_main_ret = <span class="tok-str">&quot;expected return type of main to be 'void', '!void', 'noreturn', 'u8', or '!u8'&quot;</span>;</span>
+<span class="line" id="L492"></span>
+<span class="line" id="L493"><span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
 </span>
-<span class="line" id="L486"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">initEventLoopAndCallMain</span>() <span class="tok-type">u8</span> {</span>
-<span class="line" id="L487">    <span class="tok-kw">if</span> (std.event.Loop.instance) |loop| {</span>
-<span class="line" id="L488">        <span class="tok-kw">if</span> (loop == std.event.Loop.default_instance) {</span>
-<span class="line" id="L489">            loop.init() <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L490">                std.log.err(<span class="tok-str">&quot;{s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L491">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
-<span class="line" id="L492">                    std.debug.dumpStackTrace(trace.*);</span>
-<span class="line" id="L493">                }</span>
-<span class="line" id="L494">                <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
-<span class="line" id="L495">            };</span>
-<span class="line" id="L496">            <span class="tok-kw">defer</span> loop.deinit();</span>
-<span class="line" id="L497"></span>
-<span class="line" id="L498">            <span class="tok-kw">var</span> result: <span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L499">            <span class="tok-kw">var</span> frame: <span class="tok-builtin">@Frame</span>(callMainAsync) = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L500">            _ = <span class="tok-builtin">@asyncCall</span>(&amp;frame, &amp;result, callMainAsync, .{loop});</span>
-<span class="line" id="L501">            loop.run();</span>
-<span class="line" id="L502">            <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L503">        }</span>
-<span class="line" id="L504">    }</span>
-<span class="line" id="L505"></span>
-<span class="line" id="L506">    <span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
+<span class="line" id="L494"><span class="tok-comment">// and we want fewer call frames in stack traces.</span>
 </span>
-<span class="line" id="L507">    <span class="tok-comment">// and we want fewer call frames in stack traces.</span>
+<span class="line" id="L495"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">initEventLoopAndCallMain</span>() <span class="tok-type">u8</span> {</span>
+<span class="line" id="L496">    <span class="tok-kw">if</span> (std.event.Loop.instance) |loop| {</span>
+<span class="line" id="L497">        <span class="tok-kw">if</span> (loop == std.event.Loop.default_instance) {</span>
+<span class="line" id="L498">            loop.init() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L499">                std.log.err(<span class="tok-str">&quot;{s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L500">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
+<span class="line" id="L501">                    std.debug.dumpStackTrace(trace.*);</span>
+<span class="line" id="L502">                }</span>
+<span class="line" id="L503">                <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L504">            };</span>
+<span class="line" id="L505">            <span class="tok-kw">defer</span> loop.deinit();</span>
+<span class="line" id="L506"></span>
+<span class="line" id="L507">            <span class="tok-kw">var</span> result: <span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L508">            <span class="tok-kw">var</span> frame: <span class="tok-builtin">@Frame</span>(callMainAsync) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L509">            _ = <span class="tok-builtin">@asyncCall</span>(&amp;frame, &amp;result, callMainAsync, .{loop});</span>
+<span class="line" id="L510">            loop.run();</span>
+<span class="line" id="L511">            <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L512">        }</span>
+<span class="line" id="L513">    }</span>
+<span class="line" id="L514"></span>
+<span class="line" id="L515">    <span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
 </span>
-<span class="line" id="L508">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMain, .{});</span>
-<span class="line" id="L509">}</span>
-<span class="line" id="L510"></span>
-<span class="line" id="L511"><span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
+<span class="line" id="L516">    <span class="tok-comment">// and we want fewer call frames in stack traces.</span>
 </span>
-<span class="line" id="L512"><span class="tok-comment">// and we want fewer call frames in stack traces.</span>
+<span class="line" id="L517">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, callMain, .{});</span>
+<span class="line" id="L518">}</span>
+<span class="line" id="L519"></span>
+<span class="line" id="L520"><span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
 </span>
-<span class="line" id="L513"><span class="tok-comment">// TODO This function is duplicated from initEventLoopAndCallMain instead of using generics</span>
+<span class="line" id="L521"><span class="tok-comment">// and we want fewer call frames in stack traces.</span>
 </span>
-<span class="line" id="L514"><span class="tok-comment">// because it is working around stage1 compiler bugs.</span>
+<span class="line" id="L522"><span class="tok-comment">// TODO This function is duplicated from initEventLoopAndCallMain instead of using generics</span>
 </span>
-<span class="line" id="L515"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">initEventLoopAndCallWinMain</span>() std.os.windows.INT {</span>
-<span class="line" id="L516">    <span class="tok-kw">if</span> (std.event.Loop.instance) |loop| {</span>
-<span class="line" id="L517">        <span class="tok-kw">if</span> (loop == std.event.Loop.default_instance) {</span>
-<span class="line" id="L518">            loop.init() <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L519">                std.log.err(<span class="tok-str">&quot;{s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L520">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
-<span class="line" id="L521">                    std.debug.dumpStackTrace(trace.*);</span>
-<span class="line" id="L522">                }</span>
-<span class="line" id="L523">                <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
-<span class="line" id="L524">            };</span>
-<span class="line" id="L525">            <span class="tok-kw">defer</span> loop.deinit();</span>
-<span class="line" id="L526"></span>
-<span class="line" id="L527">            <span class="tok-kw">var</span> result: std.os.windows.INT = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L528">            <span class="tok-kw">var</span> frame: <span class="tok-builtin">@Frame</span>(callWinMainAsync) = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L529">            _ = <span class="tok-builtin">@asyncCall</span>(&amp;frame, &amp;result, callWinMainAsync, .{loop});</span>
-<span class="line" id="L530">            loop.run();</span>
-<span class="line" id="L531">            <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L532">        }</span>
-<span class="line" id="L533">    }</span>
-<span class="line" id="L534"></span>
-<span class="line" id="L535">    <span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
+<span class="line" id="L523"><span class="tok-comment">// because it is working around stage1 compiler bugs.</span>
 </span>
-<span class="line" id="L536">    <span class="tok-comment">// and we want fewer call frames in stack traces.</span>
+<span class="line" id="L524"><span class="tok-kw">inline</span> <span class="tok-kw">fn</span> <span class="tok-fn">initEventLoopAndCallWinMain</span>() std.os.windows.INT {</span>
+<span class="line" id="L525">    <span class="tok-kw">if</span> (std.event.Loop.instance) |loop| {</span>
+<span class="line" id="L526">        <span class="tok-kw">if</span> (loop == std.event.Loop.default_instance) {</span>
+<span class="line" id="L527">            loop.init() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L528">                std.log.err(<span class="tok-str">&quot;{s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L529">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
+<span class="line" id="L530">                    std.debug.dumpStackTrace(trace.*);</span>
+<span class="line" id="L531">                }</span>
+<span class="line" id="L532">                <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L533">            };</span>
+<span class="line" id="L534">            <span class="tok-kw">defer</span> loop.deinit();</span>
+<span class="line" id="L535"></span>
+<span class="line" id="L536">            <span class="tok-kw">var</span> result: std.os.windows.INT = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L537">            <span class="tok-kw">var</span> frame: <span class="tok-builtin">@Frame</span>(callWinMainAsync) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L538">            _ = <span class="tok-builtin">@asyncCall</span>(&amp;frame, &amp;result, callWinMainAsync, .{loop});</span>
+<span class="line" id="L539">            loop.run();</span>
+<span class="line" id="L540">            <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L541">        }</span>
+<span class="line" id="L542">    }</span>
+<span class="line" id="L543"></span>
+<span class="line" id="L544">    <span class="tok-comment">// This is marked inline because for some reason LLVM in release mode fails to inline it,</span>
 </span>
-<span class="line" id="L537">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, call_wWinMain, .{});</span>
-<span class="line" id="L538">}</span>
-<span class="line" id="L539"></span>
-<span class="line" id="L540"><span class="tok-kw">fn</span> <span class="tok-fn">callMainAsync</span>(loop: *std.event.Loop) <span class="tok-kw">callconv</span>(.Async) <span class="tok-type">u8</span> {</span>
-<span class="line" id="L541">    <span class="tok-comment">// This prevents the event loop from terminating at least until main() has returned.</span>
+<span class="line" id="L545">    <span class="tok-comment">// and we want fewer call frames in stack traces.</span>
 </span>
-<span class="line" id="L542">    <span class="tok-comment">// TODO This shouldn't be needed here; it should be in the event loop code.</span>
+<span class="line" id="L546">    <span class="tok-kw">return</span> <span class="tok-builtin">@call</span>(.always_inline, call_wWinMain, .{});</span>
+<span class="line" id="L547">}</span>
+<span class="line" id="L548"></span>
+<span class="line" id="L549"><span class="tok-kw">fn</span> <span class="tok-fn">callMainAsync</span>(loop: *std.event.Loop) <span class="tok-kw">callconv</span>(.Async) <span class="tok-type">u8</span> {</span>
+<span class="line" id="L550">    <span class="tok-comment">// This prevents the event loop from terminating at least until main() has returned.</span>
 </span>
-<span class="line" id="L543">    loop.beginOneEvent();</span>
-<span class="line" id="L544">    <span class="tok-kw">defer</span> loop.finishOneEvent();</span>
-<span class="line" id="L545">    <span class="tok-kw">return</span> callMain();</span>
-<span class="line" id="L546">}</span>
-<span class="line" id="L547"></span>
-<span class="line" id="L548"><span class="tok-kw">fn</span> <span class="tok-fn">callWinMainAsync</span>(loop: *std.event.Loop) <span class="tok-kw">callconv</span>(.Async) std.os.windows.INT {</span>
-<span class="line" id="L549">    <span class="tok-comment">// This prevents the event loop from terminating at least until main() has returned.</span>
+<span class="line" id="L551">    <span class="tok-comment">// TODO This shouldn't be needed here; it should be in the event loop code.</span>
 </span>
-<span class="line" id="L550">    <span class="tok-comment">// TODO This shouldn't be needed here; it should be in the event loop code.</span>
+<span class="line" id="L552">    loop.beginOneEvent();</span>
+<span class="line" id="L553">    <span class="tok-kw">defer</span> loop.finishOneEvent();</span>
+<span class="line" id="L554">    <span class="tok-kw">return</span> callMain();</span>
+<span class="line" id="L555">}</span>
+<span class="line" id="L556"></span>
+<span class="line" id="L557"><span class="tok-kw">fn</span> <span class="tok-fn">callWinMainAsync</span>(loop: *std.event.Loop) <span class="tok-kw">callconv</span>(.Async) std.os.windows.INT {</span>
+<span class="line" id="L558">    <span class="tok-comment">// This prevents the event loop from terminating at least until main() has returned.</span>
 </span>
-<span class="line" id="L551">    loop.beginOneEvent();</span>
-<span class="line" id="L552">    <span class="tok-kw">defer</span> loop.finishOneEvent();</span>
-<span class="line" id="L553">    <span class="tok-kw">return</span> call_wWinMain();</span>
-<span class="line" id="L554">}</span>
-<span class="line" id="L555"></span>
-<span class="line" id="L556"><span class="tok-comment">// This is not marked inline because it is called with @asyncCall when</span>
+<span class="line" id="L559">    <span class="tok-comment">// TODO This shouldn't be needed here; it should be in the event loop code.</span>
 </span>
-<span class="line" id="L557"><span class="tok-comment">// there is an event loop.</span>
+<span class="line" id="L560">    loop.beginOneEvent();</span>
+<span class="line" id="L561">    <span class="tok-kw">defer</span> loop.finishOneEvent();</span>
+<span class="line" id="L562">    <span class="tok-kw">return</span> call_wWinMain();</span>
+<span class="line" id="L563">}</span>
+<span class="line" id="L564"></span>
+<span class="line" id="L565"><span class="tok-comment">// This is not marked inline because it is called with @asyncCall when</span>
 </span>
-<span class="line" id="L558"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">callMain</span>() <span class="tok-type">u8</span> {</span>
-<span class="line" id="L559">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(root.main)).Fn.return_type.?)) {</span>
-<span class="line" id="L560">        .NoReturn =&gt; {</span>
-<span class="line" id="L561">            root.main();</span>
-<span class="line" id="L562">        },</span>
-<span class="line" id="L563">        .Void =&gt; {</span>
-<span class="line" id="L564">            root.main();</span>
-<span class="line" id="L565">            <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L566">        },</span>
-<span class="line" id="L567">        .Int =&gt; |info| {</span>
-<span class="line" id="L568">            <span class="tok-kw">if</span> (info.bits != <span class="tok-number">8</span> <span class="tok-kw">or</span> info.signedness == .signed) {</span>
-<span class="line" id="L569">                <span class="tok-builtin">@compileError</span>(bad_main_ret);</span>
-<span class="line" id="L570">            }</span>
-<span class="line" id="L571">            <span class="tok-kw">return</span> root.main();</span>
-<span class="line" id="L572">        },</span>
-<span class="line" id="L573">        .ErrorUnion =&gt; {</span>
-<span class="line" id="L574">            <span class="tok-kw">const</span> result = root.main() <span class="tok-kw">catch</span> |err| {</span>
-<span class="line" id="L575">                std.log.err(<span class="tok-str">&quot;{s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
-<span class="line" id="L576">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
-<span class="line" id="L577">                    std.debug.dumpStackTrace(trace.*);</span>
-<span class="line" id="L578">                }</span>
-<span class="line" id="L579">                <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
-<span class="line" id="L580">            };</span>
-<span class="line" id="L581">            <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(result))) {</span>
-<span class="line" id="L582">                .Void =&gt; <span class="tok-kw">return</span> <span class="tok-number">0</span>,</span>
-<span class="line" id="L583">                .Int =&gt; |info| {</span>
-<span class="line" id="L584">                    <span class="tok-kw">if</span> (info.bits != <span class="tok-number">8</span> <span class="tok-kw">or</span> info.signedness == .signed) {</span>
-<span class="line" id="L585">                        <span class="tok-builtin">@compileError</span>(bad_main_ret);</span>
-<span class="line" id="L586">                    }</span>
-<span class="line" id="L587">                    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L588">                },</span>
-<span class="line" id="L589">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(bad_main_ret),</span>
-<span class="line" id="L590">            }</span>
-<span class="line" id="L591">        },</span>
-<span class="line" id="L592">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(bad_main_ret),</span>
-<span class="line" id="L593">    }</span>
-<span class="line" id="L594">}</span>
-<span class="line" id="L595"></span>
-<span class="line" id="L596"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">call_wWinMain</span>() std.os.windows.INT {</span>
-<span class="line" id="L597">    <span class="tok-kw">const</span> MAIN_HINSTANCE = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(root.wWinMain)).Fn.params[<span class="tok-number">0</span>].<span class="tok-type">type</span>.?;</span>
-<span class="line" id="L598">    <span class="tok-kw">const</span> hInstance = <span class="tok-builtin">@as</span>(MAIN_HINSTANCE, <span class="tok-builtin">@ptrCast</span>(std.os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>).?));</span>
-<span class="line" id="L599">    <span class="tok-kw">const</span> lpCmdLine = std.os.windows.kernel32.GetCommandLineW();</span>
-<span class="line" id="L600"></span>
-<span class="line" id="L601">    <span class="tok-comment">// There's no (documented) way to get the nCmdShow parameter, so we're</span>
+<span class="line" id="L566"><span class="tok-comment">// there is an event loop.</span>
 </span>
-<span class="line" id="L602">    <span class="tok-comment">// using this fairly standard default.</span>
-</span>
-<span class="line" id="L603">    <span class="tok-kw">const</span> nCmdShow = std.os.windows.user32.SW_SHOW;</span>
+<span class="line" id="L567"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">callMain</span>() <span class="tok-type">u8</span> {</span>
+<span class="line" id="L568">    <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(root.main)).Fn.return_type.?)) {</span>
+<span class="line" id="L569">        .NoReturn =&gt; {</span>
+<span class="line" id="L570">            root.main();</span>
+<span class="line" id="L571">        },</span>
+<span class="line" id="L572">        .Void =&gt; {</span>
+<span class="line" id="L573">            root.main();</span>
+<span class="line" id="L574">            <span class="tok-kw">return</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L575">        },</span>
+<span class="line" id="L576">        .Int =&gt; |info| {</span>
+<span class="line" id="L577">            <span class="tok-kw">if</span> (info.bits != <span class="tok-number">8</span> <span class="tok-kw">or</span> info.signedness == .signed) {</span>
+<span class="line" id="L578">                <span class="tok-builtin">@compileError</span>(bad_main_ret);</span>
+<span class="line" id="L579">            }</span>
+<span class="line" id="L580">            <span class="tok-kw">return</span> root.main();</span>
+<span class="line" id="L581">        },</span>
+<span class="line" id="L582">        .ErrorUnion =&gt; {</span>
+<span class="line" id="L583">            <span class="tok-kw">const</span> result = root.main() <span class="tok-kw">catch</span> |err| {</span>
+<span class="line" id="L584">                std.log.err(<span class="tok-str">&quot;{s}&quot;</span>, .{<span class="tok-builtin">@errorName</span>(err)});</span>
+<span class="line" id="L585">                <span class="tok-kw">if</span> (<span class="tok-builtin">@errorReturnTrace</span>()) |trace| {</span>
+<span class="line" id="L586">                    std.debug.dumpStackTrace(trace.*);</span>
+<span class="line" id="L587">                }</span>
+<span class="line" id="L588">                <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L589">            };</span>
+<span class="line" id="L590">            <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(result))) {</span>
+<span class="line" id="L591">                .Void =&gt; <span class="tok-kw">return</span> <span class="tok-number">0</span>,</span>
+<span class="line" id="L592">                .Int =&gt; |info| {</span>
+<span class="line" id="L593">                    <span class="tok-kw">if</span> (info.bits != <span class="tok-number">8</span> <span class="tok-kw">or</span> info.signedness == .signed) {</span>
+<span class="line" id="L594">                        <span class="tok-builtin">@compileError</span>(bad_main_ret);</span>
+<span class="line" id="L595">                    }</span>
+<span class="line" id="L596">                    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L597">                },</span>
+<span class="line" id="L598">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(bad_main_ret),</span>
+<span class="line" id="L599">            }</span>
+<span class="line" id="L600">        },</span>
+<span class="line" id="L601">        <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(bad_main_ret),</span>
+<span class="line" id="L602">    }</span>
+<span class="line" id="L603">}</span>
 <span class="line" id="L604"></span>
-<span class="line" id="L605">    <span class="tok-comment">// second parameter hPrevInstance, MSDN: &quot;This parameter is always NULL&quot;</span>
+<span class="line" id="L605"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">call_wWinMain</span>() std.os.windows.INT {</span>
+<span class="line" id="L606">    <span class="tok-kw">const</span> MAIN_HINSTANCE = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(root.wWinMain)).Fn.params[<span class="tok-number">0</span>].<span class="tok-type">type</span>.?;</span>
+<span class="line" id="L607">    <span class="tok-kw">const</span> hInstance = <span class="tok-builtin">@as</span>(MAIN_HINSTANCE, <span class="tok-builtin">@ptrCast</span>(std.os.windows.kernel32.GetModuleHandleW(<span class="tok-null">null</span>).?));</span>
+<span class="line" id="L608">    <span class="tok-kw">const</span> lpCmdLine = std.os.windows.kernel32.GetCommandLineW();</span>
+<span class="line" id="L609"></span>
+<span class="line" id="L610">    <span class="tok-comment">// There's no (documented) way to get the nCmdShow parameter, so we're</span>
 </span>
-<span class="line" id="L606">    <span class="tok-kw">return</span> root.wWinMain(hInstance, <span class="tok-null">null</span>, lpCmdLine, nCmdShow);</span>
-<span class="line" id="L607">}</span>
-<span class="line" id="L608"></span>
+<span class="line" id="L611">    <span class="tok-comment">// using this fairly standard default.</span>
+</span>
+<span class="line" id="L612">    <span class="tok-kw">const</span> nCmdShow = std.os.windows.user32.SW_SHOW;</span>
+<span class="line" id="L613"></span>
+<span class="line" id="L614">    <span class="tok-comment">// second parameter hPrevInstance, MSDN: &quot;This parameter is always NULL&quot;</span>
+</span>
+<span class="line" id="L615">    <span class="tok-kw">return</span> root.wWinMain(hInstance, <span class="tok-null">null</span>, lpCmdLine, nCmdShow);</span>
+<span class="line" id="L616">}</span>
+<span class="line" id="L617"></span>
 </code></pre></body>
 </html>

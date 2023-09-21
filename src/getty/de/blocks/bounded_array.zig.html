@@ -128,8 +128,8 @@
 <span class="line" id="L15"></span>
 <span class="line" id="L16"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
 <span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L18">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L19">    ally: ?std.mem.Allocator,</span>
+<span class="line" id="L18">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L19">    ally: std.mem.Allocator,</span>
 <span class="line" id="L20">    <span class="tok-comment">/// The type being deserialized into.</span></span>
 <span class="line" id="L21">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L22">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
@@ -150,7 +150,7 @@
 <span class="line" id="L37">    <span class="tok-kw">return</span> BoundedArrayVisitor(T);</span>
 <span class="line" id="L38">}</span>
 <span class="line" id="L39"></span>
-<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - bounded array&quot;</span> {</span>
+<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.BoundedArray&quot;</span> {</span>
 <span class="line" id="L41">    <span class="tok-kw">const</span> tests = .{</span>
 <span class="line" id="L42">        .{</span>
 <span class="line" id="L43">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
@@ -181,50 +181,52 @@
 <span class="line" id="L68"></span>
 <span class="line" id="L69">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
 <span class="line" id="L70">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L71">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L74">    }</span>
-<span class="line" id="L75">}</span>
-<span class="line" id="L76"></span>
-<span class="line" id="L77"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - bounded array (recursive)&quot;</span> {</span>
-<span class="line" id="L78">    <span class="tok-kw">const</span> Child = std.BoundedArray(<span class="tok-type">i32</span>, <span class="tok-number">2</span>);</span>
-<span class="line" id="L79">    <span class="tok-kw">const</span> Parent = std.BoundedArray(Child, <span class="tok-number">3</span>);</span>
-<span class="line" id="L80"></span>
-<span class="line" id="L81">    <span class="tok-kw">var</span> expected = Parent.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L82">    <span class="tok-kw">var</span> a = Child.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L83">    <span class="tok-kw">var</span> b = Child.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L84">    <span class="tok-kw">var</span> c = Child.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L85"></span>
-<span class="line" id="L86">    b.append(<span class="tok-number">1</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L87">    c.append(<span class="tok-number">2</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L88">    c.append(<span class="tok-number">3</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L89">    expected.append(a) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L90">    expected.append(b) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L91">    expected.append(c) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
-<span class="line" id="L92"></span>
-<span class="line" id="L93">    <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L94">        .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L95">        .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L96">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L97">        .{ .Seq = .{ .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L98">        .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L99">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L100">        .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L101">        .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L102">        .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L103">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L71">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L72">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L73"></span>
+<span class="line" id="L74">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
+<span class="line" id="L75">    }</span>
+<span class="line" id="L76">}</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.BoundedArray (recursive)&quot;</span> {</span>
+<span class="line" id="L79">    <span class="tok-kw">const</span> Child = std.BoundedArray(<span class="tok-type">i32</span>, <span class="tok-number">2</span>);</span>
+<span class="line" id="L80">    <span class="tok-kw">const</span> Parent = std.BoundedArray(Child, <span class="tok-number">3</span>);</span>
+<span class="line" id="L81"></span>
+<span class="line" id="L82">    <span class="tok-kw">var</span> expected = Parent.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L83">    <span class="tok-kw">var</span> a = Child.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L84">    <span class="tok-kw">var</span> b = Child.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L85">    <span class="tok-kw">var</span> c = Child.init(<span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L86"></span>
+<span class="line" id="L87">    b.append(<span class="tok-number">1</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L88">    c.append(<span class="tok-number">2</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L89">    c.append(<span class="tok-number">3</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L90">    expected.append(a) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L91">    expected.append(b) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L92">    expected.append(c) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedTestError;</span>
+<span class="line" id="L93"></span>
+<span class="line" id="L94">    <span class="tok-kw">const</span> tokens = &amp;.{</span>
+<span class="line" id="L95">        .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L96">        .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L97">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L98">        .{ .Seq = .{ .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L99">        .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L100">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L101">        .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L102">        .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L103">        .{ .I32 = <span class="tok-number">3</span> },</span>
 <span class="line" id="L104">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L105">    };</span>
-<span class="line" id="L106"></span>
-<span class="line" id="L107">    <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, <span class="tok-null">null</span>, Self, Parent, tokens);</span>
-<span class="line" id="L108"></span>
-<span class="line" id="L109">    <span class="tok-kw">try</span> std.testing.expectEqual(expected.capacity(), got.capacity());</span>
-<span class="line" id="L110">    <span class="tok-kw">for</span> (got.slice(), <span class="tok-number">0</span>..) |l, i| {</span>
-<span class="line" id="L111">        <span class="tok-kw">try</span> std.testing.expectEqual(expected.get(i).capacity(), l.capacity());</span>
-<span class="line" id="L112">        <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">i32</span>, expected.get(i).slice(), l.slice());</span>
-<span class="line" id="L113">    }</span>
-<span class="line" id="L114">}</span>
-<span class="line" id="L115"></span>
+<span class="line" id="L105">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L106">    };</span>
+<span class="line" id="L107"></span>
+<span class="line" id="L108">    <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, Self, Parent, tokens);</span>
+<span class="line" id="L109">    <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L110"></span>
+<span class="line" id="L111">    <span class="tok-kw">try</span> std.testing.expectEqual(expected.capacity(), result.value.capacity());</span>
+<span class="line" id="L112">    <span class="tok-kw">for</span> (result.value.slice(), <span class="tok-number">0</span>..) |l, i| {</span>
+<span class="line" id="L113">        <span class="tok-kw">try</span> std.testing.expectEqual(expected.get(i).capacity(), l.capacity());</span>
+<span class="line" id="L114">        <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">i32</span>, expected.get(i).slice(), l.slice());</span>
+<span class="line" id="L115">    }</span>
+<span class="line" id="L116">}</span>
+<span class="line" id="L117"></span>
 </code></pre></body>
 </html>

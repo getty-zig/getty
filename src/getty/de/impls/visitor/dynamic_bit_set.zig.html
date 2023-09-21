@@ -127,49 +127,45 @@
 <span class="line" id="L14">            },</span>
 <span class="line" id="L15">        );</span>
 <span class="line" id="L16"></span>
-<span class="line" id="L17">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L18">            <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L19">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L20">            }</span>
-<span class="line" id="L21"></span>
-<span class="line" id="L22">            <span class="tok-comment">// A DynamicBitSet can only be resized towards its LSB. That is,</span>
+<span class="line" id="L17">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L18">            <span class="tok-comment">// A DynamicBitSet can only be resized towards its LSB. That is,</span>
 </span>
-<span class="line" id="L23">            <span class="tok-comment">// making [1,1,0,0]'s length = 2 gives [0,0], not [1,1]. And, as</span>
+<span class="line" id="L19">            <span class="tok-comment">// making [1,1,0,0]'s length = 2 gives [0,0], not [1,1]. And, as</span>
 </span>
-<span class="line" id="L24">            <span class="tok-comment">// far as I know, there's no sane way to copy bits from one bitset</span>
+<span class="line" id="L20">            <span class="tok-comment">// far as I know, there's no sane way to copy bits from one bitset</span>
 </span>
-<span class="line" id="L25">            <span class="tok-comment">// to another when their lengths differ.</span>
+<span class="line" id="L21">            <span class="tok-comment">// to another when their lengths differ.</span>
 </span>
-<span class="line" id="L26">            <span class="tok-comment">//</span>
+<span class="line" id="L22">            <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L27">            <span class="tok-comment">// To avoid messing around with resizing bitsets, we instead</span>
+<span class="line" id="L23">            <span class="tok-comment">// To avoid messing around with resizing bitsets, we instead</span>
 </span>
-<span class="line" id="L28">            <span class="tok-comment">// deserialize into an ArrayList initially. Then, the list's</span>
+<span class="line" id="L24">            <span class="tok-comment">// deserialize into an ArrayList initially. Then, the list's</span>
 </span>
-<span class="line" id="L29">            <span class="tok-comment">// elements are simply copied over to a properly sized bitset.</span>
+<span class="line" id="L25">            <span class="tok-comment">// elements are simply copied over to a properly sized bitset.</span>
 </span>
-<span class="line" id="L30">            <span class="tok-kw">var</span> list = <span class="tok-kw">try</span> std.ArrayList(Value.MaskInt).initCapacity(ally.?, <span class="tok-number">8</span>);</span>
-<span class="line" id="L31">            <span class="tok-kw">defer</span> list.deinit();</span>
-<span class="line" id="L32"></span>
-<span class="line" id="L33">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seq.nextElement(ally, Value.MaskInt)) |bit| {</span>
-<span class="line" id="L34">                <span class="tok-kw">switch</span> (bit) {</span>
-<span class="line" id="L35">                    <span class="tok-number">0</span> =&gt; <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>),</span>
-<span class="line" id="L36">                    <span class="tok-number">1</span> =&gt; <span class="tok-kw">try</span> list.append(<span class="tok-number">1</span>),</span>
-<span class="line" id="L37">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue,</span>
-<span class="line" id="L38">                }</span>
-<span class="line" id="L39">            }</span>
-<span class="line" id="L40"></span>
-<span class="line" id="L41">            <span class="tok-kw">var</span> bitset = <span class="tok-kw">try</span> Value.initEmpty(ally.?, list.items.len);</span>
-<span class="line" id="L42">            <span class="tok-kw">errdefer</span> <span class="tok-kw">if</span> (Value == std.DynamicBitSet) bitset.deinit() <span class="tok-kw">else</span> bitset.deinit(ally.?);</span>
+<span class="line" id="L26">            <span class="tok-kw">var</span> list = <span class="tok-kw">try</span> std.ArrayList(Value.MaskInt).initCapacity(ally, <span class="tok-number">8</span>);</span>
+<span class="line" id="L27">            <span class="tok-kw">defer</span> list.deinit();</span>
+<span class="line" id="L28"></span>
+<span class="line" id="L29">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seq.nextElement(ally, Value.MaskInt)) |bit| {</span>
+<span class="line" id="L30">                <span class="tok-kw">switch</span> (bit) {</span>
+<span class="line" id="L31">                    <span class="tok-number">0</span> =&gt; <span class="tok-kw">try</span> list.append(<span class="tok-number">0</span>),</span>
+<span class="line" id="L32">                    <span class="tok-number">1</span> =&gt; <span class="tok-kw">try</span> list.append(<span class="tok-number">1</span>),</span>
+<span class="line" id="L33">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue,</span>
+<span class="line" id="L34">                }</span>
+<span class="line" id="L35">            }</span>
+<span class="line" id="L36"></span>
+<span class="line" id="L37">            <span class="tok-kw">var</span> bitset = <span class="tok-kw">try</span> Value.initEmpty(ally, list.items.len);</span>
+<span class="line" id="L38">            <span class="tok-kw">errdefer</span> <span class="tok-kw">if</span> (Value == std.DynamicBitSet) bitset.deinit() <span class="tok-kw">else</span> bitset.deinit(ally);</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40">            <span class="tok-kw">for</span> (list.items, <span class="tok-number">0</span>..) |bit, i| {</span>
+<span class="line" id="L41">                <span class="tok-kw">if</span> (bit == <span class="tok-number">1</span>) bitset.set(list.items.len - <span class="tok-number">1</span> - i);</span>
+<span class="line" id="L42">            }</span>
 <span class="line" id="L43"></span>
-<span class="line" id="L44">            <span class="tok-kw">for</span> (list.items, <span class="tok-number">0</span>..) |bit, i| {</span>
-<span class="line" id="L45">                <span class="tok-kw">if</span> (bit == <span class="tok-number">1</span>) bitset.set(list.items.len - <span class="tok-number">1</span> - i);</span>
-<span class="line" id="L46">            }</span>
-<span class="line" id="L47"></span>
-<span class="line" id="L48">            <span class="tok-kw">return</span> bitset;</span>
-<span class="line" id="L49">        }</span>
-<span class="line" id="L50">    };</span>
-<span class="line" id="L51">}</span>
-<span class="line" id="L52"></span>
+<span class="line" id="L44">            <span class="tok-kw">return</span> bitset;</span>
+<span class="line" id="L45">        }</span>
+<span class="line" id="L46">    };</span>
+<span class="line" id="L47">}</span>
+<span class="line" id="L48"></span>
 </code></pre></body>
 </html>

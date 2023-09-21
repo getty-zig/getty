@@ -115,195 +115,154 @@
 <span class="line" id="L2"></span>
 <span class="line" id="L3"><span class="tok-kw">const</span> blocks = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../blocks.zig&quot;</span>);</span>
 <span class="line" id="L4"><span class="tok-kw">const</span> find_db = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../find.zig&quot;</span>).find_db;</span>
-<span class="line" id="L5"><span class="tok-kw">const</span> free = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../free.zig&quot;</span>).free;</span>
-<span class="line" id="L6"><span class="tok-kw">const</span> has_attributes = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../../attributes.zig&quot;</span>).has_attributes;</span>
-<span class="line" id="L7"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L8"></span>
-<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Pointer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L10">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Pointer) != .Pointer <span class="tok-kw">or</span> <span class="tok-builtin">@typeInfo</span>(Pointer).Pointer.size != .One) {</span>
-<span class="line" id="L11">        <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;expected one pointer, found `{s}`&quot;</span>, .{<span class="tok-builtin">@typeName</span>(Pointer)}));</span>
-<span class="line" id="L12">    }</span>
-<span class="line" id="L13"></span>
-<span class="line" id="L14">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L15">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L16"></span>
-<span class="line" id="L17">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
-<span class="line" id="L18">            Self,</span>
-<span class="line" id="L19">            Value,</span>
-<span class="line" id="L20">            .{</span>
-<span class="line" id="L21">                .visitBool = visitBool,</span>
-<span class="line" id="L22">                .visitFloat = visitFloat,</span>
-<span class="line" id="L23">                .visitInt = visitInt,</span>
-<span class="line" id="L24">                .visitMap = visitMap,</span>
-<span class="line" id="L25">                .visitNull = visitNull,</span>
-<span class="line" id="L26">                .visitSeq = visitSeq,</span>
-<span class="line" id="L27">                .visitSome = visitSome,</span>
-<span class="line" id="L28">                .visitString = visitString,</span>
-<span class="line" id="L29">                .visitUnion = visitUnion,</span>
-<span class="line" id="L30">                .visitVoid = visitVoid,</span>
-<span class="line" id="L31">            },</span>
-<span class="line" id="L32">        );</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">        <span class="tok-kw">const</span> Value = Pointer;</span>
-<span class="line" id="L35">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
-<span class="line" id="L36"></span>
-<span class="line" id="L37">        <span class="tok-kw">fn</span> <span class="tok-fn">visitBool</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-type">bool</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L38">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L39">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L40">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L41"></span>
-<span class="line" id="L42">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L43">                value.* = <span class="tok-kw">try</span> cv.visitor().visitBool(a, Deserializer, input);</span>
-<span class="line" id="L44"></span>
-<span class="line" id="L45">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L46">            }</span>
-<span class="line" id="L47"></span>
-<span class="line" id="L48">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L49">        }</span>
-<span class="line" id="L50"></span>
-<span class="line" id="L51">        <span class="tok-kw">fn</span> <span class="tok-fn">visitFloat</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L52">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L53">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L54">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> has_attributes = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../../attributes.zig&quot;</span>).has_attributes;</span>
+<span class="line" id="L6"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Pointer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L9">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Pointer) != .Pointer <span class="tok-kw">or</span> <span class="tok-builtin">@typeInfo</span>(Pointer).Pointer.size != .One) {</span>
+<span class="line" id="L10">        <span class="tok-builtin">@compileError</span>(std.fmt.comptimePrint(<span class="tok-str">&quot;expected one pointer, found `{s}`&quot;</span>, .{<span class="tok-builtin">@typeName</span>(Pointer)}));</span>
+<span class="line" id="L11">    }</span>
+<span class="line" id="L12"></span>
+<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L14">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L15"></span>
+<span class="line" id="L16">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
+<span class="line" id="L17">            Self,</span>
+<span class="line" id="L18">            Value,</span>
+<span class="line" id="L19">            .{</span>
+<span class="line" id="L20">                .visitBool = visitBool,</span>
+<span class="line" id="L21">                .visitFloat = visitFloat,</span>
+<span class="line" id="L22">                .visitInt = visitInt,</span>
+<span class="line" id="L23">                .visitMap = visitMap,</span>
+<span class="line" id="L24">                .visitNull = visitNull,</span>
+<span class="line" id="L25">                .visitSeq = visitSeq,</span>
+<span class="line" id="L26">                .visitSome = visitSome,</span>
+<span class="line" id="L27">                .visitString = visitString,</span>
+<span class="line" id="L28">                .visitUnion = visitUnion,</span>
+<span class="line" id="L29">                .visitVoid = visitVoid,</span>
+<span class="line" id="L30">            },</span>
+<span class="line" id="L31">        );</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33">        <span class="tok-kw">const</span> Value = Pointer;</span>
+<span class="line" id="L34">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
+<span class="line" id="L35"></span>
+<span class="line" id="L36">        <span class="tok-kw">fn</span> <span class="tok-fn">visitBool</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-type">bool</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L37">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L38">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L41">            value.* = <span class="tok-kw">try</span> cv.visitor().visitBool(ally, Deserializer, input);</span>
+<span class="line" id="L42"></span>
+<span class="line" id="L43">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L44">        }</span>
+<span class="line" id="L45"></span>
+<span class="line" id="L46">        <span class="tok-kw">fn</span> <span class="tok-fn">visitFloat</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L47">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L48">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L49"></span>
+<span class="line" id="L50">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L51">            value.* = <span class="tok-kw">try</span> cv.visitor().visitFloat(ally, Deserializer, input);</span>
+<span class="line" id="L52"></span>
+<span class="line" id="L53">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L54">        }</span>
 <span class="line" id="L55"></span>
-<span class="line" id="L56">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L57">                value.* = <span class="tok-kw">try</span> cv.visitor().visitFloat(a, Deserializer, input);</span>
-<span class="line" id="L58"></span>
-<span class="line" id="L59">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L60">            }</span>
-<span class="line" id="L61"></span>
-<span class="line" id="L62">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L63">        }</span>
-<span class="line" id="L64"></span>
-<span class="line" id="L65">        <span class="tok-kw">fn</span> <span class="tok-fn">visitInt</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L66">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L67">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L68">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
+<span class="line" id="L56">        <span class="tok-kw">fn</span> <span class="tok-fn">visitInt</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L57">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L58">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L59"></span>
+<span class="line" id="L60">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L61">            value.* = <span class="tok-kw">try</span> cv.visitor().visitInt(ally, Deserializer, input);</span>
+<span class="line" id="L62"></span>
+<span class="line" id="L63">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L64">        }</span>
+<span class="line" id="L65"></span>
+<span class="line" id="L66">        <span class="tok-kw">fn</span> <span class="tok-fn">visitMap</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, map: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L67">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L68">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
 <span class="line" id="L69"></span>
-<span class="line" id="L70">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L71">                value.* = <span class="tok-kw">try</span> cv.visitor().visitInt(a, Deserializer, input);</span>
+<span class="line" id="L70">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L71">            value.* = <span class="tok-kw">try</span> cv.visitor().visitMap(ally, Deserializer, map);</span>
 <span class="line" id="L72"></span>
-<span class="line" id="L73">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L74">            }</span>
+<span class="line" id="L73">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L74">        }</span>
 <span class="line" id="L75"></span>
-<span class="line" id="L76">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L77">        }</span>
-<span class="line" id="L78"></span>
-<span class="line" id="L79">        <span class="tok-kw">fn</span> <span class="tok-fn">visitMap</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, map: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L80">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L81">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L82">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L83"></span>
-<span class="line" id="L84">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L85">                value.* = <span class="tok-kw">try</span> cv.visitor().visitMap(a, Deserializer, map);</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L88">            }</span>
+<span class="line" id="L76">        <span class="tok-kw">fn</span> <span class="tok-fn">visitNull</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L77">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L78">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L79"></span>
+<span class="line" id="L80">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L81">            value.* = <span class="tok-kw">try</span> cv.visitor().visitNull(ally, Deserializer);</span>
+<span class="line" id="L82"></span>
+<span class="line" id="L83">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L84">        }</span>
+<span class="line" id="L85"></span>
+<span class="line" id="L86">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L87">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L88">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
 <span class="line" id="L89"></span>
-<span class="line" id="L90">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L91">        }</span>
+<span class="line" id="L90">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L91">            value.* = <span class="tok-kw">try</span> cv.visitor().visitSeq(ally, Deserializer, seq);</span>
 <span class="line" id="L92"></span>
-<span class="line" id="L93">        <span class="tok-kw">fn</span> <span class="tok-fn">visitNull</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L94">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L95">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L96">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L97"></span>
-<span class="line" id="L98">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L99">                value.* = <span class="tok-kw">try</span> cv.visitor().visitNull(a, Deserializer);</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L102">            }</span>
-<span class="line" id="L103"></span>
-<span class="line" id="L104">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L105">        }</span>
-<span class="line" id="L106"></span>
-<span class="line" id="L107">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L108">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L109">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L110">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L111"></span>
-<span class="line" id="L112">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L113">                value.* = <span class="tok-kw">try</span> cv.visitor().visitSeq(a, Deserializer, seq);</span>
-<span class="line" id="L114"></span>
-<span class="line" id="L115">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L116">            }</span>
-<span class="line" id="L117"></span>
-<span class="line" id="L118">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L119">        }</span>
-<span class="line" id="L120"></span>
-<span class="line" id="L121">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSome</span>(_: Self, ally: ?std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Err!Value {</span>
-<span class="line" id="L122">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L123">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L124">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
+<span class="line" id="L93">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L94">        }</span>
+<span class="line" id="L95"></span>
+<span class="line" id="L96">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSome</span>(_: Self, ally: std.mem.Allocator, deserializer: <span class="tok-kw">anytype</span>) <span class="tok-builtin">@TypeOf</span>(deserializer).Err!Value {</span>
+<span class="line" id="L97">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L98">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">            <span class="tok-kw">var</span> cv = ChildVisitor(<span class="tok-builtin">@TypeOf</span>(deserializer)){};</span>
+<span class="line" id="L101">            value.* = <span class="tok-kw">try</span> cv.visitor().visitSome(ally, deserializer);</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L104">        }</span>
+<span class="line" id="L105"></span>
+<span class="line" id="L106">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L107">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L108">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L109"></span>
+<span class="line" id="L110">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L111">            value.* = <span class="tok-kw">try</span> cv.visitor().visitString(ally, Deserializer, input);</span>
+<span class="line" id="L112"></span>
+<span class="line" id="L113">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L114">        }</span>
+<span class="line" id="L115"></span>
+<span class="line" id="L116">        <span class="tok-kw">fn</span> <span class="tok-fn">visitUnion</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, ua: <span class="tok-kw">anytype</span>, va: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L117">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L118">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L119"></span>
+<span class="line" id="L120">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L121">            value.* = <span class="tok-kw">try</span> cv.visitor().visitUnion(ally, Deserializer, ua, va);</span>
+<span class="line" id="L122"></span>
+<span class="line" id="L123">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L124">        }</span>
 <span class="line" id="L125"></span>
-<span class="line" id="L126">                <span class="tok-kw">var</span> cv = ChildVisitor(<span class="tok-builtin">@TypeOf</span>(deserializer)){};</span>
-<span class="line" id="L127">                value.* = <span class="tok-kw">try</span> cv.visitor().visitSome(a, deserializer);</span>
-<span class="line" id="L128"></span>
-<span class="line" id="L129">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L130">            }</span>
-<span class="line" id="L131"></span>
-<span class="line" id="L132">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L133">        }</span>
-<span class="line" id="L134"></span>
-<span class="line" id="L135">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L136">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L137">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L138">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L139"></span>
-<span class="line" id="L140">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L141">                value.* = <span class="tok-kw">try</span> cv.visitor().visitString(a, Deserializer, input);</span>
-<span class="line" id="L142"></span>
-<span class="line" id="L143">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L144">            }</span>
-<span class="line" id="L145"></span>
-<span class="line" id="L146">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L147">        }</span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149">        <span class="tok-kw">fn</span> <span class="tok-fn">visitUnion</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, ua: <span class="tok-kw">anytype</span>, va: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L150">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L151">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L152">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L153"></span>
-<span class="line" id="L154">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L155">                value.* = <span class="tok-kw">try</span> cv.visitor().visitUnion(a, Deserializer, ua, va);</span>
-<span class="line" id="L156"></span>
-<span class="line" id="L157">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L158">            }</span>
-<span class="line" id="L159"></span>
-<span class="line" id="L160">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L161">        }</span>
-<span class="line" id="L162"></span>
-<span class="line" id="L163">        <span class="tok-kw">fn</span> <span class="tok-fn">visitVoid</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L164">            <span class="tok-kw">if</span> (ally) |a| {</span>
-<span class="line" id="L165">                <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> a.create(Child);</span>
-<span class="line" id="L166">                <span class="tok-kw">errdefer</span> a.destroy(value);</span>
-<span class="line" id="L167"></span>
-<span class="line" id="L168">                <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L169">                value.* = <span class="tok-kw">try</span> cv.visitor().visitVoid(a, Deserializer);</span>
-<span class="line" id="L170"></span>
-<span class="line" id="L171">                <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L172">            }</span>
-<span class="line" id="L173"></span>
-<span class="line" id="L174">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L175">        }</span>
-<span class="line" id="L176"></span>
-<span class="line" id="L177">        <span class="tok-kw">fn</span> <span class="tok-fn">ChildVisitor</span>(<span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L178">            <span class="tok-kw">const</span> child_db = <span class="tok-kw">comptime</span> find_db(Child, Deserializer);</span>
-<span class="line" id="L179"></span>
-<span class="line" id="L180">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> has_attributes(Child, child_db)) {</span>
-<span class="line" id="L181">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(Child)) {</span>
-<span class="line" id="L182">                    .Enum =&gt; blocks.Enum.Visitor(Child),</span>
-<span class="line" id="L183">                    .Struct =&gt; blocks.Struct.Visitor(Child),</span>
-<span class="line" id="L184">                    .Union =&gt; blocks.Union.Visitor(Child),</span>
-<span class="line" id="L185">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.</span>
+<span class="line" id="L126">        <span class="tok-kw">fn</span> <span class="tok-fn">visitVoid</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L127">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L128">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L129"></span>
+<span class="line" id="L130">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L131">            value.* = <span class="tok-kw">try</span> cv.visitor().visitVoid(ally, Deserializer);</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L134">        }</span>
+<span class="line" id="L135"></span>
+<span class="line" id="L136">        <span class="tok-kw">fn</span> <span class="tok-fn">ChildVisitor</span>(<span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L137">            <span class="tok-kw">const</span> child_db = <span class="tok-kw">comptime</span> find_db(Child, Deserializer);</span>
+<span class="line" id="L138"></span>
+<span class="line" id="L139">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> has_attributes(Child, child_db)) {</span>
+<span class="line" id="L140">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(Child)) {</span>
+<span class="line" id="L141">                    .Enum =&gt; blocks.Enum.Visitor(Child),</span>
+<span class="line" id="L142">                    .Struct =&gt; blocks.Struct.Visitor(Child),</span>
+<span class="line" id="L143">                    .Union =&gt; blocks.Union.Visitor(Child),</span>
+<span class="line" id="L144">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.</span>
 </span>
-<span class="line" id="L186">                };</span>
-<span class="line" id="L187">            }</span>
-<span class="line" id="L188"></span>
-<span class="line" id="L189">            <span class="tok-kw">return</span> child_db.Visitor(Child);</span>
-<span class="line" id="L190">        }</span>
-<span class="line" id="L191">    };</span>
-<span class="line" id="L192">}</span>
-<span class="line" id="L193"></span>
+<span class="line" id="L145">                };</span>
+<span class="line" id="L146">            }</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">            <span class="tok-kw">return</span> child_db.Visitor(Child);</span>
+<span class="line" id="L149">        }</span>
+<span class="line" id="L150">    };</span>
+<span class="line" id="L151">}</span>
+<span class="line" id="L152"></span>
 </code></pre></body>
 </html>

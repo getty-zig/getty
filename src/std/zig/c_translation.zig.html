@@ -515,16 +515,16 @@
 <span class="line" id="L384">    }</span>
 <span class="line" id="L385"></span>
 <span class="line" id="L386">    <span class="tok-kw">fn</span> <span class="tok-fn">L_SUFFIX_ReturnType</span>(<span class="tok-kw">comptime</span> number: <span class="tok-kw">anytype</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L387">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@TypeOf</span>(number)) {</span>
-<span class="line" id="L388">            <span class="tok-type">comptime_int</span> =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@TypeOf</span>(promoteIntLiteral(<span class="tok-type">c_long</span>, number, .decimal)),</span>
-<span class="line" id="L389">            <span class="tok-type">comptime_float</span> =&gt; <span class="tok-kw">return</span> <span class="tok-type">c_longdouble</span>,</span>
+<span class="line" id="L387">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(number))) {</span>
+<span class="line" id="L388">            .Int, .ComptimeInt =&gt; <span class="tok-kw">return</span> <span class="tok-builtin">@TypeOf</span>(promoteIntLiteral(<span class="tok-type">c_long</span>, number, .decimal)),</span>
+<span class="line" id="L389">            .Float, .ComptimeFloat =&gt; <span class="tok-kw">return</span> <span class="tok-type">c_longdouble</span>,</span>
 <span class="line" id="L390">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Invalid value for L suffix&quot;</span>),</span>
 <span class="line" id="L391">        }</span>
 <span class="line" id="L392">    }</span>
 <span class="line" id="L393">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">L_SUFFIX</span>(<span class="tok-kw">comptime</span> number: <span class="tok-kw">anytype</span>) L_SUFFIX_ReturnType(number) {</span>
-<span class="line" id="L394">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@TypeOf</span>(number)) {</span>
-<span class="line" id="L395">            <span class="tok-type">comptime_int</span> =&gt; <span class="tok-kw">return</span> promoteIntLiteral(<span class="tok-type">c_long</span>, number, .decimal),</span>
-<span class="line" id="L396">            <span class="tok-type">comptime_float</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: c_longdouble initialization from comptime_float not supported&quot;</span>),</span>
+<span class="line" id="L394">        <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(number))) {</span>
+<span class="line" id="L395">            .Int, .ComptimeInt =&gt; <span class="tok-kw">return</span> promoteIntLiteral(<span class="tok-type">c_long</span>, number, .decimal),</span>
+<span class="line" id="L396">            .Float, .ComptimeFloat =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;TODO: c_longdouble initialization from comptime_float not supported&quot;</span>),</span>
 <span class="line" id="L397">            <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Invalid value for L suffix&quot;</span>),</span>
 <span class="line" id="L398">        }</span>
 <span class="line" id="L399">    }</span>
@@ -778,5 +778,40 @@
 <span class="line" id="L645">    <span class="tok-kw">try</span> testing.expectEqual(Helper.identity(<span class="tok-builtin">@as</span>(<span class="tok-type">c_uint</span>, <span class="tok-number">100</span>)), Macros.CAST_OR_CALL(Helper.identity, <span class="tok-builtin">@as</span>(<span class="tok-type">c_uint</span>, <span class="tok-number">100</span>)));</span>
 <span class="line" id="L646">}</span>
 <span class="line" id="L647"></span>
+<span class="line" id="L648"><span class="tok-kw">test</span> <span class="tok-str">&quot;Extended C ABI casting&quot;</span> {</span>
+<span class="line" id="L649">    <span class="tok-kw">if</span> (math.maxInt(<span class="tok-type">c_long</span>) &gt; math.maxInt(<span class="tok-type">c_char</span>)) {</span>
+<span class="line" id="L650">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(<span class="tok-builtin">@as</span>(<span class="tok-type">c_char</span>, math.maxInt(<span class="tok-type">c_char</span>) - <span class="tok-number">1</span>))) == <span class="tok-type">c_long</span>); <span class="tok-comment">// c_char</span>
+</span>
+<span class="line" id="L651">    }</span>
+<span class="line" id="L652">    <span class="tok-kw">if</span> (math.maxInt(<span class="tok-type">c_long</span>) &gt; math.maxInt(<span class="tok-type">c_short</span>)) {</span>
+<span class="line" id="L653">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(<span class="tok-builtin">@as</span>(<span class="tok-type">c_short</span>, math.maxInt(<span class="tok-type">c_short</span>) - <span class="tok-number">1</span>))) == <span class="tok-type">c_long</span>); <span class="tok-comment">// c_short</span>
+</span>
+<span class="line" id="L654">    }</span>
+<span class="line" id="L655"></span>
+<span class="line" id="L656">    <span class="tok-kw">if</span> (math.maxInt(<span class="tok-type">c_long</span>) &gt; math.maxInt(<span class="tok-type">c_ushort</span>)) {</span>
+<span class="line" id="L657">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(<span class="tok-builtin">@as</span>(<span class="tok-type">c_ushort</span>, math.maxInt(<span class="tok-type">c_ushort</span>) - <span class="tok-number">1</span>))) == <span class="tok-type">c_long</span>); <span class="tok-comment">//c_ushort</span>
+</span>
+<span class="line" id="L658">    }</span>
+<span class="line" id="L659"></span>
+<span class="line" id="L660">    <span class="tok-kw">if</span> (math.maxInt(<span class="tok-type">c_long</span>) &gt; math.maxInt(<span class="tok-type">c_int</span>)) {</span>
+<span class="line" id="L661">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, math.maxInt(<span class="tok-type">c_int</span>) - <span class="tok-number">1</span>))) == <span class="tok-type">c_long</span>); <span class="tok-comment">// c_int</span>
+</span>
+<span class="line" id="L662">    }</span>
+<span class="line" id="L663"></span>
+<span class="line" id="L664">    <span class="tok-kw">if</span> (math.maxInt(<span class="tok-type">c_long</span>) &gt; math.maxInt(<span class="tok-type">c_uint</span>)) {</span>
+<span class="line" id="L665">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(<span class="tok-builtin">@as</span>(<span class="tok-type">c_uint</span>, math.maxInt(<span class="tok-type">c_uint</span>) - <span class="tok-number">1</span>))) == <span class="tok-type">c_long</span>); <span class="tok-comment">// c_uint</span>
+</span>
+<span class="line" id="L666">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(math.maxInt(<span class="tok-type">c_uint</span>) + <span class="tok-number">1</span>)) == <span class="tok-type">c_long</span>); <span class="tok-comment">// comptime_int -&gt; c_long</span>
+</span>
+<span class="line" id="L667">    }</span>
+<span class="line" id="L668"></span>
+<span class="line" id="L669">    <span class="tok-kw">if</span> (math.maxInt(<span class="tok-type">c_longlong</span>) &gt; math.maxInt(<span class="tok-type">c_long</span>)) {</span>
+<span class="line" id="L670">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(<span class="tok-builtin">@as</span>(<span class="tok-type">c_long</span>, math.maxInt(<span class="tok-type">c_long</span>) - <span class="tok-number">1</span>))) == <span class="tok-type">c_long</span>); <span class="tok-comment">// c_long</span>
+</span>
+<span class="line" id="L671">        <span class="tok-kw">try</span> testing.expect(<span class="tok-builtin">@TypeOf</span>(Macros.L_SUFFIX(math.maxInt(<span class="tok-type">c_long</span>) + <span class="tok-number">1</span>)) == <span class="tok-type">c_longlong</span>); <span class="tok-comment">// comptime_int -&gt; c_longlong</span>
+</span>
+<span class="line" id="L672">    }</span>
+<span class="line" id="L673">}</span>
+<span class="line" id="L674"></span>
 </code></pre></body>
 </html>

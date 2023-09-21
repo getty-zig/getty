@@ -113,41 +113,32 @@
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> free = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../free.zig&quot;</span>).free;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> BufSet: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L7">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L8">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L9"></span>
-<span class="line" id="L10">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
-<span class="line" id="L11">            Self,</span>
-<span class="line" id="L12">            Value,</span>
-<span class="line" id="L13">            .{ .visitSeq = visitSeq },</span>
-<span class="line" id="L14">        );</span>
-<span class="line" id="L15"></span>
-<span class="line" id="L16">        <span class="tok-kw">const</span> Value = BufSet;</span>
-<span class="line" id="L17"></span>
-<span class="line" id="L18">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: ?std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L19">            <span class="tok-kw">if</span> (ally == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L20">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingAllocator;</span>
-<span class="line" id="L21">            }</span>
-<span class="line" id="L22"></span>
-<span class="line" id="L23">            <span class="tok-kw">const</span> a = ally.?;</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L4"></span>
+<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> BufSet: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L6">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L7">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L8"></span>
+<span class="line" id="L9">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
+<span class="line" id="L10">            Self,</span>
+<span class="line" id="L11">            Value,</span>
+<span class="line" id="L12">            .{ .visitSeq = visitSeq },</span>
+<span class="line" id="L13">        );</span>
+<span class="line" id="L14"></span>
+<span class="line" id="L15">        <span class="tok-kw">const</span> Value = BufSet;</span>
+<span class="line" id="L16"></span>
+<span class="line" id="L17">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L18">            <span class="tok-kw">var</span> set = BufSet.init(ally);</span>
+<span class="line" id="L19">            <span class="tok-kw">errdefer</span> set.deinit();</span>
+<span class="line" id="L20"></span>
+<span class="line" id="L21">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seq.nextElement(ally, []<span class="tok-kw">const</span> <span class="tok-type">u8</span>)) |elem| {</span>
+<span class="line" id="L22">                <span class="tok-kw">try</span> set.insert(elem);</span>
+<span class="line" id="L23">            }</span>
 <span class="line" id="L24"></span>
-<span class="line" id="L25">            <span class="tok-kw">var</span> set = BufSet.init(a);</span>
-<span class="line" id="L26">            <span class="tok-kw">errdefer</span> free(a, Deserializer, set);</span>
-<span class="line" id="L27"></span>
-<span class="line" id="L28">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seq.nextElement(a, []<span class="tok-kw">const</span> <span class="tok-type">u8</span>)) |elem| {</span>
-<span class="line" id="L29">                <span class="tok-kw">defer</span> free(a, Deserializer, elem);</span>
-<span class="line" id="L30"></span>
-<span class="line" id="L31">                <span class="tok-kw">try</span> set.insert(elem);</span>
-<span class="line" id="L32">            }</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">            <span class="tok-kw">return</span> set;</span>
-<span class="line" id="L35">        }</span>
-<span class="line" id="L36">    };</span>
-<span class="line" id="L37">}</span>
-<span class="line" id="L38"></span>
+<span class="line" id="L25">            <span class="tok-kw">return</span> set;</span>
+<span class="line" id="L26">        }</span>
+<span class="line" id="L27">    };</span>
+<span class="line" id="L28">}</span>
+<span class="line" id="L29"></span>
 </code></pre></body>
 </html>

@@ -128,8 +128,8 @@
 <span class="line" id="L15"></span>
 <span class="line" id="L16"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
 <span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L18">    <span class="tok-comment">/// An optional memory allocator.</span></span>
-<span class="line" id="L19">    ally: ?std.mem.Allocator,</span>
+<span class="line" id="L18">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L19">    ally: std.mem.Allocator,</span>
 <span class="line" id="L20">    <span class="tok-comment">/// The type being deserialized into.</span></span>
 <span class="line" id="L21">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
 <span class="line" id="L22">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
@@ -193,139 +193,147 @@
 <span class="line" id="L80"></span>
 <span class="line" id="L81">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
 <span class="line" id="L82">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L83">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L84">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L85">    }</span>
-<span class="line" id="L86">}</span>
-<span class="line" id="L87"></span>
-<span class="line" id="L88"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum, attributes (rename)&quot;</span> {</span>
-<span class="line" id="L89">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L90">        foo,</span>
-<span class="line" id="L91">        bar,</span>
-<span class="line" id="L92"></span>
-<span class="line" id="L93">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L94">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L95">                .foo = .{ .rename = <span class="tok-str">&quot;baz&quot;</span> },</span>
-<span class="line" id="L96">                .bar = .{ .rename = <span class="tok-str">&quot;qux&quot;</span> },</span>
-<span class="line" id="L97">            };</span>
-<span class="line" id="L98">        };</span>
-<span class="line" id="L99">    };</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L102">        .{</span>
-<span class="line" id="L103">            .name = <span class="tok-str">&quot;from integer, u8&quot;</span>,</span>
-<span class="line" id="L104">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U8 = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L105">            .want = T.foo,</span>
-<span class="line" id="L106">        },</span>
-<span class="line" id="L107">        .{</span>
-<span class="line" id="L108">            .name = <span class="tok-str">&quot;from integer, u16&quot;</span>,</span>
-<span class="line" id="L109">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U16 = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L110">            .want = T.bar,</span>
-<span class="line" id="L111">        },</span>
-<span class="line" id="L112">        .{</span>
-<span class="line" id="L113">            .name = <span class="tok-str">&quot;from string (I)&quot;</span>,</span>
-<span class="line" id="L114">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;baz&quot;</span> } },</span>
-<span class="line" id="L115">            .want = T.foo,</span>
-<span class="line" id="L116">        },</span>
-<span class="line" id="L117">        .{</span>
-<span class="line" id="L118">            .name = <span class="tok-str">&quot;from string (II)&quot;</span>,</span>
-<span class="line" id="L119">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;qux&quot;</span> } },</span>
-<span class="line" id="L120">            .want = T.bar,</span>
-<span class="line" id="L121">        },</span>
-<span class="line" id="L122">    };</span>
-<span class="line" id="L123"></span>
-<span class="line" id="L124">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L125">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L126">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L127">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L128">    }</span>
-<span class="line" id="L129">}</span>
+<span class="line" id="L83">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L84">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L85"></span>
+<span class="line" id="L86">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
+<span class="line" id="L87">    }</span>
+<span class="line" id="L88">}</span>
+<span class="line" id="L89"></span>
+<span class="line" id="L90"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum, attributes (rename)&quot;</span> {</span>
+<span class="line" id="L91">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L92">        foo,</span>
+<span class="line" id="L93">        bar,</span>
+<span class="line" id="L94"></span>
+<span class="line" id="L95">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L96">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L97">                .foo = .{ .rename = <span class="tok-str">&quot;baz&quot;</span> },</span>
+<span class="line" id="L98">                .bar = .{ .rename = <span class="tok-str">&quot;qux&quot;</span> },</span>
+<span class="line" id="L99">            };</span>
+<span class="line" id="L100">        };</span>
+<span class="line" id="L101">    };</span>
+<span class="line" id="L102"></span>
+<span class="line" id="L103">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L104">        .{</span>
+<span class="line" id="L105">            .name = <span class="tok-str">&quot;from integer, u8&quot;</span>,</span>
+<span class="line" id="L106">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U8 = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L107">            .want = T.foo,</span>
+<span class="line" id="L108">        },</span>
+<span class="line" id="L109">        .{</span>
+<span class="line" id="L110">            .name = <span class="tok-str">&quot;from integer, u16&quot;</span>,</span>
+<span class="line" id="L111">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U16 = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L112">            .want = T.bar,</span>
+<span class="line" id="L113">        },</span>
+<span class="line" id="L114">        .{</span>
+<span class="line" id="L115">            .name = <span class="tok-str">&quot;from string (I)&quot;</span>,</span>
+<span class="line" id="L116">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;baz&quot;</span> } },</span>
+<span class="line" id="L117">            .want = T.foo,</span>
+<span class="line" id="L118">        },</span>
+<span class="line" id="L119">        .{</span>
+<span class="line" id="L120">            .name = <span class="tok-str">&quot;from string (II)&quot;</span>,</span>
+<span class="line" id="L121">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;qux&quot;</span> } },</span>
+<span class="line" id="L122">            .want = T.bar,</span>
+<span class="line" id="L123">        },</span>
+<span class="line" id="L124">    };</span>
+<span class="line" id="L125"></span>
+<span class="line" id="L126">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L127">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L128">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L129">        <span class="tok-kw">defer</span> result.deinit();</span>
 <span class="line" id="L130"></span>
-<span class="line" id="L131"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum, attributes (skip)&quot;</span> {</span>
-<span class="line" id="L132">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L133">        foo,</span>
-<span class="line" id="L134">        bar,</span>
-<span class="line" id="L135"></span>
-<span class="line" id="L136">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L137">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L138">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L139">                .bar = .{ .skip = <span class="tok-null">false</span> },</span>
-<span class="line" id="L140">            };</span>
-<span class="line" id="L141">        };</span>
-<span class="line" id="L142">    };</span>
-<span class="line" id="L143"></span>
-<span class="line" id="L144">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L145">        .{</span>
-<span class="line" id="L146">            .name = <span class="tok-str">&quot;from integer, u8&quot;</span>,</span>
-<span class="line" id="L147">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U8 = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L148">            .dont_want = T.foo,</span>
-<span class="line" id="L149">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
-<span class="line" id="L150">        },</span>
-<span class="line" id="L151">        .{</span>
-<span class="line" id="L152">            .name = <span class="tok-str">&quot;from integer, u16&quot;</span>,</span>
-<span class="line" id="L153">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U16 = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L154">            .want = T.bar,</span>
-<span class="line" id="L155">        },</span>
-<span class="line" id="L156">        .{</span>
-<span class="line" id="L157">            .name = <span class="tok-str">&quot;from string (I)&quot;</span>,</span>
-<span class="line" id="L158">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } },</span>
-<span class="line" id="L159">            .dont_want = T.foo,</span>
-<span class="line" id="L160">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
-<span class="line" id="L161">        },</span>
-<span class="line" id="L162">        .{</span>
-<span class="line" id="L163">            .name = <span class="tok-str">&quot;from string (II)&quot;</span>,</span>
-<span class="line" id="L164">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } },</span>
-<span class="line" id="L165">            .want = T.bar,</span>
-<span class="line" id="L166">        },</span>
-<span class="line" id="L167">    };</span>
-<span class="line" id="L168"></span>
-<span class="line" id="L169">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L170">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
-<span class="line" id="L171">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
-<span class="line" id="L172">            <span class="tok-kw">const</span> DontWant = <span class="tok-builtin">@TypeOf</span>(t.dont_want);</span>
-<span class="line" id="L173">            <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L174">                t.name,</span>
-<span class="line" id="L175">                t.want_err,</span>
-<span class="line" id="L176">                testing.deserializeErr(<span class="tok-null">null</span>, Self, DontWant, t.tokens),</span>
-<span class="line" id="L177">            );</span>
-<span class="line" id="L178">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L179">            <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L180">            <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L181">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L182">        }</span>
-<span class="line" id="L183">    }</span>
-<span class="line" id="L184">}</span>
-<span class="line" id="L185"></span>
-<span class="line" id="L186"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum, attributes (aliases)&quot;</span> {</span>
-<span class="line" id="L187">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L188">        foo,</span>
-<span class="line" id="L189"></span>
-<span class="line" id="L190">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L191">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L192">                .foo = .{ .aliases = &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ <span class="tok-str">&quot;One&quot;</span>, <span class="tok-str">&quot;Two&quot;</span>, <span class="tok-str">&quot;Three&quot;</span> } },</span>
-<span class="line" id="L193">            };</span>
-<span class="line" id="L194">        };</span>
-<span class="line" id="L195">    };</span>
-<span class="line" id="L196"></span>
-<span class="line" id="L197">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L198">        .{</span>
-<span class="line" id="L199">            .name = <span class="tok-str">&quot;success (name)&quot;</span>,</span>
-<span class="line" id="L200">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } },</span>
-<span class="line" id="L201">            .want = T.foo,</span>
-<span class="line" id="L202">        },</span>
-<span class="line" id="L203">        .{</span>
-<span class="line" id="L204">            .name = <span class="tok-str">&quot;success (alias)&quot;</span>,</span>
-<span class="line" id="L205">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;Two&quot;</span> } },</span>
-<span class="line" id="L206">            .want = T.foo,</span>
-<span class="line" id="L207">        },</span>
-<span class="line" id="L208">    };</span>
-<span class="line" id="L209"></span>
-<span class="line" id="L210">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L211">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L212">        <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L213">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, got);</span>
-<span class="line" id="L214">    }</span>
-<span class="line" id="L215">}</span>
-<span class="line" id="L216"></span>
+<span class="line" id="L131">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
+<span class="line" id="L132">    }</span>
+<span class="line" id="L133">}</span>
+<span class="line" id="L134"></span>
+<span class="line" id="L135"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum, attributes (skip)&quot;</span> {</span>
+<span class="line" id="L136">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L137">        foo,</span>
+<span class="line" id="L138">        bar,</span>
+<span class="line" id="L139"></span>
+<span class="line" id="L140">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L141">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L142">                .foo = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L143">                .bar = .{ .skip = <span class="tok-null">false</span> },</span>
+<span class="line" id="L144">            };</span>
+<span class="line" id="L145">        };</span>
+<span class="line" id="L146">    };</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L149">        .{</span>
+<span class="line" id="L150">            .name = <span class="tok-str">&quot;from integer, u8&quot;</span>,</span>
+<span class="line" id="L151">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U8 = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L152">            .dont_want = T.foo,</span>
+<span class="line" id="L153">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
+<span class="line" id="L154">        },</span>
+<span class="line" id="L155">        .{</span>
+<span class="line" id="L156">            .name = <span class="tok-str">&quot;from integer, u16&quot;</span>,</span>
+<span class="line" id="L157">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .U16 = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L158">            .want = T.bar,</span>
+<span class="line" id="L159">        },</span>
+<span class="line" id="L160">        .{</span>
+<span class="line" id="L161">            .name = <span class="tok-str">&quot;from string (I)&quot;</span>,</span>
+<span class="line" id="L162">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } },</span>
+<span class="line" id="L163">            .dont_want = T.foo,</span>
+<span class="line" id="L164">            .want_err = <span class="tok-kw">error</span>.UnknownVariant,</span>
+<span class="line" id="L165">        },</span>
+<span class="line" id="L166">        .{</span>
+<span class="line" id="L167">            .name = <span class="tok-str">&quot;from string (II)&quot;</span>,</span>
+<span class="line" id="L168">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;bar&quot;</span> } },</span>
+<span class="line" id="L169">            .want = T.bar,</span>
+<span class="line" id="L170">        },</span>
+<span class="line" id="L171">    };</span>
+<span class="line" id="L172"></span>
+<span class="line" id="L173">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L174">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L175">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L176">            <span class="tok-kw">const</span> DontWant = <span class="tok-builtin">@TypeOf</span>(t.dont_want);</span>
+<span class="line" id="L177">            <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L178">                t.name,</span>
+<span class="line" id="L179">                t.want_err,</span>
+<span class="line" id="L180">                testing.deserializeErr(Self, DontWant, t.tokens),</span>
+<span class="line" id="L181">            );</span>
+<span class="line" id="L182">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L183">            <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L184">            <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L185">            <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L186"></span>
+<span class="line" id="L187">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
+<span class="line" id="L188">        }</span>
+<span class="line" id="L189">    }</span>
+<span class="line" id="L190">}</span>
+<span class="line" id="L191"></span>
+<span class="line" id="L192"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - enum, attributes (aliases)&quot;</span> {</span>
+<span class="line" id="L193">    <span class="tok-kw">const</span> T = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L194">        foo,</span>
+<span class="line" id="L195"></span>
+<span class="line" id="L196">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.db&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L197">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L198">                .foo = .{ .aliases = &amp;[_][]<span class="tok-kw">const</span> <span class="tok-type">u8</span>{ <span class="tok-str">&quot;One&quot;</span>, <span class="tok-str">&quot;Two&quot;</span>, <span class="tok-str">&quot;Three&quot;</span> } },</span>
+<span class="line" id="L199">            };</span>
+<span class="line" id="L200">        };</span>
+<span class="line" id="L201">    };</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L204">        .{</span>
+<span class="line" id="L205">            .name = <span class="tok-str">&quot;success (name)&quot;</span>,</span>
+<span class="line" id="L206">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;foo&quot;</span> } },</span>
+<span class="line" id="L207">            .want = T.foo,</span>
+<span class="line" id="L208">        },</span>
+<span class="line" id="L209">        .{</span>
+<span class="line" id="L210">            .name = <span class="tok-str">&quot;success (alias)&quot;</span>,</span>
+<span class="line" id="L211">            .tokens = &amp;.{ .{ .Enum = {} }, .{ .String = <span class="tok-str">&quot;Two&quot;</span> } },</span>
+<span class="line" id="L212">            .want = T.foo,</span>
+<span class="line" id="L213">        },</span>
+<span class="line" id="L214">    };</span>
+<span class="line" id="L215"></span>
+<span class="line" id="L216">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L217">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L218">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L219">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L220"></span>
+<span class="line" id="L221">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
+<span class="line" id="L222">    }</span>
+<span class="line" id="L223">}</span>
+<span class="line" id="L224"></span>
 </code></pre></body>
 </html>
