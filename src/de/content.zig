@@ -24,6 +24,33 @@ pub const Content = union(enum) {
     String: []const u8,
     Void,
 
+    pub fn deinit(self: Content, ally: std.mem.Allocator) void {
+        switch (self) {
+            .Int => |v| {
+                var mut = v;
+                mut.deinit();
+            },
+            .Seq => |v| {
+                for (v.items) |elem| elem.deinit(ally);
+                v.deinit();
+            },
+            .Map => |v| {
+                for (v.items(.key), v.items(.value)) |key, value| {
+                    key.deinit(ally);
+                    value.deinit(ally);
+                }
+                var mut = v;
+                mut.deinit(ally);
+            },
+            .String => |v| ally.free(v),
+            .Some => |v| {
+                v.deinit(ally);
+                ally.destroy(v);
+            },
+            else => {},
+        }
+    }
+
     pub const @"getty.db" = struct {
         pub fn deserialize(
             ally: std.mem.Allocator,

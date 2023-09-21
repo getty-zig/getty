@@ -79,10 +79,11 @@ fn deserializeUntaggedUnion(
     // This intermediate value allows us to repeatedly attempt deserialization
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
-    var result = try getty_deserialize(ally, Content, deserializer);
+    var content_result = try getty_deserialize(ally, Content, deserializer);
+    defer content_result.value.deinit(ally);
 
     // Deserialize the Content value into a value of type T.
-    var cd = ContentDeserializer{ .content = result.value };
+    var cd = ContentDeserializer{ .content = content_result.value };
     const d = cd.deserializer();
 
     inline for (std.meta.fields(T)) |field| {
@@ -572,13 +573,6 @@ test "deserialize - union, attributes (aliases)" {
 
         pub const @"getty.db" = block;
     };
-
-    const Bare = union {
-        foo: void,
-
-        pub const @"getty.db" = block;
-    };
-    _ = Bare;
 
     const tests = .{
         .{
