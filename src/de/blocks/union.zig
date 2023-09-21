@@ -80,7 +80,7 @@ fn deserializeUntaggedUnion(
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
     var content_result = try getty_deserialize(ally, Content, deserializer);
-    defer content_result.value.deinit(ally);
+    defer content_result.deinit();
 
     // Deserialize the Content value into a value of type T.
     var cd = ContentDeserializer{ .content = content_result.value };
