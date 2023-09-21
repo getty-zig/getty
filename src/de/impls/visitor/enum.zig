@@ -23,7 +23,8 @@ pub fn Visitor(comptime Enum: type) type {
 
             const fields = std.meta.fields(Value);
             const attributes = comptime getAttributes(Value, Deserializer);
-            const result = std.meta.intToEnum(Value, input) catch return error.InvalidValue;
+            var result = std.meta.intToEnum(Value, input) catch return error.InvalidValue;
+            errdefer result.deinit();
 
             if (attributes) |attrs| {
                 inline for (fields) |field| {

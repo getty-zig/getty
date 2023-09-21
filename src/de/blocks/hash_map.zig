@@ -204,14 +204,14 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
         defer free(test_ally, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(test_ally, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }
@@ -276,21 +276,19 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         var want = t.want;
         defer want.deinit();
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(test_ally, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }
@@ -339,21 +337,19 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         var want = t.want;
         defer want.deinit(test_ally);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(test_ally, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }

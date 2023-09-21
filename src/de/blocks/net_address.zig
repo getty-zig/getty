@@ -70,8 +70,10 @@ test "deserialize - std.net.Address" {
         };
 
         inline for (tests) |t| {
-            const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-            try testing.expect(t.name, std.net.Address.eql(t.want, got));
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
+
+            try testing.expect(t.name, std.net.Address.eql(t.want, result.value));
         }
     }
 }

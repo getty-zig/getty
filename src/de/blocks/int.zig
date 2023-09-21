@@ -181,8 +181,10 @@ test "deserialize - integer" {
                 testing.deserializeErr(Self, Want, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-            try testing.expectEqual(t.name, t.want, got);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
+
+            try testing.expectEqual(t.name, t.want, result.value);
         }
     }
 }

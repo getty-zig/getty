@@ -40,6 +40,8 @@ pub fn Visitor(
 }
 
 test "deserialize - void" {
-    const got = try testing.deserialize(null, Self, void, &.{.{ .Void = {} }});
-    try std.testing.expectEqual({}, got);
+    var result = try testing.deserialize(null, Self, void, &.{.{ .Void = {} }});
+    defer result.deinit();
+
+    try std.testing.expectEqual({}, result.value);
 }

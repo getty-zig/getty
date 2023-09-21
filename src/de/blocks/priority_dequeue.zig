@@ -93,26 +93,24 @@ test "deserialize - std.PriorityDequeue" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
+        defer t.want.deinit();
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
         // Check that the deques' lengths match.
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
-        var want_it = blk: {
+        var want_it = want_it: {
             var mut = t.want;
-            break :blk mut.iterator();
+            break :want_it mut.iterator();
         };
 
-        var got_it = blk: {
-            var mut = got;
-            break :blk mut.iterator();
+        var got_it = got_it: {
+            var mut = result.value;
+            break :got_it mut.iterator();
         };
 
         while (want_it.next()) |elem| {

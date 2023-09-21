@@ -142,11 +142,11 @@ test "deserialize - std.IndexedSet" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
-        try testing.expect(t.name, t.want.eql(got));
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try testing.expect(t.name, t.want.eql(result.value));
     }
 }
 
@@ -226,10 +226,10 @@ test "deserialize - std.EnumSet" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
-        try testing.expect(t.name, t.want.eql(got));
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try testing.expect(t.name, t.want.eql(result.value));
     }
 }

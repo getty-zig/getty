@@ -56,7 +56,7 @@ pub fn free(
     mut.hash_map.deinit();
 }
 
-test "deserialize - buf map" {
+test "deserialize - std.BufMap" {
     const tests = .{
         .{
             .name = "empty",
@@ -94,14 +94,14 @@ test "deserialize - buf map" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqualStrings(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqualStrings(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }

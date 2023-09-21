@@ -57,7 +57,7 @@ pub fn free(
     }
 }
 
-test "deserialize - multi array list" {
+test "deserialize - std.MultiArrayList" {
     const Element = struct {
         x: i32,
         y: i32,
@@ -116,17 +116,14 @@ test "deserialize - multi array list" {
             mut.deinit(std.testing.allocator);
         }
 
-        const got = try testing.deserialize(t.name, Self, List, t.tokens);
-        defer {
-            var mut = got;
-            mut.deinit(std.testing.allocator);
-        }
+        var result = try testing.deserialize(t.name, Self, List, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.len, got.len);
-        try testing.expectEqual(t.name, t.want.capacity, got.capacity);
+        try testing.expectEqual(t.name, t.want.len, result.value.len);
+        try testing.expectEqual(t.name, t.want.capacity, result.value.capacity);
 
         for (0..t.want.len) |i| {
-            try testing.expectEqual(t.name, t.want.get(i), got.get(i));
+            try testing.expectEqual(t.name, t.want.get(i), result.value.get(i));
         }
     }
 }

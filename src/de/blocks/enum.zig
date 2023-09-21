@@ -80,8 +80,10 @@ test "deserialize - enum" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        try testing.expectEqual(t.name, t.want, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
+        try testing.expectEqual(t.name, t.want, result.value);
     }
 }
 
@@ -123,8 +125,10 @@ test "deserialize - enum, attributes (rename)" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        try testing.expectEqual(t.name, t.want, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
+        try testing.expectEqual(t.name, t.want, result.value);
     }
 }
 
@@ -177,8 +181,10 @@ test "deserialize - enum, attributes (skip)" {
             );
         } else {
             const Want = @TypeOf(t.want);
-            const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-            try testing.expectEqual(t.name, t.want, got);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
+
+            try testing.expectEqual(t.name, t.want, result.value);
         }
     }
 }
@@ -209,7 +215,9 @@ test "deserialize - enum, attributes (aliases)" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        try testing.expectEqual(t.name, t.want, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
+        try testing.expectEqual(t.name, t.want, result.value);
     }
 }

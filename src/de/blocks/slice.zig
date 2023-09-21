@@ -85,9 +85,9 @@ test "deserialize - slice, string" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer std.testing.allocator.free(got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqualStrings(t.name, t.want, got);
+        try testing.expectEqualStrings(t.name, t.want, result.value);
     }
 }

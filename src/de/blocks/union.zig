@@ -101,7 +101,7 @@ fn deserializeUntaggedUnion(
     // This intermediate value allows us to repeatedly attempt deserialization
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
-    const result = try getty_deserialize(ally, Content, deserializer);
+    var result = try getty_deserialize(ally, Content, deserializer);
     defer switch (result.value) {
         .Int, .Map, .Seq, .String, .Some => {
             getty_free(ally, @TypeOf(deserializer), result.value);
@@ -571,22 +571,20 @@ test "deserialize - union, attributes (tag, untagged)" {
                 testing.deserializeErr(@This(), Want, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(t.name, @This(), Want, t.tokens);
+            var result = try testing.deserialize(t.name, @This(), Want, t.tokens);
+            defer result.deinit();
 
             if (@typeInfo(@TypeOf(t.want)).Union.tag_type) |_| {
                 switch (t.want) {
-                    .String => |want| {
-                        defer std.testing.allocator.free(got.String);
-                        try testing.expectEqualSlices(t.name, u8, want, got.String);
-                    },
-                    else => |want| try testing.expectEqual(t.name, want, got),
+                    .String => |want| try testing.expectEqualSlices(t.name, u8, want, result.value.String),
+                    else => |want| try testing.expectEqual(t.name, want, result.value),
                 }
             } else {
                 if (comptime std.mem.eql(u8, t.tag, "String")) {
-                    defer std.testing.allocator.free(got.String);
-                    try testing.expectEqualSlices(t.name, u8, got.want, got.String);
+                    defer std.testing.allocator.free(result.value.String);
+                    try testing.expectEqualSlices(t.name, u8, result.value.want, result.value.String);
                 } else {
-                    try testing.expectEqual(t.name, t.want, @field(got, t.tag));
+                    try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));
                 }
             }
         }
@@ -661,12 +659,13 @@ fn runTest(t: anytype, comptime Want: type) !void {
             testing.deserializeErr(@This(), Want, t.tokens),
         );
     } else {
-        const got = try testing.deserialize(t.name, @This(), Want, t.tokens);
+        var result = try testing.deserialize(t.name, @This(), Want, t.tokens);
+        defer result.deinit();
 
         if (t.tagged) {
-            try testing.expectEqual(t.name, t.want, got);
+            try testing.expectEqual(t.name, t.want, result.value);
         } else {
-            try testing.expectEqual(t.name, t.want, @field(got, t.tag));
+            try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));
         }
     }
 }

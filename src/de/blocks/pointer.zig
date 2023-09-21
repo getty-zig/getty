@@ -176,14 +176,12 @@ test "deserialize - pointer" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.*, got.*);
+        try testing.expectEqual(t.name, t.want.*, result.value.*);
     }
 }
 
@@ -261,28 +259,24 @@ test "deserialize - pointer, string" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqualStrings(t.name, t.want, got);
+        try testing.expectEqualStrings(t.name, t.want, result.value);
     }
 }
 
 test "deserialize - pointer (recursive)" {
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     const Want = **i32;
     const want: i32 = 1;
 
-    const got = try testing.deserialize(null, Self, Want, &.{.{ .I32 = 1 }});
-    defer free(std.testing.allocator, Deserializer, got);
+    var result = try testing.deserialize(null, Self, Want, &.{.{ .I32 = 1 }});
+    defer result.deinit();
 
-    try std.testing.expectEqual(Want, @TypeOf(got));
-    try std.testing.expectEqual(*i32, @TypeOf(got.*));
-    try std.testing.expectEqual(i32, @TypeOf(got.*.*));
-    try std.testing.expectEqual(want, got.*.*);
+    try std.testing.expectEqual(Want, @TypeOf(result.value));
+    try std.testing.expectEqual(*i32, @TypeOf(result.value.*));
+    try std.testing.expectEqual(i32, @TypeOf(result.value.*.*));
+    try std.testing.expectEqual(want, result.value.*.*);
 }

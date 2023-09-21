@@ -121,23 +121,23 @@ test "deserialize - std.SemanticVersion" {
                 testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
         } else {
-            const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+            const Want = @TypeOf(t.want);
 
-            const got = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
-            defer free(std.testing.allocator, Deserializer, got);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
 
-            try testing.expectEqual(t.name, t.want.major, got.major);
-            try testing.expectEqual(t.name, t.want.minor, got.minor);
-            try testing.expectEqual(t.name, t.want.patch, got.patch);
+            try testing.expectEqual(t.name, t.want.major, result.value.major);
+            try testing.expectEqual(t.name, t.want.minor, result.value.minor);
+            try testing.expectEqual(t.name, t.want.patch, result.value.patch);
 
             if (t.want.pre) |pre| {
-                try testing.expect(t.name, got.pre != null);
-                try testing.expectEqualStrings(t.name, pre, got.pre.?);
+                try testing.expect(t.name, result.value.pre != null);
+                try testing.expectEqualStrings(t.name, pre, result.value.pre.?);
             }
 
             if (t.want.build) |build| {
-                try testing.expect(t.name, got.build != null);
-                try testing.expectEqualStrings(t.name, build, got.build.?);
+                try testing.expect(t.name, result.value.build != null);
+                try testing.expectEqualStrings(t.name, build, result.value.build.?);
             }
         }
     }

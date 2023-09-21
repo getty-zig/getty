@@ -88,7 +88,7 @@ fn visitSeq(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, se
 
 fn visitSome(_: @This(), ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Content {
     return .{ .Some = some: {
-        const result = try getty_deserialize(ally, *Content, deserializer);
+        var result = try getty_deserialize(ally, *Content, deserializer);
         break :some result.value;
     } };
 }

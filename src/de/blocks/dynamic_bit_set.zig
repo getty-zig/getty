@@ -129,11 +129,11 @@ test "deserialize - std.DynamicBitSet" {
         defer want.deinit();
 
         const Want = @TypeOf(want);
-        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer got.deinit();
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, want.capacity(), got.capacity());
-        try testing.expect(t.name, want.eql(got));
+        try testing.expectEqual(t.name, want.capacity(), result.value.capacity());
+        try testing.expect(t.name, want.eql(result.value));
     }
 }
 
@@ -228,10 +228,10 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
         defer want.deinit(test_ally);
 
         const Want = @TypeOf(want);
-        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer got.deinit(test_ally);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, want.capacity(), got.capacity());
-        try testing.expect(t.name, want.eql(got));
+        try testing.expectEqual(t.name, want.capacity(), result.value.capacity());
+        try testing.expect(t.name, want.eql(result.value));
     }
 }

@@ -100,12 +100,13 @@ test "deserialize - std.LinearFifo (static)" {
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
+        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
 
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), got.peekItem(i));
+            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }
@@ -146,18 +147,16 @@ test "deserialize - std.LinearFifo (slice)" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
+        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
 
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), got.peekItem(i));
+            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }
@@ -196,20 +195,18 @@ test "deserialize - std.LinearFifo (dynamic)" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         defer t.want.deinit();
 
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
+        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
 
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), got.peekItem(i));
+            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }

@@ -55,7 +55,7 @@ pub fn free(
     mut.deinit(ally);
 }
 
-test "deserialize - segmented list" {
+test "deserialize - std.SegmentedList" {
     const tests = .{
         .{
             .name = "empty",
@@ -86,19 +86,20 @@ test "deserialize - segmented list" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
+        defer {
+            var mut = t.want;
+            mut.deinit(std.testing.allocator);
+        }
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.len, got.len);
+        try testing.expectEqual(t.name, t.want.len, result.value.len);
 
         for (0..t.want.len) |i| {
-            try testing.expectEqual(t.name, t.want.at(i).*, got.at(i).*);
+            try testing.expectEqual(t.name, t.want.at(i).*, result.value.at(i).*);
         }
     }
 }

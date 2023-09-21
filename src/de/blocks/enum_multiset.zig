@@ -111,10 +111,11 @@ test "deserialize - std.BoundedEnumMultiset" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
-        try testing.expect(t.name, t.want.eql(got));
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try testing.expect(t.name, t.want.eql(result.value));
     }
 }
 
@@ -175,9 +176,10 @@ test "deserialize - std.EnumMultiSet" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
-        try testing.expect(t.name, t.want.eql(got));
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try testing.expect(t.name, t.want.eql(result.value));
     }
 }

@@ -99,34 +99,33 @@ test "deserialize - std.Uri" {
                 testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
         } else {
-            const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+            const Want = @TypeOf(t.want);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
 
-            const got = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
-            defer free(std.testing.allocator, Deserializer, got);
-
-            try testing.expectEqualStrings(t.name, t.want.scheme, got.scheme);
-            try testing.expectEqual(t.name, t.want.port, got.port);
-            try testing.expectEqualStrings(t.name, t.want.path, got.path);
+            try testing.expectEqualStrings(t.name, t.want.scheme, result.value.scheme);
+            try testing.expectEqual(t.name, t.want.port, result.value.port);
+            try testing.expectEqualStrings(t.name, t.want.path, result.value.path);
 
             if (t.want.host) |host| {
-                try testing.expect(t.name, got.host != null);
-                try testing.expectEqualStrings(t.name, host, got.host.?);
+                try testing.expect(t.name, result.value.host != null);
+                try testing.expectEqualStrings(t.name, host, result.value.host.?);
             }
             if (t.want.user) |user| {
-                try testing.expect(t.name, got.user != null);
-                try testing.expectEqualStrings(t.name, user, got.user.?);
+                try testing.expect(t.name, result.value.user != null);
+                try testing.expectEqualStrings(t.name, user, result.value.user.?);
             }
             if (t.want.password) |password| {
-                try testing.expect(t.name, got.password != null);
-                try testing.expectEqualStrings(t.name, password, got.password.?);
+                try testing.expect(t.name, result.value.password != null);
+                try testing.expectEqualStrings(t.name, password, result.value.password.?);
             }
             if (t.want.query) |query| {
-                try testing.expect(t.name, got.query != null);
-                try testing.expectEqualStrings(t.name, query, got.query.?);
+                try testing.expect(t.name, result.value.query != null);
+                try testing.expectEqualStrings(t.name, query, result.value.query.?);
             }
             if (t.want.fragment) |fragment| {
-                try testing.expect(t.name, got.fragment != null);
-                try testing.expectEqualStrings(t.name, fragment, got.fragment.?);
+                try testing.expect(t.name, result.value.fragment != null);
+                try testing.expectEqualStrings(t.name, fragment, result.value.fragment.?);
             }
         }
     }

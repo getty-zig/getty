@@ -28,10 +28,7 @@ pub fn deserialize(
         },
         .value = undefined,
     };
-    errdefer {
-        result.arena.deinit();
-        ally.destroy(result.arena);
-    }
+    errdefer result.deinit();
 
     const arena_ally = result.arena.allocator();
 
@@ -64,6 +61,11 @@ pub fn Result(comptime T: type) type {
     return struct {
         arena: *std.heap.ArenaAllocator,
         value: T,
+
+        pub fn deinit(self: @This()) void {
+            self.arena.deinit();
+            self.arena.child_allocator.destroy(self.arena);
+        }
     };
 }
 
@@ -153,7 +155,9 @@ test "deserialize - success, normal" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -166,7 +170,9 @@ test "deserialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -179,7 +185,9 @@ test "deserialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -192,7 +200,9 @@ test "deserialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected_custom, result.value);
     }
 }
@@ -238,7 +248,9 @@ test "deserialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -253,7 +265,9 @@ test "deserialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -268,7 +282,9 @@ test "deserialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected_custom, result.value);
     }
 }
@@ -324,7 +340,9 @@ test "deserialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -349,7 +367,9 @@ test "deserialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 
@@ -374,7 +394,9 @@ test "deserialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        const result = deserialize(std.testing.allocator, PointInvalidCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        var result = deserialize(std.testing.allocator, PointInvalidCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
         try expectEqual(expected, result.value);
     }
 }

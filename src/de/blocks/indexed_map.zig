@@ -144,16 +144,16 @@ test "deserialize - std.IndexedMap" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
-            try testing.expect(t.name, got.contains(kv.key));
-            try testing.expectEqual(t.name, kv.value.*, got.get(kv.key).?);
+            try testing.expect(t.name, result.value.contains(kv.key));
+            try testing.expectEqual(t.name, kv.value.*, result.value.get(kv.key).?);
         }
     }
 }
@@ -210,16 +210,16 @@ test "deserialize - std.EnumMap" {
         defer free(std.testing.allocator, Deserializer, t.want);
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
-            try testing.expect(t.name, got.contains(kv.key));
-            try testing.expectEqual(t.name, kv.value.*, got.get(kv.key).?);
+            try testing.expect(t.name, result.value.contains(kv.key));
+            try testing.expectEqual(t.name, kv.value.*, result.value.get(kv.key).?);
         }
     }
 }

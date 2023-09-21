@@ -73,8 +73,9 @@ test "deserialize - std.PackedIntArray" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, got);
+        try testing.expectEqual(t.name, t.want, result.value);
     }
 }

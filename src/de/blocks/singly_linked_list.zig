@@ -90,24 +90,21 @@ test "deserialize - std.SinglyLinkedList" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        var got = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
         // Check that the lists' lengths match.
-        try testing.expectEqual(t.name, t.want.len(), got.len());
+        try testing.expectEqual(t.name, t.want.len(), result.value.len());
 
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
-            var got_node = got.popFirst();
+            var got_node = result.value.popFirst();
 
             // Sanity node check.
             try testing.expect(t.name, got_node != null);
-            defer std.testing.allocator.destroy(got_node.?);
 
             // Check that the lists' data match.
             try testing.expectEqual(t.name, node.data, got_node.?.data);
@@ -115,7 +112,7 @@ test "deserialize - std.SinglyLinkedList" {
     }
 }
 
-test "deserialize - linked list (recursive)" {
+test "deserialize - std.SinglyLinkedList (recursive)" {
     const Child = std.SinglyLinkedList(i32);
     const Parent = std.SinglyLinkedList(Child);
 
@@ -153,21 +150,18 @@ test "deserialize - linked list (recursive)" {
         .{ .SeqEnd = {} },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
-    var got = try testing.deserialize(null, Self, Parent, tokens);
-    defer free(std.testing.allocator, Deserializer, got);
+    var result = try testing.deserialize(null, Self, Parent, tokens);
+    defer result.deinit();
 
     // Check that the lists' lengths match.
-    try std.testing.expectEqual(expected.len(), got.len());
+    try std.testing.expectEqual(expected.len(), result.value.len());
 
     var it = expected.first;
     while (it) |node| : (it = node.next) {
-        var got_node = got.popFirst();
+        var got_node = result.value.popFirst();
 
         // Sanity node check.
         try std.testing.expect(got_node != null);
-        defer std.testing.allocator.destroy(got_node.?);
 
         // Check that the inner lists' lengths match.
         try std.testing.expectEqual(node.data.len(), got_node.?.data.len());
@@ -178,7 +172,6 @@ test "deserialize - linked list (recursive)" {
 
             // Sanity inner node check.
             try std.testing.expect(got_inner_node != null);
-            defer std.testing.allocator.destroy(got_inner_node.?);
 
             // Check that the inner lists' data match.
             try std.testing.expectEqual(inner_node.data, got_inner_node.?.data);
