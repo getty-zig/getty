@@ -12,7 +12,6 @@ pub fn VariantAccess(
     comptime methods: struct {
         payloadSeed: PayloadSeedFn(Impl, E) = null,
         payload: ?PayloadFn(Impl, E) = null,
-        isPayloadAllocated: ?IsPayloadAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -41,14 +40,6 @@ pub fn VariantAccess(
                 const seed = ds.seed();
 
                 return try self.payloadSeed(ally, seed);
-            }
-
-            pub fn isPayloadAllocated(self: Self, comptime Payload: type) bool {
-                if (methods.isPayloadAllocated) |func| {
-                    return func(self.impl, Payload);
-                }
-
-                return @typeInfo(Payload) == .Pointer;
             }
         };
 
@@ -83,8 +74,4 @@ fn PayloadFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
-}
-
-fn IsPayloadAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime Payload: type) bool;
 }

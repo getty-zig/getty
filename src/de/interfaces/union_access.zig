@@ -12,7 +12,6 @@ pub fn UnionAccess(
     comptime methods: struct {
         variantSeed: VariantSeedFn(Impl, E) = null,
         variant: ?VariantFn(Impl, E) = null,
-        isVariantAllocated: ?IsVariantAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -41,14 +40,6 @@ pub fn UnionAccess(
                 const seed = ds.seed();
 
                 return try self.variantSeed(ally, seed);
-            }
-
-            pub fn isVariantAllocated(self: Self, comptime Variant: type) bool {
-                if (methods.isVariantAllocated) |func| {
-                    return func(self.impl, Variant);
-                }
-
-                return @typeInfo(Variant) == .Pointer;
             }
         };
 
@@ -83,8 +74,4 @@ fn VariantFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
-}
-
-fn IsVariantAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime Variant: type) bool;
 }

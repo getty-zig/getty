@@ -122,19 +122,13 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
         pub usingnamespace UnionAccessInterface(
             Self,
             getty_error,
-            .{
-                .variantSeed = variantSeed,
-                .isVariantAllocated = isAllocated,
-            },
+            .{ .variantSeed = variantSeed },
         );
 
         pub usingnamespace VariantAccessInterface(
             Self,
             getty_error,
-            .{
-                .payloadSeed = payloadSeed,
-                .isPayloadAllocated = isAllocated,
-            },
+            .{ .payloadSeed = payloadSeed },
         );
 
         fn variantSeed(self: Self, _: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
@@ -150,10 +144,6 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
             }
 
             return self.payload;
-        }
-
-        fn isAllocated(_: Self, comptime _: type) bool {
-            return false;
         }
     };
 }

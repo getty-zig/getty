@@ -14,8 +14,6 @@ pub fn MapAccess(
         nextValueSeed: NextValueSeedFn(Impl, E) = null,
         nextKey: ?NextKeyFn(Impl, E) = null,
         nextValue: ?NextValueFn(Impl, E) = null,
-        isKeyAllocated: ?IsAllocatedFn(Impl) = null,
-        isValueAllocated: ?IsAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -63,22 +61,6 @@ pub fn MapAccess(
                 const ds = seed.seed();
 
                 return try self.nextValueSeed(ally, ds);
-            }
-
-            pub fn isKeyAllocated(self: Self, comptime Key: type) bool {
-                if (methods.isKeyAllocated) |func| {
-                    return func(self.impl, Key);
-                }
-
-                return @typeInfo(Key) == .Pointer;
-            }
-
-            pub fn isValueAllocated(self: Self, comptime Value: type) bool {
-                if (methods.isValueAllocated) |func| {
-                    return func(self.impl, Value);
-                }
-
-                return @typeInfo(Value) == .Pointer;
             }
         };
 
@@ -139,8 +121,4 @@ fn NextValueFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
-}
-
-fn IsAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime KV: type) bool;
 }

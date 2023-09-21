@@ -12,7 +12,6 @@ pub fn SeqAccess(
     comptime methods: struct {
         nextElementSeed: NextElementSeedFn(Impl, E) = null,
         nextElement: ?NextElementFn(Impl, E) = null,
-        isElementAllocated: ?IsElementAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -41,14 +40,6 @@ pub fn SeqAccess(
                 const ds = seed.seed();
 
                 return try self.nextElementSeed(ally, ds);
-            }
-
-            pub fn isElementAllocated(self: Self, comptime Elem: type) bool {
-                if (methods.isElementAllocated) |func| {
-                    return func(self.impl, Elem);
-                }
-
-                return @typeInfo(Elem) == .Pointer;
             }
         };
 
@@ -83,8 +74,4 @@ fn NextElementFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
-}
-
-fn IsElementAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime Elem: type) bool;
 }
