@@ -44,9 +44,6 @@ pub const de = struct {
     /// Returns the highest priority Deserialization Block for a type.
     pub const find_db = @import("find.zig").find_db;
 
-    /// Frees resources allocated by Getty during deserialization.
-    pub const free = @import("free.zig").free;
-
     /// Returns deserialization attributes for `T`. If none exist, `null` is returned.
     pub const getAttributes = @import("attributes.zig").getAttributes;
 
