@@ -40,12 +40,6 @@ pub fn Visitor(comptime Struct: type) type {
             };
 
             key_loop: while (try map.nextKey(ally, []const u8)) |key| {
-                // If key is allocated, free it at the end of this loop.
-                //
-                // key won't ever be part of the final value returned by the
-                // visitor, so there's never a reason to keep it around.
-                defer ally.free(key);
-
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;
 
