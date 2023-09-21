@@ -2,7 +2,6 @@ const std = @import("std");
 
 const blocks = @import("../blocks.zig");
 const find_db = @import("../find.zig").find_db;
-const getty_free = @import("../free.zig").free;
 const has_attributes = @import("../../attributes.zig").has_attributes;
 const Ignored = @import("../impls/seed/ignored.zig").Ignored;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
@@ -55,30 +54,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return PointerVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const info = @typeInfo(@TypeOf(value)).Pointer;
-
-    comptime std.debug.assert(info.size == .One);
-
-    // Trying to free `anyopaque` or `fn` values here triggers the errors in
-    // the following issue: https://github.com/getty-zig/getty/issues/37.
-    switch (@typeInfo(info.child)) {
-        .Fn, .Opaque => {},
-        else => {
-            getty_free(ally, Deserializer, value.*);
-            ally.destroy(value);
-        },
-    }
 }
 
 test "deserialize - pointer" {

@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const BufMapVisitor = @import("../impls/visitor/buf_map.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -38,24 +37,6 @@ pub fn Visitor(
     return BufMapVisitor(T);
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var it = value.hash_map.iterator();
-    while (it.next()) |entry| {
-        getty_free(ally, Deserializer, entry.key_ptr.*);
-        getty_free(ally, Deserializer, entry.value_ptr.*);
-    }
-    var mut = value;
-    mut.hash_map.deinit();
-}
-
 test "deserialize - std.BufMap" {
     const tests = .{
         .{
@@ -88,10 +69,11 @@ test "deserialize - std.BufMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
+        defer {
+            var mut = t.want;
+            mut.deinit();
+        }
 
         const Want = @TypeOf(t.want);
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);

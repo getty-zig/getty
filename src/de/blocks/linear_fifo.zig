@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const LinearFifoVisitor = @import("../impls/visitor/linear_fifo.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -36,31 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return LinearFifoVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const is_buffer_dynamic = comptime std.meta.FieldType(@TypeOf(value), .allocator) != void;
-    const is_buffer_static = comptime @typeInfo(std.meta.FieldType(@TypeOf(value), .buf)) == .Array;
-
-    // Linearize the buffer so we can read it as a contiguous slice.
-    var mut = value;
-    mut.realign();
-    for (mut.readableSlice(0)) |v| {
-        getty_free(ally, Deserializer, v);
-    }
-    if (is_buffer_dynamic) {
-        value.deinit();
-    } else if (!is_buffer_static) {
-        ally.free(value.buf);
-    }
 }
 
 test "deserialize - std.LinearFifo (static)" {

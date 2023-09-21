@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -37,23 +36,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return SliceVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    if (comptime std.meta.trait.isZigString(@TypeOf(value))) {
-        ally.free(value);
-    } else {
-        for (value) |v| getty_free(ally, Deserializer, v);
-        ally.free(value);
-    }
 }
 
 test "deserialize - slice, string" {

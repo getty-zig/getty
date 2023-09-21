@@ -5,7 +5,6 @@ const test_ally = std.testing.allocator;
 
 const DeserializerInterface = @import("interfaces/deserializer.zig").Deserializer;
 const err = @import("error.zig");
-const free = @import("free.zig").free;
 const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
 const Result = @import("deserialize.zig").Result;
 const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;

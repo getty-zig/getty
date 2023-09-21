@@ -3,7 +3,6 @@ const std = @import("std");
 const Content = @import("../../content.zig").Content;
 const ContentMultiArrayList = @import("../../content.zig").ContentMultiArrayList;
 const getty_deserialize = @import("../../deserialize.zig").deserialize;
-const getty_free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 const Visitor = @This();
@@ -55,12 +54,7 @@ fn visitMap(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, ma
     errdefer map.deinit(ally);
 
     while (try mapAccess.nextKey(ally, Content)) |key| {
-        errdefer if (mapAccess.isKeyAllocated(@TypeOf(key))) {
-            getty_free(ally, Deserializer, key);
-        };
-
         const value = try mapAccess.nextValue(ally, Content);
-        errdefer getty_free(ally, Deserializer, value);
 
         try map.append(ally, .{
             .key = key,
@@ -102,12 +96,7 @@ fn visitString(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type,
 
 fn visitUnion(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Content {
     var variant = try ua.variant(ally, Content);
-    errdefer if (ua.isVariantAllocated(@TypeOf(variant))) {
-        getty_free(ally, Deserializer, variant);
-    };
-
     var payload = try va.payload(ally, Content);
-    errdefer getty_free(ally, Deserializer, payload);
 
     var map = ContentMultiArrayList{};
     errdefer map.deinit(ally);

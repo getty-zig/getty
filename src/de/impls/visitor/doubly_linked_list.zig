@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime DoublyLinkedList: type) type {
@@ -17,7 +16,6 @@ pub fn Visitor(comptime DoublyLinkedList: type) type {
 
         fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = Value{};
-            errdefer free(ally, Deserializer, list);
 
             const Child = std.meta.fieldInfo(Value.Node, .data).type;
 

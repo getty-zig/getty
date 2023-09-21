@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const getAttributes = @import("../../attributes.zig").getAttributes;
 const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
@@ -26,14 +25,6 @@ pub fn Visitor(comptime Struct: type) type {
             var structure: Value = undefined;
             var seen = [_]bool{false} ** fields.len;
 
-            errdefer {
-                inline for (fields, 0..) |field, i| {
-                    if (!field.is_comptime and seen[i]) {
-                        free(ally, Deserializer, @field(structure, field.name));
-                    }
-                }
-            }
-
             // Indicates whether or not unknown fields should be ignored.
             const ignore_unknown_fields = comptime blk: {
                 if (attributes) |attrs| {
@@ -53,9 +44,7 @@ pub fn Visitor(comptime Struct: type) type {
                 //
                 // key won't ever be part of the final value returned by the
                 // visitor, so there's never a reason to keep it around.
-                defer if (map.isKeyAllocated(@TypeOf(key))) {
-                    free(ally, Deserializer, key);
-                };
+                defer ally.free(key);
 
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;

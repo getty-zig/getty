@@ -5,7 +5,6 @@ const ContentMultiArrayList = @import("../../content.zig").ContentMultiArrayList
 const DeserializerInterface = @import("../../interfaces/deserializer.zig").Deserializer;
 const getty_deserialize = @import("../../deserialize.zig").deserialize;
 const getty_error = @import("../../error.zig").Error;
-const getty_free = @import("../../free.zig").free;
 const MapAccessInterface = @import("../../interfaces/map_access.zig").MapAccess;
 const SeqAccessInterface = @import("../../interfaces/seq_access.zig").SeqAccess;
 const UnionAccessInterface = @import("../../interfaces/union_access.zig").UnionAccess;

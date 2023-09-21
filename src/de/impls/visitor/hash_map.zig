@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime HashMap: type) type {
@@ -21,16 +20,10 @@ pub fn Visitor(comptime HashMap: type) type {
             const unmanaged = is_hash_map_unmanaged or is_array_hash_map_unmanaged;
 
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(ally);
-            errdefer free(ally, Deserializer, hash_map);
+            errdefer if (unmanaged) hash_map.deinit(ally) else hash_map.deinit();
 
             while (try map.nextKey(ally, K)) |key| {
-                errdefer if (map.isKeyAllocated(@TypeOf(key))) {
-                    free(ally, Deserializer, key);
-                };
-
                 const value = try map.nextValue(ally, V);
-                errdefer free(ally, Deserializer, value);
-
                 try if (unmanaged) hash_map.put(ally, key, value) else hash_map.put(key, value);
             }
 

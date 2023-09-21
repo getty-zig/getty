@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime EnumMultiset: type) type {
@@ -20,7 +19,6 @@ pub fn Visitor(comptime EnumMultiset: type) type {
 
         fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var multiset = Value.initEmpty();
-            errdefer free(ally, Deserializer, multiset);
 
             const K = std.meta.FieldType(Value, .counts).Key;
 
@@ -33,19 +31,12 @@ pub fn Visitor(comptime EnumMultiset: type) type {
 
         fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             var multiset = Value.initEmpty();
-            errdefer free(ally, Deserializer, multiset);
 
             const K = std.meta.FieldType(Value, .counts).Key;
             const V = std.meta.FieldType(Value, .counts).Value;
 
             while (try map.nextKey(ally, K)) |k| {
-                defer if (map.isKeyAllocated(@TypeOf(k))) {
-                    free(ally, Deserializer, k);
-                };
-
                 const v = try map.nextValue(ally, V);
-                errdefer free(ally, Deserializer, v);
-
                 try multiset.add(k, v);
             }
 

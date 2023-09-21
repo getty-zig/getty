@@ -5,7 +5,6 @@ const ContentDeserializer = @import("../impls/deserializer/content.zig").Content
 const getAttributes = @import("../attributes.zig").getAttributes;
 const getty_deserialize = @import("../deserialize.zig").deserialize;
 const getty_error = @import("../error.zig").Error;
-const getty_free = @import("../free.zig").free;
 const Tag = @import("../../attributes.zig").Tag;
 const testing = @import("../testing.zig");
 const UnionAccessInterface = @import("../interfaces/union_access.zig").UnionAccess;
@@ -60,27 +59,6 @@ pub fn Visitor(
     return UnionVisitor(T);
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const info = @typeInfo(@TypeOf(value)).Union;
-
-    if (info.tag_type) |T| {
-        inline for (info.fields) |field| {
-            if (value == @field(T, field.name)) {
-                getty_free(ally, Deserializer, @field(value, field.name));
-                break;
-            }
-        }
-    }
-}
-
 fn deserializeExternallyTaggedUnion(
     ally: std.mem.Allocator,
     deserializer: anytype,
@@ -102,12 +80,6 @@ fn deserializeUntaggedUnion(
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
     var result = try getty_deserialize(ally, Content, deserializer);
-    defer switch (result.value) {
-        .Int, .Map, .Seq, .String, .Some => {
-            getty_free(ally, @TypeOf(deserializer), result.value);
-        },
-        else => {},
-    };
 
     // Deserialize the Content value into a value of type T.
     var cd = ContentDeserializer{ .content = result.value };
@@ -115,8 +87,6 @@ fn deserializeUntaggedUnion(
 
     inline for (std.meta.fields(T)) |field| {
         if (getty_deserialize(ally, field.type, d)) |res| {
-            errdefer getty_free(ally, @TypeOf(d), res.value);
-
             var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(res.value)){
                 .variant = field.name,
                 .payload = res.value,
@@ -581,7 +551,6 @@ test "deserialize - union, attributes (tag, untagged)" {
                 }
             } else {
                 if (comptime std.mem.eql(u8, t.tag, "String")) {
-                    defer std.testing.allocator.free(result.value.String);
                     try testing.expectEqualSlices(t.name, u8, result.value.want, result.value.String);
                 } else {
                     try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));

@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
@@ -24,14 +23,6 @@ pub fn Visitor(comptime Tuple: type) type {
 
             var tuple: Value = undefined;
             comptime var seen: usize = 0;
-
-            errdefer if (len > 0) {
-                inline for (tuple, 0..) |v, i| {
-                    if (i < seen) {
-                        free(ally, Deserializer, v);
-                    }
-                }
-            };
 
             switch (len) {
                 0 => tuple = .{},

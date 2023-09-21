@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const IndexedMapVisitor = @import("../impls/visitor/indexed_map.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -39,23 +38,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return IndexedMapVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var mut = value;
-    var it = mut.iterator();
-    while (it.next()) |entry| {
-        getty_free(ally, Deserializer, entry.value.*);
-    }
-    getty_free(ally, Deserializer, value.bits);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {
@@ -138,11 +120,7 @@ test "deserialize - std.IndexedMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
-
         const Want = @TypeOf(t.want);
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
@@ -204,11 +182,7 @@ test "deserialize - std.EnumMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
-
         const Want = @TypeOf(t.want);
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();

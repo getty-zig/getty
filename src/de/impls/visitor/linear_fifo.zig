@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime LinearFifo: type) type {
@@ -18,7 +17,7 @@ pub fn Visitor(comptime LinearFifo: type) type {
         fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             if (is_buffer_static) {
                 var fifo = Value.init();
-                errdefer free(ally, Deserializer, fifo);
+                errdefer fifo.deinit();
 
                 for (0..fifo.buf.len) |_| {
                     if (try seq.nextElement(ally, Child)) |elem| {
@@ -34,20 +33,18 @@ pub fn Visitor(comptime LinearFifo: type) type {
                 return fifo;
             } else if (is_buffer_dynamic) {
                 var fifo = Value.init(ally);
-                errdefer free(ally, Deserializer, fifo);
+                errdefer fifo.deinit();
 
                 while (try seq.nextElement(ally, Child)) |elem| {
-                    errdefer free(ally, Deserializer, elem);
                     try fifo.writeItem(elem);
                 }
 
                 return fifo;
             } else {
                 var list = std.ArrayList(Child).init(ally);
-                errdefer free(ally, Deserializer, list);
+                errdefer list.deinit();
 
                 while (try seq.nextElement(ally, Child)) |elem| {
-                    errdefer free(ally, Deserializer, elem);
                     try list.append(elem);
                 }
 

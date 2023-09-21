@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const SinglyLinkedListVisitor = @import("../impls/visitor/singly_linked_list.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -36,23 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return SinglyLinkedListVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var iterator = value.first;
-    while (iterator) |node| {
-        getty_free(ally, Deserializer, node.data);
-        iterator = node.next;
-        ally.destroy(node);
-    }
 }
 
 test "deserialize - std.SinglyLinkedList" {

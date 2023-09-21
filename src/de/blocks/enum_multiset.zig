@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const EnumMultisetVisitor = @import("../impls/visitor/enum_multiset.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -39,22 +38,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return EnumMultisetVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var mut = value;
-    var it = mut.iterator();
-    while (it.next()) |entry| {
-        getty_free(ally, Deserializer, entry.value.*);
-    }
 }
 
 const Color = enum { red, blue, yellow };

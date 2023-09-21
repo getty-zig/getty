@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime SegmentedList: type) type {
@@ -17,7 +16,7 @@ pub fn Visitor(comptime SegmentedList: type) type {
 
         fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = SegmentedList{};
-            errdefer free(ally, Deserializer, list);
+            errdefer list.deinit(ally);
 
             const E = std.meta.Child(std.meta.FieldType(SegmentedList, .prealloc_segment));
 

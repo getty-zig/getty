@@ -39,24 +39,6 @@ pub fn Visitor(
     return UriVisitor;
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime _: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    ally.free(value.scheme);
-    ally.free(value.path);
-    if (value.host) |host| ally.free(host);
-    if (value.user) |user| ally.free(user);
-    if (value.password) |password| ally.free(password);
-    if (value.query) |query| ally.free(query);
-    if (value.fragment) |fragment| ally.free(fragment);
-}
-
 test "deserialize - std.Uri" {
     const tests = .{
         .{

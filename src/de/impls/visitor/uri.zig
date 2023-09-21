@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 const Visitor = @This();
@@ -17,7 +16,6 @@ const Value = std.Uri;
 
 fn visitString(_: Visitor, ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
     var uri = std.Uri.parse(input) catch return error.InvalidValue;
-    errdefer free(ally, Deserializer, uri);
 
     uri.scheme = try ally.dupe(u8, uri.scheme);
     uri.path = try ally.dupe(u8, uri.path);

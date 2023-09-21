@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime PriorityQueue: type) type {
@@ -24,7 +23,7 @@ pub fn Visitor(comptime PriorityQueue: type) type {
             }
 
             var queue = Value.init(ally, undefined);
-            errdefer free(ally, Deserializer, queue);
+            errdefer queue.deinit();
 
             while (try seq.nextElement(ally, T)) |elem| {
                 try queue.add(elem);

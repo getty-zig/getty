@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const SegmentedListVisitor = @import("../impls/visitor/segmented_list.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -36,23 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return SegmentedListVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var it = value.constIterator(0);
-    while (it.next()) |elem| {
-        getty_free(ally, Deserializer, elem.*);
-    }
-    var mut = value;
-    mut.deinit(ally);
 }
 
 test "deserialize - std.SegmentedList" {

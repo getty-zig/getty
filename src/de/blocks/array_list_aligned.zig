@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list_aligned.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -36,33 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return ArrayListVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    for (value.items) |v| {
-        getty_free(ally, Deserializer, v);
-    }
-
-    const unmanaged = comptime std.mem.startsWith(
-        u8,
-        @typeName(@TypeOf(value)),
-        "array_list.ArrayListAlignedUnmanaged",
-    );
-
-    if (unmanaged) {
-        var mut = value;
-        mut.deinit(ally);
-    } else {
-        value.deinit();
-    }
 }
 
 test "deserialize - std.ArrayList" {

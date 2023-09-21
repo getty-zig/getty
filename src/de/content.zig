@@ -64,12 +64,5 @@ pub const Content = union(enum) {
         pub fn Visitor(comptime _: type) type {
             return ContentVisitor;
         }
-
-        pub fn free(ally: std.mem.Allocator, comptime _: type, value: anytype) void {
-            switch (value) {
-                .Int, .Map, .Seq, .String, .Some => value.deinit(ally),
-                else => {},
-            }
-        }
     };
 };

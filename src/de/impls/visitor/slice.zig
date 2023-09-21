@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Slice: type) type {
@@ -20,7 +19,7 @@ pub fn Visitor(comptime Slice: type) type {
 
         fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = std.ArrayList(Child).init(ally);
-            errdefer free(ally, Deserializer, list);
+            errdefer list.deinit();
 
             while (try seq.nextElement(ally, Child)) |elem| {
                 try list.append(elem);

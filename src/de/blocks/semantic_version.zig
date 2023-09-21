@@ -39,19 +39,6 @@ pub fn Visitor(
     return SemanticVersionVisitor;
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime _: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    if (value.pre) |pre| ally.free(pre);
-    if (value.build) |build| ally.free(build);
-}
-
 test "deserialize - std.SemanticVersion" {
     const tests = .{
         .{

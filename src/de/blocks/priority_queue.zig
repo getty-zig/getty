@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const PriorityQueueVisitor = @import("../impls/visitor/priority_queue.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -36,23 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return PriorityQueueVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var mut = value;
-    var it = mut.iterator();
-    while (it.next()) |elem| {
-        getty_free(ally, Deserializer, elem);
-    }
-    value.deinit();
 }
 
 fn lessThan(context: void, a: i32, b: i32) std.math.Order {

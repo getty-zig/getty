@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const getAttributes = @import("../../attributes.zig").getAttributes;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
@@ -22,9 +21,6 @@ pub fn Visitor(comptime Union: type) type {
             const attributes = comptime getAttributes(Value, Deserializer);
 
             var variant = try ua.variant(ally, []const u8);
-            defer if (ua.isVariantAllocated(@TypeOf(variant))) {
-                free(ally, Deserializer, variant);
-            };
 
             inline for (std.meta.fields(Value)) |f| {
                 const attrs = comptime attrs: {
