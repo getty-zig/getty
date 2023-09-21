@@ -14,8 +14,6 @@ pub fn MapAccess(
         nextValueSeed: NextValueSeedFn(Impl, E) = null,
         nextKey: ?NextKeyFn(Impl, E) = null,
         nextValue: ?NextValueFn(Impl, E) = null,
-        isKeyAllocated: ?IsAllocatedFn(Impl) = null,
-        isValueAllocated: ?IsAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -27,7 +25,7 @@ pub fn MapAccess(
 
             pub const Err = E;
 
-            pub fn nextKeySeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+            pub fn nextKeySeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 if (methods.nextKeySeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -35,7 +33,7 @@ pub fn MapAccess(
                 @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextValueSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+            pub fn nextValueSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.nextValueSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -43,7 +41,7 @@ pub fn MapAccess(
                 @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextKey(self: Self, ally: ?std.mem.Allocator, comptime Key: type) E!?Key {
+            pub fn nextKey(self: Self, ally: std.mem.Allocator, comptime Key: type) E!?Key {
                 if (methods.nextKey) |func| {
                     return try func(self.impl, ally, Key);
                 }
@@ -54,7 +52,7 @@ pub fn MapAccess(
                 return try self.nextKeySeed(ally, ds);
             }
 
-            pub fn nextValue(self: Self, ally: ?std.mem.Allocator, comptime Value: type) E!Value {
+            pub fn nextValue(self: Self, ally: std.mem.Allocator, comptime Value: type) E!Value {
                 if (methods.nextValue) |func| {
                     return try func(self.impl, ally, Value);
                 }
@@ -63,22 +61,6 @@ pub fn MapAccess(
                 const ds = seed.seed();
 
                 return try self.nextValueSeed(ally, ds);
-            }
-
-            pub fn isKeyAllocated(self: Self, comptime Key: type) bool {
-                if (methods.isKeyAllocated) |func| {
-                    return func(self.impl, Key);
-                }
-
-                return @typeInfo(Key) == .Pointer;
-            }
-
-            pub fn isValueAllocated(self: Self, comptime Value: type) bool {
-                if (methods.isValueAllocated) |func| {
-                    return func(self.impl, Value);
-                }
-
-                return @typeInfo(Value) == .Pointer;
             }
         };
 
@@ -91,7 +73,7 @@ pub fn MapAccess(
 
 fn NextKeySeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -104,7 +86,7 @@ fn NextKeySeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -117,7 +99,7 @@ fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextKeyFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Key: type) E!?Key {
+        fn func(impl: Impl, ally: std.mem.Allocator, comptime Key: type) E!?Key {
             _ = impl;
             _ = ally;
 
@@ -130,7 +112,7 @@ fn NextKeyFn(comptime Impl: type, comptime E: type) type {
 
 fn NextValueFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Value: type) E!Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, comptime Value: type) E!Value {
             _ = impl;
             _ = ally;
 
@@ -139,8 +121,4 @@ fn NextValueFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
-}
-
-fn IsAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime KV: type) bool;
 }

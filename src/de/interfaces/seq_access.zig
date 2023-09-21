@@ -12,7 +12,6 @@ pub fn SeqAccess(
     comptime methods: struct {
         nextElementSeed: NextElementSeedFn(Impl, E) = null,
         nextElement: ?NextElementFn(Impl, E) = null,
-        isElementAllocated: ?IsElementAllocatedFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -24,7 +23,7 @@ pub fn SeqAccess(
 
             pub const Err = E;
 
-            pub fn nextElementSeed(self: Self, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+            pub fn nextElementSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 if (methods.nextElementSeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -32,7 +31,7 @@ pub fn SeqAccess(
                 @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextElement(self: Self, ally: ?std.mem.Allocator, comptime Elem: type) E!?Elem {
+            pub fn nextElement(self: Self, ally: std.mem.Allocator, comptime Elem: type) E!?Elem {
                 if (methods.nextElement) |func| {
                     return try func(self.impl, ally, Elem);
                 }
@@ -41,14 +40,6 @@ pub fn SeqAccess(
                 const ds = seed.seed();
 
                 return try self.nextElementSeed(ally, ds);
-            }
-
-            pub fn isElementAllocated(self: Self, comptime Elem: type) bool {
-                if (methods.isElementAllocated) |func| {
-                    return func(self.impl, Elem);
-                }
-
-                return @typeInfo(Elem) == .Pointer;
             }
         };
 
@@ -61,7 +52,7 @@ pub fn SeqAccess(
 
 fn NextElementSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             _ = impl;
             _ = ally;
 
@@ -74,7 +65,7 @@ fn NextElementSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextElementFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, comptime Elem: type) E!?Elem {
+        fn func(impl: Impl, ally: std.mem.Allocator, comptime Elem: type) E!?Elem {
             _ = impl;
             _ = ally;
 
@@ -83,8 +74,4 @@ fn NextElementFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
-}
-
-fn IsElementAllocatedFn(comptime Impl: type) type {
-    return fn (Impl, comptime Elem: type) bool;
 }

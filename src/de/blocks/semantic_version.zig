@@ -15,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -37,19 +37,6 @@ pub fn Visitor(
     _ = T;
 
     return SemanticVersionVisitor;
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime _: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    if (value.pre) |pre| ally.free(pre);
-    if (value.build) |build| ally.free(build);
 }
 
 test "deserialize - std.SemanticVersion" {
@@ -118,26 +105,26 @@ test "deserialize - std.SemanticVersion" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, Self, std.SemanticVersion, t.tokens),
+                testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
         } else {
-            const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+            const Want = @TypeOf(t.want);
 
-            const got = try testing.deserialize(std.testing.allocator, t.name, Self, @TypeOf(t.want), t.tokens);
-            defer free(std.testing.allocator, Deserializer, got);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
 
-            try testing.expectEqual(t.name, t.want.major, got.major);
-            try testing.expectEqual(t.name, t.want.minor, got.minor);
-            try testing.expectEqual(t.name, t.want.patch, got.patch);
+            try testing.expectEqual(t.name, t.want.major, result.value.major);
+            try testing.expectEqual(t.name, t.want.minor, result.value.minor);
+            try testing.expectEqual(t.name, t.want.patch, result.value.patch);
 
             if (t.want.pre) |pre| {
-                try testing.expect(t.name, got.pre != null);
-                try testing.expectEqualStrings(t.name, pre, got.pre.?);
+                try testing.expect(t.name, result.value.pre != null);
+                try testing.expectEqualStrings(t.name, pre, result.value.pre.?);
             }
 
             if (t.want.build) |build| {
-                try testing.expect(t.name, got.build != null);
-                try testing.expectEqualStrings(t.name, build, got.build.?);
+                try testing.expect(t.name, result.value.build != null);
+                try testing.expectEqualStrings(t.name, build, result.value.build.?);
             }
         }
     }

@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const DoublyLinkedListVisitor = @import("../impls/visitor/doubly_linked_list.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -36,23 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return DoublyLinkedListVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var iterator = value.first;
-    while (iterator) |node| {
-        getty_free(ally, Deserializer, node.data);
-        iterator = node.next;
-        ally.destroy(node);
-    }
 }
 
 test "deserialize - std.DoublyLinkedList" {
@@ -90,24 +72,20 @@ test "deserialize - std.DoublyLinkedList" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        var got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        // Check that the lists' lengths match.
-        try testing.expectEqual(t.name, t.want.len, got.len);
+        try testing.expectEqual(t.name, t.want.len, result.value.len);
 
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
-            var got_node = got.popFirst();
+            var got_node = result.value.popFirst();
 
             // Sanity node check.
             try testing.expect(t.name, got_node != null);
-            defer std.testing.allocator.destroy(got_node.?);
 
             // Check that the lists' data match.
             try testing.expectEqual(t.name, node.data, got_node.?.data);
@@ -153,21 +131,17 @@ test "deserialize - std.DoublyLinkedList (recursive)" {
         .{ .SeqEnd = {} },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+    var result = try testing.deserialize(null, Self, Parent, tokens);
+    defer result.deinit();
 
-    var got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
-    defer free(std.testing.allocator, Deserializer, got);
-
-    // Check that the lists' lengths match.
-    try std.testing.expectEqual(expected.len, got.len);
+    try std.testing.expectEqual(expected.len, result.value.len);
 
     var it = expected.first;
     while (it) |node| : (it = node.next) {
-        var got_node = got.popFirst();
+        var got_node = result.value.popFirst();
 
         // Sanity node check.
         try std.testing.expect(got_node != null);
-        defer std.testing.allocator.destroy(got_node.?);
 
         // Check that the inner lists' lengths match.
         try std.testing.expectEqual(node.data.len, got_node.?.data.len);
@@ -178,7 +152,6 @@ test "deserialize - std.DoublyLinkedList (recursive)" {
 
             // Sanity inner node check.
             try std.testing.expect(got_inner_node != null);
-            defer std.testing.allocator.destroy(got_inner_node.?);
 
             // Check that the inner lists' data match.
             try std.testing.expectEqual(inner_node.data, got_inner_node.?.data);

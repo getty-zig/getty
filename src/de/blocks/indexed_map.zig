@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const IndexedMapVisitor = @import("../impls/visitor/indexed_map.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -19,8 +18,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -39,23 +38,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return IndexedMapVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var mut = value;
-    var it = mut.iterator();
-    while (it.next()) |entry| {
-        getty_free(ally, Deserializer, entry.value.*);
-    }
-    getty_free(ally, Deserializer, value.bits);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {
@@ -138,22 +120,18 @@ test "deserialize - std.IndexedMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
-
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
-            try testing.expect(t.name, got.contains(kv.key));
-            try testing.expectEqual(t.name, kv.value.*, got.get(kv.key).?);
+            try testing.expect(t.name, result.value.contains(kv.key));
+            try testing.expectEqual(t.name, kv.value.*, result.value.get(kv.key).?);
         }
     }
 }
@@ -204,22 +182,18 @@ test "deserialize - std.EnumMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
-
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
-            try testing.expect(t.name, got.contains(kv.key));
-            try testing.expectEqual(t.name, kv.value.*, got.get(kv.key).?);
+            try testing.expect(t.name, result.value.contains(kv.key));
+            try testing.expectEqual(t.name, kv.value.*, result.value.get(kv.key).?);
         }
     }
 }

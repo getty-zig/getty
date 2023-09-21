@@ -15,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -37,7 +37,7 @@ pub fn Visitor(
     return BoundedArrayVisitor(T);
 }
 
-test "deserialize - bounded array" {
+test "deserialize - std.BoundedArray" {
     const tests = .{
         .{
             .name = "empty",
@@ -68,13 +68,14 @@ test "deserialize - bounded array" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, got);
+        try testing.expectEqual(t.name, t.want, result.value);
     }
 }
 
-test "deserialize - bounded array (recursive)" {
+test "deserialize - std.BoundedArray (recursive)" {
     const Child = std.BoundedArray(i32, 2);
     const Parent = std.BoundedArray(Child, 3);
 
@@ -104,10 +105,11 @@ test "deserialize - bounded array (recursive)" {
         .{ .SeqEnd = {} },
     };
 
-    const got = try testing.deserialize(null, null, Self, Parent, tokens);
+    var result = try testing.deserialize(null, Self, Parent, tokens);
+    defer result.deinit();
 
-    try std.testing.expectEqual(expected.capacity(), got.capacity());
-    for (got.slice(), 0..) |l, i| {
+    try std.testing.expectEqual(expected.capacity(), result.value.capacity());
+    for (result.value.slice(), 0..) |l, i| {
         try std.testing.expectEqual(expected.get(i).capacity(), l.capacity());
         try std.testing.expectEqualSlices(i32, expected.get(i).slice(), l.slice());
     }

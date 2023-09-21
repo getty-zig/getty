@@ -1,7 +1,6 @@
 const std = @import("std");
 const test_ally = std.testing.allocator;
 
-const getty_free = @import("../free.zig").free;
 const HashMapVisitor = @import("../impls/visitor/hash_map.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -20,8 +19,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -40,42 +39,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return HashMapVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const T = @TypeOf(value);
-    const name = @typeName(T);
-
-    const unmanaged = comptime std.mem.startsWith(
-        u8,
-        name,
-        "hash_map.HashMapUnmanaged",
-    ) or std.mem.startsWith(
-        u8,
-        name,
-        "array_hash_map.ArrayHashMapUnmanaged",
-    );
-
-    var iterator = value.iterator();
-    while (iterator.next()) |entry| {
-        getty_free(ally, Deserializer, entry.key_ptr.*);
-        getty_free(ally, Deserializer, entry.value_ptr.*);
-    }
-
-    var mut = value;
-    if (unmanaged) {
-        mut.deinit(ally);
-    } else {
-        mut.deinit();
-    }
 }
 
 // TODO: Empty tests for ArrayHashMap variants are commented out due to an
@@ -198,20 +161,35 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(test_ally, Deserializer, t.want);
-
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
-        defer free(test_ally, Deserializer, got);
+        defer {
+            const unmanaged = comptime std.mem.startsWith(
+                u8,
+                @typeName(Want),
+                "hash_map.HashMapUnmanaged",
+            ) or std.mem.startsWith(
+                u8,
+                @typeName(Want),
+                "array_hash_map.ArrayHashMapUnmanaged",
+            );
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+            var mut = t.want;
+            if (unmanaged) {
+                mut.deinit(std.testing.allocator);
+            } else {
+                mut.deinit();
+            }
+        }
+
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }
@@ -276,21 +254,19 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         var want = t.want;
         defer want.deinit();
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
-        defer free(test_ally, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }
@@ -339,21 +315,19 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         var want = t.want;
         defer want.deinit(test_ally);
 
         const Want = @TypeOf(t.want);
-        var got = try testing.deserialize(test_ally, t.name, Self, Want, t.tokens);
-        defer free(test_ally, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }

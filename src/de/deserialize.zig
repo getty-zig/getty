@@ -10,36 +10,68 @@ const Visitor = @import("interfaces/visitor.zig").Visitor;
 
 /// Deserializes data from a `getty.Deserializer` `d` into a value of type `T`.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type of the value to deserialize into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
     d: anytype,
-) @TypeOf(d).Err!T {
+) @TypeOf(d).Err!Result(T) {
     const db = comptime find_db(T, @TypeOf(d));
+
+    var result = Result(T){
+        .arena = arena: {
+            var arena = try ally.create(std.heap.ArenaAllocator);
+            arena.* = std.heap.ArenaAllocator.init(ally);
+
+            break :arena arena;
+        },
+        .value = undefined,
+    };
+    errdefer result.deinit();
+
+    const arena_ally = result.arena.allocator();
 
     if (comptime attributes.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
             .Enum => {
                 var v = blocks.Enum.Visitor(T){};
-                return try blocks.Enum.deserialize(ally, T, d, v.visitor());
+                result.value = try blocks.Enum.deserialize(arena_ally, T, d, v.visitor());
             },
             .Struct => {
                 var v = blocks.Struct.Visitor(T){};
-                return try blocks.Struct.deserialize(ally, T, d, v.visitor());
+                result.value = try blocks.Struct.deserialize(arena_ally, T, d, v.visitor());
             },
             .Union => {
                 var v = blocks.Union.Visitor(T){};
-                return try blocks.Union.deserialize(ally, T, d, v.visitor());
+                result.value = try blocks.Union.deserialize(arena_ally, T, d, v.visitor());
             },
             else => unreachable, // UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.
         }
+
+        return result;
     }
 
     var v = db.Visitor(T){};
-    return try db.deserialize(ally, T, d, v.visitor());
+    result.value = try db.deserialize(arena_ally, T, d, v.visitor());
+    return result;
 }
+
+pub fn Result(comptime T: type) type {
+    return struct {
+        arena: *std.heap.ArenaAllocator,
+        value: T,
+
+        pub fn deinit(self: @This()) void {
+            self.arena.deinit();
+            self.arena.child_allocator.destroy(self.arena);
+        }
+    };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// TESTS
+////////////////////////////////////////////////////////////////////////////////
 
 fn PointVisitor(comptime Value: type) type {
     return struct {
@@ -53,7 +85,7 @@ fn PointVisitor(comptime Value: type) type {
 
         fn visitSeq(
             _: Self,
-            ally: ?std.mem.Allocator,
+            ally: std.mem.Allocator,
             comptime De: type,
             seq: anytype,
         ) De.Err!Value {
@@ -87,7 +119,7 @@ test "deserialize - success, normal" {
             return T == Point;
         }
 
-        pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
+        pub fn deserialize(ally: std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
             return try d.deserializeSeq(ally, v);
         }
 
@@ -101,7 +133,7 @@ test "deserialize - success, normal" {
         const Self = @This();
 
         pub const @"getty.db" = struct {
-            pub fn deserialize(ally: ?std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
+            pub fn deserialize(ally: std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
                 return try d.deserializeSeq(ally, v);
             }
 
@@ -123,8 +155,10 @@ test "deserialize - success, normal" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // User DB
@@ -136,8 +170,10 @@ test "deserialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // Deserializer DB
@@ -149,8 +185,10 @@ test "deserialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // Type DB
@@ -162,8 +200,10 @@ test "deserialize - success, normal" {
             .{ .SeqEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected_custom, got);
+        var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected_custom, result.value);
     }
 }
 
@@ -208,8 +248,10 @@ test "deserialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // Deserializer DB
@@ -223,8 +265,10 @@ test "deserialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // Type DB
@@ -238,8 +282,10 @@ test "deserialize - success, attributes" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected_custom, got);
+        var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected_custom, result.value);
     }
 }
 
@@ -294,8 +340,10 @@ test "deserialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // Type DB > Deserializer DB
@@ -319,8 +367,10 @@ test "deserialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 
     // User DB > Type DB
@@ -344,7 +394,9 @@ test "deserialize - priority" {
             .{ .StructEnd = {} },
         });
 
-        const got = deserialize(std.testing.allocator, PointInvalidCustom, d.deserializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, got);
+        var result = deserialize(std.testing.allocator, PointInvalidCustom, d.deserializer()) catch return error.UnexpectedTestError;
+        defer result.deinit();
+
+        try expectEqual(expected, result.value);
     }
 }

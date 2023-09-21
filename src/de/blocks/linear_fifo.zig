@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const LinearFifoVisitor = @import("../impls/visitor/linear_fifo.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -36,31 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return LinearFifoVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const is_buffer_dynamic = comptime std.meta.FieldType(@TypeOf(value), .allocator) != void;
-    const is_buffer_static = comptime @typeInfo(std.meta.FieldType(@TypeOf(value), .buf)) == .Array;
-
-    // Linearize the buffer so we can read it as a contiguous slice.
-    var mut = value;
-    mut.realign();
-    for (mut.readableSlice(0)) |v| {
-        getty_free(ally, Deserializer, v);
-    }
-    if (is_buffer_dynamic) {
-        value.deinit();
-    } else if (!is_buffer_static) {
-        ally.free(value.buf);
-    }
 }
 
 test "deserialize - std.LinearFifo (static)" {
@@ -100,12 +74,13 @@ test "deserialize - std.LinearFifo (static)" {
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
+        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
 
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), got.peekItem(i));
+            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }
@@ -146,18 +121,16 @@ test "deserialize - std.LinearFifo (slice)" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
+        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
 
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), got.peekItem(i));
+            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }
@@ -196,20 +169,18 @@ test "deserialize - std.LinearFifo (dynamic)" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
         defer t.want.deinit();
 
         const Want = @TypeOf(t.want);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), got.readableLength());
+        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
 
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), got.peekItem(i));
+            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }

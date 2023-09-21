@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime LinearFifo: type) type {
@@ -15,10 +14,10 @@ pub fn Visitor(comptime LinearFifo: type) type {
 
         const Value = LinearFifo;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             if (is_buffer_static) {
                 var fifo = Value.init();
-                errdefer free(ally.?, Deserializer, fifo);
+                errdefer fifo.deinit();
 
                 for (0..fifo.buf.len) |_| {
                     if (try seq.nextElement(ally, Child)) |elem| {
@@ -33,33 +32,19 @@ pub fn Visitor(comptime LinearFifo: type) type {
 
                 return fifo;
             } else if (is_buffer_dynamic) {
-                if (ally == null) {
-                    return error.MissingAllocator;
-                }
+                var fifo = Value.init(ally);
+                errdefer fifo.deinit();
 
-                const a = ally.?;
-
-                var fifo = Value.init(a);
-                errdefer free(a, Deserializer, fifo);
-
-                while (try seq.nextElement(a, Child)) |elem| {
-                    errdefer free(a, Deserializer, elem);
+                while (try seq.nextElement(ally, Child)) |elem| {
                     try fifo.writeItem(elem);
                 }
 
                 return fifo;
             } else {
-                if (ally == null) {
-                    return error.MissingAllocator;
-                }
+                var list = std.ArrayList(Child).init(ally);
+                errdefer list.deinit();
 
-                const a = ally.?;
-
-                var list = std.ArrayList(Child).init(a);
-                errdefer free(a, Deserializer, list);
-
-                while (try seq.nextElement(a, Child)) |elem| {
-                    errdefer free(a, Deserializer, elem);
+                while (try seq.nextElement(ally, Child)) |elem| {
                     try list.append(elem);
                 }
 

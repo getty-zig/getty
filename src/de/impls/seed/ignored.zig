@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const Result = @import("../../deserialize.zig").Result;
 const SeedInterface = @import("../../interfaces/seed.zig").Seed;
 
 /// An implementation of `getty.de.Seed` that ignores values.
@@ -15,7 +16,7 @@ pub const Ignored = struct {
         .{ .deserialize = deserialize },
     );
 
-    fn deserialize(i: Value, ally: ?std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
+    fn deserialize(i: Value, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Result(Value) {
         return try deserializer.deserializeIgnored(ally, i.visitor());
     }
 };

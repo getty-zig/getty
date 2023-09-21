@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
@@ -16,7 +15,7 @@ pub fn Visitor(comptime Tuple: type) type {
 
         const Value = Tuple;
 
-        fn visitSeq(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -24,18 +23,6 @@ pub fn Visitor(comptime Tuple: type) type {
 
             var tuple: Value = undefined;
             comptime var seen: usize = 0;
-
-            errdefer {
-                if (ally) |a| {
-                    if (len > 0) {
-                        inline for (tuple, 0..) |v, i| {
-                            if (i < seen) {
-                                free(a, Deserializer, v);
-                            }
-                        }
-                    }
-                }
-            }
 
             switch (len) {
                 0 => tuple = .{},

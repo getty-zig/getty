@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const IndexedArrayVisitor = @import("../impls/visitor/indexed_array.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -19,8 +18,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -39,18 +38,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return IndexedArrayVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    getty_free(ally, Deserializer, value.values);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {
@@ -163,9 +150,11 @@ test "deserialize - std.IndexedArray" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
         for (t.want.values, 0..) |want, i| {
-            try testing.expectEqual(t.name, want, got.values[i]);
+            try testing.expectEqual(t.name, want, result.value.values[i]);
         }
     }
 }
@@ -249,9 +238,11 @@ test "deserialize - std.EnumArray" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
         for (t.want.values, 0..) |want, i| {
-            try testing.expectEqual(t.name, want, got.values[i]);
+            try testing.expectEqual(t.name, want, result.value.values[i]);
         }
     }
 }

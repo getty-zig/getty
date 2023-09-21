@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const SegmentedListVisitor = @import("../impls/visitor/segmented_list.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -38,24 +37,7 @@ pub fn Visitor(
     return SegmentedListVisitor(T);
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var it = value.constIterator(0);
-    while (it.next()) |elem| {
-        getty_free(ally, Deserializer, elem.*);
-    }
-    var mut = value;
-    mut.deinit(ally);
-}
-
-test "deserialize - segmented list" {
+test "deserialize - std.SegmentedList" {
     const tests = .{
         .{
             .name = "empty",
@@ -86,19 +68,20 @@ test "deserialize - segmented list" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
+        defer {
+            var mut = t.want;
+            mut.deinit(std.testing.allocator);
+        }
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.len, got.len);
+        try testing.expectEqual(t.name, t.want.len, result.value.len);
 
         for (0..t.want.len) |i| {
-            try testing.expectEqual(t.name, t.want.at(i).*, got.at(i).*);
+            try testing.expectEqual(t.name, t.want.at(i).*, result.value.at(i).*);
         }
     }
 }

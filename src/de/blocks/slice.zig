@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -37,23 +36,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return SliceVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    if (comptime std.meta.trait.isZigString(@TypeOf(value))) {
-        ally.free(value);
-    } else {
-        for (value) |v| getty_free(ally, Deserializer, v);
-        ally.free(value);
-    }
 }
 
 test "deserialize - slice, string" {
@@ -85,9 +67,9 @@ test "deserialize - slice, string" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer std.testing.allocator.free(got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqualStrings(t.name, t.want, got);
+        try testing.expectEqualStrings(t.name, t.want, result.value);
     }
 }

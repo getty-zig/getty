@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const getAttributes = @import("../../attributes.zig").getAttributes;
 const Ignored = @import("../../impls/seed/ignored.zig").Ignored;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
@@ -17,7 +16,7 @@ pub fn Visitor(comptime Struct: type) type {
 
         const Value = Struct;
 
-        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = comptime std.meta.fields(Value);
@@ -25,16 +24,6 @@ pub fn Visitor(comptime Struct: type) type {
 
             var structure: Value = undefined;
             var seen = [_]bool{false} ** fields.len;
-
-            errdefer {
-                if (ally) |a| {
-                    inline for (fields, 0..) |field, i| {
-                        if (!field.is_comptime and seen[i]) {
-                            free(a, Deserializer, @field(structure, field.name));
-                        }
-                    }
-                }
-            }
 
             // Indicates whether or not unknown fields should be ignored.
             const ignore_unknown_fields = comptime blk: {
@@ -51,21 +40,6 @@ pub fn Visitor(comptime Struct: type) type {
             };
 
             key_loop: while (try map.nextKey(ally, []const u8)) |key| {
-                // If key is allocated, free it at the end of this loop.
-                //
-                // key won't ever be part of the final value returned by the
-                // visitor, so there's never a reason to keep it around.
-                const key_is_allocated = map.isKeyAllocated(@TypeOf(key));
-
-                if (key_is_allocated and ally == null) {
-                    return error.MissingAllocator;
-                }
-
-                defer if (key_is_allocated) {
-                    std.debug.assert(ally != null);
-                    free(ally.?, Deserializer, key);
-                };
-
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;
 

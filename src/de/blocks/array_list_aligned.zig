@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list_aligned.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -38,34 +37,7 @@ pub fn Visitor(
     return ArrayListVisitor(T);
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    for (value.items) |v| {
-        getty_free(ally, Deserializer, v);
-    }
-
-    const unmanaged = comptime std.mem.startsWith(
-        u8,
-        @typeName(@TypeOf(value)),
-        "array_list.ArrayListAlignedUnmanaged",
-    );
-
-    if (unmanaged) {
-        var mut = value;
-        mut.deinit(ally);
-    } else {
-        value.deinit();
-    }
-}
-
-test "deserialize - array list" {
+test "deserialize - std.ArrayList" {
     const tests = .{
         .{
             .name = "empty",
@@ -100,15 +72,15 @@ test "deserialize - array list" {
         const Want = @TypeOf(t.want);
         const Child = std.meta.Child(Want.Slice);
 
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer got.deinit();
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.capacity, got.capacity);
-        try testing.expectEqualSlices(t.name, Child, t.want.items, got.items);
+        try testing.expectEqual(t.name, t.want.capacity, result.value.capacity);
+        try testing.expectEqualSlices(t.name, Child, t.want.items, result.value.items);
     }
 }
 
-test "deserialize - array list (recursive)" {
+test "deserialize - std.ArrayList (recursive)" {
     const Child = std.ArrayList(isize);
     const Parent = std.ArrayList(Child);
 
@@ -144,13 +116,11 @@ test "deserialize - array list (recursive)" {
         .{ .SeqEnd = {} },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+    var result = try testing.deserialize(null, Self, Parent, tokens);
+    defer result.deinit();
 
-    const got = try testing.deserialize(std.testing.allocator, null, Self, Parent, tokens);
-    defer free(std.testing.allocator, Deserializer, got);
-
-    try std.testing.expectEqual(want.capacity, got.capacity);
-    for (got.items, 0..) |l, i| {
+    try std.testing.expectEqual(want.capacity, result.value.capacity);
+    for (result.value.items, 0..) |l, i| {
         try std.testing.expectEqual(want.items[i].capacity, l.capacity);
         try std.testing.expectEqualSlices(isize, want.items[i].items, l.items);
     }

@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const BufMapVisitor = @import("../impls/visitor/buf_map.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -38,25 +37,7 @@ pub fn Visitor(
     return BufMapVisitor(T);
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var it = value.hash_map.iterator();
-    while (it.next()) |entry| {
-        getty_free(ally, Deserializer, entry.key_ptr.*);
-        getty_free(ally, Deserializer, entry.value_ptr.*);
-    }
-    var mut = value;
-    mut.hash_map.deinit();
-}
-
-test "deserialize - buf map" {
+test "deserialize - std.BufMap" {
     const tests = .{
         .{
             .name = "empty",
@@ -88,20 +69,21 @@ test "deserialize - buf map" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
+        defer {
+            var mut = t.want;
+            mut.deinit();
+        }
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqualStrings(t.name, t.want.get(kv.key_ptr.*).?, got.get(kv.key_ptr.*).?);
+            try testing.expectEqualStrings(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }

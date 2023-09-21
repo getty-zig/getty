@@ -15,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -37,24 +37,6 @@ pub fn Visitor(
     _ = T;
 
     return UriVisitor;
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime _: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    ally.free(value.scheme);
-    ally.free(value.path);
-    if (value.host) |host| ally.free(host);
-    if (value.user) |user| ally.free(user);
-    if (value.password) |password| ally.free(password);
-    if (value.query) |query| ally.free(query);
-    if (value.fragment) |fragment| ally.free(fragment);
 }
 
 test "deserialize - std.Uri" {
@@ -96,37 +78,36 @@ test "deserialize - std.Uri" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, Self, std.SemanticVersion, t.tokens),
+                testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
         } else {
-            const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
+            const Want = @TypeOf(t.want);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
 
-            const got = try testing.deserialize(std.testing.allocator, t.name, Self, @TypeOf(t.want), t.tokens);
-            defer free(std.testing.allocator, Deserializer, got);
-
-            try testing.expectEqualStrings(t.name, t.want.scheme, got.scheme);
-            try testing.expectEqual(t.name, t.want.port, got.port);
-            try testing.expectEqualStrings(t.name, t.want.path, got.path);
+            try testing.expectEqualStrings(t.name, t.want.scheme, result.value.scheme);
+            try testing.expectEqual(t.name, t.want.port, result.value.port);
+            try testing.expectEqualStrings(t.name, t.want.path, result.value.path);
 
             if (t.want.host) |host| {
-                try testing.expect(t.name, got.host != null);
-                try testing.expectEqualStrings(t.name, host, got.host.?);
+                try testing.expect(t.name, result.value.host != null);
+                try testing.expectEqualStrings(t.name, host, result.value.host.?);
             }
             if (t.want.user) |user| {
-                try testing.expect(t.name, got.user != null);
-                try testing.expectEqualStrings(t.name, user, got.user.?);
+                try testing.expect(t.name, result.value.user != null);
+                try testing.expectEqualStrings(t.name, user, result.value.user.?);
             }
             if (t.want.password) |password| {
-                try testing.expect(t.name, got.password != null);
-                try testing.expectEqualStrings(t.name, password, got.password.?);
+                try testing.expect(t.name, result.value.password != null);
+                try testing.expectEqualStrings(t.name, password, result.value.password.?);
             }
             if (t.want.query) |query| {
-                try testing.expect(t.name, got.query != null);
-                try testing.expectEqualStrings(t.name, query, got.query.?);
+                try testing.expect(t.name, result.value.query != null);
+                try testing.expectEqualStrings(t.name, query, result.value.query.?);
             }
             if (t.want.fragment) |fragment| {
-                try testing.expect(t.name, got.fragment != null);
-                try testing.expectEqualStrings(t.name, fragment, got.fragment.?);
+                try testing.expect(t.name, result.value.fragment != null);
+                try testing.expectEqualStrings(t.name, fragment, result.value.fragment.?);
             }
         }
     }

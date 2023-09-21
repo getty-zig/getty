@@ -18,8 +18,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -178,11 +178,13 @@ test "deserialize - integer" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(null, Self, Want, t.tokens),
+                testing.deserializeErr(Self, Want, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
-            try testing.expectEqual(t.name, t.want, got);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
+
+            try testing.expectEqual(t.name, t.want, result.value);
         }
     }
 }

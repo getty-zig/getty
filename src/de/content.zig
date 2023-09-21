@@ -53,7 +53,7 @@ pub const Content = union(enum) {
 
     pub const @"getty.db" = struct {
         pub fn deserialize(
-            ally: ?std.mem.Allocator,
+            ally: std.mem.Allocator,
             comptime _: type,
             deserializer: anytype,
             visitor: anytype,
@@ -63,13 +63,6 @@ pub const Content = union(enum) {
 
         pub fn Visitor(comptime _: type) type {
             return ContentVisitor;
-        }
-
-        pub fn free(ally: std.mem.Allocator, comptime _: type, value: anytype) void {
-            switch (value) {
-                .Int, .Map, .Seq, .String, .Some => value.deinit(ally),
-                else => {},
-            }
         }
     };
 };

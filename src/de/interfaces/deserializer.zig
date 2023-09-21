@@ -131,7 +131,7 @@ pub fn Deserializer(
             };
 
             /// Deserializes a deserializer's input data into some Getty value.
-            pub fn deserializeAny(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeAny(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeAny) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -140,7 +140,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Boolean.
-            pub fn deserializeBool(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeBool(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeBool) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -149,7 +149,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Enum.
-            pub fn deserializeEnum(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeEnum(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeEnum) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -158,7 +158,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Float.
-            pub fn deserializeFloat(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeFloat(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeFloat) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -169,7 +169,7 @@ pub fn Deserializer(
             /// Hint that the type being deserialized into is expecting to
             /// deserialize a value whose type does not matter because it is
             /// ignored.
-            pub fn deserializeIgnored(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeIgnored(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeIgnored) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -178,7 +178,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Integer.
-            pub fn deserializeInt(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeInt(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeInt) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -187,7 +187,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Map.
-            pub fn deserializeMap(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeMap(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeMap) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -196,7 +196,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Optional.
-            pub fn deserializeOptional(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeOptional(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeOptional) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -205,7 +205,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Sequence.
-            pub fn deserializeSeq(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeSeq(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeSeq) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -214,7 +214,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty String.
-            pub fn deserializeString(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeString(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeString) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -223,7 +223,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Struct.
-            pub fn deserializeStruct(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeStruct(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeStruct) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -232,7 +232,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Union.
-            pub fn deserializeUnion(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeUnion(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeUnion) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -241,7 +241,7 @@ pub fn Deserializer(
             }
 
             /// Deserializes a deserializer's input data into a Getty Void.
-            pub fn deserializeVoid(self: Self, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+            pub fn deserializeVoid(self: Self, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
                 if (methods.deserializeVoid) |func| {
                     return try func(self.impl, ally, visitor);
                 }
@@ -259,7 +259,7 @@ pub fn Deserializer(
 
 fn DeserializeFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: ?std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
+        fn func(impl: Impl, ally: std.mem.Allocator, visitor: anytype) E!@TypeOf(visitor).Value {
             _ = impl;
             _ = ally;
 

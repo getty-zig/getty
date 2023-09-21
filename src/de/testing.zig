@@ -1,11 +1,12 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const expectEqual = std.testing.expectEqual;
+const test_ally = std.testing.allocator;
 
 const DeserializerInterface = @import("interfaces/deserializer.zig").Deserializer;
 const err = @import("error.zig");
-const free = @import("free.zig").free;
 const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
+const Result = @import("deserialize.zig").Result;
 const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;
 const testing = @import("../testing.zig");
 const Token = testing.Token;
@@ -15,13 +16,12 @@ const VariantAccessInterface = @import("interfaces/variant_access.zig").VariantA
 pub usingnamespace testing;
 
 pub fn deserialize(
-    ally: ?std.mem.Allocator,
     comptime test_case: ?[]const u8,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
-) !Want {
-    return deserializeErr(ally, block, Want, input) catch |e| {
+) !Result(Want) {
+    return deserializeErr(block, Want, input) catch |e| {
         if (test_case) |t| {
             return testing.logErr(t, e);
         }
@@ -31,15 +31,27 @@ pub fn deserialize(
 }
 
 pub fn deserializeErr(
-    ally: ?std.mem.Allocator,
     comptime block: type,
     comptime Want: type,
     input: []const Token,
-) !Want {
+) !Result(Want) {
     comptime {
         std.debug.assert(@typeInfo(block) == .Struct);
         std.debug.assert(std.meta.trait.hasFunctions(block, .{ "deserialize", "Visitor" }));
     }
+
+    var result = Result(Want){
+        .arena = arena: {
+            var arena = try test_ally.create(std.heap.ArenaAllocator);
+            arena.* = std.heap.ArenaAllocator.init(test_ally);
+
+            break :arena arena;
+        },
+        .value = undefined,
+    };
+    errdefer result.deinit();
+
+    const arena_ally = result.arena.allocator();
 
     var d = DefaultDeserializer.init(input);
     const deserializer = d.deserializer();
@@ -47,11 +59,11 @@ pub fn deserializeErr(
     var v = block.Visitor(Want){};
     const visitor = v.visitor();
 
-    const got = try block.deserialize(ally, Want, deserializer, visitor);
+    result.value = try block.deserialize(arena_ally, Want, deserializer, visitor);
 
     try std.testing.expect(d.remaining() == 0);
 
-    return got;
+    return result;
 }
 
 pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anytype) type {
@@ -128,7 +140,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
         const De = Self.@"getty.Deserializer";
 
-        fn deserializeAny(self: *Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeAny(self: *Self, ally: std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
                 .Bool => |v| try visitor.visitBool(ally, De, v),
                 .I8 => |v| try visitor.visitInt(ally, De, v),
@@ -195,7 +207,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             };
         }
 
-        fn deserializeIgnored(self: *Self, ally: ?std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeIgnored(self: *Self, ally: std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
             _ = self.nextTokenOpt();
             return try visitor.visitVoid(ally, De);
         }
@@ -231,7 +243,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .nextElementSeed = nextElementSeed },
             );
 
-            fn nextElementSeed(self: *Seq, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextElementSeed(self: *Seq, ally: std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // All elements have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -243,7 +255,8 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                return try seed.deserialize(ally, self.de.deserializer());
+                var result = try seed.deserialize(ally, self.de.deserializer());
+                return result.value;
             }
         };
 
@@ -261,7 +274,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
             );
 
-            fn nextKeySeed(self: *Map, ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextKeySeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // All entries have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -275,11 +288,13 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                return try seed.deserialize(ally, self.de.deserializer());
+                var result = try seed.deserialize(ally, self.de.deserializer());
+                return result.value;
             }
 
-            fn nextValueSeed(self: *Map, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                return try seed.deserialize(ally, self.de.deserializer());
+            fn nextValueSeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+                var result = try seed.deserialize(ally, self.de.deserializer());
+                return result.value;
             }
         };
 
@@ -298,19 +313,21 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{ .payloadSeed = payloadSeed },
             );
 
-            fn variantSeed(self: *Union, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn variantSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (self.de.peekTokenOpt()) |token| {
                     if (token == .String) {
-                        return try seed.deserialize(ally, self.de.deserializer());
+                        var result = try seed.deserialize(ally, self.de.deserializer());
+                        return result.value;
                     }
                 }
 
                 return error.InvalidType;
             }
 
-            fn payloadSeed(self: *Union, ally: ?std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
+            fn payloadSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (@TypeOf(seed).Value != void) {
-                    return try seed.deserialize(ally, self.de.deserializer());
+                    var result = try seed.deserialize(ally, self.de.deserializer());
+                    return result.value;
                 }
 
                 if (self.de.nextToken() != .Void) {

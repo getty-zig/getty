@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -36,24 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return StructVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const info = @typeInfo(@TypeOf(value)).Struct;
-
-    inline for (info.fields) |field| {
-        if (!field.is_comptime) {
-            getty_free(ally, Deserializer, @field(value, field.name));
-        }
-    }
 }
 
 test "deserialize - struct" {
@@ -91,8 +72,10 @@ test "deserialize - struct" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        try testing.expectEqual(t.name, t.want, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
+
+        try testing.expectEqual(t.name, t.want, result.value);
     }
 }
 
@@ -284,13 +267,14 @@ test "deserialize - struct, attributes" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, Self, Want, t.tokens),
+                testing.deserializeErr(Self, Want, t.tokens),
             );
         } else {
             const Want = @TypeOf(t.want);
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
 
-            const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-            try testing.expectEqual(t.name, t.want, got);
+            try testing.expectEqual(t.name, t.want, result.value);
         }
     }
 }

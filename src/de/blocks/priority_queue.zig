@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const getty_free = @import("../free.zig").free;
 const PriorityQueueVisitor = @import("../impls/visitor/priority_queue.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -16,8 +15,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -36,23 +35,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return PriorityQueueVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var mut = value;
-    var it = mut.iterator();
-    while (it.next()) |elem| {
-        getty_free(ally, Deserializer, elem);
-    }
-    value.deinit();
 }
 
 fn lessThan(context: void, a: i32, b: i32) std.math.Order {
@@ -93,26 +75,24 @@ test "deserialize - std.PriorityQueue" {
         },
     };
 
-    const Deserializer = testing.DefaultDeserializer.@"getty.Deserializer";
-
     inline for (tests) |t| {
-        defer free(std.testing.allocator, Deserializer, t.want);
+        defer t.want.deinit();
 
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(std.testing.allocator, t.name, Self, Want, t.tokens);
-        defer free(std.testing.allocator, Deserializer, got);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
         // Check that the queues' lengths match.
-        try testing.expectEqual(t.name, t.want.count(), got.count());
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
 
-        var want_it = blk: {
+        var want_it = want_it: {
             var mut = t.want;
-            break :blk mut.iterator();
+            break :want_it mut.iterator();
         };
 
-        var got_it = blk: {
-            var mut = got;
-            break :blk mut.iterator();
+        var got_it = got_it: {
+            var mut = result.value;
+            break :got_it mut.iterator();
         };
 
         while (want_it.next()) |elem| {

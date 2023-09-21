@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const EnumMultisetVisitor = @import("../impls/visitor/enum_multiset.zig").Visitor;
-const getty_free = @import("../free.zig").free;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -19,8 +18,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -39,22 +38,6 @@ pub fn Visitor(
     comptime T: type,
 ) type {
     return EnumMultisetVisitor(T);
-}
-
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    var mut = value;
-    var it = mut.iterator();
-    while (it.next()) |entry| {
-        getty_free(ally, Deserializer, entry.value.*);
-    }
 }
 
 const Color = enum { red, blue, yellow };
@@ -111,10 +94,11 @@ test "deserialize - std.BoundedEnumMultiset" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
-        try testing.expect(t.name, t.want.eql(got));
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try testing.expect(t.name, t.want.eql(result.value));
     }
 }
 
@@ -175,9 +159,10 @@ test "deserialize - std.EnumMultiSet" {
 
     inline for (tests) |t| {
         const Want = @TypeOf(t.want);
-        const got = try testing.deserialize(null, t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), got.count());
-        try testing.expect(t.name, t.want.eql(got));
+        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try testing.expect(t.name, t.want.eql(result.value));
     }
 }

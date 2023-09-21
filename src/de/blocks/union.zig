@@ -5,7 +5,6 @@ const ContentDeserializer = @import("../impls/deserializer/content.zig").Content
 const getAttributes = @import("../attributes.zig").getAttributes;
 const getty_deserialize = @import("../deserialize.zig").deserialize;
 const getty_error = @import("../error.zig").Error;
-const getty_free = @import("../free.zig").free;
 const Tag = @import("../../attributes.zig").Tag;
 const testing = @import("../testing.zig");
 const UnionAccessInterface = @import("../interfaces/union_access.zig").UnionAccess;
@@ -22,8 +21,8 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// An optional memory allocator.
-    ally: ?std.mem.Allocator,
+    /// A memory allocator.
+    ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -60,29 +59,8 @@ pub fn Visitor(
     return UnionVisitor(T);
 }
 
-/// Frees resources allocated by Getty during deserialization.
-pub fn free(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
-    /// A `getty.Deserializer` interface type.
-    comptime Deserializer: type,
-    /// A value to deallocate.
-    value: anytype,
-) void {
-    const info = @typeInfo(@TypeOf(value)).Union;
-
-    if (info.tag_type) |T| {
-        inline for (info.fields) |field| {
-            if (value == @field(T, field.name)) {
-                getty_free(ally, Deserializer, @field(value, field.name));
-                break;
-            }
-        }
-    }
-}
-
 fn deserializeExternallyTaggedUnion(
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     deserializer: anytype,
     visitor: anytype,
 ) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
@@ -91,7 +69,7 @@ fn deserializeExternallyTaggedUnion(
 
 // Untagged unions are only supported in self-describing formats.
 fn deserializeUntaggedUnion(
-    ally: ?std.mem.Allocator,
+    ally: std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,
@@ -101,30 +79,18 @@ fn deserializeUntaggedUnion(
     // This intermediate value allows us to repeatedly attempt deserialization
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
-    var content = try getty_deserialize(ally, Content, deserializer);
-    defer switch (content) {
-        .Int, .Map, .Seq, .String, .Some => {
-            // If content was successfully deserialized, and we're here, then
-            // that means allocator must've not been null.
-            std.debug.assert(ally != null);
-            getty_free(ally.?, @TypeOf(deserializer), content);
-        },
-        else => {},
-    };
+    var content_result = try getty_deserialize(ally, Content, deserializer);
+    defer content_result.value.deinit(ally);
 
     // Deserialize the Content value into a value of type T.
-    var cd = ContentDeserializer{ .content = content };
+    var cd = ContentDeserializer{ .content = content_result.value };
     const d = cd.deserializer();
 
     inline for (std.meta.fields(T)) |field| {
-        if (getty_deserialize(ally, field.type, d)) |value| {
-            errdefer if (ally) |a| {
-                getty_free(a, @TypeOf(d), value);
-            };
-
-            var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(value)){
+        if (getty_deserialize(ally, field.type, d)) |res| {
+            var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(res.value)){
                 .variant = field.name,
-                .payload = value,
+                .payload = res.value,
             };
             const ua = tuva.unionAccess();
             const va = tuva.variantAccess();
@@ -156,26 +122,20 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
         pub usingnamespace UnionAccessInterface(
             Self,
             getty_error,
-            .{
-                .variantSeed = variantSeed,
-                .isVariantAllocated = isAllocated,
-            },
+            .{ .variantSeed = variantSeed },
         );
 
         pub usingnamespace VariantAccessInterface(
             Self,
             getty_error,
-            .{
-                .payloadSeed = payloadSeed,
-                .isPayloadAllocated = isAllocated,
-            },
+            .{ .payloadSeed = payloadSeed },
         );
 
-        fn variantSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+        fn variantSeed(self: Self, _: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
             return self.variant;
         }
 
-        fn payloadSeed(self: Self, _: ?std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+        fn payloadSeed(self: Self, _: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
             // This check prevents deserializeUntaggedUnion from having
             // multiple return statements with different return types when its
             // inline loop is unrolled.
@@ -184,10 +144,6 @@ fn TransparentUnionVariantAccess(comptime Variant: type, comptime Payload: type)
             }
 
             return self.payload;
-        }
-
-        fn isAllocated(_: Self, comptime _: type) bool {
-            return false;
         }
     };
 }
@@ -573,25 +529,22 @@ test "deserialize - union, attributes (tag, untagged)" {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(std.testing.allocator, @This(), Want, t.tokens),
+                testing.deserializeErr(@This(), Want, t.tokens),
             );
         } else {
-            const got = try testing.deserialize(std.testing.allocator, t.name, @This(), Want, t.tokens);
+            var result = try testing.deserialize(t.name, @This(), Want, t.tokens);
+            defer result.deinit();
 
             if (@typeInfo(@TypeOf(t.want)).Union.tag_type) |_| {
                 switch (t.want) {
-                    .String => |want| {
-                        defer std.testing.allocator.free(got.String);
-                        try testing.expectEqualSlices(t.name, u8, want, got.String);
-                    },
-                    else => |want| try testing.expectEqual(t.name, want, got),
+                    .String => |want| try testing.expectEqualSlices(t.name, u8, want, result.value.String),
+                    else => |want| try testing.expectEqual(t.name, want, result.value),
                 }
             } else {
                 if (comptime std.mem.eql(u8, t.tag, "String")) {
-                    defer std.testing.allocator.free(got.String);
-                    try testing.expectEqualSlices(t.name, u8, got.want, got.String);
+                    try testing.expectEqualSlices(t.name, u8, result.value.want, result.value.String);
                 } else {
-                    try testing.expectEqual(t.name, t.want, @field(got, t.tag));
+                    try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));
                 }
             }
         }
@@ -610,13 +563,6 @@ test "deserialize - union, attributes (aliases)" {
 
         pub const @"getty.db" = block;
     };
-
-    const Bare = union {
-        foo: void,
-
-        pub const @"getty.db" = block;
-    };
-    _ = Bare;
 
     const tests = .{
         .{
@@ -663,15 +609,16 @@ fn runTest(t: anytype, comptime Want: type) !void {
         try testing.expectError(
             t.name,
             t.want_err,
-            testing.deserializeErr(std.testing.allocator, @This(), Want, t.tokens),
+            testing.deserializeErr(@This(), Want, t.tokens),
         );
     } else {
-        const got = try testing.deserialize(std.testing.allocator, t.name, @This(), Want, t.tokens);
+        var result = try testing.deserialize(t.name, @This(), Want, t.tokens);
+        defer result.deinit();
 
         if (t.tagged) {
-            try testing.expectEqual(t.name, t.want, got);
+            try testing.expectEqual(t.name, t.want, result.value);
         } else {
-            try testing.expectEqual(t.name, t.want, @field(got, t.tag));
+            try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));
         }
     }
 }

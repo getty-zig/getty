@@ -12,6 +12,6 @@ pub usingnamespace VisitorInterface(
 
 const Value = void;
 
-fn visitVoid(_: Visitor, _: ?std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!Value {
+fn visitVoid(_: Visitor, _: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!Value {
     return {};
 }

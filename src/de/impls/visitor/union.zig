@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const getAttributes = @import("../../attributes.zig").getAttributes;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
@@ -16,22 +15,12 @@ pub fn Visitor(comptime Union: type) type {
 
         const Value = Union;
 
-        fn visitUnion(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Value {
+        fn visitUnion(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const attributes = comptime getAttributes(Value, Deserializer);
 
             var variant = try ua.variant(ally, []const u8);
-            const variant_is_allocated = ua.isVariantAllocated(@TypeOf(variant));
-
-            if (variant_is_allocated and ally == null) {
-                return error.MissingAllocator;
-            }
-
-            defer if (variant_is_allocated) {
-                std.debug.assert(ally != null);
-                free(ally.?, Deserializer, variant);
-            };
 
             inline for (std.meta.fields(Value)) |f| {
                 const attrs = comptime attrs: {

@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const free = @import("../../free.zig").free;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime BufMap: type) type {
@@ -15,24 +14,12 @@ pub fn Visitor(comptime BufMap: type) type {
 
         const Value = BufMap;
 
-        fn visitMap(_: Self, ally: ?std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
-            if (ally == null) {
-                return error.MissingAllocator;
-            }
+        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+            var m = BufMap.init(ally);
+            errdefer m.deinit();
 
-            const a = ally.?;
-
-            var m = BufMap.init(a);
-            errdefer free(a, Deserializer, m);
-
-            while (try map.nextKey(a, []const u8)) |k| {
-                defer if (map.isKeyAllocated(@TypeOf(k))) {
-                    free(a, Deserializer, k);
-                };
-
-                const v = try map.nextValue(a, []const u8);
-                defer free(a, Deserializer, v);
-
+            while (try map.nextKey(ally, []const u8)) |k| {
+                const v = try map.nextValue(ally, []const u8);
                 try m.put(k, v);
             }
 
