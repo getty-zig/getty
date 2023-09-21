@@ -6,6 +6,9 @@ pub const de = struct {
     // Types
     ////////////////////////////////////////////////////////////////////////////////
 
+    /// Return type of `getty.deserialize`.
+    pub const Result = @import("deserialize.zig").Result;
+
     /// Deserialization and access interface for Getty Maps.
     pub const MapAccess = @import("interfaces/map_access.zig").MapAccess;
 
