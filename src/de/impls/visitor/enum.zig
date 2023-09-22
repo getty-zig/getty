@@ -89,7 +89,7 @@ pub fn Visitor(comptime Enum: type) type {
 
                 const name_cmp = std.mem.eql(u8, name, input);
                 const aliases_cmp = aliases_cmp: {
-                    var aliases = aliases: {
+                    var aliases = comptime aliases: {
                         if (attrs) |a| {
                             const aliased = @hasField(@TypeOf(a), "aliases");
                             if (aliased) break :aliases a.aliases;
