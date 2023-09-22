@@ -16,7 +16,10 @@ pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 // Namespaces
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Serialization-specific types and functions.
 pub const ser = @import("ser/ser.zig").ser;
+
+/// Deserialization-specific types and functions.
 pub const de = @import("de/de.zig").de;
 
 ////////////////////////////////////////////////////////////////////////////////
