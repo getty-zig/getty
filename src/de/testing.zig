@@ -115,7 +115,7 @@ pub fn deserializeErrWithLifetime(
 pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anytype) type {
     return struct {
         tokens: []const Token,
-        str_lifetime: StringLifetime,
+        str_lifetime: StringLifetime = .stack,
 
         const Self = @This();
 
