@@ -176,36 +176,35 @@
 <span class="line" id="L55"></span>
 <span class="line" id="L56">            <span class="tok-kw">const</span> v_info = <span class="tok-builtin">@typeInfo</span>(Value).Pointer;</span>
 <span class="line" id="L57"></span>
-<span class="line" id="L58">            <span class="tok-kw">switch</span> (lt) {</span>
-<span class="line" id="L59">                .heap =&gt; {</span>
-<span class="line" id="L60">                    <span class="tok-kw">const</span> i_info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(input)).Pointer;</span>
-<span class="line" id="L61"></span>
-<span class="line" id="L62">                    <span class="tok-kw">const</span> sentinels_match = (v_info.sentinel == <span class="tok-null">null</span>) == (i_info.sentinel == <span class="tok-null">null</span>);</span>
-<span class="line" id="L63">                    <span class="tok-kw">const</span> constness_match = v_info.is_const == i_info.is_const;</span>
-<span class="line" id="L64">                    <span class="tok-kw">const</span> constness_compat = v_info.is_const <span class="tok-kw">and</span> !i_info.is_const;</span>
-<span class="line" id="L65"></span>
-<span class="line" id="L66">                    <span class="tok-kw">if</span> (sentinels_match <span class="tok-kw">and</span> (constness_match <span class="tok-kw">or</span> constness_compat)) {</span>
-<span class="line" id="L67">                        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(Value, input);</span>
-<span class="line" id="L68">                    }</span>
-<span class="line" id="L69">                },</span>
-<span class="line" id="L70">                .stack, .managed =&gt; {},</span>
-<span class="line" id="L71">            }</span>
-<span class="line" id="L72"></span>
-<span class="line" id="L73">            <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> ally.alloc(<span class="tok-type">u8</span>, input.len + <span class="tok-builtin">@intFromBool</span>(v_info.sentinel != <span class="tok-null">null</span>));</span>
-<span class="line" id="L74">            std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
-<span class="line" id="L75"></span>
-<span class="line" id="L76">            <span class="tok-kw">if</span> (v_info.sentinel) |s| {</span>
-<span class="line" id="L77">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(s)).*;</span>
-<span class="line" id="L78">                output[input.len] = sentinel_char;</span>
-<span class="line" id="L79">                <span class="tok-kw">return</span> output[<span class="tok-number">0</span>..input.len :sentinel_char];</span>
-<span class="line" id="L80">            }</span>
-<span class="line" id="L81"></span>
-<span class="line" id="L82">            <span class="tok-kw">return</span> output;</span>
-<span class="line" id="L83">        }</span>
-<span class="line" id="L84"></span>
-<span class="line" id="L85">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
-<span class="line" id="L86">    };</span>
-<span class="line" id="L87">}</span>
-<span class="line" id="L88"></span>
+<span class="line" id="L58">            <span class="tok-kw">const</span> safe = <span class="tok-kw">comptime</span> safe: {</span>
+<span class="line" id="L59">                <span class="tok-kw">const</span> i_info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(input)).Pointer;</span>
+<span class="line" id="L60"></span>
+<span class="line" id="L61">                <span class="tok-kw">const</span> sentinels_match = (v_info.sentinel == <span class="tok-null">null</span>) == (i_info.sentinel == <span class="tok-null">null</span>);</span>
+<span class="line" id="L62">                <span class="tok-kw">const</span> constness_match = v_info.is_const == i_info.is_const;</span>
+<span class="line" id="L63">                <span class="tok-kw">const</span> constness_compat = v_info.is_const <span class="tok-kw">and</span> !i_info.is_const;</span>
+<span class="line" id="L64"></span>
+<span class="line" id="L65">                <span class="tok-kw">break</span> :safe sentinels_match <span class="tok-kw">and</span> (constness_match <span class="tok-kw">or</span> constness_compat);</span>
+<span class="line" id="L66">            };</span>
+<span class="line" id="L67"></span>
+<span class="line" id="L68">            <span class="tok-kw">if</span> (safe <span class="tok-kw">and</span> lt == .heap) {</span>
+<span class="line" id="L69">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(Value, input);</span>
+<span class="line" id="L70">            }</span>
+<span class="line" id="L71"></span>
+<span class="line" id="L72">            <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> ally.alloc(<span class="tok-type">u8</span>, input.len + <span class="tok-builtin">@intFromBool</span>(v_info.sentinel != <span class="tok-null">null</span>));</span>
+<span class="line" id="L73">            std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
+<span class="line" id="L74"></span>
+<span class="line" id="L75">            <span class="tok-kw">if</span> (v_info.sentinel) |s| {</span>
+<span class="line" id="L76">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(s)).*;</span>
+<span class="line" id="L77">                output[input.len] = sentinel_char;</span>
+<span class="line" id="L78">                <span class="tok-kw">return</span> output[<span class="tok-number">0</span>..input.len :sentinel_char];</span>
+<span class="line" id="L79">            }</span>
+<span class="line" id="L80"></span>
+<span class="line" id="L81">            <span class="tok-kw">return</span> output;</span>
+<span class="line" id="L82">        }</span>
+<span class="line" id="L83"></span>
+<span class="line" id="L84">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
+<span class="line" id="L85">    };</span>
+<span class="line" id="L86">}</span>
+<span class="line" id="L87"></span>
 </code></pre></body>
 </html>
