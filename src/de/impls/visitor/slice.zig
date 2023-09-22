@@ -59,11 +59,11 @@ pub fn Visitor(comptime Slice: type) type {
                 .heap => {
                     const i_info = @typeInfo(@TypeOf(input)).Pointer;
 
-                    const sentinels_match = (v_info.sentinel == null) == (i_info.sentinel == null);
-                    const constness_match = v_info.is_const == i_info.is_const;
-                    const constness_compat = v_info.is_const and !i_info.is_const;
+                    const sentinels_match = comptime (v_info.sentinel == null) == (i_info.sentinel == null);
+                    const constness_match = comptime v_info.is_const == i_info.is_const;
+                    const constness_compat = comptime v_info.is_const and !i_info.is_const;
 
-                    if (sentinels_match and (constness_match or constness_compat)) {
+                    if (comptime sentinels_match and (constness_match or constness_compat)) {
                         return @as(Value, input);
                     }
                 },
