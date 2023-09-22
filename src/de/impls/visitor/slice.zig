@@ -55,19 +55,18 @@ pub fn Visitor(comptime Slice: type) type {
 
             const v_info = @typeInfo(Value).Pointer;
 
-            switch (lt) {
-                .heap => {
-                    const i_info = @typeInfo(@TypeOf(input)).Pointer;
+            const safe = comptime safe: {
+                const i_info = @typeInfo(@TypeOf(input)).Pointer;
 
-                    const sentinels_match = (v_info.sentinel == null) == (i_info.sentinel == null);
-                    const constness_match = v_info.is_const == i_info.is_const;
-                    const constness_compat = v_info.is_const and !i_info.is_const;
+                const sentinels_match = (v_info.sentinel == null) == (i_info.sentinel == null);
+                const constness_match = v_info.is_const == i_info.is_const;
+                const constness_compat = v_info.is_const and !i_info.is_const;
 
-                    if (sentinels_match and (constness_match or constness_compat)) {
-                        return @as(Value, input);
-                    }
-                },
-                .stack, .managed => {},
+                break :safe sentinels_match and (constness_match or constness_compat);
+            };
+
+            if (safe and lt == .heap) {
+                return @as(Value, input);
             }
 
             const output = try ally.alloc(u8, input.len + @intFromBool(v_info.sentinel != null));
