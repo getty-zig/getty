@@ -57,6 +57,7 @@ pub fn deserialize(
     return result;
 }
 
+/// A managed, deserialized value.
 pub fn Result(comptime T: type) type {
     return struct {
         arena: *std.heap.ArenaAllocator,
