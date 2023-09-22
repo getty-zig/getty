@@ -8,7 +8,8 @@ const Ignored = @import("impls/seed/ignored.zig").Ignored;
 const t = @import("testing.zig");
 const Visitor = @import("interfaces/visitor.zig").Visitor;
 
-/// Deserializes data from a `getty.Deserializer` `d` into a value of type `T`.
+/// Deserializes data from the `getty.Deserializer` `d` into a value of type
+/// `T`.
 pub fn deserialize(
     /// A memory allocator.
     ally: std.mem.Allocator,

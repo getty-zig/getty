@@ -1,6 +1,6 @@
 const blocks = @import("blocks.zig");
 
-/// The default serialization tuple.
+/// Getty's default serialization tuple.
 pub const st = .{
     ////////////////////////////////////////////////////////////////////////////
     // Primitives

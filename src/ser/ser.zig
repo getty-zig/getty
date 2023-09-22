@@ -1,6 +1,6 @@
 //! Serialization framework.
 
-/// A namespace containing serialization-specific types and functions.
+/// Serialization-specific types and functions.
 pub const ser = struct {
     ////////////////////////////////////////////////////////////////////////////////
     // Types

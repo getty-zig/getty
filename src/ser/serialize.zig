@@ -7,7 +7,7 @@ const st = @import("tuples.zig").st;
 const has_block = @import("../block.zig").has_block;
 const t = @import("testing.zig");
 
-/// Serializes `v` using a `getty.Serializer` `s`.
+/// Serializes the value `v` using the `getty.Serializer` `s`.
 pub fn serialize(
     /// An optional memory allocator.
     ally: ?std.mem.Allocator,

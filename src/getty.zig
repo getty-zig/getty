@@ -4,10 +4,12 @@
 // Types
 ////////////////////////////////////////////////////////////////////////////////
 
-/// A `Serializer` serializes values from Getty's data model into a data format.
+/// A `Serializer` serializes values from Getty's data model into a data
+/// format.
 pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
-/// A `Deserializer` deserializes values from a data format into Getty's data model.
+/// A `Deserializer` deserializes values from a data format into Getty's data
+/// model.
 pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,10 +23,10 @@ pub const de = @import("de/de.zig").de;
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Serializes `v` using a `getty.Serializer` `s`.
+/// Serializes the value `v` using the `getty.Serializer` `s`.
 pub const serialize = @import("ser/serialize.zig").serialize;
 
-/// Deserializes data from a `getty.Deserializer` `d` into a value of type
+/// Deserializes data from the `getty.Deserializer` `d` into a value of type
 /// `T`.
 pub const deserialize = @import("de/deserialize.zig").deserialize;
 
@@ -32,10 +34,10 @@ pub const deserialize = @import("de/deserialize.zig").deserialize;
 // Values
 ////////////////////////////////////////////////////////////////////////////////
 
-/// The default serialization tuple.
+/// Getty's default serialization tuple.
 pub const st = @import("ser/tuples.zig").st;
 
-/// The default deserialization tuple.
+/// Getty's default deserialization tuple.
 pub const dt = @import("de/tuples.zig").dt;
 
 ////////////////////////////////////////////////////////////////////////////////

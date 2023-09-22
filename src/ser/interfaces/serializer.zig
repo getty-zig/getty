@@ -3,7 +3,8 @@ const std = @import("std");
 const err = @import("../error.zig");
 const default_st = @import("../tuples.zig").st;
 
-/// A `Serializer` serializes values from Getty's data model into a data format.
+/// A `Serializer` serializes values from Getty's data model into a data
+/// format.
 pub fn Serializer(
     /// An implementing type.
     comptime Impl: type,

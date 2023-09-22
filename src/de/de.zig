@@ -1,6 +1,6 @@
 //! Deserialization framework.
 
-/// A namespace containing deserialization-specific types and functions.
+/// Deserialization-specific types and functions.
 pub const de = struct {
     ////////////////////////////////////////////////////////////////////////////////
     // Types
