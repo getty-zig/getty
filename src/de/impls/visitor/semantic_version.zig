@@ -26,7 +26,7 @@ fn visitString(
 
     switch (lt) {
         .heap => {},
-        .stack, .owned => {
+        .stack, .managed => {
             if (ver.pre == null and ver.build == null) {
                 return ver;
             }

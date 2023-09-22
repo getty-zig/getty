@@ -26,7 +26,7 @@ fn visitString(
 
     switch (lt) {
         .heap => {},
-        .stack, .owned => {
+        .stack, .managed => {
             uri.scheme = try ally.dupe(u8, uri.scheme);
             uri.path = try ally.dupe(u8, uri.path);
 

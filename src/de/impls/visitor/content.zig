@@ -97,7 +97,7 @@ fn visitString(
 ) Deserializer.Err!Content {
     switch (lt) {
         .heap => return .{ .String = @as([]const u8, input) },
-        .stack, .owned => {
+        .stack, .managed => {
             const copy = try ally.alloc(u8, input.len);
             std.mem.copy(u8, copy, input);
             return .{ .String = copy };

@@ -67,7 +67,7 @@ pub fn Visitor(comptime Slice: type) type {
                         return @as(Value, input);
                     }
                 },
-                .stack, .owned => {},
+                .stack, .managed => {},
             }
 
             const output = try ally.alloc(u8, input.len + @intFromBool(v_info.sentinel != null));
