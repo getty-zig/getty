@@ -262,6 +262,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
                         .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
                         .Some => try expectEqual(@field(token, "Some"), @field(expected, "Some")),
                         .String => try expectEqualSlices(u8, @field(token, "String"), @field(expected, "String")),
+                        .StringZ => try expectEqualSlices(u8, @field(token, "StringZ"), @field(expected, "StringZ")),
                         .Struct => {
                             const tok = @field(token, "Struct");
                             const e = @field(expected, "Struct");
