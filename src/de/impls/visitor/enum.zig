@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const getAttributes = @import("../../attributes.zig").getAttributes;
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Enum: type) type {
@@ -18,7 +19,12 @@ pub fn Visitor(comptime Enum: type) type {
 
         const Value = Enum;
 
-        fn visitInt(_: Self, _: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitInt(
+            _: Self,
+            _: std.mem.Allocator,
+            comptime Deserializer: type,
+            input: anytype,
+        ) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -47,7 +53,13 @@ pub fn Visitor(comptime Enum: type) type {
             return e;
         }
 
-        fn visitString(_: Self, _: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitString(
+            _: Self,
+            _: std.mem.Allocator,
+            comptime Deserializer: type,
+            input: anytype,
+            _: StringLifetime,
+        ) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
