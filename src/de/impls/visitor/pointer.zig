@@ -3,6 +3,8 @@ const std = @import("std");
 const blocks = @import("../../blocks.zig");
 const find_db = @import("../../find.zig").find_db;
 const has_attributes = @import("../../../attributes.zig").has_attributes;
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
+
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Pointer: type) type {
@@ -103,12 +105,18 @@ pub fn Visitor(comptime Pointer: type) type {
             return value;
         }
 
-        fn visitString(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Value {
+        fn visitString(
+            _: Self,
+            ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            input: anytype,
+            lt: StringLifetime,
+        ) Deserializer.Err!Value {
             const value = try ally.create(Child);
             errdefer ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitString(ally, Deserializer, input);
+            value.* = try cv.visitor().visitString(ally, Deserializer, input, lt);
 
             return value;
         }
