@@ -7,6 +7,7 @@ const getty_deserialize = @import("../../deserialize.zig").deserialize;
 const getty_error = @import("../../error.zig").Error;
 const MapAccessInterface = @import("../../interfaces/map_access.zig").MapAccess;
 const SeqAccessInterface = @import("../../interfaces/seq_access.zig").SeqAccess;
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const UnionAccessInterface = @import("../../interfaces/union_access.zig").UnionAccess;
 const VariantAccessInterface = @import("../../interfaces/variant_access.zig").VariantAccess;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
@@ -79,7 +80,7 @@ pub const ContentDeserializer = struct {
                 const int = v.to(@TypeOf(visitor).Value) catch unreachable;
                 break :blk try visitor.visitInt(ally, De, int);
             },
-            .String => |v| try visitor.visitString(ally, De, v),
+            .String => |v| try visitor.visitString(ally, De, v, .managed),
             else => error.InvalidType,
         };
     }
@@ -141,7 +142,7 @@ pub const ContentDeserializer = struct {
 
     fn deserializeString(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
-            .String => |v| try visitor.visitString(ally, De, v),
+            .String => |v| try visitor.visitString(ally, De, v, .managed),
             else => error.InvalidType,
         };
     }

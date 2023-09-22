@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Ignored: type) type {
@@ -17,7 +18,7 @@ pub fn Visitor(comptime Ignored: type) type {
                 .visitNull = visitNothing,
                 .visitSeq = visitSeq,
                 .visitSome = visitSome,
-                .visitString = visitAny,
+                .visitString = visitString,
                 .visitUnion = visitUnion,
                 .visitVoid = visitNothing,
             },
@@ -50,6 +51,10 @@ pub fn Visitor(comptime Ignored: type) type {
         }
 
         fn visitSome(_: Self, _: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
+            return .{};
+        }
+
+        fn visitString(_: Self, _: std.mem.Allocator, comptime Deserializer: type, _: anytype, _: StringLifetime) Deserializer.Err!Value {
             return .{};
         }
 

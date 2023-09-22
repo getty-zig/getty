@@ -3,6 +3,7 @@ const std = @import("std");
 const Content = @import("../../content.zig").Content;
 const ContentMultiArrayList = @import("../../content.zig").ContentMultiArrayList;
 const getty_deserialize = @import("../../deserialize.zig").deserialize;
+const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 const Visitor = @This();
@@ -87,11 +88,21 @@ fn visitSome(_: @This(), ally: std.mem.Allocator, deserializer: anytype) @TypeOf
     } };
 }
 
-fn visitString(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
-    const output = try ally.alloc(u8, input.len);
-    std.mem.copy(u8, output, input);
-
-    return .{ .String = output };
+fn visitString(
+    _: @This(),
+    ally: std.mem.Allocator,
+    comptime Deserializer: type,
+    input: anytype,
+    lt: StringLifetime,
+) Deserializer.Err!Content {
+    switch (lt) {
+        .heap => return .{ .String = @as([]const u8, input) },
+        .stack, .managed => {
+            const copy = try ally.alloc(u8, input.len);
+            std.mem.copy(u8, copy, input);
+            return .{ .String = copy };
+        },
+    }
 }
 
 fn visitUnion(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Content {

@@ -8,6 +8,7 @@ const err = @import("error.zig");
 const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
 const Result = @import("deserialize.zig").Result;
 const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;
+const StringLifetime = @import("lifetime.zig").StringLifetime;
 const testing = @import("../testing.zig");
 const Token = testing.Token;
 const UnionAccessInterface = @import("interfaces/union_access.zig").UnionAccess;
@@ -66,9 +67,55 @@ pub fn deserializeErr(
     return result;
 }
 
+pub fn deserializeWithLifetime(
+    ally: ?std.mem.Allocator,
+    comptime test_case: ?[]const u8,
+    comptime block: type,
+    comptime Want: type,
+    input: []const Token,
+    lifetime: StringLifetime,
+) !Want {
+    return deserializeErrWithLifetime(ally, block, Want, input, lifetime) catch |e| {
+        if (test_case) |t| {
+            return testing.logErr(t, e);
+        }
+
+        return e;
+    };
+}
+
+pub fn deserializeErrWithLifetime(
+    ally: ?std.mem.Allocator,
+    comptime block: type,
+    comptime Want: type,
+    input: []const Token,
+    lifetime: StringLifetime,
+) !Want {
+    comptime {
+        std.debug.assert(@typeInfo(block) == .Struct);
+        std.debug.assert(std.meta.trait.hasFunctions(block, .{ "deserialize", "Visitor" }));
+    }
+
+    var d = DefaultDeserializer{
+        .tokens = input,
+        .str_lifetime = lifetime,
+    };
+    const deserializer = d.deserializer();
+
+    var v = block.Visitor(Want){};
+    const visitor = v.visitor();
+
+    const got = try block.deserialize(ally, Want, deserializer, visitor);
+
+    try std.testing.expect(d.remaining() == 0);
+
+    return got;
+}
+
 pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anytype) type {
     return struct {
         tokens: []const Token,
+        str_lifetime: StringLifetime = .stack,
 
         const Self = @This();
 
@@ -163,7 +210,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     .U32 => |v| try visitor.visitInt(ally, De, v),
                     .U64 => |v| try visitor.visitInt(ally, De, v),
                     .U128 => |v| try visitor.visitInt(ally, De, v),
-                    .String => |v| try visitor.visitString(ally, De, v),
+                    inline .String, .StringZ => |v| try visitor.visitString(ally, De, v, .stack),
                     else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
                 },
                 .Map => |v| blk: {
@@ -177,7 +224,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Null => try visitor.visitNull(ally, De),
                 .Some => try visitor.visitSome(ally, self.deserializer()),
-                .String => |v| try visitor.visitString(ally, De, v),
+                inline .String, .StringZ => |v| try visitor.visitString(ally, De, v, self.str_lifetime),
                 .Void => try visitor.visitVoid(ally, De),
                 .Seq => |v| blk: {
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };

@@ -44,25 +44,31 @@ test "deserialize - slice, string" {
 
     const tests = .{
         .{
-            .name = "no sentinel",
+            .name = "no sentinel (copied)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([]u8, &no_sentinel),
         },
         .{
-            .name = "no sentinel, const",
+            .name = "no sentinel, const (borrowed)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([]const u8, &no_sentinel),
         },
         .{
-            .name = "sentinel",
-            .tokens = &.{.{ .String = "abc" }},
-            .want = @as([:0]u8, &sentinel),
+            .name = "sentinel (input has a sentinel)",
+            .tokens = &.{.{ .StringZ = "abc" }},
+            .want = @as([:0]const u8, &sentinel),
         },
         .{
-            .name = "sentinel, const",
+            .name = "sentinel, const (input has no sentinel)",
             .tokens = &.{.{ .String = "abc" }},
             .want = @as([:0]const u8, &sentinel),
         },
+        .{
+            .name = "sentinel (input has no sentinel, const -> mut)",
+            .tokens = &.{.{ .String = "abc" }},
+            .want = @as([:0]u8, &sentinel),
+        },
+        // TODO: Add test case for []u8 input to []const u8 output with and without sentinel.
     };
 
     inline for (tests) |t| {
