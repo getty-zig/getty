@@ -24,6 +24,7 @@ pub const Token = union(enum) {
     F128: f128,
 
     String: []const u8,
+    StringZ: [:0]const u8,
 
     Null,
     Some,
