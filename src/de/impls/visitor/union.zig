@@ -49,7 +49,7 @@ pub fn Visitor(comptime Union: type) type {
                 // any of its aliases, deserialize the field.
                 const name_cmp = std.mem.eql(u8, name, variant);
                 const aliases_cmp = aliases_cmp: {
-                    var aliases = comptime aliases: {
+                    comptime var aliases = aliases: {
                         if (attrs) |a| {
                             const aliased = @hasField(@TypeOf(a), "aliases");
                             if (aliased) break :aliases a.aliases;
