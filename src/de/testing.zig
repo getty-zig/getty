@@ -210,7 +210,10 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     .U32 => |v| try visitor.visitInt(ally, De, v),
                     .U64 => |v| try visitor.visitInt(ally, De, v),
                     .U128 => |v| try visitor.visitInt(ally, De, v),
-                    inline .String, .StringZ => |v| try visitor.visitString(ally, De, v, .stack),
+                    inline .String, .StringZ => |v| blk: {
+                        var ret = try visitor.visitString(ally, De, v, .stack);
+                        break :blk ret.value;
+                    },
                     else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
                 },
                 .Map => |v| blk: {
@@ -224,7 +227,10 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Null => try visitor.visitNull(ally, De),
                 .Some => try visitor.visitSome(ally, self.deserializer()),
-                inline .String, .StringZ => |v| try visitor.visitString(ally, De, v, self.str_lifetime),
+                inline .String, .StringZ => |v| blk: {
+                    var ret = try visitor.visitString(ally, De, v, self.str_lifetime);
+                    break :blk ret.value;
+                },
                 .Void => try visitor.visitVoid(ally, De),
                 .Seq => |v| blk: {
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };

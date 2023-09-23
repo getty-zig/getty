@@ -80,7 +80,10 @@ pub const ContentDeserializer = struct {
                 const int = v.to(@TypeOf(visitor).Value) catch unreachable;
                 break :blk try visitor.visitInt(ally, De, int);
             },
-            .String => |v| try visitor.visitString(ally, De, v, .managed),
+            .String => |v| blk: {
+                var ret = try visitor.visitString(ally, De, v, .managed);
+                break :blk ret.value;
+            },
             else => error.InvalidType,
         };
     }
@@ -142,7 +145,10 @@ pub const ContentDeserializer = struct {
 
     fn deserializeString(self: Self, ally: std.mem.Allocator, visitor: anytype) getty_error!@TypeOf(visitor).Value {
         return switch (self.content) {
-            .String => |v| try visitor.visitString(ally, De, v, .managed),
+            .String => |v| blk: {
+                var ret = try visitor.visitString(ally, De, v, .managed);
+                break :blk ret.value;
+            },
             else => error.InvalidType,
         };
     }

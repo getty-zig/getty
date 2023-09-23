@@ -116,7 +116,7 @@ pub fn Visitor(
                 comptime Deserializer: type,
                 input: anytype,
                 lifetime: StringLifetime,
-            ) Deserializer.Err!T {
+            ) Deserializer.Err!VisitStringReturn(T) {
                 if (methods.visitString) |func| {
                     comptime {
                         if (!std.meta.trait.isZigString(@TypeOf(input))) {
@@ -151,6 +151,14 @@ pub fn Visitor(
         pub fn visitor(impl: Impl) @"getty.de.Visitor" {
             return .{ .impl = impl };
         }
+    };
+}
+
+/// The return value of a `getty.de.Visitor`'s `visitString` method.
+pub fn VisitStringReturn(comptime T: type) type {
+    return struct {
+        value: T,
+        used: bool,
     };
 }
 
@@ -215,10 +223,7 @@ fn VisitStringFn(comptime Impl: type, comptime T: type) type {
             comptime Deserializer: type,
             input: anytype,
             lifeitime: StringLifetime,
-        ) Deserializer.Err!struct {
-            value: T,
-            used: bool,
-        } {
+        ) Deserializer.Err!VisitStringReturn(T) {
             _ = lifeitime;
             _ = impl;
             _ = ally;

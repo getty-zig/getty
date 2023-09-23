@@ -2,6 +2,7 @@ const std = @import("std");
 
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Array: type) type {
     return struct {
@@ -54,7 +55,7 @@ pub fn Visitor(comptime Array: type) type {
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             if (Child != u8) {
                 return error.InvalidType;
             }
@@ -66,7 +67,7 @@ pub fn Visitor(comptime Array: type) type {
             }
 
             @memcpy(&arr, input);
-            return arr;
+            return .{ .value = arr, .used = false };
         }
 
         const Child = std.meta.Child(Value);

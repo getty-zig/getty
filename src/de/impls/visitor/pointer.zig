@@ -4,8 +4,8 @@ const blocks = @import("../../blocks.zig");
 const find_db = @import("../../find.zig").find_db;
 const has_attributes = @import("../../../attributes.zig").has_attributes;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
-
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Pointer: type) type {
     if (@typeInfo(Pointer) != .Pointer or @typeInfo(Pointer).Pointer.size != .One) {
@@ -111,14 +111,15 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             input: anytype,
             lt: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             const value = try ally.create(Child);
             errdefer ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitString(ally, Deserializer, input, lt);
+            const result = try cv.visitor().visitString(ally, Deserializer, input, lt);
 
-            return value;
+            value.* = result.value;
+            return .{ .value = value, .used = result.used };
         }
 
         fn visitUnion(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Value {

@@ -2,6 +2,7 @@ const std = @import("std");
 
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Ignored: type) type {
     return struct {
@@ -54,8 +55,8 @@ pub fn Visitor(comptime Ignored: type) type {
             return .{};
         }
 
-        fn visitString(_: Self, _: std.mem.Allocator, comptime Deserializer: type, _: anytype, _: StringLifetime) Deserializer.Err!Value {
-            return .{};
+        fn visitString(_: Self, _: std.mem.Allocator, comptime Deserializer: type, _: anytype, _: StringLifetime) Deserializer.Err!VisitStringReturn(Value) {
+            return .{ .value = .{}, .used = false };
         }
 
         fn visitUnion(_: Self, _: std.mem.Allocator, comptime Deserializer: type, _: anytype, _: anytype) Deserializer.Err!Value {

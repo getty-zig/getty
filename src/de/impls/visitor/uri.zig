@@ -2,6 +2,7 @@ const std = @import("std");
 
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 const Visitor = @This();
 
@@ -21,11 +22,12 @@ fn visitString(
     comptime Deserializer: type,
     input: anytype,
     lt: StringLifetime,
-) Deserializer.Err!Value {
+) Deserializer.Err!VisitStringReturn(Value) {
     var uri = std.Uri.parse(input) catch return error.InvalidValue;
 
+    var used = false;
     switch (lt) {
-        .heap => {},
+        .heap => used = true,
         .stack, .managed => {
             uri.scheme = try ally.dupe(u8, uri.scheme);
             uri.path = try ally.dupe(u8, uri.path);
@@ -48,5 +50,5 @@ fn visitString(
         },
     }
 
-    return uri;
+    return .{ .value = uri, .used = used };
 }

@@ -5,6 +5,7 @@ const ContentMultiArrayList = @import("../../content.zig").ContentMultiArrayList
 const getty_deserialize = @import("../../deserialize.zig").deserialize;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 const Visitor = @This();
 
@@ -94,13 +95,16 @@ fn visitString(
     comptime Deserializer: type,
     input: anytype,
     lt: StringLifetime,
-) Deserializer.Err!Content {
+) Deserializer.Err!VisitStringReturn(Content) {
     switch (lt) {
-        .heap => return .{ .String = @as([]const u8, input) },
+        .heap => return .{
+            .value = .{ .String = @as([]const u8, input) },
+            .used = true,
+        },
         .stack, .managed => {
             const copy = try ally.alloc(u8, input.len);
             std.mem.copy(u8, copy, input);
-            return .{ .String = copy };
+            return .{ .value = .{ .String = copy }, .used = false };
         },
     }
 }
