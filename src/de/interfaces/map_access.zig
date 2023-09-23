@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
+const ValueLifetime = @import("../lifetime.zig").ValueLifetime;
 
 /// Deserialization and access interface for Getty Maps.
 pub fn MapAccess(
@@ -25,7 +26,7 @@ pub fn MapAccess(
 
             pub const Err = E;
 
-            pub fn nextKeySeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+            pub fn nextKeySeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!NextKeyReturn(@TypeOf(seed).Value) {
                 if (methods.nextKeySeed) |func| {
                     return try func(self.impl, ally, seed);
                 }
@@ -41,7 +42,7 @@ pub fn MapAccess(
                 @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextKey(self: Self, ally: std.mem.Allocator, comptime Key: type) E!?Key {
+            pub fn nextKey(self: Self, ally: std.mem.Allocator, comptime Key: type) E!NextKeyReturn(Key) {
                 if (methods.nextKey) |func| {
                     return try func(self.impl, ally, Key);
                 }
@@ -71,22 +72,22 @@ pub fn MapAccess(
     };
 }
 
-fn NextKeySeedFn(comptime Impl: type, comptime E: type) type {
-    const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
-            _ = impl;
-            _ = ally;
-
-            unreachable;
-        }
+/// The return type of the `nextKeySeed` and `nextKey` methods of a
+/// `getty.de.MapAccess`.
+pub fn NextKeyReturn(comptime T: type) type {
+    return ?struct {
+        value: T,
+        lifetime: ValueLifetime,
     };
-
-    return ?@TypeOf(Lambda.func);
 }
 
-fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
+fn NextKeySeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+        fn func(
+            impl: Impl,
+            ally: std.mem.Allocator,
+            seed: anytype,
+        ) E!NextKeyReturn(@TypeOf(seed).Value) {
             _ = impl;
             _ = ally;
 
@@ -99,7 +100,11 @@ fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextKeyFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Key: type) E!?Key {
+        fn func(
+            impl: Impl,
+            ally: std.mem.Allocator,
+            comptime Key: type,
+        ) E!NextKeyReturn(Key) {
             _ = impl;
             _ = ally;
 
@@ -110,9 +115,30 @@ fn NextKeyFn(comptime Impl: type, comptime E: type) type {
     return @TypeOf(Lambda.func);
 }
 
+fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
+    const Lambda = struct {
+        fn func(
+            impl: Impl,
+            ally: std.mem.Allocator,
+            seed: anytype,
+        ) E!@TypeOf(seed).Value {
+            _ = impl;
+            _ = ally;
+
+            unreachable;
+        }
+    };
+
+    return ?@TypeOf(Lambda.func);
+}
+
 fn NextValueFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Value: type) E!Value {
+        fn func(
+            impl: Impl,
+            ally: std.mem.Allocator,
+            comptime Value: type,
+        ) E!Value {
             _ = impl;
             _ = ally;
 

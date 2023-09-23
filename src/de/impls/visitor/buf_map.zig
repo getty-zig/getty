@@ -18,8 +18,11 @@ pub fn Visitor(comptime BufMap: type) type {
             var m = BufMap.init(ally);
             errdefer m.deinit();
 
-            while (try map.nextKey(ally, []const u8)) |k| {
+            while (try map.nextKey(ally, []const u8)) |ret| {
+                var k = ret.value;
+                defer if (ret.lifetime == .heap) ally.free(k);
                 const v = try map.nextValue(ally, []const u8);
+
                 try m.put(k, v);
             }
 

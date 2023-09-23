@@ -55,7 +55,8 @@ fn visitMap(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, ma
     var map = ContentMultiArrayList{};
     errdefer map.deinit(ally);
 
-    while (try mapAccess.nextKey(ally, Content)) |key| {
+    while (try mapAccess.nextKey(ally, Content)) |ret| {
+        var key = ret.value;
         const value = try mapAccess.nextValue(ally, Content);
 
         try map.append(ally, .{

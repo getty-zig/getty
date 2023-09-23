@@ -22,7 +22,8 @@ pub fn Visitor(comptime HashMap: type) type {
             var hash_map = if (unmanaged) HashMap{} else HashMap.init(ally);
             errdefer if (unmanaged) hash_map.deinit(ally) else hash_map.deinit();
 
-            while (try map.nextKey(ally, K)) |key| {
+            while (try map.nextKey(ally, K)) |ret| {
+                var key = ret.value;
                 const value = try map.nextValue(ally, V);
                 try if (unmanaged) hash_map.put(ally, key, value) else hash_map.put(key, value);
             }

@@ -39,7 +39,10 @@ pub fn Visitor(comptime Struct: type) type {
                 break :blk false;
             };
 
-            key_loop: while (try map.nextKey(ally, []const u8)) |key| {
+            key_loop: while (try map.nextKey(ally, []const u8)) |ret| {
+                var key = ret.value;
+                defer if (ret.lifetime == .heap) ally.free(key);
+
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;
 

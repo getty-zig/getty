@@ -6,6 +6,7 @@ const DeserializerInterface = @import("../../interfaces/deserializer.zig").Deser
 const getty_deserialize = @import("../../deserialize.zig").deserialize;
 const getty_error = @import("../../error.zig").Error;
 const MapAccessInterface = @import("../../interfaces/map_access.zig").MapAccess;
+const NextKeyReturn = @import("../../interfaces/map_access.zig").NextKeyReturn;
 const SeqAccessInterface = @import("../../interfaces/seq_access.zig").SeqAccess;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const UnionAccessInterface = @import("../../interfaces/union_access.zig").UnionAccess;
@@ -222,17 +223,25 @@ const MapAccess = struct {
         },
     );
 
-    fn nextKeySeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) getty_error!?@TypeOf(seed).Value {
+    fn nextKeySeed(
+        self: *@This(),
+        ally: std.mem.Allocator,
+        seed: anytype,
+    ) getty_error!NextKeyReturn(@TypeOf(seed).Value) {
         if (self.pos >= self.deserializers.items(.key).len) {
             return null;
         }
 
         var d = self.deserializers.items(.key)[self.pos];
         var result = try seed.deserialize(ally, d.deserializer());
-        return result.value;
+        return .{ .value = result.value, .lifetime = .managed };
     }
 
-    fn nextValueSeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) getty_error!@TypeOf(seed).Value {
+    fn nextValueSeed(
+        self: *@This(),
+        ally: std.mem.Allocator,
+        seed: anytype,
+    ) getty_error!@TypeOf(seed).Value {
         var d = self.deserializers.items(.value)[self.pos];
         self.pos += 1;
 

@@ -5,6 +5,7 @@ const test_ally = std.testing.allocator;
 
 const DeserializerInterface = @import("interfaces/deserializer.zig").Deserializer;
 const err = @import("error.zig");
+const NextKeyReturn = @import("interfaces/map_access.zig").NextKeyReturn;
 const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
 const Result = @import("deserialize.zig").Result;
 const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;
@@ -327,7 +328,11 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
             );
 
-            fn nextKeySeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextKeySeed(
+                self: *Map,
+                ally: std.mem.Allocator,
+                seed: anytype,
+            ) Error!NextKeyReturn(@TypeOf(seed).Value) {
                 // All entries have been deserialized.
                 if (self.len.? == 0) {
                     return null;
@@ -342,7 +347,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 self.len.? -= @as(usize, 1);
 
                 var result = try seed.deserialize(ally, self.de.deserializer());
-                return result.value;
+                return .{ .value = result.value, .lifetime = .managed };
             }
 
             fn nextValueSeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {

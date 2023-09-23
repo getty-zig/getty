@@ -154,7 +154,7 @@ pub fn Visitor(
     };
 }
 
-/// The return value of a `getty.de.Visitor`'s `visitString` method.
+/// The return type of the `visitString` method of a `getty.de.Visitor`.
 pub fn VisitStringReturn(comptime T: type) type {
     return struct {
         value: T,

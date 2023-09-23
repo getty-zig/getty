@@ -7,9 +7,6 @@ pub const de = struct {
     /// A managed, deserialized value.
     pub const Result = @import("deserialize.zig").Result;
 
-    /// The return value of a `getty.de.Visitor`'s `visitString` method.
-    pub const VisitStringReturn = @import("interfaces/visitor.zig").VisitStringReturn;
-
     /// Deserialization and access interface for Getty Maps.
     pub const MapAccess = @import("interfaces/map_access.zig").MapAccess;
 
@@ -40,6 +37,13 @@ pub const de = struct {
 
     /// The lifetime of an access method's return value.
     pub const ValueLifetime = @import("lifetime.zig").ValueLifetime;
+
+    /// The return type of the `visitString` method of a `getty.de.Visitor`.
+    pub const VisitStringReturn = @import("interfaces/visitor.zig").VisitStringReturn;
+
+    /// The return type of the `nextKeySeed` and `nextKey` methods of a
+    /// `getty.de.MapAccess`.
+    pub const NextKeyReturn = @import("interfaces/map_access.zig").NextKeyReturn;
 
     ////////////////////////////////////////////////////////////////////////////////
     // Namespaces

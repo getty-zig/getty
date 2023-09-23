@@ -35,7 +35,19 @@ pub fn Visitor(comptime EnumMultiset: type) type {
             const K = std.meta.FieldType(Value, .counts).Key;
             const V = std.meta.FieldType(Value, .counts).Value;
 
-            while (try map.nextKey(ally, K)) |k| {
+            while (try map.nextKey(ally, K)) |ret| {
+                var k = ret.value;
+                defer {
+                    const k_info = @typeInfo(K);
+                    if (k_info == .Pointer and ret.lifetime == .heap) {
+                        switch (k_info.Pointer.size) {
+                            .One => ally.destroy(k),
+                            .Slice => ally.free(k),
+                            else => {},
+                        }
+                    }
+                }
+
                 const v = try map.nextValue(ally, V);
                 try multiset.add(k, v);
             }
