@@ -106,7 +106,7 @@ pub fn Visitor(comptime Struct: type) type {
 
                         const value = try map.nextValue(ally, field.type);
 
-                        // Do assign value to field if the "skip" attribute is
+                        // Do not assign value to field if the "skip" attribute is
                         // set.
                         //
                         // Note that we still deserialize a value and check its
