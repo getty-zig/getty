@@ -115,96 +115,101 @@
 <span class="line" id="L2"></span>
 <span class="line" id="L3"><span class="tok-kw">const</span> StringLifetime = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../lifetime.zig&quot;</span>).StringLifetime;</span>
 <span class="line" id="L4"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Slice: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L7">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L8">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L9"></span>
-<span class="line" id="L10">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
-<span class="line" id="L11">            Self,</span>
-<span class="line" id="L12">            Value,</span>
-<span class="line" id="L13">            .{</span>
-<span class="line" id="L14">                .visitSeq = visitSeq,</span>
-<span class="line" id="L15">                .visitString = visitString,</span>
-<span class="line" id="L16">            },</span>
-<span class="line" id="L17">        );</span>
-<span class="line" id="L18"></span>
-<span class="line" id="L19">        <span class="tok-kw">const</span> Value = Slice;</span>
-<span class="line" id="L20"></span>
-<span class="line" id="L21">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L22">            <span class="tok-kw">var</span> list = std.ArrayList(Child).init(ally);</span>
-<span class="line" id="L23">            <span class="tok-kw">errdefer</span> list.deinit();</span>
-<span class="line" id="L24"></span>
-<span class="line" id="L25">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seq.nextElement(ally, Child)) |elem| {</span>
-<span class="line" id="L26">                <span class="tok-kw">try</span> list.append(elem);</span>
-<span class="line" id="L27">            }</span>
-<span class="line" id="L28"></span>
-<span class="line" id="L29">            <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Value).Pointer.sentinel) |s| {</span>
-<span class="line" id="L30">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> Child, <span class="tok-builtin">@ptrCast</span>(s)).*;</span>
-<span class="line" id="L31">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> list.toOwnedSliceSentinel(sentinel_char);</span>
-<span class="line" id="L32">            }</span>
-<span class="line" id="L33"></span>
-<span class="line" id="L34">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> list.toOwnedSlice();</span>
-<span class="line" id="L35">        }</span>
-<span class="line" id="L36"></span>
-<span class="line" id="L37">        <span class="tok-comment">// input is only used directly if it the following are true:</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> VisitStringReturn = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).VisitStringReturn;</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Slice: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L8">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L9">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L10"></span>
+<span class="line" id="L11">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
+<span class="line" id="L12">            Self,</span>
+<span class="line" id="L13">            Value,</span>
+<span class="line" id="L14">            .{</span>
+<span class="line" id="L15">                .visitSeq = visitSeq,</span>
+<span class="line" id="L16">                .visitString = visitString,</span>
+<span class="line" id="L17">            },</span>
+<span class="line" id="L18">        );</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20">        <span class="tok-kw">const</span> Value = Slice;</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22">        <span class="tok-kw">fn</span> <span class="tok-fn">visitSeq</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, seq: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L23">            <span class="tok-kw">var</span> list = std.ArrayList(Child).init(ally);</span>
+<span class="line" id="L24">            <span class="tok-kw">errdefer</span> list.deinit();</span>
+<span class="line" id="L25"></span>
+<span class="line" id="L26">            <span class="tok-kw">while</span> (<span class="tok-kw">try</span> seq.nextElement(ally, Child)) |elem| {</span>
+<span class="line" id="L27">                <span class="tok-kw">try</span> list.append(elem);</span>
+<span class="line" id="L28">            }</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30">            <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Value).Pointer.sentinel) |s| {</span>
+<span class="line" id="L31">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> Child, <span class="tok-builtin">@ptrCast</span>(s)).*;</span>
+<span class="line" id="L32">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> list.toOwnedSliceSentinel(sentinel_char);</span>
+<span class="line" id="L33">            }</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> list.toOwnedSlice();</span>
+<span class="line" id="L36">        }</span>
+<span class="line" id="L37"></span>
+<span class="line" id="L38">        <span class="tok-comment">// input is only used directly if it the following are true:</span>
 </span>
-<span class="line" id="L38">        <span class="tok-comment">//</span>
+<span class="line" id="L39">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L39">        <span class="tok-comment">//   1. input is a Heap value.</span>
+<span class="line" id="L40">        <span class="tok-comment">//   1. input is a Heap value.</span>
 </span>
-<span class="line" id="L40">        <span class="tok-comment">//   2. The sentinel values of input and Value match.</span>
+<span class="line" id="L41">        <span class="tok-comment">//   2. The sentinel values of input and Value match.</span>
 </span>
-<span class="line" id="L41">        <span class="tok-comment">//   3. Either constness of input and Value match or are compatible</span>
+<span class="line" id="L42">        <span class="tok-comment">//   3. Either constness of input and Value match or are compatible</span>
 </span>
-<span class="line" id="L42">        <span class="tok-comment">//      (i.e., Value is const and input is not const).</span>
+<span class="line" id="L43">        <span class="tok-comment">//      (i.e., Value is const and input is not const).</span>
 </span>
-<span class="line" id="L43">        <span class="tok-comment">//</span>
+<span class="line" id="L44">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L44">        <span class="tok-comment">//  Otherwise, input is copied into a new slice.</span>
+<span class="line" id="L45">        <span class="tok-comment">//  Otherwise, input is copied into a new slice.</span>
 </span>
-<span class="line" id="L45">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(</span>
-<span class="line" id="L46">            _: Self,</span>
-<span class="line" id="L47">            ally: std.mem.Allocator,</span>
-<span class="line" id="L48">            <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
-<span class="line" id="L49">            input: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L50">            lt: StringLifetime,</span>
-<span class="line" id="L51">        ) Deserializer.Err!Value {</span>
-<span class="line" id="L52">            <span class="tok-kw">if</span> (Child != <span class="tok-type">u8</span>) {</span>
-<span class="line" id="L53">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
-<span class="line" id="L54">            }</span>
-<span class="line" id="L55"></span>
-<span class="line" id="L56">            <span class="tok-kw">const</span> v_info = <span class="tok-builtin">@typeInfo</span>(Value).Pointer;</span>
-<span class="line" id="L57"></span>
-<span class="line" id="L58">            <span class="tok-kw">const</span> safe = <span class="tok-kw">comptime</span> safe: {</span>
-<span class="line" id="L59">                <span class="tok-kw">const</span> i_info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(input)).Pointer;</span>
-<span class="line" id="L60"></span>
-<span class="line" id="L61">                <span class="tok-kw">const</span> sentinels_match = (v_info.sentinel == <span class="tok-null">null</span>) == (i_info.sentinel == <span class="tok-null">null</span>);</span>
-<span class="line" id="L62">                <span class="tok-kw">const</span> constness_match = v_info.is_const == i_info.is_const;</span>
-<span class="line" id="L63">                <span class="tok-kw">const</span> constness_compat = v_info.is_const <span class="tok-kw">and</span> !i_info.is_const;</span>
-<span class="line" id="L64"></span>
-<span class="line" id="L65">                <span class="tok-kw">break</span> :safe sentinels_match <span class="tok-kw">and</span> (constness_match <span class="tok-kw">or</span> constness_compat);</span>
-<span class="line" id="L66">            };</span>
-<span class="line" id="L67"></span>
-<span class="line" id="L68">            <span class="tok-kw">if</span> (safe <span class="tok-kw">and</span> lt == .heap) {</span>
-<span class="line" id="L69">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(Value, input);</span>
-<span class="line" id="L70">            }</span>
-<span class="line" id="L71"></span>
-<span class="line" id="L72">            <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> ally.alloc(<span class="tok-type">u8</span>, input.len + <span class="tok-builtin">@intFromBool</span>(v_info.sentinel != <span class="tok-null">null</span>));</span>
-<span class="line" id="L73">            std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
-<span class="line" id="L74"></span>
-<span class="line" id="L75">            <span class="tok-kw">if</span> (v_info.sentinel) |s| {</span>
-<span class="line" id="L76">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(s)).*;</span>
-<span class="line" id="L77">                output[input.len] = sentinel_char;</span>
-<span class="line" id="L78">                <span class="tok-kw">return</span> output[<span class="tok-number">0</span>..input.len :sentinel_char];</span>
-<span class="line" id="L79">            }</span>
-<span class="line" id="L80"></span>
-<span class="line" id="L81">            <span class="tok-kw">return</span> output;</span>
-<span class="line" id="L82">        }</span>
-<span class="line" id="L83"></span>
-<span class="line" id="L84">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
-<span class="line" id="L85">    };</span>
-<span class="line" id="L86">}</span>
-<span class="line" id="L87"></span>
+<span class="line" id="L46">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(</span>
+<span class="line" id="L47">            _: Self,</span>
+<span class="line" id="L48">            ally: std.mem.Allocator,</span>
+<span class="line" id="L49">            <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
+<span class="line" id="L50">            input: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L51">            lt: StringLifetime,</span>
+<span class="line" id="L52">        ) Deserializer.Err!VisitStringReturn(Value) {</span>
+<span class="line" id="L53">            <span class="tok-kw">if</span> (Child != <span class="tok-type">u8</span>) {</span>
+<span class="line" id="L54">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
+<span class="line" id="L55">            }</span>
+<span class="line" id="L56"></span>
+<span class="line" id="L57">            <span class="tok-kw">const</span> v_info = <span class="tok-builtin">@typeInfo</span>(Value).Pointer;</span>
+<span class="line" id="L58"></span>
+<span class="line" id="L59">            <span class="tok-kw">const</span> safe = <span class="tok-kw">comptime</span> safe: {</span>
+<span class="line" id="L60">                <span class="tok-kw">const</span> i_info = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(input)).Pointer;</span>
+<span class="line" id="L61"></span>
+<span class="line" id="L62">                <span class="tok-kw">const</span> sentinels_match = (v_info.sentinel == <span class="tok-null">null</span>) == (i_info.sentinel == <span class="tok-null">null</span>);</span>
+<span class="line" id="L63">                <span class="tok-kw">const</span> constness_match = v_info.is_const == i_info.is_const;</span>
+<span class="line" id="L64">                <span class="tok-kw">const</span> constness_compat = v_info.is_const <span class="tok-kw">and</span> !i_info.is_const;</span>
+<span class="line" id="L65"></span>
+<span class="line" id="L66">                <span class="tok-kw">break</span> :safe sentinels_match <span class="tok-kw">and</span> (constness_match <span class="tok-kw">or</span> constness_compat);</span>
+<span class="line" id="L67">            };</span>
+<span class="line" id="L68"></span>
+<span class="line" id="L69">            <span class="tok-kw">if</span> (safe <span class="tok-kw">and</span> lt == .heap) {</span>
+<span class="line" id="L70">                <span class="tok-kw">return</span> .{ .value = <span class="tok-builtin">@as</span>(Value, input), .used = <span class="tok-null">true</span> };</span>
+<span class="line" id="L71">            }</span>
+<span class="line" id="L72"></span>
+<span class="line" id="L73">            <span class="tok-kw">const</span> output = <span class="tok-kw">try</span> ally.alloc(<span class="tok-type">u8</span>, input.len + <span class="tok-builtin">@intFromBool</span>(v_info.sentinel != <span class="tok-null">null</span>));</span>
+<span class="line" id="L74">            std.mem.copy(<span class="tok-type">u8</span>, output, input);</span>
+<span class="line" id="L75"></span>
+<span class="line" id="L76">            <span class="tok-kw">if</span> (v_info.sentinel) |s| {</span>
+<span class="line" id="L77">                <span class="tok-kw">const</span> sentinel_char = <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(s)).*;</span>
+<span class="line" id="L78">                output[input.len] = sentinel_char;</span>
+<span class="line" id="L79"></span>
+<span class="line" id="L80">                <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L81">                    .value = output[<span class="tok-number">0</span>..input.len :sentinel_char],</span>
+<span class="line" id="L82">                    .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L83">                };</span>
+<span class="line" id="L84">            }</span>
+<span class="line" id="L85"></span>
+<span class="line" id="L86">            <span class="tok-kw">return</span> .{ .value = output, .used = <span class="tok-null">false</span> };</span>
+<span class="line" id="L87">        }</span>
+<span class="line" id="L88"></span>
+<span class="line" id="L89">        <span class="tok-kw">const</span> Child = std.meta.Child(Value);</span>
+<span class="line" id="L90">    };</span>
+<span class="line" id="L91">}</span>
+<span class="line" id="L92"></span>
 </code></pre></body>
 </html>

@@ -117,8 +117,8 @@
 <span class="line" id="L4"><span class="tok-kw">const</span> find_db = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../find.zig&quot;</span>).find_db;</span>
 <span class="line" id="L5"><span class="tok-kw">const</span> has_attributes = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../../attributes.zig&quot;</span>).has_attributes;</span>
 <span class="line" id="L6"><span class="tok-kw">const</span> StringLifetime = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../lifetime.zig&quot;</span>).StringLifetime;</span>
-<span class="line" id="L7"></span>
-<span class="line" id="L8"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L7"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L8"><span class="tok-kw">const</span> VisitStringReturn = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).VisitStringReturn;</span>
 <span class="line" id="L9"></span>
 <span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Pointer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L11">    <span class="tok-kw">if</span> (<span class="tok-builtin">@typeInfo</span>(Pointer) != .Pointer <span class="tok-kw">or</span> <span class="tok-builtin">@typeInfo</span>(Pointer).Pointer.size != .One) {</span>
@@ -224,53 +224,54 @@
 <span class="line" id="L111">            <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
 <span class="line" id="L112">            input: <span class="tok-kw">anytype</span>,</span>
 <span class="line" id="L113">            lt: StringLifetime,</span>
-<span class="line" id="L114">        ) Deserializer.Err!Value {</span>
+<span class="line" id="L114">        ) Deserializer.Err!VisitStringReturn(Value) {</span>
 <span class="line" id="L115">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
 <span class="line" id="L116">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
 <span class="line" id="L117"></span>
 <span class="line" id="L118">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L119">            value.* = <span class="tok-kw">try</span> cv.visitor().visitString(ally, Deserializer, input, lt);</span>
+<span class="line" id="L119">            <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> cv.visitor().visitString(ally, Deserializer, input, lt);</span>
 <span class="line" id="L120"></span>
-<span class="line" id="L121">            <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L122">        }</span>
-<span class="line" id="L123"></span>
-<span class="line" id="L124">        <span class="tok-kw">fn</span> <span class="tok-fn">visitUnion</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, ua: <span class="tok-kw">anytype</span>, va: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L125">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
-<span class="line" id="L126">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
-<span class="line" id="L127"></span>
-<span class="line" id="L128">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L129">            value.* = <span class="tok-kw">try</span> cv.visitor().visitUnion(ally, Deserializer, ua, va);</span>
-<span class="line" id="L130"></span>
-<span class="line" id="L131">            <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L132">        }</span>
-<span class="line" id="L133"></span>
-<span class="line" id="L134">        <span class="tok-kw">fn</span> <span class="tok-fn">visitVoid</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L135">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
-<span class="line" id="L136">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
-<span class="line" id="L137"></span>
-<span class="line" id="L138">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
-<span class="line" id="L139">            value.* = <span class="tok-kw">try</span> cv.visitor().visitVoid(ally, Deserializer);</span>
-<span class="line" id="L140"></span>
-<span class="line" id="L141">            <span class="tok-kw">return</span> value;</span>
-<span class="line" id="L142">        }</span>
-<span class="line" id="L143"></span>
-<span class="line" id="L144">        <span class="tok-kw">fn</span> <span class="tok-fn">ChildVisitor</span>(<span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L145">            <span class="tok-kw">const</span> child_db = <span class="tok-kw">comptime</span> find_db(Child, Deserializer);</span>
-<span class="line" id="L146"></span>
-<span class="line" id="L147">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> has_attributes(Child, child_db)) {</span>
-<span class="line" id="L148">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(Child)) {</span>
-<span class="line" id="L149">                    .Enum =&gt; blocks.Enum.Visitor(Child),</span>
-<span class="line" id="L150">                    .Struct =&gt; blocks.Struct.Visitor(Child),</span>
-<span class="line" id="L151">                    .Union =&gt; blocks.Union.Visitor(Child),</span>
-<span class="line" id="L152">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.</span>
+<span class="line" id="L121">            value.* = result.value;</span>
+<span class="line" id="L122">            <span class="tok-kw">return</span> .{ .value = value, .used = result.used };</span>
+<span class="line" id="L123">        }</span>
+<span class="line" id="L124"></span>
+<span class="line" id="L125">        <span class="tok-kw">fn</span> <span class="tok-fn">visitUnion</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, ua: <span class="tok-kw">anytype</span>, va: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L126">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L127">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L130">            value.* = <span class="tok-kw">try</span> cv.visitor().visitUnion(ally, Deserializer, ua, va);</span>
+<span class="line" id="L131"></span>
+<span class="line" id="L132">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L133">        }</span>
+<span class="line" id="L134"></span>
+<span class="line" id="L135">        <span class="tok-kw">fn</span> <span class="tok-fn">visitVoid</span>(_: Self, ally: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) Deserializer.Err!Value {</span>
+<span class="line" id="L136">            <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> ally.create(Child);</span>
+<span class="line" id="L137">            <span class="tok-kw">errdefer</span> ally.destroy(value);</span>
+<span class="line" id="L138"></span>
+<span class="line" id="L139">            <span class="tok-kw">var</span> cv = ChildVisitor(Deserializer){};</span>
+<span class="line" id="L140">            value.* = <span class="tok-kw">try</span> cv.visitor().visitVoid(ally, Deserializer);</span>
+<span class="line" id="L141"></span>
+<span class="line" id="L142">            <span class="tok-kw">return</span> value;</span>
+<span class="line" id="L143">        }</span>
+<span class="line" id="L144"></span>
+<span class="line" id="L145">        <span class="tok-kw">fn</span> <span class="tok-fn">ChildVisitor</span>(<span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L146">            <span class="tok-kw">const</span> child_db = <span class="tok-kw">comptime</span> find_db(Child, Deserializer);</span>
+<span class="line" id="L147"></span>
+<span class="line" id="L148">            <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> has_attributes(Child, child_db)) {</span>
+<span class="line" id="L149">                <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(Child)) {</span>
+<span class="line" id="L150">                    .Enum =&gt; blocks.Enum.Visitor(Child),</span>
+<span class="line" id="L151">                    .Struct =&gt; blocks.Struct.Visitor(Child),</span>
+<span class="line" id="L152">                    .Union =&gt; blocks.Union.Visitor(Child),</span>
+<span class="line" id="L153">                    <span class="tok-kw">else</span> =&gt; <span class="tok-kw">unreachable</span>, <span class="tok-comment">// UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.</span>
 </span>
-<span class="line" id="L153">                };</span>
-<span class="line" id="L154">            }</span>
-<span class="line" id="L155"></span>
-<span class="line" id="L156">            <span class="tok-kw">return</span> child_db.Visitor(Child);</span>
-<span class="line" id="L157">        }</span>
-<span class="line" id="L158">    };</span>
-<span class="line" id="L159">}</span>
-<span class="line" id="L160"></span>
+<span class="line" id="L154">                };</span>
+<span class="line" id="L155">            }</span>
+<span class="line" id="L156"></span>
+<span class="line" id="L157">            <span class="tok-kw">return</span> child_db.Visitor(Child);</span>
+<span class="line" id="L158">        }</span>
+<span class="line" id="L159">    };</span>
+<span class="line" id="L160">}</span>
+<span class="line" id="L161"></span>
 </code></pre></body>
 </html>
