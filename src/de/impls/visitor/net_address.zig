@@ -2,6 +2,7 @@ const std = @import("std");
 
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime NetAddress: type) type {
     return struct {
@@ -100,7 +101,9 @@ pub fn Visitor(comptime NetAddress: type) type {
             }
 
             const end = addr_port_len - port_len - 1; // The 1 is for the colon separator.
-            return std.net.Address.resolveIp(addr_port_str[0..end], port) catch error.InvalidValue;
+            var addr = std.net.Address.resolveIp(addr_port_str[0..end], port) catch return error.InvalidValue;
+
+            return .{ .value = addr, .used = false };
         }
 
         const Child = std.meta.Child(Value);

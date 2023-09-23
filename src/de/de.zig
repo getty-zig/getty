@@ -7,6 +7,9 @@ pub const de = struct {
     /// A managed, deserialized value.
     pub const Result = @import("deserialize.zig").Result;
 
+    /// The return value of a `getty.de.Visitor`'s `visitString` method.
+    pub const VisitStringReturn = @import("interfaces/visitor.zig").VisitStringReturn;
+
     /// Deserialization and access interface for Getty Maps.
     pub const MapAccess = @import("interfaces/map_access.zig").MapAccess;
 

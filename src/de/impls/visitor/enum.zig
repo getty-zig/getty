@@ -3,6 +3,7 @@ const std = @import("std");
 const getAttributes = @import("../../attributes.zig").getAttributes;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Enum: type) type {
     return struct {
@@ -59,7 +60,7 @@ pub fn Visitor(comptime Enum: type) type {
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -108,7 +109,8 @@ pub fn Visitor(comptime Enum: type) type {
                 };
 
                 if (name_cmp or aliases_cmp) {
-                    return std.meta.stringToEnum(Value, field.name) orelse error.UnknownVariant;
+                    var e = std.meta.stringToEnum(Value, field.name) orelse return error.UnknownVariant;
+                    return .{ .value = e, .used = false };
                 }
             }
 

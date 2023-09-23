@@ -2,6 +2,7 @@ const std = @import("std");
 
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
+const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;
 
 pub fn Visitor(comptime Slice: type) type {
     return struct {
@@ -48,7 +49,7 @@ pub fn Visitor(comptime Slice: type) type {
             comptime Deserializer: type,
             input: anytype,
             lt: StringLifetime,
-        ) Deserializer.Err!Value {
+        ) Deserializer.Err!VisitStringReturn(Value) {
             if (Child != u8) {
                 return error.InvalidType;
             }
@@ -66,7 +67,7 @@ pub fn Visitor(comptime Slice: type) type {
             };
 
             if (safe and lt == .heap) {
-                return @as(Value, input);
+                return .{ .value = @as(Value, input), .used = true };
             }
 
             const output = try ally.alloc(u8, input.len + @intFromBool(v_info.sentinel != null));
@@ -75,10 +76,14 @@ pub fn Visitor(comptime Slice: type) type {
             if (v_info.sentinel) |s| {
                 const sentinel_char = @as(*const u8, @ptrCast(s)).*;
                 output[input.len] = sentinel_char;
-                return output[0..input.len :sentinel_char];
+
+                return .{
+                    .value = output[0..input.len :sentinel_char],
+                    .used = false,
+                };
             }
 
-            return output;
+            return .{ .value = output, .used = false };
         }
 
         const Child = std.meta.Child(Value);
