@@ -215,7 +215,10 @@ fn VisitStringFn(comptime Impl: type, comptime T: type) type {
             comptime Deserializer: type,
             input: anytype,
             lifeitime: StringLifetime,
-        ) Deserializer.Err!T {
+        ) Deserializer.Err!struct {
+            value: T,
+            used: bool,
+        } {
             _ = lifeitime;
             _ = impl;
             _ = ally;
