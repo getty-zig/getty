@@ -40,6 +40,11 @@ pub fn Visitor(comptime Struct: type) type {
             };
 
             key_loop: while (try map.nextKey(ally, []const u8)) |key| {
+                defer switch (map.keyLifetime()) {
+                    .heap => ally.free(key),
+                    .managed => {},
+                };
+
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;
 
