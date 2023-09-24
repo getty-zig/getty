@@ -188,3 +188,48 @@ test "deserialize - integer" {
         }
     }
 }
+
+test "deserialize - integer (from string)" {
+    const tests = .{
+        .{
+            .name = "signed",
+            .tokens = &.{.{ .String = "127" }},
+            .want = @as(i8, std.math.maxInt(i8)),
+        },
+        .{
+            .name = "unsigned",
+            .tokens = &.{.{ .String = "255" }},
+            .want = @as(u8, std.math.maxInt(u8)),
+        },
+        .{
+            .name = "overflow",
+            .tokens = &.{.{ .String = "128" }},
+            .Want = i8,
+            .want_err = error.InvalidValue,
+        },
+        .{
+            .name = "underflow",
+            .tokens = &.{.{ .String = "-1" }},
+            .Want = u8,
+            .want_err = error.InvalidValue,
+        },
+    };
+
+    inline for (tests) |t| {
+        const Test = @TypeOf(t);
+        const Want = if (@hasField(Test, "Want")) t.Want else @TypeOf(t.want);
+
+        if (@hasField(Test, "want_err")) {
+            try testing.expectError(
+                t.name,
+                t.want_err,
+                testing.deserializeErr(Self, Want, t.tokens),
+            );
+        } else {
+            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            defer result.deinit();
+
+            try testing.expectEqual(t.name, t.want, result.value);
+        }
+    }
+}
