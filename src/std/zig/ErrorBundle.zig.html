@@ -542,7 +542,7 @@
 <span class="line" id="L421">        _ = <span class="tok-kw">try</span> addExtra(wip, rt);</span>
 <span class="line" id="L422">    }</span>
 <span class="line" id="L423"></span>
-<span class="line" id="L424">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addBundle</span>(wip: *Wip, other: ErrorBundle) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L424">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addBundleAsNotes</span>(wip: *Wip, other: ErrorBundle) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L425">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
 <span class="line" id="L426"></span>
 <span class="line" id="L427">        <span class="tok-kw">try</span> wip.string_bytes.ensureUnusedCapacity(gpa, other.string_bytes.len);</span>
@@ -558,83 +558,102 @@
 <span class="line" id="L436">        }</span>
 <span class="line" id="L437">    }</span>
 <span class="line" id="L438"></span>
-<span class="line" id="L439">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reserveNotes</span>(wip: *Wip, notes_len: <span class="tok-type">u32</span>) !<span class="tok-type">u32</span> {</span>
-<span class="line" id="L440">        <span class="tok-kw">try</span> wip.extra.ensureUnusedCapacity(wip.gpa, notes_len +</span>
-<span class="line" id="L441">            notes_len * <span class="tok-builtin">@typeInfo</span>(ErrorBundle.ErrorMessage).Struct.fields.len);</span>
-<span class="line" id="L442">        wip.extra.items.len += notes_len;</span>
-<span class="line" id="L443">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(wip.extra.items.len - notes_len));</span>
-<span class="line" id="L444">    }</span>
-<span class="line" id="L445"></span>
-<span class="line" id="L446">    <span class="tok-kw">fn</span> <span class="tok-fn">addOtherMessage</span>(wip: *Wip, other: ErrorBundle, msg_index: MessageIndex) !MessageIndex {</span>
-<span class="line" id="L447">        <span class="tok-kw">const</span> other_msg = other.getErrorMessage(msg_index);</span>
-<span class="line" id="L448">        <span class="tok-kw">const</span> src_loc = <span class="tok-kw">try</span> wip.addOtherSourceLocation(other, other_msg.src_loc);</span>
-<span class="line" id="L449">        <span class="tok-kw">const</span> msg = <span class="tok-kw">try</span> wip.addErrorMessage(.{</span>
-<span class="line" id="L450">            .msg = <span class="tok-kw">try</span> wip.addString(other.nullTerminatedString(other_msg.msg)),</span>
-<span class="line" id="L451">            .count = other_msg.count,</span>
-<span class="line" id="L452">            .src_loc = src_loc,</span>
-<span class="line" id="L453">            .notes_len = other_msg.notes_len,</span>
-<span class="line" id="L454">        });</span>
-<span class="line" id="L455">        <span class="tok-kw">const</span> notes_start = <span class="tok-kw">try</span> wip.reserveNotes(other_msg.notes_len);</span>
-<span class="line" id="L456">        <span class="tok-kw">for</span> (notes_start.., other.getNotes(msg_index)) |note, other_note| {</span>
-<span class="line" id="L457">            wip.extra.items[note] = <span class="tok-builtin">@intFromEnum</span>(<span class="tok-kw">try</span> wip.addOtherMessage(other, other_note));</span>
-<span class="line" id="L458">        }</span>
-<span class="line" id="L459">        <span class="tok-kw">return</span> msg;</span>
-<span class="line" id="L460">    }</span>
-<span class="line" id="L461"></span>
-<span class="line" id="L462">    <span class="tok-kw">fn</span> <span class="tok-fn">addOtherSourceLocation</span>(</span>
-<span class="line" id="L463">        wip: *Wip,</span>
-<span class="line" id="L464">        other: ErrorBundle,</span>
-<span class="line" id="L465">        index: SourceLocationIndex,</span>
-<span class="line" id="L466">    ) !SourceLocationIndex {</span>
-<span class="line" id="L467">        <span class="tok-kw">if</span> (index == .none) <span class="tok-kw">return</span> .none;</span>
-<span class="line" id="L468">        <span class="tok-kw">const</span> other_sl = other.getSourceLocation(index);</span>
-<span class="line" id="L469"></span>
-<span class="line" id="L470">        <span class="tok-kw">const</span> src_loc = <span class="tok-kw">try</span> wip.addSourceLocation(.{</span>
-<span class="line" id="L471">            .src_path = <span class="tok-kw">try</span> wip.addString(other.nullTerminatedString(other_sl.src_path)),</span>
-<span class="line" id="L472">            .line = other_sl.line,</span>
-<span class="line" id="L473">            .column = other_sl.column,</span>
-<span class="line" id="L474">            .span_start = other_sl.span_start,</span>
-<span class="line" id="L475">            .span_main = other_sl.span_main,</span>
-<span class="line" id="L476">            .span_end = other_sl.span_end,</span>
-<span class="line" id="L477">            .source_line = <span class="tok-kw">try</span> wip.addString(other.nullTerminatedString(other_sl.source_line)),</span>
-<span class="line" id="L478">            .reference_trace_len = other_sl.reference_trace_len,</span>
-<span class="line" id="L479">        });</span>
-<span class="line" id="L480"></span>
-<span class="line" id="L481">        <span class="tok-comment">// TODO: also add the reference trace</span>
+<span class="line" id="L439">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">addBundleAsRoots</span>(wip: *Wip, other: ErrorBundle) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L440">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
+<span class="line" id="L441"></span>
+<span class="line" id="L442">        <span class="tok-kw">try</span> wip.string_bytes.ensureUnusedCapacity(gpa, other.string_bytes.len);</span>
+<span class="line" id="L443">        <span class="tok-kw">try</span> wip.extra.ensureUnusedCapacity(gpa, other.extra.len);</span>
+<span class="line" id="L444"></span>
+<span class="line" id="L445">        <span class="tok-kw">const</span> other_list = other.getMessages();</span>
+<span class="line" id="L446"></span>
+<span class="line" id="L447">        <span class="tok-kw">try</span> wip.root_list.ensureUnusedCapacity(gpa, other_list.len);</span>
+<span class="line" id="L448">        <span class="tok-kw">for</span> (other_list) |other_msg| {</span>
+<span class="line" id="L449">            <span class="tok-comment">// The ensureUnusedCapacity calls above guarantees this.</span>
 </span>
-<span class="line" id="L482"></span>
-<span class="line" id="L483">        <span class="tok-kw">return</span> src_loc;</span>
-<span class="line" id="L484">    }</span>
-<span class="line" id="L485"></span>
-<span class="line" id="L486">    <span class="tok-kw">fn</span> <span class="tok-fn">addExtra</span>(wip: *Wip, extra: <span class="tok-kw">anytype</span>) Allocator.Error!<span class="tok-type">u32</span> {</span>
-<span class="line" id="L487">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
-<span class="line" id="L488">        <span class="tok-kw">const</span> fields = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(extra)).Struct.fields;</span>
-<span class="line" id="L489">        <span class="tok-kw">try</span> wip.extra.ensureUnusedCapacity(gpa, fields.len);</span>
-<span class="line" id="L490">        <span class="tok-kw">return</span> addExtraAssumeCapacity(wip, extra);</span>
-<span class="line" id="L491">    }</span>
-<span class="line" id="L492"></span>
-<span class="line" id="L493">    <span class="tok-kw">fn</span> <span class="tok-fn">addExtraAssumeCapacity</span>(wip: *Wip, extra: <span class="tok-kw">anytype</span>) <span class="tok-type">u32</span> {</span>
-<span class="line" id="L494">        <span class="tok-kw">const</span> fields = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(extra)).Struct.fields;</span>
-<span class="line" id="L495">        <span class="tok-kw">const</span> result = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(wip.extra.items.len));</span>
-<span class="line" id="L496">        wip.extra.items.len += fields.len;</span>
-<span class="line" id="L497">        setExtra(wip, result, extra);</span>
-<span class="line" id="L498">        <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L499">    }</span>
+<span class="line" id="L450">            wip.root_list.appendAssumeCapacity(wip.addOtherMessage(other, other_msg) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>);</span>
+<span class="line" id="L451">        }</span>
+<span class="line" id="L452">    }</span>
+<span class="line" id="L453"></span>
+<span class="line" id="L454">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reserveNotes</span>(wip: *Wip, notes_len: <span class="tok-type">u32</span>) !<span class="tok-type">u32</span> {</span>
+<span class="line" id="L455">        <span class="tok-kw">try</span> wip.extra.ensureUnusedCapacity(wip.gpa, notes_len +</span>
+<span class="line" id="L456">            notes_len * <span class="tok-builtin">@typeInfo</span>(ErrorBundle.ErrorMessage).Struct.fields.len);</span>
+<span class="line" id="L457">        wip.extra.items.len += notes_len;</span>
+<span class="line" id="L458">        <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(wip.extra.items.len - notes_len));</span>
+<span class="line" id="L459">    }</span>
+<span class="line" id="L460"></span>
+<span class="line" id="L461">    <span class="tok-kw">fn</span> <span class="tok-fn">addOtherMessage</span>(wip: *Wip, other: ErrorBundle, msg_index: MessageIndex) !MessageIndex {</span>
+<span class="line" id="L462">        <span class="tok-kw">const</span> other_msg = other.getErrorMessage(msg_index);</span>
+<span class="line" id="L463">        <span class="tok-kw">const</span> src_loc = <span class="tok-kw">try</span> wip.addOtherSourceLocation(other, other_msg.src_loc);</span>
+<span class="line" id="L464">        <span class="tok-kw">const</span> msg = <span class="tok-kw">try</span> wip.addErrorMessage(.{</span>
+<span class="line" id="L465">            .msg = <span class="tok-kw">try</span> wip.addString(other.nullTerminatedString(other_msg.msg)),</span>
+<span class="line" id="L466">            .count = other_msg.count,</span>
+<span class="line" id="L467">            .src_loc = src_loc,</span>
+<span class="line" id="L468">            .notes_len = other_msg.notes_len,</span>
+<span class="line" id="L469">        });</span>
+<span class="line" id="L470">        <span class="tok-kw">const</span> notes_start = <span class="tok-kw">try</span> wip.reserveNotes(other_msg.notes_len);</span>
+<span class="line" id="L471">        <span class="tok-kw">for</span> (notes_start.., other.getNotes(msg_index)) |note, other_note| {</span>
+<span class="line" id="L472">            wip.extra.items[note] = <span class="tok-builtin">@intFromEnum</span>(<span class="tok-kw">try</span> wip.addOtherMessage(other, other_note));</span>
+<span class="line" id="L473">        }</span>
+<span class="line" id="L474">        <span class="tok-kw">return</span> msg;</span>
+<span class="line" id="L475">    }</span>
+<span class="line" id="L476"></span>
+<span class="line" id="L477">    <span class="tok-kw">fn</span> <span class="tok-fn">addOtherSourceLocation</span>(</span>
+<span class="line" id="L478">        wip: *Wip,</span>
+<span class="line" id="L479">        other: ErrorBundle,</span>
+<span class="line" id="L480">        index: SourceLocationIndex,</span>
+<span class="line" id="L481">    ) !SourceLocationIndex {</span>
+<span class="line" id="L482">        <span class="tok-kw">if</span> (index == .none) <span class="tok-kw">return</span> .none;</span>
+<span class="line" id="L483">        <span class="tok-kw">const</span> other_sl = other.getSourceLocation(index);</span>
+<span class="line" id="L484"></span>
+<span class="line" id="L485">        <span class="tok-kw">const</span> src_loc = <span class="tok-kw">try</span> wip.addSourceLocation(.{</span>
+<span class="line" id="L486">            .src_path = <span class="tok-kw">try</span> wip.addString(other.nullTerminatedString(other_sl.src_path)),</span>
+<span class="line" id="L487">            .line = other_sl.line,</span>
+<span class="line" id="L488">            .column = other_sl.column,</span>
+<span class="line" id="L489">            .span_start = other_sl.span_start,</span>
+<span class="line" id="L490">            .span_main = other_sl.span_main,</span>
+<span class="line" id="L491">            .span_end = other_sl.span_end,</span>
+<span class="line" id="L492">            .source_line = <span class="tok-kw">if</span> (other_sl.source_line != <span class="tok-number">0</span>)</span>
+<span class="line" id="L493">                <span class="tok-kw">try</span> wip.addString(other.nullTerminatedString(other_sl.source_line))</span>
+<span class="line" id="L494">            <span class="tok-kw">else</span></span>
+<span class="line" id="L495">                <span class="tok-number">0</span>,</span>
+<span class="line" id="L496">            .reference_trace_len = other_sl.reference_trace_len,</span>
+<span class="line" id="L497">        });</span>
+<span class="line" id="L498"></span>
+<span class="line" id="L499">        <span class="tok-comment">// TODO: also add the reference trace</span>
+</span>
 <span class="line" id="L500"></span>
-<span class="line" id="L501">    <span class="tok-kw">fn</span> <span class="tok-fn">setExtra</span>(wip: *Wip, index: <span class="tok-type">usize</span>, extra: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L502">        <span class="tok-kw">const</span> fields = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(extra)).Struct.fields;</span>
-<span class="line" id="L503">        <span class="tok-kw">var</span> i = index;</span>
-<span class="line" id="L504">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
-<span class="line" id="L505">            wip.extra.items[i] = <span class="tok-kw">switch</span> (field.<span class="tok-type">type</span>) {</span>
-<span class="line" id="L506">                <span class="tok-type">u32</span> =&gt; <span class="tok-builtin">@field</span>(extra, field.name),</span>
-<span class="line" id="L507">                MessageIndex =&gt; <span class="tok-builtin">@intFromEnum</span>(<span class="tok-builtin">@field</span>(extra, field.name)),</span>
-<span class="line" id="L508">                SourceLocationIndex =&gt; <span class="tok-builtin">@intFromEnum</span>(<span class="tok-builtin">@field</span>(extra, field.name)),</span>
-<span class="line" id="L509">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;bad field type&quot;</span>),</span>
-<span class="line" id="L510">            };</span>
-<span class="line" id="L511">            i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L512">        }</span>
-<span class="line" id="L513">    }</span>
-<span class="line" id="L514">};</span>
-<span class="line" id="L515"></span>
+<span class="line" id="L501">        <span class="tok-kw">return</span> src_loc;</span>
+<span class="line" id="L502">    }</span>
+<span class="line" id="L503"></span>
+<span class="line" id="L504">    <span class="tok-kw">fn</span> <span class="tok-fn">addExtra</span>(wip: *Wip, extra: <span class="tok-kw">anytype</span>) Allocator.Error!<span class="tok-type">u32</span> {</span>
+<span class="line" id="L505">        <span class="tok-kw">const</span> gpa = wip.gpa;</span>
+<span class="line" id="L506">        <span class="tok-kw">const</span> fields = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(extra)).Struct.fields;</span>
+<span class="line" id="L507">        <span class="tok-kw">try</span> wip.extra.ensureUnusedCapacity(gpa, fields.len);</span>
+<span class="line" id="L508">        <span class="tok-kw">return</span> addExtraAssumeCapacity(wip, extra);</span>
+<span class="line" id="L509">    }</span>
+<span class="line" id="L510"></span>
+<span class="line" id="L511">    <span class="tok-kw">fn</span> <span class="tok-fn">addExtraAssumeCapacity</span>(wip: *Wip, extra: <span class="tok-kw">anytype</span>) <span class="tok-type">u32</span> {</span>
+<span class="line" id="L512">        <span class="tok-kw">const</span> fields = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(extra)).Struct.fields;</span>
+<span class="line" id="L513">        <span class="tok-kw">const</span> result = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-builtin">@intCast</span>(wip.extra.items.len));</span>
+<span class="line" id="L514">        wip.extra.items.len += fields.len;</span>
+<span class="line" id="L515">        setExtra(wip, result, extra);</span>
+<span class="line" id="L516">        <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L517">    }</span>
+<span class="line" id="L518"></span>
+<span class="line" id="L519">    <span class="tok-kw">fn</span> <span class="tok-fn">setExtra</span>(wip: *Wip, index: <span class="tok-type">usize</span>, extra: <span class="tok-kw">anytype</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L520">        <span class="tok-kw">const</span> fields = <span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(extra)).Struct.fields;</span>
+<span class="line" id="L521">        <span class="tok-kw">var</span> i = index;</span>
+<span class="line" id="L522">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
+<span class="line" id="L523">            wip.extra.items[i] = <span class="tok-kw">switch</span> (field.<span class="tok-type">type</span>) {</span>
+<span class="line" id="L524">                <span class="tok-type">u32</span> =&gt; <span class="tok-builtin">@field</span>(extra, field.name),</span>
+<span class="line" id="L525">                MessageIndex =&gt; <span class="tok-builtin">@intFromEnum</span>(<span class="tok-builtin">@field</span>(extra, field.name)),</span>
+<span class="line" id="L526">                SourceLocationIndex =&gt; <span class="tok-builtin">@intFromEnum</span>(<span class="tok-builtin">@field</span>(extra, field.name)),</span>
+<span class="line" id="L527">                <span class="tok-kw">else</span> =&gt; <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;bad field type&quot;</span>),</span>
+<span class="line" id="L528">            };</span>
+<span class="line" id="L529">            i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L530">        }</span>
+<span class="line" id="L531">    }</span>
+<span class="line" id="L532">};</span>
+<span class="line" id="L533"></span>
 </code></pre></body>
 </html>

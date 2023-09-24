@@ -113,25 +113,52 @@
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L4"></span>
-<span class="line" id="L5"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Int: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L6">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L7">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L8"></span>
-<span class="line" id="L9">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
-<span class="line" id="L10">            Self,</span>
-<span class="line" id="L11">            Value,</span>
-<span class="line" id="L12">            .{ .visitInt = visitInt },</span>
-<span class="line" id="L13">        );</span>
-<span class="line" id="L14"></span>
-<span class="line" id="L15">        <span class="tok-kw">const</span> Value = Int;</span>
-<span class="line" id="L16"></span>
-<span class="line" id="L17">        <span class="tok-kw">fn</span> <span class="tok-fn">visitInt</span>(_: Self, _: std.mem.Allocator, <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>, input: <span class="tok-kw">anytype</span>) Deserializer.Err!Value {</span>
-<span class="line" id="L18">            <span class="tok-kw">return</span> std.math.cast(Value, input) <span class="tok-kw">orelse</span> <span class="tok-kw">error</span>.Overflow;</span>
-<span class="line" id="L19">        }</span>
-<span class="line" id="L20">    };</span>
-<span class="line" id="L21">}</span>
-<span class="line" id="L22"></span>
+<span class="line" id="L3"><span class="tok-kw">const</span> StringLifetime = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../lifetime.zig&quot;</span>).StringLifetime;</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> VisitorInterface = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> VisitStringReturn = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../../interfaces/visitor.zig&quot;</span>).VisitStringReturn;</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(<span class="tok-kw">comptime</span> Int: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L8">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L9">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L10"></span>
+<span class="line" id="L11">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VisitorInterface(</span>
+<span class="line" id="L12">            Self,</span>
+<span class="line" id="L13">            Value,</span>
+<span class="line" id="L14">            .{</span>
+<span class="line" id="L15">                .visitInt = visitInt,</span>
+<span class="line" id="L16">                .visitString = visitString,</span>
+<span class="line" id="L17">            },</span>
+<span class="line" id="L18">        );</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20">        <span class="tok-kw">const</span> Value = Int;</span>
+<span class="line" id="L21"></span>
+<span class="line" id="L22">        <span class="tok-kw">fn</span> <span class="tok-fn">visitInt</span>(</span>
+<span class="line" id="L23">            _: Self,</span>
+<span class="line" id="L24">            _: std.mem.Allocator,</span>
+<span class="line" id="L25">            <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
+<span class="line" id="L26">            input: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L27">        ) Deserializer.Err!Value {</span>
+<span class="line" id="L28">            <span class="tok-kw">return</span> std.math.cast(Value, input) <span class="tok-kw">orelse</span> <span class="tok-kw">error</span>.Overflow;</span>
+<span class="line" id="L29">        }</span>
+<span class="line" id="L30"></span>
+<span class="line" id="L31">        <span class="tok-kw">fn</span> <span class="tok-fn">visitString</span>(</span>
+<span class="line" id="L32">            _: Self,</span>
+<span class="line" id="L33">            ally: std.mem.Allocator,</span>
+<span class="line" id="L34">            <span class="tok-kw">comptime</span> Deserializer: <span class="tok-type">type</span>,</span>
+<span class="line" id="L35">            input: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L36">            lt: StringLifetime,</span>
+<span class="line" id="L37">        ) Deserializer.Err!VisitStringReturn(Value) {</span>
+<span class="line" id="L38">            <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (lt == .heap) ally.free(input);</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40">            <span class="tok-kw">var</span> int = std.fmt.parseInt(Value, input, <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidValue;</span>
+<span class="line" id="L41"></span>
+<span class="line" id="L42">            <span class="tok-kw">return</span> .{</span>
+<span class="line" id="L43">                .value = int,</span>
+<span class="line" id="L44">                .used = <span class="tok-null">false</span>,</span>
+<span class="line" id="L45">            };</span>
+<span class="line" id="L46">        }</span>
+<span class="line" id="L47">    };</span>
+<span class="line" id="L48">}</span>
+<span class="line" id="L49"></span>
 </code></pre></body>
 </html>

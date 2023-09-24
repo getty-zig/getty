@@ -302,5 +302,50 @@
 <span class="line" id="L189">    }</span>
 <span class="line" id="L190">}</span>
 <span class="line" id="L191"></span>
+<span class="line" id="L192"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - integer (from string)&quot;</span> {</span>
+<span class="line" id="L193">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L194">        .{</span>
+<span class="line" id="L195">            .name = <span class="tok-str">&quot;signed&quot;</span>,</span>
+<span class="line" id="L196">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;127&quot;</span> }},</span>
+<span class="line" id="L197">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
+<span class="line" id="L198">        },</span>
+<span class="line" id="L199">        .{</span>
+<span class="line" id="L200">            .name = <span class="tok-str">&quot;unsigned&quot;</span>,</span>
+<span class="line" id="L201">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;255&quot;</span> }},</span>
+<span class="line" id="L202">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
+<span class="line" id="L203">        },</span>
+<span class="line" id="L204">        .{</span>
+<span class="line" id="L205">            .name = <span class="tok-str">&quot;overflow&quot;</span>,</span>
+<span class="line" id="L206">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;128&quot;</span> }},</span>
+<span class="line" id="L207">            .Want = <span class="tok-type">i8</span>,</span>
+<span class="line" id="L208">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
+<span class="line" id="L209">        },</span>
+<span class="line" id="L210">        .{</span>
+<span class="line" id="L211">            .name = <span class="tok-str">&quot;underflow&quot;</span>,</span>
+<span class="line" id="L212">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;-1&quot;</span> }},</span>
+<span class="line" id="L213">            .Want = <span class="tok-type">u8</span>,</span>
+<span class="line" id="L214">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
+<span class="line" id="L215">        },</span>
+<span class="line" id="L216">    };</span>
+<span class="line" id="L217"></span>
+<span class="line" id="L218">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L219">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L220">        <span class="tok-kw">const</span> Want = <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;Want&quot;</span>)) t.Want <span class="tok-kw">else</span> <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L221"></span>
+<span class="line" id="L222">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L223">            <span class="tok-kw">try</span> testing.expectError(</span>
+<span class="line" id="L224">                t.name,</span>
+<span class="line" id="L225">                t.want_err,</span>
+<span class="line" id="L226">                testing.deserializeErr(Self, Want, t.tokens),</span>
+<span class="line" id="L227">            );</span>
+<span class="line" id="L228">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L229">            <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L230">            <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L231"></span>
+<span class="line" id="L232">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
+<span class="line" id="L233">        }</span>
+<span class="line" id="L234">    }</span>
+<span class="line" id="L235">}</span>
+<span class="line" id="L236"></span>
 </code></pre></body>
 </html>
