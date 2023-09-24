@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const DefaultSeed = @import("../impls/seed/default.zig").DefaultSeed;
+const ValueLifetime = @import("../lifetime.zig").ValueLifetime;
 
 /// Deserialization and access interface for Getty Maps.
 pub fn MapAccess(
@@ -14,6 +15,7 @@ pub fn MapAccess(
         nextValueSeed: NextValueSeedFn(Impl, E) = null,
         nextKey: ?NextKeyFn(Impl, E) = null,
         nextValue: ?NextValueFn(Impl, E) = null,
+        keyLifetime: KeyLifetimeFn(Impl) = null,
     },
 ) type {
     return struct {
@@ -61,6 +63,14 @@ pub fn MapAccess(
                 const ds = seed.seed();
 
                 return try self.nextValueSeed(ally, ds);
+            }
+
+            pub fn keyLifetime(self: Self) ValueLifetime {
+                if (methods.keyLifetime) |func| {
+                    return func(self.impl);
+                }
+
+                @compileError("keyLifetime is not implemented by type: " ++ @typeName(Impl));
             }
         };
 
@@ -121,4 +131,8 @@ fn NextValueFn(comptime Impl: type, comptime E: type) type {
     };
 
     return @TypeOf(Lambda.func);
+}
+
+fn KeyLifetimeFn(comptime Impl: type) type {
+    return ?fn (impl: Impl) ValueLifetime;
 }

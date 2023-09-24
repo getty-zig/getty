@@ -9,6 +9,7 @@ const MapAccessInterface = @import("interfaces/map_access.zig").MapAccess;
 const Result = @import("deserialize.zig").Result;
 const SeqAccessInterface = @import("interfaces/seq_access.zig").SeqAccess;
 const StringLifetime = @import("lifetime.zig").StringLifetime;
+const ValueLifetime = @import("lifetime.zig").ValueLifetime;
 const testing = @import("../testing.zig");
 const Token = testing.Token;
 const UnionAccessInterface = @import("interfaces/union_access.zig").UnionAccess;
@@ -324,6 +325,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .{
                     .nextKeySeed = nextKeySeed,
                     .nextValueSeed = nextValueSeed,
+                    .keyLifetime = keyLifetime,
                 },
             );
 
@@ -348,6 +350,10 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             fn nextValueSeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 var result = try seed.deserialize(ally, self.de.deserializer());
                 return result.value;
+            }
+
+            fn keyLifetime(_: *Map) ValueLifetime {
+                return .managed;
             }
         };
 
