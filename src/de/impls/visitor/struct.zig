@@ -44,6 +44,10 @@ pub fn Visitor(comptime Struct: type) type {
                 var found = false;
 
                 inline for (fields, 0..) |field, i| {
+                    if (field.is_comptime) {
+                        @compileError("TODO: DESERIALIZATION OF COMPTIME FIELD");
+                    }
+
                     const attrs = comptime attrs: {
                         if (attributes) |attrs| {
                             if (@hasField(@TypeOf(attrs), field.name)) {
@@ -94,10 +98,6 @@ pub fn Visitor(comptime Struct: type) type {
                     };
 
                     if (name_cmp or aliases_cmp) {
-                        if (field.is_comptime) {
-                            @compileError("TODO: DESERIALIZATION OF COMPTIME FIELD");
-                        }
-
                         // If field has already been deserialized, return an
                         // error.
                         if (seen[i]) {
