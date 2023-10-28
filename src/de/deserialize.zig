@@ -21,40 +21,39 @@ pub fn deserialize(
     const db = comptime find_db(T, @TypeOf(d));
 
     var result = Result(T){
-        .arena = arena: {
-            var arena = try ally.create(std.heap.ArenaAllocator);
-            arena.* = std.heap.ArenaAllocator.init(ally);
-
-            break :arena arena;
-        },
         .value = undefined,
+        .arena = arena: {
+            var a = try ally.create(std.heap.ArenaAllocator);
+            a.* = std.heap.ArenaAllocator.init(ally);
+            break :arena a;
+        },
     };
+    const result_ally = result.arena.allocator();
     errdefer result.deinit();
-
-    const arena_ally = result.arena.allocator();
 
     if (comptime attributes.has_attributes(T, db)) {
         switch (@typeInfo(T)) {
-            .Enum => {
-                var v = blocks.Enum.Visitor(T){};
-                result.value = try blocks.Enum.deserialize(arena_ally, T, d, v.visitor());
-            },
             .Struct => {
                 var v = blocks.Struct.Visitor(T){};
-                result.value = try blocks.Struct.deserialize(arena_ally, T, d, v.visitor());
+                result.value = try blocks.Struct.deserialize(result_ally, ally, T, d, v.visitor());
             },
             .Union => {
                 var v = blocks.Union.Visitor(T){};
-                result.value = try blocks.Union.deserialize(arena_ally, T, d, v.visitor());
+                result.value = try blocks.Union.deserialize(result_ally, ally, T, d, v.visitor());
             },
-            else => unreachable, // UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.
+            .Enum => {
+                var v = blocks.Enum.Visitor(T){};
+                result.value = try blocks.Enum.deserialize(result_ally, ally, T, d, v.visitor());
+            },
+            // UNREACHABLE: has_attributes guarantees that T is an enum, struct
+            // or union.
+            else => unreachable,
         }
-
-        return result;
+    } else {
+        var v = db.Visitor(T){};
+        result.value = try db.deserialize(result_ally, ally, T, d, v.visitor());
     }
 
-    var v = db.Visitor(T){};
-    result.value = try db.deserialize(arena_ally, T, d, v.visitor());
     return result;
 }
 
