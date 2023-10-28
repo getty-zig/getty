@@ -21,8 +21,12 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
+    /// A memory allocator for heap values that are part of the returned
+    /// deserialized value.
+    result_ally: std.mem.Allocator,
+    /// A memory allocator for heap values that are not part of the returned
+    /// deserialized value.
+    scratch_ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
@@ -60,7 +64,8 @@ pub fn Visitor(
 }
 
 fn deserializeExternallyTaggedUnion(
-    ally: std.mem.Allocator,
+    result_ally: std.mem.Allocator,
+    scratch_ally: std.mem.Allocator,
     deserializer: anytype,
     visitor: anytype,
 ) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
@@ -69,7 +74,8 @@ fn deserializeExternallyTaggedUnion(
 
 // Untagged unions are only supported in self-describing formats.
 fn deserializeUntaggedUnion(
-    ally: std.mem.Allocator,
+    result_ally: std.mem.Allocator,
+    scratch_ally: std.mem.Allocator,
     comptime T: type,
     deserializer: anytype,
     visitor: anytype,

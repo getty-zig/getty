@@ -15,8 +15,12 @@ pub fn is(
 
 /// Specifies the deserialization process for types relevant to this block.
 pub fn deserialize(
-    /// A memory allocator.
-    ally: std.mem.Allocator,
+    /// A memory allocator for heap values that are part of the returned
+    /// deserialized value.
+    result_ally: std.mem.Allocator,
+    /// A memory allocator for heap values that are not part of the returned
+    /// deserialized value.
+    scratch_ally: std.mem.Allocator,
     /// The type being deserialized into.
     comptime T: type,
     /// A `getty.Deserializer` interface value.
