@@ -53,12 +53,13 @@ pub const Content = union(enum) {
 
     pub const @"getty.db" = struct {
         pub fn deserialize(
-            ally: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime _: type,
             deserializer: anytype,
             visitor: anytype,
         ) !@TypeOf(visitor).Value {
-            return try deserializer.deserializeAny(ally, visitor);
+            return try deserializer.deserializeAny(result_ally, scratch_ally, visitor);
         }
 
         pub fn Visitor(comptime _: type) type {
