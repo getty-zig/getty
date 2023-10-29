@@ -16,7 +16,7 @@ pub fn Visitor(comptime Struct: type) type {
 
         const Value = Struct;
 
-        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = comptime std.meta.fields(Value);

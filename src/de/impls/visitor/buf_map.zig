@@ -14,7 +14,7 @@ pub fn Visitor(comptime BufMap: type) type {
 
         const Value = BufMap;
 
-        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             var m = BufMap.init(ally);
             errdefer m.deinit();
 

@@ -15,7 +15,7 @@ pub fn Visitor(comptime Tuple: type) type {
 
         const Value = Tuple;
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);

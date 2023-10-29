@@ -14,7 +14,7 @@ pub fn Visitor(comptime SinglyLinkedList: type) type {
 
         const Value = SinglyLinkedList;
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = Value{};
 
             var current: ?*Value.Node = null;

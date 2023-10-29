@@ -14,7 +14,7 @@ pub fn Visitor(comptime Value: type) type {
             },
         );
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             // A DynamicBitSet can only be resized towards its LSB. That is,
             // making [1,1,0,0]'s length = 2 gives [0,0], not [1,1]. And, as
             // far as I know, there's no sane way to copy bits from one bitset

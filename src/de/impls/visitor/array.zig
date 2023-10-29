@@ -21,7 +21,8 @@ pub fn Visitor(comptime Array: type) type {
 
         fn visitSeq(
             _: Self,
-            ally: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             seq: anytype,
         ) Deserializer.Err!Value {
@@ -42,7 +43,7 @@ pub fn Visitor(comptime Array: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(ally, Child)) != null) {
+            if ((try seq.nextElement(result_ally, Child)) != null) {
                 return error.InvalidLength;
             }
 

@@ -30,7 +30,8 @@ pub fn Visitor(comptime Int: type) type {
 
         fn visitString(
             _: Self,
-            ally: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
             lt: StringLifetime,

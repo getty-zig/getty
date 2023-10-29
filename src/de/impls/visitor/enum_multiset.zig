@@ -17,7 +17,7 @@ pub fn Visitor(comptime EnumMultiset: type) type {
 
         const Value = EnumMultiset;
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var multiset = Value.initEmpty();
 
             const K = std.meta.FieldType(Value, .counts).Key;
@@ -29,7 +29,7 @@ pub fn Visitor(comptime EnumMultiset: type) type {
             return multiset;
         }
 
-        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             var multiset = Value.initEmpty();
 
             const K = std.meta.FieldType(Value, .counts).Key;

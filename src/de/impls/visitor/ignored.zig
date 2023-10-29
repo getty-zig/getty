@@ -35,7 +35,7 @@ pub fn Visitor(comptime Ignored: type) type {
             return .{};
         }
 
-        fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             while ((try map.nextEntry(ally, Ignored, Ignored)) != null) {
                 // Gobble
             }
@@ -43,7 +43,7 @@ pub fn Visitor(comptime Ignored: type) type {
             return .{};
         }
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             while ((try seq.nextElement(ally, Ignored)) != null) {
                 // Gobble
             }

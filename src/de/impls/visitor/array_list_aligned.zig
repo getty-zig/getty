@@ -14,7 +14,7 @@ pub fn Visitor(comptime ArrayList: type) type {
 
         const Value = ArrayList;
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             const unmanaged = comptime std.mem.startsWith(
                 u8,
                 @typeName(Value),

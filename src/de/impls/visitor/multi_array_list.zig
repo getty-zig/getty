@@ -14,7 +14,7 @@ pub fn Visitor(comptime MultiArrayList: type) type {
 
         const Value = MultiArrayList;
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = Value{};
             errdefer list.deinit(ally);
 

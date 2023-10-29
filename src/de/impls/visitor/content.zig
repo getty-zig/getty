@@ -43,7 +43,7 @@ fn visitFloat(_: @This(), _: std.mem.Allocator, comptime Deserializer: type, inp
     };
 }
 
-fn visitInt(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
+fn visitInt(_: @This(), result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!Content {
     return switch (@typeInfo(@TypeOf(input))) {
         .Int => .{ .Int = try std.math.big.int.Managed.initSet(ally, input) },
         .ComptimeInt => @compileError("comptime_int is not supported"),
@@ -51,7 +51,7 @@ fn visitInt(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, in
     };
 }
 
-fn visitMap(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, mapAccess: anytype) Deserializer.Err!Content {
+fn visitMap(_: @This(), result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, mapAccess: anytype) Deserializer.Err!Content {
     var map = ContentMultiArrayList{};
     errdefer map.deinit(ally);
 
@@ -71,7 +71,7 @@ fn visitNull(_: @This(), _: std.mem.Allocator, comptime Deserializer: type) Dese
     return .{ .Null = {} };
 }
 
-fn visitSeq(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, seqAccess: anytype) Deserializer.Err!Content {
+fn visitSeq(_: @This(), result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seqAccess: anytype) Deserializer.Err!Content {
     var list = std.ArrayList(Content).init(ally);
     errdefer list.deinit();
 
@@ -82,7 +82,7 @@ fn visitSeq(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, se
     return .{ .Seq = list };
 }
 
-fn visitSome(_: @This(), ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Content {
+fn visitSome(_: @This(), result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Content {
     return .{ .Some = some: {
         var result = try getty_deserialize(ally, *Content, deserializer);
         break :some result.value;
@@ -91,7 +91,8 @@ fn visitSome(_: @This(), ally: std.mem.Allocator, deserializer: anytype) @TypeOf
 
 fn visitString(
     _: @This(),
-    ally: std.mem.Allocator,
+    result_ally: std.mem.Allocator,
+    scratch_ally: std.mem.Allocator,
     comptime Deserializer: type,
     input: anytype,
     lt: StringLifetime,
@@ -109,7 +110,7 @@ fn visitString(
     }
 }
 
-fn visitUnion(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Content {
+fn visitUnion(_: @This(), result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Content {
     var variant = try ua.variant(ally, Content);
     var payload = try va.payload(ally, Content);
 

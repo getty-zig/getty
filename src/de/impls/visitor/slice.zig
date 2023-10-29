@@ -19,7 +19,7 @@ pub fn Visitor(comptime Slice: type) type {
 
         const Value = Slice;
 
-        fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var list = std.ArrayList(Child).init(ally);
             errdefer list.deinit();
 
@@ -45,7 +45,8 @@ pub fn Visitor(comptime Slice: type) type {
         //  Otherwise, input is copied into a new slice.
         fn visitString(
             _: Self,
-            ally: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
             lt: StringLifetime,

@@ -18,7 +18,8 @@ const Value = std.SemanticVersion;
 
 fn visitString(
     _: Visitor,
-    ally: std.mem.Allocator,
+    result_ally: std.mem.Allocator,
+    scratch_ally: std.mem.Allocator,
     comptime Deserializer: type,
     input: anytype,
     lt: StringLifetime,
