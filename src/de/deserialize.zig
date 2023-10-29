@@ -120,8 +120,14 @@ test "deserialize - success, normal" {
             return T == Point;
         }
 
-        pub fn deserialize(ally: std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
-            return try d.deserializeSeq(ally, v);
+        pub fn deserialize(
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime _: type,
+            d: anytype,
+            v: anytype,
+        ) @TypeOf(d).Err!@TypeOf(v).Value {
+            return try d.deserializeSeq(result_ally, scratch_ally, v);
         }
 
         pub const Visitor = PointVisitor;
@@ -134,8 +140,14 @@ test "deserialize - success, normal" {
         const Self = @This();
 
         pub const @"getty.db" = struct {
-            pub fn deserialize(ally: std.mem.Allocator, comptime _: type, d: anytype, v: anytype) @TypeOf(d).Err!@TypeOf(v).Value {
-                return try d.deserializeSeq(ally, v);
+            pub fn deserialize(
+                result_ally: std.mem.Allocator,
+                scratch_ally: std.mem.Allocator,
+                comptime _: type,
+                d: anytype,
+                v: anytype,
+            ) @TypeOf(d).Err!@TypeOf(v).Value {
+                return try d.deserializeSeq(result_ally, scratch_ally, v);
             }
 
             pub const Visitor = PointVisitor;
