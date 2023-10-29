@@ -34,7 +34,11 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     if (comptime std.meta.trait.isZigString(T)) {
-        return try deserializer.deserializeString(ally, visitor);
+        return try deserializer.deserializeString(
+            result_ally,
+            scratch_ally,
+            visitor,
+        );
     }
 
     const Child = std.meta.Child(T);
@@ -42,14 +46,40 @@ pub fn deserialize(
 
     if (comptime has_attributes(Child, db)) {
         switch (@typeInfo(Child)) {
-            .Enum => return try blocks.Enum.deserialize(ally, Child, deserializer, visitor),
-            .Struct => return try blocks.Struct.deserialize(ally, Child, deserializer, visitor),
-            .Union => return try blocks.Union.deserialize(ally, Child, deserializer, visitor),
-            else => unreachable, // UNREACHABLE: has_attributes guarantees that Child is an enum, struct or union.
+            .Enum => return try blocks.Enum.deserialize(
+                result_ally,
+                scratch_ally,
+                Child,
+                deserializer,
+                visitor,
+            ),
+            .Struct => return try blocks.Struct.deserialize(
+                result_ally,
+                scratch_ally,
+                Child,
+                deserializer,
+                visitor,
+            ),
+            .Union => return try blocks.Union.deserialize(
+                result_ally,
+                scratch_ally,
+                Child,
+                deserializer,
+                visitor,
+            ),
+            // UNREACHABLE: has_attributes guarantees that Child is an enum,
+            // struct or union.
+            else => unreachable,
         }
     }
 
-    return try db.deserialize(ally, Child, deserializer, visitor);
+    return try db.deserialize(
+        result_ally,
+        scratch_ally,
+        Child,
+        deserializer,
+        visitor,
+    );
 }
 
 /// Returns a type that implements `getty.de.Visitor`.

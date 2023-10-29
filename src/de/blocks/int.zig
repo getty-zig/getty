@@ -33,7 +33,7 @@ pub fn deserialize(
 ) !@TypeOf(visitor).Value {
     _ = T;
 
-    return try deserializer.deserializeInt(ally, visitor);
+    return try deserializer.deserializeInt(result_ally, scratch_ally, visitor);
 }
 
 /// Returns a type that implements `getty.de.Visitor`.

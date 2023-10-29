@@ -29,8 +29,8 @@ pub fn deserialize(
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
     return try switch (comptime std.meta.trait.isZigString(T)) {
-        true => deserializer.deserializeString(ally, visitor),
-        false => deserializer.deserializeSeq(ally, visitor),
+        true => deserializer.deserializeString(result_ally, scratch_ally, visitor),
+        false => deserializer.deserializeSeq(result_ally, scratch_ally, visitor),
     };
 }
 

@@ -49,8 +49,19 @@ pub fn deserialize(
     };
 
     return switch (tag) {
-        .external => try deserializeExternallyTaggedUnion(ally, deserializer, visitor),
-        .untagged => try deserializeUntaggedUnion(ally, T, deserializer, visitor),
+        .external => try deserializeExternallyTaggedUnion(
+            result_ally,
+            scratch_ally,
+            deserializer,
+            visitor,
+        ),
+        .untagged => try deserializeUntaggedUnion(
+            result_ally,
+            scratch_ally,
+            T,
+            deserializer,
+            visitor,
+        ),
         .internal => @compileError("TODO: internally tagged representation"),
     };
 }
@@ -69,7 +80,7 @@ fn deserializeExternallyTaggedUnion(
     deserializer: anytype,
     visitor: anytype,
 ) @TypeOf(deserializer).Err!@TypeOf(visitor).Value {
-    return try deserializer.deserializeUnion(ally, visitor);
+    return try deserializer.deserializeUnion(result_ally, scratch_ally, visitor);
 }
 
 // Untagged unions are only supported in self-describing formats.
@@ -85,15 +96,15 @@ fn deserializeUntaggedUnion(
     // This intermediate value allows us to repeatedly attempt deserialization
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
-    var content_result = try getty_deserialize(ally, Content, deserializer);
-    defer content_result.value.deinit(ally);
+    var content_result = try getty_deserialize(scratch_ally, Content, deserializer);
+    defer content_result.value.deinit(scratch_ally);
 
     // Deserialize the Content value into a value of type T.
     var cd = ContentDeserializer{ .content = content_result.value };
     const d = cd.deserializer();
 
     inline for (std.meta.fields(T)) |field| {
-        if (getty_deserialize(ally, field.type, d)) |res| {
+        if (getty_deserialize(scratch_ally, field.type, d)) |res| {
             var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(res.value)){
                 .variant = field.name,
                 .payload = res.value,
@@ -101,7 +112,7 @@ fn deserializeUntaggedUnion(
             const ua = tuva.unionAccess();
             const va = tuva.variantAccess();
 
-            return try visitor.visitUnion(ally, @TypeOf(d), ua, va);
+            return try visitor.visitUnion(result_ally, scratch_ally, @TypeOf(d), ua, va);
         } else |err| switch (err) {
             error.DuplicateField,
             error.InvalidLength,

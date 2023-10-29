@@ -26,8 +26,9 @@ pub fn deserialize(
     /// A `getty.de.Visitor` interface value.
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
+    _ = scratch_ally;
+    _ = result_ally;
     _ = deserializer;
-    _ = ally;
 
     @compileError("type is not supported: " ++ @typeName(T));
 }
