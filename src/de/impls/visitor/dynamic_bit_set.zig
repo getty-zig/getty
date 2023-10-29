@@ -14,7 +14,15 @@ pub fn Visitor(comptime Value: type) type {
             },
         );
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             // A DynamicBitSet can only be resized towards its LSB. That is,
             // making [1,1,0,0]'s length = 2 gives [0,0], not [1,1]. And, as
             // far as I know, there's no sane way to copy bits from one bitset
@@ -23,10 +31,10 @@ pub fn Visitor(comptime Value: type) type {
             // To avoid messing around with resizing bitsets, we instead
             // deserialize into an ArrayList initially. Then, the list's
             // elements are simply copied over to a properly sized bitset.
-            var list = try std.ArrayList(Value.MaskInt).initCapacity(ally, 8);
+            var list = try std.ArrayList(Value.MaskInt).initCapacity(result_ally, 8);
             defer list.deinit();
 
-            while (try seq.nextElement(ally, Value.MaskInt)) |bit| {
+            while (try seq.nextElement(result_ally, Value.MaskInt)) |bit| {
                 switch (bit) {
                     0 => try list.append(0),
                     1 => try list.append(1),
@@ -34,8 +42,8 @@ pub fn Visitor(comptime Value: type) type {
                 }
             }
 
-            var bitset = try Value.initEmpty(ally, list.items.len);
-            errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(ally);
+            var bitset = try Value.initEmpty(result_ally, list.items.len);
+            errdefer if (Value == std.DynamicBitSet) bitset.deinit() else bitset.deinit(result_ally);
 
             for (list.items, 0..) |bit, i| {
                 if (bit == 1) bitset.set(list.items.len - 1 - i);

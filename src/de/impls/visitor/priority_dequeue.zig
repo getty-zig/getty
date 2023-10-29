@@ -14,7 +14,15 @@ pub fn Visitor(comptime PriorityDequeue: type) type {
 
         const Value = PriorityDequeue;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             const T = std.meta.Child(std.meta.FieldType(Value, .items));
             const Context = std.meta.FieldType(Value, .context);
 
@@ -22,10 +30,10 @@ pub fn Visitor(comptime PriorityDequeue: type) type {
                 @compileError("non void context is not supported");
             }
 
-            var deque = Value.init(ally, undefined);
+            var deque = Value.init(result_ally, undefined);
             errdefer deque.deinit();
 
-            while (try seq.nextElement(ally, T)) |elem| {
+            while (try seq.nextElement(result_ally, T)) |elem| {
                 try deque.add(elem);
             }
 

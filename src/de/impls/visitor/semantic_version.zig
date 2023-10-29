@@ -24,14 +24,16 @@ fn visitString(
     input: anytype,
     lt: StringLifetime,
 ) Deserializer.Err!VisitStringReturn(Value) {
+    _ = scratch_ally;
+
     var ver = std.SemanticVersion.parse(input) catch return error.InvalidValue;
 
     var used = false;
     switch (lt) {
         .heap => used = true,
         .stack, .managed => {
-            if (ver.pre) |pre| ver.pre = try ally.dupe(u8, pre);
-            if (ver.build) |build| ver.build = try ally.dupe(u8, build);
+            if (ver.pre) |pre| ver.pre = try result_ally.dupe(u8, pre);
+            if (ver.build) |build| ver.build = try result_ally.dupe(u8, build);
         },
     }
 

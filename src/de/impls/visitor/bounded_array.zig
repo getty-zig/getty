@@ -14,14 +14,22 @@ pub fn Visitor(comptime BoundedArray: type) type {
 
         const Value = BoundedArray;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var arr = Value.init(0) catch return error.InvalidValue;
 
             if (@TypeOf(arr.len) == u0 or @TypeOf(arr.len) == i0) {
                 return arr;
             }
 
-            while (try seq.nextElement(ally, std.meta.Child(@TypeOf(arr.buffer)))) |value| {
+            while (try seq.nextElement(result_ally, std.meta.Child(@TypeOf(arr.buffer)))) |value| {
                 arr.append(value) catch return error.InvalidValue;
             }
 

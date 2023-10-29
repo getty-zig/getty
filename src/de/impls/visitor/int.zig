@@ -21,10 +21,14 @@ pub fn Visitor(comptime Int: type) type {
 
         fn visitInt(
             _: Self,
-            _: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
         ) Deserializer.Err!Value {
+            _ = result_ally;
+            _ = scratch_ally;
+
             return std.math.cast(Value, input) orelse error.Overflow;
         }
 
@@ -36,7 +40,9 @@ pub fn Visitor(comptime Int: type) type {
             input: anytype,
             lt: StringLifetime,
         ) Deserializer.Err!VisitStringReturn(Value) {
-            defer if (lt == .heap) ally.free(input);
+            _ = scratch_ally;
+
+            defer if (lt == .heap) result_ally.free(input);
 
             var int = std.fmt.parseInt(Value, input, 10) catch return error.InvalidValue;
 

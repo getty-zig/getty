@@ -14,11 +14,19 @@ pub fn Visitor(comptime IndexedMap: type) type {
 
         const Value = IndexedMap;
 
-        fn visitMap(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            map: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var m = Value{};
 
-            while (try map.nextKey(ally, Value.Key)) |k| {
-                const v = try map.nextValue(ally, Value.Value);
+            while (try map.nextKey(result_ally, Value.Key)) |k| {
+                const v = try map.nextValue(result_ally, Value.Value);
                 m.put(k, v);
             }
 

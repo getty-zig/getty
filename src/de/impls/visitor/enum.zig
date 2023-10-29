@@ -22,10 +22,14 @@ pub fn Visitor(comptime Enum: type) type {
 
         fn visitInt(
             _: Self,
-            _: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
         ) Deserializer.Err!Value {
+            _ = result_ally;
+            _ = scratch_ally;
+
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -56,11 +60,15 @@ pub fn Visitor(comptime Enum: type) type {
 
         fn visitString(
             _: Self,
-            _: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
         ) Deserializer.Err!VisitStringReturn(Value) {
+            _ = result_ally;
+            _ = scratch_ally;
+
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);

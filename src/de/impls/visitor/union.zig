@@ -15,12 +15,21 @@ pub fn Visitor(comptime Union: type) type {
 
         const Value = Union;
 
-        fn visitUnion(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Value {
+        fn visitUnion(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            ua: anytype,
+            va: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             @setEvalBranchQuota(10_000);
 
             const attributes = comptime getAttributes(Value, Deserializer);
 
-            var variant = try ua.variant(ally, []const u8);
+            var variant = try ua.variant(result_ally, []const u8);
 
             inline for (std.meta.fields(Value)) |f| {
                 const attrs = comptime attrs: {
@@ -73,7 +82,7 @@ pub fn Visitor(comptime Union: type) type {
                         if (skipped) return error.UnknownVariant;
                     }
 
-                    return @unionInit(Value, f.name, try va.payload(ally, f.type));
+                    return @unionInit(Value, f.name, try va.payload(result_ally, f.type));
                 }
             }
 

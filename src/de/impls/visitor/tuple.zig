@@ -15,7 +15,15 @@ pub fn Visitor(comptime Tuple: type) type {
 
         const Value = Tuple;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             @setEvalBranchQuota(10_000);
 
             const fields = std.meta.fields(Value);
@@ -30,7 +38,7 @@ pub fn Visitor(comptime Tuple: type) type {
                     inline for (0..len) |i| {
                         // NOTE: Using an if to unwrap `value` runs into a
                         // compiler bug, so this is a workaround.
-                        const value = try seq.nextElement(ally, fields[i].type);
+                        const value = try seq.nextElement(result_ally, fields[i].type);
                         if (value == null) return error.InvalidLength;
 
                         tuple[i] = value.?;
@@ -40,7 +48,7 @@ pub fn Visitor(comptime Tuple: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(ally, Ignored)) != null) {
+            if ((try seq.nextElement(result_ally, Ignored)) != null) {
                 return error.InvalidLength;
             }
 

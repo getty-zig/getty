@@ -16,7 +16,15 @@ pub fn Visitor(comptime Struct: type) type {
 
         const Value = Struct;
 
-        fn visitMap(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
+        fn visitMap(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            map: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             @setEvalBranchQuota(10_000);
 
             const fields = comptime std.meta.fields(Value);
@@ -39,7 +47,7 @@ pub fn Visitor(comptime Struct: type) type {
                 break :blk false;
             };
 
-            key_loop: while (try map.nextKey(ally, []const u8)) |key| {
+            key_loop: while (try map.nextKey(result_ally, []const u8)) |key| {
                 // Indicates whether or not key matches any field in the struct.
                 var found = false;
 
@@ -104,7 +112,7 @@ pub fn Visitor(comptime Struct: type) type {
                             return error.DuplicateField;
                         }
 
-                        const value = try map.nextValue(ally, field.type);
+                        const value = try map.nextValue(result_ally, field.type);
 
                         // Do not assign value to field if the "skip" attribute is
                         // set.
@@ -135,7 +143,7 @@ pub fn Visitor(comptime Struct: type) type {
                 // field is not checked.
                 if (!found) {
                     switch (ignore_unknown_fields) {
-                        true => _ = try map.nextValue(ally, Ignored),
+                        true => _ = try map.nextValue(result_ally, Ignored),
                         false => return error.UnknownField,
                     }
                 }

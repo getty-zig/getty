@@ -12,6 +12,15 @@ pub usingnamespace VisitorInterface(
 
 const Value = bool;
 
-fn visitBool(_: Visitor, _: std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!Value {
+fn visitBool(
+    _: Visitor,
+    result_ally: std.mem.Allocator,
+    scratch_ally: std.mem.Allocator,
+    comptime Deserializer: type,
+    input: bool,
+) Deserializer.Err!Value {
+    _ = result_ally;
+    _ = scratch_ally;
+
     return input;
 }

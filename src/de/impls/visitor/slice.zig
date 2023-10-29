@@ -19,11 +19,19 @@ pub fn Visitor(comptime Slice: type) type {
 
         const Value = Slice;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
-            var list = std.ArrayList(Child).init(ally);
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
+            var list = std.ArrayList(Child).init(result_ally);
             errdefer list.deinit();
 
-            while (try seq.nextElement(ally, Child)) |elem| {
+            while (try seq.nextElement(result_ally, Child)) |elem| {
                 try list.append(elem);
             }
 
@@ -51,6 +59,8 @@ pub fn Visitor(comptime Slice: type) type {
             input: anytype,
             lt: StringLifetime,
         ) Deserializer.Err!VisitStringReturn(Value) {
+            _ = scratch_ally;
+
             if (Child != u8) {
                 return error.InvalidType;
             }
@@ -71,7 +81,7 @@ pub fn Visitor(comptime Slice: type) type {
                 return .{ .value = @as(Value, input), .used = true };
             }
 
-            const output = try ally.alloc(u8, input.len + @intFromBool(v_info.sentinel != null));
+            const output = try result_ally.alloc(u8, input.len + @intFromBool(v_info.sentinel != null));
             std.mem.copy(u8, output, input);
 
             if (v_info.sentinel) |s| {

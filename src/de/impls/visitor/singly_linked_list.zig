@@ -14,12 +14,20 @@ pub fn Visitor(comptime SinglyLinkedList: type) type {
 
         const Value = SinglyLinkedList;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var list = Value{};
 
             var current: ?*Value.Node = null;
-            while (try seq.nextElement(ally, Value.Node.Data)) |value| {
-                var node = try ally.create(Value.Node);
+            while (try seq.nextElement(result_ally, Value.Node.Data)) |value| {
+                var node = try result_ally.create(Value.Node);
                 node.* = .{ .data = value };
 
                 if (current) |c| {

@@ -17,11 +17,19 @@ pub fn Visitor(comptime BitSet: type) type {
 
         const Value = BitSet;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var bitset = Value.initEmpty();
 
             if (Value.bit_length == 0) {
-                if (try seq.nextElement(ally, Ignored) != null) {
+                if (try seq.nextElement(result_ally, Ignored) != null) {
                     return error.InvalidLength;
                 }
 
@@ -36,7 +44,7 @@ pub fn Visitor(comptime BitSet: type) type {
             // something.
             comptime var i: usize = Value.bit_length - 1;
             inline while (i > 0) : (i -= 1) {
-                if (try seq.nextElement(ally, Value.MaskInt)) |bit| {
+                if (try seq.nextElement(result_ally, Value.MaskInt)) |bit| {
                     switch (bit) {
                         0 => {},
                         1 => bitset.set(i),
@@ -48,7 +56,7 @@ pub fn Visitor(comptime BitSet: type) type {
             }
 
             // Deserialize 0th bit.
-            if (try seq.nextElement(ally, Value.MaskInt)) |bit| {
+            if (try seq.nextElement(result_ally, Value.MaskInt)) |bit| {
                 switch (bit) {
                     0 => {},
                     1 => bitset.set(0),
@@ -59,7 +67,7 @@ pub fn Visitor(comptime BitSet: type) type {
             }
 
             // Check for end of sequence.
-            if (try seq.nextElement(ally, Ignored) != null) {
+            if (try seq.nextElement(result_ally, Ignored) != null) {
                 return error.InvalidLength;
             }
 

@@ -26,13 +26,15 @@ pub fn Visitor(comptime Array: type) type {
             comptime Deserializer: type,
             seq: anytype,
         ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var array: Value = undefined;
             var seen: usize = 0;
 
             switch (array.len) {
                 0 => array = .{},
                 else => for (&array) |*elem| {
-                    if (try seq.nextElement(ally, Child)) |value| {
+                    if (try seq.nextElement(result_ally, Child)) |value| {
                         elem.* = value;
                         seen += 1;
                     } else {
@@ -52,11 +54,15 @@ pub fn Visitor(comptime Array: type) type {
 
         fn visitString(
             _: Self,
-            _: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
         ) Deserializer.Err!VisitStringReturn(Value) {
+            _ = result_ally;
+            _ = scratch_ally;
+
             if (Child != u8) {
                 return error.InvalidType;
             }

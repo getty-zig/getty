@@ -14,11 +14,19 @@ pub fn Visitor(comptime BufSet: type) type {
 
         const Value = BufSet;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
-            var set = BufSet.init(ally);
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
+            var set = BufSet.init(result_ally);
             errdefer set.deinit();
 
-            while (try seq.nextElement(ally, []const u8)) |elem| {
+            while (try seq.nextElement(result_ally, []const u8)) |elem| {
                 try set.insert(elem);
             }
 

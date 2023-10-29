@@ -14,13 +14,21 @@ pub fn Visitor(comptime DoublyLinkedList: type) type {
 
         const Value = DoublyLinkedList;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var list = Value{};
 
             const Child = std.meta.fieldInfo(Value.Node, .data).type;
 
-            while (try seq.nextElement(ally, Child)) |value| {
-                var node = try ally.create(Value.Node);
+            while (try seq.nextElement(result_ally, Child)) |value| {
+                var node = try result_ally.create(Value.Node);
                 node.* = .{ .data = value };
                 list.append(node);
             }

@@ -20,11 +20,15 @@ pub fn Visitor(comptime NetAddress: type) type {
 
         fn visitString(
             _: Self,
-            _: ?std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
             _: StringLifetime,
         ) Deserializer.Err!Value {
+            _ = result_ally;
+            _ = scratch_ally;
+
             const max_ipv6_chars = 47;
             const max_port_chars = 6;
 

@@ -17,7 +17,15 @@ pub fn Visitor(comptime PackedIntEndian: type) type {
 
         const Value = PackedIntEndian;
 
-        fn visitSeq(_: Self, result_ally: std.mem.Allocator, scratch_ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
+        fn visitSeq(
+            _: Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            comptime Deserializer: type,
+            seq: anytype,
+        ) Deserializer.Err!Value {
+            _ = scratch_ally;
+
             var array = Value.initAllTo(0);
 
             if (array.len == 0) {
@@ -25,7 +33,7 @@ pub fn Visitor(comptime PackedIntEndian: type) type {
             }
 
             for (0..array.len) |i| {
-                if (try seq.nextElement(ally, Value.Child)) |value| {
+                if (try seq.nextElement(result_ally, Value.Child)) |value| {
                     array.set(i, value);
                 } else {
                     // End of sequence was reached early.
@@ -34,7 +42,7 @@ pub fn Visitor(comptime PackedIntEndian: type) type {
             }
 
             // Expected end of sequence, but found an element.
-            if ((try seq.nextElement(ally, Ignored)) != null) {
+            if ((try seq.nextElement(result_ally, Ignored)) != null) {
                 return error.InvalidLength;
             }
 
