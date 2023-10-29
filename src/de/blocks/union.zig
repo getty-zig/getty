@@ -97,14 +97,16 @@ fn deserializeUntaggedUnion(
     // for each variant of the untagged union, without further modifying the
     // actual input data of the deserializer.
     var content_result = try getty_deserialize(scratch_ally, Content, deserializer);
-    defer content_result.value.deinit(scratch_ally);
+    defer content_result.deinit();
 
     // Deserialize the Content value into a value of type T.
     var cd = ContentDeserializer{ .content = content_result.value };
     const d = cd.deserializer();
 
     inline for (std.meta.fields(T)) |field| {
-        if (getty_deserialize(scratch_ally, field.type, d)) |res| {
+        if (getty_deserialize(result_ally, field.type, d)) |res| {
+            errdefer res.deinit();
+
             var tuva = TransparentUnionVariantAccess(@TypeOf(field.name), @TypeOf(res.value)){
                 .variant = field.name,
                 .payload = res.value,
