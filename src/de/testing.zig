@@ -43,16 +43,14 @@ pub fn deserializeErr(
 
     var result = Result(Want){
         .arena = arena: {
-            var arena = try test_ally.create(std.heap.ArenaAllocator);
-            arena.* = std.heap.ArenaAllocator.init(test_ally);
-
-            break :arena arena;
+            var a = try test_ally.create(std.heap.ArenaAllocator);
+            a.* = std.heap.ArenaAllocator.init(test_ally);
+            break :arena a;
         },
         .value = undefined,
     };
+    const result_ally = result.arena.allocator();
     errdefer result.deinit();
-
-    const arena_ally = result.arena.allocator();
 
     var d = DefaultDeserializer.init(input);
     const deserializer = d.deserializer();
@@ -60,7 +58,13 @@ pub fn deserializeErr(
     var v = block.Visitor(Want){};
     const visitor = v.visitor();
 
-    result.value = try block.deserialize(arena_ally, Want, deserializer, visitor);
+    result.value = try block.deserialize(
+        result_ally,
+        test_ally,
+        Want,
+        deserializer,
+        visitor,
+    );
 
     try std.testing.expect(d.remaining() == 0);
 
@@ -105,7 +109,7 @@ pub fn deserializeErrWithLifetime(
     var v = block.Visitor(Want){};
     const visitor = v.visitor();
 
-    const got = try block.deserialize(ally, Want, deserializer, visitor);
+    const got = try block.deserialize(ally, ally, Want, deserializer, visitor);
 
     try std.testing.expect(d.remaining() == 0);
 
@@ -187,54 +191,59 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
         const De = Self.@"getty.Deserializer";
 
-        fn deserializeAny(self: *Self, ally: std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeAny(
+            self: *Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            visitor: anytype,
+        ) Error!@TypeOf(visitor).Value {
             return switch (self.nextToken()) {
-                .Bool => |v| try visitor.visitBool(ally, De, v),
-                .I8 => |v| try visitor.visitInt(ally, De, v),
-                .I16 => |v| try visitor.visitInt(ally, De, v),
-                .I32 => |v| try visitor.visitInt(ally, De, v),
-                .I64 => |v| try visitor.visitInt(ally, De, v),
-                .I128 => |v| try visitor.visitInt(ally, De, v),
-                .U8 => |v| try visitor.visitInt(ally, De, v),
-                .U16 => |v| try visitor.visitInt(ally, De, v),
-                .U32 => |v| try visitor.visitInt(ally, De, v),
-                .U64 => |v| try visitor.visitInt(ally, De, v),
-                .U128 => |v| try visitor.visitInt(ally, De, v),
-                .F16 => |v| try visitor.visitFloat(ally, De, v),
-                .F32 => |v| try visitor.visitFloat(ally, De, v),
-                .F64 => |v| try visitor.visitFloat(ally, De, v),
-                .F128 => |v| try visitor.visitFloat(ally, De, v),
+                .Bool => |v| try visitor.visitBool(result_ally, scratch_ally, De, v),
+                .I8 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .I16 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .I32 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .I64 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .I128 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .U8 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .U16 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .U32 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .U64 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .U128 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                .F16 => |v| try visitor.visitFloat(result_ally, scratch_ally, De, v),
+                .F32 => |v| try visitor.visitFloat(result_ally, scratch_ally, De, v),
+                .F64 => |v| try visitor.visitFloat(result_ally, scratch_ally, De, v),
+                .F128 => |v| try visitor.visitFloat(result_ally, scratch_ally, De, v),
                 .Enum => switch (self.nextToken()) {
-                    .U8 => |v| try visitor.visitInt(ally, De, v),
-                    .U16 => |v| try visitor.visitInt(ally, De, v),
-                    .U32 => |v| try visitor.visitInt(ally, De, v),
-                    .U64 => |v| try visitor.visitInt(ally, De, v),
-                    .U128 => |v| try visitor.visitInt(ally, De, v),
+                    .U8 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                    .U16 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                    .U32 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                    .U64 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
+                    .U128 => |v| try visitor.visitInt(result_ally, scratch_ally, De, v),
                     inline .String, .StringZ => |v| blk: {
-                        var ret = try visitor.visitString(ally, De, v, .stack);
+                        var ret = try visitor.visitString(result_ally, scratch_ally, De, v, .stack);
                         break :blk ret.value;
                     },
                     else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
                 },
                 .Map => |v| blk: {
                     var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
-                    var value = try visitor.visitMap(ally, De, m.mapAccess());
+                    var value = try visitor.visitMap(result_ally, scratch_ally, De, m.mapAccess());
 
                     try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.MapEnd);
 
                     break :blk value;
                 },
-                .Null => try visitor.visitNull(ally, De),
-                .Some => try visitor.visitSome(ally, self.deserializer()),
+                .Null => try visitor.visitNull(result_ally, scratch_ally, De),
+                .Some => try visitor.visitSome(result_ally, scratch_ally, self.deserializer()),
                 inline .String, .StringZ => |v| blk: {
-                    var ret = try visitor.visitString(ally, De, v, self.str_lifetime);
+                    var ret = try visitor.visitString(result_ally, scratch_ally, De, v, self.str_lifetime);
                     break :blk ret.value;
                 },
-                .Void => try visitor.visitVoid(ally, De),
+                .Void => try visitor.visitVoid(result_ally, scratch_ally, De),
                 .Seq => |v| blk: {
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
-                    var value = try visitor.visitSeq(ally, De, s.seqAccess());
+                    var value = try visitor.visitSeq(result_ally, scratch_ally, De, s.seqAccess());
 
                     try expectEqual(@as(usize, 0), s.len.?);
                     try self.assertNextToken(.SeqEnd);
@@ -243,7 +252,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Struct => |v| blk: {
                     var m = Map{ .de = self, .len = v.len, .end = .StructEnd };
-                    var value = try visitor.visitMap(ally, De, m.mapAccess());
+                    var value = try visitor.visitMap(result_ally, scratch_ally, De, m.mapAccess());
 
                     try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.StructEnd);
@@ -252,7 +261,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Union => blk: {
                     var u = Union{ .de = self };
-                    break :blk try visitor.visitUnion(ally, De, u.unionAccess(), u.variantAccess());
+                    break :blk try visitor.visitUnion(result_ally, scratch_ally, De, u.unionAccess(), u.variantAccess());
                 },
 
                 // Panic! At The Disco
@@ -260,9 +269,14 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             };
         }
 
-        fn deserializeIgnored(self: *Self, ally: std.mem.Allocator, visitor: anytype) Error!@TypeOf(visitor).Value {
+        fn deserializeIgnored(
+            self: *Self,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
+            visitor: anytype,
+        ) Error!@TypeOf(visitor).Value {
             _ = self.nextTokenOpt();
-            return try visitor.visitVoid(ally, De);
+            return try visitor.visitVoid(result_ally, scratch_ally, De);
         }
 
         fn assertNextToken(self: *Self, expected: Token) !void {
