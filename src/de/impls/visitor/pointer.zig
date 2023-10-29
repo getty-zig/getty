@@ -42,13 +42,11 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             input: bool,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitBool(result_ally, Deserializer, input);
+            value.* = try cv.visitor().visitBool(result_ally, scratch_ally, Deserializer, input);
 
             return value;
         }
@@ -60,13 +58,11 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             input: anytype,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitFloat(result_ally, Deserializer, input);
+            value.* = try cv.visitor().visitFloat(result_ally, scratch_ally, Deserializer, input);
 
             return value;
         }
@@ -78,13 +74,11 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             input: anytype,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitInt(result_ally, Deserializer, input);
+            value.* = try cv.visitor().visitInt(result_ally, scratch_ally, Deserializer, input);
 
             return value;
         }
@@ -96,13 +90,11 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             map: anytype,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitMap(result_ally, Deserializer, map);
+            value.* = try cv.visitor().visitMap(result_ally, scratch_ally, Deserializer, map);
 
             return value;
         }
@@ -113,13 +105,11 @@ pub fn Visitor(comptime Pointer: type) type {
             scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitNull(result_ally, Deserializer);
+            value.* = try cv.visitor().visitNull(result_ally, scratch_ally, Deserializer);
 
             return value;
         }
@@ -131,13 +121,11 @@ pub fn Visitor(comptime Pointer: type) type {
             comptime Deserializer: type,
             seq: anytype,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitSeq(result_ally, Deserializer, seq);
+            value.* = try cv.visitor().visitSeq(result_ally, scratch_ally, Deserializer, seq);
 
             return value;
         }
@@ -148,13 +136,11 @@ pub fn Visitor(comptime Pointer: type) type {
             scratch_ally: std.mem.Allocator,
             deserializer: anytype,
         ) @TypeOf(deserializer).Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(@TypeOf(deserializer)){};
-            value.* = try cv.visitor().visitSome(result_ally, deserializer);
+            value.* = try cv.visitor().visitSome(result_ally, scratch_ally, deserializer);
 
             return value;
         }
@@ -167,13 +153,11 @@ pub fn Visitor(comptime Pointer: type) type {
             input: anytype,
             lt: StringLifetime,
         ) Deserializer.Err!VisitStringReturn(Value) {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            const result = try cv.visitor().visitString(result_ally, Deserializer, input, lt);
+            const result = try cv.visitor().visitString(result_ally, scratch_ally, Deserializer, input, lt);
 
             value.* = result.value;
             return .{ .value = value, .used = result.used };
@@ -187,13 +171,11 @@ pub fn Visitor(comptime Pointer: type) type {
             ua: anytype,
             va: anytype,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitUnion(result_ally, Deserializer, ua, va);
+            value.* = try cv.visitor().visitUnion(result_ally, scratch_ally, Deserializer, ua, va);
 
             return value;
         }
@@ -204,13 +186,11 @@ pub fn Visitor(comptime Pointer: type) type {
             scratch_ally: std.mem.Allocator,
             comptime Deserializer: type,
         ) Deserializer.Err!Value {
-            _ = scratch_ally;
-
             const value = try result_ally.create(Child);
             errdefer result_ally.destroy(value);
 
             var cv = ChildVisitor(Deserializer){};
-            value.* = try cv.visitor().visitVoid(result_ally, Deserializer);
+            value.* = try cv.visitor().visitVoid(result_ally, scratch_ally, Deserializer);
 
             return value;
         }
