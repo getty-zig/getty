@@ -88,21 +88,24 @@ fn PointVisitor(comptime Value: type) type {
 
         fn visitSeq(
             _: Self,
-            ally: std.mem.Allocator,
+            result_ally: std.mem.Allocator,
+            scratch_ally: std.mem.Allocator,
             comptime De: type,
             seq: anytype,
         ) De.Err!Value {
+            _ = scratch_ally;
+
             var point: Value = undefined;
 
             inline for (std.meta.fields(Value)) |field| {
-                if (try seq.nextElement(ally, i32)) |elem| {
+                if (try seq.nextElement(result_ally, i32)) |elem| {
                     @field(point, field.name) = elem;
                 } else {
                     return error.InvalidLength;
                 }
             }
 
-            if ((try seq.nextElement(ally, Ignored)) != null) {
+            if ((try seq.nextElement(result_ally, Ignored)) != null) {
                 return error.InvalidLength;
             }
 
