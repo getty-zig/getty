@@ -416,8 +416,7 @@ const MapAccess = struct {
 
     fn nextKeySeed(
         self: *@This(),
-        result_ally: std.mem.Allocator,
-        scratch_ally: std.mem.Allocator,
+        ally: std.mem.Allocator,
         seed: anytype,
     ) getty_error!?@TypeOf(seed).Value {
         if (self.pos >= self.deserializers.items(.key).len) {
@@ -425,28 +424,19 @@ const MapAccess = struct {
         }
 
         var d = self.deserializers.items(.key)[self.pos];
-        var result = try seed.deserialize(
-            result_ally,
-            scratch_ally,
-            d.deserializer(),
-        );
+        var result = try seed.deserialize(ally, d.deserializer());
         return result.value;
     }
 
     fn nextValueSeed(
         self: *@This(),
-        result_ally: std.mem.Allocator,
-        scratch_ally: std.mem.Allocator,
+        ally: std.mem.Allocator,
         seed: anytype,
     ) getty_error!@TypeOf(seed).Value {
         var d = self.deserializers.items(.value)[self.pos];
         self.pos += 1;
 
-        var result = try seed.deserialize(
-            result_ally,
-            scratch_ally,
-            d.deserializer(),
-        );
+        var result = try seed.deserialize(ally, d.deserializer());
         return result.value;
     }
 };
@@ -463,8 +453,7 @@ const SeqAccess = struct {
 
     fn nextElementSeed(
         self: *@This(),
-        result_ally: std.mem.Allocator,
-        scratch_ally: std.mem.Allocator,
+        ally: std.mem.Allocator,
         seed: anytype,
     ) getty_error!?@TypeOf(seed).Value {
         if (self.pos >= self.deserializers.items.len) {
@@ -474,11 +463,7 @@ const SeqAccess = struct {
         var d = self.deserializers.items[self.pos];
         self.pos += 1;
 
-        var result = try seed.deserialize(
-            result_ally,
-            scratch_ally,
-            d.deserializer(),
-        );
+        var result = try seed.deserialize(ally, d.deserializer());
         return result.value;
     }
 };
@@ -503,31 +488,21 @@ const UnionVariantAccess = struct {
 
     fn variantSeed(
         self: *Self,
-        result_ally: std.mem.Allocator,
-        scratch_ally: std.mem.Allocator,
+        ally: std.mem.Allocator,
         seed: anytype,
     ) getty_error!@TypeOf(seed).Value {
         var cd = ContentDeserializer{ .content = self.key };
-        var result = try seed.deserialize(
-            result_ally,
-            scratch_ally,
-            cd.deserializer(),
-        );
+        var result = try seed.deserialize(ally, cd.deserializer());
         return result.value;
     }
 
     fn payloadSeed(
         self: *Self,
-        result_ally: std.mem.Allocator,
-        scratch_ally: std.mem.Allocator,
+        ally: std.mem.Allocator,
         seed: anytype,
     ) getty_error!@TypeOf(seed).Value {
         var cd = ContentDeserializer{ .content = self.value };
-        var result = try seed.deserialize(
-            result_ally,
-            scratch_ally,
-            cd.deserializer(),
-        );
+        var result = try seed.deserialize(ally, cd.deserializer());
         return result.value;
     }
 };
