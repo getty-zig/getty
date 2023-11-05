@@ -784,7 +784,7 @@
 <span class="line" id="L663"></span>
 <span class="line" id="L664">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">getNameOffset</span>(self: Symbol) ?<span class="tok-type">u32</span> {</span>
 <span class="line" id="L665">        <span class="tok-kw">if</span> (!std.mem.eql(<span class="tok-type">u8</span>, self.name[<span class="tok-number">0</span>..<span class="tok-number">4</span>], <span class="tok-str">&quot;\x00\x00\x00\x00&quot;</span>)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L666">        <span class="tok-kw">const</span> offset = std.mem.readIntLittle(<span class="tok-type">u32</span>, self.name[<span class="tok-number">4</span>..<span class="tok-number">8</span>]);</span>
+<span class="line" id="L666">        <span class="tok-kw">const</span> offset = std.mem.readInt(<span class="tok-type">u32</span>, self.name[<span class="tok-number">4</span>..<span class="tok-number">8</span>], .little);</span>
 <span class="line" id="L667">        <span class="tok-kw">return</span> offset;</span>
 <span class="line" id="L668">    }</span>
 <span class="line" id="L669">};</span>
@@ -1202,7 +1202,7 @@
 <span class="line" id="L1075">        <span class="tok-kw">var</span> stream = std.io.fixedBufferStream(data);</span>
 <span class="line" id="L1076">        <span class="tok-kw">const</span> reader = stream.reader();</span>
 <span class="line" id="L1077">        <span class="tok-kw">try</span> stream.seekTo(pe_pointer_offset);</span>
-<span class="line" id="L1078">        <span class="tok-kw">var</span> coff_header_offset = <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>);</span>
+<span class="line" id="L1078">        <span class="tok-kw">var</span> coff_header_offset = <span class="tok-kw">try</span> reader.readInt(<span class="tok-type">u32</span>, .little);</span>
 <span class="line" id="L1079">        <span class="tok-kw">try</span> stream.seekTo(coff_header_offset);</span>
 <span class="line" id="L1080">        <span class="tok-kw">var</span> buf: [<span class="tok-number">4</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L1081">        <span class="tok-kw">try</span> reader.readNoEof(&amp;buf);</span>
@@ -1277,7 +1277,7 @@
 <span class="line" id="L1142">        <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, &amp;cv_signature, <span class="tok-str">&quot;RSDS&quot;</span>))</span>
 <span class="line" id="L1143">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidPEMagic;</span>
 <span class="line" id="L1144">        <span class="tok-kw">try</span> reader.readNoEof(self.guid[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L1145">        self.age = <span class="tok-kw">try</span> reader.readIntLittle(<span class="tok-type">u32</span>);</span>
+<span class="line" id="L1145">        self.age = <span class="tok-kw">try</span> reader.readInt(<span class="tok-type">u32</span>, .little);</span>
 <span class="line" id="L1146"></span>
 <span class="line" id="L1147">        <span class="tok-comment">// Finally read the null-terminated string.</span>
 </span>
@@ -1362,7 +1362,7 @@
 <span class="line" id="L1223">        <span class="tok-kw">if</span> (coff_header.pointer_to_symbol_table == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
 <span class="line" id="L1224"></span>
 <span class="line" id="L1225">        <span class="tok-kw">const</span> offset = coff_header.pointer_to_symbol_table + Symbol.sizeOf() * coff_header.number_of_symbols;</span>
-<span class="line" id="L1226">        <span class="tok-kw">const</span> size = mem.readIntLittle(<span class="tok-type">u32</span>, self.data[offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>]);</span>
+<span class="line" id="L1226">        <span class="tok-kw">const</span> size = mem.readInt(<span class="tok-type">u32</span>, self.data[offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>], .little);</span>
 <span class="line" id="L1227">        <span class="tok-kw">if</span> ((offset + size) &gt; self.data.len) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidStrtabSize;</span>
 <span class="line" id="L1228"></span>
 <span class="line" id="L1229">        <span class="tok-kw">return</span> Strtab{ .buffer = self.data[offset..][<span class="tok-number">0</span>..size] };</span>
@@ -1464,9 +1464,9 @@
 <span class="line" id="L1324">    <span class="tok-kw">fn</span> <span class="tok-fn">asSymbol</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Symbol {</span>
 <span class="line" id="L1325">        <span class="tok-kw">return</span> .{</span>
 <span class="line" id="L1326">            .name = raw[<span class="tok-number">0</span>..<span class="tok-number">8</span>].*,</span>
-<span class="line" id="L1327">            .value = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
-<span class="line" id="L1328">            .section_number = <span class="tok-builtin">@as</span>(SectionNumber, <span class="tok-builtin">@enumFromInt</span>(mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>]))),</span>
-<span class="line" id="L1329">            .<span class="tok-type">type</span> = <span class="tok-builtin">@as</span>(SymType, <span class="tok-builtin">@bitCast</span>(mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">14</span>..<span class="tok-number">16</span>]))),</span>
+<span class="line" id="L1327">            .value = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>], .little),</span>
+<span class="line" id="L1328">            .section_number = <span class="tok-builtin">@as</span>(SectionNumber, <span class="tok-builtin">@enumFromInt</span>(mem.readInt(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>], .little))),</span>
+<span class="line" id="L1329">            .<span class="tok-type">type</span> = <span class="tok-builtin">@as</span>(SymType, <span class="tok-builtin">@bitCast</span>(mem.readInt(<span class="tok-type">u16</span>, raw[<span class="tok-number">14</span>..<span class="tok-number">16</span>], .little))),</span>
 <span class="line" id="L1330">            .storage_class = <span class="tok-builtin">@as</span>(StorageClass, <span class="tok-builtin">@enumFromInt</span>(raw[<span class="tok-number">16</span>])),</span>
 <span class="line" id="L1331">            .number_of_aux_symbols = raw[<span class="tok-number">17</span>],</span>
 <span class="line" id="L1332">        };</span>
@@ -1475,27 +1475,27 @@
 <span class="line" id="L1335">    <span class="tok-kw">fn</span> <span class="tok-fn">asDebugInfo</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) DebugInfoDefinition {</span>
 <span class="line" id="L1336">        <span class="tok-kw">return</span> .{</span>
 <span class="line" id="L1337">            .unused_1 = raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>].*,</span>
-<span class="line" id="L1338">            .linenumber = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>]),</span>
+<span class="line" id="L1338">            .linenumber = mem.readInt(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>], .little),</span>
 <span class="line" id="L1339">            .unused_2 = raw[<span class="tok-number">6</span>..<span class="tok-number">12</span>].*,</span>
-<span class="line" id="L1340">            .pointer_to_next_function = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>]),</span>
+<span class="line" id="L1340">            .pointer_to_next_function = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>], .little),</span>
 <span class="line" id="L1341">            .unused_3 = raw[<span class="tok-number">16</span>..<span class="tok-number">18</span>].*,</span>
 <span class="line" id="L1342">        };</span>
 <span class="line" id="L1343">    }</span>
 <span class="line" id="L1344"></span>
 <span class="line" id="L1345">    <span class="tok-kw">fn</span> <span class="tok-fn">asFuncDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) FunctionDefinition {</span>
 <span class="line" id="L1346">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1347">            .tag_index = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
-<span class="line" id="L1348">            .total_size = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>]),</span>
-<span class="line" id="L1349">            .pointer_to_linenumber = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
-<span class="line" id="L1350">            .pointer_to_next_function = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>]),</span>
+<span class="line" id="L1347">            .tag_index = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>], .little),</span>
+<span class="line" id="L1348">            .total_size = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>], .little),</span>
+<span class="line" id="L1349">            .pointer_to_linenumber = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>], .little),</span>
+<span class="line" id="L1350">            .pointer_to_next_function = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">16</span>], .little),</span>
 <span class="line" id="L1351">            .unused = raw[<span class="tok-number">16</span>..<span class="tok-number">18</span>].*,</span>
 <span class="line" id="L1352">        };</span>
 <span class="line" id="L1353">    }</span>
 <span class="line" id="L1354"></span>
 <span class="line" id="L1355">    <span class="tok-kw">fn</span> <span class="tok-fn">asWeakExtDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WeakExternalDefinition {</span>
 <span class="line" id="L1356">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1357">            .tag_index = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
-<span class="line" id="L1358">            .flag = <span class="tok-builtin">@as</span>(WeakExternalFlag, <span class="tok-builtin">@enumFromInt</span>(mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>]))),</span>
+<span class="line" id="L1357">            .tag_index = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>], .little),</span>
+<span class="line" id="L1358">            .flag = <span class="tok-builtin">@as</span>(WeakExternalFlag, <span class="tok-builtin">@enumFromInt</span>(mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">8</span>], .little))),</span>
 <span class="line" id="L1359">            .unused = raw[<span class="tok-number">8</span>..<span class="tok-number">18</span>].*,</span>
 <span class="line" id="L1360">        };</span>
 <span class="line" id="L1361">    }</span>
@@ -1508,11 +1508,11 @@
 <span class="line" id="L1368"></span>
 <span class="line" id="L1369">    <span class="tok-kw">fn</span> <span class="tok-fn">asSectDef</span>(raw: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) SectionDefinition {</span>
 <span class="line" id="L1370">        <span class="tok-kw">return</span> .{</span>
-<span class="line" id="L1371">            .length = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>]),</span>
-<span class="line" id="L1372">            .number_of_relocations = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>]),</span>
-<span class="line" id="L1373">            .number_of_linenumbers = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">6</span>..<span class="tok-number">8</span>]),</span>
-<span class="line" id="L1374">            .checksum = mem.readIntLittle(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>]),</span>
-<span class="line" id="L1375">            .number = mem.readIntLittle(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>]),</span>
+<span class="line" id="L1371">            .length = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">0</span>..<span class="tok-number">4</span>], .little),</span>
+<span class="line" id="L1372">            .number_of_relocations = mem.readInt(<span class="tok-type">u16</span>, raw[<span class="tok-number">4</span>..<span class="tok-number">6</span>], .little),</span>
+<span class="line" id="L1373">            .number_of_linenumbers = mem.readInt(<span class="tok-type">u16</span>, raw[<span class="tok-number">6</span>..<span class="tok-number">8</span>], .little),</span>
+<span class="line" id="L1374">            .checksum = mem.readInt(<span class="tok-type">u32</span>, raw[<span class="tok-number">8</span>..<span class="tok-number">12</span>], .little),</span>
+<span class="line" id="L1375">            .number = mem.readInt(<span class="tok-type">u16</span>, raw[<span class="tok-number">12</span>..<span class="tok-number">14</span>], .little),</span>
 <span class="line" id="L1376">            .selection = <span class="tok-builtin">@as</span>(ComdatSelection, <span class="tok-builtin">@enumFromInt</span>(raw[<span class="tok-number">14</span>])),</span>
 <span class="line" id="L1377">            .unused = raw[<span class="tok-number">15</span>..<span class="tok-number">18</span>].*,</span>
 <span class="line" id="L1378">        };</span>

@@ -316,7 +316,7 @@
 <span class="line" id="L201">                <span class="tok-kw">if</span> (block_header.last_block) {</span>
 <span class="line" id="L202">                    self.state = .LastBlock;</span>
 <span class="line" id="L203">                    <span class="tok-kw">if</span> (self.frame_context.has_checksum) {</span>
-<span class="line" id="L204">                        <span class="tok-kw">const</span> checksum = source_reader.readIntLittle(<span class="tok-type">u32</span>) <span class="tok-kw">catch</span></span>
+<span class="line" id="L204">                        <span class="tok-kw">const</span> checksum = source_reader.readInt(<span class="tok-type">u32</span>, .little) <span class="tok-kw">catch</span></span>
 <span class="line" id="L205">                            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MalformedFrame;</span>
 <span class="line" id="L206">                        <span class="tok-kw">if</span> (<span class="tok-kw">comptime</span> options.verify_checksum) {</span>
 <span class="line" id="L207">                            <span class="tok-kw">if</span> (self.frame_context.hasher_opt) |*hasher| {</span>
@@ -334,53 +334,53 @@
 <span class="line" id="L219">            }</span>
 <span class="line" id="L220"></span>
 <span class="line" id="L221">            <span class="tok-kw">const</span> size = <span class="tok-builtin">@min</span>(self.buffer.len(), buffer.len);</span>
-<span class="line" id="L222">            <span class="tok-kw">for</span> (<span class="tok-number">0</span>..size) |i| {</span>
-<span class="line" id="L223">                buffer[i] = self.buffer.read().?;</span>
-<span class="line" id="L224">            }</span>
-<span class="line" id="L225">            <span class="tok-kw">if</span> (self.state == .LastBlock <span class="tok-kw">and</span> self.buffer.len() == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L226">                self.state = .NewFrame;</span>
-<span class="line" id="L227">                self.allocator.free(self.literal_fse_buffer);</span>
-<span class="line" id="L228">                self.allocator.free(self.match_fse_buffer);</span>
-<span class="line" id="L229">                self.allocator.free(self.offset_fse_buffer);</span>
-<span class="line" id="L230">                self.allocator.free(self.literals_buffer);</span>
-<span class="line" id="L231">                self.allocator.free(self.sequence_buffer);</span>
-<span class="line" id="L232">                self.buffer.deinit(self.allocator);</span>
-<span class="line" id="L233">            }</span>
-<span class="line" id="L234">            <span class="tok-kw">return</span> size;</span>
-<span class="line" id="L235">        }</span>
-<span class="line" id="L236">    };</span>
-<span class="line" id="L237">}</span>
-<span class="line" id="L238"></span>
-<span class="line" id="L239"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decompressStreamOptions</span>(</span>
-<span class="line" id="L240">    allocator: Allocator,</span>
-<span class="line" id="L241">    reader: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L242">    <span class="tok-kw">comptime</span> options: DecompressStreamOptions,</span>
-<span class="line" id="L243">) DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader, options)) {</span>
-<span class="line" id="L244">    <span class="tok-kw">return</span> DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader), options).init(allocator, reader);</span>
-<span class="line" id="L245">}</span>
-<span class="line" id="L246"></span>
-<span class="line" id="L247"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decompressStream</span>(</span>
-<span class="line" id="L248">    allocator: Allocator,</span>
-<span class="line" id="L249">    reader: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L250">) DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader), .{}) {</span>
-<span class="line" id="L251">    <span class="tok-kw">return</span> DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader), .{}).init(allocator, reader);</span>
-<span class="line" id="L252">}</span>
-<span class="line" id="L253"></span>
-<span class="line" id="L254"><span class="tok-kw">fn</span> <span class="tok-fn">testDecompress</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L255">    <span class="tok-kw">var</span> in_stream = std.io.fixedBufferStream(data);</span>
-<span class="line" id="L256">    <span class="tok-kw">var</span> zstd_stream = decompressStream(std.testing.allocator, in_stream.reader());</span>
-<span class="line" id="L257">    <span class="tok-kw">defer</span> zstd_stream.deinit();</span>
-<span class="line" id="L258">    <span class="tok-kw">const</span> result = zstd_stream.reader().readAllAlloc(std.testing.allocator, std.math.maxInt(<span class="tok-type">usize</span>));</span>
-<span class="line" id="L259">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L260">}</span>
-<span class="line" id="L261"></span>
-<span class="line" id="L262"><span class="tok-kw">fn</span> <span class="tok-fn">testReader</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> expected: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L263">    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> testDecompress(data);</span>
-<span class="line" id="L264">    <span class="tok-kw">defer</span> std.testing.allocator.free(buf);</span>
-<span class="line" id="L265">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, buf);</span>
-<span class="line" id="L266">}</span>
-<span class="line" id="L267"></span>
-<span class="line" id="L268"><span class="tok-kw">test</span> <span class="tok-str">&quot;zstandard decompression&quot;</span> {</span>
+<span class="line" id="L222">            self.buffer.readFirstAssumeLength(buffer, size);</span>
+<span class="line" id="L223">            <span class="tok-kw">if</span> (self.state == .LastBlock <span class="tok-kw">and</span> self.buffer.len() == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L224">                self.state = .NewFrame;</span>
+<span class="line" id="L225">                self.allocator.free(self.literal_fse_buffer);</span>
+<span class="line" id="L226">                self.allocator.free(self.match_fse_buffer);</span>
+<span class="line" id="L227">                self.allocator.free(self.offset_fse_buffer);</span>
+<span class="line" id="L228">                self.allocator.free(self.literals_buffer);</span>
+<span class="line" id="L229">                self.allocator.free(self.sequence_buffer);</span>
+<span class="line" id="L230">                self.buffer.deinit(self.allocator);</span>
+<span class="line" id="L231">            }</span>
+<span class="line" id="L232">            <span class="tok-kw">return</span> size;</span>
+<span class="line" id="L233">        }</span>
+<span class="line" id="L234">    };</span>
+<span class="line" id="L235">}</span>
+<span class="line" id="L236"></span>
+<span class="line" id="L237"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decompressStreamOptions</span>(</span>
+<span class="line" id="L238">    allocator: Allocator,</span>
+<span class="line" id="L239">    reader: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L240">    <span class="tok-kw">comptime</span> options: DecompressStreamOptions,</span>
+<span class="line" id="L241">) DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader, options)) {</span>
+<span class="line" id="L242">    <span class="tok-kw">return</span> DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader), options).init(allocator, reader);</span>
+<span class="line" id="L243">}</span>
+<span class="line" id="L244"></span>
+<span class="line" id="L245"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">decompressStream</span>(</span>
+<span class="line" id="L246">    allocator: Allocator,</span>
+<span class="line" id="L247">    reader: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L248">) DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader), .{}) {</span>
+<span class="line" id="L249">    <span class="tok-kw">return</span> DecompressStream(<span class="tok-builtin">@TypeOf</span>(reader), .{}).init(allocator, reader);</span>
+<span class="line" id="L250">}</span>
+<span class="line" id="L251"></span>
+<span class="line" id="L252"><span class="tok-kw">fn</span> <span class="tok-fn">testDecompress</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L253">    <span class="tok-kw">var</span> in_stream = std.io.fixedBufferStream(data);</span>
+<span class="line" id="L254">    <span class="tok-kw">var</span> zstd_stream = decompressStream(std.testing.allocator, in_stream.reader());</span>
+<span class="line" id="L255">    <span class="tok-kw">defer</span> zstd_stream.deinit();</span>
+<span class="line" id="L256">    <span class="tok-kw">const</span> result = zstd_stream.reader().readAllAlloc(std.testing.allocator, std.math.maxInt(<span class="tok-type">usize</span>));</span>
+<span class="line" id="L257">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L258">}</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260"><span class="tok-kw">fn</span> <span class="tok-fn">testReader</span>(data: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-kw">comptime</span> expected: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L261">    <span class="tok-kw">const</span> buf = <span class="tok-kw">try</span> testDecompress(data);</span>
+<span class="line" id="L262">    <span class="tok-kw">defer</span> std.testing.allocator.free(buf);</span>
+<span class="line" id="L263">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, expected, buf);</span>
+<span class="line" id="L264">}</span>
+<span class="line" id="L265"></span>
+<span class="line" id="L266"><span class="tok-kw">test</span> <span class="tok-str">&quot;zstandard decompression&quot;</span> {</span>
+<span class="line" id="L267">    <span class="tok-kw">if</span> (<span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>).zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L268"></span>
 <span class="line" id="L269">    <span class="tok-kw">const</span> uncompressed = <span class="tok-builtin">@embedFile</span>(<span class="tok-str">&quot;testdata/rfc8478.txt&quot;</span>);</span>
 <span class="line" id="L270">    <span class="tok-kw">const</span> compressed3 = <span class="tok-builtin">@embedFile</span>(<span class="tok-str">&quot;testdata/rfc8478.txt.zst.3&quot;</span>);</span>
 <span class="line" id="L271">    <span class="tok-kw">const</span> compressed19 = <span class="tok-builtin">@embedFile</span>(<span class="tok-str">&quot;testdata/rfc8478.txt.zst.19&quot;</span>);</span>

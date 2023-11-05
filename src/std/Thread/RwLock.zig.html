@@ -419,87 +419,89 @@
 <span class="line" id="L297">    <span class="tok-kw">if</span> (builtin.single_threaded)</span>
 <span class="line" id="L298">        <span class="tok-kw">return</span>;</span>
 <span class="line" id="L299"></span>
-<span class="line" id="L300">    <span class="tok-kw">const</span> num_writers: <span class="tok-type">usize</span> = <span class="tok-number">2</span>;</span>
-<span class="line" id="L301">    <span class="tok-kw">const</span> num_readers: <span class="tok-type">usize</span> = <span class="tok-number">4</span>;</span>
-<span class="line" id="L302">    <span class="tok-kw">const</span> num_writes: <span class="tok-type">usize</span> = <span class="tok-number">10000</span>;</span>
-<span class="line" id="L303">    <span class="tok-kw">const</span> num_reads: <span class="tok-type">usize</span> = num_writes * <span class="tok-number">2</span>;</span>
-<span class="line" id="L304"></span>
-<span class="line" id="L305">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L306">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L307"></span>
-<span class="line" id="L308">        rwl: RwLock = .{},</span>
-<span class="line" id="L309">        writes: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L310">        reads: std.atomic.Atomic(<span class="tok-type">usize</span>) = std.atomic.Atomic(<span class="tok-type">usize</span>).init(<span class="tok-number">0</span>),</span>
-<span class="line" id="L311"></span>
-<span class="line" id="L312">        term1: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L313">        term2: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L314">        term_sum: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L315"></span>
-<span class="line" id="L316">        <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(self: *Self) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L317">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L318">                self.rwl.lockShared();</span>
-<span class="line" id="L319">                <span class="tok-kw">defer</span> self.rwl.unlockShared();</span>
-<span class="line" id="L320"></span>
-<span class="line" id="L321">                <span class="tok-kw">if</span> (self.writes &gt;= num_writes <span class="tok-kw">or</span> self.reads.load(.Unordered) &gt;= num_reads)</span>
-<span class="line" id="L322">                    <span class="tok-kw">break</span>;</span>
-<span class="line" id="L323"></span>
-<span class="line" id="L324">                <span class="tok-kw">try</span> self.check();</span>
+<span class="line" id="L300">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L301"></span>
+<span class="line" id="L302">    <span class="tok-kw">const</span> num_writers: <span class="tok-type">usize</span> = <span class="tok-number">2</span>;</span>
+<span class="line" id="L303">    <span class="tok-kw">const</span> num_readers: <span class="tok-type">usize</span> = <span class="tok-number">4</span>;</span>
+<span class="line" id="L304">    <span class="tok-kw">const</span> num_writes: <span class="tok-type">usize</span> = <span class="tok-number">10000</span>;</span>
+<span class="line" id="L305">    <span class="tok-kw">const</span> num_reads: <span class="tok-type">usize</span> = num_writes * <span class="tok-number">2</span>;</span>
+<span class="line" id="L306"></span>
+<span class="line" id="L307">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L308">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L309"></span>
+<span class="line" id="L310">        rwl: RwLock = .{},</span>
+<span class="line" id="L311">        writes: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L312">        reads: std.atomic.Atomic(<span class="tok-type">usize</span>) = std.atomic.Atomic(<span class="tok-type">usize</span>).init(<span class="tok-number">0</span>),</span>
+<span class="line" id="L313"></span>
+<span class="line" id="L314">        term1: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L315">        term2: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L316">        term_sum: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L317"></span>
+<span class="line" id="L318">        <span class="tok-kw">fn</span> <span class="tok-fn">reader</span>(self: *Self) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L319">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L320">                self.rwl.lockShared();</span>
+<span class="line" id="L321">                <span class="tok-kw">defer</span> self.rwl.unlockShared();</span>
+<span class="line" id="L322"></span>
+<span class="line" id="L323">                <span class="tok-kw">if</span> (self.writes &gt;= num_writes <span class="tok-kw">or</span> self.reads.load(.Unordered) &gt;= num_reads)</span>
+<span class="line" id="L324">                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L325"></span>
-<span class="line" id="L326">                _ = self.reads.fetchAdd(<span class="tok-number">1</span>, .Monotonic);</span>
-<span class="line" id="L327">            }</span>
-<span class="line" id="L328">        }</span>
-<span class="line" id="L329"></span>
-<span class="line" id="L330">        <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(self: *Self, thread_idx: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L331">            <span class="tok-kw">var</span> prng = std.rand.DefaultPrng.init(thread_idx);</span>
-<span class="line" id="L332">            <span class="tok-kw">var</span> rnd = prng.random();</span>
-<span class="line" id="L333"></span>
-<span class="line" id="L334">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L335">                self.rwl.lock();</span>
-<span class="line" id="L336">                <span class="tok-kw">defer</span> self.rwl.unlock();</span>
-<span class="line" id="L337"></span>
-<span class="line" id="L338">                <span class="tok-kw">if</span> (self.writes &gt;= num_writes)</span>
-<span class="line" id="L339">                    <span class="tok-kw">break</span>;</span>
-<span class="line" id="L340"></span>
-<span class="line" id="L341">                <span class="tok-kw">try</span> self.check();</span>
+<span class="line" id="L326">                <span class="tok-kw">try</span> self.check();</span>
+<span class="line" id="L327"></span>
+<span class="line" id="L328">                _ = self.reads.fetchAdd(<span class="tok-number">1</span>, .Monotonic);</span>
+<span class="line" id="L329">            }</span>
+<span class="line" id="L330">        }</span>
+<span class="line" id="L331"></span>
+<span class="line" id="L332">        <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(self: *Self, thread_idx: <span class="tok-type">usize</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L333">            <span class="tok-kw">var</span> prng = std.rand.DefaultPrng.init(thread_idx);</span>
+<span class="line" id="L334">            <span class="tok-kw">var</span> rnd = prng.random();</span>
+<span class="line" id="L335"></span>
+<span class="line" id="L336">            <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L337">                self.rwl.lock();</span>
+<span class="line" id="L338">                <span class="tok-kw">defer</span> self.rwl.unlock();</span>
+<span class="line" id="L339"></span>
+<span class="line" id="L340">                <span class="tok-kw">if</span> (self.writes &gt;= num_writes)</span>
+<span class="line" id="L341">                    <span class="tok-kw">break</span>;</span>
 <span class="line" id="L342"></span>
-<span class="line" id="L343">                <span class="tok-kw">const</span> term1 = rnd.int(<span class="tok-type">usize</span>);</span>
-<span class="line" id="L344">                self.term1 = term1;</span>
-<span class="line" id="L345">                <span class="tok-kw">try</span> std.Thread.yield();</span>
-<span class="line" id="L346"></span>
-<span class="line" id="L347">                <span class="tok-kw">const</span> term2 = rnd.int(<span class="tok-type">usize</span>);</span>
-<span class="line" id="L348">                self.term2 = term2;</span>
-<span class="line" id="L349">                <span class="tok-kw">try</span> std.Thread.yield();</span>
-<span class="line" id="L350"></span>
-<span class="line" id="L351">                self.term_sum = term1 +% term2;</span>
-<span class="line" id="L352">                self.writes += <span class="tok-number">1</span>;</span>
-<span class="line" id="L353">            }</span>
-<span class="line" id="L354">        }</span>
-<span class="line" id="L355"></span>
-<span class="line" id="L356">        <span class="tok-kw">fn</span> <span class="tok-fn">check</span>(self: *<span class="tok-kw">const</span> Self) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L357">            <span class="tok-kw">const</span> term_sum = self.term_sum;</span>
-<span class="line" id="L358">            <span class="tok-kw">try</span> std.Thread.yield();</span>
-<span class="line" id="L359"></span>
-<span class="line" id="L360">            <span class="tok-kw">const</span> term2 = self.term2;</span>
-<span class="line" id="L361">            <span class="tok-kw">try</span> std.Thread.yield();</span>
-<span class="line" id="L362"></span>
-<span class="line" id="L363">            <span class="tok-kw">const</span> term1 = self.term1;</span>
-<span class="line" id="L364">            <span class="tok-kw">try</span> testing.expectEqual(term_sum, term1 +% term2);</span>
-<span class="line" id="L365">        }</span>
-<span class="line" id="L366">    };</span>
-<span class="line" id="L367"></span>
-<span class="line" id="L368">    <span class="tok-kw">var</span> runner = Runner{};</span>
-<span class="line" id="L369">    <span class="tok-kw">var</span> threads: [num_writers + num_readers]std.Thread = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L370"></span>
-<span class="line" id="L371">    <span class="tok-kw">for</span> (threads[<span class="tok-number">0</span>..num_writers], <span class="tok-number">0</span>..) |*t, i| t.* = <span class="tok-kw">try</span> std.Thread.spawn(.{}, Runner.writer, .{ &amp;runner, i });</span>
-<span class="line" id="L372">    <span class="tok-kw">for</span> (threads[num_writers..]) |*t| t.* = <span class="tok-kw">try</span> std.Thread.spawn(.{}, Runner.reader, .{&amp;runner});</span>
-<span class="line" id="L373"></span>
-<span class="line" id="L374">    <span class="tok-kw">for</span> (threads) |t| t.join();</span>
+<span class="line" id="L343">                <span class="tok-kw">try</span> self.check();</span>
+<span class="line" id="L344"></span>
+<span class="line" id="L345">                <span class="tok-kw">const</span> term1 = rnd.int(<span class="tok-type">usize</span>);</span>
+<span class="line" id="L346">                self.term1 = term1;</span>
+<span class="line" id="L347">                <span class="tok-kw">try</span> std.Thread.yield();</span>
+<span class="line" id="L348"></span>
+<span class="line" id="L349">                <span class="tok-kw">const</span> term2 = rnd.int(<span class="tok-type">usize</span>);</span>
+<span class="line" id="L350">                self.term2 = term2;</span>
+<span class="line" id="L351">                <span class="tok-kw">try</span> std.Thread.yield();</span>
+<span class="line" id="L352"></span>
+<span class="line" id="L353">                self.term_sum = term1 +% term2;</span>
+<span class="line" id="L354">                self.writes += <span class="tok-number">1</span>;</span>
+<span class="line" id="L355">            }</span>
+<span class="line" id="L356">        }</span>
+<span class="line" id="L357"></span>
+<span class="line" id="L358">        <span class="tok-kw">fn</span> <span class="tok-fn">check</span>(self: *<span class="tok-kw">const</span> Self) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L359">            <span class="tok-kw">const</span> term_sum = self.term_sum;</span>
+<span class="line" id="L360">            <span class="tok-kw">try</span> std.Thread.yield();</span>
+<span class="line" id="L361"></span>
+<span class="line" id="L362">            <span class="tok-kw">const</span> term2 = self.term2;</span>
+<span class="line" id="L363">            <span class="tok-kw">try</span> std.Thread.yield();</span>
+<span class="line" id="L364"></span>
+<span class="line" id="L365">            <span class="tok-kw">const</span> term1 = self.term1;</span>
+<span class="line" id="L366">            <span class="tok-kw">try</span> testing.expectEqual(term_sum, term1 +% term2);</span>
+<span class="line" id="L367">        }</span>
+<span class="line" id="L368">    };</span>
+<span class="line" id="L369"></span>
+<span class="line" id="L370">    <span class="tok-kw">var</span> runner = Runner{};</span>
+<span class="line" id="L371">    <span class="tok-kw">var</span> threads: [num_writers + num_readers]std.Thread = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L372"></span>
+<span class="line" id="L373">    <span class="tok-kw">for</span> (threads[<span class="tok-number">0</span>..num_writers], <span class="tok-number">0</span>..) |*t, i| t.* = <span class="tok-kw">try</span> std.Thread.spawn(.{}, Runner.writer, .{ &amp;runner, i });</span>
+<span class="line" id="L374">    <span class="tok-kw">for</span> (threads[num_writers..]) |*t| t.* = <span class="tok-kw">try</span> std.Thread.spawn(.{}, Runner.reader, .{&amp;runner});</span>
 <span class="line" id="L375"></span>
-<span class="line" id="L376">    <span class="tok-kw">try</span> testing.expectEqual(num_writes, runner.writes);</span>
+<span class="line" id="L376">    <span class="tok-kw">for</span> (threads) |t| t.join();</span>
 <span class="line" id="L377"></span>
-<span class="line" id="L378">    <span class="tok-comment">//std.debug.print(&quot;reads={}\n&quot;, .{ runner.reads.load(.Unordered)});</span>
+<span class="line" id="L378">    <span class="tok-kw">try</span> testing.expectEqual(num_writes, runner.writes);</span>
+<span class="line" id="L379"></span>
+<span class="line" id="L380">    <span class="tok-comment">//std.debug.print(&quot;reads={}\n&quot;, .{ runner.reads.load(.Unordered)});</span>
 </span>
-<span class="line" id="L379">}</span>
-<span class="line" id="L380"></span>
+<span class="line" id="L381">}</span>
+<span class="line" id="L382"></span>
 </code></pre></body>
 </html>

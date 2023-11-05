@@ -438,36 +438,38 @@
 <span class="line" id="L289">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
 <span class="line" id="L290">    }</span>
 <span class="line" id="L291"></span>
-<span class="line" id="L292">    <span class="tok-kw">const</span> num_threads = <span class="tok-number">4</span>;</span>
-<span class="line" id="L293">    <span class="tok-kw">const</span> num_increments = <span class="tok-number">1000</span>;</span>
-<span class="line" id="L294"></span>
-<span class="line" id="L295">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L296">        mutex: Mutex = .{},</span>
-<span class="line" id="L297">        counter: NonAtomicCounter = .{},</span>
-<span class="line" id="L298"></span>
-<span class="line" id="L299">        <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
-<span class="line" id="L300">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = num_increments;</span>
-<span class="line" id="L301">            <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L302">                <span class="tok-comment">// Occasionally hint to let another thread run.</span>
+<span class="line" id="L292">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
+<span class="line" id="L293"></span>
+<span class="line" id="L294">    <span class="tok-kw">const</span> num_threads = <span class="tok-number">4</span>;</span>
+<span class="line" id="L295">    <span class="tok-kw">const</span> num_increments = <span class="tok-number">1000</span>;</span>
+<span class="line" id="L296"></span>
+<span class="line" id="L297">    <span class="tok-kw">const</span> Runner = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L298">        mutex: Mutex = .{},</span>
+<span class="line" id="L299">        counter: NonAtomicCounter = .{},</span>
+<span class="line" id="L300"></span>
+<span class="line" id="L301">        <span class="tok-kw">fn</span> <span class="tok-fn">run</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
+<span class="line" id="L302">            <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = num_increments;</span>
+<span class="line" id="L303">            <span class="tok-kw">while</span> (i &gt; <span class="tok-number">0</span>) : (i -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L304">                <span class="tok-comment">// Occasionally hint to let another thread run.</span>
 </span>
-<span class="line" id="L303">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (i % <span class="tok-number">100</span> == <span class="tok-number">0</span>) Thread.yield() <span class="tok-kw">catch</span> {};</span>
-<span class="line" id="L304"></span>
-<span class="line" id="L305">                self.mutex.lock();</span>
-<span class="line" id="L306">                <span class="tok-kw">defer</span> self.mutex.unlock();</span>
-<span class="line" id="L307"></span>
-<span class="line" id="L308">                self.counter.inc();</span>
-<span class="line" id="L309">            }</span>
-<span class="line" id="L310">        }</span>
-<span class="line" id="L311">    };</span>
-<span class="line" id="L312"></span>
-<span class="line" id="L313">    <span class="tok-kw">var</span> runner = Runner{};</span>
+<span class="line" id="L305">                <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (i % <span class="tok-number">100</span> == <span class="tok-number">0</span>) Thread.yield() <span class="tok-kw">catch</span> {};</span>
+<span class="line" id="L306"></span>
+<span class="line" id="L307">                self.mutex.lock();</span>
+<span class="line" id="L308">                <span class="tok-kw">defer</span> self.mutex.unlock();</span>
+<span class="line" id="L309"></span>
+<span class="line" id="L310">                self.counter.inc();</span>
+<span class="line" id="L311">            }</span>
+<span class="line" id="L312">        }</span>
+<span class="line" id="L313">    };</span>
 <span class="line" id="L314"></span>
-<span class="line" id="L315">    <span class="tok-kw">var</span> threads: [num_threads]Thread = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L316">    <span class="tok-kw">for</span> (&amp;threads) |*t| t.* = <span class="tok-kw">try</span> Thread.spawn(.{}, Runner.run, .{&amp;runner});</span>
-<span class="line" id="L317">    <span class="tok-kw">for</span> (threads) |t| t.join();</span>
-<span class="line" id="L318"></span>
-<span class="line" id="L319">    <span class="tok-kw">try</span> testing.expectEqual(runner.counter.get(), num_increments * num_threads);</span>
-<span class="line" id="L320">}</span>
-<span class="line" id="L321"></span>
+<span class="line" id="L315">    <span class="tok-kw">var</span> runner = Runner{};</span>
+<span class="line" id="L316"></span>
+<span class="line" id="L317">    <span class="tok-kw">var</span> threads: [num_threads]Thread = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L318">    <span class="tok-kw">for</span> (&amp;threads) |*t| t.* = <span class="tok-kw">try</span> Thread.spawn(.{}, Runner.run, .{&amp;runner});</span>
+<span class="line" id="L319">    <span class="tok-kw">for</span> (threads) |t| t.join();</span>
+<span class="line" id="L320"></span>
+<span class="line" id="L321">    <span class="tok-kw">try</span> testing.expectEqual(runner.counter.get(), num_increments * num_threads);</span>
+<span class="line" id="L322">}</span>
+<span class="line" id="L323"></span>
 </code></pre></body>
 </html>

@@ -852,8 +852,8 @@
 <span class="line" id="L671">            <span class="tok-kw">if</span> (self.unwind_state) |*unwind_state| {</span>
 <span class="line" id="L672">                <span class="tok-kw">if</span> (!unwind_state.failed) {</span>
 <span class="line" id="L673">                    <span class="tok-kw">if</span> (unwind_state.dwarf_context.pc == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L674">                    <span class="tok-kw">if</span> (self.next_unwind()) |return_address| {</span>
-<span class="line" id="L675">                        self.fp = unwind_state.dwarf_context.getFp() <span class="tok-kw">catch</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L674">                    <span class="tok-kw">defer</span> self.fp = unwind_state.dwarf_context.getFp() <span class="tok-kw">catch</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L675">                    <span class="tok-kw">if</span> (self.next_unwind()) |return_address| {</span>
 <span class="line" id="L676">                        <span class="tok-kw">return</span> return_address;</span>
 <span class="line" id="L677">                    } <span class="tok-kw">else</span> |err| {</span>
 <span class="line" id="L678">                        unwind_state.last_error = err;</span>
@@ -1300,8 +1300,8 @@
 <span class="line" id="L1098">        <span class="tok-kw">if</span> (hdr.e_ident[elf.EI_VERSION] != <span class="tok-number">1</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidElfVersion;</span>
 <span class="line" id="L1099"></span>
 <span class="line" id="L1100">        <span class="tok-kw">const</span> endian: std.builtin.Endian = <span class="tok-kw">switch</span> (hdr.e_ident[elf.EI_DATA]) {</span>
-<span class="line" id="L1101">            elf.ELFDATA2LSB =&gt; .Little,</span>
-<span class="line" id="L1102">            elf.ELFDATA2MSB =&gt; .Big,</span>
+<span class="line" id="L1101">            elf.ELFDATA2LSB =&gt; .little,</span>
+<span class="line" id="L1102">            elf.ELFDATA2MSB =&gt; .big,</span>
 <span class="line" id="L1103">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidElfEndian,</span>
 <span class="line" id="L1104">        };</span>
 <span class="line" id="L1105">        assert(endian == native_endian); <span class="tok-comment">// this is our own debug info</span>
@@ -1339,8 +1339,8 @@
 <span class="line" id="L1135">                <span class="tok-kw">const</span> gnu_debuglink = <span class="tok-kw">try</span> chopSlice(mapped_mem, shdr.sh_offset, shdr.sh_size);</span>
 <span class="line" id="L1136">                <span class="tok-kw">const</span> debug_filename = mem.sliceTo(<span class="tok-builtin">@as</span>([*:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrCast</span>(gnu_debuglink.ptr)), <span class="tok-number">0</span>);</span>
 <span class="line" id="L1137">                <span class="tok-kw">const</span> crc_offset = mem.alignForward(<span class="tok-type">usize</span>, <span class="tok-builtin">@intFromPtr</span>(&amp;debug_filename[debug_filename.len]) + <span class="tok-number">1</span>, <span class="tok-number">4</span>) - <span class="tok-builtin">@intFromPtr</span>(gnu_debuglink.ptr);</span>
-<span class="line" id="L1138">                <span class="tok-kw">const</span> crc_bytes = gnu_debuglink[crc_offset .. crc_offset + <span class="tok-number">4</span>];</span>
-<span class="line" id="L1139">                separate_debug_crc = mem.readIntSliceNative(<span class="tok-type">u32</span>, crc_bytes);</span>
+<span class="line" id="L1138">                <span class="tok-kw">const</span> crc_bytes = gnu_debuglink[crc_offset..][<span class="tok-number">0</span>..<span class="tok-number">4</span>];</span>
+<span class="line" id="L1139">                separate_debug_crc = mem.readInt(<span class="tok-type">u32</span>, crc_bytes, native_endian);</span>
 <span class="line" id="L1140">                separate_debug_filename = debug_filename;</span>
 <span class="line" id="L1141">                <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L1142">            }</span>
@@ -2107,10 +2107,10 @@
 <span class="line" id="L1869">                            <span class="tok-comment">// Look for .note.gnu.build-id</span>
 </span>
 <span class="line" id="L1870">                            <span class="tok-kw">const</span> note_bytes = <span class="tok-builtin">@as</span>([*]<span class="tok-kw">const</span> <span class="tok-type">u8</span>, <span class="tok-builtin">@ptrFromInt</span>(info.dlpi_addr + phdr.p_vaddr))[<span class="tok-number">0</span>..phdr.p_memsz];</span>
-<span class="line" id="L1871">                            <span class="tok-kw">const</span> name_size = mem.readIntSliceNative(<span class="tok-type">u32</span>, note_bytes[<span class="tok-number">0</span>..<span class="tok-number">4</span>]);</span>
+<span class="line" id="L1871">                            <span class="tok-kw">const</span> name_size = mem.readInt(<span class="tok-type">u32</span>, note_bytes[<span class="tok-number">0</span>..<span class="tok-number">4</span>], native_endian);</span>
 <span class="line" id="L1872">                            <span class="tok-kw">if</span> (name_size != <span class="tok-number">4</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1873">                            <span class="tok-kw">const</span> desc_size = mem.readIntSliceNative(<span class="tok-type">u32</span>, note_bytes[<span class="tok-number">4</span>..<span class="tok-number">8</span>]);</span>
-<span class="line" id="L1874">                            <span class="tok-kw">const</span> note_type = mem.readIntSliceNative(<span class="tok-type">u32</span>, note_bytes[<span class="tok-number">8</span>..<span class="tok-number">12</span>]);</span>
+<span class="line" id="L1873">                            <span class="tok-kw">const</span> desc_size = mem.readInt(<span class="tok-type">u32</span>, note_bytes[<span class="tok-number">4</span>..<span class="tok-number">8</span>], native_endian);</span>
+<span class="line" id="L1874">                            <span class="tok-kw">const</span> note_type = mem.readInt(<span class="tok-type">u32</span>, note_bytes[<span class="tok-number">8</span>..<span class="tok-number">12</span>], native_endian);</span>
 <span class="line" id="L1875">                            <span class="tok-kw">if</span> (note_type != elf.NT_GNU_BUILD_ID) <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L1876">                            <span class="tok-kw">if</span> (!mem.eql(<span class="tok-type">u8</span>, <span class="tok-str">&quot;GNU\x00&quot;</span>, note_bytes[<span class="tok-number">12</span>..<span class="tok-number">16</span>])) <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L1877">                            context.build_id = note_bytes[<span class="tok-number">16</span>..][<span class="tok-number">0</span>..desc_size];</span>
@@ -2289,7 +2289,7 @@
 <span class="line" id="L2040">            <span class="tok-kw">if</span> (missing_debug_info) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.MissingDebugInfo;</span>
 <span class="line" id="L2041"></span>
 <span class="line" id="L2042">            <span class="tok-kw">var</span> di = DW.DwarfInfo{</span>
-<span class="line" id="L2043">                .endian = .Little,</span>
+<span class="line" id="L2043">                .endian = .little,</span>
 <span class="line" id="L2044">                .sections = sections,</span>
 <span class="line" id="L2045">                .is_macho = <span class="tok-null">true</span>,</span>
 <span class="line" id="L2046">            };</span>
@@ -2601,7 +2601,7 @@
 <span class="line" id="L2340">    <span class="tok-kw">try</span> os.sigaction(os.SIG.FPE, act, <span class="tok-null">null</span>);</span>
 <span class="line" id="L2341">}</span>
 <span class="line" id="L2342"></span>
-<span class="line" id="L2343"><span class="tok-comment">/// Attaches a global SIGSEGV handler which calls @panic(&quot;segmentation fault&quot;);</span></span>
+<span class="line" id="L2343"><span class="tok-comment">/// Attaches a global SIGSEGV handler which calls `@panic(&quot;segmentation fault&quot;);`</span></span>
 <span class="line" id="L2344"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">attachSegfaultHandler</span>() <span class="tok-type">void</span> {</span>
 <span class="line" id="L2345">    <span class="tok-kw">if</span> (!have_segfault_handling_support) {</span>
 <span class="line" id="L2346">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;segfault handler not supported for this target&quot;</span>);</span>
