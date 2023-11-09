@@ -52,7 +52,7 @@ test "serialize - std.PackedIntArray" {
 
     // Custom endian
     {
-        var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
+        var array = std.PackedIntArrayEndian(u8, .big, 3).init([_]u8{ 1, 2, 3 });
 
         try t.run(null, serialize, array, &.{
             .{ .Seq = .{ .len = 3 } },
@@ -81,7 +81,7 @@ test "serialize - std.PackedIntSlice" {
 
     // Custom endian
     {
-        var array = std.PackedIntArrayEndian(u8, .Big, 3).init([_]u8{ 1, 2, 3 });
+        var array = std.PackedIntArrayEndian(u8, .big, 3).init([_]u8{ 1, 2, 3 });
         const slice = array.slice(0, 3);
 
         try t.run(null, serialize, slice, &.{
