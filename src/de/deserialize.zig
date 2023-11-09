@@ -8,8 +8,8 @@ const Ignored = @import("impls/seed/ignored.zig").Ignored;
 const t = @import("testing.zig");
 const Visitor = @import("interfaces/visitor.zig").Visitor;
 
-/// Deserializes data from the `getty.Deserializer` `d` into a value of type
-/// `T`.
+/// Deserializes data from the `getty.Deserializer` `d` into a managed value of
+/// type `T`.
 pub fn deserialize(
     /// A memory allocator.
     ally: std.mem.Allocator,
@@ -69,6 +69,40 @@ pub fn Result(comptime T: type) type {
             self.arena.child_allocator.destroy(self.arena);
         }
     };
+}
+
+/// Deserializes data from the `getty.Deserializer` `d` into an umanaged value
+/// of type `T`.
+pub fn deserializeLeaky(
+    /// A memory allocator.
+    ally: std.mem.Allocator,
+    /// The type of the value to deserialize into.
+    comptime T: type,
+    /// A `getty.Deserializer` interface value.
+    d: anytype,
+) @TypeOf(d).Err!T {
+    const db = comptime find_db(T, @TypeOf(d));
+
+    if (comptime attributes.has_attributes(T, db)) {
+        switch (@typeInfo(T)) {
+            .Enum => {
+                var v = blocks.Enum.Visitor(T){};
+                return try blocks.Enum.deserialize(ally, T, d, v.visitor());
+            },
+            .Struct => {
+                var v = blocks.Struct.Visitor(T){};
+                return try blocks.Struct.deserialize(ally, T, d, v.visitor());
+            },
+            .Union => {
+                var v = blocks.Union.Visitor(T){};
+                return try blocks.Union.deserialize(ally, T, d, v.visitor());
+            },
+            else => unreachable, // UNREACHABLE: has_attributes guarantees that T is an enum, struct or union.
+        }
+    }
+
+    var v = db.Visitor(T){};
+    return try db.deserialize(ally, T, d, v.visitor());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
