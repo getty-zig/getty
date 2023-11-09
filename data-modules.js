@@ -1,1 +1,1 @@
-var modules =[{"name":"getty","file":0,"main":66,"table":{"std":1,"builtin":2,"getty":0}},{"name":"std","file":0,"main":68,"table":{}},{"name":"builtin","file":0,"main":31836,"table":{}}];
+var modules =[{"name":"getty","file":0,"main":66,"table":{"getty":0,"builtin":2,"std":1}},{"name":"std","file":0,"main":68,"table":{}},{"name":"builtin","file":0,"main":32108,"table":{}}];

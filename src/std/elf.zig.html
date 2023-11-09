@@ -2025,5 +2025,97 @@
 <span class="line" id="L1897">    PROTECTED = <span class="tok-number">3</span>,</span>
 <span class="line" id="L1898">};</span>
 <span class="line" id="L1899"></span>
+<span class="line" id="L1900"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ar_hdr = <span class="tok-kw">extern</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1901">    <span class="tok-comment">/// Member file name, sometimes / terminated.</span></span>
+<span class="line" id="L1902">    ar_name: [<span class="tok-number">16</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1903"></span>
+<span class="line" id="L1904">    <span class="tok-comment">/// File date, decimal seconds since Epoch.</span></span>
+<span class="line" id="L1905">    ar_date: [<span class="tok-number">12</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1906"></span>
+<span class="line" id="L1907">    <span class="tok-comment">/// User ID, in ASCII format.</span></span>
+<span class="line" id="L1908">    ar_uid: [<span class="tok-number">6</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1909"></span>
+<span class="line" id="L1910">    <span class="tok-comment">/// Group ID, in ASCII format.</span></span>
+<span class="line" id="L1911">    ar_gid: [<span class="tok-number">6</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1912"></span>
+<span class="line" id="L1913">    <span class="tok-comment">/// File mode, in ASCII octal.</span></span>
+<span class="line" id="L1914">    ar_mode: [<span class="tok-number">8</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1915"></span>
+<span class="line" id="L1916">    <span class="tok-comment">/// File size, in ASCII decimal.</span></span>
+<span class="line" id="L1917">    ar_size: [<span class="tok-number">10</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1918"></span>
+<span class="line" id="L1919">    <span class="tok-comment">/// Always contains ARFMAG.</span></span>
+<span class="line" id="L1920">    ar_fmag: [<span class="tok-number">2</span>]<span class="tok-type">u8</span>,</span>
+<span class="line" id="L1921"></span>
+<span class="line" id="L1922">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">date</span>(self: ar_hdr) std.fmt.ParseIntError!<span class="tok-type">u64</span> {</span>
+<span class="line" id="L1923">        <span class="tok-kw">const</span> value = mem.trimRight(<span class="tok-type">u8</span>, &amp;self.ar_date, &amp;[_]<span class="tok-type">u8</span>{<span class="tok-number">0x20</span>});</span>
+<span class="line" id="L1924">        <span class="tok-kw">return</span> std.fmt.parseInt(<span class="tok-type">u64</span>, value, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1925">    }</span>
+<span class="line" id="L1926"></span>
+<span class="line" id="L1927">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">size</span>(self: ar_hdr) std.fmt.ParseIntError!<span class="tok-type">u32</span> {</span>
+<span class="line" id="L1928">        <span class="tok-kw">const</span> value = mem.trimRight(<span class="tok-type">u8</span>, &amp;self.ar_size, &amp;[_]<span class="tok-type">u8</span>{<span class="tok-number">0x20</span>});</span>
+<span class="line" id="L1929">        <span class="tok-kw">return</span> std.fmt.parseInt(<span class="tok-type">u32</span>, value, <span class="tok-number">10</span>);</span>
+<span class="line" id="L1930">    }</span>
+<span class="line" id="L1931"></span>
+<span class="line" id="L1932">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isStrtab</span>(self: ar_hdr) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1933">        <span class="tok-kw">return</span> mem.eql(<span class="tok-type">u8</span>, &amp;self.ar_name, STRNAME);</span>
+<span class="line" id="L1934">    }</span>
+<span class="line" id="L1935"></span>
+<span class="line" id="L1936">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSymtab</span>(self: ar_hdr) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1937">        <span class="tok-kw">return</span> mem.eql(<span class="tok-type">u8</span>, &amp;self.ar_name, SYMNAME);</span>
+<span class="line" id="L1938">    }</span>
+<span class="line" id="L1939"></span>
+<span class="line" id="L1940">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSymtab64</span>(self: ar_hdr) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1941">        <span class="tok-kw">return</span> mem.eql(<span class="tok-type">u8</span>, &amp;self.ar_name, SYM64NAME);</span>
+<span class="line" id="L1942">    }</span>
+<span class="line" id="L1943"></span>
+<span class="line" id="L1944">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSymdef</span>(self: ar_hdr) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1945">        <span class="tok-kw">return</span> mem.eql(<span class="tok-type">u8</span>, &amp;self.ar_name, SYMDEFNAME);</span>
+<span class="line" id="L1946">    }</span>
+<span class="line" id="L1947"></span>
+<span class="line" id="L1948">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isSymdefSorted</span>(self: ar_hdr) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1949">        <span class="tok-kw">return</span> mem.eql(<span class="tok-type">u8</span>, &amp;self.ar_name, SYMDEFSORTEDNAME);</span>
+<span class="line" id="L1950">    }</span>
+<span class="line" id="L1951"></span>
+<span class="line" id="L1952">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">name</span>(self: *<span class="tok-kw">const</span> ar_hdr) ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L1953">        <span class="tok-kw">const</span> value = &amp;self.ar_name;</span>
+<span class="line" id="L1954">        <span class="tok-kw">if</span> (value[<span class="tok-number">0</span>] == <span class="tok-str">'/'</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1955">        <span class="tok-kw">const</span> sentinel = mem.indexOfScalar(<span class="tok-type">u8</span>, value, <span class="tok-str">'/'</span>) <span class="tok-kw">orelse</span> value.len;</span>
+<span class="line" id="L1956">        <span class="tok-kw">return</span> value[<span class="tok-number">0</span>..sentinel];</span>
+<span class="line" id="L1957">    }</span>
+<span class="line" id="L1958"></span>
+<span class="line" id="L1959">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nameOffset</span>(self: ar_hdr) std.fmt.ParseIntError!?<span class="tok-type">u32</span> {</span>
+<span class="line" id="L1960">        <span class="tok-kw">const</span> value = &amp;self.ar_name;</span>
+<span class="line" id="L1961">        <span class="tok-kw">if</span> (value[<span class="tok-number">0</span>] != <span class="tok-str">'/'</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1962">        <span class="tok-kw">const</span> trimmed = mem.trimRight(<span class="tok-type">u8</span>, value, &amp;[_]<span class="tok-type">u8</span>{<span class="tok-number">0x20</span>});</span>
+<span class="line" id="L1963">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> std.fmt.parseInt(<span class="tok-type">u32</span>, trimmed[<span class="tok-number">1</span>..], <span class="tok-number">10</span>);</span>
+<span class="line" id="L1964">    }</span>
+<span class="line" id="L1965">};</span>
+<span class="line" id="L1966"></span>
+<span class="line" id="L1967"><span class="tok-kw">fn</span> <span class="tok-fn">genSpecialMemberName</span>(<span class="tok-kw">comptime</span> name: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *<span class="tok-kw">const</span> [<span class="tok-number">16</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1968">    assert(name.len &lt;= <span class="tok-number">16</span>);</span>
+<span class="line" id="L1969">    <span class="tok-kw">const</span> padding = <span class="tok-number">16</span> - name.len;</span>
+<span class="line" id="L1970">    <span class="tok-kw">return</span> name ++ &amp;[_]<span class="tok-type">u8</span>{<span class="tok-number">0x20</span>} ** padding;</span>
+<span class="line" id="L1971">}</span>
+<span class="line" id="L1972"></span>
+<span class="line" id="L1973"><span class="tok-comment">// Archive files start with the ARMAG identifying string.  Then follows a</span>
+</span>
+<span class="line" id="L1974"><span class="tok-comment">// `struct ar_hdr', and as many bytes of member file data as its `ar_size'</span>
+</span>
+<span class="line" id="L1975"><span class="tok-comment">// member indicates, for each member file.</span>
+</span>
+<span class="line" id="L1976"><span class="tok-comment">/// String that begins an archive file.</span></span>
+<span class="line" id="L1977"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ARMAG = <span class="tok-str">&quot;!&lt;arch&gt;\n&quot;</span>;</span>
+<span class="line" id="L1978"><span class="tok-comment">/// String in ar_fmag at the end of each header.</span></span>
+<span class="line" id="L1979"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ARFMAG = <span class="tok-str">&quot;`\n&quot;</span>;</span>
+<span class="line" id="L1980"><span class="tok-comment">/// 32-bit symtab identifier</span></span>
+<span class="line" id="L1981"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SYMNAME = genSpecialMemberName(<span class="tok-str">&quot;/&quot;</span>);</span>
+<span class="line" id="L1982"><span class="tok-comment">/// Strtab identifier</span></span>
+<span class="line" id="L1983"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> STRNAME = genSpecialMemberName(<span class="tok-str">&quot;//&quot;</span>);</span>
+<span class="line" id="L1984"><span class="tok-comment">/// 64-bit symtab identifier</span></span>
+<span class="line" id="L1985"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SYM64NAME = genSpecialMemberName(<span class="tok-str">&quot;/SYM64/&quot;</span>);</span>
+<span class="line" id="L1986"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SYMDEFNAME = genSpecialMemberName(<span class="tok-str">&quot;__.SYMDEF&quot;</span>);</span>
+<span class="line" id="L1987"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> SYMDEFSORTEDNAME = genSpecialMemberName(<span class="tok-str">&quot;__.SYMDEF SORTED&quot;</span>);</span>
+<span class="line" id="L1988"></span>
 </code></pre></body>
 </html>

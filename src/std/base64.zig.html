@@ -469,199 +469,195 @@
 <span class="line" id="L355">};</span>
 <span class="line" id="L356"></span>
 <span class="line" id="L357"><span class="tok-kw">test</span> <span class="tok-str">&quot;base64&quot;</span> {</span>
-<span class="line" id="L358">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L359"></span>
-<span class="line" id="L360">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">8000</span>);</span>
-<span class="line" id="L361">    <span class="tok-kw">try</span> testBase64();</span>
-<span class="line" id="L362">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testAllApis(standard, <span class="tok-str">&quot;comptime&quot;</span>, <span class="tok-str">&quot;Y29tcHRpbWU=&quot;</span>);</span>
-<span class="line" id="L363">}</span>
-<span class="line" id="L364"></span>
-<span class="line" id="L365"><span class="tok-kw">test</span> <span class="tok-str">&quot;base64 padding dest overflow&quot;</span> {</span>
-<span class="line" id="L366">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;foo&quot;</span>;</span>
-<span class="line" id="L367"></span>
-<span class="line" id="L368">    <span class="tok-kw">var</span> expect: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L369">    <span class="tok-builtin">@memset</span>(&amp;expect, <span class="tok-number">0</span>);</span>
-<span class="line" id="L370">    _ = url_safe.Encoder.encode(expect[<span class="tok-number">0</span>..url_safe.Encoder.calcSize(input.len)], input);</span>
-<span class="line" id="L371"></span>
-<span class="line" id="L372">    <span class="tok-kw">var</span> got: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L373">    <span class="tok-builtin">@memset</span>(&amp;got, <span class="tok-number">0</span>);</span>
-<span class="line" id="L374">    _ = url_safe.Encoder.encode(&amp;got, input);</span>
-<span class="line" id="L375"></span>
-<span class="line" id="L376">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, &amp;expect, &amp;got);</span>
-<span class="line" id="L377">}</span>
-<span class="line" id="L378"></span>
-<span class="line" id="L379"><span class="tok-kw">test</span> <span class="tok-str">&quot;base64 url_safe_no_pad&quot;</span> {</span>
-<span class="line" id="L380">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L381"></span>
-<span class="line" id="L382">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">8000</span>);</span>
-<span class="line" id="L383">    <span class="tok-kw">try</span> testBase64UrlSafeNoPad();</span>
-<span class="line" id="L384">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testAllApis(url_safe_no_pad, <span class="tok-str">&quot;comptime&quot;</span>, <span class="tok-str">&quot;Y29tcHRpbWU&quot;</span>);</span>
-<span class="line" id="L385">}</span>
-<span class="line" id="L386"></span>
-<span class="line" id="L387"><span class="tok-kw">fn</span> <span class="tok-fn">testBase64</span>() !<span class="tok-type">void</span> {</span>
-<span class="line" id="L388">    <span class="tok-kw">const</span> codecs = standard;</span>
-<span class="line" id="L389"></span>
-<span class="line" id="L390">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L391">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Zg==&quot;</span>);</span>
-<span class="line" id="L392">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;Zm8=&quot;</span>);</span>
-<span class="line" id="L393">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v&quot;</span>);</span>
-<span class="line" id="L394">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg==&quot;</span>);</span>
-<span class="line" id="L395">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9vYmE=&quot;</span>);</span>
-<span class="line" id="L396">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFy&quot;</span>);</span>
-<span class="line" id="L397">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoo&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9v&quot;</span>);</span>
-<span class="line" id="L398">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoob&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYg==&quot;</span>);</span>
-<span class="line" id="L399">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfooba&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYmE=&quot;</span>);</span>
-<span class="line" id="L400">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYmFy&quot;</span>);</span>
-<span class="line" id="L401"></span>
-<span class="line" id="L402">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L403">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Z g= =&quot;</span>);</span>
-<span class="line" id="L404">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;    Zm8=&quot;</span>);</span>
-<span class="line" id="L405">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v    &quot;</span>);</span>
-<span class="line" id="L406">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg = = &quot;</span>);</span>
-<span class="line" id="L407">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9v YmE=&quot;</span>);</span>
-<span class="line" id="L408">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot; Z m 9 v Y m F y &quot;</span>);</span>
-<span class="line" id="L409"></span>
-<span class="line" id="L410">    <span class="tok-comment">// test getting some api errors</span>
+<span class="line" id="L358">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">8000</span>);</span>
+<span class="line" id="L359">    <span class="tok-kw">try</span> testBase64();</span>
+<span class="line" id="L360">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testAllApis(standard, <span class="tok-str">&quot;comptime&quot;</span>, <span class="tok-str">&quot;Y29tcHRpbWU=&quot;</span>);</span>
+<span class="line" id="L361">}</span>
+<span class="line" id="L362"></span>
+<span class="line" id="L363"><span class="tok-kw">test</span> <span class="tok-str">&quot;base64 padding dest overflow&quot;</span> {</span>
+<span class="line" id="L364">    <span class="tok-kw">const</span> input = <span class="tok-str">&quot;foo&quot;</span>;</span>
+<span class="line" id="L365"></span>
+<span class="line" id="L366">    <span class="tok-kw">var</span> expect: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L367">    <span class="tok-builtin">@memset</span>(&amp;expect, <span class="tok-number">0</span>);</span>
+<span class="line" id="L368">    _ = url_safe.Encoder.encode(expect[<span class="tok-number">0</span>..url_safe.Encoder.calcSize(input.len)], input);</span>
+<span class="line" id="L369"></span>
+<span class="line" id="L370">    <span class="tok-kw">var</span> got: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L371">    <span class="tok-builtin">@memset</span>(&amp;got, <span class="tok-number">0</span>);</span>
+<span class="line" id="L372">    _ = url_safe.Encoder.encode(&amp;got, input);</span>
+<span class="line" id="L373"></span>
+<span class="line" id="L374">    <span class="tok-kw">try</span> std.testing.expectEqualSlices(<span class="tok-type">u8</span>, &amp;expect, &amp;got);</span>
+<span class="line" id="L375">}</span>
+<span class="line" id="L376"></span>
+<span class="line" id="L377"><span class="tok-kw">test</span> <span class="tok-str">&quot;base64 url_safe_no_pad&quot;</span> {</span>
+<span class="line" id="L378">    <span class="tok-builtin">@setEvalBranchQuota</span>(<span class="tok-number">8000</span>);</span>
+<span class="line" id="L379">    <span class="tok-kw">try</span> testBase64UrlSafeNoPad();</span>
+<span class="line" id="L380">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testAllApis(url_safe_no_pad, <span class="tok-str">&quot;comptime&quot;</span>, <span class="tok-str">&quot;Y29tcHRpbWU&quot;</span>);</span>
+<span class="line" id="L381">}</span>
+<span class="line" id="L382"></span>
+<span class="line" id="L383"><span class="tok-kw">fn</span> <span class="tok-fn">testBase64</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L384">    <span class="tok-kw">const</span> codecs = standard;</span>
+<span class="line" id="L385"></span>
+<span class="line" id="L386">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L387">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Zg==&quot;</span>);</span>
+<span class="line" id="L388">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;Zm8=&quot;</span>);</span>
+<span class="line" id="L389">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v&quot;</span>);</span>
+<span class="line" id="L390">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg==&quot;</span>);</span>
+<span class="line" id="L391">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9vYmE=&quot;</span>);</span>
+<span class="line" id="L392">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFy&quot;</span>);</span>
+<span class="line" id="L393">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoo&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9v&quot;</span>);</span>
+<span class="line" id="L394">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoob&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYg==&quot;</span>);</span>
+<span class="line" id="L395">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfooba&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYmE=&quot;</span>);</span>
+<span class="line" id="L396">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYmFy&quot;</span>);</span>
+<span class="line" id="L397"></span>
+<span class="line" id="L398">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L399">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Z g= =&quot;</span>);</span>
+<span class="line" id="L400">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;    Zm8=&quot;</span>);</span>
+<span class="line" id="L401">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v    &quot;</span>);</span>
+<span class="line" id="L402">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg = = &quot;</span>);</span>
+<span class="line" id="L403">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9v YmE=&quot;</span>);</span>
+<span class="line" id="L404">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot; Z m 9 v Y m F y &quot;</span>);</span>
+<span class="line" id="L405"></span>
+<span class="line" id="L406">    <span class="tok-comment">// test getting some api errors</span>
 </span>
-<span class="line" id="L411">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L412">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L413">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AAA&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L414">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L415">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L416">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L417">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A/==&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L418">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A===&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L419">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;====&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L420">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L421">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyAA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L422">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyAA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L423">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA/==&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L424">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA===&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L425">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..AZm9vYmFyZm9vYmFy&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L426">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vAA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L427">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vAA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L428">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vA/==&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L429">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vA===&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L430"></span>
-<span class="line" id="L431">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AA==&quot;</span>);</span>
-<span class="line" id="L432">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAA=&quot;</span>);</span>
-<span class="line" id="L433">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAA&quot;</span>);</span>
-<span class="line" id="L434">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAA==&quot;</span>);</span>
-<span class="line" id="L435"></span>
-<span class="line" id="L436">    <span class="tok-kw">try</span> testFourBytesDestNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAAAAAAAAAAAA&quot;</span>);</span>
-<span class="line" id="L437">}</span>
-<span class="line" id="L438"></span>
-<span class="line" id="L439"><span class="tok-kw">fn</span> <span class="tok-fn">testBase64UrlSafeNoPad</span>() !<span class="tok-type">void</span> {</span>
-<span class="line" id="L440">    <span class="tok-kw">const</span> codecs = url_safe_no_pad;</span>
-<span class="line" id="L441"></span>
-<span class="line" id="L442">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L443">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Zg&quot;</span>);</span>
-<span class="line" id="L444">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;Zm8&quot;</span>);</span>
-<span class="line" id="L445">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v&quot;</span>);</span>
-<span class="line" id="L446">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg&quot;</span>);</span>
-<span class="line" id="L447">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9vYmE&quot;</span>);</span>
-<span class="line" id="L448">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFy&quot;</span>);</span>
-<span class="line" id="L449">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYmFy&quot;</span>);</span>
-<span class="line" id="L450"></span>
-<span class="line" id="L451">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L452">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Z g &quot;</span>);</span>
-<span class="line" id="L453">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;    Zm8&quot;</span>);</span>
-<span class="line" id="L454">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v    &quot;</span>);</span>
-<span class="line" id="L455">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg   &quot;</span>);</span>
-<span class="line" id="L456">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9v YmE&quot;</span>);</span>
-<span class="line" id="L457">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot; Z m 9 v Y m F y &quot;</span>);</span>
-<span class="line" id="L458"></span>
-<span class="line" id="L459">    <span class="tok-comment">// test getting some api errors</span>
+<span class="line" id="L407">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L408">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L409">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AAA&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L410">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L411">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L412">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L413">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A/==&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L414">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A===&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L415">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;====&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L416">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L417">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyAA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L418">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyAA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L419">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA/==&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L420">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA===&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L421">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..AZm9vYmFyZm9vYmFy&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L422">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vAA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L423">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vAA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L424">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vA/==&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L425">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vA===&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L426"></span>
+<span class="line" id="L427">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AA==&quot;</span>);</span>
+<span class="line" id="L428">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAA=&quot;</span>);</span>
+<span class="line" id="L429">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAA&quot;</span>);</span>
+<span class="line" id="L430">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAA==&quot;</span>);</span>
+<span class="line" id="L431"></span>
+<span class="line" id="L432">    <span class="tok-kw">try</span> testFourBytesDestNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAAAAAAAAAAAA&quot;</span>);</span>
+<span class="line" id="L433">}</span>
+<span class="line" id="L434"></span>
+<span class="line" id="L435"><span class="tok-kw">fn</span> <span class="tok-fn">testBase64UrlSafeNoPad</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L436">    <span class="tok-kw">const</span> codecs = url_safe_no_pad;</span>
+<span class="line" id="L437"></span>
+<span class="line" id="L438">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L439">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Zg&quot;</span>);</span>
+<span class="line" id="L440">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;Zm8&quot;</span>);</span>
+<span class="line" id="L441">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v&quot;</span>);</span>
+<span class="line" id="L442">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg&quot;</span>);</span>
+<span class="line" id="L443">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9vYmE&quot;</span>);</span>
+<span class="line" id="L444">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFy&quot;</span>);</span>
+<span class="line" id="L445">    <span class="tok-kw">try</span> testAllApis(codecs, <span class="tok-str">&quot;foobarfoobarfoobar&quot;</span>, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyZm9vYmFy&quot;</span>);</span>
+<span class="line" id="L446"></span>
+<span class="line" id="L447">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L448">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;f&quot;</span>, <span class="tok-str">&quot;Z g &quot;</span>);</span>
+<span class="line" id="L449">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fo&quot;</span>, <span class="tok-str">&quot;    Zm8&quot;</span>);</span>
+<span class="line" id="L450">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;Zm9v    &quot;</span>);</span>
+<span class="line" id="L451">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foob&quot;</span>, <span class="tok-str">&quot;Zm9vYg   &quot;</span>);</span>
+<span class="line" id="L452">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;fooba&quot;</span>, <span class="tok-str">&quot;Zm9v YmE&quot;</span>);</span>
+<span class="line" id="L453">    <span class="tok-kw">try</span> testDecodeIgnoreSpace(codecs, <span class="tok-str">&quot;foobar&quot;</span>, <span class="tok-str">&quot; Z m 9 v Y m F y &quot;</span>);</span>
+<span class="line" id="L454"></span>
+<span class="line" id="L455">    <span class="tok-comment">// test getting some api errors</span>
 </span>
-<span class="line" id="L460">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
-<span class="line" id="L461">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AAA=&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L462">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L463">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L464">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L465">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A/==&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L466">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A===&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L467">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;====&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L468">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L469">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..AZm9vYmFyZm9vYmFy&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
-<span class="line" id="L470"></span>
-<span class="line" id="L471">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AA&quot;</span>);</span>
-<span class="line" id="L472">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAA&quot;</span>);</span>
-<span class="line" id="L473">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAA&quot;</span>);</span>
-<span class="line" id="L474">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAA&quot;</span>);</span>
-<span class="line" id="L475"></span>
-<span class="line" id="L476">    <span class="tok-kw">try</span> testFourBytesDestNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAAAAAAAAAAAA&quot;</span>);</span>
-<span class="line" id="L477">}</span>
-<span class="line" id="L478"></span>
-<span class="line" id="L479"><span class="tok-kw">fn</span> <span class="tok-fn">testAllApis</span>(codecs: Codecs, expected_decoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L480">    <span class="tok-comment">// Base64Encoder</span>
+<span class="line" id="L456">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A&quot;</span>, <span class="tok-kw">error</span>.InvalidPadding);</span>
+<span class="line" id="L457">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AAA=&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L458">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L459">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA=A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L460">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;AA/=&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L461">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A/==&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L462">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A===&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L463">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;====&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L464">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;Zm9vYmFyZm9vYmFyA..A&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L465">    <span class="tok-kw">try</span> testError(codecs, <span class="tok-str">&quot;A..AZm9vYmFyZm9vYmFy&quot;</span>, <span class="tok-kw">error</span>.InvalidCharacter);</span>
+<span class="line" id="L466"></span>
+<span class="line" id="L467">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AA&quot;</span>);</span>
+<span class="line" id="L468">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAA&quot;</span>);</span>
+<span class="line" id="L469">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAA&quot;</span>);</span>
+<span class="line" id="L470">    <span class="tok-kw">try</span> testNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAA&quot;</span>);</span>
+<span class="line" id="L471"></span>
+<span class="line" id="L472">    <span class="tok-kw">try</span> testFourBytesDestNoSpaceLeftError(codecs, <span class="tok-str">&quot;AAAAAAAAAAAAAAAA&quot;</span>);</span>
+<span class="line" id="L473">}</span>
+<span class="line" id="L474"></span>
+<span class="line" id="L475"><span class="tok-kw">fn</span> <span class="tok-fn">testAllApis</span>(codecs: Codecs, expected_decoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L476">    <span class="tok-comment">// Base64Encoder</span>
 </span>
-<span class="line" id="L481">    {</span>
-<span class="line" id="L482">        <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L483">        <span class="tok-kw">const</span> encoded = codecs.Encoder.encode(&amp;buffer, expected_decoded);</span>
-<span class="line" id="L484">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_encoded, encoded);</span>
-<span class="line" id="L485">    }</span>
-<span class="line" id="L486"></span>
-<span class="line" id="L487">    <span class="tok-comment">// Base64Decoder</span>
+<span class="line" id="L477">    {</span>
+<span class="line" id="L478">        <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L479">        <span class="tok-kw">const</span> encoded = codecs.Encoder.encode(&amp;buffer, expected_decoded);</span>
+<span class="line" id="L480">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_encoded, encoded);</span>
+<span class="line" id="L481">    }</span>
+<span class="line" id="L482"></span>
+<span class="line" id="L483">    <span class="tok-comment">// Base64Decoder</span>
 </span>
-<span class="line" id="L488">    {</span>
-<span class="line" id="L489">        <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L490">        <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> codecs.Decoder.calcSizeForSlice(expected_encoded)];</span>
-<span class="line" id="L491">        <span class="tok-kw">try</span> codecs.Decoder.decode(decoded, expected_encoded);</span>
-<span class="line" id="L492">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_decoded, decoded);</span>
-<span class="line" id="L493">    }</span>
-<span class="line" id="L494"></span>
-<span class="line" id="L495">    <span class="tok-comment">// Base64DecoderWithIgnore</span>
+<span class="line" id="L484">    {</span>
+<span class="line" id="L485">        <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L486">        <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> codecs.Decoder.calcSizeForSlice(expected_encoded)];</span>
+<span class="line" id="L487">        <span class="tok-kw">try</span> codecs.Decoder.decode(decoded, expected_encoded);</span>
+<span class="line" id="L488">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_decoded, decoded);</span>
+<span class="line" id="L489">    }</span>
+<span class="line" id="L490"></span>
+<span class="line" id="L491">    <span class="tok-comment">// Base64DecoderWithIgnore</span>
 </span>
-<span class="line" id="L496">    {</span>
-<span class="line" id="L497">        <span class="tok-kw">const</span> decoder_ignore_nothing = codecs.decoderWithIgnore(<span class="tok-str">&quot;&quot;</span>);</span>
-<span class="line" id="L498">        <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L499">        <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> decoder_ignore_nothing.calcSizeUpperBound(expected_encoded.len)];</span>
-<span class="line" id="L500">        <span class="tok-kw">var</span> written = <span class="tok-kw">try</span> decoder_ignore_nothing.decode(decoded, expected_encoded);</span>
-<span class="line" id="L501">        <span class="tok-kw">try</span> testing.expect(written &lt;= decoded.len);</span>
-<span class="line" id="L502">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_decoded, decoded[<span class="tok-number">0</span>..written]);</span>
-<span class="line" id="L503">    }</span>
-<span class="line" id="L504">}</span>
-<span class="line" id="L505"></span>
-<span class="line" id="L506"><span class="tok-kw">fn</span> <span class="tok-fn">testDecodeIgnoreSpace</span>(codecs: Codecs, expected_decoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L507">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L508">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L509">    <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> decoder_ignore_space.calcSizeUpperBound(encoded.len)];</span>
-<span class="line" id="L510">    <span class="tok-kw">var</span> written = <span class="tok-kw">try</span> decoder_ignore_space.decode(decoded, encoded);</span>
-<span class="line" id="L511">    <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_decoded, decoded[<span class="tok-number">0</span>..written]);</span>
-<span class="line" id="L512">}</span>
-<span class="line" id="L513"></span>
-<span class="line" id="L514"><span class="tok-kw">fn</span> <span class="tok-fn">testError</span>(codecs: Codecs, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_err: <span class="tok-type">anyerror</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L515">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L516">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L517">    <span class="tok-kw">if</span> (codecs.Decoder.calcSizeForSlice(encoded)) |decoded_size| {</span>
-<span class="line" id="L518">        <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..decoded_size];</span>
-<span class="line" id="L519">        <span class="tok-kw">if</span> (codecs.Decoder.decode(decoded, encoded)) |_| {</span>
-<span class="line" id="L520">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
-<span class="line" id="L521">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != expected_err) <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L492">    {</span>
+<span class="line" id="L493">        <span class="tok-kw">const</span> decoder_ignore_nothing = codecs.decoderWithIgnore(<span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L494">        <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L495">        <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> decoder_ignore_nothing.calcSizeUpperBound(expected_encoded.len)];</span>
+<span class="line" id="L496">        <span class="tok-kw">var</span> written = <span class="tok-kw">try</span> decoder_ignore_nothing.decode(decoded, expected_encoded);</span>
+<span class="line" id="L497">        <span class="tok-kw">try</span> testing.expect(written &lt;= decoded.len);</span>
+<span class="line" id="L498">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_decoded, decoded[<span class="tok-number">0</span>..written]);</span>
+<span class="line" id="L499">    }</span>
+<span class="line" id="L500">}</span>
+<span class="line" id="L501"></span>
+<span class="line" id="L502"><span class="tok-kw">fn</span> <span class="tok-fn">testDecodeIgnoreSpace</span>(codecs: Codecs, expected_decoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L503">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L504">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L505">    <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-kw">try</span> decoder_ignore_space.calcSizeUpperBound(encoded.len)];</span>
+<span class="line" id="L506">    <span class="tok-kw">var</span> written = <span class="tok-kw">try</span> decoder_ignore_space.decode(decoded, encoded);</span>
+<span class="line" id="L507">    <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, expected_decoded, decoded[<span class="tok-number">0</span>..written]);</span>
+<span class="line" id="L508">}</span>
+<span class="line" id="L509"></span>
+<span class="line" id="L510"><span class="tok-kw">fn</span> <span class="tok-fn">testError</span>(codecs: Codecs, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_err: <span class="tok-type">anyerror</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L511">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L512">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L513">    <span class="tok-kw">if</span> (codecs.Decoder.calcSizeForSlice(encoded)) |decoded_size| {</span>
+<span class="line" id="L514">        <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..decoded_size];</span>
+<span class="line" id="L515">        <span class="tok-kw">if</span> (codecs.Decoder.decode(decoded, encoded)) |_| {</span>
+<span class="line" id="L516">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
+<span class="line" id="L517">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != expected_err) <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L518">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != expected_err) <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L519"></span>
+<span class="line" id="L520">    <span class="tok-kw">if</span> (decoder_ignore_space.decode(buffer[<span class="tok-number">0</span>..], encoded)) |_| {</span>
+<span class="line" id="L521">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
 <span class="line" id="L522">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != expected_err) <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L523"></span>
-<span class="line" id="L524">    <span class="tok-kw">if</span> (decoder_ignore_space.decode(buffer[<span class="tok-number">0</span>..], encoded)) |_| {</span>
-<span class="line" id="L525">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
-<span class="line" id="L526">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != expected_err) <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L527">}</span>
-<span class="line" id="L528"></span>
-<span class="line" id="L529"><span class="tok-kw">fn</span> <span class="tok-fn">testNoSpaceLeftError</span>(codecs: Codecs, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L530">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L531">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L532">    <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span> .. (<span class="tok-kw">try</span> codecs.Decoder.calcSizeForSlice(encoded)) - <span class="tok-number">1</span>];</span>
-<span class="line" id="L533">    <span class="tok-kw">if</span> (decoder_ignore_space.decode(decoded, encoded)) |_| {</span>
-<span class="line" id="L534">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
-<span class="line" id="L535">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != <span class="tok-kw">error</span>.NoSpaceLeft) <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L536">}</span>
-<span class="line" id="L537"></span>
-<span class="line" id="L538"><span class="tok-kw">fn</span> <span class="tok-fn">testFourBytesDestNoSpaceLeftError</span>(codecs: Codecs, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L539">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L540">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L541">    <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-number">4</span>];</span>
-<span class="line" id="L542">    <span class="tok-kw">if</span> (decoder_ignore_space.decode(decoded, encoded)) |_| {</span>
-<span class="line" id="L543">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
-<span class="line" id="L544">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != <span class="tok-kw">error</span>.NoSpaceLeft) <span class="tok-kw">return</span> err;</span>
-<span class="line" id="L545">}</span>
-<span class="line" id="L546"></span>
+<span class="line" id="L523">}</span>
+<span class="line" id="L524"></span>
+<span class="line" id="L525"><span class="tok-kw">fn</span> <span class="tok-fn">testNoSpaceLeftError</span>(codecs: Codecs, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L526">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L527">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L528">    <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span> .. (<span class="tok-kw">try</span> codecs.Decoder.calcSizeForSlice(encoded)) - <span class="tok-number">1</span>];</span>
+<span class="line" id="L529">    <span class="tok-kw">if</span> (decoder_ignore_space.decode(decoded, encoded)) |_| {</span>
+<span class="line" id="L530">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
+<span class="line" id="L531">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != <span class="tok-kw">error</span>.NoSpaceLeft) <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L532">}</span>
+<span class="line" id="L533"></span>
+<span class="line" id="L534"><span class="tok-kw">fn</span> <span class="tok-fn">testFourBytesDestNoSpaceLeftError</span>(codecs: Codecs, encoded: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L535">    <span class="tok-kw">const</span> decoder_ignore_space = codecs.decoderWithIgnore(<span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L536">    <span class="tok-kw">var</span> buffer: [<span class="tok-number">0x100</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L537">    <span class="tok-kw">var</span> decoded = buffer[<span class="tok-number">0</span>..<span class="tok-number">4</span>];</span>
+<span class="line" id="L538">    <span class="tok-kw">if</span> (decoder_ignore_space.decode(decoded, encoded)) |_| {</span>
+<span class="line" id="L539">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ExpectedError;</span>
+<span class="line" id="L540">    } <span class="tok-kw">else</span> |err| <span class="tok-kw">if</span> (err != <span class="tok-kw">error</span>.NoSpaceLeft) <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L541">}</span>
+<span class="line" id="L542"></span>
 </code></pre></body>
 </html>

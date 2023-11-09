@@ -760,18 +760,18 @@
 <span class="line" id="L614">};</span>
 <span class="line" id="L615"></span>
 <span class="line" id="L616"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseTimeDigits</span>(text: *<span class="tok-kw">const</span> [<span class="tok-number">2</span>]<span class="tok-type">u8</span>, min: <span class="tok-type">u8</span>, max: <span class="tok-type">u8</span>) !<span class="tok-type">u8</span> {</span>
-<span class="line" id="L617">    <span class="tok-kw">const</span> nn: <span class="tok-builtin">@Vector</span>(<span class="tok-number">2</span>, <span class="tok-type">u16</span>) = .{ text[<span class="tok-number">0</span>], text[<span class="tok-number">1</span>] };</span>
-<span class="line" id="L618">    <span class="tok-kw">const</span> zero: <span class="tok-builtin">@Vector</span>(<span class="tok-number">2</span>, <span class="tok-type">u16</span>) = .{ <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span> };</span>
-<span class="line" id="L619">    <span class="tok-kw">const</span> mm: <span class="tok-builtin">@Vector</span>(<span class="tok-number">2</span>, <span class="tok-type">u16</span>) = .{ <span class="tok-number">10</span>, <span class="tok-number">1</span> };</span>
-<span class="line" id="L620">    <span class="tok-kw">const</span> result = <span class="tok-builtin">@reduce</span>(.Add, (nn -% zero) *% mm);</span>
-<span class="line" id="L621">    <span class="tok-kw">if</span> (result &lt; min) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
-<span class="line" id="L622">    <span class="tok-kw">if</span> (result &gt; max) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
-<span class="line" id="L623">    <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(result);</span>
-<span class="line" id="L624">}</span>
-<span class="line" id="L625"></span>
-<span class="line" id="L626"><span class="tok-kw">test</span> parseTimeDigits {</span>
-<span class="line" id="L627">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L628"></span>
+<span class="line" id="L617">    <span class="tok-kw">const</span> result = <span class="tok-kw">if</span> (use_vectors) result: {</span>
+<span class="line" id="L618">        <span class="tok-kw">const</span> nn: <span class="tok-builtin">@Vector</span>(<span class="tok-number">2</span>, <span class="tok-type">u16</span>) = .{ text[<span class="tok-number">0</span>], text[<span class="tok-number">1</span>] };</span>
+<span class="line" id="L619">        <span class="tok-kw">const</span> zero: <span class="tok-builtin">@Vector</span>(<span class="tok-number">2</span>, <span class="tok-type">u16</span>) = .{ <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span> };</span>
+<span class="line" id="L620">        <span class="tok-kw">const</span> mm: <span class="tok-builtin">@Vector</span>(<span class="tok-number">2</span>, <span class="tok-type">u16</span>) = .{ <span class="tok-number">10</span>, <span class="tok-number">1</span> };</span>
+<span class="line" id="L621">        <span class="tok-kw">break</span> :result <span class="tok-builtin">@reduce</span>(.Add, (nn -% zero) *% mm);</span>
+<span class="line" id="L622">    } <span class="tok-kw">else</span> std.fmt.parseInt(<span class="tok-type">u8</span>, text, <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
+<span class="line" id="L623">    <span class="tok-kw">if</span> (result &lt; min) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
+<span class="line" id="L624">    <span class="tok-kw">if</span> (result &gt; max) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
+<span class="line" id="L625">    <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(result);</span>
+<span class="line" id="L626">}</span>
+<span class="line" id="L627"></span>
+<span class="line" id="L628"><span class="tok-kw">test</span> parseTimeDigits {</span>
 <span class="line" id="L629">    <span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
 <span class="line" id="L630">    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">0</span>), <span class="tok-kw">try</span> parseTimeDigits(<span class="tok-str">&quot;00&quot;</span>, <span class="tok-number">0</span>, <span class="tok-number">99</span>));</span>
 <span class="line" id="L631">    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">99</span>), <span class="tok-kw">try</span> parseTimeDigits(<span class="tok-str">&quot;99&quot;</span>, <span class="tok-number">0</span>, <span class="tok-number">99</span>));</span>
@@ -784,17 +784,17 @@
 <span class="line" id="L638">}</span>
 <span class="line" id="L639"></span>
 <span class="line" id="L640"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">parseYear4</span>(text: *<span class="tok-kw">const</span> [<span class="tok-number">4</span>]<span class="tok-type">u8</span>) !<span class="tok-type">u16</span> {</span>
-<span class="line" id="L641">    <span class="tok-kw">const</span> nnnn: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = .{ text[<span class="tok-number">0</span>], text[<span class="tok-number">1</span>], text[<span class="tok-number">2</span>], text[<span class="tok-number">3</span>] };</span>
-<span class="line" id="L642">    <span class="tok-kw">const</span> zero: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = .{ <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span> };</span>
-<span class="line" id="L643">    <span class="tok-kw">const</span> mmmm: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = .{ <span class="tok-number">1000</span>, <span class="tok-number">100</span>, <span class="tok-number">10</span>, <span class="tok-number">1</span> };</span>
-<span class="line" id="L644">    <span class="tok-kw">const</span> result = <span class="tok-builtin">@reduce</span>(.Add, (nnnn -% zero) *% mmmm);</span>
-<span class="line" id="L645">    <span class="tok-kw">if</span> (result &gt; <span class="tok-number">9999</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
-<span class="line" id="L646">    <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(result);</span>
-<span class="line" id="L647">}</span>
-<span class="line" id="L648"></span>
-<span class="line" id="L649"><span class="tok-kw">test</span> parseYear4 {</span>
-<span class="line" id="L650">    <span class="tok-kw">if</span> (builtin.zig_backend == .stage2_x86_64) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SkipZigTest;</span>
-<span class="line" id="L651"></span>
+<span class="line" id="L641">    <span class="tok-kw">const</span> result = <span class="tok-kw">if</span> (use_vectors) result: {</span>
+<span class="line" id="L642">        <span class="tok-kw">const</span> nnnn: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = .{ text[<span class="tok-number">0</span>], text[<span class="tok-number">1</span>], text[<span class="tok-number">2</span>], text[<span class="tok-number">3</span>] };</span>
+<span class="line" id="L643">        <span class="tok-kw">const</span> zero: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = .{ <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span>, <span class="tok-str">'0'</span> };</span>
+<span class="line" id="L644">        <span class="tok-kw">const</span> mmmm: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = .{ <span class="tok-number">1000</span>, <span class="tok-number">100</span>, <span class="tok-number">10</span>, <span class="tok-number">1</span> };</span>
+<span class="line" id="L645">        <span class="tok-kw">break</span> :result <span class="tok-builtin">@reduce</span>(.Add, (nnnn -% zero) *% mmmm);</span>
+<span class="line" id="L646">    } <span class="tok-kw">else</span> std.fmt.parseInt(<span class="tok-type">u16</span>, text, <span class="tok-number">10</span>) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
+<span class="line" id="L647">    <span class="tok-kw">if</span> (result &gt; <span class="tok-number">9999</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.CertificateTimeInvalid;</span>
+<span class="line" id="L648">    <span class="tok-kw">return</span> <span class="tok-builtin">@truncate</span>(result);</span>
+<span class="line" id="L649">}</span>
+<span class="line" id="L650"></span>
+<span class="line" id="L651"><span class="tok-kw">test</span> parseYear4 {</span>
 <span class="line" id="L652">    <span class="tok-kw">const</span> expectEqual = std.testing.expectEqual;</span>
 <span class="line" id="L653">    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">0</span>), <span class="tok-kw">try</span> parseYear4(<span class="tok-str">&quot;0000&quot;</span>));</span>
 <span class="line" id="L654">    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">9999</span>), <span class="tok-kw">try</span> parseYear4(<span class="tok-str">&quot;9999&quot;</span>));</span>
@@ -1313,7 +1313,7 @@
 <span class="line" id="L1124">    }</span>
 <span class="line" id="L1125">};</span>
 <span class="line" id="L1126"></span>
-<span class="line" id="L1127"><span class="tok-kw">const</span> builtin = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>);</span>
+<span class="line" id="L1127"><span class="tok-kw">const</span> use_vectors = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;builtin&quot;</span>).zig_backend != .stage2_x86_64;</span>
 <span class="line" id="L1128"></span>
 </code></pre></body>
 </html>
