@@ -1,13 +1,12 @@
 const std = @import("std");
 
-const getty_deserialize = @import("../../deserialize.zig").deserialize;
-const Result = @import("../../deserialize.zig").Result;
+const deserializeLeaky = @import("../../deserialize.zig").deserializeLeaky;
 const SeedInterface = @import("../../interfaces/seed.zig").Seed;
 
 /// The default implementation of `getty.de.Seed`.
 ///
 /// `DefaultSeed` is the default seed used by Getty. All it does is call
-/// `getty.deserialize`.
+/// `getty.deserializeLeaky`.
 pub fn DefaultSeed(
     /// The type to deserialize into.
     comptime Value: type,
@@ -21,8 +20,8 @@ pub fn DefaultSeed(
             .{ .deserialize = deserialize },
         );
 
-        fn deserialize(_: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Result(Value) {
-            return try getty_deserialize(ally, Value, deserializer);
+        fn deserialize(_: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
+            return try deserializeLeaky(ally, Value, deserializer);
         }
     };
 }

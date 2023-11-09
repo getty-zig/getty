@@ -308,8 +308,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                var result = try seed.deserialize(ally, self.de.deserializer());
-                return result.value;
+                return try seed.deserialize(ally, self.de.deserializer());
             }
         };
 
@@ -341,13 +340,11 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 self.len.? -= @as(usize, 1);
 
-                var result = try seed.deserialize(ally, self.de.deserializer());
-                return result.value;
+                return try seed.deserialize(ally, self.de.deserializer());
             }
 
             fn nextValueSeed(self: *Map, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
-                var result = try seed.deserialize(ally, self.de.deserializer());
-                return result.value;
+                return try seed.deserialize(ally, self.de.deserializer());
             }
         };
 
@@ -369,8 +366,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             fn variantSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (self.de.peekTokenOpt()) |token| {
                     if (token == .String) {
-                        var result = try seed.deserialize(ally, self.de.deserializer());
-                        return result.value;
+                        return try seed.deserialize(ally, self.de.deserializer());
                     }
                 }
 
@@ -379,8 +375,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
             fn payloadSeed(self: *Union, ally: std.mem.Allocator, seed: anytype) Error!@TypeOf(seed).Value {
                 if (@TypeOf(seed).Value != void) {
-                    var result = try seed.deserialize(ally, self.de.deserializer());
-                    return result.value;
+                    return try seed.deserialize(ally, self.de.deserializer());
                 }
 
                 if (self.de.nextToken() != .Void) {
