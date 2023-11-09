@@ -342,72 +342,67 @@
 <span class="line" id="L228">        }</span>
 <span class="line" id="L229"></span>
 <span class="line" id="L230">        <span class="tok-kw">var</span> d = self.deserializers.items(.key)[self.pos];</span>
-<span class="line" id="L231">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
-<span class="line" id="L232">        <span class="tok-kw">return</span> result.value;</span>
-<span class="line" id="L233">    }</span>
-<span class="line" id="L234"></span>
-<span class="line" id="L235">    <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L236">        <span class="tok-kw">var</span> d = self.deserializers.items(.value)[self.pos];</span>
-<span class="line" id="L237">        self.pos += <span class="tok-number">1</span>;</span>
-<span class="line" id="L238"></span>
-<span class="line" id="L239">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
-<span class="line" id="L240">        <span class="tok-kw">return</span> result.value;</span>
-<span class="line" id="L241">    }</span>
-<span class="line" id="L242">};</span>
-<span class="line" id="L243"></span>
-<span class="line" id="L244"><span class="tok-kw">const</span> SeqAccess = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L245">    pos: <span class="tok-type">u64</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L246">    deserializers: std.ArrayList(ContentDeserializer),</span>
-<span class="line" id="L247"></span>
-<span class="line" id="L248">    <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> SeqAccessInterface(</span>
-<span class="line" id="L249">        *<span class="tok-builtin">@This</span>(),</span>
-<span class="line" id="L250">        getty_error,</span>
-<span class="line" id="L251">        .{ .nextElementSeed = nextElementSeed },</span>
-<span class="line" id="L252">    );</span>
-<span class="line" id="L253"></span>
-<span class="line" id="L254">    <span class="tok-kw">fn</span> <span class="tok-fn">nextElementSeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L255">        <span class="tok-kw">if</span> (self.pos &gt;= self.deserializers.items.len) {</span>
-<span class="line" id="L256">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L257">        }</span>
-<span class="line" id="L258"></span>
-<span class="line" id="L259">        <span class="tok-kw">var</span> d = self.deserializers.items[self.pos];</span>
-<span class="line" id="L260">        self.pos += <span class="tok-number">1</span>;</span>
-<span class="line" id="L261"></span>
-<span class="line" id="L262">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
-<span class="line" id="L263">        <span class="tok-kw">return</span> result.value;</span>
-<span class="line" id="L264">    }</span>
-<span class="line" id="L265">};</span>
-<span class="line" id="L266"></span>
-<span class="line" id="L267"><span class="tok-kw">const</span> UnionVariantAccess = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L268">    key: Content,</span>
-<span class="line" id="L269">    value: Content,</span>
-<span class="line" id="L270"></span>
-<span class="line" id="L271">    <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L272"></span>
-<span class="line" id="L273">    <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> UnionAccessInterface(</span>
-<span class="line" id="L274">        *Self,</span>
-<span class="line" id="L275">        getty_error,</span>
-<span class="line" id="L276">        .{ .variantSeed = variantSeed },</span>
-<span class="line" id="L277">    );</span>
-<span class="line" id="L278"></span>
-<span class="line" id="L279">    <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VariantAccessInterface(</span>
-<span class="line" id="L280">        *Self,</span>
-<span class="line" id="L281">        getty_error,</span>
-<span class="line" id="L282">        .{ .payloadSeed = payloadSeed },</span>
-<span class="line" id="L283">    );</span>
-<span class="line" id="L284"></span>
-<span class="line" id="L285">    <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: *Self, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L286">        <span class="tok-kw">var</span> cd = ContentDeserializer{ .content = self.key };</span>
-<span class="line" id="L287">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> seed.deserialize(ally, cd.deserializer());</span>
-<span class="line" id="L288">        <span class="tok-kw">return</span> result.value;</span>
-<span class="line" id="L289">    }</span>
-<span class="line" id="L290"></span>
-<span class="line" id="L291">    <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: *Self, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L292">        <span class="tok-kw">var</span> cd = ContentDeserializer{ .content = self.value };</span>
-<span class="line" id="L293">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> seed.deserialize(ally, cd.deserializer());</span>
-<span class="line" id="L294">        <span class="tok-kw">return</span> result.value;</span>
-<span class="line" id="L295">    }</span>
-<span class="line" id="L296">};</span>
-<span class="line" id="L297"></span>
+<span class="line" id="L231">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
+<span class="line" id="L232">    }</span>
+<span class="line" id="L233"></span>
+<span class="line" id="L234">    <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L235">        <span class="tok-kw">var</span> d = self.deserializers.items(.value)[self.pos];</span>
+<span class="line" id="L236">        self.pos += <span class="tok-number">1</span>;</span>
+<span class="line" id="L237"></span>
+<span class="line" id="L238">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
+<span class="line" id="L239">    }</span>
+<span class="line" id="L240">};</span>
+<span class="line" id="L241"></span>
+<span class="line" id="L242"><span class="tok-kw">const</span> SeqAccess = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L243">    pos: <span class="tok-type">u64</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L244">    deserializers: std.ArrayList(ContentDeserializer),</span>
+<span class="line" id="L245"></span>
+<span class="line" id="L246">    <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> SeqAccessInterface(</span>
+<span class="line" id="L247">        *<span class="tok-builtin">@This</span>(),</span>
+<span class="line" id="L248">        getty_error,</span>
+<span class="line" id="L249">        .{ .nextElementSeed = nextElementSeed },</span>
+<span class="line" id="L250">    );</span>
+<span class="line" id="L251"></span>
+<span class="line" id="L252">    <span class="tok-kw">fn</span> <span class="tok-fn">nextElementSeed</span>(self: *<span class="tok-builtin">@This</span>(), ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L253">        <span class="tok-kw">if</span> (self.pos &gt;= self.deserializers.items.len) {</span>
+<span class="line" id="L254">            <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L255">        }</span>
+<span class="line" id="L256"></span>
+<span class="line" id="L257">        <span class="tok-kw">var</span> d = self.deserializers.items[self.pos];</span>
+<span class="line" id="L258">        self.pos += <span class="tok-number">1</span>;</span>
+<span class="line" id="L259"></span>
+<span class="line" id="L260">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, d.deserializer());</span>
+<span class="line" id="L261">    }</span>
+<span class="line" id="L262">};</span>
+<span class="line" id="L263"></span>
+<span class="line" id="L264"><span class="tok-kw">const</span> UnionVariantAccess = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L265">    key: Content,</span>
+<span class="line" id="L266">    value: Content,</span>
+<span class="line" id="L267"></span>
+<span class="line" id="L268">    <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L269"></span>
+<span class="line" id="L270">    <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> UnionAccessInterface(</span>
+<span class="line" id="L271">        *Self,</span>
+<span class="line" id="L272">        getty_error,</span>
+<span class="line" id="L273">        .{ .variantSeed = variantSeed },</span>
+<span class="line" id="L274">    );</span>
+<span class="line" id="L275"></span>
+<span class="line" id="L276">    <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VariantAccessInterface(</span>
+<span class="line" id="L277">        *Self,</span>
+<span class="line" id="L278">        getty_error,</span>
+<span class="line" id="L279">        .{ .payloadSeed = payloadSeed },</span>
+<span class="line" id="L280">    );</span>
+<span class="line" id="L281"></span>
+<span class="line" id="L282">    <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: *Self, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L283">        <span class="tok-kw">var</span> cd = ContentDeserializer{ .content = self.key };</span>
+<span class="line" id="L284">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, cd.deserializer());</span>
+<span class="line" id="L285">    }</span>
+<span class="line" id="L286"></span>
+<span class="line" id="L287">    <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: *Self, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) getty_error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L288">        <span class="tok-kw">var</span> cd = ContentDeserializer{ .content = self.value };</span>
+<span class="line" id="L289">        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, cd.deserializer());</span>
+<span class="line" id="L290">    }</span>
+<span class="line" id="L291">};</span>
+<span class="line" id="L292"></span>
 </code></pre></body>
 </html>
