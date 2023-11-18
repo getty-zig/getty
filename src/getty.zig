@@ -1,23 +1,9 @@
 //! A (de)serialization framework for the Zig programming language.
 
-////////////////////////////////////////////////////////////////////////////////
-// Namespaces
-////////////////////////////////////////////////////////////////////////////////
-
-/// Deserialization-specific types and functions.
 pub const de = @import("de/de.zig").de;
+pub const ser = @import("ser/ser.zig");
 
-/// Serialization-specific types and functions.
-pub const ser = @import("ser/ser.zig").ser;
-
-////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////
-
-/// A `Deserializer` converts formatted data into _Getty values_.
 pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
-
-/// A `Serializer` converts _Getty values_ into formatted data.
 pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
 ////////////////////////////////////////////////////////////////////////////////

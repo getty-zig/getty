@@ -1,3 +1,5 @@
+//! `String` is a _Serialization Block_ for string values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

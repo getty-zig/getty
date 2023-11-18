@@ -1,3 +1,16 @@
+//! `HashMap` is a _Serialization Block_ for values of the following types:
+//!
+//!   - `std.ArrayHashMap`
+//!   - `std.ArrayHashMapUnmanaged`
+//!   - `std.AutoArrayHashMap`
+//!   - `std.AutoArrayHashMapUnmanaged`
+//!   - `std.HashMap`
+//!   - `std.HashMapUnmanaged`
+//!   - `std.StringArrayHashMap`
+//!   - `std.StringArrayHashMapUnmanaged`
+//!   - `std.StringHashMap`
+//!   - `std.StringHashMapUnmanaged`
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

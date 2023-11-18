@@ -1,3 +1,5 @@
+//! `Vector` is a _Serialization Block_ for vector values.
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;

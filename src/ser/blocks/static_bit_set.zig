@@ -1,3 +1,5 @@
+//! `StaticBitSet` is a _Serialization Block_ for `std.StaticBitSet`.
+
 const std = @import("std");
 
 const blocks = @import("../blocks.zig");

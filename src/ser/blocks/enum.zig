@@ -1,3 +1,5 @@
+//! `Enum` is a _Serialization Block_ for enum values.
+
 const std = @import("std");
 
 const getAttributes = @import("../attributes.zig").getAttributes;

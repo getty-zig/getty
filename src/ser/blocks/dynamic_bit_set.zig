@@ -1,3 +1,5 @@
+//! `DynamicBitSet` is a _Serialization Block_ for `std.DynamicBitSet` values.
+
 const std = @import("std");
 const test_ally = std.testing.allocator;
 

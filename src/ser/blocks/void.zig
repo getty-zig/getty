@@ -1,3 +1,5 @@
+//! `Void` is a _Serialization Block_ for void values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

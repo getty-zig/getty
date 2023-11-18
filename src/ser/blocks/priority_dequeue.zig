@@ -1,3 +1,5 @@
+//! `PriorityDequeue` is a _Serialization Block_ for `std.PriorityDequeue` values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

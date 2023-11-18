@@ -1,4 +1,4 @@
-/// Deserialization-specific types and functions.
+/// The `de` namespace provides deserialization-specific types and functions.
 pub const de = struct {
     ////////////////////////////////////////////////////////////////////////////////
     // Types

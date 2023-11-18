@@ -1,3 +1,5 @@
+//! `Float` is a _Serialization Block_ for floating-point values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

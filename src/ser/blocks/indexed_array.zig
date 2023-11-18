@@ -1,3 +1,8 @@
+//! `IndexedArray` is a _Serialization Block_ for values of the following types:
+//!
+//!   - `std.EnumArray`
+//!   - `std.IndexedArray`
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;

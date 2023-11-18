@@ -1,3 +1,5 @@
+//! `BoundedArray` is a _Serialization Block_ for `std.BoundedArray` values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

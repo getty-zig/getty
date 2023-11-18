@@ -1,3 +1,5 @@
+//! `Union` is a _Serialization Block_ for union values.
+
 const std = @import("std");
 
 const getAttributes = @import("../attributes.zig").getAttributes;

@@ -1,3 +1,8 @@
+//! `IndexedSet` is a _Serialization Block_ for values of the following types:
+//!
+//!   - `std.EnumSet`.
+//!   - `std.IndexedSet`.
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;

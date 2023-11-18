@@ -1,3 +1,5 @@
+//! `LinearFifo` is a _Serialization Block_ for `std.LinearFifo`.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

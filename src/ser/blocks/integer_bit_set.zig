@@ -1,3 +1,5 @@
+//! `IntegerBitSet` is a _Serialization Block_ for `std.IntegerBitSet` values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

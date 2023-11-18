@@ -1,3 +1,8 @@
+//! `IndexedMap` is a _Serialization Block_ for values of the following types:
+//!
+//!   - `std.EnumMap`
+//!   - `std.IndexedMap`
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;

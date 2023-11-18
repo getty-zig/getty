@@ -1,3 +1,5 @@
+//! `DynamicBitSetUnmanaged` is a _Serialization Block_ for `std.DynamicBitSetUnmanaged` values.
+
 const std = @import("std");
 const test_ally = std.testing.allocator;
 

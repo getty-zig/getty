@@ -1,3 +1,5 @@
+//! `Struct` is a _Serialization Block_ for struct values.
+
 const std = @import("std");
 
 const getAttributes = @import("../attributes.zig").getAttributes;

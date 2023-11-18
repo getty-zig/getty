@@ -1,3 +1,9 @@
+//! `ArrayListAligned` is a _Serialization Block_ for values of the following types:
+//!
+//!   - `std.ArrayList`
+//!   - `std.ArrayListAligned`
+//!   - `std.ArrayListUnmanaged`
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

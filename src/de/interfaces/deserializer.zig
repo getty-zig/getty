@@ -3,8 +3,7 @@ const std = @import("std");
 const default_dt = @import("../tuples.zig").dt;
 const err = @import("../error.zig");
 
-/// A `Deserializer` deserializes values from a data format into Getty's data
-/// model.
+/// A `Deserializer` converts formatted data into _Getty values_.
 pub fn Deserializer(
     /// An implementing type.
     comptime Impl: type,

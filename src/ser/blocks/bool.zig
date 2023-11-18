@@ -1,3 +1,5 @@
+//! `Bool` is a _Serialization Block_ for Boolean values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

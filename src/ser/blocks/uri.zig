@@ -1,3 +1,5 @@
+//! `Uri` is a _Serialization Block_ for `std.Uri` values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

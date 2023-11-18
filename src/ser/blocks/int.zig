@@ -1,3 +1,5 @@
+//! `Int` is a _Serialization Block_ for integer values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

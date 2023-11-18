@@ -1,3 +1,5 @@
+//! `BufMap` is a _Serialization Block_ for `std.BufMap` values.
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;

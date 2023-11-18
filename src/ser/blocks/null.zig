@@ -1,3 +1,5 @@
+//! `Null` is a _Serialization Block_ for null values.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

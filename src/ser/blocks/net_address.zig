@@ -1,3 +1,5 @@
+//! `NetAddress` is a _Serialization Block_ for `std.net.Address` values.
+
 const builtin = @import("builtin");
 const std = @import("std");
 

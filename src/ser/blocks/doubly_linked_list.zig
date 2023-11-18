@@ -1,3 +1,5 @@
+//! `DoublyLinkedList` is a _Serialization Block_ for `std.DoublyLinkedList`.
+
 const std = @import("std");
 
 const t = @import("../testing.zig");

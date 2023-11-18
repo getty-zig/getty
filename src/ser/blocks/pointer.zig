@@ -1,3 +1,5 @@
+//! `Pointer` is a _Serialization Block_ for pointer values.
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;
