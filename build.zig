@@ -78,7 +78,7 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
 }
 
 fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.OptimizeMode) void {
-    const docs_step = b.step("getty-docs", "Build the project documentation");
+    const docs_step = b.step("docs", "Build the project documentation");
 
     const doc_obj = b.addObject(.{
         .name = "docs",
