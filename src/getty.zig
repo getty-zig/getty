@@ -1,47 +1,46 @@
 //! A (de)serialization framework for the Zig programming language.
 
 ////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////
-
-/// A `Serializer` serializes values from Getty's data model into a data
-/// format.
-pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
-
-/// A `Deserializer` deserializes values from a data format into Getty's data
-/// model.
-pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
-
-////////////////////////////////////////////////////////////////////////////////
 // Namespaces
 ////////////////////////////////////////////////////////////////////////////////
+
+/// Deserialization-specific types and functions.
+pub const de = @import("de/de.zig").de;
 
 /// Serialization-specific types and functions.
 pub const ser = @import("ser/ser.zig").ser;
 
-/// Deserialization-specific types and functions.
-pub const de = @import("de/de.zig").de;
+////////////////////////////////////////////////////////////////////////////////
+// Types
+////////////////////////////////////////////////////////////////////////////////
+
+/// A `Deserializer` converts formatted data into _Getty values_.
+pub const Deserializer = @import("de/interfaces/deserializer.zig").Deserializer;
+
+/// A `Serializer` converts _Getty values_ into formatted data.
+pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Serializes the value `v` using the `getty.Serializer` `s`.
-pub const serialize = @import("ser/serialize.zig").serialize;
-
-/// Deserializes data from the `getty.Deserializer` `d` into a value of type
-/// `T`.
+/// `deserialize` converts formatted data from the `getty.Deserializer` `d`
+/// into a value of type `T`.
 pub const deserialize = @import("de/deserialize.zig").deserialize;
+
+/// `serialize` converts the value `v` into formatted data using the
+/// `getty.Serializer` `s`.
+pub const serialize = @import("ser/serialize.zig").serialize;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Values
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Getty's default serialization tuple.
-pub const st = @import("ser/tuples.zig").st;
-
-/// Getty's default deserialization tuple.
+/// `dt` is Getty's default _Deserialization Tuple_.
 pub const dt = @import("de/tuples.zig").dt;
+
+/// `st` is Getty's default _Serialization Tuple_.
+pub const st = @import("ser/tuples.zig").st;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Testing
