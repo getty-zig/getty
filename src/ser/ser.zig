@@ -36,6 +36,10 @@ pub const getAttributes = @import("attributes.zig").getAttributes;
 // Error Sets
 ////////////////////////////////////////////////////////////////////////////////
 
+/// A generic error set for `getty.Serializer` implementations.
+///
+/// This error set must always be included in a `getty.Serializer`
+/// implementation's error set.
 pub const Error = @import("error.zig").Error;
 
 comptime {

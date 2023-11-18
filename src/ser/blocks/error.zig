@@ -1,3 +1,5 @@
+//! `Error` is a _Serialization Block_ for error values.
+
 const std = @import("std");
 
 const getty_serialize = @import("../serialize.zig").serialize;
