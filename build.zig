@@ -48,10 +48,10 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
         }
     }
 
+    // Configure tests.
     const test_ser_step = b.step("test-ser", "Run serialization tests");
     const test_de_step = b.step("test-de", "Run deserialization tests");
 
-    // Configure tests.
     const t_ser = b.addTest(.{
         .name = "serialization test",
         .root_source_file = .{ .path = "src/ser/ser.zig" },
@@ -59,7 +59,6 @@ fn tests(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.O
         .optimize = mode,
         .main_pkg_path = .{ .path = "src/" },
     });
-
     const t_de = b.addTest(.{
         .name = "deserialization test",
         .root_source_file = .{ .path = "src/de/de.zig" },
@@ -90,7 +89,7 @@ fn docs(b: *std.build.Builder, target: std.zig.CrossTarget, mode: std.builtin.Op
     const install_docs = b.addInstallDirectory(.{
         .source_dir = doc_obj.getEmittedDocs(),
         .install_dir = .prefix,
-        .install_subdir = "doc/getty",
+        .install_subdir = "docs/getty",
     });
     docs_step.dependOn(&install_docs.step);
 }
