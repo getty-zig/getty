@@ -1386,7 +1386,7 @@
 <span class="line" id="L1267"><span class="tok-comment">///     /// The key type which this indexer converts to indices</span></span>
 <span class="line" id="L1268"><span class="tok-comment">///     pub const Key: type,</span></span>
 <span class="line" id="L1269"><span class="tok-comment">///     /// The number of indexes in the dense mapping</span></span>
-<span class="line" id="L1270"><span class="tok-comment">///     pub const count: usize,</span></span>
+<span class="line" id="L1270"><span class="tok-comment">///     pub const count: comptime_int,</span></span>
 <span class="line" id="L1271"><span class="tok-comment">///     /// Converts from a key to an index</span></span>
 <span class="line" id="L1272"><span class="tok-comment">///     pub fn indexOf(Key) usize;</span></span>
 <span class="line" id="L1273"><span class="tok-comment">///     /// Converts from an index to a key</span></span>
@@ -1397,8 +1397,8 @@
 <span class="line" id="L1278">    <span class="tok-kw">comptime</span> {</span>
 <span class="line" id="L1279">        <span class="tok-kw">if</span> (!<span class="tok-builtin">@hasDecl</span>(T, <span class="tok-str">&quot;Key&quot;</span>)) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer must have decl Key: type.&quot;</span>);</span>
 <span class="line" id="L1280">        <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(T.Key) != <span class="tok-type">type</span>) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer.Key must be a type.&quot;</span>);</span>
-<span class="line" id="L1281">        <span class="tok-kw">if</span> (!<span class="tok-builtin">@hasDecl</span>(T, <span class="tok-str">&quot;count&quot;</span>)) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer must have decl count: usize.&quot;</span>);</span>
-<span class="line" id="L1282">        <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(T.count) != <span class="tok-type">usize</span>) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer.count must be a usize.&quot;</span>);</span>
+<span class="line" id="L1281">        <span class="tok-kw">if</span> (!<span class="tok-builtin">@hasDecl</span>(T, <span class="tok-str">&quot;count&quot;</span>)) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer must have decl count: comptime_int.&quot;</span>);</span>
+<span class="line" id="L1282">        <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(T.count) != <span class="tok-type">comptime_int</span>) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer.count must be a comptime_int.&quot;</span>);</span>
 <span class="line" id="L1283">        <span class="tok-kw">if</span> (!<span class="tok-builtin">@hasDecl</span>(T, <span class="tok-str">&quot;indexOf&quot;</span>)) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer.indexOf must be a fn (Key) usize.&quot;</span>);</span>
 <span class="line" id="L1284">        <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(T.indexOf) != <span class="tok-kw">fn</span> (T.Key) <span class="tok-type">usize</span>) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer must have decl indexOf: fn (Key) usize.&quot;</span>);</span>
 <span class="line" id="L1285">        <span class="tok-kw">if</span> (!<span class="tok-builtin">@hasDecl</span>(T, <span class="tok-str">&quot;keyForIndex&quot;</span>)) <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Indexer must have decl keyForIndex: fn (usize) Key.&quot;</span>);</span>
@@ -1409,7 +1409,7 @@
 <span class="line" id="L1290"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.ensureIndexer&quot;</span> {</span>
 <span class="line" id="L1291">    ensureIndexer(<span class="tok-kw">struct</span> {</span>
 <span class="line" id="L1292">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = <span class="tok-type">u32</span>;</span>
-<span class="line" id="L1293">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">usize</span> = <span class="tok-number">8</span>;</span>
+<span class="line" id="L1293">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = <span class="tok-number">8</span>;</span>
 <span class="line" id="L1294">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(k: Key) <span class="tok-type">usize</span> {</span>
 <span class="line" id="L1295">            <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(k));</span>
 <span class="line" id="L1296">        }</span>
@@ -1421,152 +1421,230 @@
 <span class="line" id="L1302"></span>
 <span class="line" id="L1303"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">EnumIndexer</span>(<span class="tok-kw">comptime</span> E: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
 <span class="line" id="L1304">    <span class="tok-kw">if</span> (!<span class="tok-builtin">@typeInfo</span>(E).Enum.is_exhaustive) {</span>
-<span class="line" id="L1305">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Cannot create an enum indexer for a non-exhaustive enum.&quot;</span>);</span>
-<span class="line" id="L1306">    }</span>
-<span class="line" id="L1307"></span>
-<span class="line" id="L1308">    <span class="tok-kw">const</span> const_fields = std.meta.fields(E);</span>
-<span class="line" id="L1309">    <span class="tok-kw">var</span> fields = const_fields[<span class="tok-number">0</span>..const_fields.len].*;</span>
-<span class="line" id="L1310">    <span class="tok-kw">const</span> fields_len = fields.len;</span>
+<span class="line" id="L1305">        <span class="tok-kw">const</span> BackingInt = <span class="tok-builtin">@typeInfo</span>(E).Enum.tag_type;</span>
+<span class="line" id="L1306">        <span class="tok-kw">if</span> (<span class="tok-builtin">@bitSizeOf</span>(BackingInt) &gt; <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">usize</span>))</span>
+<span class="line" id="L1307">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;Cannot create an enum indexer for a given non-exhaustive enum, tag_type is larger than usize.&quot;</span>);</span>
+<span class="line" id="L1308"></span>
+<span class="line" id="L1309">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1310">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key: <span class="tok-type">type</span> = E;</span>
 <span class="line" id="L1311"></span>
-<span class="line" id="L1312">    <span class="tok-kw">if</span> (fields_len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L1313">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1314">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = E;</span>
-<span class="line" id="L1315">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1316">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1317">                _ = e;</span>
-<span class="line" id="L1318">                <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1319">            }</span>
-<span class="line" id="L1320">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
-<span class="line" id="L1321">                _ = i;</span>
-<span class="line" id="L1322">                <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1323">            }</span>
-<span class="line" id="L1324">        };</span>
-<span class="line" id="L1325">    }</span>
-<span class="line" id="L1326"></span>
-<span class="line" id="L1327">    <span class="tok-kw">const</span> min = fields[<span class="tok-number">0</span>].value;</span>
-<span class="line" id="L1328">    <span class="tok-kw">const</span> max = fields[fields.len - <span class="tok-number">1</span>].value;</span>
-<span class="line" id="L1329"></span>
-<span class="line" id="L1330">    <span class="tok-kw">const</span> SortContext = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1331">        fields: []EnumField,</span>
-<span class="line" id="L1332"></span>
-<span class="line" id="L1333">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lessThan</span>(<span class="tok-kw">comptime</span> ctx: <span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> a: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> b: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L1334">            <span class="tok-kw">return</span> ctx.fields[a].value &lt; ctx.fields[b].value;</span>
-<span class="line" id="L1335">        }</span>
+<span class="line" id="L1312">            <span class="tok-kw">const</span> backing_int_sign = <span class="tok-builtin">@typeInfo</span>(BackingInt).Int.signedness;</span>
+<span class="line" id="L1313">            <span class="tok-kw">const</span> min_value = std.math.minInt(BackingInt);</span>
+<span class="line" id="L1314">            <span class="tok-kw">const</span> max_value = std.math.maxInt(BackingInt);</span>
+<span class="line" id="L1315"></span>
+<span class="line" id="L1316">            <span class="tok-kw">const</span> RangeType = std.meta.Int(.unsigned, <span class="tok-builtin">@bitSizeOf</span>(BackingInt));</span>
+<span class="line" id="L1317">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = std.math.maxInt(RangeType) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L1318"></span>
+<span class="line" id="L1319">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1320">                <span class="tok-kw">if</span> (backing_int_sign == .unsigned)</span>
+<span class="line" id="L1321">                    <span class="tok-kw">return</span> <span class="tok-builtin">@intFromEnum</span>(e);</span>
+<span class="line" id="L1322"></span>
+<span class="line" id="L1323">                <span class="tok-kw">return</span> <span class="tok-kw">if</span> (<span class="tok-builtin">@intFromEnum</span>(e) &lt; <span class="tok-number">0</span>)</span>
+<span class="line" id="L1324">                    <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@intFromEnum</span>(e) - min_value)</span>
+<span class="line" id="L1325">                <span class="tok-kw">else</span></span>
+<span class="line" id="L1326">                    <span class="tok-builtin">@as</span>(RangeType, -min_value) + <span class="tok-builtin">@as</span>(RangeType, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@intFromEnum</span>(e)));</span>
+<span class="line" id="L1327">            }</span>
+<span class="line" id="L1328">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
+<span class="line" id="L1329">                <span class="tok-kw">if</span> (backing_int_sign == .unsigned)</span>
+<span class="line" id="L1330">                    <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(i);</span>
+<span class="line" id="L1331"></span>
+<span class="line" id="L1332">                <span class="tok-kw">return</span> <span class="tok-builtin">@enumFromInt</span>(<span class="tok-builtin">@as</span>(std.meta.Int(.signed, <span class="tok-builtin">@bitSizeOf</span>(RangeType) + <span class="tok-number">1</span>), <span class="tok-builtin">@intCast</span>(i)) + min_value);</span>
+<span class="line" id="L1333">            }</span>
+<span class="line" id="L1334">        };</span>
+<span class="line" id="L1335">    }</span>
 <span class="line" id="L1336"></span>
-<span class="line" id="L1337">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">swap</span>(<span class="tok-kw">comptime</span> ctx: <span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> a: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> b: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1338">            <span class="tok-kw">return</span> std.mem.swap(EnumField, &amp;ctx.fields[a], &amp;ctx.fields[b]);</span>
-<span class="line" id="L1339">        }</span>
-<span class="line" id="L1340">    };</span>
-<span class="line" id="L1341">    std.sort.insertionContext(<span class="tok-number">0</span>, fields_len, SortContext{ .fields = &amp;fields });</span>
-<span class="line" id="L1342"></span>
-<span class="line" id="L1343">    <span class="tok-kw">if</span> (max - min == fields.len - <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1344">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1345">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = E;</span>
-<span class="line" id="L1346">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count = fields_len;</span>
-<span class="line" id="L1347">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1348">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@intFromEnum</span>(e) - min));</span>
-<span class="line" id="L1349">            }</span>
-<span class="line" id="L1350">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
-<span class="line" id="L1351">                <span class="tok-comment">// TODO fix addition semantics.  This calculation</span>
-</span>
-<span class="line" id="L1352">                <span class="tok-comment">// gives up some safety to avoid artificially limiting</span>
-</span>
-<span class="line" id="L1353">                <span class="tok-comment">// the range of signed enum values to max_isize.</span>
-</span>
-<span class="line" id="L1354">                <span class="tok-kw">const</span> enum_value = <span class="tok-kw">if</span> (min &lt; <span class="tok-number">0</span>) <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, <span class="tok-builtin">@bitCast</span>(i)) +% min <span class="tok-kw">else</span> i + min;</span>
-<span class="line" id="L1355">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(E, <span class="tok-builtin">@enumFromInt</span>(<span class="tok-builtin">@as</span>(std.meta.Tag(E), <span class="tok-builtin">@intCast</span>(enum_value))));</span>
-<span class="line" id="L1356">            }</span>
-<span class="line" id="L1357">        };</span>
-<span class="line" id="L1358">    }</span>
-<span class="line" id="L1359"></span>
-<span class="line" id="L1360">    <span class="tok-kw">const</span> keys = valuesFromFields(E, &amp;fields);</span>
+<span class="line" id="L1337">    <span class="tok-kw">const</span> const_fields = std.meta.fields(E);</span>
+<span class="line" id="L1338">    <span class="tok-kw">var</span> fields = const_fields[<span class="tok-number">0</span>..const_fields.len].*;</span>
+<span class="line" id="L1339">    <span class="tok-kw">const</span> fields_len = fields.len;</span>
+<span class="line" id="L1340"></span>
+<span class="line" id="L1341">    <span class="tok-kw">if</span> (fields_len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1342">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1343">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = E;</span>
+<span class="line" id="L1344">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1345">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1346">                _ = e;</span>
+<span class="line" id="L1347">                <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1348">            }</span>
+<span class="line" id="L1349">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
+<span class="line" id="L1350">                _ = i;</span>
+<span class="line" id="L1351">                <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1352">            }</span>
+<span class="line" id="L1353">        };</span>
+<span class="line" id="L1354">    }</span>
+<span class="line" id="L1355"></span>
+<span class="line" id="L1356">    <span class="tok-kw">const</span> min = fields[<span class="tok-number">0</span>].value;</span>
+<span class="line" id="L1357">    <span class="tok-kw">const</span> max = fields[fields.len - <span class="tok-number">1</span>].value;</span>
+<span class="line" id="L1358"></span>
+<span class="line" id="L1359">    <span class="tok-kw">const</span> SortContext = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1360">        fields: []EnumField,</span>
 <span class="line" id="L1361"></span>
-<span class="line" id="L1362">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1363">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = E;</span>
-<span class="line" id="L1364">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count = fields_len;</span>
-<span class="line" id="L1365">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L1366">            <span class="tok-kw">for</span> (keys, <span class="tok-number">0</span>..) |k, i| {</span>
-<span class="line" id="L1367">                <span class="tok-kw">if</span> (k == e) <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L1368">            }</span>
-<span class="line" id="L1369">            <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1370">        }</span>
-<span class="line" id="L1371">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
-<span class="line" id="L1372">            <span class="tok-kw">return</span> keys[i];</span>
-<span class="line" id="L1373">        }</span>
-<span class="line" id="L1374">    };</span>
-<span class="line" id="L1375">}</span>
-<span class="line" id="L1376"></span>
-<span class="line" id="L1377"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer dense zeroed&quot;</span> {</span>
-<span class="line" id="L1378">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">u2</span>) { b = <span class="tok-number">1</span>, a = <span class="tok-number">0</span>, c = <span class="tok-number">2</span> };</span>
-<span class="line" id="L1379">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
-<span class="line" id="L1380">    ensureIndexer(Indexer);</span>
-<span class="line" id="L1381">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
-<span class="line" id="L1382">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">3</span>), Indexer.count);</span>
-<span class="line" id="L1383"></span>
-<span class="line" id="L1384">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
-<span class="line" id="L1385">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
-<span class="line" id="L1386">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
-<span class="line" id="L1387"></span>
-<span class="line" id="L1388">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
-<span class="line" id="L1389">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
-<span class="line" id="L1390">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
-<span class="line" id="L1391">}</span>
-<span class="line" id="L1392"></span>
-<span class="line" id="L1393"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer dense positive&quot;</span> {</span>
-<span class="line" id="L1394">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">u4</span>) { c = <span class="tok-number">6</span>, a = <span class="tok-number">4</span>, b = <span class="tok-number">5</span> };</span>
-<span class="line" id="L1395">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
-<span class="line" id="L1396">    ensureIndexer(Indexer);</span>
-<span class="line" id="L1397">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
-<span class="line" id="L1398">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">3</span>), Indexer.count);</span>
-<span class="line" id="L1399"></span>
-<span class="line" id="L1400">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
-<span class="line" id="L1401">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
-<span class="line" id="L1402">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
-<span class="line" id="L1403"></span>
-<span class="line" id="L1404">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
-<span class="line" id="L1405">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
-<span class="line" id="L1406">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
-<span class="line" id="L1407">}</span>
-<span class="line" id="L1408"></span>
-<span class="line" id="L1409"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer dense negative&quot;</span> {</span>
-<span class="line" id="L1410">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">i4</span>) { a = -<span class="tok-number">6</span>, c = -<span class="tok-number">4</span>, b = -<span class="tok-number">5</span> };</span>
-<span class="line" id="L1411">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
-<span class="line" id="L1412">    ensureIndexer(Indexer);</span>
-<span class="line" id="L1413">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
-<span class="line" id="L1414">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">3</span>), Indexer.count);</span>
-<span class="line" id="L1415"></span>
-<span class="line" id="L1416">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
-<span class="line" id="L1417">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
-<span class="line" id="L1418">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
-<span class="line" id="L1419"></span>
-<span class="line" id="L1420">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
-<span class="line" id="L1421">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
-<span class="line" id="L1422">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
-<span class="line" id="L1423">}</span>
-<span class="line" id="L1424"></span>
-<span class="line" id="L1425"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer sparse&quot;</span> {</span>
-<span class="line" id="L1426">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">i4</span>) { a = -<span class="tok-number">2</span>, c = <span class="tok-number">6</span>, b = <span class="tok-number">4</span> };</span>
-<span class="line" id="L1427">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
-<span class="line" id="L1428">    ensureIndexer(Indexer);</span>
-<span class="line" id="L1429">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
-<span class="line" id="L1430">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">3</span>), Indexer.count);</span>
+<span class="line" id="L1362">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lessThan</span>(<span class="tok-kw">comptime</span> ctx: <span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> a: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> b: <span class="tok-type">usize</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L1363">            <span class="tok-kw">return</span> ctx.fields[a].value &lt; ctx.fields[b].value;</span>
+<span class="line" id="L1364">        }</span>
+<span class="line" id="L1365"></span>
+<span class="line" id="L1366">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">swap</span>(<span class="tok-kw">comptime</span> ctx: <span class="tok-builtin">@This</span>(), <span class="tok-kw">comptime</span> a: <span class="tok-type">usize</span>, <span class="tok-kw">comptime</span> b: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1367">            <span class="tok-kw">return</span> std.mem.swap(EnumField, &amp;ctx.fields[a], &amp;ctx.fields[b]);</span>
+<span class="line" id="L1368">        }</span>
+<span class="line" id="L1369">    };</span>
+<span class="line" id="L1370">    std.sort.insertionContext(<span class="tok-number">0</span>, fields_len, SortContext{ .fields = &amp;fields });</span>
+<span class="line" id="L1371"></span>
+<span class="line" id="L1372">    <span class="tok-kw">if</span> (max - min == fields.len - <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1373">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1374">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = E;</span>
+<span class="line" id="L1375">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = fields_len;</span>
+<span class="line" id="L1376">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1377">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-builtin">@intCast</span>(<span class="tok-builtin">@intFromEnum</span>(e) - min));</span>
+<span class="line" id="L1378">            }</span>
+<span class="line" id="L1379">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
+<span class="line" id="L1380">                <span class="tok-comment">// TODO fix addition semantics.  This calculation</span>
+</span>
+<span class="line" id="L1381">                <span class="tok-comment">// gives up some safety to avoid artificially limiting</span>
+</span>
+<span class="line" id="L1382">                <span class="tok-comment">// the range of signed enum values to max_isize.</span>
+</span>
+<span class="line" id="L1383">                <span class="tok-kw">const</span> enum_value = <span class="tok-kw">if</span> (min &lt; <span class="tok-number">0</span>) <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, <span class="tok-builtin">@bitCast</span>(i)) +% min <span class="tok-kw">else</span> i + min;</span>
+<span class="line" id="L1384">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(E, <span class="tok-builtin">@enumFromInt</span>(<span class="tok-builtin">@as</span>(std.meta.Tag(E), <span class="tok-builtin">@intCast</span>(enum_value))));</span>
+<span class="line" id="L1385">            }</span>
+<span class="line" id="L1386">        };</span>
+<span class="line" id="L1387">    }</span>
+<span class="line" id="L1388"></span>
+<span class="line" id="L1389">    <span class="tok-kw">const</span> keys = valuesFromFields(E, &amp;fields);</span>
+<span class="line" id="L1390"></span>
+<span class="line" id="L1391">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1392">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = E;</span>
+<span class="line" id="L1393">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = fields_len;</span>
+<span class="line" id="L1394">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(e: E) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L1395">            <span class="tok-kw">for</span> (keys, <span class="tok-number">0</span>..) |k, i| {</span>
+<span class="line" id="L1396">                <span class="tok-kw">if</span> (k == e) <span class="tok-kw">return</span> i;</span>
+<span class="line" id="L1397">            }</span>
+<span class="line" id="L1398">            <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1399">        }</span>
+<span class="line" id="L1400">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) E {</span>
+<span class="line" id="L1401">            <span class="tok-kw">return</span> keys[i];</span>
+<span class="line" id="L1402">        }</span>
+<span class="line" id="L1403">    };</span>
+<span class="line" id="L1404">}</span>
+<span class="line" id="L1405"></span>
+<span class="line" id="L1406"><span class="tok-kw">test</span> <span class="tok-str">&quot;EnumIndexer non-exhaustive&quot;</span> {</span>
+<span class="line" id="L1407">    <span class="tok-kw">const</span> backing_ints = [_]<span class="tok-type">type</span>{</span>
+<span class="line" id="L1408">        <span class="tok-type">i1</span>,</span>
+<span class="line" id="L1409">        <span class="tok-type">i2</span>,</span>
+<span class="line" id="L1410">        <span class="tok-type">i3</span>,</span>
+<span class="line" id="L1411">        <span class="tok-type">i4</span>,</span>
+<span class="line" id="L1412">        <span class="tok-type">i8</span>,</span>
+<span class="line" id="L1413">        <span class="tok-type">i16</span>,</span>
+<span class="line" id="L1414">        std.meta.Int(.signed, <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">isize</span>) - <span class="tok-number">1</span>),</span>
+<span class="line" id="L1415">        <span class="tok-type">isize</span>,</span>
+<span class="line" id="L1416">        <span class="tok-type">u1</span>,</span>
+<span class="line" id="L1417">        <span class="tok-type">u2</span>,</span>
+<span class="line" id="L1418">        <span class="tok-type">u3</span>,</span>
+<span class="line" id="L1419">        <span class="tok-type">u4</span>,</span>
+<span class="line" id="L1420">        <span class="tok-type">u16</span>,</span>
+<span class="line" id="L1421">        std.meta.Int(.unsigned, <span class="tok-builtin">@bitSizeOf</span>(<span class="tok-type">usize</span>) - <span class="tok-number">1</span>),</span>
+<span class="line" id="L1422">        <span class="tok-type">usize</span>,</span>
+<span class="line" id="L1423">    };</span>
+<span class="line" id="L1424">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (backing_ints) |BackingInt| {</span>
+<span class="line" id="L1425">        <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(BackingInt) {</span>
+<span class="line" id="L1426">            number_zero_tag = <span class="tok-number">0</span>,</span>
+<span class="line" id="L1427">            _,</span>
+<span class="line" id="L1428">        };</span>
+<span class="line" id="L1429">        <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
+<span class="line" id="L1430">        ensureIndexer(Indexer);</span>
 <span class="line" id="L1431"></span>
-<span class="line" id="L1432">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
-<span class="line" id="L1433">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
-<span class="line" id="L1434">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
-<span class="line" id="L1435"></span>
-<span class="line" id="L1436">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
-<span class="line" id="L1437">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
-<span class="line" id="L1438">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
-<span class="line" id="L1439">}</span>
-<span class="line" id="L1440"></span>
-<span class="line" id="L1441"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer empty&quot;</span> {</span>
-<span class="line" id="L1442">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span> {};</span>
-<span class="line" id="L1443">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
-<span class="line" id="L1444">    ensureIndexer(Indexer);</span>
-<span class="line" id="L1445">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
-<span class="line" id="L1446">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.count);</span>
-<span class="line" id="L1447">}</span>
+<span class="line" id="L1432">        <span class="tok-kw">const</span> min_tag: E = <span class="tok-builtin">@enumFromInt</span>(std.math.minInt(BackingInt));</span>
+<span class="line" id="L1433">        <span class="tok-kw">const</span> max_tag: E = <span class="tok-builtin">@enumFromInt</span>(std.math.maxInt(BackingInt));</span>
+<span class="line" id="L1434"></span>
+<span class="line" id="L1435">        <span class="tok-kw">const</span> RangedType = std.meta.Int(.unsigned, <span class="tok-builtin">@bitSizeOf</span>(BackingInt));</span>
+<span class="line" id="L1436">        <span class="tok-kw">const</span> max_index: <span class="tok-type">comptime_int</span> = std.math.maxInt(RangedType);</span>
+<span class="line" id="L1437">        <span class="tok-kw">const</span> number_zero_tag_index: <span class="tok-type">usize</span> = <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(BackingInt).Int.signedness) {</span>
+<span class="line" id="L1438">            .unsigned =&gt; <span class="tok-number">0</span>,</span>
+<span class="line" id="L1439">            .signed =&gt; std.math.divCeil(<span class="tok-type">comptime_int</span>, max_index, <span class="tok-number">2</span>) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>,</span>
+<span class="line" id="L1440">        };</span>
+<span class="line" id="L1441"></span>
+<span class="line" id="L1442">        <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
+<span class="line" id="L1443">        <span class="tok-kw">try</span> testing.expectEqual(max_index + <span class="tok-number">1</span>, Indexer.count);</span>
+<span class="line" id="L1444"></span>
+<span class="line" id="L1445">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(min_tag));</span>
+<span class="line" id="L1446">        <span class="tok-kw">try</span> testing.expectEqual(number_zero_tag_index, Indexer.indexOf(E.number_zero_tag));</span>
+<span class="line" id="L1447">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, max_index), Indexer.indexOf(max_tag));</span>
 <span class="line" id="L1448"></span>
+<span class="line" id="L1449">        <span class="tok-kw">try</span> testing.expectEqual(min_tag, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
+<span class="line" id="L1450">        <span class="tok-kw">try</span> testing.expectEqual(E.number_zero_tag, Indexer.keyForIndex(number_zero_tag_index));</span>
+<span class="line" id="L1451">        <span class="tok-kw">try</span> testing.expectEqual(max_tag, Indexer.keyForIndex(max_index));</span>
+<span class="line" id="L1452">    }</span>
+<span class="line" id="L1453">}</span>
+<span class="line" id="L1454"></span>
+<span class="line" id="L1455"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer dense zeroed&quot;</span> {</span>
+<span class="line" id="L1456">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">u2</span>) { b = <span class="tok-number">1</span>, a = <span class="tok-number">0</span>, c = <span class="tok-number">2</span> };</span>
+<span class="line" id="L1457">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
+<span class="line" id="L1458">    ensureIndexer(Indexer);</span>
+<span class="line" id="L1459">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
+<span class="line" id="L1460">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-number">3</span>, Indexer.count);</span>
+<span class="line" id="L1461"></span>
+<span class="line" id="L1462">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
+<span class="line" id="L1463">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
+<span class="line" id="L1464">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
+<span class="line" id="L1465"></span>
+<span class="line" id="L1466">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
+<span class="line" id="L1467">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
+<span class="line" id="L1468">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
+<span class="line" id="L1469">}</span>
+<span class="line" id="L1470"></span>
+<span class="line" id="L1471"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer dense positive&quot;</span> {</span>
+<span class="line" id="L1472">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">u4</span>) { c = <span class="tok-number">6</span>, a = <span class="tok-number">4</span>, b = <span class="tok-number">5</span> };</span>
+<span class="line" id="L1473">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
+<span class="line" id="L1474">    ensureIndexer(Indexer);</span>
+<span class="line" id="L1475">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
+<span class="line" id="L1476">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-number">3</span>, Indexer.count);</span>
+<span class="line" id="L1477"></span>
+<span class="line" id="L1478">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
+<span class="line" id="L1479">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
+<span class="line" id="L1480">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
+<span class="line" id="L1481"></span>
+<span class="line" id="L1482">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
+<span class="line" id="L1483">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
+<span class="line" id="L1484">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
+<span class="line" id="L1485">}</span>
+<span class="line" id="L1486"></span>
+<span class="line" id="L1487"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer dense negative&quot;</span> {</span>
+<span class="line" id="L1488">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">i4</span>) { a = -<span class="tok-number">6</span>, c = -<span class="tok-number">4</span>, b = -<span class="tok-number">5</span> };</span>
+<span class="line" id="L1489">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
+<span class="line" id="L1490">    ensureIndexer(Indexer);</span>
+<span class="line" id="L1491">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
+<span class="line" id="L1492">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-number">3</span>, Indexer.count);</span>
+<span class="line" id="L1493"></span>
+<span class="line" id="L1494">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
+<span class="line" id="L1495">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
+<span class="line" id="L1496">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
+<span class="line" id="L1497"></span>
+<span class="line" id="L1498">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
+<span class="line" id="L1499">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
+<span class="line" id="L1500">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
+<span class="line" id="L1501">}</span>
+<span class="line" id="L1502"></span>
+<span class="line" id="L1503"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer sparse&quot;</span> {</span>
+<span class="line" id="L1504">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span>(<span class="tok-type">i4</span>) { a = -<span class="tok-number">2</span>, c = <span class="tok-number">6</span>, b = <span class="tok-number">4</span> };</span>
+<span class="line" id="L1505">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
+<span class="line" id="L1506">    ensureIndexer(Indexer);</span>
+<span class="line" id="L1507">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
+<span class="line" id="L1508">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-number">3</span>, Indexer.count);</span>
+<span class="line" id="L1509"></span>
+<span class="line" id="L1510">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), Indexer.indexOf(.a));</span>
+<span class="line" id="L1511">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), Indexer.indexOf(.b));</span>
+<span class="line" id="L1512">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), Indexer.indexOf(.c));</span>
+<span class="line" id="L1513"></span>
+<span class="line" id="L1514">    <span class="tok-kw">try</span> testing.expectEqual(E.a, Indexer.keyForIndex(<span class="tok-number">0</span>));</span>
+<span class="line" id="L1515">    <span class="tok-kw">try</span> testing.expectEqual(E.b, Indexer.keyForIndex(<span class="tok-number">1</span>));</span>
+<span class="line" id="L1516">    <span class="tok-kw">try</span> testing.expectEqual(E.c, Indexer.keyForIndex(<span class="tok-number">2</span>));</span>
+<span class="line" id="L1517">}</span>
+<span class="line" id="L1518"></span>
+<span class="line" id="L1519"><span class="tok-kw">test</span> <span class="tok-str">&quot;std.enums.EnumIndexer empty&quot;</span> {</span>
+<span class="line" id="L1520">    <span class="tok-kw">const</span> E = <span class="tok-kw">enum</span> {};</span>
+<span class="line" id="L1521">    <span class="tok-kw">const</span> Indexer = EnumIndexer(E);</span>
+<span class="line" id="L1522">    ensureIndexer(Indexer);</span>
+<span class="line" id="L1523">    <span class="tok-kw">try</span> testing.expectEqual(E, Indexer.Key);</span>
+<span class="line" id="L1524">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-number">0</span>, Indexer.count);</span>
+<span class="line" id="L1525">}</span>
+<span class="line" id="L1526"></span>
 </code></pre></body>
 </html>
