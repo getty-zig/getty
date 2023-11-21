@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const getty_deserialize = @import("../../deserialize.zig").deserialize;
+const deserializeLeaky = @import("../../deserialize.zig").deserializeLeaky;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
 pub fn Visitor(comptime Optional: type) type {
@@ -23,8 +23,7 @@ pub fn Visitor(comptime Optional: type) type {
         }
 
         fn visitSome(_: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Value {
-            const result = try getty_deserialize(ally, std.meta.Child(Value), deserializer);
-            return result.value;
+            return try deserializeLeaky(ally, std.meta.Child(Value), deserializer);
         }
     };
 }
