@@ -96,7 +96,7 @@ test "deserialize - std.PriorityDequeue" {
         };
 
         while (want_it.next()) |elem| {
-            var got_elem = got_it.next();
+            const got_elem = got_it.next();
 
             // Check that the deques' elements match.
             try testing.expectEqual(t.name, elem, got_elem.?);
