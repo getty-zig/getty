@@ -411,161 +411,162 @@
 <span class="line" id="L281">    <span class="tok-comment">// TODO audit deep/shallow - maybe it has the wrong behavior with respect to array pointers and slices</span>
 </span>
 <span class="line" id="L282">    <span class="tok-kw">var</span> runtime_zero: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L283">    <span class="tok-kw">const</span> a = array1[runtime_zero..];</span>
-<span class="line" id="L284">    <span class="tok-kw">const</span> b = array2[runtime_zero..];</span>
-<span class="line" id="L285">    <span class="tok-kw">const</span> c = array1[runtime_zero..<span class="tok-number">3</span>];</span>
-<span class="line" id="L286">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) == testHashShallow(a));</span>
-<span class="line" id="L287">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) != testHashShallow(array1));</span>
-<span class="line" id="L288">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) != testHashShallow(b));</span>
-<span class="line" id="L289">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) != testHashShallow(c));</span>
-<span class="line" id="L290">}</span>
-<span class="line" id="L291"></span>
-<span class="line" id="L292"><span class="tok-kw">test</span> <span class="tok-str">&quot;hash slice deep&quot;</span> {</span>
-<span class="line" id="L293">    <span class="tok-comment">// Allocate one array dynamically so that we're assured it is not merged</span>
+<span class="line" id="L283">    _ = &amp;runtime_zero;</span>
+<span class="line" id="L284">    <span class="tok-kw">const</span> a = array1[runtime_zero..];</span>
+<span class="line" id="L285">    <span class="tok-kw">const</span> b = array2[runtime_zero..];</span>
+<span class="line" id="L286">    <span class="tok-kw">const</span> c = array1[runtime_zero..<span class="tok-number">3</span>];</span>
+<span class="line" id="L287">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) == testHashShallow(a));</span>
+<span class="line" id="L288">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) != testHashShallow(array1));</span>
+<span class="line" id="L289">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) != testHashShallow(b));</span>
+<span class="line" id="L290">    <span class="tok-kw">try</span> testing.expect(testHashShallow(a) != testHashShallow(c));</span>
+<span class="line" id="L291">}</span>
+<span class="line" id="L292"></span>
+<span class="line" id="L293"><span class="tok-kw">test</span> <span class="tok-str">&quot;hash slice deep&quot;</span> {</span>
+<span class="line" id="L294">    <span class="tok-comment">// Allocate one array dynamically so that we're assured it is not merged</span>
 </span>
-<span class="line" id="L294">    <span class="tok-comment">// with the other by the optimization passes.</span>
+<span class="line" id="L295">    <span class="tok-comment">// with the other by the optimization passes.</span>
 </span>
-<span class="line" id="L295">    <span class="tok-kw">const</span> array1 = <span class="tok-kw">try</span> std.testing.allocator.create([<span class="tok-number">6</span>]<span class="tok-type">u32</span>);</span>
-<span class="line" id="L296">    <span class="tok-kw">defer</span> std.testing.allocator.destroy(array1);</span>
-<span class="line" id="L297">    array1.* = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span> };</span>
-<span class="line" id="L298">    <span class="tok-kw">const</span> array2 = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span> };</span>
-<span class="line" id="L299">    <span class="tok-kw">const</span> a = array1[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L300">    <span class="tok-kw">const</span> b = array2[<span class="tok-number">0</span>..];</span>
-<span class="line" id="L301">    <span class="tok-kw">const</span> c = array1[<span class="tok-number">0</span>..<span class="tok-number">3</span>];</span>
-<span class="line" id="L302">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) == testHashDeep(a));</span>
-<span class="line" id="L303">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) == testHashDeep(array1));</span>
-<span class="line" id="L304">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) == testHashDeep(b));</span>
-<span class="line" id="L305">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) != testHashDeep(c));</span>
-<span class="line" id="L306">}</span>
-<span class="line" id="L307"></span>
-<span class="line" id="L308"><span class="tok-kw">test</span> <span class="tok-str">&quot;hash struct deep&quot;</span> {</span>
-<span class="line" id="L309">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L310">        a: <span class="tok-type">u32</span>,</span>
-<span class="line" id="L311">        b: <span class="tok-type">u16</span>,</span>
-<span class="line" id="L312">        c: *<span class="tok-type">bool</span>,</span>
-<span class="line" id="L313"></span>
-<span class="line" id="L314">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L315"></span>
-<span class="line" id="L316">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(allocator: mem.Allocator, a_: <span class="tok-type">u32</span>, b_: <span class="tok-type">u16</span>, c_: <span class="tok-type">bool</span>) !Self {</span>
-<span class="line" id="L317">            <span class="tok-kw">const</span> ptr = <span class="tok-kw">try</span> allocator.create(<span class="tok-type">bool</span>);</span>
-<span class="line" id="L318">            ptr.* = c_;</span>
-<span class="line" id="L319">            <span class="tok-kw">return</span> Self{ .a = a_, .b = b_, .c = ptr };</span>
-<span class="line" id="L320">        }</span>
-<span class="line" id="L321">    };</span>
-<span class="line" id="L322"></span>
-<span class="line" id="L323">    <span class="tok-kw">const</span> allocator = std.testing.allocator;</span>
-<span class="line" id="L324">    <span class="tok-kw">const</span> foo = <span class="tok-kw">try</span> Foo.init(allocator, <span class="tok-number">123</span>, <span class="tok-number">10</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L325">    <span class="tok-kw">const</span> bar = <span class="tok-kw">try</span> Foo.init(allocator, <span class="tok-number">123</span>, <span class="tok-number">10</span>, <span class="tok-null">true</span>);</span>
-<span class="line" id="L326">    <span class="tok-kw">const</span> baz = <span class="tok-kw">try</span> Foo.init(allocator, <span class="tok-number">123</span>, <span class="tok-number">10</span>, <span class="tok-null">false</span>);</span>
-<span class="line" id="L327">    <span class="tok-kw">defer</span> allocator.destroy(foo.c);</span>
-<span class="line" id="L328">    <span class="tok-kw">defer</span> allocator.destroy(bar.c);</span>
-<span class="line" id="L329">    <span class="tok-kw">defer</span> allocator.destroy(baz.c);</span>
-<span class="line" id="L330"></span>
-<span class="line" id="L331">    <span class="tok-kw">try</span> testing.expect(testHashDeep(foo) == testHashDeep(bar));</span>
-<span class="line" id="L332">    <span class="tok-kw">try</span> testing.expect(testHashDeep(foo) != testHashDeep(baz));</span>
-<span class="line" id="L333">    <span class="tok-kw">try</span> testing.expect(testHashDeep(bar) != testHashDeep(baz));</span>
-<span class="line" id="L334"></span>
-<span class="line" id="L335">    <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L336">    <span class="tok-kw">const</span> h = testHashDeep(foo);</span>
-<span class="line" id="L337">    autoHash(&amp;hasher, foo.a);</span>
-<span class="line" id="L338">    autoHash(&amp;hasher, foo.b);</span>
-<span class="line" id="L339">    autoHash(&amp;hasher, foo.c.*);</span>
-<span class="line" id="L340">    <span class="tok-kw">try</span> testing.expectEqual(h, hasher.final());</span>
-<span class="line" id="L341"></span>
-<span class="line" id="L342">    <span class="tok-kw">const</span> h2 = testHashDeepRecursive(&amp;foo);</span>
-<span class="line" id="L343">    <span class="tok-kw">try</span> testing.expect(h2 != testHashDeep(&amp;foo));</span>
-<span class="line" id="L344">    <span class="tok-kw">try</span> testing.expect(h2 == testHashDeep(foo));</span>
-<span class="line" id="L345">}</span>
-<span class="line" id="L346"></span>
-<span class="line" id="L347"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash optional&quot;</span> {</span>
-<span class="line" id="L348">    <span class="tok-kw">const</span> a: ?<span class="tok-type">u32</span> = <span class="tok-number">123</span>;</span>
-<span class="line" id="L349">    <span class="tok-kw">const</span> b: ?<span class="tok-type">u32</span> = <span class="tok-null">null</span>;</span>
-<span class="line" id="L350">    <span class="tok-kw">try</span> testing.expectEqual(testHash(a), testHash(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">123</span>)));</span>
-<span class="line" id="L351">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
-<span class="line" id="L352">    <span class="tok-kw">try</span> testing.expectEqual(testHash(b), <span class="tok-number">0x409638ee2bde459</span>); <span class="tok-comment">// wyhash empty input hash</span>
+<span class="line" id="L296">    <span class="tok-kw">const</span> array1 = <span class="tok-kw">try</span> std.testing.allocator.create([<span class="tok-number">6</span>]<span class="tok-type">u32</span>);</span>
+<span class="line" id="L297">    <span class="tok-kw">defer</span> std.testing.allocator.destroy(array1);</span>
+<span class="line" id="L298">    array1.* = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span> };</span>
+<span class="line" id="L299">    <span class="tok-kw">const</span> array2 = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span>, <span class="tok-number">5</span>, <span class="tok-number">6</span> };</span>
+<span class="line" id="L300">    <span class="tok-kw">const</span> a = array1[<span class="tok-number">0</span>..];</span>
+<span class="line" id="L301">    <span class="tok-kw">const</span> b = array2[<span class="tok-number">0</span>..];</span>
+<span class="line" id="L302">    <span class="tok-kw">const</span> c = array1[<span class="tok-number">0</span>..<span class="tok-number">3</span>];</span>
+<span class="line" id="L303">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) == testHashDeep(a));</span>
+<span class="line" id="L304">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) == testHashDeep(array1));</span>
+<span class="line" id="L305">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) == testHashDeep(b));</span>
+<span class="line" id="L306">    <span class="tok-kw">try</span> testing.expect(testHashDeep(a) != testHashDeep(c));</span>
+<span class="line" id="L307">}</span>
+<span class="line" id="L308"></span>
+<span class="line" id="L309"><span class="tok-kw">test</span> <span class="tok-str">&quot;hash struct deep&quot;</span> {</span>
+<span class="line" id="L310">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L311">        a: <span class="tok-type">u32</span>,</span>
+<span class="line" id="L312">        b: <span class="tok-type">u16</span>,</span>
+<span class="line" id="L313">        c: *<span class="tok-type">bool</span>,</span>
+<span class="line" id="L314"></span>
+<span class="line" id="L315">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L316"></span>
+<span class="line" id="L317">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(allocator: mem.Allocator, a_: <span class="tok-type">u32</span>, b_: <span class="tok-type">u16</span>, c_: <span class="tok-type">bool</span>) !Self {</span>
+<span class="line" id="L318">            <span class="tok-kw">const</span> ptr = <span class="tok-kw">try</span> allocator.create(<span class="tok-type">bool</span>);</span>
+<span class="line" id="L319">            ptr.* = c_;</span>
+<span class="line" id="L320">            <span class="tok-kw">return</span> Self{ .a = a_, .b = b_, .c = ptr };</span>
+<span class="line" id="L321">        }</span>
+<span class="line" id="L322">    };</span>
+<span class="line" id="L323"></span>
+<span class="line" id="L324">    <span class="tok-kw">const</span> allocator = std.testing.allocator;</span>
+<span class="line" id="L325">    <span class="tok-kw">const</span> foo = <span class="tok-kw">try</span> Foo.init(allocator, <span class="tok-number">123</span>, <span class="tok-number">10</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L326">    <span class="tok-kw">const</span> bar = <span class="tok-kw">try</span> Foo.init(allocator, <span class="tok-number">123</span>, <span class="tok-number">10</span>, <span class="tok-null">true</span>);</span>
+<span class="line" id="L327">    <span class="tok-kw">const</span> baz = <span class="tok-kw">try</span> Foo.init(allocator, <span class="tok-number">123</span>, <span class="tok-number">10</span>, <span class="tok-null">false</span>);</span>
+<span class="line" id="L328">    <span class="tok-kw">defer</span> allocator.destroy(foo.c);</span>
+<span class="line" id="L329">    <span class="tok-kw">defer</span> allocator.destroy(bar.c);</span>
+<span class="line" id="L330">    <span class="tok-kw">defer</span> allocator.destroy(baz.c);</span>
+<span class="line" id="L331"></span>
+<span class="line" id="L332">    <span class="tok-kw">try</span> testing.expect(testHashDeep(foo) == testHashDeep(bar));</span>
+<span class="line" id="L333">    <span class="tok-kw">try</span> testing.expect(testHashDeep(foo) != testHashDeep(baz));</span>
+<span class="line" id="L334">    <span class="tok-kw">try</span> testing.expect(testHashDeep(bar) != testHashDeep(baz));</span>
+<span class="line" id="L335"></span>
+<span class="line" id="L336">    <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L337">    <span class="tok-kw">const</span> h = testHashDeep(foo);</span>
+<span class="line" id="L338">    autoHash(&amp;hasher, foo.a);</span>
+<span class="line" id="L339">    autoHash(&amp;hasher, foo.b);</span>
+<span class="line" id="L340">    autoHash(&amp;hasher, foo.c.*);</span>
+<span class="line" id="L341">    <span class="tok-kw">try</span> testing.expectEqual(h, hasher.final());</span>
+<span class="line" id="L342"></span>
+<span class="line" id="L343">    <span class="tok-kw">const</span> h2 = testHashDeepRecursive(&amp;foo);</span>
+<span class="line" id="L344">    <span class="tok-kw">try</span> testing.expect(h2 != testHashDeep(&amp;foo));</span>
+<span class="line" id="L345">    <span class="tok-kw">try</span> testing.expect(h2 == testHashDeep(foo));</span>
+<span class="line" id="L346">}</span>
+<span class="line" id="L347"></span>
+<span class="line" id="L348"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash optional&quot;</span> {</span>
+<span class="line" id="L349">    <span class="tok-kw">const</span> a: ?<span class="tok-type">u32</span> = <span class="tok-number">123</span>;</span>
+<span class="line" id="L350">    <span class="tok-kw">const</span> b: ?<span class="tok-type">u32</span> = <span class="tok-null">null</span>;</span>
+<span class="line" id="L351">    <span class="tok-kw">try</span> testing.expectEqual(testHash(a), testHash(<span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">123</span>)));</span>
+<span class="line" id="L352">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
+<span class="line" id="L353">    <span class="tok-kw">try</span> testing.expectEqual(testHash(b), <span class="tok-number">0x409638ee2bde459</span>); <span class="tok-comment">// wyhash empty input hash</span>
 </span>
-<span class="line" id="L353">}</span>
-<span class="line" id="L354"></span>
-<span class="line" id="L355"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash array&quot;</span> {</span>
-<span class="line" id="L356">    <span class="tok-kw">const</span> a = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> };</span>
-<span class="line" id="L357">    <span class="tok-kw">const</span> h = testHash(a);</span>
-<span class="line" id="L358">    <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L359">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L360">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L361">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">3</span>));</span>
-<span class="line" id="L362">    <span class="tok-kw">try</span> testing.expectEqual(h, hasher.final());</span>
-<span class="line" id="L363">}</span>
-<span class="line" id="L364"></span>
-<span class="line" id="L365"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash multi-dimensional array&quot;</span> {</span>
-<span class="line" id="L366">    <span class="tok-kw">const</span> a = [_][]<span class="tok-kw">const</span> <span class="tok-type">u32</span>{ &amp;.{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> }, &amp;.{ <span class="tok-number">4</span>, <span class="tok-number">5</span> } };</span>
-<span class="line" id="L367">    <span class="tok-kw">const</span> b = [_][]<span class="tok-kw">const</span> <span class="tok-type">u32</span>{ &amp;.{ <span class="tok-number">1</span>, <span class="tok-number">2</span> }, &amp;.{ <span class="tok-number">3</span>, <span class="tok-number">4</span>, <span class="tok-number">5</span> } };</span>
-<span class="line" id="L368">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
-<span class="line" id="L369">}</span>
-<span class="line" id="L370"></span>
-<span class="line" id="L371"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash struct&quot;</span> {</span>
-<span class="line" id="L372">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L373">        a: <span class="tok-type">u32</span> = <span class="tok-number">1</span>,</span>
-<span class="line" id="L374">        b: <span class="tok-type">u32</span> = <span class="tok-number">2</span>,</span>
-<span class="line" id="L375">        c: <span class="tok-type">u32</span> = <span class="tok-number">3</span>,</span>
-<span class="line" id="L376">    };</span>
-<span class="line" id="L377">    <span class="tok-kw">const</span> f = Foo{};</span>
-<span class="line" id="L378">    <span class="tok-kw">const</span> h = testHash(f);</span>
-<span class="line" id="L379">    <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
-<span class="line" id="L380">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>));</span>
-<span class="line" id="L381">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>));</span>
-<span class="line" id="L382">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">3</span>));</span>
-<span class="line" id="L383">    <span class="tok-kw">try</span> testing.expectEqual(h, hasher.final());</span>
-<span class="line" id="L384">}</span>
-<span class="line" id="L385"></span>
-<span class="line" id="L386"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash union&quot;</span> {</span>
-<span class="line" id="L387">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
-<span class="line" id="L388">        A: <span class="tok-type">u32</span>,</span>
-<span class="line" id="L389">        B: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L390">        C: <span class="tok-type">u32</span>,</span>
-<span class="line" id="L391">        D: <span class="tok-type">void</span>,</span>
-<span class="line" id="L392">    };</span>
-<span class="line" id="L393"></span>
-<span class="line" id="L394">    <span class="tok-kw">const</span> a = Foo{ .A = <span class="tok-number">18</span> };</span>
-<span class="line" id="L395">    <span class="tok-kw">var</span> b = Foo{ .B = <span class="tok-null">true</span> };</span>
-<span class="line" id="L396">    <span class="tok-kw">const</span> c = Foo{ .C = <span class="tok-number">18</span> };</span>
-<span class="line" id="L397">    <span class="tok-kw">const</span> d: Foo = .D;</span>
-<span class="line" id="L398">    <span class="tok-kw">try</span> testing.expect(testHash(a) == testHash(a));</span>
-<span class="line" id="L399">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
-<span class="line" id="L400">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(c));</span>
-<span class="line" id="L401">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(d));</span>
-<span class="line" id="L402"></span>
-<span class="line" id="L403">    b = Foo{ .A = <span class="tok-number">18</span> };</span>
-<span class="line" id="L404">    <span class="tok-kw">try</span> testing.expect(testHash(a) == testHash(b));</span>
-<span class="line" id="L405"></span>
-<span class="line" id="L406">    b = .D;</span>
-<span class="line" id="L407">    <span class="tok-kw">try</span> testing.expect(testHash(d) == testHash(b));</span>
-<span class="line" id="L408">}</span>
-<span class="line" id="L409"></span>
-<span class="line" id="L410"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash vector&quot;</span> {</span>
-<span class="line" id="L411">    <span class="tok-kw">const</span> a: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span> };</span>
-<span class="line" id="L412">    <span class="tok-kw">const</span> b: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">5</span> };</span>
-<span class="line" id="L413">    <span class="tok-kw">try</span> testing.expect(testHash(a) == testHash(a));</span>
-<span class="line" id="L414">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
-<span class="line" id="L415"></span>
-<span class="line" id="L416">    <span class="tok-kw">const</span> c: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u31</span>) = [_]<span class="tok-type">u31</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span> };</span>
-<span class="line" id="L417">    <span class="tok-kw">const</span> d: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u31</span>) = [_]<span class="tok-type">u31</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">5</span> };</span>
-<span class="line" id="L418">    <span class="tok-kw">try</span> testing.expect(testHash(c) == testHash(c));</span>
-<span class="line" id="L419">    <span class="tok-kw">try</span> testing.expect(testHash(c) != testHash(d));</span>
-<span class="line" id="L420">}</span>
-<span class="line" id="L421"></span>
-<span class="line" id="L422"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash error union&quot;</span> {</span>
-<span class="line" id="L423">    <span class="tok-kw">const</span> Errors = <span class="tok-kw">error</span>{Test};</span>
-<span class="line" id="L424">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L425">        a: <span class="tok-type">u32</span> = <span class="tok-number">1</span>,</span>
-<span class="line" id="L426">        b: <span class="tok-type">u32</span> = <span class="tok-number">2</span>,</span>
-<span class="line" id="L427">        c: <span class="tok-type">u32</span> = <span class="tok-number">3</span>,</span>
-<span class="line" id="L428">    };</span>
-<span class="line" id="L429">    <span class="tok-kw">const</span> f = Foo{};</span>
-<span class="line" id="L430">    <span class="tok-kw">const</span> g: Errors!Foo = Errors.Test;</span>
-<span class="line" id="L431">    <span class="tok-kw">try</span> testing.expect(testHash(f) != testHash(g));</span>
-<span class="line" id="L432">    <span class="tok-kw">try</span> testing.expect(testHash(f) == testHash(Foo{}));</span>
-<span class="line" id="L433">    <span class="tok-kw">try</span> testing.expect(testHash(g) == testHash(Errors.Test));</span>
-<span class="line" id="L434">}</span>
-<span class="line" id="L435"></span>
+<span class="line" id="L354">}</span>
+<span class="line" id="L355"></span>
+<span class="line" id="L356"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash array&quot;</span> {</span>
+<span class="line" id="L357">    <span class="tok-kw">const</span> a = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> };</span>
+<span class="line" id="L358">    <span class="tok-kw">const</span> h = testHash(a);</span>
+<span class="line" id="L359">    <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L360">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L361">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L362">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">3</span>));</span>
+<span class="line" id="L363">    <span class="tok-kw">try</span> testing.expectEqual(h, hasher.final());</span>
+<span class="line" id="L364">}</span>
+<span class="line" id="L365"></span>
+<span class="line" id="L366"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash multi-dimensional array&quot;</span> {</span>
+<span class="line" id="L367">    <span class="tok-kw">const</span> a = [_][]<span class="tok-kw">const</span> <span class="tok-type">u32</span>{ &amp;.{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span> }, &amp;.{ <span class="tok-number">4</span>, <span class="tok-number">5</span> } };</span>
+<span class="line" id="L368">    <span class="tok-kw">const</span> b = [_][]<span class="tok-kw">const</span> <span class="tok-type">u32</span>{ &amp;.{ <span class="tok-number">1</span>, <span class="tok-number">2</span> }, &amp;.{ <span class="tok-number">3</span>, <span class="tok-number">4</span>, <span class="tok-number">5</span> } };</span>
+<span class="line" id="L369">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
+<span class="line" id="L370">}</span>
+<span class="line" id="L371"></span>
+<span class="line" id="L372"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash struct&quot;</span> {</span>
+<span class="line" id="L373">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L374">        a: <span class="tok-type">u32</span> = <span class="tok-number">1</span>,</span>
+<span class="line" id="L375">        b: <span class="tok-type">u32</span> = <span class="tok-number">2</span>,</span>
+<span class="line" id="L376">        c: <span class="tok-type">u32</span> = <span class="tok-number">3</span>,</span>
+<span class="line" id="L377">    };</span>
+<span class="line" id="L378">    <span class="tok-kw">const</span> f = Foo{};</span>
+<span class="line" id="L379">    <span class="tok-kw">const</span> h = testHash(f);</span>
+<span class="line" id="L380">    <span class="tok-kw">var</span> hasher = Wyhash.init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L381">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">1</span>));</span>
+<span class="line" id="L382">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">2</span>));</span>
+<span class="line" id="L383">    autoHash(&amp;hasher, <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">3</span>));</span>
+<span class="line" id="L384">    <span class="tok-kw">try</span> testing.expectEqual(h, hasher.final());</span>
+<span class="line" id="L385">}</span>
+<span class="line" id="L386"></span>
+<span class="line" id="L387"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash union&quot;</span> {</span>
+<span class="line" id="L388">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) {</span>
+<span class="line" id="L389">        A: <span class="tok-type">u32</span>,</span>
+<span class="line" id="L390">        B: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L391">        C: <span class="tok-type">u32</span>,</span>
+<span class="line" id="L392">        D: <span class="tok-type">void</span>,</span>
+<span class="line" id="L393">    };</span>
+<span class="line" id="L394"></span>
+<span class="line" id="L395">    <span class="tok-kw">const</span> a = Foo{ .A = <span class="tok-number">18</span> };</span>
+<span class="line" id="L396">    <span class="tok-kw">var</span> b = Foo{ .B = <span class="tok-null">true</span> };</span>
+<span class="line" id="L397">    <span class="tok-kw">const</span> c = Foo{ .C = <span class="tok-number">18</span> };</span>
+<span class="line" id="L398">    <span class="tok-kw">const</span> d: Foo = .D;</span>
+<span class="line" id="L399">    <span class="tok-kw">try</span> testing.expect(testHash(a) == testHash(a));</span>
+<span class="line" id="L400">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
+<span class="line" id="L401">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(c));</span>
+<span class="line" id="L402">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(d));</span>
+<span class="line" id="L403"></span>
+<span class="line" id="L404">    b = Foo{ .A = <span class="tok-number">18</span> };</span>
+<span class="line" id="L405">    <span class="tok-kw">try</span> testing.expect(testHash(a) == testHash(b));</span>
+<span class="line" id="L406"></span>
+<span class="line" id="L407">    b = .D;</span>
+<span class="line" id="L408">    <span class="tok-kw">try</span> testing.expect(testHash(d) == testHash(b));</span>
+<span class="line" id="L409">}</span>
+<span class="line" id="L410"></span>
+<span class="line" id="L411"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash vector&quot;</span> {</span>
+<span class="line" id="L412">    <span class="tok-kw">const</span> a: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span> };</span>
+<span class="line" id="L413">    <span class="tok-kw">const</span> b: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u32</span>) = [_]<span class="tok-type">u32</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">5</span> };</span>
+<span class="line" id="L414">    <span class="tok-kw">try</span> testing.expect(testHash(a) == testHash(a));</span>
+<span class="line" id="L415">    <span class="tok-kw">try</span> testing.expect(testHash(a) != testHash(b));</span>
+<span class="line" id="L416"></span>
+<span class="line" id="L417">    <span class="tok-kw">const</span> c: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u31</span>) = [_]<span class="tok-type">u31</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">4</span> };</span>
+<span class="line" id="L418">    <span class="tok-kw">const</span> d: <span class="tok-builtin">@Vector</span>(<span class="tok-number">4</span>, <span class="tok-type">u31</span>) = [_]<span class="tok-type">u31</span>{ <span class="tok-number">1</span>, <span class="tok-number">2</span>, <span class="tok-number">3</span>, <span class="tok-number">5</span> };</span>
+<span class="line" id="L419">    <span class="tok-kw">try</span> testing.expect(testHash(c) == testHash(c));</span>
+<span class="line" id="L420">    <span class="tok-kw">try</span> testing.expect(testHash(c) != testHash(d));</span>
+<span class="line" id="L421">}</span>
+<span class="line" id="L422"></span>
+<span class="line" id="L423"><span class="tok-kw">test</span> <span class="tok-str">&quot;testHash error union&quot;</span> {</span>
+<span class="line" id="L424">    <span class="tok-kw">const</span> Errors = <span class="tok-kw">error</span>{Test};</span>
+<span class="line" id="L425">    <span class="tok-kw">const</span> Foo = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L426">        a: <span class="tok-type">u32</span> = <span class="tok-number">1</span>,</span>
+<span class="line" id="L427">        b: <span class="tok-type">u32</span> = <span class="tok-number">2</span>,</span>
+<span class="line" id="L428">        c: <span class="tok-type">u32</span> = <span class="tok-number">3</span>,</span>
+<span class="line" id="L429">    };</span>
+<span class="line" id="L430">    <span class="tok-kw">const</span> f = Foo{};</span>
+<span class="line" id="L431">    <span class="tok-kw">const</span> g: Errors!Foo = Errors.Test;</span>
+<span class="line" id="L432">    <span class="tok-kw">try</span> testing.expect(testHash(f) != testHash(g));</span>
+<span class="line" id="L433">    <span class="tok-kw">try</span> testing.expect(testHash(f) == testHash(Foo{}));</span>
+<span class="line" id="L434">    <span class="tok-kw">try</span> testing.expect(testHash(g) == testHash(Errors.Test));</span>
+<span class="line" id="L435">}</span>
+<span class="line" id="L436"></span>
 </code></pre></body>
 </html>

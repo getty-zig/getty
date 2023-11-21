@@ -159,7 +159,7 @@
 <span class="line" id="L43"></span>
 <span class="line" id="L44">    <span class="tok-comment">/// Creates a file device path from the existing device path and a file path.</span></span>
 <span class="line" id="L45">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">create_file_device_path</span>(self: *DevicePath, allocator: Allocator, path: [:<span class="tok-number">0</span>]<span class="tok-kw">align</span>(<span class="tok-number">1</span>) <span class="tok-kw">const</span> <span class="tok-type">u16</span>) !*DevicePath {</span>
-<span class="line" id="L46">        <span class="tok-kw">var</span> path_size = self.size();</span>
+<span class="line" id="L46">        <span class="tok-kw">const</span> path_size = self.size();</span>
 <span class="line" id="L47"></span>
 <span class="line" id="L48">        <span class="tok-comment">// 2 * (path.len + 1) for the path and its null terminator, which are u16s</span>
 </span>
@@ -205,47 +205,46 @@
 <span class="line" id="L83">            <span class="tok-comment">// we need to initialize it and its subtype</span>
 </span>
 <span class="line" id="L84">            <span class="tok-kw">if</span> (self.<span class="tok-type">type</span> == enum_value) {</span>
-<span class="line" id="L85">                <span class="tok-kw">var</span> subtype = self.initSubtype(ufield.<span class="tok-type">type</span>);</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87">                <span class="tok-kw">if</span> (subtype) |sb| {</span>
-<span class="line" id="L88">                    <span class="tok-comment">// e.g. return .{ .Hardware = .{ .Pci = @ptrCast(...) } }</span>
+<span class="line" id="L85">                <span class="tok-kw">const</span> subtype = self.initSubtype(ufield.<span class="tok-type">type</span>);</span>
+<span class="line" id="L86">                <span class="tok-kw">if</span> (subtype) |sb| {</span>
+<span class="line" id="L87">                    <span class="tok-comment">// e.g. return .{ .Hardware = .{ .Pci = @ptrCast(...) } }</span>
 </span>
-<span class="line" id="L89">                    <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(uefi.DevicePath, ufield.name, sb);</span>
-<span class="line" id="L90">                }</span>
-<span class="line" id="L91">            }</span>
-<span class="line" id="L92">        }</span>
-<span class="line" id="L93"></span>
-<span class="line" id="L94">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L95">    }</span>
-<span class="line" id="L96"></span>
-<span class="line" id="L97">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initSubtype</span>(self: *<span class="tok-kw">const</span> DevicePath, <span class="tok-kw">comptime</span> TUnion: <span class="tok-type">type</span>) ?TUnion {</span>
-<span class="line" id="L98">        <span class="tok-kw">const</span> type_info = <span class="tok-builtin">@typeInfo</span>(TUnion).Union;</span>
-<span class="line" id="L99">        <span class="tok-kw">const</span> TTag = type_info.tag_type.?;</span>
-<span class="line" id="L100"></span>
-<span class="line" id="L101">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (type_info.fields) |subtype| {</span>
-<span class="line" id="L102">            <span class="tok-comment">// The tag names match the union names, so just grab that off the enum</span>
+<span class="line" id="L88">                    <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(uefi.DevicePath, ufield.name, sb);</span>
+<span class="line" id="L89">                }</span>
+<span class="line" id="L90">            }</span>
+<span class="line" id="L91">        }</span>
+<span class="line" id="L92"></span>
+<span class="line" id="L93">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L94">    }</span>
+<span class="line" id="L95"></span>
+<span class="line" id="L96">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">initSubtype</span>(self: *<span class="tok-kw">const</span> DevicePath, <span class="tok-kw">comptime</span> TUnion: <span class="tok-type">type</span>) ?TUnion {</span>
+<span class="line" id="L97">        <span class="tok-kw">const</span> type_info = <span class="tok-builtin">@typeInfo</span>(TUnion).Union;</span>
+<span class="line" id="L98">        <span class="tok-kw">const</span> TTag = type_info.tag_type.?;</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (type_info.fields) |subtype| {</span>
+<span class="line" id="L101">            <span class="tok-comment">// The tag names match the union names, so just grab that off the enum</span>
 </span>
-<span class="line" id="L103">            <span class="tok-kw">const</span> tag_val: <span class="tok-type">u8</span> = <span class="tok-builtin">@intFromEnum</span>(<span class="tok-builtin">@field</span>(TTag, subtype.name));</span>
-<span class="line" id="L104"></span>
-<span class="line" id="L105">            <span class="tok-kw">if</span> (self.subtype == tag_val) {</span>
-<span class="line" id="L106">                <span class="tok-comment">// e.g. expr = .{ .Pci = @ptrCast(...) }</span>
+<span class="line" id="L102">            <span class="tok-kw">const</span> tag_val: <span class="tok-type">u8</span> = <span class="tok-builtin">@intFromEnum</span>(<span class="tok-builtin">@field</span>(TTag, subtype.name));</span>
+<span class="line" id="L103"></span>
+<span class="line" id="L104">            <span class="tok-kw">if</span> (self.subtype == tag_val) {</span>
+<span class="line" id="L105">                <span class="tok-comment">// e.g. expr = .{ .Pci = @ptrCast(...) }</span>
 </span>
-<span class="line" id="L107">                <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(TUnion, subtype.name, <span class="tok-builtin">@as</span>(subtype.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(self)));</span>
-<span class="line" id="L108">            }</span>
-<span class="line" id="L109">        }</span>
-<span class="line" id="L110"></span>
-<span class="line" id="L111">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L112">    }</span>
-<span class="line" id="L113">};</span>
-<span class="line" id="L114"></span>
-<span class="line" id="L115"><span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L116">    assert(<span class="tok-number">4</span> == <span class="tok-builtin">@sizeOf</span>(DevicePath));</span>
-<span class="line" id="L117">    assert(<span class="tok-number">1</span> == <span class="tok-builtin">@alignOf</span>(DevicePath));</span>
-<span class="line" id="L118"></span>
-<span class="line" id="L119">    assert(<span class="tok-number">0</span> == <span class="tok-builtin">@offsetOf</span>(DevicePath, <span class="tok-str">&quot;type&quot;</span>));</span>
-<span class="line" id="L120">    assert(<span class="tok-number">1</span> == <span class="tok-builtin">@offsetOf</span>(DevicePath, <span class="tok-str">&quot;subtype&quot;</span>));</span>
-<span class="line" id="L121">    assert(<span class="tok-number">2</span> == <span class="tok-builtin">@offsetOf</span>(DevicePath, <span class="tok-str">&quot;length&quot;</span>));</span>
-<span class="line" id="L122">}</span>
-<span class="line" id="L123"></span>
+<span class="line" id="L106">                <span class="tok-kw">return</span> <span class="tok-builtin">@unionInit</span>(TUnion, subtype.name, <span class="tok-builtin">@as</span>(subtype.<span class="tok-type">type</span>, <span class="tok-builtin">@ptrCast</span>(self)));</span>
+<span class="line" id="L107">            }</span>
+<span class="line" id="L108">        }</span>
+<span class="line" id="L109"></span>
+<span class="line" id="L110">        <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L111">    }</span>
+<span class="line" id="L112">};</span>
+<span class="line" id="L113"></span>
+<span class="line" id="L114"><span class="tok-kw">comptime</span> {</span>
+<span class="line" id="L115">    assert(<span class="tok-number">4</span> == <span class="tok-builtin">@sizeOf</span>(DevicePath));</span>
+<span class="line" id="L116">    assert(<span class="tok-number">1</span> == <span class="tok-builtin">@alignOf</span>(DevicePath));</span>
+<span class="line" id="L117"></span>
+<span class="line" id="L118">    assert(<span class="tok-number">0</span> == <span class="tok-builtin">@offsetOf</span>(DevicePath, <span class="tok-str">&quot;type&quot;</span>));</span>
+<span class="line" id="L119">    assert(<span class="tok-number">1</span> == <span class="tok-builtin">@offsetOf</span>(DevicePath, <span class="tok-str">&quot;subtype&quot;</span>));</span>
+<span class="line" id="L120">    assert(<span class="tok-number">2</span> == <span class="tok-builtin">@offsetOf</span>(DevicePath, <span class="tok-str">&quot;length&quot;</span>));</span>
+<span class="line" id="L121">}</span>
+<span class="line" id="L122"></span>
 </code></pre></body>
 </html>

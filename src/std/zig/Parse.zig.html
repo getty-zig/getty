@@ -3691,600 +3691,599 @@
 <span class="line" id="L3516">    <span class="tok-kw">var</span> saw_const = <span class="tok-null">false</span>;</span>
 <span class="line" id="L3517">    <span class="tok-kw">var</span> saw_volatile = <span class="tok-null">false</span>;</span>
 <span class="line" id="L3518">    <span class="tok-kw">var</span> saw_allowzero = <span class="tok-null">false</span>;</span>
-<span class="line" id="L3519">    <span class="tok-kw">var</span> saw_addrspace = <span class="tok-null">false</span>;</span>
-<span class="line" id="L3520">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3521">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
-<span class="line" id="L3522">            .keyword_align =&gt; {</span>
-<span class="line" id="L3523">                <span class="tok-kw">if</span> (result.align_node != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3524">                    <span class="tok-kw">try</span> p.warn(.extra_align_qualifier);</span>
-<span class="line" id="L3525">                }</span>
-<span class="line" id="L3526">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3527">                _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
-<span class="line" id="L3528">                result.align_node = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3529"></span>
-<span class="line" id="L3530">                <span class="tok-kw">if</span> (p.eatToken(.colon)) |_| {</span>
-<span class="line" id="L3531">                    result.bit_range_start = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3532">                    _ = <span class="tok-kw">try</span> p.expectToken(.colon);</span>
-<span class="line" id="L3533">                    result.bit_range_end = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3534">                }</span>
-<span class="line" id="L3535"></span>
-<span class="line" id="L3536">                _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3537">            },</span>
-<span class="line" id="L3538">            .keyword_const =&gt; {</span>
-<span class="line" id="L3539">                <span class="tok-kw">if</span> (saw_const) {</span>
-<span class="line" id="L3540">                    <span class="tok-kw">try</span> p.warn(.extra_const_qualifier);</span>
-<span class="line" id="L3541">                }</span>
-<span class="line" id="L3542">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3543">                saw_const = <span class="tok-null">true</span>;</span>
-<span class="line" id="L3544">            },</span>
-<span class="line" id="L3545">            .keyword_volatile =&gt; {</span>
-<span class="line" id="L3546">                <span class="tok-kw">if</span> (saw_volatile) {</span>
-<span class="line" id="L3547">                    <span class="tok-kw">try</span> p.warn(.extra_volatile_qualifier);</span>
-<span class="line" id="L3548">                }</span>
-<span class="line" id="L3549">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3550">                saw_volatile = <span class="tok-null">true</span>;</span>
-<span class="line" id="L3551">            },</span>
-<span class="line" id="L3552">            .keyword_allowzero =&gt; {</span>
-<span class="line" id="L3553">                <span class="tok-kw">if</span> (saw_allowzero) {</span>
-<span class="line" id="L3554">                    <span class="tok-kw">try</span> p.warn(.extra_allowzero_qualifier);</span>
-<span class="line" id="L3555">                }</span>
-<span class="line" id="L3556">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3557">                saw_allowzero = <span class="tok-null">true</span>;</span>
-<span class="line" id="L3558">            },</span>
-<span class="line" id="L3559">            .keyword_addrspace =&gt; {</span>
-<span class="line" id="L3560">                <span class="tok-kw">if</span> (saw_addrspace) {</span>
-<span class="line" id="L3561">                    <span class="tok-kw">try</span> p.warn(.extra_addrspace_qualifier);</span>
-<span class="line" id="L3562">                }</span>
-<span class="line" id="L3563">                result.addrspace_node = <span class="tok-kw">try</span> p.parseAddrSpace();</span>
-<span class="line" id="L3564">            },</span>
-<span class="line" id="L3565">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> result,</span>
-<span class="line" id="L3566">        }</span>
-<span class="line" id="L3567">    }</span>
-<span class="line" id="L3568">}</span>
-<span class="line" id="L3569"></span>
-<span class="line" id="L3570"><span class="tok-comment">/// SuffixOp</span></span>
-<span class="line" id="L3571"><span class="tok-comment">///     &lt;- LBRACKET Expr (DOT2 (Expr? (COLON Expr)?)?)? RBRACKET</span></span>
-<span class="line" id="L3572"><span class="tok-comment">///      / DOT IDENTIFIER</span></span>
-<span class="line" id="L3573"><span class="tok-comment">///      / DOTASTERISK</span></span>
-<span class="line" id="L3574"><span class="tok-comment">///      / DOTQUESTIONMARK</span></span>
-<span class="line" id="L3575"><span class="tok-kw">fn</span> <span class="tok-fn">parseSuffixOp</span>(p: *Parse, lhs: Node.Index) !Node.Index {</span>
-<span class="line" id="L3576">    <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
-<span class="line" id="L3577">        .l_bracket =&gt; {</span>
-<span class="line" id="L3578">            <span class="tok-kw">const</span> lbracket = p.nextToken();</span>
-<span class="line" id="L3579">            <span class="tok-kw">const</span> index_expr = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3580"></span>
-<span class="line" id="L3581">            <span class="tok-kw">if</span> (p.eatToken(.ellipsis2)) |_| {</span>
-<span class="line" id="L3582">                <span class="tok-kw">const</span> end_expr = <span class="tok-kw">try</span> p.parseExpr();</span>
-<span class="line" id="L3583">                <span class="tok-kw">if</span> (p.eatToken(.colon)) |_| {</span>
-<span class="line" id="L3584">                    <span class="tok-kw">const</span> sentinel = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3585">                    _ = <span class="tok-kw">try</span> p.expectToken(.r_bracket);</span>
-<span class="line" id="L3586">                    <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3587">                        .tag = .slice_sentinel,</span>
-<span class="line" id="L3588">                        .main_token = lbracket,</span>
-<span class="line" id="L3589">                        .data = .{</span>
-<span class="line" id="L3590">                            .lhs = lhs,</span>
-<span class="line" id="L3591">                            .rhs = <span class="tok-kw">try</span> p.addExtra(Node.SliceSentinel{</span>
-<span class="line" id="L3592">                                .start = index_expr,</span>
-<span class="line" id="L3593">                                .end = end_expr,</span>
-<span class="line" id="L3594">                                .sentinel = sentinel,</span>
-<span class="line" id="L3595">                            }),</span>
-<span class="line" id="L3596">                        },</span>
-<span class="line" id="L3597">                    });</span>
-<span class="line" id="L3598">                }</span>
-<span class="line" id="L3599">                _ = <span class="tok-kw">try</span> p.expectToken(.r_bracket);</span>
-<span class="line" id="L3600">                <span class="tok-kw">if</span> (end_expr == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3601">                    <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3602">                        .tag = .slice_open,</span>
-<span class="line" id="L3603">                        .main_token = lbracket,</span>
-<span class="line" id="L3604">                        .data = .{</span>
-<span class="line" id="L3605">                            .lhs = lhs,</span>
-<span class="line" id="L3606">                            .rhs = index_expr,</span>
-<span class="line" id="L3607">                        },</span>
-<span class="line" id="L3608">                    });</span>
-<span class="line" id="L3609">                }</span>
-<span class="line" id="L3610">                <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3611">                    .tag = .slice,</span>
-<span class="line" id="L3612">                    .main_token = lbracket,</span>
-<span class="line" id="L3613">                    .data = .{</span>
-<span class="line" id="L3614">                        .lhs = lhs,</span>
-<span class="line" id="L3615">                        .rhs = <span class="tok-kw">try</span> p.addExtra(Node.Slice{</span>
-<span class="line" id="L3616">                            .start = index_expr,</span>
-<span class="line" id="L3617">                            .end = end_expr,</span>
-<span class="line" id="L3618">                        }),</span>
-<span class="line" id="L3619">                    },</span>
-<span class="line" id="L3620">                });</span>
-<span class="line" id="L3621">            }</span>
-<span class="line" id="L3622">            _ = <span class="tok-kw">try</span> p.expectToken(.r_bracket);</span>
-<span class="line" id="L3623">            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3624">                .tag = .array_access,</span>
-<span class="line" id="L3625">                .main_token = lbracket,</span>
-<span class="line" id="L3626">                .data = .{</span>
-<span class="line" id="L3627">                    .lhs = lhs,</span>
-<span class="line" id="L3628">                    .rhs = index_expr,</span>
-<span class="line" id="L3629">                },</span>
-<span class="line" id="L3630">            });</span>
-<span class="line" id="L3631">        },</span>
-<span class="line" id="L3632">        .period_asterisk =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3633">            .tag = .deref,</span>
-<span class="line" id="L3634">            .main_token = p.nextToken(),</span>
-<span class="line" id="L3635">            .data = .{</span>
-<span class="line" id="L3636">                .lhs = lhs,</span>
-<span class="line" id="L3637">                .rhs = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L3638">            },</span>
-<span class="line" id="L3639">        }),</span>
-<span class="line" id="L3640">        .invalid_periodasterisks =&gt; {</span>
-<span class="line" id="L3641">            <span class="tok-kw">try</span> p.warn(.asterisk_after_ptr_deref);</span>
-<span class="line" id="L3642">            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3643">                .tag = .deref,</span>
-<span class="line" id="L3644">                .main_token = p.nextToken(),</span>
-<span class="line" id="L3645">                .data = .{</span>
-<span class="line" id="L3646">                    .lhs = lhs,</span>
-<span class="line" id="L3647">                    .rhs = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L3648">                },</span>
-<span class="line" id="L3649">            });</span>
-<span class="line" id="L3650">        },</span>
-<span class="line" id="L3651">        .period =&gt; <span class="tok-kw">switch</span> (p.token_tags[p.tok_i + <span class="tok-number">1</span>]) {</span>
-<span class="line" id="L3652">            .identifier =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3653">                .tag = .field_access,</span>
-<span class="line" id="L3654">                .main_token = p.nextToken(),</span>
-<span class="line" id="L3655">                .data = .{</span>
-<span class="line" id="L3656">                    .lhs = lhs,</span>
-<span class="line" id="L3657">                    .rhs = p.nextToken(),</span>
-<span class="line" id="L3658">                },</span>
-<span class="line" id="L3659">            }),</span>
-<span class="line" id="L3660">            .question_mark =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3661">                .tag = .unwrap_optional,</span>
-<span class="line" id="L3662">                .main_token = p.nextToken(),</span>
-<span class="line" id="L3663">                .data = .{</span>
-<span class="line" id="L3664">                    .lhs = lhs,</span>
-<span class="line" id="L3665">                    .rhs = p.nextToken(),</span>
-<span class="line" id="L3666">                },</span>
-<span class="line" id="L3667">            }),</span>
-<span class="line" id="L3668">            .l_brace =&gt; {</span>
-<span class="line" id="L3669">                <span class="tok-comment">// this a misplaced `.{`, handle the error somewhere else</span>
+<span class="line" id="L3519">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3520">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
+<span class="line" id="L3521">            .keyword_align =&gt; {</span>
+<span class="line" id="L3522">                <span class="tok-kw">if</span> (result.align_node != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3523">                    <span class="tok-kw">try</span> p.warn(.extra_align_qualifier);</span>
+<span class="line" id="L3524">                }</span>
+<span class="line" id="L3525">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3526">                _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
+<span class="line" id="L3527">                result.align_node = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3528"></span>
+<span class="line" id="L3529">                <span class="tok-kw">if</span> (p.eatToken(.colon)) |_| {</span>
+<span class="line" id="L3530">                    result.bit_range_start = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3531">                    _ = <span class="tok-kw">try</span> p.expectToken(.colon);</span>
+<span class="line" id="L3532">                    result.bit_range_end = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3533">                }</span>
+<span class="line" id="L3534"></span>
+<span class="line" id="L3535">                _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
+<span class="line" id="L3536">            },</span>
+<span class="line" id="L3537">            .keyword_const =&gt; {</span>
+<span class="line" id="L3538">                <span class="tok-kw">if</span> (saw_const) {</span>
+<span class="line" id="L3539">                    <span class="tok-kw">try</span> p.warn(.extra_const_qualifier);</span>
+<span class="line" id="L3540">                }</span>
+<span class="line" id="L3541">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3542">                saw_const = <span class="tok-null">true</span>;</span>
+<span class="line" id="L3543">            },</span>
+<span class="line" id="L3544">            .keyword_volatile =&gt; {</span>
+<span class="line" id="L3545">                <span class="tok-kw">if</span> (saw_volatile) {</span>
+<span class="line" id="L3546">                    <span class="tok-kw">try</span> p.warn(.extra_volatile_qualifier);</span>
+<span class="line" id="L3547">                }</span>
+<span class="line" id="L3548">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3549">                saw_volatile = <span class="tok-null">true</span>;</span>
+<span class="line" id="L3550">            },</span>
+<span class="line" id="L3551">            .keyword_allowzero =&gt; {</span>
+<span class="line" id="L3552">                <span class="tok-kw">if</span> (saw_allowzero) {</span>
+<span class="line" id="L3553">                    <span class="tok-kw">try</span> p.warn(.extra_allowzero_qualifier);</span>
+<span class="line" id="L3554">                }</span>
+<span class="line" id="L3555">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3556">                saw_allowzero = <span class="tok-null">true</span>;</span>
+<span class="line" id="L3557">            },</span>
+<span class="line" id="L3558">            .keyword_addrspace =&gt; {</span>
+<span class="line" id="L3559">                <span class="tok-kw">if</span> (result.addrspace_node != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3560">                    <span class="tok-kw">try</span> p.warn(.extra_addrspace_qualifier);</span>
+<span class="line" id="L3561">                }</span>
+<span class="line" id="L3562">                result.addrspace_node = <span class="tok-kw">try</span> p.parseAddrSpace();</span>
+<span class="line" id="L3563">            },</span>
+<span class="line" id="L3564">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> result,</span>
+<span class="line" id="L3565">        }</span>
+<span class="line" id="L3566">    }</span>
+<span class="line" id="L3567">}</span>
+<span class="line" id="L3568"></span>
+<span class="line" id="L3569"><span class="tok-comment">/// SuffixOp</span></span>
+<span class="line" id="L3570"><span class="tok-comment">///     &lt;- LBRACKET Expr (DOT2 (Expr? (COLON Expr)?)?)? RBRACKET</span></span>
+<span class="line" id="L3571"><span class="tok-comment">///      / DOT IDENTIFIER</span></span>
+<span class="line" id="L3572"><span class="tok-comment">///      / DOTASTERISK</span></span>
+<span class="line" id="L3573"><span class="tok-comment">///      / DOTQUESTIONMARK</span></span>
+<span class="line" id="L3574"><span class="tok-kw">fn</span> <span class="tok-fn">parseSuffixOp</span>(p: *Parse, lhs: Node.Index) !Node.Index {</span>
+<span class="line" id="L3575">    <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
+<span class="line" id="L3576">        .l_bracket =&gt; {</span>
+<span class="line" id="L3577">            <span class="tok-kw">const</span> lbracket = p.nextToken();</span>
+<span class="line" id="L3578">            <span class="tok-kw">const</span> index_expr = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3579"></span>
+<span class="line" id="L3580">            <span class="tok-kw">if</span> (p.eatToken(.ellipsis2)) |_| {</span>
+<span class="line" id="L3581">                <span class="tok-kw">const</span> end_expr = <span class="tok-kw">try</span> p.parseExpr();</span>
+<span class="line" id="L3582">                <span class="tok-kw">if</span> (p.eatToken(.colon)) |_| {</span>
+<span class="line" id="L3583">                    <span class="tok-kw">const</span> sentinel = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3584">                    _ = <span class="tok-kw">try</span> p.expectToken(.r_bracket);</span>
+<span class="line" id="L3585">                    <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3586">                        .tag = .slice_sentinel,</span>
+<span class="line" id="L3587">                        .main_token = lbracket,</span>
+<span class="line" id="L3588">                        .data = .{</span>
+<span class="line" id="L3589">                            .lhs = lhs,</span>
+<span class="line" id="L3590">                            .rhs = <span class="tok-kw">try</span> p.addExtra(Node.SliceSentinel{</span>
+<span class="line" id="L3591">                                .start = index_expr,</span>
+<span class="line" id="L3592">                                .end = end_expr,</span>
+<span class="line" id="L3593">                                .sentinel = sentinel,</span>
+<span class="line" id="L3594">                            }),</span>
+<span class="line" id="L3595">                        },</span>
+<span class="line" id="L3596">                    });</span>
+<span class="line" id="L3597">                }</span>
+<span class="line" id="L3598">                _ = <span class="tok-kw">try</span> p.expectToken(.r_bracket);</span>
+<span class="line" id="L3599">                <span class="tok-kw">if</span> (end_expr == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3600">                    <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3601">                        .tag = .slice_open,</span>
+<span class="line" id="L3602">                        .main_token = lbracket,</span>
+<span class="line" id="L3603">                        .data = .{</span>
+<span class="line" id="L3604">                            .lhs = lhs,</span>
+<span class="line" id="L3605">                            .rhs = index_expr,</span>
+<span class="line" id="L3606">                        },</span>
+<span class="line" id="L3607">                    });</span>
+<span class="line" id="L3608">                }</span>
+<span class="line" id="L3609">                <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3610">                    .tag = .slice,</span>
+<span class="line" id="L3611">                    .main_token = lbracket,</span>
+<span class="line" id="L3612">                    .data = .{</span>
+<span class="line" id="L3613">                        .lhs = lhs,</span>
+<span class="line" id="L3614">                        .rhs = <span class="tok-kw">try</span> p.addExtra(Node.Slice{</span>
+<span class="line" id="L3615">                            .start = index_expr,</span>
+<span class="line" id="L3616">                            .end = end_expr,</span>
+<span class="line" id="L3617">                        }),</span>
+<span class="line" id="L3618">                    },</span>
+<span class="line" id="L3619">                });</span>
+<span class="line" id="L3620">            }</span>
+<span class="line" id="L3621">            _ = <span class="tok-kw">try</span> p.expectToken(.r_bracket);</span>
+<span class="line" id="L3622">            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3623">                .tag = .array_access,</span>
+<span class="line" id="L3624">                .main_token = lbracket,</span>
+<span class="line" id="L3625">                .data = .{</span>
+<span class="line" id="L3626">                    .lhs = lhs,</span>
+<span class="line" id="L3627">                    .rhs = index_expr,</span>
+<span class="line" id="L3628">                },</span>
+<span class="line" id="L3629">            });</span>
+<span class="line" id="L3630">        },</span>
+<span class="line" id="L3631">        .period_asterisk =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3632">            .tag = .deref,</span>
+<span class="line" id="L3633">            .main_token = p.nextToken(),</span>
+<span class="line" id="L3634">            .data = .{</span>
+<span class="line" id="L3635">                .lhs = lhs,</span>
+<span class="line" id="L3636">                .rhs = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L3637">            },</span>
+<span class="line" id="L3638">        }),</span>
+<span class="line" id="L3639">        .invalid_periodasterisks =&gt; {</span>
+<span class="line" id="L3640">            <span class="tok-kw">try</span> p.warn(.asterisk_after_ptr_deref);</span>
+<span class="line" id="L3641">            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3642">                .tag = .deref,</span>
+<span class="line" id="L3643">                .main_token = p.nextToken(),</span>
+<span class="line" id="L3644">                .data = .{</span>
+<span class="line" id="L3645">                    .lhs = lhs,</span>
+<span class="line" id="L3646">                    .rhs = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L3647">                },</span>
+<span class="line" id="L3648">            });</span>
+<span class="line" id="L3649">        },</span>
+<span class="line" id="L3650">        .period =&gt; <span class="tok-kw">switch</span> (p.token_tags[p.tok_i + <span class="tok-number">1</span>]) {</span>
+<span class="line" id="L3651">            .identifier =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3652">                .tag = .field_access,</span>
+<span class="line" id="L3653">                .main_token = p.nextToken(),</span>
+<span class="line" id="L3654">                .data = .{</span>
+<span class="line" id="L3655">                    .lhs = lhs,</span>
+<span class="line" id="L3656">                    .rhs = p.nextToken(),</span>
+<span class="line" id="L3657">                },</span>
+<span class="line" id="L3658">            }),</span>
+<span class="line" id="L3659">            .question_mark =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3660">                .tag = .unwrap_optional,</span>
+<span class="line" id="L3661">                .main_token = p.nextToken(),</span>
+<span class="line" id="L3662">                .data = .{</span>
+<span class="line" id="L3663">                    .lhs = lhs,</span>
+<span class="line" id="L3664">                    .rhs = p.nextToken(),</span>
+<span class="line" id="L3665">                },</span>
+<span class="line" id="L3666">            }),</span>
+<span class="line" id="L3667">            .l_brace =&gt; {</span>
+<span class="line" id="L3668">                <span class="tok-comment">// this a misplaced `.{`, handle the error somewhere else</span>
 </span>
-<span class="line" id="L3670">                <span class="tok-kw">return</span> null_node;</span>
-<span class="line" id="L3671">            },</span>
-<span class="line" id="L3672">            <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L3673">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3674">                <span class="tok-kw">try</span> p.warn(.expected_suffix_op);</span>
-<span class="line" id="L3675">                <span class="tok-kw">return</span> null_node;</span>
-<span class="line" id="L3676">            },</span>
-<span class="line" id="L3677">        },</span>
-<span class="line" id="L3678">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> null_node,</span>
-<span class="line" id="L3679">    }</span>
-<span class="line" id="L3680">}</span>
-<span class="line" id="L3681"></span>
-<span class="line" id="L3682"><span class="tok-comment">/// Caller must have already verified the first token.</span></span>
-<span class="line" id="L3683"><span class="tok-comment">///</span></span>
-<span class="line" id="L3684"><span class="tok-comment">/// ContainerDeclAuto &lt;- ContainerDeclType LBRACE container_doc_comment? ContainerMembers RBRACE</span></span>
-<span class="line" id="L3685"><span class="tok-comment">///</span></span>
-<span class="line" id="L3686"><span class="tok-comment">/// ContainerDeclType</span></span>
-<span class="line" id="L3687"><span class="tok-comment">///     &lt;- KEYWORD_struct (LPAREN Expr RPAREN)?</span></span>
-<span class="line" id="L3688"><span class="tok-comment">///      / KEYWORD_opaque</span></span>
-<span class="line" id="L3689"><span class="tok-comment">///      / KEYWORD_enum (LPAREN Expr RPAREN)?</span></span>
-<span class="line" id="L3690"><span class="tok-comment">///      / KEYWORD_union (LPAREN (KEYWORD_enum (LPAREN Expr RPAREN)? / Expr) RPAREN)?</span></span>
-<span class="line" id="L3691"><span class="tok-kw">fn</span> <span class="tok-fn">parseContainerDeclAuto</span>(p: *Parse) !Node.Index {</span>
-<span class="line" id="L3692">    <span class="tok-kw">const</span> main_token = p.nextToken();</span>
-<span class="line" id="L3693">    <span class="tok-kw">const</span> arg_expr = <span class="tok-kw">switch</span> (p.token_tags[main_token]) {</span>
-<span class="line" id="L3694">        .keyword_opaque =&gt; null_node,</span>
-<span class="line" id="L3695">        .keyword_struct, .keyword_enum =&gt; blk: {</span>
-<span class="line" id="L3696">            <span class="tok-kw">if</span> (p.eatToken(.l_paren)) |_| {</span>
-<span class="line" id="L3697">                <span class="tok-kw">const</span> expr = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3698">                _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3699">                <span class="tok-kw">break</span> :blk expr;</span>
-<span class="line" id="L3700">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3701">                <span class="tok-kw">break</span> :blk null_node;</span>
-<span class="line" id="L3702">            }</span>
-<span class="line" id="L3703">        },</span>
-<span class="line" id="L3704">        .keyword_union =&gt; blk: {</span>
-<span class="line" id="L3705">            <span class="tok-kw">if</span> (p.eatToken(.l_paren)) |_| {</span>
-<span class="line" id="L3706">                <span class="tok-kw">if</span> (p.eatToken(.keyword_enum)) |_| {</span>
-<span class="line" id="L3707">                    <span class="tok-kw">if</span> (p.eatToken(.l_paren)) |_| {</span>
-<span class="line" id="L3708">                        <span class="tok-kw">const</span> enum_tag_expr = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3669">                <span class="tok-kw">return</span> null_node;</span>
+<span class="line" id="L3670">            },</span>
+<span class="line" id="L3671">            <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L3672">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3673">                <span class="tok-kw">try</span> p.warn(.expected_suffix_op);</span>
+<span class="line" id="L3674">                <span class="tok-kw">return</span> null_node;</span>
+<span class="line" id="L3675">            },</span>
+<span class="line" id="L3676">        },</span>
+<span class="line" id="L3677">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> null_node,</span>
+<span class="line" id="L3678">    }</span>
+<span class="line" id="L3679">}</span>
+<span class="line" id="L3680"></span>
+<span class="line" id="L3681"><span class="tok-comment">/// Caller must have already verified the first token.</span></span>
+<span class="line" id="L3682"><span class="tok-comment">///</span></span>
+<span class="line" id="L3683"><span class="tok-comment">/// ContainerDeclAuto &lt;- ContainerDeclType LBRACE container_doc_comment? ContainerMembers RBRACE</span></span>
+<span class="line" id="L3684"><span class="tok-comment">///</span></span>
+<span class="line" id="L3685"><span class="tok-comment">/// ContainerDeclType</span></span>
+<span class="line" id="L3686"><span class="tok-comment">///     &lt;- KEYWORD_struct (LPAREN Expr RPAREN)?</span></span>
+<span class="line" id="L3687"><span class="tok-comment">///      / KEYWORD_opaque</span></span>
+<span class="line" id="L3688"><span class="tok-comment">///      / KEYWORD_enum (LPAREN Expr RPAREN)?</span></span>
+<span class="line" id="L3689"><span class="tok-comment">///      / KEYWORD_union (LPAREN (KEYWORD_enum (LPAREN Expr RPAREN)? / Expr) RPAREN)?</span></span>
+<span class="line" id="L3690"><span class="tok-kw">fn</span> <span class="tok-fn">parseContainerDeclAuto</span>(p: *Parse) !Node.Index {</span>
+<span class="line" id="L3691">    <span class="tok-kw">const</span> main_token = p.nextToken();</span>
+<span class="line" id="L3692">    <span class="tok-kw">const</span> arg_expr = <span class="tok-kw">switch</span> (p.token_tags[main_token]) {</span>
+<span class="line" id="L3693">        .keyword_opaque =&gt; null_node,</span>
+<span class="line" id="L3694">        .keyword_struct, .keyword_enum =&gt; blk: {</span>
+<span class="line" id="L3695">            <span class="tok-kw">if</span> (p.eatToken(.l_paren)) |_| {</span>
+<span class="line" id="L3696">                <span class="tok-kw">const</span> expr = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3697">                _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
+<span class="line" id="L3698">                <span class="tok-kw">break</span> :blk expr;</span>
+<span class="line" id="L3699">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3700">                <span class="tok-kw">break</span> :blk null_node;</span>
+<span class="line" id="L3701">            }</span>
+<span class="line" id="L3702">        },</span>
+<span class="line" id="L3703">        .keyword_union =&gt; blk: {</span>
+<span class="line" id="L3704">            <span class="tok-kw">if</span> (p.eatToken(.l_paren)) |_| {</span>
+<span class="line" id="L3705">                <span class="tok-kw">if</span> (p.eatToken(.keyword_enum)) |_| {</span>
+<span class="line" id="L3706">                    <span class="tok-kw">if</span> (p.eatToken(.l_paren)) |_| {</span>
+<span class="line" id="L3707">                        <span class="tok-kw">const</span> enum_tag_expr = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3708">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
 <span class="line" id="L3709">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3710">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3711"></span>
-<span class="line" id="L3712">                        _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
-<span class="line" id="L3713">                        <span class="tok-kw">const</span> members = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
-<span class="line" id="L3714">                        <span class="tok-kw">const</span> members_span = <span class="tok-kw">try</span> members.toSpan(p);</span>
-<span class="line" id="L3715">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
-<span class="line" id="L3716">                        <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3717">                            .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
-<span class="line" id="L3718">                                <span class="tok-null">true</span> =&gt; .tagged_union_enum_tag_trailing,</span>
-<span class="line" id="L3719">                                <span class="tok-null">false</span> =&gt; .tagged_union_enum_tag,</span>
-<span class="line" id="L3720">                            },</span>
-<span class="line" id="L3721">                            .main_token = main_token,</span>
-<span class="line" id="L3722">                            .data = .{</span>
-<span class="line" id="L3723">                                .lhs = enum_tag_expr,</span>
-<span class="line" id="L3724">                                .rhs = <span class="tok-kw">try</span> p.addExtra(members_span),</span>
-<span class="line" id="L3725">                            },</span>
-<span class="line" id="L3726">                        });</span>
-<span class="line" id="L3727">                    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3728">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3729"></span>
-<span class="line" id="L3730">                        _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
-<span class="line" id="L3731">                        <span class="tok-kw">const</span> members = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
-<span class="line" id="L3732">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
-<span class="line" id="L3733">                        <span class="tok-kw">if</span> (members.len &lt;= <span class="tok-number">2</span>) {</span>
-<span class="line" id="L3734">                            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3735">                                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
-<span class="line" id="L3736">                                    <span class="tok-null">true</span> =&gt; .tagged_union_two_trailing,</span>
-<span class="line" id="L3737">                                    <span class="tok-null">false</span> =&gt; .tagged_union_two,</span>
-<span class="line" id="L3738">                                },</span>
-<span class="line" id="L3739">                                .main_token = main_token,</span>
-<span class="line" id="L3740">                                .data = .{</span>
-<span class="line" id="L3741">                                    .lhs = members.lhs,</span>
-<span class="line" id="L3742">                                    .rhs = members.rhs,</span>
-<span class="line" id="L3743">                                },</span>
-<span class="line" id="L3744">                            });</span>
-<span class="line" id="L3745">                        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3746">                            <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> members.toSpan(p);</span>
-<span class="line" id="L3747">                            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3748">                                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
-<span class="line" id="L3749">                                    <span class="tok-null">true</span> =&gt; .tagged_union_trailing,</span>
-<span class="line" id="L3750">                                    <span class="tok-null">false</span> =&gt; .tagged_union,</span>
-<span class="line" id="L3751">                                },</span>
-<span class="line" id="L3752">                                .main_token = main_token,</span>
-<span class="line" id="L3753">                                .data = .{</span>
-<span class="line" id="L3754">                                    .lhs = span.start,</span>
-<span class="line" id="L3755">                                    .rhs = span.end,</span>
-<span class="line" id="L3756">                                },</span>
-<span class="line" id="L3757">                            });</span>
-<span class="line" id="L3758">                        }</span>
-<span class="line" id="L3759">                    }</span>
-<span class="line" id="L3760">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3761">                    <span class="tok-kw">const</span> expr = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3762">                    _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3763">                    <span class="tok-kw">break</span> :blk expr;</span>
-<span class="line" id="L3764">                }</span>
-<span class="line" id="L3765">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3766">                <span class="tok-kw">break</span> :blk null_node;</span>
-<span class="line" id="L3767">            }</span>
-<span class="line" id="L3768">        },</span>
-<span class="line" id="L3769">        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L3770">            p.tok_i -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L3771">            <span class="tok-kw">return</span> p.fail(.expected_container);</span>
-<span class="line" id="L3772">        },</span>
-<span class="line" id="L3773">    };</span>
-<span class="line" id="L3774">    _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
-<span class="line" id="L3775">    <span class="tok-kw">const</span> members = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
-<span class="line" id="L3776">    _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
-<span class="line" id="L3777">    <span class="tok-kw">if</span> (arg_expr == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3778">        <span class="tok-kw">if</span> (members.len &lt;= <span class="tok-number">2</span>) {</span>
-<span class="line" id="L3779">            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3780">                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
-<span class="line" id="L3781">                    <span class="tok-null">true</span> =&gt; .container_decl_two_trailing,</span>
-<span class="line" id="L3782">                    <span class="tok-null">false</span> =&gt; .container_decl_two,</span>
-<span class="line" id="L3783">                },</span>
-<span class="line" id="L3784">                .main_token = main_token,</span>
-<span class="line" id="L3785">                .data = .{</span>
-<span class="line" id="L3786">                    .lhs = members.lhs,</span>
-<span class="line" id="L3787">                    .rhs = members.rhs,</span>
-<span class="line" id="L3788">                },</span>
-<span class="line" id="L3789">            });</span>
-<span class="line" id="L3790">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3791">            <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> members.toSpan(p);</span>
-<span class="line" id="L3792">            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3793">                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
-<span class="line" id="L3794">                    <span class="tok-null">true</span> =&gt; .container_decl_trailing,</span>
-<span class="line" id="L3795">                    <span class="tok-null">false</span> =&gt; .container_decl,</span>
-<span class="line" id="L3796">                },</span>
-<span class="line" id="L3797">                .main_token = main_token,</span>
-<span class="line" id="L3798">                .data = .{</span>
-<span class="line" id="L3799">                    .lhs = span.start,</span>
-<span class="line" id="L3800">                    .rhs = span.end,</span>
-<span class="line" id="L3801">                },</span>
-<span class="line" id="L3802">            });</span>
-<span class="line" id="L3803">        }</span>
-<span class="line" id="L3804">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3805">        <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> members.toSpan(p);</span>
-<span class="line" id="L3806">        <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3807">            .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
-<span class="line" id="L3808">                <span class="tok-null">true</span> =&gt; .container_decl_arg_trailing,</span>
-<span class="line" id="L3809">                <span class="tok-null">false</span> =&gt; .container_decl_arg,</span>
-<span class="line" id="L3810">            },</span>
-<span class="line" id="L3811">            .main_token = main_token,</span>
-<span class="line" id="L3812">            .data = .{</span>
-<span class="line" id="L3813">                .lhs = arg_expr,</span>
-<span class="line" id="L3814">                .rhs = <span class="tok-kw">try</span> p.addExtra(Node.SubRange{</span>
-<span class="line" id="L3815">                    .start = span.start,</span>
-<span class="line" id="L3816">                    .end = span.end,</span>
-<span class="line" id="L3817">                }),</span>
-<span class="line" id="L3818">            },</span>
-<span class="line" id="L3819">        });</span>
-<span class="line" id="L3820">    }</span>
-<span class="line" id="L3821">}</span>
-<span class="line" id="L3822"></span>
-<span class="line" id="L3823"><span class="tok-comment">/// Give a helpful error message for those transitioning from</span></span>
-<span class="line" id="L3824"><span class="tok-comment">/// C's 'struct Foo {};' to Zig's 'const Foo = struct {};'.</span></span>
-<span class="line" id="L3825"><span class="tok-kw">fn</span> <span class="tok-fn">parseCStyleContainer</span>(p: *Parse) Error!<span class="tok-type">bool</span> {</span>
-<span class="line" id="L3826">    <span class="tok-kw">const</span> main_token = p.tok_i;</span>
-<span class="line" id="L3827">    <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
-<span class="line" id="L3828">        .keyword_enum, .keyword_union, .keyword_struct =&gt; {},</span>
-<span class="line" id="L3829">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">false</span>,</span>
-<span class="line" id="L3830">    }</span>
-<span class="line" id="L3831">    <span class="tok-kw">const</span> identifier = p.tok_i + <span class="tok-number">1</span>;</span>
-<span class="line" id="L3832">    <span class="tok-kw">if</span> (p.token_tags[identifier] != .identifier) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L3833">    p.tok_i += <span class="tok-number">2</span>;</span>
-<span class="line" id="L3834"></span>
-<span class="line" id="L3835">    <span class="tok-kw">try</span> p.warnMsg(.{</span>
-<span class="line" id="L3836">        .tag = .c_style_container,</span>
-<span class="line" id="L3837">        .token = identifier,</span>
-<span class="line" id="L3838">        .extra = .{ .expected_tag = p.token_tags[main_token] },</span>
-<span class="line" id="L3839">    });</span>
-<span class="line" id="L3840">    <span class="tok-kw">try</span> p.warnMsg(.{</span>
-<span class="line" id="L3841">        .tag = .zig_style_container,</span>
-<span class="line" id="L3842">        .is_note = <span class="tok-null">true</span>,</span>
-<span class="line" id="L3843">        .token = identifier,</span>
-<span class="line" id="L3844">        .extra = .{ .expected_tag = p.token_tags[main_token] },</span>
-<span class="line" id="L3845">    });</span>
-<span class="line" id="L3846"></span>
-<span class="line" id="L3847">    _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
-<span class="line" id="L3848">    _ = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
-<span class="line" id="L3849">    _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
-<span class="line" id="L3850">    <span class="tok-kw">try</span> p.expectSemicolon(.expected_semi_after_decl, <span class="tok-null">true</span>);</span>
-<span class="line" id="L3851">    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L3852">}</span>
-<span class="line" id="L3853"></span>
-<span class="line" id="L3854"><span class="tok-comment">/// Holds temporary data until we are ready to construct the full ContainerDecl AST node.</span></span>
-<span class="line" id="L3855"><span class="tok-comment">///</span></span>
-<span class="line" id="L3856"><span class="tok-comment">/// ByteAlign &lt;- KEYWORD_align LPAREN Expr RPAREN</span></span>
-<span class="line" id="L3857"><span class="tok-kw">fn</span> <span class="tok-fn">parseByteAlign</span>(p: *Parse) !Node.Index {</span>
-<span class="line" id="L3858">    _ = p.eatToken(.keyword_align) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> null_node;</span>
-<span class="line" id="L3859">    _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
-<span class="line" id="L3860">    <span class="tok-kw">const</span> expr = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3861">    _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L3862">    <span class="tok-kw">return</span> expr;</span>
-<span class="line" id="L3863">}</span>
-<span class="line" id="L3864"></span>
-<span class="line" id="L3865"><span class="tok-comment">/// SwitchProngList &lt;- (SwitchProng COMMA)* SwitchProng?</span></span>
-<span class="line" id="L3866"><span class="tok-kw">fn</span> <span class="tok-fn">parseSwitchProngList</span>(p: *Parse) !Node.SubRange {</span>
-<span class="line" id="L3867">    <span class="tok-kw">const</span> scratch_top = p.scratch.items.len;</span>
-<span class="line" id="L3868">    <span class="tok-kw">defer</span> p.scratch.shrinkRetainingCapacity(scratch_top);</span>
-<span class="line" id="L3869"></span>
-<span class="line" id="L3870">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3871">        <span class="tok-kw">const</span> item = <span class="tok-kw">try</span> parseSwitchProng(p);</span>
-<span class="line" id="L3872">        <span class="tok-kw">if</span> (item == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3873"></span>
-<span class="line" id="L3874">        <span class="tok-kw">try</span> p.scratch.append(p.gpa, item);</span>
-<span class="line" id="L3875"></span>
-<span class="line" id="L3876">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
-<span class="line" id="L3877">            .comma =&gt; p.tok_i += <span class="tok-number">1</span>,</span>
-<span class="line" id="L3878">            <span class="tok-comment">// All possible delimiters.</span>
+<span class="line" id="L3710"></span>
+<span class="line" id="L3711">                        _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
+<span class="line" id="L3712">                        <span class="tok-kw">const</span> members = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
+<span class="line" id="L3713">                        <span class="tok-kw">const</span> members_span = <span class="tok-kw">try</span> members.toSpan(p);</span>
+<span class="line" id="L3714">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
+<span class="line" id="L3715">                        <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3716">                            .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
+<span class="line" id="L3717">                                <span class="tok-null">true</span> =&gt; .tagged_union_enum_tag_trailing,</span>
+<span class="line" id="L3718">                                <span class="tok-null">false</span> =&gt; .tagged_union_enum_tag,</span>
+<span class="line" id="L3719">                            },</span>
+<span class="line" id="L3720">                            .main_token = main_token,</span>
+<span class="line" id="L3721">                            .data = .{</span>
+<span class="line" id="L3722">                                .lhs = enum_tag_expr,</span>
+<span class="line" id="L3723">                                .rhs = <span class="tok-kw">try</span> p.addExtra(members_span),</span>
+<span class="line" id="L3724">                            },</span>
+<span class="line" id="L3725">                        });</span>
+<span class="line" id="L3726">                    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3727">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
+<span class="line" id="L3728"></span>
+<span class="line" id="L3729">                        _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
+<span class="line" id="L3730">                        <span class="tok-kw">const</span> members = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
+<span class="line" id="L3731">                        _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
+<span class="line" id="L3732">                        <span class="tok-kw">if</span> (members.len &lt;= <span class="tok-number">2</span>) {</span>
+<span class="line" id="L3733">                            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3734">                                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
+<span class="line" id="L3735">                                    <span class="tok-null">true</span> =&gt; .tagged_union_two_trailing,</span>
+<span class="line" id="L3736">                                    <span class="tok-null">false</span> =&gt; .tagged_union_two,</span>
+<span class="line" id="L3737">                                },</span>
+<span class="line" id="L3738">                                .main_token = main_token,</span>
+<span class="line" id="L3739">                                .data = .{</span>
+<span class="line" id="L3740">                                    .lhs = members.lhs,</span>
+<span class="line" id="L3741">                                    .rhs = members.rhs,</span>
+<span class="line" id="L3742">                                },</span>
+<span class="line" id="L3743">                            });</span>
+<span class="line" id="L3744">                        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3745">                            <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> members.toSpan(p);</span>
+<span class="line" id="L3746">                            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3747">                                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
+<span class="line" id="L3748">                                    <span class="tok-null">true</span> =&gt; .tagged_union_trailing,</span>
+<span class="line" id="L3749">                                    <span class="tok-null">false</span> =&gt; .tagged_union,</span>
+<span class="line" id="L3750">                                },</span>
+<span class="line" id="L3751">                                .main_token = main_token,</span>
+<span class="line" id="L3752">                                .data = .{</span>
+<span class="line" id="L3753">                                    .lhs = span.start,</span>
+<span class="line" id="L3754">                                    .rhs = span.end,</span>
+<span class="line" id="L3755">                                },</span>
+<span class="line" id="L3756">                            });</span>
+<span class="line" id="L3757">                        }</span>
+<span class="line" id="L3758">                    }</span>
+<span class="line" id="L3759">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3760">                    <span class="tok-kw">const</span> expr = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3761">                    _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
+<span class="line" id="L3762">                    <span class="tok-kw">break</span> :blk expr;</span>
+<span class="line" id="L3763">                }</span>
+<span class="line" id="L3764">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3765">                <span class="tok-kw">break</span> :blk null_node;</span>
+<span class="line" id="L3766">            }</span>
+<span class="line" id="L3767">        },</span>
+<span class="line" id="L3768">        <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L3769">            p.tok_i -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L3770">            <span class="tok-kw">return</span> p.fail(.expected_container);</span>
+<span class="line" id="L3771">        },</span>
+<span class="line" id="L3772">    };</span>
+<span class="line" id="L3773">    _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
+<span class="line" id="L3774">    <span class="tok-kw">const</span> members = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
+<span class="line" id="L3775">    _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
+<span class="line" id="L3776">    <span class="tok-kw">if</span> (arg_expr == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3777">        <span class="tok-kw">if</span> (members.len &lt;= <span class="tok-number">2</span>) {</span>
+<span class="line" id="L3778">            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3779">                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
+<span class="line" id="L3780">                    <span class="tok-null">true</span> =&gt; .container_decl_two_trailing,</span>
+<span class="line" id="L3781">                    <span class="tok-null">false</span> =&gt; .container_decl_two,</span>
+<span class="line" id="L3782">                },</span>
+<span class="line" id="L3783">                .main_token = main_token,</span>
+<span class="line" id="L3784">                .data = .{</span>
+<span class="line" id="L3785">                    .lhs = members.lhs,</span>
+<span class="line" id="L3786">                    .rhs = members.rhs,</span>
+<span class="line" id="L3787">                },</span>
+<span class="line" id="L3788">            });</span>
+<span class="line" id="L3789">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3790">            <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> members.toSpan(p);</span>
+<span class="line" id="L3791">            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3792">                .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
+<span class="line" id="L3793">                    <span class="tok-null">true</span> =&gt; .container_decl_trailing,</span>
+<span class="line" id="L3794">                    <span class="tok-null">false</span> =&gt; .container_decl,</span>
+<span class="line" id="L3795">                },</span>
+<span class="line" id="L3796">                .main_token = main_token,</span>
+<span class="line" id="L3797">                .data = .{</span>
+<span class="line" id="L3798">                    .lhs = span.start,</span>
+<span class="line" id="L3799">                    .rhs = span.end,</span>
+<span class="line" id="L3800">                },</span>
+<span class="line" id="L3801">            });</span>
+<span class="line" id="L3802">        }</span>
+<span class="line" id="L3803">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3804">        <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> members.toSpan(p);</span>
+<span class="line" id="L3805">        <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3806">            .tag = <span class="tok-kw">switch</span> (members.trailing) {</span>
+<span class="line" id="L3807">                <span class="tok-null">true</span> =&gt; .container_decl_arg_trailing,</span>
+<span class="line" id="L3808">                <span class="tok-null">false</span> =&gt; .container_decl_arg,</span>
+<span class="line" id="L3809">            },</span>
+<span class="line" id="L3810">            .main_token = main_token,</span>
+<span class="line" id="L3811">            .data = .{</span>
+<span class="line" id="L3812">                .lhs = arg_expr,</span>
+<span class="line" id="L3813">                .rhs = <span class="tok-kw">try</span> p.addExtra(Node.SubRange{</span>
+<span class="line" id="L3814">                    .start = span.start,</span>
+<span class="line" id="L3815">                    .end = span.end,</span>
+<span class="line" id="L3816">                }),</span>
+<span class="line" id="L3817">            },</span>
+<span class="line" id="L3818">        });</span>
+<span class="line" id="L3819">    }</span>
+<span class="line" id="L3820">}</span>
+<span class="line" id="L3821"></span>
+<span class="line" id="L3822"><span class="tok-comment">/// Give a helpful error message for those transitioning from</span></span>
+<span class="line" id="L3823"><span class="tok-comment">/// C's 'struct Foo {};' to Zig's 'const Foo = struct {};'.</span></span>
+<span class="line" id="L3824"><span class="tok-kw">fn</span> <span class="tok-fn">parseCStyleContainer</span>(p: *Parse) Error!<span class="tok-type">bool</span> {</span>
+<span class="line" id="L3825">    <span class="tok-kw">const</span> main_token = p.tok_i;</span>
+<span class="line" id="L3826">    <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
+<span class="line" id="L3827">        .keyword_enum, .keyword_union, .keyword_struct =&gt; {},</span>
+<span class="line" id="L3828">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">false</span>,</span>
+<span class="line" id="L3829">    }</span>
+<span class="line" id="L3830">    <span class="tok-kw">const</span> identifier = p.tok_i + <span class="tok-number">1</span>;</span>
+<span class="line" id="L3831">    <span class="tok-kw">if</span> (p.token_tags[identifier] != .identifier) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L3832">    p.tok_i += <span class="tok-number">2</span>;</span>
+<span class="line" id="L3833"></span>
+<span class="line" id="L3834">    <span class="tok-kw">try</span> p.warnMsg(.{</span>
+<span class="line" id="L3835">        .tag = .c_style_container,</span>
+<span class="line" id="L3836">        .token = identifier,</span>
+<span class="line" id="L3837">        .extra = .{ .expected_tag = p.token_tags[main_token] },</span>
+<span class="line" id="L3838">    });</span>
+<span class="line" id="L3839">    <span class="tok-kw">try</span> p.warnMsg(.{</span>
+<span class="line" id="L3840">        .tag = .zig_style_container,</span>
+<span class="line" id="L3841">        .is_note = <span class="tok-null">true</span>,</span>
+<span class="line" id="L3842">        .token = identifier,</span>
+<span class="line" id="L3843">        .extra = .{ .expected_tag = p.token_tags[main_token] },</span>
+<span class="line" id="L3844">    });</span>
+<span class="line" id="L3845"></span>
+<span class="line" id="L3846">    _ = <span class="tok-kw">try</span> p.expectToken(.l_brace);</span>
+<span class="line" id="L3847">    _ = <span class="tok-kw">try</span> p.parseContainerMembers();</span>
+<span class="line" id="L3848">    _ = <span class="tok-kw">try</span> p.expectToken(.r_brace);</span>
+<span class="line" id="L3849">    <span class="tok-kw">try</span> p.expectSemicolon(.expected_semi_after_decl, <span class="tok-null">true</span>);</span>
+<span class="line" id="L3850">    <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L3851">}</span>
+<span class="line" id="L3852"></span>
+<span class="line" id="L3853"><span class="tok-comment">/// Holds temporary data until we are ready to construct the full ContainerDecl AST node.</span></span>
+<span class="line" id="L3854"><span class="tok-comment">///</span></span>
+<span class="line" id="L3855"><span class="tok-comment">/// ByteAlign &lt;- KEYWORD_align LPAREN Expr RPAREN</span></span>
+<span class="line" id="L3856"><span class="tok-kw">fn</span> <span class="tok-fn">parseByteAlign</span>(p: *Parse) !Node.Index {</span>
+<span class="line" id="L3857">    _ = p.eatToken(.keyword_align) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> null_node;</span>
+<span class="line" id="L3858">    _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
+<span class="line" id="L3859">    <span class="tok-kw">const</span> expr = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3860">    _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
+<span class="line" id="L3861">    <span class="tok-kw">return</span> expr;</span>
+<span class="line" id="L3862">}</span>
+<span class="line" id="L3863"></span>
+<span class="line" id="L3864"><span class="tok-comment">/// SwitchProngList &lt;- (SwitchProng COMMA)* SwitchProng?</span></span>
+<span class="line" id="L3865"><span class="tok-kw">fn</span> <span class="tok-fn">parseSwitchProngList</span>(p: *Parse) !Node.SubRange {</span>
+<span class="line" id="L3866">    <span class="tok-kw">const</span> scratch_top = p.scratch.items.len;</span>
+<span class="line" id="L3867">    <span class="tok-kw">defer</span> p.scratch.shrinkRetainingCapacity(scratch_top);</span>
+<span class="line" id="L3868"></span>
+<span class="line" id="L3869">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3870">        <span class="tok-kw">const</span> item = <span class="tok-kw">try</span> parseSwitchProng(p);</span>
+<span class="line" id="L3871">        <span class="tok-kw">if</span> (item == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3872"></span>
+<span class="line" id="L3873">        <span class="tok-kw">try</span> p.scratch.append(p.gpa, item);</span>
+<span class="line" id="L3874"></span>
+<span class="line" id="L3875">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
+<span class="line" id="L3876">            .comma =&gt; p.tok_i += <span class="tok-number">1</span>,</span>
+<span class="line" id="L3877">            <span class="tok-comment">// All possible delimiters.</span>
 </span>
-<span class="line" id="L3879">            .colon, .r_paren, .r_brace, .r_bracket =&gt; <span class="tok-kw">break</span>,</span>
-<span class="line" id="L3880">            <span class="tok-comment">// Likely just a missing comma; give error but continue parsing.</span>
+<span class="line" id="L3878">            .colon, .r_paren, .r_brace, .r_bracket =&gt; <span class="tok-kw">break</span>,</span>
+<span class="line" id="L3879">            <span class="tok-comment">// Likely just a missing comma; give error but continue parsing.</span>
 </span>
-<span class="line" id="L3881">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> p.warn(.expected_comma_after_switch_prong),</span>
-<span class="line" id="L3882">        }</span>
-<span class="line" id="L3883">    }</span>
-<span class="line" id="L3884">    <span class="tok-kw">return</span> p.listToSpan(p.scratch.items[scratch_top..]);</span>
-<span class="line" id="L3885">}</span>
-<span class="line" id="L3886"></span>
-<span class="line" id="L3887"><span class="tok-comment">/// ParamDeclList &lt;- (ParamDecl COMMA)* ParamDecl?</span></span>
-<span class="line" id="L3888"><span class="tok-kw">fn</span> <span class="tok-fn">parseParamDeclList</span>(p: *Parse) !SmallSpan {</span>
-<span class="line" id="L3889">    _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
-<span class="line" id="L3890">    <span class="tok-kw">const</span> scratch_top = p.scratch.items.len;</span>
-<span class="line" id="L3891">    <span class="tok-kw">defer</span> p.scratch.shrinkRetainingCapacity(scratch_top);</span>
-<span class="line" id="L3892">    <span class="tok-kw">var</span> varargs: <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) { none, seen, nonfinal: TokenIndex } = .none;</span>
-<span class="line" id="L3893">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3894">        <span class="tok-kw">if</span> (p.eatToken(.r_paren)) |_| <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3895">        <span class="tok-kw">if</span> (varargs == .seen) varargs = .{ .nonfinal = p.tok_i };</span>
-<span class="line" id="L3896">        <span class="tok-kw">const</span> param = <span class="tok-kw">try</span> p.expectParamDecl();</span>
-<span class="line" id="L3897">        <span class="tok-kw">if</span> (param != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3898">            <span class="tok-kw">try</span> p.scratch.append(p.gpa, param);</span>
-<span class="line" id="L3899">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (p.token_tags[p.tok_i - <span class="tok-number">1</span>] == .ellipsis3) {</span>
-<span class="line" id="L3900">            <span class="tok-kw">if</span> (varargs == .none) varargs = .seen;</span>
-<span class="line" id="L3901">        }</span>
-<span class="line" id="L3902">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
-<span class="line" id="L3903">            .comma =&gt; p.tok_i += <span class="tok-number">1</span>,</span>
-<span class="line" id="L3904">            .r_paren =&gt; {</span>
-<span class="line" id="L3905">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3906">                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3907">            },</span>
-<span class="line" id="L3908">            .colon, .r_brace, .r_bracket =&gt; <span class="tok-kw">return</span> p.failExpected(.r_paren),</span>
-<span class="line" id="L3909">            <span class="tok-comment">// Likely just a missing comma; give error but continue parsing.</span>
+<span class="line" id="L3880">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> p.warn(.expected_comma_after_switch_prong),</span>
+<span class="line" id="L3881">        }</span>
+<span class="line" id="L3882">    }</span>
+<span class="line" id="L3883">    <span class="tok-kw">return</span> p.listToSpan(p.scratch.items[scratch_top..]);</span>
+<span class="line" id="L3884">}</span>
+<span class="line" id="L3885"></span>
+<span class="line" id="L3886"><span class="tok-comment">/// ParamDeclList &lt;- (ParamDecl COMMA)* ParamDecl?</span></span>
+<span class="line" id="L3887"><span class="tok-kw">fn</span> <span class="tok-fn">parseParamDeclList</span>(p: *Parse) !SmallSpan {</span>
+<span class="line" id="L3888">    _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
+<span class="line" id="L3889">    <span class="tok-kw">const</span> scratch_top = p.scratch.items.len;</span>
+<span class="line" id="L3890">    <span class="tok-kw">defer</span> p.scratch.shrinkRetainingCapacity(scratch_top);</span>
+<span class="line" id="L3891">    <span class="tok-kw">var</span> varargs: <span class="tok-kw">union</span>(<span class="tok-kw">enum</span>) { none, seen, nonfinal: TokenIndex } = .none;</span>
+<span class="line" id="L3892">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3893">        <span class="tok-kw">if</span> (p.eatToken(.r_paren)) |_| <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3894">        <span class="tok-kw">if</span> (varargs == .seen) varargs = .{ .nonfinal = p.tok_i };</span>
+<span class="line" id="L3895">        <span class="tok-kw">const</span> param = <span class="tok-kw">try</span> p.expectParamDecl();</span>
+<span class="line" id="L3896">        <span class="tok-kw">if</span> (param != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3897">            <span class="tok-kw">try</span> p.scratch.append(p.gpa, param);</span>
+<span class="line" id="L3898">        } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (p.token_tags[p.tok_i - <span class="tok-number">1</span>] == .ellipsis3) {</span>
+<span class="line" id="L3899">            <span class="tok-kw">if</span> (varargs == .none) varargs = .seen;</span>
+<span class="line" id="L3900">        }</span>
+<span class="line" id="L3901">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
+<span class="line" id="L3902">            .comma =&gt; p.tok_i += <span class="tok-number">1</span>,</span>
+<span class="line" id="L3903">            .r_paren =&gt; {</span>
+<span class="line" id="L3904">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3905">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3906">            },</span>
+<span class="line" id="L3907">            .colon, .r_brace, .r_bracket =&gt; <span class="tok-kw">return</span> p.failExpected(.r_paren),</span>
+<span class="line" id="L3908">            <span class="tok-comment">// Likely just a missing comma; give error but continue parsing.</span>
 </span>
-<span class="line" id="L3910">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> p.warn(.expected_comma_after_param),</span>
-<span class="line" id="L3911">        }</span>
-<span class="line" id="L3912">    }</span>
-<span class="line" id="L3913">    <span class="tok-kw">if</span> (varargs == .nonfinal) {</span>
-<span class="line" id="L3914">        <span class="tok-kw">try</span> p.warnMsg(.{ .tag = .varargs_nonfinal, .token = varargs.nonfinal });</span>
-<span class="line" id="L3915">    }</span>
-<span class="line" id="L3916">    <span class="tok-kw">const</span> params = p.scratch.items[scratch_top..];</span>
-<span class="line" id="L3917">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (params.len) {</span>
-<span class="line" id="L3918">        <span class="tok-number">0</span> =&gt; SmallSpan{ .zero_or_one = <span class="tok-number">0</span> },</span>
-<span class="line" id="L3919">        <span class="tok-number">1</span> =&gt; SmallSpan{ .zero_or_one = params[<span class="tok-number">0</span>] },</span>
-<span class="line" id="L3920">        <span class="tok-kw">else</span> =&gt; SmallSpan{ .multi = <span class="tok-kw">try</span> p.listToSpan(params) },</span>
-<span class="line" id="L3921">    };</span>
-<span class="line" id="L3922">}</span>
-<span class="line" id="L3923"></span>
-<span class="line" id="L3924"><span class="tok-comment">/// FnCallArguments &lt;- LPAREN ExprList RPAREN</span></span>
-<span class="line" id="L3925"><span class="tok-comment">///</span></span>
-<span class="line" id="L3926"><span class="tok-comment">/// ExprList &lt;- (Expr COMMA)* Expr?</span></span>
-<span class="line" id="L3927"><span class="tok-kw">fn</span> <span class="tok-fn">parseBuiltinCall</span>(p: *Parse) !Node.Index {</span>
-<span class="line" id="L3928">    <span class="tok-kw">const</span> builtin_token = p.assertToken(.builtin);</span>
-<span class="line" id="L3929">    <span class="tok-kw">if</span> (p.token_tags[p.nextToken()] != .l_paren) {</span>
-<span class="line" id="L3930">        p.tok_i -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L3931">        <span class="tok-kw">try</span> p.warn(.expected_param_list);</span>
-<span class="line" id="L3932">        <span class="tok-comment">// Pretend this was an identifier so we can continue parsing.</span>
+<span class="line" id="L3909">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> p.warn(.expected_comma_after_param),</span>
+<span class="line" id="L3910">        }</span>
+<span class="line" id="L3911">    }</span>
+<span class="line" id="L3912">    <span class="tok-kw">if</span> (varargs == .nonfinal) {</span>
+<span class="line" id="L3913">        <span class="tok-kw">try</span> p.warnMsg(.{ .tag = .varargs_nonfinal, .token = varargs.nonfinal });</span>
+<span class="line" id="L3914">    }</span>
+<span class="line" id="L3915">    <span class="tok-kw">const</span> params = p.scratch.items[scratch_top..];</span>
+<span class="line" id="L3916">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (params.len) {</span>
+<span class="line" id="L3917">        <span class="tok-number">0</span> =&gt; SmallSpan{ .zero_or_one = <span class="tok-number">0</span> },</span>
+<span class="line" id="L3918">        <span class="tok-number">1</span> =&gt; SmallSpan{ .zero_or_one = params[<span class="tok-number">0</span>] },</span>
+<span class="line" id="L3919">        <span class="tok-kw">else</span> =&gt; SmallSpan{ .multi = <span class="tok-kw">try</span> p.listToSpan(params) },</span>
+<span class="line" id="L3920">    };</span>
+<span class="line" id="L3921">}</span>
+<span class="line" id="L3922"></span>
+<span class="line" id="L3923"><span class="tok-comment">/// FnCallArguments &lt;- LPAREN ExprList RPAREN</span></span>
+<span class="line" id="L3924"><span class="tok-comment">///</span></span>
+<span class="line" id="L3925"><span class="tok-comment">/// ExprList &lt;- (Expr COMMA)* Expr?</span></span>
+<span class="line" id="L3926"><span class="tok-kw">fn</span> <span class="tok-fn">parseBuiltinCall</span>(p: *Parse) !Node.Index {</span>
+<span class="line" id="L3927">    <span class="tok-kw">const</span> builtin_token = p.assertToken(.builtin);</span>
+<span class="line" id="L3928">    <span class="tok-kw">if</span> (p.token_tags[p.nextToken()] != .l_paren) {</span>
+<span class="line" id="L3929">        p.tok_i -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L3930">        <span class="tok-kw">try</span> p.warn(.expected_param_list);</span>
+<span class="line" id="L3931">        <span class="tok-comment">// Pretend this was an identifier so we can continue parsing.</span>
 </span>
-<span class="line" id="L3933">        <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3934">            .tag = .identifier,</span>
-<span class="line" id="L3935">            .main_token = builtin_token,</span>
-<span class="line" id="L3936">            .data = .{</span>
-<span class="line" id="L3937">                .lhs = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L3938">                .rhs = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L3939">            },</span>
-<span class="line" id="L3940">        });</span>
-<span class="line" id="L3941">    }</span>
-<span class="line" id="L3942">    <span class="tok-kw">const</span> scratch_top = p.scratch.items.len;</span>
-<span class="line" id="L3943">    <span class="tok-kw">defer</span> p.scratch.shrinkRetainingCapacity(scratch_top);</span>
-<span class="line" id="L3944">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L3945">        <span class="tok-kw">if</span> (p.eatToken(.r_paren)) |_| <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3946">        <span class="tok-kw">const</span> param = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L3947">        <span class="tok-kw">try</span> p.scratch.append(p.gpa, param);</span>
-<span class="line" id="L3948">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
-<span class="line" id="L3949">            .comma =&gt; p.tok_i += <span class="tok-number">1</span>,</span>
-<span class="line" id="L3950">            .r_paren =&gt; {</span>
-<span class="line" id="L3951">                p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3952">                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3953">            },</span>
-<span class="line" id="L3954">            <span class="tok-comment">// Likely just a missing comma; give error but continue parsing.</span>
+<span class="line" id="L3932">        <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3933">            .tag = .identifier,</span>
+<span class="line" id="L3934">            .main_token = builtin_token,</span>
+<span class="line" id="L3935">            .data = .{</span>
+<span class="line" id="L3936">                .lhs = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L3937">                .rhs = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L3938">            },</span>
+<span class="line" id="L3939">        });</span>
+<span class="line" id="L3940">    }</span>
+<span class="line" id="L3941">    <span class="tok-kw">const</span> scratch_top = p.scratch.items.len;</span>
+<span class="line" id="L3942">    <span class="tok-kw">defer</span> p.scratch.shrinkRetainingCapacity(scratch_top);</span>
+<span class="line" id="L3943">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L3944">        <span class="tok-kw">if</span> (p.eatToken(.r_paren)) |_| <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3945">        <span class="tok-kw">const</span> param = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L3946">        <span class="tok-kw">try</span> p.scratch.append(p.gpa, param);</span>
+<span class="line" id="L3947">        <span class="tok-kw">switch</span> (p.token_tags[p.tok_i]) {</span>
+<span class="line" id="L3948">            .comma =&gt; p.tok_i += <span class="tok-number">1</span>,</span>
+<span class="line" id="L3949">            .r_paren =&gt; {</span>
+<span class="line" id="L3950">                p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3951">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3952">            },</span>
+<span class="line" id="L3953">            <span class="tok-comment">// Likely just a missing comma; give error but continue parsing.</span>
 </span>
-<span class="line" id="L3955">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> p.warn(.expected_comma_after_arg),</span>
-<span class="line" id="L3956">        }</span>
-<span class="line" id="L3957">    }</span>
-<span class="line" id="L3958">    <span class="tok-kw">const</span> comma = (p.token_tags[p.tok_i - <span class="tok-number">2</span>] == .comma);</span>
-<span class="line" id="L3959">    <span class="tok-kw">const</span> params = p.scratch.items[scratch_top..];</span>
-<span class="line" id="L3960">    <span class="tok-kw">switch</span> (params.len) {</span>
-<span class="line" id="L3961">        <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3962">            .tag = .builtin_call_two,</span>
-<span class="line" id="L3963">            .main_token = builtin_token,</span>
-<span class="line" id="L3964">            .data = .{</span>
-<span class="line" id="L3965">                .lhs = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3966">                .rhs = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3967">            },</span>
-<span class="line" id="L3968">        }),</span>
-<span class="line" id="L3969">        <span class="tok-number">1</span> =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3970">            .tag = <span class="tok-kw">if</span> (comma) .builtin_call_two_comma <span class="tok-kw">else</span> .builtin_call_two,</span>
-<span class="line" id="L3971">            .main_token = builtin_token,</span>
-<span class="line" id="L3972">            .data = .{</span>
-<span class="line" id="L3973">                .lhs = params[<span class="tok-number">0</span>],</span>
-<span class="line" id="L3974">                .rhs = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3975">            },</span>
-<span class="line" id="L3976">        }),</span>
-<span class="line" id="L3977">        <span class="tok-number">2</span> =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3978">            .tag = <span class="tok-kw">if</span> (comma) .builtin_call_two_comma <span class="tok-kw">else</span> .builtin_call_two,</span>
-<span class="line" id="L3979">            .main_token = builtin_token,</span>
-<span class="line" id="L3980">            .data = .{</span>
-<span class="line" id="L3981">                .lhs = params[<span class="tok-number">0</span>],</span>
-<span class="line" id="L3982">                .rhs = params[<span class="tok-number">1</span>],</span>
-<span class="line" id="L3983">            },</span>
-<span class="line" id="L3984">        }),</span>
-<span class="line" id="L3985">        <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L3986">            <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> p.listToSpan(params);</span>
-<span class="line" id="L3987">            <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L3988">                .tag = <span class="tok-kw">if</span> (comma) .builtin_call_comma <span class="tok-kw">else</span> .builtin_call,</span>
-<span class="line" id="L3989">                .main_token = builtin_token,</span>
-<span class="line" id="L3990">                .data = .{</span>
-<span class="line" id="L3991">                    .lhs = span.start,</span>
-<span class="line" id="L3992">                    .rhs = span.end,</span>
-<span class="line" id="L3993">                },</span>
-<span class="line" id="L3994">            });</span>
-<span class="line" id="L3995">        },</span>
-<span class="line" id="L3996">    }</span>
-<span class="line" id="L3997">}</span>
-<span class="line" id="L3998"></span>
-<span class="line" id="L3999"><span class="tok-comment">/// IfPrefix &lt;- KEYWORD_if LPAREN Expr RPAREN PtrPayload?</span></span>
-<span class="line" id="L4000"><span class="tok-kw">fn</span> <span class="tok-fn">parseIf</span>(p: *Parse, <span class="tok-kw">comptime</span> bodyParseFn: <span class="tok-kw">fn</span> (p: *Parse) Error!Node.Index) !Node.Index {</span>
-<span class="line" id="L4001">    <span class="tok-kw">const</span> if_token = p.eatToken(.keyword_if) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> null_node;</span>
-<span class="line" id="L4002">    _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
-<span class="line" id="L4003">    <span class="tok-kw">const</span> condition = <span class="tok-kw">try</span> p.expectExpr();</span>
-<span class="line" id="L4004">    _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
-<span class="line" id="L4005">    _ = <span class="tok-kw">try</span> p.parsePtrPayload();</span>
-<span class="line" id="L4006"></span>
-<span class="line" id="L4007">    <span class="tok-kw">const</span> then_expr = <span class="tok-kw">try</span> bodyParseFn(p);</span>
-<span class="line" id="L4008">    assert(then_expr != <span class="tok-number">0</span>);</span>
-<span class="line" id="L4009"></span>
-<span class="line" id="L4010">    _ = p.eatToken(.keyword_else) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L4011">        .tag = .if_simple,</span>
-<span class="line" id="L4012">        .main_token = if_token,</span>
-<span class="line" id="L4013">        .data = .{</span>
-<span class="line" id="L4014">            .lhs = condition,</span>
-<span class="line" id="L4015">            .rhs = then_expr,</span>
-<span class="line" id="L4016">        },</span>
-<span class="line" id="L4017">    });</span>
-<span class="line" id="L4018">    _ = <span class="tok-kw">try</span> p.parsePayload();</span>
-<span class="line" id="L4019">    <span class="tok-kw">const</span> else_expr = <span class="tok-kw">try</span> bodyParseFn(p);</span>
-<span class="line" id="L4020">    assert(else_expr != <span class="tok-number">0</span>);</span>
-<span class="line" id="L4021"></span>
-<span class="line" id="L4022">    <span class="tok-kw">return</span> p.addNode(.{</span>
-<span class="line" id="L4023">        .tag = .@&quot;if&quot;,</span>
-<span class="line" id="L4024">        .main_token = if_token,</span>
-<span class="line" id="L4025">        .data = .{</span>
-<span class="line" id="L4026">            .lhs = condition,</span>
-<span class="line" id="L4027">            .rhs = <span class="tok-kw">try</span> p.addExtra(Node.If{</span>
-<span class="line" id="L4028">                .then_expr = then_expr,</span>
-<span class="line" id="L4029">                .else_expr = else_expr,</span>
-<span class="line" id="L4030">            }),</span>
-<span class="line" id="L4031">        },</span>
-<span class="line" id="L4032">    });</span>
-<span class="line" id="L4033">}</span>
-<span class="line" id="L4034"></span>
-<span class="line" id="L4035"><span class="tok-comment">/// Skips over doc comment tokens. Returns the first one, if any.</span></span>
-<span class="line" id="L4036"><span class="tok-kw">fn</span> <span class="tok-fn">eatDocComments</span>(p: *Parse) !?TokenIndex {</span>
-<span class="line" id="L4037">    <span class="tok-kw">if</span> (p.eatToken(.doc_comment)) |tok| {</span>
-<span class="line" id="L4038">        <span class="tok-kw">var</span> first_line = tok;</span>
-<span class="line" id="L4039">        <span class="tok-kw">if</span> (tok &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> tokensOnSameLine(p, tok - <span class="tok-number">1</span>, tok)) {</span>
-<span class="line" id="L4040">            <span class="tok-kw">try</span> p.warnMsg(.{</span>
-<span class="line" id="L4041">                .tag = .same_line_doc_comment,</span>
-<span class="line" id="L4042">                .token = tok,</span>
-<span class="line" id="L4043">            });</span>
-<span class="line" id="L4044">            first_line = p.eatToken(.doc_comment) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L4045">        }</span>
-<span class="line" id="L4046">        <span class="tok-kw">while</span> (p.eatToken(.doc_comment)) |_| {}</span>
-<span class="line" id="L4047">        <span class="tok-kw">return</span> first_line;</span>
-<span class="line" id="L4048">    }</span>
-<span class="line" id="L4049">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L4050">}</span>
-<span class="line" id="L4051"></span>
-<span class="line" id="L4052"><span class="tok-kw">fn</span> <span class="tok-fn">tokensOnSameLine</span>(p: *Parse, token1: TokenIndex, token2: TokenIndex) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L4053">    <span class="tok-kw">return</span> std.mem.indexOfScalar(<span class="tok-type">u8</span>, p.source[p.token_starts[token1]..p.token_starts[token2]], <span class="tok-str">'\n'</span>) == <span class="tok-null">null</span>;</span>
-<span class="line" id="L4054">}</span>
-<span class="line" id="L4055"></span>
-<span class="line" id="L4056"><span class="tok-kw">fn</span> <span class="tok-fn">eatToken</span>(p: *Parse, tag: Token.Tag) ?TokenIndex {</span>
-<span class="line" id="L4057">    <span class="tok-kw">return</span> <span class="tok-kw">if</span> (p.token_tags[p.tok_i] == tag) p.nextToken() <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L4058">}</span>
-<span class="line" id="L4059"></span>
-<span class="line" id="L4060"><span class="tok-kw">fn</span> <span class="tok-fn">assertToken</span>(p: *Parse, tag: Token.Tag) TokenIndex {</span>
-<span class="line" id="L4061">    <span class="tok-kw">const</span> token = p.nextToken();</span>
-<span class="line" id="L4062">    assert(p.token_tags[token] == tag);</span>
-<span class="line" id="L4063">    <span class="tok-kw">return</span> token;</span>
-<span class="line" id="L4064">}</span>
-<span class="line" id="L4065"></span>
-<span class="line" id="L4066"><span class="tok-kw">fn</span> <span class="tok-fn">expectToken</span>(p: *Parse, tag: Token.Tag) Error!TokenIndex {</span>
-<span class="line" id="L4067">    <span class="tok-kw">if</span> (p.token_tags[p.tok_i] != tag) {</span>
-<span class="line" id="L4068">        <span class="tok-kw">return</span> p.failMsg(.{</span>
-<span class="line" id="L4069">            .tag = .expected_token,</span>
-<span class="line" id="L4070">            .token = p.tok_i,</span>
-<span class="line" id="L4071">            .extra = .{ .expected_tag = tag },</span>
-<span class="line" id="L4072">        });</span>
-<span class="line" id="L4073">    }</span>
-<span class="line" id="L4074">    <span class="tok-kw">return</span> p.nextToken();</span>
-<span class="line" id="L4075">}</span>
-<span class="line" id="L4076"></span>
-<span class="line" id="L4077"><span class="tok-kw">fn</span> <span class="tok-fn">expectSemicolon</span>(p: *Parse, error_tag: AstError.Tag, recoverable: <span class="tok-type">bool</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L4078">    <span class="tok-kw">if</span> (p.token_tags[p.tok_i] == .semicolon) {</span>
-<span class="line" id="L4079">        _ = p.nextToken();</span>
-<span class="line" id="L4080">        <span class="tok-kw">return</span>;</span>
-<span class="line" id="L4081">    }</span>
-<span class="line" id="L4082">    <span class="tok-kw">try</span> p.warn(error_tag);</span>
-<span class="line" id="L4083">    <span class="tok-kw">if</span> (!recoverable) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ParseError;</span>
-<span class="line" id="L4084">}</span>
-<span class="line" id="L4085"></span>
-<span class="line" id="L4086"><span class="tok-kw">fn</span> <span class="tok-fn">nextToken</span>(p: *Parse) TokenIndex {</span>
-<span class="line" id="L4087">    <span class="tok-kw">const</span> result = p.tok_i;</span>
-<span class="line" id="L4088">    p.tok_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L4089">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L4090">}</span>
-<span class="line" id="L4091"></span>
-<span class="line" id="L4092"><span class="tok-kw">const</span> null_node: Node.Index = <span class="tok-number">0</span>;</span>
-<span class="line" id="L4093"></span>
-<span class="line" id="L4094"><span class="tok-kw">const</span> Parse = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L4095"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
-<span class="line" id="L4096"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
-<span class="line" id="L4097"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
-<span class="line" id="L4098"><span class="tok-kw">const</span> Ast = std.zig.Ast;</span>
-<span class="line" id="L4099"><span class="tok-kw">const</span> Node = Ast.Node;</span>
-<span class="line" id="L4100"><span class="tok-kw">const</span> AstError = Ast.Error;</span>
-<span class="line" id="L4101"><span class="tok-kw">const</span> TokenIndex = Ast.TokenIndex;</span>
-<span class="line" id="L4102"><span class="tok-kw">const</span> Token = std.zig.Token;</span>
-<span class="line" id="L4103"></span>
-<span class="line" id="L4104"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L4105">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;parser_test.zig&quot;</span>);</span>
-<span class="line" id="L4106">}</span>
-<span class="line" id="L4107"></span>
+<span class="line" id="L3954">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> p.warn(.expected_comma_after_arg),</span>
+<span class="line" id="L3955">        }</span>
+<span class="line" id="L3956">    }</span>
+<span class="line" id="L3957">    <span class="tok-kw">const</span> comma = (p.token_tags[p.tok_i - <span class="tok-number">2</span>] == .comma);</span>
+<span class="line" id="L3958">    <span class="tok-kw">const</span> params = p.scratch.items[scratch_top..];</span>
+<span class="line" id="L3959">    <span class="tok-kw">switch</span> (params.len) {</span>
+<span class="line" id="L3960">        <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3961">            .tag = .builtin_call_two,</span>
+<span class="line" id="L3962">            .main_token = builtin_token,</span>
+<span class="line" id="L3963">            .data = .{</span>
+<span class="line" id="L3964">                .lhs = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3965">                .rhs = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3966">            },</span>
+<span class="line" id="L3967">        }),</span>
+<span class="line" id="L3968">        <span class="tok-number">1</span> =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3969">            .tag = <span class="tok-kw">if</span> (comma) .builtin_call_two_comma <span class="tok-kw">else</span> .builtin_call_two,</span>
+<span class="line" id="L3970">            .main_token = builtin_token,</span>
+<span class="line" id="L3971">            .data = .{</span>
+<span class="line" id="L3972">                .lhs = params[<span class="tok-number">0</span>],</span>
+<span class="line" id="L3973">                .rhs = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3974">            },</span>
+<span class="line" id="L3975">        }),</span>
+<span class="line" id="L3976">        <span class="tok-number">2</span> =&gt; <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3977">            .tag = <span class="tok-kw">if</span> (comma) .builtin_call_two_comma <span class="tok-kw">else</span> .builtin_call_two,</span>
+<span class="line" id="L3978">            .main_token = builtin_token,</span>
+<span class="line" id="L3979">            .data = .{</span>
+<span class="line" id="L3980">                .lhs = params[<span class="tok-number">0</span>],</span>
+<span class="line" id="L3981">                .rhs = params[<span class="tok-number">1</span>],</span>
+<span class="line" id="L3982">            },</span>
+<span class="line" id="L3983">        }),</span>
+<span class="line" id="L3984">        <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L3985">            <span class="tok-kw">const</span> span = <span class="tok-kw">try</span> p.listToSpan(params);</span>
+<span class="line" id="L3986">            <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L3987">                .tag = <span class="tok-kw">if</span> (comma) .builtin_call_comma <span class="tok-kw">else</span> .builtin_call,</span>
+<span class="line" id="L3988">                .main_token = builtin_token,</span>
+<span class="line" id="L3989">                .data = .{</span>
+<span class="line" id="L3990">                    .lhs = span.start,</span>
+<span class="line" id="L3991">                    .rhs = span.end,</span>
+<span class="line" id="L3992">                },</span>
+<span class="line" id="L3993">            });</span>
+<span class="line" id="L3994">        },</span>
+<span class="line" id="L3995">    }</span>
+<span class="line" id="L3996">}</span>
+<span class="line" id="L3997"></span>
+<span class="line" id="L3998"><span class="tok-comment">/// IfPrefix &lt;- KEYWORD_if LPAREN Expr RPAREN PtrPayload?</span></span>
+<span class="line" id="L3999"><span class="tok-kw">fn</span> <span class="tok-fn">parseIf</span>(p: *Parse, <span class="tok-kw">comptime</span> bodyParseFn: <span class="tok-kw">fn</span> (p: *Parse) Error!Node.Index) !Node.Index {</span>
+<span class="line" id="L4000">    <span class="tok-kw">const</span> if_token = p.eatToken(.keyword_if) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> null_node;</span>
+<span class="line" id="L4001">    _ = <span class="tok-kw">try</span> p.expectToken(.l_paren);</span>
+<span class="line" id="L4002">    <span class="tok-kw">const</span> condition = <span class="tok-kw">try</span> p.expectExpr();</span>
+<span class="line" id="L4003">    _ = <span class="tok-kw">try</span> p.expectToken(.r_paren);</span>
+<span class="line" id="L4004">    _ = <span class="tok-kw">try</span> p.parsePtrPayload();</span>
+<span class="line" id="L4005"></span>
+<span class="line" id="L4006">    <span class="tok-kw">const</span> then_expr = <span class="tok-kw">try</span> bodyParseFn(p);</span>
+<span class="line" id="L4007">    assert(then_expr != <span class="tok-number">0</span>);</span>
+<span class="line" id="L4008"></span>
+<span class="line" id="L4009">    _ = p.eatToken(.keyword_else) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L4010">        .tag = .if_simple,</span>
+<span class="line" id="L4011">        .main_token = if_token,</span>
+<span class="line" id="L4012">        .data = .{</span>
+<span class="line" id="L4013">            .lhs = condition,</span>
+<span class="line" id="L4014">            .rhs = then_expr,</span>
+<span class="line" id="L4015">        },</span>
+<span class="line" id="L4016">    });</span>
+<span class="line" id="L4017">    _ = <span class="tok-kw">try</span> p.parsePayload();</span>
+<span class="line" id="L4018">    <span class="tok-kw">const</span> else_expr = <span class="tok-kw">try</span> bodyParseFn(p);</span>
+<span class="line" id="L4019">    assert(else_expr != <span class="tok-number">0</span>);</span>
+<span class="line" id="L4020"></span>
+<span class="line" id="L4021">    <span class="tok-kw">return</span> p.addNode(.{</span>
+<span class="line" id="L4022">        .tag = .@&quot;if&quot;,</span>
+<span class="line" id="L4023">        .main_token = if_token,</span>
+<span class="line" id="L4024">        .data = .{</span>
+<span class="line" id="L4025">            .lhs = condition,</span>
+<span class="line" id="L4026">            .rhs = <span class="tok-kw">try</span> p.addExtra(Node.If{</span>
+<span class="line" id="L4027">                .then_expr = then_expr,</span>
+<span class="line" id="L4028">                .else_expr = else_expr,</span>
+<span class="line" id="L4029">            }),</span>
+<span class="line" id="L4030">        },</span>
+<span class="line" id="L4031">    });</span>
+<span class="line" id="L4032">}</span>
+<span class="line" id="L4033"></span>
+<span class="line" id="L4034"><span class="tok-comment">/// Skips over doc comment tokens. Returns the first one, if any.</span></span>
+<span class="line" id="L4035"><span class="tok-kw">fn</span> <span class="tok-fn">eatDocComments</span>(p: *Parse) !?TokenIndex {</span>
+<span class="line" id="L4036">    <span class="tok-kw">if</span> (p.eatToken(.doc_comment)) |tok| {</span>
+<span class="line" id="L4037">        <span class="tok-kw">var</span> first_line = tok;</span>
+<span class="line" id="L4038">        <span class="tok-kw">if</span> (tok &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> tokensOnSameLine(p, tok - <span class="tok-number">1</span>, tok)) {</span>
+<span class="line" id="L4039">            <span class="tok-kw">try</span> p.warnMsg(.{</span>
+<span class="line" id="L4040">                .tag = .same_line_doc_comment,</span>
+<span class="line" id="L4041">                .token = tok,</span>
+<span class="line" id="L4042">            });</span>
+<span class="line" id="L4043">            first_line = p.eatToken(.doc_comment) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L4044">        }</span>
+<span class="line" id="L4045">        <span class="tok-kw">while</span> (p.eatToken(.doc_comment)) |_| {}</span>
+<span class="line" id="L4046">        <span class="tok-kw">return</span> first_line;</span>
+<span class="line" id="L4047">    }</span>
+<span class="line" id="L4048">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L4049">}</span>
+<span class="line" id="L4050"></span>
+<span class="line" id="L4051"><span class="tok-kw">fn</span> <span class="tok-fn">tokensOnSameLine</span>(p: *Parse, token1: TokenIndex, token2: TokenIndex) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L4052">    <span class="tok-kw">return</span> std.mem.indexOfScalar(<span class="tok-type">u8</span>, p.source[p.token_starts[token1]..p.token_starts[token2]], <span class="tok-str">'\n'</span>) == <span class="tok-null">null</span>;</span>
+<span class="line" id="L4053">}</span>
+<span class="line" id="L4054"></span>
+<span class="line" id="L4055"><span class="tok-kw">fn</span> <span class="tok-fn">eatToken</span>(p: *Parse, tag: Token.Tag) ?TokenIndex {</span>
+<span class="line" id="L4056">    <span class="tok-kw">return</span> <span class="tok-kw">if</span> (p.token_tags[p.tok_i] == tag) p.nextToken() <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L4057">}</span>
+<span class="line" id="L4058"></span>
+<span class="line" id="L4059"><span class="tok-kw">fn</span> <span class="tok-fn">assertToken</span>(p: *Parse, tag: Token.Tag) TokenIndex {</span>
+<span class="line" id="L4060">    <span class="tok-kw">const</span> token = p.nextToken();</span>
+<span class="line" id="L4061">    assert(p.token_tags[token] == tag);</span>
+<span class="line" id="L4062">    <span class="tok-kw">return</span> token;</span>
+<span class="line" id="L4063">}</span>
+<span class="line" id="L4064"></span>
+<span class="line" id="L4065"><span class="tok-kw">fn</span> <span class="tok-fn">expectToken</span>(p: *Parse, tag: Token.Tag) Error!TokenIndex {</span>
+<span class="line" id="L4066">    <span class="tok-kw">if</span> (p.token_tags[p.tok_i] != tag) {</span>
+<span class="line" id="L4067">        <span class="tok-kw">return</span> p.failMsg(.{</span>
+<span class="line" id="L4068">            .tag = .expected_token,</span>
+<span class="line" id="L4069">            .token = p.tok_i,</span>
+<span class="line" id="L4070">            .extra = .{ .expected_tag = tag },</span>
+<span class="line" id="L4071">        });</span>
+<span class="line" id="L4072">    }</span>
+<span class="line" id="L4073">    <span class="tok-kw">return</span> p.nextToken();</span>
+<span class="line" id="L4074">}</span>
+<span class="line" id="L4075"></span>
+<span class="line" id="L4076"><span class="tok-kw">fn</span> <span class="tok-fn">expectSemicolon</span>(p: *Parse, error_tag: AstError.Tag, recoverable: <span class="tok-type">bool</span>) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L4077">    <span class="tok-kw">if</span> (p.token_tags[p.tok_i] == .semicolon) {</span>
+<span class="line" id="L4078">        _ = p.nextToken();</span>
+<span class="line" id="L4079">        <span class="tok-kw">return</span>;</span>
+<span class="line" id="L4080">    }</span>
+<span class="line" id="L4081">    <span class="tok-kw">try</span> p.warn(error_tag);</span>
+<span class="line" id="L4082">    <span class="tok-kw">if</span> (!recoverable) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.ParseError;</span>
+<span class="line" id="L4083">}</span>
+<span class="line" id="L4084"></span>
+<span class="line" id="L4085"><span class="tok-kw">fn</span> <span class="tok-fn">nextToken</span>(p: *Parse) TokenIndex {</span>
+<span class="line" id="L4086">    <span class="tok-kw">const</span> result = p.tok_i;</span>
+<span class="line" id="L4087">    p.tok_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L4088">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L4089">}</span>
+<span class="line" id="L4090"></span>
+<span class="line" id="L4091"><span class="tok-kw">const</span> null_node: Node.Index = <span class="tok-number">0</span>;</span>
+<span class="line" id="L4092"></span>
+<span class="line" id="L4093"><span class="tok-kw">const</span> Parse = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L4094"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../std.zig&quot;</span>);</span>
+<span class="line" id="L4095"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
+<span class="line" id="L4096"><span class="tok-kw">const</span> Allocator = std.mem.Allocator;</span>
+<span class="line" id="L4097"><span class="tok-kw">const</span> Ast = std.zig.Ast;</span>
+<span class="line" id="L4098"><span class="tok-kw">const</span> Node = Ast.Node;</span>
+<span class="line" id="L4099"><span class="tok-kw">const</span> AstError = Ast.Error;</span>
+<span class="line" id="L4100"><span class="tok-kw">const</span> TokenIndex = Ast.TokenIndex;</span>
+<span class="line" id="L4101"><span class="tok-kw">const</span> Token = std.zig.Token;</span>
+<span class="line" id="L4102"></span>
+<span class="line" id="L4103"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L4104">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;parser_test.zig&quot;</span>);</span>
+<span class="line" id="L4105">}</span>
+<span class="line" id="L4106"></span>
 </code></pre></body>
 </html>
