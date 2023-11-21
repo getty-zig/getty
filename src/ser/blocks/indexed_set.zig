@@ -36,7 +36,7 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
     if (str_keys.len == 0) {
         return struct {
             pub const Key = []const u8;
-            pub const count: usize = 0;
+            pub const count: comptime_int = 0;
             pub fn indexOf(k: Key) usize {
                 _ = k;
                 unreachable;
@@ -50,7 +50,7 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
 
     return struct {
         pub const Key = []const u8;
-        pub const count: usize = str_keys.len;
+        pub const count: comptime_int = str_keys.len;
         pub fn indexOf(k: Key) usize {
             for (str_keys, 0..) |key, i| {
                 if (std.mem.eql(u8, k, key)) {
