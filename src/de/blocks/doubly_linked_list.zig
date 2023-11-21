@@ -82,7 +82,7 @@ test "deserialize - std.DoublyLinkedList" {
 
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
-            var got_node = result.value.popFirst();
+            const got_node = result.value.popFirst();
 
             // Sanity node check.
             try testing.expect(t.name, got_node != null);
@@ -98,7 +98,7 @@ test "deserialize - std.DoublyLinkedList (recursive)" {
     const Parent = std.DoublyLinkedList(Child);
 
     var expected = Parent{};
-    var a = Child{};
+    const a = Child{};
     var b = Child{};
     var c = Child{};
 
@@ -148,7 +148,7 @@ test "deserialize - std.DoublyLinkedList (recursive)" {
 
         var inner_it = node.data.first;
         while (inner_it) |inner_node| : (inner_it = inner_node.next) {
-            var got_inner_node = got_node.?.data.popFirst();
+            const got_inner_node = got_node.?.data.popFirst();
 
             // Sanity inner node check.
             try std.testing.expect(got_inner_node != null);

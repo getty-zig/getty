@@ -96,7 +96,7 @@ test "serialize - std.IndexedMap" {
 
     // empty
     {
-        var map = std.enums.IndexedMap(Color, u32, null){};
+        const map = std.enums.IndexedMap(Color, u32, null){};
 
         try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },
@@ -146,7 +146,7 @@ test "serialize - std.EnumMap" {
 
     // empty
     {
-        var map = std.enums.EnumMap(Color, u32){};
+        const map = std.enums.EnumMap(Color, u32){};
 
         try t.run(null, serialize, map, &.{
             .{ .Map = .{ .len = 0 } },

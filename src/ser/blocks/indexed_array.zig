@@ -70,7 +70,7 @@ test "serialize - std.IndexedArray" {
 
     // empty
     {
-        var array = std.enums.IndexedArray(StringIndexer(&.{}), u32, null).initFill(0);
+        const array = std.enums.IndexedArray(StringIndexer(&.{}), u32, null).initFill(0);
 
         try t.run(null, serialize, array, &.{
             .{ .Seq = .{ .len = 0 } },

@@ -226,7 +226,7 @@ test "deserialize - std.EnumArray" {
                     arr.set(.large, 3);
                     break :res arr;
                 };
-                var want = std.enums.EnumArray(Color, SubArray).init(.{
+                const want = std.enums.EnumArray(Color, SubArray).init(.{
                     .red = sa_1,
                     .yellow = sa_2,
                     .blue = sa_3,

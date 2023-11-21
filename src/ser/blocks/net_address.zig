@@ -45,7 +45,7 @@ pub fn serialize(
 
     // UNREACHABLE: With the size values used in the array's declaration, there
     // should always be enough space for an IPv4 or IPv6 address.
-    var buf = std.fmt.bufPrint(&arr, "{}", .{value}) catch unreachable;
+    const buf = std.fmt.bufPrint(&arr, "{}", .{value}) catch unreachable;
 
     return try serializer.serializeString(buf);
 }
@@ -55,19 +55,19 @@ test "serialize - std.net.Address" {
     if (builtin.os.tag != .windows) {
         // IPv4
         {
-            var addr = std.net.Address.resolveIp("127.0.0.1", 80) catch return error.UnexpectedTestError;
+            const addr = std.net.Address.resolveIp("127.0.0.1", 80) catch return error.UnexpectedTestError;
             try t.run(null, serialize, addr, &.{.{ .String = "127.0.0.1:80" }});
         }
 
         // IPv6
         {
-            var addr = std.net.Address.resolveIp("2001:db8:3333:4444:5555:6666:7777:8888", 80) catch return error.UnexpectedTestError;
+            const addr = std.net.Address.resolveIp("2001:db8:3333:4444:5555:6666:7777:8888", 80) catch return error.UnexpectedTestError;
             try t.run(null, serialize, addr, &.{.{ .String = "[2001:db8:3333:4444:5555:6666:7777:8888]:80" }});
         }
 
         // IPv6 (shortened)
         {
-            var addr = std.net.Address.resolveIp("2001:db8:3333::7777:8888", 80) catch return error.UnexpectedTestError;
+            const addr = std.net.Address.resolveIp("2001:db8:3333::7777:8888", 80) catch return error.UnexpectedTestError;
             try t.run(null, serialize, addr, &.{.{ .String = "[2001:db8:3333::7777:8888]:80" }});
         }
     }

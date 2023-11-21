@@ -37,7 +37,7 @@ pub fn Visitor(comptime Int: type) type {
         ) Deserializer.Err!VisitStringReturn(Value) {
             defer if (lt == .heap) ally.free(input);
 
-            var int = std.fmt.parseInt(Value, input, 10) catch return error.InvalidValue;
+            const int = std.fmt.parseInt(Value, input, 10) catch return error.InvalidValue;
 
             return .{
                 .value = int,

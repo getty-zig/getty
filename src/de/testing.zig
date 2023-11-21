@@ -43,7 +43,7 @@ pub fn deserializeErr(
 
     var result = Result(Want){
         .arena = arena: {
-            var arena = try test_ally.create(std.heap.ArenaAllocator);
+            const arena = try test_ally.create(std.heap.ArenaAllocator);
             arena.* = std.heap.ArenaAllocator.init(test_ally);
 
             break :arena arena;
@@ -211,14 +211,14 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     .U64 => |v| try visitor.visitInt(ally, De, v),
                     .U128 => |v| try visitor.visitInt(ally, De, v),
                     inline .String, .StringZ => |v| blk: {
-                        var ret = try visitor.visitString(ally, De, v, .stack);
+                        const ret = try visitor.visitString(ally, De, v, .stack);
                         break :blk ret.value;
                     },
                     else => |v| std.debug.panic("deserialization did not expect this token: {s}", .{@tagName(v)}),
                 },
                 .Map => |v| blk: {
                     var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
-                    var value = try visitor.visitMap(ally, De, m.mapAccess());
+                    const value = try visitor.visitMap(ally, De, m.mapAccess());
 
                     try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.MapEnd);
@@ -228,13 +228,13 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 .Null => try visitor.visitNull(ally, De),
                 .Some => try visitor.visitSome(ally, self.deserializer()),
                 inline .String, .StringZ => |v| blk: {
-                    var ret = try visitor.visitString(ally, De, v, self.str_lifetime);
+                    const ret = try visitor.visitString(ally, De, v, self.str_lifetime);
                     break :blk ret.value;
                 },
                 .Void => try visitor.visitVoid(ally, De),
                 .Seq => |v| blk: {
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
-                    var value = try visitor.visitSeq(ally, De, s.seqAccess());
+                    const value = try visitor.visitSeq(ally, De, s.seqAccess());
 
                     try expectEqual(@as(usize, 0), s.len.?);
                     try self.assertNextToken(.SeqEnd);
@@ -243,7 +243,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                 },
                 .Struct => |v| blk: {
                     var m = Map{ .de = self, .len = v.len, .end = .StructEnd };
-                    var value = try visitor.visitMap(ally, De, m.mapAccess());
+                    const value = try visitor.visitMap(ally, De, m.mapAccess());
 
                     try expectEqual(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.StructEnd);

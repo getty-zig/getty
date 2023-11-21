@@ -73,7 +73,7 @@ pub fn serialize(
         //
         // Initially, name is set to field's name. But field has the "rename"
         // attribute set, name is set to the attribute's value.
-        comptime var name = blk: {
+        const name = comptime blk: {
             var n = field.name;
 
             if (attrs) |a| {

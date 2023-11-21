@@ -77,7 +77,7 @@ test "serialize - std.ArrayBitSet" {
 
     // Empty
     {
-        var want = std.StaticBitSet(size).initEmpty();
+        const want = std.StaticBitSet(size).initEmpty();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = size } },
@@ -153,7 +153,7 @@ test "serialize - std.ArrayBitSet" {
 
     // Full
     {
-        var want = std.StaticBitSet(size).initFull();
+        const want = std.StaticBitSet(size).initFull();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = size } },

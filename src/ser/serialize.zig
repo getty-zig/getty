@@ -263,7 +263,7 @@ test "serialize - priority" {
 
     // Serializer SB > Default SB
     {
-        var v = Point{ .x = 1, .y = 2 };
+        const v = Point{ .x = 1, .y = 2 };
 
         const serializer_block = struct {
             pub fn is(comptime T: type) bool {

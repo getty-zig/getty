@@ -64,7 +64,7 @@ pub fn Visitor(comptime Struct: type) type {
                     // Initially, name is set to field's name. But field has
                     // the "rename" attribute set, name is set to the
                     // attribute's value.
-                    comptime var name = name: {
+                    const name = comptime name: {
                         var name = field.name;
 
                         if (attrs) |a| {
@@ -79,7 +79,7 @@ pub fn Visitor(comptime Struct: type) type {
                     // any of its aliases, deserialize the field.
                     const name_cmp = std.mem.eql(u8, name, key);
                     const aliases_cmp = aliases_cmp: {
-                        comptime var aliases = aliases: {
+                        const aliases = comptime aliases: {
                             if (attrs) |a| {
                                 const aliased = @hasField(@TypeOf(a), "aliases");
                                 if (aliased) break :aliases a.aliases;

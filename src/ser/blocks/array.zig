@@ -34,7 +34,7 @@ pub fn serialize(
 test "serialize - array" {
     // empty
     {
-        var arr = [_]i32{};
+        const arr = [_]i32{};
 
         try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 0 } },
@@ -44,7 +44,7 @@ test "serialize - array" {
 
     // non-empty
     {
-        var arr = [_]i32{ 1, 2, 3 };
+        const arr = [_]i32{ 1, 2, 3 };
 
         try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 3 } },

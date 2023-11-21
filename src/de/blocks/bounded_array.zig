@@ -80,7 +80,7 @@ test "deserialize - std.BoundedArray (recursive)" {
     const Parent = std.BoundedArray(Child, 3);
 
     var expected = Parent.init(0) catch return error.UnexpectedTestError;
-    var a = Child.init(0) catch return error.UnexpectedTestError;
+    const a = Child.init(0) catch return error.UnexpectedTestError;
     var b = Child.init(0) catch return error.UnexpectedTestError;
     var c = Child.init(0) catch return error.UnexpectedTestError;
 

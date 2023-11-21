@@ -36,7 +36,7 @@ pub fn serialize(
 test "serialize - pointer" {
     // one level of indirection
     {
-        var ptr = try std.testing.allocator.create(i32);
+        const ptr = try std.testing.allocator.create(i32);
         defer std.testing.allocator.destroy(ptr);
         ptr.* = @as(i32, 1);
 
@@ -45,11 +45,11 @@ test "serialize - pointer" {
 
     // two levels of indirection
     {
-        var tmp = try std.testing.allocator.create(i32);
+        const tmp = try std.testing.allocator.create(i32);
         defer std.testing.allocator.destroy(tmp);
         tmp.* = 2;
 
-        var ptr = try std.testing.allocator.create(*i32);
+        const ptr = try std.testing.allocator.create(*i32);
         defer std.testing.allocator.destroy(ptr);
         ptr.* = tmp;
 
@@ -58,7 +58,7 @@ test "serialize - pointer" {
 
     // pointer to slice
     {
-        var ptr = try std.testing.allocator.create([]const u8);
+        const ptr = try std.testing.allocator.create([]const u8);
         defer std.testing.allocator.destroy(ptr);
         ptr.* = "3";
 

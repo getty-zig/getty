@@ -101,7 +101,7 @@ pub fn Visitor(comptime NetAddress: type) type {
             }
 
             const end = addr_port_len - port_len - 1; // The 1 is for the colon separator.
-            var addr = std.net.Address.resolveIp(addr_port_str[0..end], port) catch return error.InvalidValue;
+            const addr = std.net.Address.resolveIp(addr_port_str[0..end], port) catch return error.InvalidValue;
 
             return .{ .value = addr, .used = false };
         }

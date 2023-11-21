@@ -22,7 +22,7 @@ pub fn deserialize(
 
     var result = Result(T){
         .arena = arena: {
-            var arena = try ally.create(std.heap.ArenaAllocator);
+            const arena = try ally.create(std.heap.ArenaAllocator);
             arena.* = std.heap.ArenaAllocator.init(ally);
 
             break :arena arena;

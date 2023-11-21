@@ -20,7 +20,7 @@ pub fn Visitor(comptime Union: type) type {
 
             const attributes = comptime getAttributes(Value, Deserializer);
 
-            var variant = try ua.variant(ally, []const u8);
+            const variant = try ua.variant(ally, []const u8);
 
             inline for (std.meta.fields(Value)) |f| {
                 const attrs = comptime attrs: {
@@ -34,7 +34,7 @@ pub fn Visitor(comptime Union: type) type {
                     break :attrs null;
                 };
 
-                comptime var name = name: {
+                const name = comptime name: {
                     var name = f.name;
 
                     if (attrs) |a| {
@@ -49,7 +49,7 @@ pub fn Visitor(comptime Union: type) type {
                 // any of its aliases, deserialize the field.
                 const name_cmp = std.mem.eql(u8, name, variant);
                 const aliases_cmp = aliases_cmp: {
-                    comptime var aliases = aliases: {
+                    const aliases = comptime aliases: {
                         if (attrs) |a| {
                             const aliased = @hasField(@TypeOf(a), "aliases");
                             if (aliased) break :aliases a.aliases;

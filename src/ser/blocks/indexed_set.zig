@@ -70,7 +70,7 @@ test "serialize - std.IndexedSet" {
 
     // Zero-sized
     {
-        var want = std.enums.IndexedSet(StringIndexer(&.{}), null).initEmpty();
+        const want = std.enums.IndexedSet(StringIndexer(&.{}), null).initEmpty();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 0 } },
@@ -80,7 +80,7 @@ test "serialize - std.IndexedSet" {
 
     // Empty
     {
-        var want = std.enums.IndexedSet(Color, null).initEmpty();
+        const want = std.enums.IndexedSet(Color, null).initEmpty();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },
@@ -98,7 +98,7 @@ test "serialize - std.IndexedSet" {
 
     // Full
     {
-        var want = std.enums.IndexedSet(Color, null).initFull();
+        const want = std.enums.IndexedSet(Color, null).initFull();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },
@@ -116,7 +116,7 @@ test "serialize - std.IndexedSet" {
 
     // Mixed
     {
-        var want = std.enums.IndexedSet(Color, null).initMany(&.{ "yellow", "green", "violet", "magenta" });
+        const want = std.enums.IndexedSet(Color, null).initMany(&.{ "yellow", "green", "violet", "magenta" });
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },
@@ -151,7 +151,7 @@ test "serialize - std.EnumSet" {
 
     // Empty
     {
-        var want = std.enums.EnumSet(Color).initEmpty();
+        const want = std.enums.EnumSet(Color).initEmpty();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },
@@ -169,7 +169,7 @@ test "serialize - std.EnumSet" {
 
     // Full
     {
-        var want = std.enums.EnumSet(Color).initFull();
+        const want = std.enums.EnumSet(Color).initFull();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },
@@ -187,7 +187,7 @@ test "serialize - std.EnumSet" {
 
     // Mixed
     {
-        var want = std.enums.EnumSet(Color).init(.{ .yellow = true, .green = true, .violet = true, .magenta = true });
+        const want = std.enums.EnumSet(Color).init(.{ .yellow = true, .green = true, .violet = true, .magenta = true });
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },

@@ -30,7 +30,7 @@ pub fn Visitor(comptime Enum: type) type {
 
             const fields = std.meta.fields(Value);
             const attributes = comptime getAttributes(Value, Deserializer);
-            var e = std.meta.intToEnum(Value, input) catch return error.InvalidValue;
+            const e = std.meta.intToEnum(Value, input) catch return error.InvalidValue;
 
             if (attributes) |attrs| {
                 inline for (fields) |field| {
@@ -90,7 +90,7 @@ pub fn Visitor(comptime Enum: type) type {
 
                 const name_cmp = std.mem.eql(u8, name, input);
                 const aliases_cmp = aliases_cmp: {
-                    comptime var aliases = aliases: {
+                    const aliases = comptime aliases: {
                         if (attrs) |a| {
                             const aliased = @hasField(@TypeOf(a), "aliases");
                             if (aliased) break :aliases a.aliases;
@@ -109,7 +109,7 @@ pub fn Visitor(comptime Enum: type) type {
                 };
 
                 if (name_cmp or aliases_cmp) {
-                    var e = std.meta.stringToEnum(Value, field.name) orelse return error.UnknownVariant;
+                    const e = std.meta.stringToEnum(Value, field.name) orelse return error.UnknownVariant;
                     return .{ .value = e, .used = false };
                 }
             }

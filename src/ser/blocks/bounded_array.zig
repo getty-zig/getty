@@ -34,7 +34,7 @@ pub fn serialize(
 test "serialize - bounded array" {
     // empty
     {
-        var arr = try std.BoundedArray(u8, 10).fromSlice(&[_]u8{});
+        const arr = try std.BoundedArray(u8, 10).fromSlice(&[_]u8{});
 
         try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 0 } },
@@ -44,7 +44,7 @@ test "serialize - bounded array" {
 
     // non-empty
     {
-        var arr = try std.BoundedArray(u8, 5).fromSlice(&[_]u8{1} ** 5);
+        const arr = try std.BoundedArray(u8, 5).fromSlice(&[_]u8{1} ** 5);
 
         try t.run(null, serialize, arr, &.{
             .{ .Seq = .{ .len = 5 } },

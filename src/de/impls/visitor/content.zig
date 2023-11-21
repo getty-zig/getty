@@ -84,7 +84,7 @@ fn visitSeq(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, se
 
 fn visitSome(_: @This(), ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!Content {
     return .{ .Some = some: {
-        var result = try getty_deserialize(ally, *Content, deserializer);
+        const result = try getty_deserialize(ally, *Content, deserializer);
         break :some result.value;
     } };
 }
@@ -110,8 +110,8 @@ fn visitString(
 }
 
 fn visitUnion(_: @This(), ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!Content {
-    var variant = try ua.variant(ally, Content);
-    var payload = try va.payload(ally, Content);
+    const variant = try ua.variant(ally, Content);
+    const payload = try va.payload(ally, Content);
 
     var map = ContentMultiArrayList{};
     errdefer map.deinit(ally);

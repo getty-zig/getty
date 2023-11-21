@@ -46,7 +46,7 @@ pub fn serialize(
 test "serialize - std.PackedIntArray" {
     // Native endian
     {
-        var array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
+        const array = std.PackedIntArray(u8, 3).init([_]u8{ 1, 2, 3 });
 
         try t.run(null, serialize, array, &.{
             .{ .Seq = .{ .len = 3 } },
@@ -59,7 +59,7 @@ test "serialize - std.PackedIntArray" {
 
     // Custom endian
     {
-        var array = std.PackedIntArrayEndian(u8, .big, 3).init([_]u8{ 1, 2, 3 });
+        const array = std.PackedIntArrayEndian(u8, .big, 3).init([_]u8{ 1, 2, 3 });
 
         try t.run(null, serialize, array, &.{
             .{ .Seq = .{ .len = 3 } },

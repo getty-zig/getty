@@ -88,7 +88,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
         }
 
         fn serializeFloat(self: *Self, v: anytype) Error!Ok {
-            var expected = switch (@typeInfo(@TypeOf(v))) {
+            const expected = switch (@typeInfo(@TypeOf(v))) {
                 .ComptimeFloat => Token{ .ComptimeFloat = {} },
                 .Float => |info| switch (info.bits) {
                     16 => Token{ .F16 = v },
@@ -104,7 +104,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
         }
 
         fn serializeInt(self: *Self, v: anytype) Error!Ok {
-            var expected = switch (@typeInfo(@TypeOf(v))) {
+            const expected = switch (@typeInfo(@TypeOf(v))) {
                 .ComptimeInt => Token{ .ComptimeInt = {} },
                 .Int => |info| switch (info.signedness) {
                     .signed => switch (info.bits) {

@@ -19,7 +19,7 @@ pub fn Visitor(comptime SinglyLinkedList: type) type {
 
             var current: ?*Value.Node = null;
             while (try seq.nextElement(ally, Value.Node.Data)) |value| {
-                var node = try ally.create(Value.Node);
+                const node = try ally.create(Value.Node);
                 node.* = .{ .data = value };
 
                 if (current) |c| {

@@ -52,7 +52,7 @@ pub fn serialize(
 test "serialize - std.IntegerBitSet" {
     // Zero-sized
     {
-        var want = std.StaticBitSet(0).initEmpty();
+        const want = std.StaticBitSet(0).initEmpty();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 0 } },
@@ -62,7 +62,7 @@ test "serialize - std.IntegerBitSet" {
 
     // Empty
     {
-        var want = std.StaticBitSet(8).initEmpty();
+        const want = std.StaticBitSet(8).initEmpty();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },
@@ -80,7 +80,7 @@ test "serialize - std.IntegerBitSet" {
 
     // Full
     {
-        var want = std.StaticBitSet(8).initFull();
+        const want = std.StaticBitSet(8).initFull();
 
         try t.run(null, serialize, want, &.{
             .{ .Seq = .{ .len = 8 } },

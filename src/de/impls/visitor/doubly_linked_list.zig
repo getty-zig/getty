@@ -20,7 +20,7 @@ pub fn Visitor(comptime DoublyLinkedList: type) type {
             const Child = std.meta.fieldInfo(Value.Node, .data).type;
 
             while (try seq.nextElement(ally, Child)) |value| {
-                var node = try ally.create(Value.Node);
+                const node = try ally.create(Value.Node);
                 node.* = .{ .data = value };
                 list.append(node);
             }
