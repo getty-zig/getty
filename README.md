@@ -67,7 +67,7 @@ pub fn build(b: *std.Build) void {
 .{
     .name = "quick-start",
     .version = "0.1.0",
-    .path = .{""},
+    .paths = .{""},
     .dependencies = .{
         .json = .{
             .url = "https://github.com/getty-zig/json/archive/3e3cf7b.tar.gz",
