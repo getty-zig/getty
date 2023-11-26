@@ -150,360 +150,350 @@
 <span class="line" id="L36">    <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>,</span>
 <span class="line" id="L37">    input: []<span class="tok-kw">const</span> Token,</span>
 <span class="line" id="L38">) !Result(Want) {</span>
-<span class="line" id="L39">    <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L40">        std.debug.assert(<span class="tok-builtin">@typeInfo</span>(block) == .Struct);</span>
-<span class="line" id="L41">        std.debug.assert(std.meta.trait.hasFunctions(block, .{ <span class="tok-str">&quot;deserialize&quot;</span>, <span class="tok-str">&quot;Visitor&quot;</span> }));</span>
-<span class="line" id="L42">    }</span>
+<span class="line" id="L39">    <span class="tok-kw">var</span> result = Result(Want){</span>
+<span class="line" id="L40">        .arena = arena: {</span>
+<span class="line" id="L41">            <span class="tok-kw">const</span> arena = <span class="tok-kw">try</span> test_ally.create(std.heap.ArenaAllocator);</span>
+<span class="line" id="L42">            arena.* = std.heap.ArenaAllocator.init(test_ally);</span>
 <span class="line" id="L43"></span>
-<span class="line" id="L44">    <span class="tok-kw">var</span> result = Result(Want){</span>
-<span class="line" id="L45">        .arena = arena: {</span>
-<span class="line" id="L46">            <span class="tok-kw">const</span> arena = <span class="tok-kw">try</span> test_ally.create(std.heap.ArenaAllocator);</span>
-<span class="line" id="L47">            arena.* = std.heap.ArenaAllocator.init(test_ally);</span>
-<span class="line" id="L48"></span>
-<span class="line" id="L49">            <span class="tok-kw">break</span> :arena arena;</span>
-<span class="line" id="L50">        },</span>
-<span class="line" id="L51">        .value = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L52">    };</span>
-<span class="line" id="L53">    <span class="tok-kw">errdefer</span> result.deinit();</span>
+<span class="line" id="L44">            <span class="tok-kw">break</span> :arena arena;</span>
+<span class="line" id="L45">        },</span>
+<span class="line" id="L46">        .value = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L47">    };</span>
+<span class="line" id="L48">    <span class="tok-kw">errdefer</span> result.deinit();</span>
+<span class="line" id="L49"></span>
+<span class="line" id="L50">    <span class="tok-kw">const</span> arena_ally = result.arena.allocator();</span>
+<span class="line" id="L51"></span>
+<span class="line" id="L52">    <span class="tok-kw">var</span> d = DefaultDeserializer.init(input);</span>
+<span class="line" id="L53">    <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
 <span class="line" id="L54"></span>
-<span class="line" id="L55">    <span class="tok-kw">const</span> arena_ally = result.arena.allocator();</span>
-<span class="line" id="L56"></span>
-<span class="line" id="L57">    <span class="tok-kw">var</span> d = DefaultDeserializer.init(input);</span>
-<span class="line" id="L58">    <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
+<span class="line" id="L55">    <span class="tok-kw">var</span> v = block.Visitor(Want){};</span>
+<span class="line" id="L56">    <span class="tok-kw">const</span> visitor = v.visitor();</span>
+<span class="line" id="L57"></span>
+<span class="line" id="L58">    result.value = <span class="tok-kw">try</span> block.deserialize(arena_ally, Want, deserializer, visitor);</span>
 <span class="line" id="L59"></span>
-<span class="line" id="L60">    <span class="tok-kw">var</span> v = block.Visitor(Want){};</span>
-<span class="line" id="L61">    <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L62"></span>
-<span class="line" id="L63">    result.value = <span class="tok-kw">try</span> block.deserialize(arena_ally, Want, deserializer, visitor);</span>
+<span class="line" id="L60">    <span class="tok-kw">try</span> std.testing.expect(d.remaining() == <span class="tok-number">0</span>);</span>
+<span class="line" id="L61"></span>
+<span class="line" id="L62">    <span class="tok-kw">return</span> result;</span>
+<span class="line" id="L63">}</span>
 <span class="line" id="L64"></span>
-<span class="line" id="L65">    <span class="tok-kw">try</span> std.testing.expect(d.remaining() == <span class="tok-number">0</span>);</span>
-<span class="line" id="L66"></span>
-<span class="line" id="L67">    <span class="tok-kw">return</span> result;</span>
-<span class="line" id="L68">}</span>
-<span class="line" id="L69"></span>
-<span class="line" id="L70"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserializeWithLifetime</span>(</span>
-<span class="line" id="L71">    ally: ?std.mem.Allocator,</span>
-<span class="line" id="L72">    <span class="tok-kw">comptime</span> test_case: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L73">    <span class="tok-kw">comptime</span> block: <span class="tok-type">type</span>,</span>
-<span class="line" id="L74">    <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>,</span>
-<span class="line" id="L75">    input: []<span class="tok-kw">const</span> Token,</span>
-<span class="line" id="L76">    lifetime: StringLifetime,</span>
-<span class="line" id="L77">) !Want {</span>
-<span class="line" id="L78">    <span class="tok-kw">return</span> deserializeErrWithLifetime(ally, block, Want, input, lifetime) <span class="tok-kw">catch</span> |e| {</span>
-<span class="line" id="L79">        <span class="tok-kw">if</span> (test_case) |t| {</span>
-<span class="line" id="L80">            <span class="tok-kw">return</span> testing.logErr(t, e);</span>
-<span class="line" id="L81">        }</span>
-<span class="line" id="L82"></span>
-<span class="line" id="L83">        <span class="tok-kw">return</span> e;</span>
-<span class="line" id="L84">    };</span>
-<span class="line" id="L85">}</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserializeErrWithLifetime</span>(</span>
-<span class="line" id="L88">    ally: ?std.mem.Allocator,</span>
-<span class="line" id="L89">    <span class="tok-kw">comptime</span> block: <span class="tok-type">type</span>,</span>
-<span class="line" id="L90">    <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>,</span>
-<span class="line" id="L91">    input: []<span class="tok-kw">const</span> Token,</span>
-<span class="line" id="L92">    lifetime: StringLifetime,</span>
-<span class="line" id="L93">) !Want {</span>
-<span class="line" id="L94">    <span class="tok-kw">comptime</span> {</span>
-<span class="line" id="L95">        std.debug.assert(<span class="tok-builtin">@typeInfo</span>(block) == .Struct);</span>
-<span class="line" id="L96">        std.debug.assert(std.meta.trait.hasFunctions(block, .{ <span class="tok-str">&quot;deserialize&quot;</span>, <span class="tok-str">&quot;Visitor&quot;</span> }));</span>
-<span class="line" id="L97">    }</span>
-<span class="line" id="L98"></span>
-<span class="line" id="L99">    <span class="tok-kw">var</span> d = DefaultDeserializer{</span>
-<span class="line" id="L100">        .tokens = input,</span>
-<span class="line" id="L101">        .str_lifetime = lifetime,</span>
-<span class="line" id="L102">    };</span>
-<span class="line" id="L103">    <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
+<span class="line" id="L65"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserializeWithLifetime</span>(</span>
+<span class="line" id="L66">    ally: ?std.mem.Allocator,</span>
+<span class="line" id="L67">    <span class="tok-kw">comptime</span> test_case: ?[]<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L68">    <span class="tok-kw">comptime</span> block: <span class="tok-type">type</span>,</span>
+<span class="line" id="L69">    <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>,</span>
+<span class="line" id="L70">    input: []<span class="tok-kw">const</span> Token,</span>
+<span class="line" id="L71">    lifetime: StringLifetime,</span>
+<span class="line" id="L72">) !Want {</span>
+<span class="line" id="L73">    <span class="tok-kw">return</span> deserializeErrWithLifetime(ally, block, Want, input, lifetime) <span class="tok-kw">catch</span> |e| {</span>
+<span class="line" id="L74">        <span class="tok-kw">if</span> (test_case) |t| {</span>
+<span class="line" id="L75">            <span class="tok-kw">return</span> testing.logErr(t, e);</span>
+<span class="line" id="L76">        }</span>
+<span class="line" id="L77"></span>
+<span class="line" id="L78">        <span class="tok-kw">return</span> e;</span>
+<span class="line" id="L79">    };</span>
+<span class="line" id="L80">}</span>
+<span class="line" id="L81"></span>
+<span class="line" id="L82"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserializeErrWithLifetime</span>(</span>
+<span class="line" id="L83">    ally: ?std.mem.Allocator,</span>
+<span class="line" id="L84">    <span class="tok-kw">comptime</span> block: <span class="tok-type">type</span>,</span>
+<span class="line" id="L85">    <span class="tok-kw">comptime</span> Want: <span class="tok-type">type</span>,</span>
+<span class="line" id="L86">    input: []<span class="tok-kw">const</span> Token,</span>
+<span class="line" id="L87">    lifetime: StringLifetime,</span>
+<span class="line" id="L88">) !Want {</span>
+<span class="line" id="L89">    <span class="tok-kw">var</span> d = DefaultDeserializer{</span>
+<span class="line" id="L90">        .tokens = input,</span>
+<span class="line" id="L91">        .str_lifetime = lifetime,</span>
+<span class="line" id="L92">    };</span>
+<span class="line" id="L93">    <span class="tok-kw">const</span> deserializer = d.deserializer();</span>
+<span class="line" id="L94"></span>
+<span class="line" id="L95">    <span class="tok-kw">var</span> v = block.Visitor(Want){};</span>
+<span class="line" id="L96">    <span class="tok-kw">const</span> visitor = v.visitor();</span>
+<span class="line" id="L97"></span>
+<span class="line" id="L98">    <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> block.deserialize(ally, Want, deserializer, visitor);</span>
+<span class="line" id="L99"></span>
+<span class="line" id="L100">    <span class="tok-kw">try</span> std.testing.expect(d.remaining() == <span class="tok-number">0</span>);</span>
+<span class="line" id="L101"></span>
+<span class="line" id="L102">    <span class="tok-kw">return</span> got;</span>
+<span class="line" id="L103">}</span>
 <span class="line" id="L104"></span>
-<span class="line" id="L105">    <span class="tok-kw">var</span> v = block.Visitor(Want){};</span>
-<span class="line" id="L106">    <span class="tok-kw">const</span> visitor = v.visitor();</span>
-<span class="line" id="L107"></span>
-<span class="line" id="L108">    <span class="tok-kw">const</span> got = <span class="tok-kw">try</span> block.deserialize(ally, Want, deserializer, visitor);</span>
+<span class="line" id="L105"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Deserializer</span>(<span class="tok-kw">comptime</span> user_dbt: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> deserializer_dbt: <span class="tok-kw">anytype</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L106">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L107">        tokens: []<span class="tok-kw">const</span> Token,</span>
+<span class="line" id="L108">        str_lifetime: StringLifetime = .stack,</span>
 <span class="line" id="L109"></span>
-<span class="line" id="L110">    <span class="tok-kw">try</span> std.testing.expect(d.remaining() == <span class="tok-number">0</span>);</span>
+<span class="line" id="L110">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
 <span class="line" id="L111"></span>
-<span class="line" id="L112">    <span class="tok-kw">return</span> got;</span>
-<span class="line" id="L113">}</span>
-<span class="line" id="L114"></span>
-<span class="line" id="L115"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Deserializer</span>(<span class="tok-kw">comptime</span> user_dbt: <span class="tok-kw">anytype</span>, <span class="tok-kw">comptime</span> deserializer_dbt: <span class="tok-kw">anytype</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L116">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L117">        tokens: []<span class="tok-kw">const</span> Token,</span>
-<span class="line" id="L118">        str_lifetime: StringLifetime = .stack,</span>
+<span class="line" id="L112">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(tokens: []<span class="tok-kw">const</span> Token) Self {</span>
+<span class="line" id="L113">            <span class="tok-kw">return</span> .{ .tokens = tokens };</span>
+<span class="line" id="L114">        }</span>
+<span class="line" id="L115"></span>
+<span class="line" id="L116">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">remaining</span>(self: Self) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L117">            <span class="tok-kw">return</span> self.tokens.len;</span>
+<span class="line" id="L118">        }</span>
 <span class="line" id="L119"></span>
-<span class="line" id="L120">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L121"></span>
-<span class="line" id="L122">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(tokens: []<span class="tok-kw">const</span> Token) Self {</span>
-<span class="line" id="L123">            <span class="tok-kw">return</span> .{ .tokens = tokens };</span>
-<span class="line" id="L124">        }</span>
-<span class="line" id="L125"></span>
-<span class="line" id="L126">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">remaining</span>(self: Self) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L127">            <span class="tok-kw">return</span> self.tokens.len;</span>
-<span class="line" id="L128">        }</span>
-<span class="line" id="L129"></span>
-<span class="line" id="L130">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextTokenOpt</span>(self: *Self) ?Token {</span>
-<span class="line" id="L131">            <span class="tok-kw">switch</span> (self.remaining()) {</span>
-<span class="line" id="L132">                <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L133">                <span class="tok-kw">else</span> =&gt; |len| {</span>
-<span class="line" id="L134">                    <span class="tok-kw">const</span> first = self.tokens[<span class="tok-number">0</span>];</span>
-<span class="line" id="L135">                    self.tokens = <span class="tok-kw">if</span> (len == <span class="tok-number">1</span>) &amp;[_]Token{} <span class="tok-kw">else</span> self.tokens[<span class="tok-number">1</span>..];</span>
-<span class="line" id="L136">                    <span class="tok-kw">return</span> first;</span>
-<span class="line" id="L137">                },</span>
-<span class="line" id="L138">            }</span>
-<span class="line" id="L139">        }</span>
-<span class="line" id="L140"></span>
-<span class="line" id="L141">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextToken</span>(self: *Self) Token {</span>
-<span class="line" id="L142">            <span class="tok-kw">switch</span> (self.remaining()) {</span>
-<span class="line" id="L143">                <span class="tok-number">0</span> =&gt; std.debug.panic(<span class="tok-str">&quot;ran out of tokens to deserialize&quot;</span>, .{}),</span>
-<span class="line" id="L144">                <span class="tok-kw">else</span> =&gt; |len| {</span>
-<span class="line" id="L145">                    <span class="tok-kw">const</span> first = self.tokens[<span class="tok-number">0</span>];</span>
-<span class="line" id="L146">                    self.tokens = <span class="tok-kw">if</span> (len == <span class="tok-number">1</span>) &amp;[_]Token{} <span class="tok-kw">else</span> self.tokens[<span class="tok-number">1</span>..];</span>
-<span class="line" id="L147">                    <span class="tok-kw">return</span> first;</span>
-<span class="line" id="L148">                },</span>
-<span class="line" id="L149">            }</span>
-<span class="line" id="L150">        }</span>
-<span class="line" id="L151"></span>
-<span class="line" id="L152">        <span class="tok-kw">fn</span> <span class="tok-fn">peekTokenOpt</span>(self: Self) ?Token {</span>
-<span class="line" id="L153">            <span class="tok-kw">return</span> <span class="tok-kw">if</span> (self.tokens.len &gt; <span class="tok-number">0</span>) self.tokens[<span class="tok-number">0</span>] <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L154">        }</span>
-<span class="line" id="L155"></span>
-<span class="line" id="L156">        <span class="tok-kw">fn</span> <span class="tok-fn">peekToken</span>(self: Self) Token {</span>
-<span class="line" id="L157">            <span class="tok-kw">if</span> (self.peekTokenOpt()) |token| {</span>
-<span class="line" id="L158">                <span class="tok-kw">return</span> token;</span>
-<span class="line" id="L159">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L160">                std.debug.panic(<span class="tok-str">&quot;ran out of tokens to deserialize&quot;</span>, .{});</span>
-<span class="line" id="L161">            }</span>
-<span class="line" id="L162">        }</span>
-<span class="line" id="L163"></span>
-<span class="line" id="L164">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> DeserializerInterface(</span>
-<span class="line" id="L165">            *Self,</span>
-<span class="line" id="L166">            Error,</span>
-<span class="line" id="L167">            user_dbt,</span>
-<span class="line" id="L168">            deserializer_dbt,</span>
-<span class="line" id="L169">            .{</span>
-<span class="line" id="L170">                .deserializeAny = deserializeAny,</span>
-<span class="line" id="L171">                .deserializeBool = deserializeAny,</span>
-<span class="line" id="L172">                .deserializeEnum = deserializeAny,</span>
-<span class="line" id="L173">                .deserializeFloat = deserializeAny,</span>
-<span class="line" id="L174">                .deserializeInt = deserializeAny,</span>
-<span class="line" id="L175">                .deserializeIgnored = deserializeIgnored,</span>
-<span class="line" id="L176">                .deserializeMap = deserializeAny,</span>
-<span class="line" id="L177">                .deserializeOptional = deserializeAny,</span>
-<span class="line" id="L178">                .deserializeSeq = deserializeAny,</span>
-<span class="line" id="L179">                .deserializeString = deserializeAny,</span>
-<span class="line" id="L180">                .deserializeStruct = deserializeAny,</span>
-<span class="line" id="L181">                .deserializeUnion = deserializeAny,</span>
-<span class="line" id="L182">                .deserializeVoid = deserializeAny,</span>
-<span class="line" id="L183">            },</span>
-<span class="line" id="L184">        );</span>
-<span class="line" id="L185"></span>
-<span class="line" id="L186">        <span class="tok-kw">const</span> Error = err.Error || <span class="tok-kw">error</span>{TestExpectedEqual};</span>
-<span class="line" id="L187"></span>
-<span class="line" id="L188">        <span class="tok-kw">const</span> De = Self.@&quot;getty.Deserializer&quot;;</span>
-<span class="line" id="L189"></span>
-<span class="line" id="L190">        <span class="tok-kw">fn</span> <span class="tok-fn">deserializeAny</span>(self: *Self, ally: std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L191">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.nextToken()) {</span>
-<span class="line" id="L192">                .Bool =&gt; |v| <span class="tok-kw">try</span> visitor.visitBool(ally, De, v),</span>
-<span class="line" id="L193">                .I8 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L194">                .I16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L195">                .I32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L196">                .I64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L197">                .I128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L198">                .U8 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L199">                .U16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L200">                .U32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L201">                .U64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L202">                .U128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L203">                .F16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
-<span class="line" id="L204">                .F32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
-<span class="line" id="L205">                .F64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
-<span class="line" id="L206">                .F128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
-<span class="line" id="L207">                .Enum =&gt; <span class="tok-kw">switch</span> (self.nextToken()) {</span>
-<span class="line" id="L208">                    .U8 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L209">                    .U16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L210">                    .U32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L211">                    .U64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L212">                    .U128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
-<span class="line" id="L213">                    <span class="tok-kw">inline</span> .String, .StringZ =&gt; |v| blk: {</span>
-<span class="line" id="L214">                        <span class="tok-kw">const</span> ret = <span class="tok-kw">try</span> visitor.visitString(ally, De, v, .stack);</span>
-<span class="line" id="L215">                        <span class="tok-kw">break</span> :blk ret.value;</span>
-<span class="line" id="L216">                    },</span>
-<span class="line" id="L217">                    <span class="tok-kw">else</span> =&gt; |v| std.debug.panic(<span class="tok-str">&quot;deserialization did not expect this token: {s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(v)}),</span>
-<span class="line" id="L218">                },</span>
-<span class="line" id="L219">                .Map =&gt; |v| blk: {</span>
-<span class="line" id="L220">                    <span class="tok-kw">var</span> m = Map{ .de = self, .len = v.len, .end = .MapEnd };</span>
-<span class="line" id="L221">                    <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> visitor.visitMap(ally, De, m.mapAccess());</span>
-<span class="line" id="L222"></span>
-<span class="line" id="L223">                    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), m.len.?);</span>
-<span class="line" id="L224">                    <span class="tok-kw">try</span> self.assertNextToken(.MapEnd);</span>
-<span class="line" id="L225"></span>
-<span class="line" id="L226">                    <span class="tok-kw">break</span> :blk value;</span>
-<span class="line" id="L227">                },</span>
-<span class="line" id="L228">                .Null =&gt; <span class="tok-kw">try</span> visitor.visitNull(ally, De),</span>
-<span class="line" id="L229">                .Some =&gt; <span class="tok-kw">try</span> visitor.visitSome(ally, self.deserializer()),</span>
-<span class="line" id="L230">                <span class="tok-kw">inline</span> .String, .StringZ =&gt; |v| blk: {</span>
-<span class="line" id="L231">                    <span class="tok-kw">const</span> ret = <span class="tok-kw">try</span> visitor.visitString(ally, De, v, self.str_lifetime);</span>
-<span class="line" id="L232">                    <span class="tok-kw">break</span> :blk ret.value;</span>
+<span class="line" id="L120">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextTokenOpt</span>(self: *Self) ?Token {</span>
+<span class="line" id="L121">            <span class="tok-kw">switch</span> (self.remaining()) {</span>
+<span class="line" id="L122">                <span class="tok-number">0</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L123">                <span class="tok-kw">else</span> =&gt; |len| {</span>
+<span class="line" id="L124">                    <span class="tok-kw">const</span> first = self.tokens[<span class="tok-number">0</span>];</span>
+<span class="line" id="L125">                    self.tokens = <span class="tok-kw">if</span> (len == <span class="tok-number">1</span>) &amp;[_]Token{} <span class="tok-kw">else</span> self.tokens[<span class="tok-number">1</span>..];</span>
+<span class="line" id="L126">                    <span class="tok-kw">return</span> first;</span>
+<span class="line" id="L127">                },</span>
+<span class="line" id="L128">            }</span>
+<span class="line" id="L129">        }</span>
+<span class="line" id="L130"></span>
+<span class="line" id="L131">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">nextToken</span>(self: *Self) Token {</span>
+<span class="line" id="L132">            <span class="tok-kw">switch</span> (self.remaining()) {</span>
+<span class="line" id="L133">                <span class="tok-number">0</span> =&gt; std.debug.panic(<span class="tok-str">&quot;ran out of tokens to deserialize&quot;</span>, .{}),</span>
+<span class="line" id="L134">                <span class="tok-kw">else</span> =&gt; |len| {</span>
+<span class="line" id="L135">                    <span class="tok-kw">const</span> first = self.tokens[<span class="tok-number">0</span>];</span>
+<span class="line" id="L136">                    self.tokens = <span class="tok-kw">if</span> (len == <span class="tok-number">1</span>) &amp;[_]Token{} <span class="tok-kw">else</span> self.tokens[<span class="tok-number">1</span>..];</span>
+<span class="line" id="L137">                    <span class="tok-kw">return</span> first;</span>
+<span class="line" id="L138">                },</span>
+<span class="line" id="L139">            }</span>
+<span class="line" id="L140">        }</span>
+<span class="line" id="L141"></span>
+<span class="line" id="L142">        <span class="tok-kw">fn</span> <span class="tok-fn">peekTokenOpt</span>(self: Self) ?Token {</span>
+<span class="line" id="L143">            <span class="tok-kw">return</span> <span class="tok-kw">if</span> (self.tokens.len &gt; <span class="tok-number">0</span>) self.tokens[<span class="tok-number">0</span>] <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L144">        }</span>
+<span class="line" id="L145"></span>
+<span class="line" id="L146">        <span class="tok-kw">fn</span> <span class="tok-fn">peekToken</span>(self: Self) Token {</span>
+<span class="line" id="L147">            <span class="tok-kw">if</span> (self.peekTokenOpt()) |token| {</span>
+<span class="line" id="L148">                <span class="tok-kw">return</span> token;</span>
+<span class="line" id="L149">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L150">                std.debug.panic(<span class="tok-str">&quot;ran out of tokens to deserialize&quot;</span>, .{});</span>
+<span class="line" id="L151">            }</span>
+<span class="line" id="L152">        }</span>
+<span class="line" id="L153"></span>
+<span class="line" id="L154">        <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> DeserializerInterface(</span>
+<span class="line" id="L155">            *Self,</span>
+<span class="line" id="L156">            Error,</span>
+<span class="line" id="L157">            user_dbt,</span>
+<span class="line" id="L158">            deserializer_dbt,</span>
+<span class="line" id="L159">            .{</span>
+<span class="line" id="L160">                .deserializeAny = deserializeAny,</span>
+<span class="line" id="L161">                .deserializeBool = deserializeAny,</span>
+<span class="line" id="L162">                .deserializeEnum = deserializeAny,</span>
+<span class="line" id="L163">                .deserializeFloat = deserializeAny,</span>
+<span class="line" id="L164">                .deserializeInt = deserializeAny,</span>
+<span class="line" id="L165">                .deserializeIgnored = deserializeIgnored,</span>
+<span class="line" id="L166">                .deserializeMap = deserializeAny,</span>
+<span class="line" id="L167">                .deserializeOptional = deserializeAny,</span>
+<span class="line" id="L168">                .deserializeSeq = deserializeAny,</span>
+<span class="line" id="L169">                .deserializeString = deserializeAny,</span>
+<span class="line" id="L170">                .deserializeStruct = deserializeAny,</span>
+<span class="line" id="L171">                .deserializeUnion = deserializeAny,</span>
+<span class="line" id="L172">                .deserializeVoid = deserializeAny,</span>
+<span class="line" id="L173">            },</span>
+<span class="line" id="L174">        );</span>
+<span class="line" id="L175"></span>
+<span class="line" id="L176">        <span class="tok-kw">const</span> Error = err.Error || <span class="tok-kw">error</span>{TestExpectedEqual};</span>
+<span class="line" id="L177"></span>
+<span class="line" id="L178">        <span class="tok-kw">const</span> De = Self.@&quot;getty.Deserializer&quot;;</span>
+<span class="line" id="L179"></span>
+<span class="line" id="L180">        <span class="tok-kw">fn</span> <span class="tok-fn">deserializeAny</span>(self: *Self, ally: std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L181">            <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (self.nextToken()) {</span>
+<span class="line" id="L182">                .Bool =&gt; |v| <span class="tok-kw">try</span> visitor.visitBool(ally, De, v),</span>
+<span class="line" id="L183">                .I8 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L184">                .I16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L185">                .I32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L186">                .I64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L187">                .I128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L188">                .U8 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L189">                .U16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L190">                .U32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L191">                .U64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L192">                .U128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L193">                .F16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
+<span class="line" id="L194">                .F32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
+<span class="line" id="L195">                .F64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
+<span class="line" id="L196">                .F128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitFloat(ally, De, v),</span>
+<span class="line" id="L197">                .Enum =&gt; <span class="tok-kw">switch</span> (self.nextToken()) {</span>
+<span class="line" id="L198">                    .U8 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L199">                    .U16 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L200">                    .U32 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L201">                    .U64 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L202">                    .U128 =&gt; |v| <span class="tok-kw">try</span> visitor.visitInt(ally, De, v),</span>
+<span class="line" id="L203">                    <span class="tok-kw">inline</span> .String, .StringZ =&gt; |v| blk: {</span>
+<span class="line" id="L204">                        <span class="tok-kw">const</span> ret = <span class="tok-kw">try</span> visitor.visitString(ally, De, v, .stack);</span>
+<span class="line" id="L205">                        <span class="tok-kw">break</span> :blk ret.value;</span>
+<span class="line" id="L206">                    },</span>
+<span class="line" id="L207">                    <span class="tok-kw">else</span> =&gt; |v| std.debug.panic(<span class="tok-str">&quot;deserialization did not expect this token: {s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(v)}),</span>
+<span class="line" id="L208">                },</span>
+<span class="line" id="L209">                .Map =&gt; |v| blk: {</span>
+<span class="line" id="L210">                    <span class="tok-kw">var</span> m = Map{ .de = self, .len = v.len, .end = .MapEnd };</span>
+<span class="line" id="L211">                    <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> visitor.visitMap(ally, De, m.mapAccess());</span>
+<span class="line" id="L212"></span>
+<span class="line" id="L213">                    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), m.len.?);</span>
+<span class="line" id="L214">                    <span class="tok-kw">try</span> self.assertNextToken(.MapEnd);</span>
+<span class="line" id="L215"></span>
+<span class="line" id="L216">                    <span class="tok-kw">break</span> :blk value;</span>
+<span class="line" id="L217">                },</span>
+<span class="line" id="L218">                .Null =&gt; <span class="tok-kw">try</span> visitor.visitNull(ally, De),</span>
+<span class="line" id="L219">                .Some =&gt; <span class="tok-kw">try</span> visitor.visitSome(ally, self.deserializer()),</span>
+<span class="line" id="L220">                <span class="tok-kw">inline</span> .String, .StringZ =&gt; |v| blk: {</span>
+<span class="line" id="L221">                    <span class="tok-kw">const</span> ret = <span class="tok-kw">try</span> visitor.visitString(ally, De, v, self.str_lifetime);</span>
+<span class="line" id="L222">                    <span class="tok-kw">break</span> :blk ret.value;</span>
+<span class="line" id="L223">                },</span>
+<span class="line" id="L224">                .Void =&gt; <span class="tok-kw">try</span> visitor.visitVoid(ally, De),</span>
+<span class="line" id="L225">                .Seq =&gt; |v| blk: {</span>
+<span class="line" id="L226">                    <span class="tok-kw">var</span> s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };</span>
+<span class="line" id="L227">                    <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> visitor.visitSeq(ally, De, s.seqAccess());</span>
+<span class="line" id="L228"></span>
+<span class="line" id="L229">                    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), s.len.?);</span>
+<span class="line" id="L230">                    <span class="tok-kw">try</span> self.assertNextToken(.SeqEnd);</span>
+<span class="line" id="L231"></span>
+<span class="line" id="L232">                    <span class="tok-kw">break</span> :blk value;</span>
 <span class="line" id="L233">                },</span>
-<span class="line" id="L234">                .Void =&gt; <span class="tok-kw">try</span> visitor.visitVoid(ally, De),</span>
-<span class="line" id="L235">                .Seq =&gt; |v| blk: {</span>
-<span class="line" id="L236">                    <span class="tok-kw">var</span> s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };</span>
-<span class="line" id="L237">                    <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> visitor.visitSeq(ally, De, s.seqAccess());</span>
-<span class="line" id="L238"></span>
-<span class="line" id="L239">                    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), s.len.?);</span>
-<span class="line" id="L240">                    <span class="tok-kw">try</span> self.assertNextToken(.SeqEnd);</span>
-<span class="line" id="L241"></span>
-<span class="line" id="L242">                    <span class="tok-kw">break</span> :blk value;</span>
-<span class="line" id="L243">                },</span>
-<span class="line" id="L244">                .Struct =&gt; |v| blk: {</span>
-<span class="line" id="L245">                    <span class="tok-kw">var</span> m = Map{ .de = self, .len = v.len, .end = .StructEnd };</span>
-<span class="line" id="L246">                    <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> visitor.visitMap(ally, De, m.mapAccess());</span>
+<span class="line" id="L234">                .Struct =&gt; |v| blk: {</span>
+<span class="line" id="L235">                    <span class="tok-kw">var</span> m = Map{ .de = self, .len = v.len, .end = .StructEnd };</span>
+<span class="line" id="L236">                    <span class="tok-kw">const</span> value = <span class="tok-kw">try</span> visitor.visitMap(ally, De, m.mapAccess());</span>
+<span class="line" id="L237"></span>
+<span class="line" id="L238">                    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), m.len.?);</span>
+<span class="line" id="L239">                    <span class="tok-kw">try</span> self.assertNextToken(.StructEnd);</span>
+<span class="line" id="L240"></span>
+<span class="line" id="L241">                    <span class="tok-kw">break</span> :blk value;</span>
+<span class="line" id="L242">                },</span>
+<span class="line" id="L243">                .Union =&gt; blk: {</span>
+<span class="line" id="L244">                    <span class="tok-kw">var</span> u = Union{ .de = self };</span>
+<span class="line" id="L245">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitUnion(ally, De, u.unionAccess(), u.variantAccess());</span>
+<span class="line" id="L246">                },</span>
 <span class="line" id="L247"></span>
-<span class="line" id="L248">                    <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>), m.len.?);</span>
-<span class="line" id="L249">                    <span class="tok-kw">try</span> self.assertNextToken(.StructEnd);</span>
-<span class="line" id="L250"></span>
-<span class="line" id="L251">                    <span class="tok-kw">break</span> :blk value;</span>
-<span class="line" id="L252">                },</span>
-<span class="line" id="L253">                .Union =&gt; blk: {</span>
-<span class="line" id="L254">                    <span class="tok-kw">var</span> u = Union{ .de = self };</span>
-<span class="line" id="L255">                    <span class="tok-kw">break</span> :blk <span class="tok-kw">try</span> visitor.visitUnion(ally, De, u.unionAccess(), u.variantAccess());</span>
-<span class="line" id="L256">                },</span>
+<span class="line" id="L248">                <span class="tok-comment">// Panic! At The Disco</span>
+</span>
+<span class="line" id="L249">                <span class="tok-kw">else</span> =&gt; |v| std.debug.panic(<span class="tok-str">&quot;deserialization did not expect this token: {s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(v)}),</span>
+<span class="line" id="L250">            };</span>
+<span class="line" id="L251">        }</span>
+<span class="line" id="L252"></span>
+<span class="line" id="L253">        <span class="tok-kw">fn</span> <span class="tok-fn">deserializeIgnored</span>(self: *Self, ally: std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L254">            _ = self.nextTokenOpt();</span>
+<span class="line" id="L255">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitVoid(ally, De);</span>
+<span class="line" id="L256">        }</span>
 <span class="line" id="L257"></span>
-<span class="line" id="L258">                <span class="tok-comment">// Panic! At The Disco</span>
-</span>
-<span class="line" id="L259">                <span class="tok-kw">else</span> =&gt; |v| std.debug.panic(<span class="tok-str">&quot;deserialization did not expect this token: {s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(v)}),</span>
-<span class="line" id="L260">            };</span>
-<span class="line" id="L261">        }</span>
+<span class="line" id="L258">        <span class="tok-kw">fn</span> <span class="tok-fn">assertNextToken</span>(self: *Self, expected: Token) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L259">            <span class="tok-kw">if</span> (self.nextTokenOpt()) |token| {</span>
+<span class="line" id="L260">                <span class="tok-kw">const</span> token_tag = std.meta.activeTag(token);</span>
+<span class="line" id="L261">                <span class="tok-kw">const</span> expected_tag = std.meta.activeTag(expected);</span>
 <span class="line" id="L262"></span>
-<span class="line" id="L263">        <span class="tok-kw">fn</span> <span class="tok-fn">deserializeIgnored</span>(self: *Self, ally: std.mem.Allocator, visitor: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L264">            _ = self.nextTokenOpt();</span>
-<span class="line" id="L265">            <span class="tok-kw">return</span> <span class="tok-kw">try</span> visitor.visitVoid(ally, De);</span>
-<span class="line" id="L266">        }</span>
-<span class="line" id="L267"></span>
-<span class="line" id="L268">        <span class="tok-kw">fn</span> <span class="tok-fn">assertNextToken</span>(self: *Self, expected: Token) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L269">            <span class="tok-kw">if</span> (self.nextTokenOpt()) |token| {</span>
-<span class="line" id="L270">                <span class="tok-kw">const</span> token_tag = std.meta.activeTag(token);</span>
-<span class="line" id="L271">                <span class="tok-kw">const</span> expected_tag = std.meta.activeTag(expected);</span>
-<span class="line" id="L272"></span>
-<span class="line" id="L273">                <span class="tok-kw">if</span> (token_tag == expected_tag) {</span>
-<span class="line" id="L274">                    <span class="tok-kw">switch</span> (token) {</span>
-<span class="line" id="L275">                        .MapEnd =&gt; <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@field</span>(token, <span class="tok-str">&quot;MapEnd&quot;</span>), <span class="tok-builtin">@field</span>(expected, <span class="tok-str">&quot;MapEnd&quot;</span>)),</span>
-<span class="line" id="L276">                        .SeqEnd =&gt; <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@field</span>(token, <span class="tok-str">&quot;SeqEnd&quot;</span>), <span class="tok-builtin">@field</span>(expected, <span class="tok-str">&quot;SeqEnd&quot;</span>)),</span>
-<span class="line" id="L277">                        .StructEnd =&gt; <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@field</span>(token, <span class="tok-str">&quot;StructEnd&quot;</span>), <span class="tok-builtin">@field</span>(expected, <span class="tok-str">&quot;StructEnd&quot;</span>)),</span>
-<span class="line" id="L278">                        <span class="tok-kw">else</span> =&gt; |v| std.debug.panic(<span class="tok-str">&quot;unexpected token: {s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(v)}),</span>
-<span class="line" id="L279">                    }</span>
-<span class="line" id="L280">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L281">                    <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;expected Token::{} but deserialization wants Token::{}&quot;</span>);</span>
-<span class="line" id="L282">                }</span>
-<span class="line" id="L283">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L284">                <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;end of tokens but deserialization wants Token::{}&quot;</span>);</span>
-<span class="line" id="L285">            }</span>
-<span class="line" id="L286">        }</span>
-<span class="line" id="L287"></span>
-<span class="line" id="L288">        <span class="tok-kw">const</span> Seq = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L289">            de: *Self,</span>
-<span class="line" id="L290">            len: ?<span class="tok-type">usize</span>,</span>
-<span class="line" id="L291">            end: Token,</span>
-<span class="line" id="L292"></span>
-<span class="line" id="L293">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> SeqAccessInterface(</span>
-<span class="line" id="L294">                *Seq,</span>
-<span class="line" id="L295">                Error,</span>
-<span class="line" id="L296">                .{ .nextElementSeed = nextElementSeed },</span>
-<span class="line" id="L297">            );</span>
+<span class="line" id="L263">                <span class="tok-kw">if</span> (token_tag == expected_tag) {</span>
+<span class="line" id="L264">                    <span class="tok-kw">switch</span> (token) {</span>
+<span class="line" id="L265">                        .MapEnd =&gt; <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@field</span>(token, <span class="tok-str">&quot;MapEnd&quot;</span>), <span class="tok-builtin">@field</span>(expected, <span class="tok-str">&quot;MapEnd&quot;</span>)),</span>
+<span class="line" id="L266">                        .SeqEnd =&gt; <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@field</span>(token, <span class="tok-str">&quot;SeqEnd&quot;</span>), <span class="tok-builtin">@field</span>(expected, <span class="tok-str">&quot;SeqEnd&quot;</span>)),</span>
+<span class="line" id="L267">                        .StructEnd =&gt; <span class="tok-kw">try</span> expectEqual(<span class="tok-builtin">@field</span>(token, <span class="tok-str">&quot;StructEnd&quot;</span>), <span class="tok-builtin">@field</span>(expected, <span class="tok-str">&quot;StructEnd&quot;</span>)),</span>
+<span class="line" id="L268">                        <span class="tok-kw">else</span> =&gt; |v| std.debug.panic(<span class="tok-str">&quot;unexpected token: {s}&quot;</span>, .{<span class="tok-builtin">@tagName</span>(v)}),</span>
+<span class="line" id="L269">                    }</span>
+<span class="line" id="L270">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L271">                    <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;expected Token::{} but deserialization wants Token::{}&quot;</span>);</span>
+<span class="line" id="L272">                }</span>
+<span class="line" id="L273">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L274">                <span class="tok-builtin">@panic</span>(<span class="tok-str">&quot;end of tokens but deserialization wants Token::{}&quot;</span>);</span>
+<span class="line" id="L275">            }</span>
+<span class="line" id="L276">        }</span>
+<span class="line" id="L277"></span>
+<span class="line" id="L278">        <span class="tok-kw">const</span> Seq = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L279">            de: *Self,</span>
+<span class="line" id="L280">            len: ?<span class="tok-type">usize</span>,</span>
+<span class="line" id="L281">            end: Token,</span>
+<span class="line" id="L282"></span>
+<span class="line" id="L283">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> SeqAccessInterface(</span>
+<span class="line" id="L284">                *Seq,</span>
+<span class="line" id="L285">                Error,</span>
+<span class="line" id="L286">                .{ .nextElementSeed = nextElementSeed },</span>
+<span class="line" id="L287">            );</span>
+<span class="line" id="L288"></span>
+<span class="line" id="L289">            <span class="tok-kw">fn</span> <span class="tok-fn">nextElementSeed</span>(self: *Seq, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L290">                <span class="tok-comment">// All elements have been deserialized.</span>
+</span>
+<span class="line" id="L291">                <span class="tok-kw">if</span> (self.len.? == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L292">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L293">                }</span>
+<span class="line" id="L294"></span>
+<span class="line" id="L295">                <span class="tok-kw">if</span> (self.de.peekTokenOpt()) |token| {</span>
+<span class="line" id="L296">                    <span class="tok-kw">if</span> (std.meta.eql(token, self.end)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L297">                }</span>
 <span class="line" id="L298"></span>
-<span class="line" id="L299">            <span class="tok-kw">fn</span> <span class="tok-fn">nextElementSeed</span>(self: *Seq, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L300">                <span class="tok-comment">// All elements have been deserialized.</span>
-</span>
-<span class="line" id="L301">                <span class="tok-kw">if</span> (self.len.? == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L302">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L303">                }</span>
+<span class="line" id="L299">                self.len.? -= <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L300"></span>
+<span class="line" id="L301">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
+<span class="line" id="L302">            }</span>
+<span class="line" id="L303">        };</span>
 <span class="line" id="L304"></span>
-<span class="line" id="L305">                <span class="tok-kw">if</span> (self.de.peekTokenOpt()) |token| {</span>
-<span class="line" id="L306">                    <span class="tok-kw">if</span> (std.meta.eql(token, self.end)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L307">                }</span>
-<span class="line" id="L308"></span>
-<span class="line" id="L309">                self.len.? -= <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L310"></span>
-<span class="line" id="L311">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
-<span class="line" id="L312">            }</span>
-<span class="line" id="L313">        };</span>
-<span class="line" id="L314"></span>
-<span class="line" id="L315">        <span class="tok-kw">const</span> Map = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L316">            de: *Self,</span>
-<span class="line" id="L317">            len: ?<span class="tok-type">usize</span>,</span>
-<span class="line" id="L318">            end: Token,</span>
-<span class="line" id="L319"></span>
-<span class="line" id="L320">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> MapAccessInterface(</span>
-<span class="line" id="L321">                *Map,</span>
-<span class="line" id="L322">                Error,</span>
-<span class="line" id="L323">                .{</span>
-<span class="line" id="L324">                    .nextKeySeed = nextKeySeed,</span>
-<span class="line" id="L325">                    .nextValueSeed = nextValueSeed,</span>
-<span class="line" id="L326">                },</span>
-<span class="line" id="L327">            );</span>
-<span class="line" id="L328"></span>
-<span class="line" id="L329">            <span class="tok-kw">fn</span> <span class="tok-fn">nextKeySeed</span>(self: *Map, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L330">                <span class="tok-comment">// All entries have been deserialized.</span>
+<span class="line" id="L305">        <span class="tok-kw">const</span> Map = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L306">            de: *Self,</span>
+<span class="line" id="L307">            len: ?<span class="tok-type">usize</span>,</span>
+<span class="line" id="L308">            end: Token,</span>
+<span class="line" id="L309"></span>
+<span class="line" id="L310">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> MapAccessInterface(</span>
+<span class="line" id="L311">                *Map,</span>
+<span class="line" id="L312">                Error,</span>
+<span class="line" id="L313">                .{</span>
+<span class="line" id="L314">                    .nextKeySeed = nextKeySeed,</span>
+<span class="line" id="L315">                    .nextValueSeed = nextValueSeed,</span>
+<span class="line" id="L316">                },</span>
+<span class="line" id="L317">            );</span>
+<span class="line" id="L318"></span>
+<span class="line" id="L319">            <span class="tok-kw">fn</span> <span class="tok-fn">nextKeySeed</span>(self: *Map, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!?<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L320">                <span class="tok-comment">// All entries have been deserialized.</span>
 </span>
-<span class="line" id="L331">                <span class="tok-kw">if</span> (self.len.? == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L332">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L333">                }</span>
-<span class="line" id="L334"></span>
-<span class="line" id="L335">                <span class="tok-kw">if</span> (self.de.peekTokenOpt()) |token| {</span>
-<span class="line" id="L336">                    <span class="tok-kw">if</span> (std.meta.eql(token, self.end)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L337">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L338">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L339">                }</span>
+<span class="line" id="L321">                <span class="tok-kw">if</span> (self.len.? == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L322">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L323">                }</span>
+<span class="line" id="L324"></span>
+<span class="line" id="L325">                <span class="tok-kw">if</span> (self.de.peekTokenOpt()) |token| {</span>
+<span class="line" id="L326">                    <span class="tok-kw">if</span> (std.meta.eql(token, self.end)) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L327">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L328">                    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L329">                }</span>
+<span class="line" id="L330"></span>
+<span class="line" id="L331">                self.len.? -= <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L332"></span>
+<span class="line" id="L333">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
+<span class="line" id="L334">            }</span>
+<span class="line" id="L335"></span>
+<span class="line" id="L336">            <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: *Map, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L337">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
+<span class="line" id="L338">            }</span>
+<span class="line" id="L339">        };</span>
 <span class="line" id="L340"></span>
-<span class="line" id="L341">                self.len.? -= <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L342"></span>
-<span class="line" id="L343">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
-<span class="line" id="L344">            }</span>
-<span class="line" id="L345"></span>
-<span class="line" id="L346">            <span class="tok-kw">fn</span> <span class="tok-fn">nextValueSeed</span>(self: *Map, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L347">                <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
-<span class="line" id="L348">            }</span>
-<span class="line" id="L349">        };</span>
-<span class="line" id="L350"></span>
-<span class="line" id="L351">        <span class="tok-kw">const</span> Union = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L352">            de: *Self,</span>
-<span class="line" id="L353"></span>
-<span class="line" id="L354">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> UnionAccessInterface(</span>
-<span class="line" id="L355">                *Union,</span>
-<span class="line" id="L356">                Error,</span>
-<span class="line" id="L357">                .{ .variantSeed = variantSeed },</span>
-<span class="line" id="L358">            );</span>
-<span class="line" id="L359"></span>
-<span class="line" id="L360">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VariantAccessInterface(</span>
-<span class="line" id="L361">                *Union,</span>
-<span class="line" id="L362">                Error,</span>
-<span class="line" id="L363">                .{ .payloadSeed = payloadSeed },</span>
-<span class="line" id="L364">            );</span>
+<span class="line" id="L341">        <span class="tok-kw">const</span> Union = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L342">            de: *Self,</span>
+<span class="line" id="L343"></span>
+<span class="line" id="L344">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> UnionAccessInterface(</span>
+<span class="line" id="L345">                *Union,</span>
+<span class="line" id="L346">                Error,</span>
+<span class="line" id="L347">                .{ .variantSeed = variantSeed },</span>
+<span class="line" id="L348">            );</span>
+<span class="line" id="L349"></span>
+<span class="line" id="L350">            <span class="tok-kw">pub</span> <span class="tok-kw">usingnamespace</span> VariantAccessInterface(</span>
+<span class="line" id="L351">                *Union,</span>
+<span class="line" id="L352">                Error,</span>
+<span class="line" id="L353">                .{ .payloadSeed = payloadSeed },</span>
+<span class="line" id="L354">            );</span>
+<span class="line" id="L355"></span>
+<span class="line" id="L356">            <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: *Union, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L357">                <span class="tok-kw">if</span> (self.de.peekTokenOpt()) |token| {</span>
+<span class="line" id="L358">                    <span class="tok-kw">if</span> (token == .String) {</span>
+<span class="line" id="L359">                        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
+<span class="line" id="L360">                    }</span>
+<span class="line" id="L361">                }</span>
+<span class="line" id="L362"></span>
+<span class="line" id="L363">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
+<span class="line" id="L364">            }</span>
 <span class="line" id="L365"></span>
-<span class="line" id="L366">            <span class="tok-kw">fn</span> <span class="tok-fn">variantSeed</span>(self: *Union, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L367">                <span class="tok-kw">if</span> (self.de.peekTokenOpt()) |token| {</span>
-<span class="line" id="L368">                    <span class="tok-kw">if</span> (token == .String) {</span>
-<span class="line" id="L369">                        <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
-<span class="line" id="L370">                    }</span>
-<span class="line" id="L371">                }</span>
-<span class="line" id="L372"></span>
-<span class="line" id="L373">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidType;</span>
+<span class="line" id="L366">            <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: *Union, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
+<span class="line" id="L367">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(seed).Value != <span class="tok-type">void</span>) {</span>
+<span class="line" id="L368">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
+<span class="line" id="L369">                }</span>
+<span class="line" id="L370"></span>
+<span class="line" id="L371">                <span class="tok-kw">if</span> (self.de.nextToken() != .Void) {</span>
+<span class="line" id="L372">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownVariant;</span>
+<span class="line" id="L373">                }</span>
 <span class="line" id="L374">            }</span>
-<span class="line" id="L375"></span>
-<span class="line" id="L376">            <span class="tok-kw">fn</span> <span class="tok-fn">payloadSeed</span>(self: *Union, ally: std.mem.Allocator, seed: <span class="tok-kw">anytype</span>) Error!<span class="tok-builtin">@TypeOf</span>(seed).Value {</span>
-<span class="line" id="L377">                <span class="tok-kw">if</span> (<span class="tok-builtin">@TypeOf</span>(seed).Value != <span class="tok-type">void</span>) {</span>
-<span class="line" id="L378">                    <span class="tok-kw">return</span> <span class="tok-kw">try</span> seed.deserialize(ally, self.de.deserializer());</span>
-<span class="line" id="L379">                }</span>
+<span class="line" id="L375">        };</span>
+<span class="line" id="L376">    };</span>
+<span class="line" id="L377">}</span>
+<span class="line" id="L378"></span>
+<span class="line" id="L379"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DefaultDeserializer = Deserializer(<span class="tok-null">null</span>, <span class="tok-null">null</span>);</span>
 <span class="line" id="L380"></span>
-<span class="line" id="L381">                <span class="tok-kw">if</span> (self.de.nextToken() != .Void) {</span>
-<span class="line" id="L382">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnknownVariant;</span>
-<span class="line" id="L383">                }</span>
-<span class="line" id="L384">            }</span>
-<span class="line" id="L385">        };</span>
-<span class="line" id="L386">    };</span>
-<span class="line" id="L387">}</span>
-<span class="line" id="L388"></span>
-<span class="line" id="L389"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> DefaultDeserializer = Deserializer(<span class="tok-null">null</span>, <span class="tok-null">null</span>);</span>
-<span class="line" id="L390"></span>
 </code></pre></body>
 </html>

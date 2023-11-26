@@ -124,7 +124,7 @@
 <span class="line" id="L10"><span class="tok-kw">const</span> os = std.os;</span>
 <span class="line" id="L11"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
 <span class="line" id="L12"><span class="tok-kw">const</span> testing = std.testing;</span>
-<span class="line" id="L13"><span class="tok-kw">const</span> Atomic = std.atomic.Atomic;</span>
+<span class="line" id="L13"><span class="tok-kw">const</span> atomic = std.atomic;</span>
 <span class="line" id="L14"></span>
 <span class="line" id="L15"><span class="tok-comment">/// Checks if `ptr` still contains the value `expect` and, if so, blocks the caller until either:</span></span>
 <span class="line" id="L16"><span class="tok-comment">/// - The value at `ptr` is no longer equal to `expect`.</span></span>
@@ -133,7 +133,7 @@
 <span class="line" id="L19"><span class="tok-comment">///</span></span>
 <span class="line" id="L20"><span class="tok-comment">/// The checking of `ptr` and `expect`, along with blocking the caller, is done atomically</span></span>
 <span class="line" id="L21"><span class="tok-comment">/// and totally ordered (sequentially consistent) with respect to other wait()/wake() calls on the same `ptr`.</span></span>
-<span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L22"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L23">    <span class="tok-builtin">@setCold</span>(<span class="tok-null">true</span>);</span>
 <span class="line" id="L24"></span>
 <span class="line" id="L25">    Impl.wait(ptr, expect, <span class="tok-null">null</span>) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
@@ -150,7 +150,7 @@
 <span class="line" id="L35"><span class="tok-comment">///</span></span>
 <span class="line" id="L36"><span class="tok-comment">/// The checking of `ptr` and `expect`, along with blocking the caller, is done atomically</span></span>
 <span class="line" id="L37"><span class="tok-comment">/// and totally ordered (sequentially consistent) with respect to other wait()/wake() calls on the same `ptr`.</span></span>
-<span class="line" id="L38"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">timedWait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout_ns: <span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L38"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">timedWait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout_ns: <span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L39">    <span class="tok-builtin">@setCold</span>(<span class="tok-null">true</span>);</span>
 <span class="line" id="L40"></span>
 <span class="line" id="L41">    <span class="tok-comment">// Avoid calling into the OS for no-op timeouts.</span>
@@ -164,7 +164,7 @@
 <span class="line" id="L48">}</span>
 <span class="line" id="L49"></span>
 <span class="line" id="L50"><span class="tok-comment">/// Unblocks at most `max_waiters` callers blocked in a `wait()` call on `ptr`.</span></span>
-<span class="line" id="L51"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L51"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L52">    <span class="tok-builtin">@setCold</span>(<span class="tok-null">true</span>);</span>
 <span class="line" id="L53"></span>
 <span class="line" id="L54">    <span class="tok-comment">// Avoid calling into the OS if there's nothing to wake up.</span>
@@ -200,11 +200,11 @@
 <span class="line" id="L83"><span class="tok-comment">/// We can't do @compileError() in the `Impl` switch statement above as its eagerly evaluated.</span></span>
 <span class="line" id="L84"><span class="tok-comment">/// So instead, we @compileError() on the methods themselves for platforms which don't support futex.</span></span>
 <span class="line" id="L85"><span class="tok-kw">const</span> UnsupportedImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L86">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L86">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L87">        <span class="tok-kw">return</span> unsupported(.{ ptr, expect, timeout });</span>
 <span class="line" id="L88">    }</span>
 <span class="line" id="L89"></span>
-<span class="line" id="L90">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L90">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L91">        <span class="tok-kw">return</span> unsupported(.{ ptr, max_waiters });</span>
 <span class="line" id="L92">    }</span>
 <span class="line" id="L93"></span>
@@ -215,8 +215,8 @@
 <span class="line" id="L98">};</span>
 <span class="line" id="L99"></span>
 <span class="line" id="L100"><span class="tok-kw">const</span> SingleThreadedImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L101">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
-<span class="line" id="L102">        <span class="tok-kw">if</span> (ptr.loadUnchecked() != expect) {</span>
+<span class="line" id="L101">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L102">        <span class="tok-kw">if</span> (ptr.raw != expect) {</span>
 <span class="line" id="L103">            <span class="tok-kw">return</span>;</span>
 <span class="line" id="L104">        }</span>
 <span class="line" id="L105"></span>
@@ -233,7 +233,7 @@
 <span class="line" id="L113">        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.Timeout;</span>
 <span class="line" id="L114">    }</span>
 <span class="line" id="L115"></span>
-<span class="line" id="L116">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L116">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L117">        <span class="tok-comment">// There are no other threads to possibly wake up</span>
 </span>
 <span class="line" id="L118">        _ = ptr;</span>
@@ -246,7 +246,7 @@
 <span class="line" id="L124"><span class="tok-comment">// as it's generally already a linked target and is autoloaded into all processes anyway.</span>
 </span>
 <span class="line" id="L125"><span class="tok-kw">const</span> WindowsImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L126">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L126">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L127">        <span class="tok-kw">var</span> timeout_value: os.windows.LARGE_INTEGER = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L128">        <span class="tok-kw">var</span> timeout_ptr: ?*<span class="tok-kw">const</span> os.windows.LARGE_INTEGER = <span class="tok-null">null</span>;</span>
 <span class="line" id="L129"></span>
@@ -277,7 +277,7 @@
 <span class="line" id="L152">        }</span>
 <span class="line" id="L153">    }</span>
 <span class="line" id="L154"></span>
-<span class="line" id="L155">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L155">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L156">        <span class="tok-kw">const</span> address: ?*<span class="tok-kw">const</span> <span class="tok-type">anyopaque</span> = ptr;</span>
 <span class="line" id="L157">        assert(max_waiters != <span class="tok-number">0</span>);</span>
 <span class="line" id="L158"></span>
@@ -289,7 +289,7 @@
 <span class="line" id="L164">};</span>
 <span class="line" id="L165"></span>
 <span class="line" id="L166"><span class="tok-kw">const</span> DarwinImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L167">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L167">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L168">        <span class="tok-comment">// Darwin XNU 7195.50.7.100.1 introduced __ulock_wait2 and migrated code paths (notably pthread_cond_t) towards it:</span>
 </span>
 <span class="line" id="L169">        <span class="tok-comment">// https://github.com/apple/darwin-xnu/commit/d4061fb0260b3ed486147341b72468f836ed6c8f#diff-08f993cc40af475663274687b7c326cc6c3031e0db3ac8de7b24624610616be6</span>
@@ -364,7 +364,7 @@
 <span class="line" id="L220">        }</span>
 <span class="line" id="L221">    }</span>
 <span class="line" id="L222"></span>
-<span class="line" id="L223">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L223">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L224">        <span class="tok-kw">var</span> flags: <span class="tok-type">u32</span> = os.darwin.UL_COMPARE_AND_WAIT | os.darwin.ULF_NO_ERRNO;</span>
 <span class="line" id="L225">        <span class="tok-kw">if</span> (max_waiters &gt; <span class="tok-number">1</span>) {</span>
 <span class="line" id="L226">            flags |= os.darwin.ULF_WAKE_ALL;</span>
@@ -393,7 +393,7 @@
 <span class="line" id="L245"><span class="tok-comment">// https://man7.org/linux/man-pages/man2/futex.2.html</span>
 </span>
 <span class="line" id="L246"><span class="tok-kw">const</span> LinuxImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L247">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L247">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L248">        <span class="tok-kw">var</span> ts: os.timespec = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L249">        <span class="tok-kw">if</span> (timeout) |timeout_ns| {</span>
 <span class="line" id="L250">            ts.tv_sec = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(ts.tv_sec), <span class="tok-builtin">@intCast</span>(timeout_ns / std.time.ns_per_s));</span>
@@ -401,7 +401,7 @@
 <span class="line" id="L252">        }</span>
 <span class="line" id="L253"></span>
 <span class="line" id="L254">        <span class="tok-kw">const</span> rc = os.linux.futex_wait(</span>
-<span class="line" id="L255">            <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">i32</span>, <span class="tok-builtin">@ptrCast</span>(&amp;ptr.value)),</span>
+<span class="line" id="L255">            <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">i32</span>, <span class="tok-builtin">@ptrCast</span>(&amp;ptr.raw)),</span>
 <span class="line" id="L256">            os.linux.FUTEX.PRIVATE_FLAG | os.linux.FUTEX.WAIT,</span>
 <span class="line" id="L257">            <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-builtin">@bitCast</span>(expect)),</span>
 <span class="line" id="L258">            <span class="tok-kw">if</span> (timeout != <span class="tok-null">null</span>) &amp;ts <span class="tok-kw">else</span> <span class="tok-null">null</span>,</span>
@@ -426,9 +426,9 @@
 <span class="line" id="L272">        }</span>
 <span class="line" id="L273">    }</span>
 <span class="line" id="L274"></span>
-<span class="line" id="L275">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L275">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L276">        <span class="tok-kw">const</span> rc = os.linux.futex_wake(</span>
-<span class="line" id="L277">            <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">i32</span>, <span class="tok-builtin">@ptrCast</span>(&amp;ptr.value)),</span>
+<span class="line" id="L277">            <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-type">i32</span>, <span class="tok-builtin">@ptrCast</span>(&amp;ptr.raw)),</span>
 <span class="line" id="L278">            os.linux.FUTEX.PRIVATE_FLAG | os.linux.FUTEX.WAKE,</span>
 <span class="line" id="L279">            std.math.cast(<span class="tok-type">i32</span>, max_waiters) <span class="tok-kw">orelse</span> std.math.maxInt(<span class="tok-type">i32</span>),</span>
 <span class="line" id="L280">        );</span>
@@ -448,7 +448,7 @@
 <span class="line" id="L291"><span class="tok-comment">// https://www.freebsd.org/cgi/man.cgi?query=_umtx_op&amp;sektion=2&amp;n=1</span>
 </span>
 <span class="line" id="L292"><span class="tok-kw">const</span> FreebsdImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L293">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L293">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L294">        <span class="tok-kw">var</span> tm_size: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
 <span class="line" id="L295">        <span class="tok-kw">var</span> tm: os.freebsd._umtx_time = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L296">        <span class="tok-kw">var</span> tm_ptr: ?*<span class="tok-kw">const</span> os.freebsd._umtx_time = <span class="tok-null">null</span>;</span>
@@ -488,7 +488,7 @@
 <span class="line" id="L326">        }</span>
 <span class="line" id="L327">    }</span>
 <span class="line" id="L328"></span>
-<span class="line" id="L329">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L329">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L330">        <span class="tok-kw">const</span> rc = os.freebsd._umtx_op(</span>
 <span class="line" id="L331">            <span class="tok-builtin">@intFromPtr</span>(&amp;ptr.value),</span>
 <span class="line" id="L332">            <span class="tok-builtin">@intFromEnum</span>(os.freebsd.UMTX_OP.WAKE_PRIVATE),</span>
@@ -513,7 +513,7 @@
 <span class="line" id="L347"><span class="tok-comment">// https://man.openbsd.org/futex.2</span>
 </span>
 <span class="line" id="L348"><span class="tok-kw">const</span> OpenbsdImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L349">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L349">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L350">        <span class="tok-kw">var</span> ts: os.timespec = <span class="tok-null">undefined</span>;</span>
 <span class="line" id="L351">        <span class="tok-kw">if</span> (timeout) |timeout_ns| {</span>
 <span class="line" id="L352">            ts.tv_sec = <span class="tok-builtin">@as</span>(<span class="tok-builtin">@TypeOf</span>(ts.tv_sec), <span class="tok-builtin">@intCast</span>(timeout_ns / std.time.ns_per_s));</span>
@@ -552,7 +552,7 @@
 <span class="line" id="L377">        }</span>
 <span class="line" id="L378">    }</span>
 <span class="line" id="L379"></span>
-<span class="line" id="L380">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L380">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L381">        <span class="tok-kw">const</span> rc = os.openbsd.futex(</span>
 <span class="line" id="L382">            <span class="tok-builtin">@as</span>(*<span class="tok-kw">const</span> <span class="tok-kw">volatile</span> <span class="tok-type">u32</span>, <span class="tok-builtin">@ptrCast</span>(&amp;ptr.value)),</span>
 <span class="line" id="L383">            os.openbsd.FUTEX_WAKE | os.openbsd.FUTEX_PRIVATE_FLAG,</span>
@@ -572,7 +572,7 @@
 <span class="line" id="L394"><span class="tok-comment">// https://man.dragonflybsd.org/?command=umtx&amp;section=2</span>
 </span>
 <span class="line" id="L395"><span class="tok-kw">const</span> DragonflyImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L396">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L396">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L397">        <span class="tok-comment">// Dragonfly uses a scheme where 0 timeout means wait until signaled or spurious wake.</span>
 </span>
 <span class="line" id="L398">        <span class="tok-comment">// It's reporting of timeout's is also unrealiable so we use an external timing source (Timer) instead.</span>
@@ -624,7 +624,7 @@
 <span class="line" id="L435">        }</span>
 <span class="line" id="L436">    }</span>
 <span class="line" id="L437"></span>
-<span class="line" id="L438">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L438">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L439">        <span class="tok-comment">// A count of zero means wake all waiters.</span>
 </span>
 <span class="line" id="L440">        assert(max_waiters != <span class="tok-number">0</span>);</span>
@@ -642,7 +642,7 @@
 <span class="line" id="L449">};</span>
 <span class="line" id="L450"></span>
 <span class="line" id="L451"><span class="tok-kw">const</span> WasmImpl = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L452">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L452">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L453">        <span class="tok-kw">if</span> (!<span class="tok-kw">comptime</span> std.Target.wasm.featureSetHas(builtin.target.cpu.features, .atomics)) {</span>
 <span class="line" id="L454">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;WASI target missing cpu feature 'atomics'&quot;</span>);</span>
 <span class="line" id="L455">        }</span>
@@ -673,7 +673,7 @@
 <span class="line" id="L473">        }</span>
 <span class="line" id="L474">    }</span>
 <span class="line" id="L475"></span>
-<span class="line" id="L476">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L476">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L477">        <span class="tok-kw">if</span> (!<span class="tok-kw">comptime</span> std.Target.wasm.featureSetHas(builtin.target.cpu.features, .atomics)) {</span>
 <span class="line" id="L478">            <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;WASI target missing cpu feature 'atomics'&quot;</span>);</span>
 <span class="line" id="L479">        }</span>
@@ -975,8 +975,8 @@
 <span class="line" id="L732">    };</span>
 <span class="line" id="L733"></span>
 <span class="line" id="L734">    <span class="tok-kw">const</span> Bucket = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L735">        mutex: std.c.pthread_mutex_t <span class="tok-kw">align</span>(std.atomic.cache_line) = .{},</span>
-<span class="line" id="L736">        pending: Atomic(<span class="tok-type">usize</span>) = Atomic(<span class="tok-type">usize</span>).init(<span class="tok-number">0</span>),</span>
+<span class="line" id="L735">        mutex: std.c.pthread_mutex_t <span class="tok-kw">align</span>(atomic.cache_line) = .{},</span>
+<span class="line" id="L736">        pending: atomic.Value(<span class="tok-type">usize</span>) = atomic.Value(<span class="tok-type">usize</span>).init(<span class="tok-number">0</span>),</span>
 <span class="line" id="L737">        treap: Treap = .{},</span>
 <span class="line" id="L738"></span>
 <span class="line" id="L739">        <span class="tok-comment">// Global array of buckets that addresses map to.</span>
@@ -1006,10 +1006,10 @@
 <span class="line" id="L757">    };</span>
 <span class="line" id="L758"></span>
 <span class="line" id="L759">    <span class="tok-kw">const</span> Address = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L760">        <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>)) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L760">        <span class="tok-kw">fn</span> <span class="tok-fn">from</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>)) <span class="tok-type">usize</span> {</span>
 <span class="line" id="L761">            <span class="tok-comment">// Get the alignment of the pointer.</span>
 </span>
-<span class="line" id="L762">            <span class="tok-kw">const</span> alignment = <span class="tok-builtin">@alignOf</span>(Atomic(<span class="tok-type">u32</span>));</span>
+<span class="line" id="L762">            <span class="tok-kw">const</span> alignment = <span class="tok-builtin">@alignOf</span>(atomic.Value(<span class="tok-type">u32</span>));</span>
 <span class="line" id="L763">            <span class="tok-kw">comptime</span> assert(std.math.isPowerOfTwo(alignment));</span>
 <span class="line" id="L764"></span>
 <span class="line" id="L765">            <span class="tok-comment">// Make sure the pointer is aligned,</span>
@@ -1022,7 +1022,7 @@
 <span class="line" id="L770">        }</span>
 <span class="line" id="L771">    };</span>
 <span class="line" id="L772"></span>
-<span class="line" id="L773">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L773">    <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>, timeout: ?<span class="tok-type">u64</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L774">        <span class="tok-kw">const</span> address = Address.from(ptr);</span>
 <span class="line" id="L775">        <span class="tok-kw">const</span> bucket = Bucket.from(address);</span>
 <span class="line" id="L776"></span>
@@ -1099,7 +1099,7 @@
 <span class="line" id="L831">        };</span>
 <span class="line" id="L832">    }</span>
 <span class="line" id="L833"></span>
-<span class="line" id="L834">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L834">    <span class="tok-kw">fn</span> <span class="tok-fn">wake</span>(ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), max_waiters: <span class="tok-type">u32</span>) <span class="tok-type">void</span> {</span>
 <span class="line" id="L835">        <span class="tok-kw">const</span> address = Address.from(ptr);</span>
 <span class="line" id="L836">        <span class="tok-kw">const</span> bucket = Bucket.from(address);</span>
 <span class="line" id="L837"></span>
@@ -1171,7 +1171,7 @@
 <span class="line" id="L882">};</span>
 <span class="line" id="L883"></span>
 <span class="line" id="L884"><span class="tok-kw">test</span> <span class="tok-str">&quot;Futex - smoke test&quot;</span> {</span>
-<span class="line" id="L885">    <span class="tok-kw">var</span> value = Atomic(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L885">    <span class="tok-kw">var</span> value = atomic.Value(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>);</span>
 <span class="line" id="L886"></span>
 <span class="line" id="L887">    <span class="tok-comment">// Try waits with invalid values.</span>
 </span>
@@ -1201,7 +1201,7 @@
 <span class="line" id="L908">    <span class="tok-kw">const</span> num_iterations = <span class="tok-number">4</span>;</span>
 <span class="line" id="L909"></span>
 <span class="line" id="L910">    <span class="tok-kw">const</span> Paddle = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L911">        value: Atomic(<span class="tok-type">u32</span>) = Atomic(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>),</span>
+<span class="line" id="L911">        value: atomic.Value(<span class="tok-type">u32</span>) = atomic.Value(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>),</span>
 <span class="line" id="L912">        current: <span class="tok-type">u32</span> = <span class="tok-number">0</span>,</span>
 <span class="line" id="L913"></span>
 <span class="line" id="L914">        <span class="tok-kw">fn</span> <span class="tok-fn">hit</span>(self: *<span class="tok-builtin">@This</span>()) <span class="tok-type">void</span> {</span>
@@ -1261,8 +1261,8 @@
 <span class="line" id="L962">    <span class="tok-kw">const</span> num_iterations = <span class="tok-number">4</span>;</span>
 <span class="line" id="L963"></span>
 <span class="line" id="L964">    <span class="tok-kw">const</span> Barrier = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L965">        count: Atomic(<span class="tok-type">u32</span>) = Atomic(<span class="tok-type">u32</span>).init(num_threads),</span>
-<span class="line" id="L966">        futex: Atomic(<span class="tok-type">u32</span>) = Atomic(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>),</span>
+<span class="line" id="L965">        count: atomic.Value(<span class="tok-type">u32</span>) = atomic.Value(<span class="tok-type">u32</span>).init(num_threads),</span>
+<span class="line" id="L966">        futex: atomic.Value(<span class="tok-type">u32</span>) = atomic.Value(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>),</span>
 <span class="line" id="L967"></span>
 <span class="line" id="L968">        <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(self: *<span class="tok-builtin">@This</span>()) !<span class="tok-type">void</span> {</span>
 <span class="line" id="L969">            <span class="tok-comment">// Decrement the counter.</span>
@@ -1344,7 +1344,7 @@
 <span class="line" id="L1036">    <span class="tok-comment">/// - `Futex.wake()` is called on the `ptr`.</span></span>
 <span class="line" id="L1037">    <span class="tok-comment">/// - A spurious wake occurs.</span></span>
 <span class="line" id="L1038">    <span class="tok-comment">/// - The deadline expires; In which case `error.Timeout` is returned.</span></span>
-<span class="line" id="L1039">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(self: *Deadline, ptr: *<span class="tok-kw">const</span> Atomic(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
+<span class="line" id="L1039">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(self: *Deadline, ptr: *<span class="tok-kw">const</span> atomic.Value(<span class="tok-type">u32</span>), expect: <span class="tok-type">u32</span>) <span class="tok-kw">error</span>{Timeout}!<span class="tok-type">void</span> {</span>
 <span class="line" id="L1040">        <span class="tok-builtin">@setCold</span>(<span class="tok-null">true</span>);</span>
 <span class="line" id="L1041"></span>
 <span class="line" id="L1042">        <span class="tok-comment">// Check if we actually have a timeout to wait until.</span>
@@ -1369,7 +1369,7 @@
 <span class="line" id="L1056"></span>
 <span class="line" id="L1057"><span class="tok-kw">test</span> <span class="tok-str">&quot;Futex - Deadline&quot;</span> {</span>
 <span class="line" id="L1058">    <span class="tok-kw">var</span> deadline = Deadline.init(<span class="tok-number">100</span> * std.time.ns_per_ms);</span>
-<span class="line" id="L1059">    <span class="tok-kw">var</span> futex_word = Atomic(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1059">    <span class="tok-kw">var</span> futex_word = atomic.Value(<span class="tok-type">u32</span>).init(<span class="tok-number">0</span>);</span>
 <span class="line" id="L1060"></span>
 <span class="line" id="L1061">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
 <span class="line" id="L1062">        deadline.wait(&amp;futex_word, <span class="tok-number">0</span>) <span class="tok-kw">catch</span> <span class="tok-kw">break</span>;</span>

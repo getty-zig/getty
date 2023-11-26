@@ -113,51 +113,50 @@
 </head>
 <body>
 <pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> Atomic = std.atomic.Atomic;</span>
-<span class="line" id="L3"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> WaitGroup = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">const</span> is_waiting: <span class="tok-type">usize</span> = <span class="tok-number">1</span> &lt;&lt; <span class="tok-number">0</span>;</span>
-<span class="line" id="L7"><span class="tok-kw">const</span> one_pending: <span class="tok-type">usize</span> = <span class="tok-number">1</span> &lt;&lt; <span class="tok-number">1</span>;</span>
-<span class="line" id="L8"></span>
-<span class="line" id="L9">state: Atomic(<span class="tok-type">usize</span>) = Atomic(<span class="tok-type">usize</span>).init(<span class="tok-number">0</span>),</span>
-<span class="line" id="L10">event: std.Thread.ResetEvent = .{},</span>
-<span class="line" id="L11"></span>
-<span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">start</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
-<span class="line" id="L13">    <span class="tok-kw">const</span> state = self.state.fetchAdd(one_pending, .Monotonic);</span>
-<span class="line" id="L14">    assert((state / one_pending) &lt; (std.math.maxInt(<span class="tok-type">usize</span>) / one_pending));</span>
-<span class="line" id="L15">}</span>
-<span class="line" id="L16"></span>
-<span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">finish</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
-<span class="line" id="L18">    <span class="tok-kw">const</span> state = self.state.fetchSub(one_pending, .Release);</span>
-<span class="line" id="L19">    assert((state / one_pending) &gt; <span class="tok-number">0</span>);</span>
-<span class="line" id="L20"></span>
-<span class="line" id="L21">    <span class="tok-kw">if</span> (state == (one_pending | is_waiting)) {</span>
-<span class="line" id="L22">        self.state.fence(.Acquire);</span>
-<span class="line" id="L23">        self.event.set();</span>
-<span class="line" id="L24">    }</span>
-<span class="line" id="L25">}</span>
-<span class="line" id="L26"></span>
-<span class="line" id="L27"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
-<span class="line" id="L28">    <span class="tok-kw">const</span> state = self.state.fetchAdd(is_waiting, .Acquire);</span>
-<span class="line" id="L29">    assert(state &amp; is_waiting == <span class="tok-number">0</span>);</span>
-<span class="line" id="L30"></span>
-<span class="line" id="L31">    <span class="tok-kw">if</span> ((state / one_pending) &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L32">        self.event.wait();</span>
-<span class="line" id="L33">    }</span>
-<span class="line" id="L34">}</span>
-<span class="line" id="L35"></span>
-<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reset</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
-<span class="line" id="L37">    self.state.store(<span class="tok-number">0</span>, .Monotonic);</span>
-<span class="line" id="L38">    self.event.reset();</span>
-<span class="line" id="L39">}</span>
-<span class="line" id="L40"></span>
-<span class="line" id="L41"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isDone</span>(wg: *WaitGroup) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L42">    <span class="tok-kw">const</span> state = wg.state.load(.Acquire);</span>
-<span class="line" id="L43">    assert(state &amp; is_waiting == <span class="tok-number">0</span>);</span>
-<span class="line" id="L44"></span>
-<span class="line" id="L45">    <span class="tok-kw">return</span> (state / one_pending) == <span class="tok-number">0</span>;</span>
-<span class="line" id="L46">}</span>
-<span class="line" id="L47"></span>
+<span class="line" id="L2"><span class="tok-kw">const</span> assert = std.debug.assert;</span>
+<span class="line" id="L3"><span class="tok-kw">const</span> WaitGroup = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L4"></span>
+<span class="line" id="L5"><span class="tok-kw">const</span> is_waiting: <span class="tok-type">usize</span> = <span class="tok-number">1</span> &lt;&lt; <span class="tok-number">0</span>;</span>
+<span class="line" id="L6"><span class="tok-kw">const</span> one_pending: <span class="tok-type">usize</span> = <span class="tok-number">1</span> &lt;&lt; <span class="tok-number">1</span>;</span>
+<span class="line" id="L7"></span>
+<span class="line" id="L8">state: std.atomic.Value(<span class="tok-type">usize</span>) = std.atomic.Value(<span class="tok-type">usize</span>).init(<span class="tok-number">0</span>),</span>
+<span class="line" id="L9">event: std.Thread.ResetEvent = .{},</span>
+<span class="line" id="L10"></span>
+<span class="line" id="L11"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">start</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
+<span class="line" id="L12">    <span class="tok-kw">const</span> state = self.state.fetchAdd(one_pending, .Monotonic);</span>
+<span class="line" id="L13">    assert((state / one_pending) &lt; (std.math.maxInt(<span class="tok-type">usize</span>) / one_pending));</span>
+<span class="line" id="L14">}</span>
+<span class="line" id="L15"></span>
+<span class="line" id="L16"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">finish</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
+<span class="line" id="L17">    <span class="tok-kw">const</span> state = self.state.fetchSub(one_pending, .Release);</span>
+<span class="line" id="L18">    assert((state / one_pending) &gt; <span class="tok-number">0</span>);</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20">    <span class="tok-kw">if</span> (state == (one_pending | is_waiting)) {</span>
+<span class="line" id="L21">        self.state.fence(.Acquire);</span>
+<span class="line" id="L22">        self.event.set();</span>
+<span class="line" id="L23">    }</span>
+<span class="line" id="L24">}</span>
+<span class="line" id="L25"></span>
+<span class="line" id="L26"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">wait</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
+<span class="line" id="L27">    <span class="tok-kw">const</span> state = self.state.fetchAdd(is_waiting, .Acquire);</span>
+<span class="line" id="L28">    assert(state &amp; is_waiting == <span class="tok-number">0</span>);</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30">    <span class="tok-kw">if</span> ((state / one_pending) &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L31">        self.event.wait();</span>
+<span class="line" id="L32">    }</span>
+<span class="line" id="L33">}</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">reset</span>(self: *WaitGroup) <span class="tok-type">void</span> {</span>
+<span class="line" id="L36">    self.state.store(<span class="tok-number">0</span>, .Monotonic);</span>
+<span class="line" id="L37">    self.event.reset();</span>
+<span class="line" id="L38">}</span>
+<span class="line" id="L39"></span>
+<span class="line" id="L40"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isDone</span>(wg: *WaitGroup) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L41">    <span class="tok-kw">const</span> state = wg.state.load(.Acquire);</span>
+<span class="line" id="L42">    assert(state &amp; is_waiting == <span class="tok-number">0</span>);</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44">    <span class="tok-kw">return</span> (state / one_pending) == <span class="tok-number">0</span>;</span>
+<span class="line" id="L45">}</span>
+<span class="line" id="L46"></span>
 </code></pre></body>
 </html>

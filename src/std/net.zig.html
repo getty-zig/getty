@@ -2077,152 +2077,161 @@
 <span class="line" id="L1871">    kernel_backlog: <span class="tok-type">u31</span>,</span>
 <span class="line" id="L1872">    reuse_address: <span class="tok-type">bool</span>,</span>
 <span class="line" id="L1873">    reuse_port: <span class="tok-type">bool</span>,</span>
-<span class="line" id="L1874"></span>
-<span class="line" id="L1875">    <span class="tok-comment">/// `undefined` until `listen` returns successfully.</span></span>
-<span class="line" id="L1876">    listen_address: Address,</span>
-<span class="line" id="L1877"></span>
-<span class="line" id="L1878">    sockfd: ?os.socket_t,</span>
-<span class="line" id="L1879"></span>
-<span class="line" id="L1880">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1881">        <span class="tok-comment">/// How many connections the kernel will accept on the application's behalf.</span></span>
-<span class="line" id="L1882">        <span class="tok-comment">/// If more than this many connections pool in the kernel, clients will start</span></span>
-<span class="line" id="L1883">        <span class="tok-comment">/// seeing &quot;Connection refused&quot;.</span></span>
-<span class="line" id="L1884">        kernel_backlog: <span class="tok-type">u31</span> = <span class="tok-number">128</span>,</span>
-<span class="line" id="L1885"></span>
-<span class="line" id="L1886">        <span class="tok-comment">/// Enable SO.REUSEADDR on the socket.</span></span>
-<span class="line" id="L1887">        reuse_address: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L1888"></span>
-<span class="line" id="L1889">        <span class="tok-comment">/// Enable SO.REUSEPORT on the socket.</span></span>
-<span class="line" id="L1890">        reuse_port: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
-<span class="line" id="L1891">    };</span>
+<span class="line" id="L1874">    force_nonblocking: <span class="tok-type">bool</span>,</span>
+<span class="line" id="L1875"></span>
+<span class="line" id="L1876">    <span class="tok-comment">/// `undefined` until `listen` returns successfully.</span></span>
+<span class="line" id="L1877">    listen_address: Address,</span>
+<span class="line" id="L1878"></span>
+<span class="line" id="L1879">    sockfd: ?os.socket_t,</span>
+<span class="line" id="L1880"></span>
+<span class="line" id="L1881">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Options = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1882">        <span class="tok-comment">/// How many connections the kernel will accept on the application's behalf.</span></span>
+<span class="line" id="L1883">        <span class="tok-comment">/// If more than this many connections pool in the kernel, clients will start</span></span>
+<span class="line" id="L1884">        <span class="tok-comment">/// seeing &quot;Connection refused&quot;.</span></span>
+<span class="line" id="L1885">        kernel_backlog: <span class="tok-type">u31</span> = <span class="tok-number">128</span>,</span>
+<span class="line" id="L1886"></span>
+<span class="line" id="L1887">        <span class="tok-comment">/// Enable SO.REUSEADDR on the socket.</span></span>
+<span class="line" id="L1888">        reuse_address: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1889"></span>
+<span class="line" id="L1890">        <span class="tok-comment">/// Enable SO.REUSEPORT on the socket.</span></span>
+<span class="line" id="L1891">        reuse_port: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
 <span class="line" id="L1892"></span>
-<span class="line" id="L1893">    <span class="tok-comment">/// After this call succeeds, resources have been acquired and must</span></span>
-<span class="line" id="L1894">    <span class="tok-comment">/// be released with `deinit`.</span></span>
-<span class="line" id="L1895">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(options: Options) StreamServer {</span>
-<span class="line" id="L1896">        <span class="tok-kw">return</span> StreamServer{</span>
-<span class="line" id="L1897">            .sockfd = <span class="tok-null">null</span>,</span>
-<span class="line" id="L1898">            .kernel_backlog = options.kernel_backlog,</span>
-<span class="line" id="L1899">            .reuse_address = options.reuse_address,</span>
-<span class="line" id="L1900">            .reuse_port = options.reuse_port,</span>
-<span class="line" id="L1901">            .listen_address = <span class="tok-null">undefined</span>,</span>
-<span class="line" id="L1902">        };</span>
-<span class="line" id="L1903">    }</span>
-<span class="line" id="L1904"></span>
-<span class="line" id="L1905">    <span class="tok-comment">/// Release all resources. The `StreamServer` memory becomes `undefined`.</span></span>
-<span class="line" id="L1906">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1907">        self.close();</span>
-<span class="line" id="L1908">        self.* = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1909">    }</span>
-<span class="line" id="L1910"></span>
-<span class="line" id="L1911">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">listen</span>(self: *StreamServer, address: Address) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1912">        <span class="tok-kw">const</span> nonblock = <span class="tok-kw">if</span> (std.io.is_async) os.SOCK.NONBLOCK <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
-<span class="line" id="L1913">        <span class="tok-kw">const</span> sock_flags = os.SOCK.STREAM | os.SOCK.CLOEXEC | nonblock;</span>
-<span class="line" id="L1914">        <span class="tok-kw">const</span> proto = <span class="tok-kw">if</span> (address.any.family == os.AF.UNIX) <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>) <span class="tok-kw">else</span> os.IPPROTO.TCP;</span>
+<span class="line" id="L1893">        <span class="tok-comment">/// Force non-blocking mode.</span></span>
+<span class="line" id="L1894">        force_nonblocking: <span class="tok-type">bool</span> = <span class="tok-null">false</span>,</span>
+<span class="line" id="L1895">    };</span>
+<span class="line" id="L1896"></span>
+<span class="line" id="L1897">    <span class="tok-comment">/// After this call succeeds, resources have been acquired and must</span></span>
+<span class="line" id="L1898">    <span class="tok-comment">/// be released with `deinit`.</span></span>
+<span class="line" id="L1899">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">init</span>(options: Options) StreamServer {</span>
+<span class="line" id="L1900">        <span class="tok-kw">return</span> StreamServer{</span>
+<span class="line" id="L1901">            .sockfd = <span class="tok-null">null</span>,</span>
+<span class="line" id="L1902">            .kernel_backlog = options.kernel_backlog,</span>
+<span class="line" id="L1903">            .reuse_address = options.reuse_address,</span>
+<span class="line" id="L1904">            .reuse_port = options.reuse_port,</span>
+<span class="line" id="L1905">            .force_nonblocking = options.force_nonblocking,</span>
+<span class="line" id="L1906">            .listen_address = <span class="tok-null">undefined</span>,</span>
+<span class="line" id="L1907">        };</span>
+<span class="line" id="L1908">    }</span>
+<span class="line" id="L1909"></span>
+<span class="line" id="L1910">    <span class="tok-comment">/// Release all resources. The `StreamServer` memory becomes `undefined`.</span></span>
+<span class="line" id="L1911">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deinit</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1912">        self.close();</span>
+<span class="line" id="L1913">        self.* = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1914">    }</span>
 <span class="line" id="L1915"></span>
-<span class="line" id="L1916">        <span class="tok-kw">const</span> sockfd = <span class="tok-kw">try</span> os.socket(address.any.family, sock_flags, proto);</span>
-<span class="line" id="L1917">        self.sockfd = sockfd;</span>
-<span class="line" id="L1918">        <span class="tok-kw">errdefer</span> {</span>
-<span class="line" id="L1919">            os.closeSocket(sockfd);</span>
-<span class="line" id="L1920">            self.sockfd = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1921">        }</span>
+<span class="line" id="L1916">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">listen</span>(self: *StreamServer, address: Address) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1917">        <span class="tok-kw">const</span> nonblock = <span class="tok-kw">if</span> (std.io.is_async) os.SOCK.NONBLOCK <span class="tok-kw">else</span> <span class="tok-number">0</span>;</span>
+<span class="line" id="L1918">        <span class="tok-kw">const</span> sock_flags = os.SOCK.STREAM | os.SOCK.CLOEXEC | nonblock;</span>
+<span class="line" id="L1919">        <span class="tok-kw">var</span> use_sock_flags: <span class="tok-type">u32</span> = sock_flags;</span>
+<span class="line" id="L1920">        <span class="tok-kw">if</span> (self.force_nonblocking) use_sock_flags |= os.SOCK.NONBLOCK;</span>
+<span class="line" id="L1921">        <span class="tok-kw">const</span> proto = <span class="tok-kw">if</span> (address.any.family == os.AF.UNIX) <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>) <span class="tok-kw">else</span> os.IPPROTO.TCP;</span>
 <span class="line" id="L1922"></span>
-<span class="line" id="L1923">        <span class="tok-kw">if</span> (self.reuse_address) {</span>
-<span class="line" id="L1924">            <span class="tok-kw">try</span> os.setsockopt(</span>
-<span class="line" id="L1925">                sockfd,</span>
-<span class="line" id="L1926">                os.SOL.SOCKET,</span>
-<span class="line" id="L1927">                os.SO.REUSEADDR,</span>
-<span class="line" id="L1928">                &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">1</span>)),</span>
-<span class="line" id="L1929">            );</span>
-<span class="line" id="L1930">        }</span>
-<span class="line" id="L1931">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(os.SO, <span class="tok-str">&quot;REUSEPORT&quot;</span>) <span class="tok-kw">and</span> self.reuse_port) {</span>
-<span class="line" id="L1932">            <span class="tok-kw">try</span> os.setsockopt(</span>
-<span class="line" id="L1933">                sockfd,</span>
-<span class="line" id="L1934">                os.SOL.SOCKET,</span>
-<span class="line" id="L1935">                os.SO.REUSEPORT,</span>
-<span class="line" id="L1936">                &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">1</span>)),</span>
-<span class="line" id="L1937">            );</span>
-<span class="line" id="L1938">        }</span>
-<span class="line" id="L1939"></span>
-<span class="line" id="L1940">        <span class="tok-kw">var</span> socklen = address.getOsSockLen();</span>
-<span class="line" id="L1941">        <span class="tok-kw">try</span> os.bind(sockfd, &amp;address.any, socklen);</span>
-<span class="line" id="L1942">        <span class="tok-kw">try</span> os.listen(sockfd, self.kernel_backlog);</span>
-<span class="line" id="L1943">        <span class="tok-kw">try</span> os.getsockname(sockfd, &amp;self.listen_address.any, &amp;socklen);</span>
-<span class="line" id="L1944">    }</span>
-<span class="line" id="L1945"></span>
-<span class="line" id="L1946">    <span class="tok-comment">/// Stop listening. It is still necessary to call `deinit` after stopping listening.</span></span>
-<span class="line" id="L1947">    <span class="tok-comment">/// Calling `deinit` will automatically call `close`. It is safe to call `close` when</span></span>
-<span class="line" id="L1948">    <span class="tok-comment">/// not listening.</span></span>
-<span class="line" id="L1949">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1950">        <span class="tok-kw">if</span> (self.sockfd) |fd| {</span>
-<span class="line" id="L1951">            os.closeSocket(fd);</span>
-<span class="line" id="L1952">            self.sockfd = <span class="tok-null">null</span>;</span>
-<span class="line" id="L1953">            self.listen_address = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1954">        }</span>
-<span class="line" id="L1955">    }</span>
-<span class="line" id="L1956"></span>
-<span class="line" id="L1957">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AcceptError = <span class="tok-kw">error</span>{</span>
-<span class="line" id="L1958">        ConnectionAborted,</span>
-<span class="line" id="L1959"></span>
-<span class="line" id="L1960">        <span class="tok-comment">/// The per-process limit on the number of open file descriptors has been reached.</span></span>
-<span class="line" id="L1961">        ProcessFdQuotaExceeded,</span>
-<span class="line" id="L1962"></span>
-<span class="line" id="L1963">        <span class="tok-comment">/// The system-wide limit on the total number of open files has been reached.</span></span>
-<span class="line" id="L1964">        SystemFdQuotaExceeded,</span>
-<span class="line" id="L1965"></span>
-<span class="line" id="L1966">        <span class="tok-comment">/// Not enough free memory.  This often means that the memory allocation  is  limited</span></span>
-<span class="line" id="L1967">        <span class="tok-comment">/// by the socket buffer limits, not by the system memory.</span></span>
-<span class="line" id="L1968">        SystemResources,</span>
+<span class="line" id="L1923">        <span class="tok-kw">const</span> sockfd = <span class="tok-kw">try</span> os.socket(address.any.family, use_sock_flags, proto);</span>
+<span class="line" id="L1924">        self.sockfd = sockfd;</span>
+<span class="line" id="L1925">        <span class="tok-kw">errdefer</span> {</span>
+<span class="line" id="L1926">            os.closeSocket(sockfd);</span>
+<span class="line" id="L1927">            self.sockfd = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1928">        }</span>
+<span class="line" id="L1929"></span>
+<span class="line" id="L1930">        <span class="tok-kw">if</span> (self.reuse_address) {</span>
+<span class="line" id="L1931">            <span class="tok-kw">try</span> os.setsockopt(</span>
+<span class="line" id="L1932">                sockfd,</span>
+<span class="line" id="L1933">                os.SOL.SOCKET,</span>
+<span class="line" id="L1934">                os.SO.REUSEADDR,</span>
+<span class="line" id="L1935">                &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">1</span>)),</span>
+<span class="line" id="L1936">            );</span>
+<span class="line" id="L1937">        }</span>
+<span class="line" id="L1938">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasDecl</span>(os.SO, <span class="tok-str">&quot;REUSEPORT&quot;</span>) <span class="tok-kw">and</span> self.reuse_port) {</span>
+<span class="line" id="L1939">            <span class="tok-kw">try</span> os.setsockopt(</span>
+<span class="line" id="L1940">                sockfd,</span>
+<span class="line" id="L1941">                os.SOL.SOCKET,</span>
+<span class="line" id="L1942">                os.SO.REUSEPORT,</span>
+<span class="line" id="L1943">                &amp;mem.toBytes(<span class="tok-builtin">@as</span>(<span class="tok-type">c_int</span>, <span class="tok-number">1</span>)),</span>
+<span class="line" id="L1944">            );</span>
+<span class="line" id="L1945">        }</span>
+<span class="line" id="L1946"></span>
+<span class="line" id="L1947">        <span class="tok-kw">var</span> socklen = address.getOsSockLen();</span>
+<span class="line" id="L1948">        <span class="tok-kw">try</span> os.bind(sockfd, &amp;address.any, socklen);</span>
+<span class="line" id="L1949">        <span class="tok-kw">try</span> os.listen(sockfd, self.kernel_backlog);</span>
+<span class="line" id="L1950">        <span class="tok-kw">try</span> os.getsockname(sockfd, &amp;self.listen_address.any, &amp;socklen);</span>
+<span class="line" id="L1951">    }</span>
+<span class="line" id="L1952"></span>
+<span class="line" id="L1953">    <span class="tok-comment">/// Stop listening. It is still necessary to call `deinit` after stopping listening.</span></span>
+<span class="line" id="L1954">    <span class="tok-comment">/// Calling `deinit` will automatically call `close`. It is safe to call `close` when</span></span>
+<span class="line" id="L1955">    <span class="tok-comment">/// not listening.</span></span>
+<span class="line" id="L1956">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">close</span>(self: *StreamServer) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1957">        <span class="tok-kw">if</span> (self.sockfd) |fd| {</span>
+<span class="line" id="L1958">            os.closeSocket(fd);</span>
+<span class="line" id="L1959">            self.sockfd = <span class="tok-null">null</span>;</span>
+<span class="line" id="L1960">            self.listen_address = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1961">        }</span>
+<span class="line" id="L1962">    }</span>
+<span class="line" id="L1963"></span>
+<span class="line" id="L1964">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> AcceptError = <span class="tok-kw">error</span>{</span>
+<span class="line" id="L1965">        ConnectionAborted,</span>
+<span class="line" id="L1966"></span>
+<span class="line" id="L1967">        <span class="tok-comment">/// The per-process limit on the number of open file descriptors has been reached.</span></span>
+<span class="line" id="L1968">        ProcessFdQuotaExceeded,</span>
 <span class="line" id="L1969"></span>
-<span class="line" id="L1970">        <span class="tok-comment">/// Socket is not listening for new connections.</span></span>
-<span class="line" id="L1971">        SocketNotListening,</span>
+<span class="line" id="L1970">        <span class="tok-comment">/// The system-wide limit on the total number of open files has been reached.</span></span>
+<span class="line" id="L1971">        SystemFdQuotaExceeded,</span>
 <span class="line" id="L1972"></span>
-<span class="line" id="L1973">        ProtocolFailure,</span>
-<span class="line" id="L1974"></span>
-<span class="line" id="L1975">        <span class="tok-comment">/// Firewall rules forbid connection.</span></span>
-<span class="line" id="L1976">        BlockedByFirewall,</span>
-<span class="line" id="L1977"></span>
-<span class="line" id="L1978">        FileDescriptorNotASocket,</span>
+<span class="line" id="L1973">        <span class="tok-comment">/// Not enough free memory. This often means that the memory allocation</span></span>
+<span class="line" id="L1974">        <span class="tok-comment">/// is limited by the socket buffer limits, not by the system memory.</span></span>
+<span class="line" id="L1975">        SystemResources,</span>
+<span class="line" id="L1976"></span>
+<span class="line" id="L1977">        <span class="tok-comment">/// Socket is not listening for new connections.</span></span>
+<span class="line" id="L1978">        SocketNotListening,</span>
 <span class="line" id="L1979"></span>
-<span class="line" id="L1980">        ConnectionResetByPeer,</span>
+<span class="line" id="L1980">        ProtocolFailure,</span>
 <span class="line" id="L1981"></span>
-<span class="line" id="L1982">        NetworkSubsystemFailed,</span>
-<span class="line" id="L1983"></span>
-<span class="line" id="L1984">        OperationNotSupported,</span>
-<span class="line" id="L1985">    } || os.UnexpectedError;</span>
-<span class="line" id="L1986"></span>
-<span class="line" id="L1987">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Connection = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L1988">        stream: Stream,</span>
-<span class="line" id="L1989">        address: Address,</span>
-<span class="line" id="L1990">    };</span>
+<span class="line" id="L1982">        <span class="tok-comment">/// Socket is in non-blocking mode and there is no connection to accept.</span></span>
+<span class="line" id="L1983">        WouldBlock,</span>
+<span class="line" id="L1984"></span>
+<span class="line" id="L1985">        <span class="tok-comment">/// Firewall rules forbid connection.</span></span>
+<span class="line" id="L1986">        BlockedByFirewall,</span>
+<span class="line" id="L1987"></span>
+<span class="line" id="L1988">        FileDescriptorNotASocket,</span>
+<span class="line" id="L1989"></span>
+<span class="line" id="L1990">        ConnectionResetByPeer,</span>
 <span class="line" id="L1991"></span>
-<span class="line" id="L1992">    <span class="tok-comment">/// If this function succeeds, the returned `Connection` is a caller-managed resource.</span></span>
-<span class="line" id="L1993">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accept</span>(self: *StreamServer) AcceptError!Connection {</span>
-<span class="line" id="L1994">        <span class="tok-kw">var</span> accepted_addr: Address = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1995">        <span class="tok-kw">var</span> adr_len: os.socklen_t = <span class="tok-builtin">@sizeOf</span>(Address);</span>
-<span class="line" id="L1996">        <span class="tok-kw">const</span> accept_result = blk: {</span>
-<span class="line" id="L1997">            <span class="tok-kw">if</span> (std.io.is_async) {</span>
-<span class="line" id="L1998">                <span class="tok-kw">const</span> loop = std.event.Loop.instance <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedError;</span>
-<span class="line" id="L1999">                <span class="tok-kw">break</span> :blk loop.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
-<span class="line" id="L2000">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L2001">                <span class="tok-kw">break</span> :blk os.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
-<span class="line" id="L2002">            }</span>
-<span class="line" id="L2003">        };</span>
-<span class="line" id="L2004"></span>
-<span class="line" id="L2005">        <span class="tok-kw">if</span> (accept_result) |fd| {</span>
-<span class="line" id="L2006">            <span class="tok-kw">return</span> Connection{</span>
-<span class="line" id="L2007">                .stream = Stream{ .handle = fd },</span>
-<span class="line" id="L2008">                .address = accepted_addr,</span>
-<span class="line" id="L2009">            };</span>
-<span class="line" id="L2010">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L2011">            <span class="tok-kw">error</span>.WouldBlock =&gt; <span class="tok-kw">unreachable</span>,</span>
-<span class="line" id="L2012">            <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
-<span class="line" id="L2013">        }</span>
-<span class="line" id="L2014">    }</span>
-<span class="line" id="L2015">};</span>
-<span class="line" id="L2016"></span>
-<span class="line" id="L2017"><span class="tok-kw">test</span> {</span>
-<span class="line" id="L2018">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;net/test.zig&quot;</span>);</span>
-<span class="line" id="L2019">}</span>
-<span class="line" id="L2020"></span>
+<span class="line" id="L1992">        NetworkSubsystemFailed,</span>
+<span class="line" id="L1993"></span>
+<span class="line" id="L1994">        OperationNotSupported,</span>
+<span class="line" id="L1995">    } || os.UnexpectedError;</span>
+<span class="line" id="L1996"></span>
+<span class="line" id="L1997">    <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Connection = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L1998">        stream: Stream,</span>
+<span class="line" id="L1999">        address: Address,</span>
+<span class="line" id="L2000">    };</span>
+<span class="line" id="L2001"></span>
+<span class="line" id="L2002">    <span class="tok-comment">/// If this function succeeds, the returned `Connection` is a caller-managed resource.</span></span>
+<span class="line" id="L2003">    <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">accept</span>(self: *StreamServer) AcceptError!Connection {</span>
+<span class="line" id="L2004">        <span class="tok-kw">var</span> accepted_addr: Address = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L2005">        <span class="tok-kw">var</span> adr_len: os.socklen_t = <span class="tok-builtin">@sizeOf</span>(Address);</span>
+<span class="line" id="L2006">        <span class="tok-kw">const</span> accept_result = blk: {</span>
+<span class="line" id="L2007">            <span class="tok-kw">if</span> (std.io.is_async) {</span>
+<span class="line" id="L2008">                <span class="tok-kw">const</span> loop = std.event.Loop.instance <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnexpectedError;</span>
+<span class="line" id="L2009">                <span class="tok-kw">break</span> :blk loop.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
+<span class="line" id="L2010">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L2011">                <span class="tok-kw">break</span> :blk os.accept(self.sockfd.?, &amp;accepted_addr.any, &amp;adr_len, os.SOCK.CLOEXEC);</span>
+<span class="line" id="L2012">            }</span>
+<span class="line" id="L2013">        };</span>
+<span class="line" id="L2014"></span>
+<span class="line" id="L2015">        <span class="tok-kw">if</span> (accept_result) |fd| {</span>
+<span class="line" id="L2016">            <span class="tok-kw">return</span> Connection{</span>
+<span class="line" id="L2017">                .stream = Stream{ .handle = fd },</span>
+<span class="line" id="L2018">                .address = accepted_addr,</span>
+<span class="line" id="L2019">            };</span>
+<span class="line" id="L2020">        } <span class="tok-kw">else</span> |err| {</span>
+<span class="line" id="L2021">            <span class="tok-kw">return</span> err;</span>
+<span class="line" id="L2022">        }</span>
+<span class="line" id="L2023">    }</span>
+<span class="line" id="L2024">};</span>
+<span class="line" id="L2025"></span>
+<span class="line" id="L2026"><span class="tok-kw">test</span> {</span>
+<span class="line" id="L2027">    _ = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;net/test.zig&quot;</span>);</span>
+<span class="line" id="L2028">}</span>
+<span class="line" id="L2029"></span>
 </code></pre></body>
 </html>

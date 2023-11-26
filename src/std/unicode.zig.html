@@ -1116,299 +1116,303 @@
 <span class="line" id="L942">    <span class="tok-kw">errdefer</span> result.deinit();</span>
 <span class="line" id="L943"></span>
 <span class="line" id="L944">    <span class="tok-kw">var</span> remaining = utf8;</span>
-<span class="line" id="L945">    <span class="tok-kw">if</span> (builtin.zig_backend != .stage2_x86_64) {</span>
-<span class="line" id="L946">        <span class="tok-kw">const</span> chunk_len = std.simd.suggestVectorSize(<span class="tok-type">u8</span>) <span class="tok-kw">orelse</span> <span class="tok-number">1</span>;</span>
-<span class="line" id="L947">        <span class="tok-kw">const</span> Chunk = <span class="tok-builtin">@Vector</span>(chunk_len, <span class="tok-type">u8</span>);</span>
-<span class="line" id="L948"></span>
-<span class="line" id="L949">        <span class="tok-comment">// Fast path. Check for and encode ASCII characters at the start of the input.</span>
+<span class="line" id="L945">    <span class="tok-comment">// Need support for std.simd.interlace</span>
 </span>
-<span class="line" id="L950">        <span class="tok-kw">while</span> (remaining.len &gt;= chunk_len) {</span>
-<span class="line" id="L951">            <span class="tok-kw">const</span> chunk: Chunk = remaining[<span class="tok-number">0</span>..chunk_len].*;</span>
-<span class="line" id="L952">            <span class="tok-kw">const</span> mask: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0x80</span>);</span>
-<span class="line" id="L953">            <span class="tok-kw">if</span> (<span class="tok-builtin">@reduce</span>(.Or, chunk &amp; mask == mask)) {</span>
-<span class="line" id="L954">                <span class="tok-comment">// found a non ASCII code unit</span>
+<span class="line" id="L946">    <span class="tok-kw">if</span> (builtin.zig_backend != .stage2_x86_64 <span class="tok-kw">and</span> <span class="tok-kw">comptime</span> !builtin.cpu.arch.isMIPS()) {</span>
+<span class="line" id="L947">        <span class="tok-kw">const</span> chunk_len = std.simd.suggestVectorSize(<span class="tok-type">u8</span>) <span class="tok-kw">orelse</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L948">        <span class="tok-kw">const</span> Chunk = <span class="tok-builtin">@Vector</span>(chunk_len, <span class="tok-type">u8</span>);</span>
+<span class="line" id="L949"></span>
+<span class="line" id="L950">        <span class="tok-comment">// Fast path. Check for and encode ASCII characters at the start of the input.</span>
 </span>
-<span class="line" id="L955">                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L956">            }</span>
-<span class="line" id="L957">            <span class="tok-kw">const</span> zeroes: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0</span>);</span>
-<span class="line" id="L958">            <span class="tok-kw">const</span> utf16_chunk: [chunk_len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u16</span>)) = std.simd.interlace(.{ chunk, zeroes });</span>
-<span class="line" id="L959">            result.appendSliceAssumeCapacity(std.mem.bytesAsSlice(<span class="tok-type">u16</span>, &amp;utf16_chunk));</span>
-<span class="line" id="L960">            remaining = remaining[chunk_len..];</span>
-<span class="line" id="L961">        }</span>
-<span class="line" id="L962">    }</span>
-<span class="line" id="L963"></span>
-<span class="line" id="L964">    <span class="tok-kw">const</span> view = <span class="tok-kw">try</span> Utf8View.init(remaining);</span>
-<span class="line" id="L965">    <span class="tok-kw">var</span> it = view.iterator();</span>
-<span class="line" id="L966">    <span class="tok-kw">while</span> (it.nextCodepoint()) |codepoint| {</span>
-<span class="line" id="L967">        <span class="tok-kw">if</span> (codepoint &lt; <span class="tok-number">0x10000</span>) {</span>
-<span class="line" id="L968">            <span class="tok-kw">const</span> short = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint));</span>
-<span class="line" id="L969">            <span class="tok-kw">try</span> result.append(mem.nativeToLittle(<span class="tok-type">u16</span>, short));</span>
-<span class="line" id="L970">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L971">            <span class="tok-kw">const</span> high = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((codepoint - <span class="tok-number">0x10000</span>) &gt;&gt; <span class="tok-number">10</span>)) + <span class="tok-number">0xD800</span>;</span>
-<span class="line" id="L972">            <span class="tok-kw">const</span> low = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint &amp; <span class="tok-number">0x3FF</span>)) + <span class="tok-number">0xDC00</span>;</span>
-<span class="line" id="L973">            <span class="tok-kw">var</span> out: [<span class="tok-number">2</span>]<span class="tok-type">u16</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L974">            out[<span class="tok-number">0</span>] = mem.nativeToLittle(<span class="tok-type">u16</span>, high);</span>
-<span class="line" id="L975">            out[<span class="tok-number">1</span>] = mem.nativeToLittle(<span class="tok-type">u16</span>, low);</span>
-<span class="line" id="L976">            <span class="tok-kw">try</span> result.appendSlice(out[<span class="tok-number">0</span>..]);</span>
-<span class="line" id="L977">        }</span>
-<span class="line" id="L978">    }</span>
-<span class="line" id="L979"></span>
-<span class="line" id="L980">    <span class="tok-kw">return</span> result.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
-<span class="line" id="L981">}</span>
-<span class="line" id="L982"></span>
-<span class="line" id="L983"><span class="tok-comment">/// Returns index of next character. If exact fit, returned index equals output slice length.</span></span>
-<span class="line" id="L984"><span class="tok-comment">/// Assumes there is enough space for the output.</span></span>
-<span class="line" id="L985"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">utf8ToUtf16Le</span>(utf16le: []<span class="tok-type">u16</span>, utf8: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
-<span class="line" id="L986">    <span class="tok-kw">var</span> dest_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L987"></span>
-<span class="line" id="L988">    <span class="tok-kw">var</span> remaining = utf8;</span>
-<span class="line" id="L989">    <span class="tok-kw">if</span> (builtin.zig_backend != .stage2_x86_64) {</span>
-<span class="line" id="L990">        <span class="tok-kw">const</span> chunk_len = std.simd.suggestVectorSize(<span class="tok-type">u8</span>) <span class="tok-kw">orelse</span> <span class="tok-number">1</span>;</span>
-<span class="line" id="L991">        <span class="tok-kw">const</span> Chunk = <span class="tok-builtin">@Vector</span>(chunk_len, <span class="tok-type">u8</span>);</span>
-<span class="line" id="L992"></span>
-<span class="line" id="L993">        <span class="tok-comment">// Fast path. Check for and encode ASCII characters at the start of the input.</span>
+<span class="line" id="L951">        <span class="tok-kw">while</span> (remaining.len &gt;= chunk_len) {</span>
+<span class="line" id="L952">            <span class="tok-kw">const</span> chunk: Chunk = remaining[<span class="tok-number">0</span>..chunk_len].*;</span>
+<span class="line" id="L953">            <span class="tok-kw">const</span> mask: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0x80</span>);</span>
+<span class="line" id="L954">            <span class="tok-kw">if</span> (<span class="tok-builtin">@reduce</span>(.Or, chunk &amp; mask == mask)) {</span>
+<span class="line" id="L955">                <span class="tok-comment">// found a non ASCII code unit</span>
 </span>
-<span class="line" id="L994">        <span class="tok-kw">while</span> (remaining.len &gt;= chunk_len) {</span>
-<span class="line" id="L995">            <span class="tok-kw">const</span> chunk: Chunk = remaining[<span class="tok-number">0</span>..chunk_len].*;</span>
-<span class="line" id="L996">            <span class="tok-kw">const</span> mask: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0x80</span>);</span>
-<span class="line" id="L997">            <span class="tok-kw">if</span> (<span class="tok-builtin">@reduce</span>(.Or, chunk &amp; mask == mask)) {</span>
-<span class="line" id="L998">                <span class="tok-comment">// found a non ASCII code unit</span>
+<span class="line" id="L956">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L957">            }</span>
+<span class="line" id="L958">            <span class="tok-kw">const</span> zeroes: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0</span>);</span>
+<span class="line" id="L959">            <span class="tok-kw">const</span> utf16_chunk: [chunk_len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u16</span>)) = std.simd.interlace(.{ chunk, zeroes });</span>
+<span class="line" id="L960">            result.appendSliceAssumeCapacity(std.mem.bytesAsSlice(<span class="tok-type">u16</span>, &amp;utf16_chunk));</span>
+<span class="line" id="L961">            remaining = remaining[chunk_len..];</span>
+<span class="line" id="L962">        }</span>
+<span class="line" id="L963">    }</span>
+<span class="line" id="L964"></span>
+<span class="line" id="L965">    <span class="tok-kw">const</span> view = <span class="tok-kw">try</span> Utf8View.init(remaining);</span>
+<span class="line" id="L966">    <span class="tok-kw">var</span> it = view.iterator();</span>
+<span class="line" id="L967">    <span class="tok-kw">while</span> (it.nextCodepoint()) |codepoint| {</span>
+<span class="line" id="L968">        <span class="tok-kw">if</span> (codepoint &lt; <span class="tok-number">0x10000</span>) {</span>
+<span class="line" id="L969">            <span class="tok-kw">const</span> short = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint));</span>
+<span class="line" id="L970">            <span class="tok-kw">try</span> result.append(mem.nativeToLittle(<span class="tok-type">u16</span>, short));</span>
+<span class="line" id="L971">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L972">            <span class="tok-kw">const</span> high = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((codepoint - <span class="tok-number">0x10000</span>) &gt;&gt; <span class="tok-number">10</span>)) + <span class="tok-number">0xD800</span>;</span>
+<span class="line" id="L973">            <span class="tok-kw">const</span> low = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint &amp; <span class="tok-number">0x3FF</span>)) + <span class="tok-number">0xDC00</span>;</span>
+<span class="line" id="L974">            <span class="tok-kw">var</span> out: [<span class="tok-number">2</span>]<span class="tok-type">u16</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L975">            out[<span class="tok-number">0</span>] = mem.nativeToLittle(<span class="tok-type">u16</span>, high);</span>
+<span class="line" id="L976">            out[<span class="tok-number">1</span>] = mem.nativeToLittle(<span class="tok-type">u16</span>, low);</span>
+<span class="line" id="L977">            <span class="tok-kw">try</span> result.appendSlice(out[<span class="tok-number">0</span>..]);</span>
+<span class="line" id="L978">        }</span>
+<span class="line" id="L979">    }</span>
+<span class="line" id="L980"></span>
+<span class="line" id="L981">    <span class="tok-kw">return</span> result.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
+<span class="line" id="L982">}</span>
+<span class="line" id="L983"></span>
+<span class="line" id="L984"><span class="tok-comment">/// Returns index of next character. If exact fit, returned index equals output slice length.</span></span>
+<span class="line" id="L985"><span class="tok-comment">/// Assumes there is enough space for the output.</span></span>
+<span class="line" id="L986"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">utf8ToUtf16Le</span>(utf16le: []<span class="tok-type">u16</span>, utf8: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">usize</span> {</span>
+<span class="line" id="L987">    <span class="tok-kw">var</span> dest_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L988"></span>
+<span class="line" id="L989">    <span class="tok-kw">var</span> remaining = utf8;</span>
+<span class="line" id="L990">    <span class="tok-comment">// Need support for std.simd.interlace</span>
 </span>
-<span class="line" id="L999">                <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1000">            }</span>
-<span class="line" id="L1001">            <span class="tok-kw">const</span> zeroes: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1002">            <span class="tok-kw">const</span> utf16_bytes: [chunk_len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u16</span>)) = std.simd.interlace(.{ chunk, zeroes });</span>
-<span class="line" id="L1003">            <span class="tok-builtin">@memcpy</span>(utf16le[dest_i..][<span class="tok-number">0</span>..chunk_len], std.mem.bytesAsSlice(<span class="tok-type">u16</span>, &amp;utf16_bytes));</span>
-<span class="line" id="L1004">            dest_i += chunk_len;</span>
-<span class="line" id="L1005">            remaining = remaining[chunk_len..];</span>
-<span class="line" id="L1006">        }</span>
-<span class="line" id="L1007">    }</span>
-<span class="line" id="L1008"></span>
-<span class="line" id="L1009">    <span class="tok-kw">var</span> src_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1010">    <span class="tok-kw">while</span> (src_i &lt; remaining.len) {</span>
-<span class="line" id="L1011">        <span class="tok-kw">const</span> n = utf8ByteSequenceLength(remaining[src_i]) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidUtf8;</span>
-<span class="line" id="L1012">        <span class="tok-kw">const</span> next_src_i = src_i + n;</span>
-<span class="line" id="L1013">        <span class="tok-kw">const</span> codepoint = utf8Decode(remaining[src_i..next_src_i]) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidUtf8;</span>
-<span class="line" id="L1014">        <span class="tok-kw">if</span> (codepoint &lt; <span class="tok-number">0x10000</span>) {</span>
-<span class="line" id="L1015">            <span class="tok-kw">const</span> short = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint));</span>
-<span class="line" id="L1016">            utf16le[dest_i] = mem.nativeToLittle(<span class="tok-type">u16</span>, short);</span>
-<span class="line" id="L1017">            dest_i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1018">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1019">            <span class="tok-kw">const</span> high = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((codepoint - <span class="tok-number">0x10000</span>) &gt;&gt; <span class="tok-number">10</span>)) + <span class="tok-number">0xD800</span>;</span>
-<span class="line" id="L1020">            <span class="tok-kw">const</span> low = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint &amp; <span class="tok-number">0x3FF</span>)) + <span class="tok-number">0xDC00</span>;</span>
-<span class="line" id="L1021">            utf16le[dest_i] = mem.nativeToLittle(<span class="tok-type">u16</span>, high);</span>
-<span class="line" id="L1022">            utf16le[dest_i + <span class="tok-number">1</span>] = mem.nativeToLittle(<span class="tok-type">u16</span>, low);</span>
-<span class="line" id="L1023">            dest_i += <span class="tok-number">2</span>;</span>
-<span class="line" id="L1024">        }</span>
-<span class="line" id="L1025">        src_i = next_src_i;</span>
-<span class="line" id="L1026">    }</span>
-<span class="line" id="L1027">    <span class="tok-kw">return</span> dest_i;</span>
-<span class="line" id="L1028">}</span>
-<span class="line" id="L1029"></span>
-<span class="line" id="L1030"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8ToUtf16Le&quot;</span> {</span>
-<span class="line" id="L1031">    <span class="tok-kw">var</span> utf16le: [<span class="tok-number">2</span>]<span class="tok-type">u16</span> = [_]<span class="tok-type">u16</span>{<span class="tok-number">0</span>} ** <span class="tok-number">2</span>;</span>
-<span class="line" id="L1032">    {</span>
-<span class="line" id="L1033">        <span class="tok-kw">const</span> length = <span class="tok-kw">try</span> utf8ToUtf16Le(utf16le[<span class="tok-number">0</span>..], <span class="tok-str">&quot;𐐷&quot;</span>);</span>
-<span class="line" id="L1034">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), length);</span>
-<span class="line" id="L1035">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\x01\xd8\x37\xdc&quot;</span>, mem.sliceAsBytes(utf16le[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L1036">    }</span>
-<span class="line" id="L1037">    {</span>
-<span class="line" id="L1038">        <span class="tok-kw">const</span> length = <span class="tok-kw">try</span> utf8ToUtf16Le(utf16le[<span class="tok-number">0</span>..], <span class="tok-str">&quot;\u{10FFFF}&quot;</span>);</span>
-<span class="line" id="L1039">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), length);</span>
-<span class="line" id="L1040">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\xff\xdb\xff\xdf&quot;</span>, mem.sliceAsBytes(utf16le[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L1041">    }</span>
-<span class="line" id="L1042">    {</span>
-<span class="line" id="L1043">        <span class="tok-kw">const</span> result = utf8ToUtf16Le(utf16le[<span class="tok-number">0</span>..], <span class="tok-str">&quot;\xf4\x90\x80\x80&quot;</span>);</span>
-<span class="line" id="L1044">        <span class="tok-kw">try</span> testing.expectError(<span class="tok-kw">error</span>.InvalidUtf8, result);</span>
-<span class="line" id="L1045">    }</span>
-<span class="line" id="L1046">}</span>
-<span class="line" id="L1047"></span>
-<span class="line" id="L1048"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8ToUtf16LeWithNull&quot;</span> {</span>
-<span class="line" id="L1049">    {</span>
-<span class="line" id="L1050">        <span class="tok-kw">const</span> utf16 = <span class="tok-kw">try</span> utf8ToUtf16LeWithNull(testing.allocator, <span class="tok-str">&quot;𐐷&quot;</span>);</span>
-<span class="line" id="L1051">        <span class="tok-kw">defer</span> testing.allocator.free(utf16);</span>
-<span class="line" id="L1052">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\x01\xd8\x37\xdc&quot;</span>, mem.sliceAsBytes(utf16[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L1053">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1054">    }</span>
-<span class="line" id="L1055">    {</span>
-<span class="line" id="L1056">        <span class="tok-kw">const</span> utf16 = <span class="tok-kw">try</span> utf8ToUtf16LeWithNull(testing.allocator, <span class="tok-str">&quot;\u{10FFFF}&quot;</span>);</span>
-<span class="line" id="L1057">        <span class="tok-kw">defer</span> testing.allocator.free(utf16);</span>
-<span class="line" id="L1058">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\xff\xdb\xff\xdf&quot;</span>, mem.sliceAsBytes(utf16[<span class="tok-number">0</span>..]));</span>
-<span class="line" id="L1059">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1060">    }</span>
-<span class="line" id="L1061">    {</span>
-<span class="line" id="L1062">        <span class="tok-kw">const</span> result = utf8ToUtf16LeWithNull(testing.allocator, <span class="tok-str">&quot;\xf4\x90\x80\x80&quot;</span>);</span>
-<span class="line" id="L1063">        <span class="tok-kw">try</span> testing.expectError(<span class="tok-kw">error</span>.InvalidUtf8, result);</span>
-<span class="line" id="L1064">    }</span>
-<span class="line" id="L1065">}</span>
-<span class="line" id="L1066"></span>
-<span class="line" id="L1067"><span class="tok-comment">/// Converts a UTF-8 string literal into a UTF-16LE string literal.</span></span>
-<span class="line" id="L1068"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">utf8ToUtf16LeStringLiteral</span>(<span class="tok-kw">comptime</span> utf8: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *<span class="tok-kw">const</span> [calcUtf16LeLen(utf8) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>:<span class="tok-number">0</span>]<span class="tok-type">u16</span> {</span>
-<span class="line" id="L1069">    <span class="tok-kw">return</span> <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L1070">        <span class="tok-kw">const</span> len: <span class="tok-type">usize</span> = calcUtf16LeLen(utf8) <span class="tok-kw">catch</span> |err| <span class="tok-builtin">@compileError</span>(err);</span>
-<span class="line" id="L1071">        <span class="tok-kw">var</span> utf16le: [len:<span class="tok-number">0</span>]<span class="tok-type">u16</span> = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{<span class="tok-number">0</span>} ** len;</span>
-<span class="line" id="L1072">        <span class="tok-kw">const</span> utf16le_len = utf8ToUtf16Le(&amp;utf16le, utf8[<span class="tok-number">0</span>..]) <span class="tok-kw">catch</span> |err| <span class="tok-builtin">@compileError</span>(err);</span>
-<span class="line" id="L1073">        assert(len == utf16le_len);</span>
-<span class="line" id="L1074">        <span class="tok-kw">break</span> :blk &amp;utf16le;</span>
-<span class="line" id="L1075">    };</span>
-<span class="line" id="L1076">}</span>
-<span class="line" id="L1077"></span>
-<span class="line" id="L1078"><span class="tok-kw">const</span> CalcUtf16LeLenError = Utf8DecodeError || <span class="tok-kw">error</span>{Utf8InvalidStartByte};</span>
+<span class="line" id="L991">    <span class="tok-kw">if</span> (builtin.zig_backend != .stage2_x86_64 <span class="tok-kw">and</span> <span class="tok-kw">comptime</span> !builtin.cpu.arch.isMIPS()) {</span>
+<span class="line" id="L992">        <span class="tok-kw">const</span> chunk_len = std.simd.suggestVectorSize(<span class="tok-type">u8</span>) <span class="tok-kw">orelse</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L993">        <span class="tok-kw">const</span> Chunk = <span class="tok-builtin">@Vector</span>(chunk_len, <span class="tok-type">u8</span>);</span>
+<span class="line" id="L994"></span>
+<span class="line" id="L995">        <span class="tok-comment">// Fast path. Check for and encode ASCII characters at the start of the input.</span>
+</span>
+<span class="line" id="L996">        <span class="tok-kw">while</span> (remaining.len &gt;= chunk_len) {</span>
+<span class="line" id="L997">            <span class="tok-kw">const</span> chunk: Chunk = remaining[<span class="tok-number">0</span>..chunk_len].*;</span>
+<span class="line" id="L998">            <span class="tok-kw">const</span> mask: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0x80</span>);</span>
+<span class="line" id="L999">            <span class="tok-kw">if</span> (<span class="tok-builtin">@reduce</span>(.Or, chunk &amp; mask == mask)) {</span>
+<span class="line" id="L1000">                <span class="tok-comment">// found a non ASCII code unit</span>
+</span>
+<span class="line" id="L1001">                <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1002">            }</span>
+<span class="line" id="L1003">            <span class="tok-kw">const</span> zeroes: Chunk = <span class="tok-builtin">@splat</span>(<span class="tok-number">0</span>);</span>
+<span class="line" id="L1004">            <span class="tok-kw">const</span> utf16_bytes: [chunk_len * <span class="tok-number">2</span>]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(<span class="tok-type">u16</span>)) = std.simd.interlace(.{ chunk, zeroes });</span>
+<span class="line" id="L1005">            <span class="tok-builtin">@memcpy</span>(utf16le[dest_i..][<span class="tok-number">0</span>..chunk_len], std.mem.bytesAsSlice(<span class="tok-type">u16</span>, &amp;utf16_bytes));</span>
+<span class="line" id="L1006">            dest_i += chunk_len;</span>
+<span class="line" id="L1007">            remaining = remaining[chunk_len..];</span>
+<span class="line" id="L1008">        }</span>
+<span class="line" id="L1009">    }</span>
+<span class="line" id="L1010"></span>
+<span class="line" id="L1011">    <span class="tok-kw">var</span> src_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1012">    <span class="tok-kw">while</span> (src_i &lt; remaining.len) {</span>
+<span class="line" id="L1013">        <span class="tok-kw">const</span> n = utf8ByteSequenceLength(remaining[src_i]) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidUtf8;</span>
+<span class="line" id="L1014">        <span class="tok-kw">const</span> next_src_i = src_i + n;</span>
+<span class="line" id="L1015">        <span class="tok-kw">const</span> codepoint = utf8Decode(remaining[src_i..next_src_i]) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidUtf8;</span>
+<span class="line" id="L1016">        <span class="tok-kw">if</span> (codepoint &lt; <span class="tok-number">0x10000</span>) {</span>
+<span class="line" id="L1017">            <span class="tok-kw">const</span> short = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint));</span>
+<span class="line" id="L1018">            utf16le[dest_i] = mem.nativeToLittle(<span class="tok-type">u16</span>, short);</span>
+<span class="line" id="L1019">            dest_i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1020">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1021">            <span class="tok-kw">const</span> high = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>((codepoint - <span class="tok-number">0x10000</span>) &gt;&gt; <span class="tok-number">10</span>)) + <span class="tok-number">0xD800</span>;</span>
+<span class="line" id="L1022">            <span class="tok-kw">const</span> low = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-builtin">@intCast</span>(codepoint &amp; <span class="tok-number">0x3FF</span>)) + <span class="tok-number">0xDC00</span>;</span>
+<span class="line" id="L1023">            utf16le[dest_i] = mem.nativeToLittle(<span class="tok-type">u16</span>, high);</span>
+<span class="line" id="L1024">            utf16le[dest_i + <span class="tok-number">1</span>] = mem.nativeToLittle(<span class="tok-type">u16</span>, low);</span>
+<span class="line" id="L1025">            dest_i += <span class="tok-number">2</span>;</span>
+<span class="line" id="L1026">        }</span>
+<span class="line" id="L1027">        src_i = next_src_i;</span>
+<span class="line" id="L1028">    }</span>
+<span class="line" id="L1029">    <span class="tok-kw">return</span> dest_i;</span>
+<span class="line" id="L1030">}</span>
+<span class="line" id="L1031"></span>
+<span class="line" id="L1032"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8ToUtf16Le&quot;</span> {</span>
+<span class="line" id="L1033">    <span class="tok-kw">var</span> utf16le: [<span class="tok-number">2</span>]<span class="tok-type">u16</span> = [_]<span class="tok-type">u16</span>{<span class="tok-number">0</span>} ** <span class="tok-number">2</span>;</span>
+<span class="line" id="L1034">    {</span>
+<span class="line" id="L1035">        <span class="tok-kw">const</span> length = <span class="tok-kw">try</span> utf8ToUtf16Le(utf16le[<span class="tok-number">0</span>..], <span class="tok-str">&quot;𐐷&quot;</span>);</span>
+<span class="line" id="L1036">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), length);</span>
+<span class="line" id="L1037">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\x01\xd8\x37\xdc&quot;</span>, mem.sliceAsBytes(utf16le[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L1038">    }</span>
+<span class="line" id="L1039">    {</span>
+<span class="line" id="L1040">        <span class="tok-kw">const</span> length = <span class="tok-kw">try</span> utf8ToUtf16Le(utf16le[<span class="tok-number">0</span>..], <span class="tok-str">&quot;\u{10FFFF}&quot;</span>);</span>
+<span class="line" id="L1041">        <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">2</span>), length);</span>
+<span class="line" id="L1042">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\xff\xdb\xff\xdf&quot;</span>, mem.sliceAsBytes(utf16le[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L1043">    }</span>
+<span class="line" id="L1044">    {</span>
+<span class="line" id="L1045">        <span class="tok-kw">const</span> result = utf8ToUtf16Le(utf16le[<span class="tok-number">0</span>..], <span class="tok-str">&quot;\xf4\x90\x80\x80&quot;</span>);</span>
+<span class="line" id="L1046">        <span class="tok-kw">try</span> testing.expectError(<span class="tok-kw">error</span>.InvalidUtf8, result);</span>
+<span class="line" id="L1047">    }</span>
+<span class="line" id="L1048">}</span>
+<span class="line" id="L1049"></span>
+<span class="line" id="L1050"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8ToUtf16LeWithNull&quot;</span> {</span>
+<span class="line" id="L1051">    {</span>
+<span class="line" id="L1052">        <span class="tok-kw">const</span> utf16 = <span class="tok-kw">try</span> utf8ToUtf16LeWithNull(testing.allocator, <span class="tok-str">&quot;𐐷&quot;</span>);</span>
+<span class="line" id="L1053">        <span class="tok-kw">defer</span> testing.allocator.free(utf16);</span>
+<span class="line" id="L1054">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\x01\xd8\x37\xdc&quot;</span>, mem.sliceAsBytes(utf16[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L1055">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1056">    }</span>
+<span class="line" id="L1057">    {</span>
+<span class="line" id="L1058">        <span class="tok-kw">const</span> utf16 = <span class="tok-kw">try</span> utf8ToUtf16LeWithNull(testing.allocator, <span class="tok-str">&quot;\u{10FFFF}&quot;</span>);</span>
+<span class="line" id="L1059">        <span class="tok-kw">defer</span> testing.allocator.free(utf16);</span>
+<span class="line" id="L1060">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u8</span>, <span class="tok-str">&quot;\xff\xdb\xff\xdf&quot;</span>, mem.sliceAsBytes(utf16[<span class="tok-number">0</span>..]));</span>
+<span class="line" id="L1061">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1062">    }</span>
+<span class="line" id="L1063">    {</span>
+<span class="line" id="L1064">        <span class="tok-kw">const</span> result = utf8ToUtf16LeWithNull(testing.allocator, <span class="tok-str">&quot;\xf4\x90\x80\x80&quot;</span>);</span>
+<span class="line" id="L1065">        <span class="tok-kw">try</span> testing.expectError(<span class="tok-kw">error</span>.InvalidUtf8, result);</span>
+<span class="line" id="L1066">    }</span>
+<span class="line" id="L1067">}</span>
+<span class="line" id="L1068"></span>
+<span class="line" id="L1069"><span class="tok-comment">/// Converts a UTF-8 string literal into a UTF-16LE string literal.</span></span>
+<span class="line" id="L1070"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">utf8ToUtf16LeStringLiteral</span>(<span class="tok-kw">comptime</span> utf8: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) *<span class="tok-kw">const</span> [calcUtf16LeLen(utf8) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>:<span class="tok-number">0</span>]<span class="tok-type">u16</span> {</span>
+<span class="line" id="L1071">    <span class="tok-kw">return</span> <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L1072">        <span class="tok-kw">const</span> len: <span class="tok-type">usize</span> = calcUtf16LeLen(utf8) <span class="tok-kw">catch</span> |err| <span class="tok-builtin">@compileError</span>(err);</span>
+<span class="line" id="L1073">        <span class="tok-kw">var</span> utf16le: [len:<span class="tok-number">0</span>]<span class="tok-type">u16</span> = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{<span class="tok-number">0</span>} ** len;</span>
+<span class="line" id="L1074">        <span class="tok-kw">const</span> utf16le_len = utf8ToUtf16Le(&amp;utf16le, utf8[<span class="tok-number">0</span>..]) <span class="tok-kw">catch</span> |err| <span class="tok-builtin">@compileError</span>(err);</span>
+<span class="line" id="L1075">        assert(len == utf16le_len);</span>
+<span class="line" id="L1076">        <span class="tok-kw">break</span> :blk &amp;utf16le;</span>
+<span class="line" id="L1077">    };</span>
+<span class="line" id="L1078">}</span>
 <span class="line" id="L1079"></span>
-<span class="line" id="L1080"><span class="tok-comment">/// Returns length in UTF-16 of UTF-8 slice as length of []u16.</span></span>
-<span class="line" id="L1081"><span class="tok-comment">/// Length in []u8 is 2*len16.</span></span>
-<span class="line" id="L1082"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">calcUtf16LeLen</span>(utf8: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) CalcUtf16LeLenError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L1083">    <span class="tok-kw">var</span> src_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1084">    <span class="tok-kw">var</span> dest_len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1085">    <span class="tok-kw">while</span> (src_i &lt; utf8.len) {</span>
-<span class="line" id="L1086">        <span class="tok-kw">const</span> n = <span class="tok-kw">try</span> utf8ByteSequenceLength(utf8[src_i]);</span>
-<span class="line" id="L1087">        <span class="tok-kw">const</span> next_src_i = src_i + n;</span>
-<span class="line" id="L1088">        <span class="tok-kw">const</span> codepoint = <span class="tok-kw">try</span> utf8Decode(utf8[src_i..next_src_i]);</span>
-<span class="line" id="L1089">        <span class="tok-kw">if</span> (codepoint &lt; <span class="tok-number">0x10000</span>) {</span>
-<span class="line" id="L1090">            dest_len += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1091">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1092">            dest_len += <span class="tok-number">2</span>;</span>
-<span class="line" id="L1093">        }</span>
-<span class="line" id="L1094">        src_i = next_src_i;</span>
-<span class="line" id="L1095">    }</span>
-<span class="line" id="L1096">    <span class="tok-kw">return</span> dest_len;</span>
-<span class="line" id="L1097">}</span>
-<span class="line" id="L1098"></span>
-<span class="line" id="L1099"><span class="tok-kw">fn</span> <span class="tok-fn">testCalcUtf16LeLen</span>() !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1100">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;a&quot;</span>));</span>
-<span class="line" id="L1101">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;abcdefghij&quot;</span>));</span>
-<span class="line" id="L1102">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;äåéëþüúíóö&quot;</span>));</span>
-<span class="line" id="L1103">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;こんにちは&quot;</span>));</span>
-<span class="line" id="L1104">}</span>
-<span class="line" id="L1105"></span>
-<span class="line" id="L1106"><span class="tok-kw">test</span> <span class="tok-str">&quot;calculate utf16 string length of given utf8 string in u16&quot;</span> {</span>
-<span class="line" id="L1107">    <span class="tok-kw">try</span> testCalcUtf16LeLen();</span>
-<span class="line" id="L1108">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testCalcUtf16LeLen();</span>
-<span class="line" id="L1109">}</span>
-<span class="line" id="L1110"></span>
-<span class="line" id="L1111"><span class="tok-comment">/// Print the given `utf16le` string</span></span>
-<span class="line" id="L1112"><span class="tok-kw">fn</span> <span class="tok-fn">formatUtf16le</span>(</span>
-<span class="line" id="L1113">    utf16le: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>,</span>
-<span class="line" id="L1114">    <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
-<span class="line" id="L1115">    options: std.fmt.FormatOptions,</span>
-<span class="line" id="L1116">    writer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L1117">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1118">    _ = fmt;</span>
-<span class="line" id="L1119">    _ = options;</span>
-<span class="line" id="L1120">    <span class="tok-kw">var</span> buf: [<span class="tok-number">300</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>; <span class="tok-comment">// just a random size I chose</span>
+<span class="line" id="L1080"><span class="tok-kw">const</span> CalcUtf16LeLenError = Utf8DecodeError || <span class="tok-kw">error</span>{Utf8InvalidStartByte};</span>
+<span class="line" id="L1081"></span>
+<span class="line" id="L1082"><span class="tok-comment">/// Returns length in UTF-16 of UTF-8 slice as length of []u16.</span></span>
+<span class="line" id="L1083"><span class="tok-comment">/// Length in []u8 is 2*len16.</span></span>
+<span class="line" id="L1084"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">calcUtf16LeLen</span>(utf8: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) CalcUtf16LeLenError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L1085">    <span class="tok-kw">var</span> src_i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1086">    <span class="tok-kw">var</span> dest_len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1087">    <span class="tok-kw">while</span> (src_i &lt; utf8.len) {</span>
+<span class="line" id="L1088">        <span class="tok-kw">const</span> n = <span class="tok-kw">try</span> utf8ByteSequenceLength(utf8[src_i]);</span>
+<span class="line" id="L1089">        <span class="tok-kw">const</span> next_src_i = src_i + n;</span>
+<span class="line" id="L1090">        <span class="tok-kw">const</span> codepoint = <span class="tok-kw">try</span> utf8Decode(utf8[src_i..next_src_i]);</span>
+<span class="line" id="L1091">        <span class="tok-kw">if</span> (codepoint &lt; <span class="tok-number">0x10000</span>) {</span>
+<span class="line" id="L1092">            dest_len += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1093">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1094">            dest_len += <span class="tok-number">2</span>;</span>
+<span class="line" id="L1095">        }</span>
+<span class="line" id="L1096">        src_i = next_src_i;</span>
+<span class="line" id="L1097">    }</span>
+<span class="line" id="L1098">    <span class="tok-kw">return</span> dest_len;</span>
+<span class="line" id="L1099">}</span>
+<span class="line" id="L1100"></span>
+<span class="line" id="L1101"><span class="tok-kw">fn</span> <span class="tok-fn">testCalcUtf16LeLen</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1102">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">1</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;a&quot;</span>));</span>
+<span class="line" id="L1103">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;abcdefghij&quot;</span>));</span>
+<span class="line" id="L1104">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;äåéëþüúíóö&quot;</span>));</span>
+<span class="line" id="L1105">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), <span class="tok-kw">try</span> calcUtf16LeLen(<span class="tok-str">&quot;こんにちは&quot;</span>));</span>
+<span class="line" id="L1106">}</span>
+<span class="line" id="L1107"></span>
+<span class="line" id="L1108"><span class="tok-kw">test</span> <span class="tok-str">&quot;calculate utf16 string length of given utf8 string in u16&quot;</span> {</span>
+<span class="line" id="L1109">    <span class="tok-kw">try</span> testCalcUtf16LeLen();</span>
+<span class="line" id="L1110">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testCalcUtf16LeLen();</span>
+<span class="line" id="L1111">}</span>
+<span class="line" id="L1112"></span>
+<span class="line" id="L1113"><span class="tok-comment">/// Print the given `utf16le` string</span></span>
+<span class="line" id="L1114"><span class="tok-kw">fn</span> <span class="tok-fn">formatUtf16le</span>(</span>
+<span class="line" id="L1115">    utf16le: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>,</span>
+<span class="line" id="L1116">    <span class="tok-kw">comptime</span> fmt: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1117">    options: std.fmt.FormatOptions,</span>
+<span class="line" id="L1118">    writer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L1119">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1120">    _ = fmt;</span>
+<span class="line" id="L1121">    _ = options;</span>
+<span class="line" id="L1122">    <span class="tok-kw">var</span> buf: [<span class="tok-number">300</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>; <span class="tok-comment">// just a random size I chose</span>
 </span>
-<span class="line" id="L1121">    <span class="tok-kw">var</span> it = Utf16LeIterator.init(utf16le);</span>
-<span class="line" id="L1122">    <span class="tok-kw">var</span> u8len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1123">    <span class="tok-kw">while</span> (it.nextCodepoint() <span class="tok-kw">catch</span> replacement_character) |codepoint| {</span>
-<span class="line" id="L1124">        u8len += utf8Encode(codepoint, buf[u8len..]) <span class="tok-kw">catch</span></span>
-<span class="line" id="L1125">            utf8Encode(replacement_character, buf[u8len..]) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1126">        <span class="tok-kw">if</span> (u8len + <span class="tok-number">3</span> &gt;= buf.len) {</span>
-<span class="line" id="L1127">            <span class="tok-kw">try</span> writer.writeAll(buf[<span class="tok-number">0</span>..u8len]);</span>
-<span class="line" id="L1128">            u8len = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1129">        }</span>
-<span class="line" id="L1130">    }</span>
-<span class="line" id="L1131">    <span class="tok-kw">try</span> writer.writeAll(buf[<span class="tok-number">0</span>..u8len]);</span>
-<span class="line" id="L1132">}</span>
-<span class="line" id="L1133"></span>
-<span class="line" id="L1134"><span class="tok-comment">/// Return a Formatter for a Utf16le string</span></span>
-<span class="line" id="L1135"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fmtUtf16le</span>(utf16le: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>) std.fmt.Formatter(formatUtf16le) {</span>
-<span class="line" id="L1136">    <span class="tok-kw">return</span> .{ .data = utf16le };</span>
-<span class="line" id="L1137">}</span>
-<span class="line" id="L1138"></span>
-<span class="line" id="L1139"><span class="tok-kw">test</span> <span class="tok-str">&quot;fmtUtf16le&quot;</span> {</span>
-<span class="line" id="L1140">    <span class="tok-kw">const</span> expectFmt = std.testing.expectFmt;</span>
-<span class="line" id="L1141">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;&quot;</span>))});</span>
-<span class="line" id="L1142">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;foo&quot;</span>))});</span>
-<span class="line" id="L1143">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;𐐷&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;𐐷&quot;</span>))});</span>
-<span class="line" id="L1144">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;퟿&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\xff\xd7&quot;</span>, native_endian)})});</span>
-<span class="line" id="L1145">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\x00\xd8&quot;</span>, native_endian)})});</span>
-<span class="line" id="L1146">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\xff\xdb&quot;</span>, native_endian)})});</span>
-<span class="line" id="L1147">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\x00\xdc&quot;</span>, native_endian)})});</span>
-<span class="line" id="L1148">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\xff\xdf&quot;</span>, native_endian)})});</span>
-<span class="line" id="L1149">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\x00\xe0&quot;</span>, native_endian)})});</span>
-<span class="line" id="L1150">}</span>
-<span class="line" id="L1151"></span>
-<span class="line" id="L1152"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8ToUtf16LeStringLiteral&quot;</span> {</span>
-<span class="line" id="L1153">    {</span>
-<span class="line" id="L1154">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L1155">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x41</span>),</span>
-<span class="line" id="L1156">        };</span>
-<span class="line" id="L1157">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;A&quot;</span>);</span>
-<span class="line" id="L1158">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
-<span class="line" id="L1159">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1160">    }</span>
-<span class="line" id="L1161">    {</span>
-<span class="line" id="L1162">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L1163">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xD801</span>),</span>
-<span class="line" id="L1164">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xDC37</span>),</span>
-<span class="line" id="L1165">        };</span>
-<span class="line" id="L1166">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;𐐷&quot;</span>);</span>
-<span class="line" id="L1167">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
-<span class="line" id="L1168">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1169">    }</span>
-<span class="line" id="L1170">    {</span>
-<span class="line" id="L1171">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L1172">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x02FF</span>),</span>
-<span class="line" id="L1173">        };</span>
-<span class="line" id="L1174">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{02FF}&quot;</span>);</span>
-<span class="line" id="L1175">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
-<span class="line" id="L1176">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1177">    }</span>
-<span class="line" id="L1178">    {</span>
-<span class="line" id="L1179">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L1180">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x7FF</span>),</span>
-<span class="line" id="L1181">        };</span>
-<span class="line" id="L1182">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{7FF}&quot;</span>);</span>
-<span class="line" id="L1183">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
-<span class="line" id="L1184">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1185">    }</span>
-<span class="line" id="L1186">    {</span>
-<span class="line" id="L1187">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L1188">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x801</span>),</span>
-<span class="line" id="L1189">        };</span>
-<span class="line" id="L1190">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{801}&quot;</span>);</span>
-<span class="line" id="L1191">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
-<span class="line" id="L1192">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1193">    }</span>
-<span class="line" id="L1194">    {</span>
-<span class="line" id="L1195">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
-<span class="line" id="L1196">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xDBFF</span>),</span>
-<span class="line" id="L1197">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xDFFF</span>),</span>
-<span class="line" id="L1198">        };</span>
-<span class="line" id="L1199">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{10FFFF}&quot;</span>);</span>
-<span class="line" id="L1200">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
-<span class="line" id="L1201">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
-<span class="line" id="L1202">    }</span>
-<span class="line" id="L1203">}</span>
-<span class="line" id="L1204"></span>
-<span class="line" id="L1205"><span class="tok-kw">fn</span> <span class="tok-fn">testUtf8CountCodepoints</span>() !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1206">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> utf8CountCodepoints(<span class="tok-str">&quot;abcdefghij&quot;</span>));</span>
-<span class="line" id="L1207">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> utf8CountCodepoints(<span class="tok-str">&quot;äåéëþüúíóö&quot;</span>));</span>
-<span class="line" id="L1208">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), <span class="tok-kw">try</span> utf8CountCodepoints(<span class="tok-str">&quot;こんにちは&quot;</span>));</span>
-<span class="line" id="L1209">    <span class="tok-comment">// testing.expectError(error.Utf8EncodesSurrogateHalf, utf8CountCodepoints(&quot;\xED\xA0\x80&quot;));</span>
+<span class="line" id="L1123">    <span class="tok-kw">var</span> it = Utf16LeIterator.init(utf16le);</span>
+<span class="line" id="L1124">    <span class="tok-kw">var</span> u8len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1125">    <span class="tok-kw">while</span> (it.nextCodepoint() <span class="tok-kw">catch</span> replacement_character) |codepoint| {</span>
+<span class="line" id="L1126">        u8len += utf8Encode(codepoint, buf[u8len..]) <span class="tok-kw">catch</span></span>
+<span class="line" id="L1127">            utf8Encode(replacement_character, buf[u8len..]) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1128">        <span class="tok-kw">if</span> (u8len + <span class="tok-number">3</span> &gt;= buf.len) {</span>
+<span class="line" id="L1129">            <span class="tok-kw">try</span> writer.writeAll(buf[<span class="tok-number">0</span>..u8len]);</span>
+<span class="line" id="L1130">            u8len = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1131">        }</span>
+<span class="line" id="L1132">    }</span>
+<span class="line" id="L1133">    <span class="tok-kw">try</span> writer.writeAll(buf[<span class="tok-number">0</span>..u8len]);</span>
+<span class="line" id="L1134">}</span>
+<span class="line" id="L1135"></span>
+<span class="line" id="L1136"><span class="tok-comment">/// Return a Formatter for a Utf16le string</span></span>
+<span class="line" id="L1137"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">fmtUtf16le</span>(utf16le: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>) std.fmt.Formatter(formatUtf16le) {</span>
+<span class="line" id="L1138">    <span class="tok-kw">return</span> .{ .data = utf16le };</span>
+<span class="line" id="L1139">}</span>
+<span class="line" id="L1140"></span>
+<span class="line" id="L1141"><span class="tok-kw">test</span> <span class="tok-str">&quot;fmtUtf16le&quot;</span> {</span>
+<span class="line" id="L1142">    <span class="tok-kw">const</span> expectFmt = std.testing.expectFmt;</span>
+<span class="line" id="L1143">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;&quot;</span>))});</span>
+<span class="line" id="L1144">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;foo&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;foo&quot;</span>))});</span>
+<span class="line" id="L1145">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;𐐷&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;𐐷&quot;</span>))});</span>
+<span class="line" id="L1146">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;퟿&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\xff\xd7&quot;</span>, native_endian)})});</span>
+<span class="line" id="L1147">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\x00\xd8&quot;</span>, native_endian)})});</span>
+<span class="line" id="L1148">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\xff\xdb&quot;</span>, native_endian)})});</span>
+<span class="line" id="L1149">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\x00\xdc&quot;</span>, native_endian)})});</span>
+<span class="line" id="L1150">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;�&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\xff\xdf&quot;</span>, native_endian)})});</span>
+<span class="line" id="L1151">    <span class="tok-kw">try</span> expectFmt(<span class="tok-str">&quot;&quot;</span>, <span class="tok-str">&quot;{}&quot;</span>, .{fmtUtf16le(&amp;[_]<span class="tok-type">u16</span>{std.mem.readInt(<span class="tok-type">u16</span>, <span class="tok-str">&quot;\x00\xe0&quot;</span>, native_endian)})});</span>
+<span class="line" id="L1152">}</span>
+<span class="line" id="L1153"></span>
+<span class="line" id="L1154"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8ToUtf16LeStringLiteral&quot;</span> {</span>
+<span class="line" id="L1155">    {</span>
+<span class="line" id="L1156">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
+<span class="line" id="L1157">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x41</span>),</span>
+<span class="line" id="L1158">        };</span>
+<span class="line" id="L1159">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;A&quot;</span>);</span>
+<span class="line" id="L1160">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
+<span class="line" id="L1161">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1162">    }</span>
+<span class="line" id="L1163">    {</span>
+<span class="line" id="L1164">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
+<span class="line" id="L1165">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xD801</span>),</span>
+<span class="line" id="L1166">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xDC37</span>),</span>
+<span class="line" id="L1167">        };</span>
+<span class="line" id="L1168">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;𐐷&quot;</span>);</span>
+<span class="line" id="L1169">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
+<span class="line" id="L1170">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1171">    }</span>
+<span class="line" id="L1172">    {</span>
+<span class="line" id="L1173">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
+<span class="line" id="L1174">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x02FF</span>),</span>
+<span class="line" id="L1175">        };</span>
+<span class="line" id="L1176">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{02FF}&quot;</span>);</span>
+<span class="line" id="L1177">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
+<span class="line" id="L1178">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1179">    }</span>
+<span class="line" id="L1180">    {</span>
+<span class="line" id="L1181">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
+<span class="line" id="L1182">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x7FF</span>),</span>
+<span class="line" id="L1183">        };</span>
+<span class="line" id="L1184">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{7FF}&quot;</span>);</span>
+<span class="line" id="L1185">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
+<span class="line" id="L1186">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1187">    }</span>
+<span class="line" id="L1188">    {</span>
+<span class="line" id="L1189">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
+<span class="line" id="L1190">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0x801</span>),</span>
+<span class="line" id="L1191">        };</span>
+<span class="line" id="L1192">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{801}&quot;</span>);</span>
+<span class="line" id="L1193">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
+<span class="line" id="L1194">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">1</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1195">    }</span>
+<span class="line" id="L1196">    {</span>
+<span class="line" id="L1197">        <span class="tok-kw">const</span> bytes = [_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{</span>
+<span class="line" id="L1198">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xDBFF</span>),</span>
+<span class="line" id="L1199">            mem.nativeToLittle(<span class="tok-type">u16</span>, <span class="tok-number">0xDFFF</span>),</span>
+<span class="line" id="L1200">        };</span>
+<span class="line" id="L1201">        <span class="tok-kw">const</span> utf16 = utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;\u{10FFFF}&quot;</span>);</span>
+<span class="line" id="L1202">        <span class="tok-kw">try</span> testing.expectEqualSlices(<span class="tok-type">u16</span>, &amp;bytes, utf16);</span>
+<span class="line" id="L1203">        <span class="tok-kw">try</span> testing.expect(utf16[<span class="tok-number">2</span>] == <span class="tok-number">0</span>);</span>
+<span class="line" id="L1204">    }</span>
+<span class="line" id="L1205">}</span>
+<span class="line" id="L1206"></span>
+<span class="line" id="L1207"><span class="tok-kw">fn</span> <span class="tok-fn">testUtf8CountCodepoints</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1208">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> utf8CountCodepoints(<span class="tok-str">&quot;abcdefghij&quot;</span>));</span>
+<span class="line" id="L1209">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">10</span>), <span class="tok-kw">try</span> utf8CountCodepoints(<span class="tok-str">&quot;äåéëþüúíóö&quot;</span>));</span>
+<span class="line" id="L1210">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), <span class="tok-kw">try</span> utf8CountCodepoints(<span class="tok-str">&quot;こんにちは&quot;</span>));</span>
+<span class="line" id="L1211">    <span class="tok-comment">// testing.expectError(error.Utf8EncodesSurrogateHalf, utf8CountCodepoints(&quot;\xED\xA0\x80&quot;));</span>
 </span>
-<span class="line" id="L1210">}</span>
-<span class="line" id="L1211"></span>
-<span class="line" id="L1212"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8 count codepoints&quot;</span> {</span>
-<span class="line" id="L1213">    <span class="tok-kw">try</span> testUtf8CountCodepoints();</span>
-<span class="line" id="L1214">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testUtf8CountCodepoints();</span>
-<span class="line" id="L1215">}</span>
-<span class="line" id="L1216"></span>
-<span class="line" id="L1217"><span class="tok-kw">fn</span> <span class="tok-fn">testUtf8ValidCodepoint</span>() !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1218">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-str">'e'</span>));</span>
-<span class="line" id="L1219">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-str">'ë'</span>));</span>
-<span class="line" id="L1220">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-str">'は'</span>));</span>
-<span class="line" id="L1221">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-number">0xe000</span>));</span>
-<span class="line" id="L1222">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-number">0x10ffff</span>));</span>
-<span class="line" id="L1223">    <span class="tok-kw">try</span> testing.expect(!utf8ValidCodepoint(<span class="tok-number">0xd800</span>));</span>
-<span class="line" id="L1224">    <span class="tok-kw">try</span> testing.expect(!utf8ValidCodepoint(<span class="tok-number">0xdfff</span>));</span>
-<span class="line" id="L1225">    <span class="tok-kw">try</span> testing.expect(!utf8ValidCodepoint(<span class="tok-number">0x110000</span>));</span>
-<span class="line" id="L1226">}</span>
-<span class="line" id="L1227"></span>
-<span class="line" id="L1228"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8 valid codepoint&quot;</span> {</span>
-<span class="line" id="L1229">    <span class="tok-kw">try</span> testUtf8ValidCodepoint();</span>
-<span class="line" id="L1230">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testUtf8ValidCodepoint();</span>
-<span class="line" id="L1231">}</span>
-<span class="line" id="L1232"></span>
+<span class="line" id="L1212">}</span>
+<span class="line" id="L1213"></span>
+<span class="line" id="L1214"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8 count codepoints&quot;</span> {</span>
+<span class="line" id="L1215">    <span class="tok-kw">try</span> testUtf8CountCodepoints();</span>
+<span class="line" id="L1216">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testUtf8CountCodepoints();</span>
+<span class="line" id="L1217">}</span>
+<span class="line" id="L1218"></span>
+<span class="line" id="L1219"><span class="tok-kw">fn</span> <span class="tok-fn">testUtf8ValidCodepoint</span>() !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1220">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-str">'e'</span>));</span>
+<span class="line" id="L1221">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-str">'ë'</span>));</span>
+<span class="line" id="L1222">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-str">'は'</span>));</span>
+<span class="line" id="L1223">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-number">0xe000</span>));</span>
+<span class="line" id="L1224">    <span class="tok-kw">try</span> testing.expect(utf8ValidCodepoint(<span class="tok-number">0x10ffff</span>));</span>
+<span class="line" id="L1225">    <span class="tok-kw">try</span> testing.expect(!utf8ValidCodepoint(<span class="tok-number">0xd800</span>));</span>
+<span class="line" id="L1226">    <span class="tok-kw">try</span> testing.expect(!utf8ValidCodepoint(<span class="tok-number">0xdfff</span>));</span>
+<span class="line" id="L1227">    <span class="tok-kw">try</span> testing.expect(!utf8ValidCodepoint(<span class="tok-number">0x110000</span>));</span>
+<span class="line" id="L1228">}</span>
+<span class="line" id="L1229"></span>
+<span class="line" id="L1230"><span class="tok-kw">test</span> <span class="tok-str">&quot;utf8 valid codepoint&quot;</span> {</span>
+<span class="line" id="L1231">    <span class="tok-kw">try</span> testUtf8ValidCodepoint();</span>
+<span class="line" id="L1232">    <span class="tok-kw">try</span> <span class="tok-kw">comptime</span> testUtf8ValidCodepoint();</span>
+<span class="line" id="L1233">}</span>
+<span class="line" id="L1234"></span>
 </code></pre></body>
 </html>
