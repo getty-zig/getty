@@ -36,11 +36,6 @@ pub fn deserializeErr(
     comptime Want: type,
     input: []const Token,
 ) !Result(Want) {
-    comptime {
-        std.debug.assert(@typeInfo(block) == .Struct);
-        std.debug.assert(std.meta.trait.hasFunctions(block, .{ "deserialize", "Visitor" }));
-    }
-
     var result = Result(Want){
         .arena = arena: {
             const arena = try test_ally.create(std.heap.ArenaAllocator);
@@ -91,11 +86,6 @@ pub fn deserializeErrWithLifetime(
     input: []const Token,
     lifetime: StringLifetime,
 ) !Want {
-    comptime {
-        std.debug.assert(@typeInfo(block) == .Struct);
-        std.debug.assert(std.meta.trait.hasFunctions(block, .{ "deserialize", "Visitor" }));
-    }
-
     var d = DefaultDeserializer{
         .tokens = input,
         .str_lifetime = lifetime,
