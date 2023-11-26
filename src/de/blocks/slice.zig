@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const isString = @import("../../helpers.zig").isString;
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
 const testing = @import("../testing.zig");
 
@@ -24,7 +25,7 @@ pub fn deserialize(
     /// A `getty.de.Visitor` interface value.
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
-    return try switch (comptime std.meta.trait.isZigString(T)) {
+    return try switch (comptime isString(T)) {
         true => deserializer.deserializeString(ally, visitor),
         false => deserializer.deserializeSeq(ally, visitor),
     };

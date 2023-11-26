@@ -1,6 +1,7 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
+const isString = @import("../../helpers.zig").isString;
 const StringLifetime = @import("../lifetime.zig").StringLifetime;
 
 /// A `Visitor` deserializes values from Getty's data model into Zig.
@@ -119,7 +120,7 @@ pub fn Visitor(
             ) Deserializer.Err!VisitStringReturn(T) {
                 if (methods.visitString) |func| {
                     comptime {
-                        if (!std.meta.trait.isZigString(@TypeOf(input))) {
+                        if (!isString(@TypeOf(input))) {
                             @compileError("expected string, found: " ++ @typeName(@TypeOf(input)));
                         }
                     }

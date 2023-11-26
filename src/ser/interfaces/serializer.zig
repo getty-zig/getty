@@ -2,6 +2,7 @@ const std = @import("std");
 
 const err = @import("../error.zig");
 const default_st = @import("../tuples.zig").st;
+const isString = @import("../../helpers.zig").isString;
 
 /// A `Serializer` converts _Getty values_ into formatted data.
 pub fn Serializer(
@@ -251,7 +252,7 @@ pub fn Serializer(
             /// Serializes a Getty String value.
             pub fn serializeString(self: Self, value: anytype) E!T {
                 if (methods.serializeString) |func| {
-                    if (comptime !std.meta.trait.isZigString(@TypeOf(value))) {
+                    if (comptime !isString(@TypeOf(value))) {
                         @compileError("expected string, found: " ++ @typeName(@TypeOf(value)));
                     }
 

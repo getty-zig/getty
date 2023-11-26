@@ -4,6 +4,7 @@ const blocks = @import("../blocks.zig");
 const find_db = @import("../find.zig").find_db;
 const has_attributes = @import("../../attributes.zig").has_attributes;
 const Ignored = @import("../impls/seed/ignored.zig").Ignored;
+const isString = @import("../../helpers.zig").isString;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 const testing = @import("../testing.zig");
 const VisitorInterface = @import("../interfaces/visitor.zig").Visitor;
@@ -29,7 +30,7 @@ pub fn deserialize(
     /// A `getty.de.Visitor` interface value.
     visitor: anytype,
 ) !@TypeOf(visitor).Value {
-    if (comptime std.meta.trait.isZigString(T)) {
+    if (comptime isString(T)) {
         return try deserializer.deserializeString(ally, visitor);
     }
 

@@ -2,6 +2,7 @@
 
 const std = @import("std");
 
+const isString = @import("../../helpers.zig").isString;
 const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.
@@ -9,7 +10,7 @@ pub fn is(
     /// The type of a value being serialized.
     comptime T: type,
 ) bool {
-    return comptime std.meta.trait.isZigString(T);
+    return comptime isString(T);
 }
 
 /// Specifies the serialization process for values relevant to this block.
@@ -25,7 +26,7 @@ pub fn serialize(
 
     const T = @TypeOf(value);
 
-    comptime std.debug.assert(std.meta.trait.isZigString(T));
+    comptime std.debug.assert(isString(T));
 
     // If there is a sentinel value, avoid serializing anything after it.
     if (comptime std.meta.sentinel(T)) |sentinel| {
