@@ -103,7 +103,7 @@ fn visitString(
         },
         .stack, .managed => {
             const copy = try ally.alloc(u8, input.len);
-            std.mem.copy(u8, copy, input);
+            std.mem.copyForwards(u8, copy, input);
             return .{ .value = .{ .String = copy }, .used = false };
         },
     }

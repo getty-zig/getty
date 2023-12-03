@@ -71,7 +71,7 @@ pub fn Visitor(comptime Slice: type) type {
             }
 
             const output = try ally.alloc(u8, input.len + @intFromBool(v_info.sentinel != null));
-            std.mem.copy(u8, output, input);
+            std.mem.copyForwards(u8, output, input);
 
             if (v_info.sentinel) |s| {
                 const sentinel_char = @as(*const u8, @ptrCast(s)).*;
