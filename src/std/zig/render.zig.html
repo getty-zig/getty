@@ -3705,391 +3705,394 @@
 <span class="line" id="L3188">    <span class="tok-kw">else</span></span>
 <span class="line" id="L3189">        token_starts[token_index - <span class="tok-number">1</span>] + tokenSliceForRender(tree, token_index - <span class="tok-number">1</span>).len;</span>
 <span class="line" id="L3190"></span>
-<span class="line" id="L3191">    <span class="tok-comment">// If there is a comment present, it will handle the empty line</span>
+<span class="line" id="L3191">    <span class="tok-comment">// If there is a immediately preceding comment or doc_comment,</span>
 </span>
-<span class="line" id="L3192">    <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, tree.source[prev_token_end..token_start], <span class="tok-str">&quot;//&quot;</span>) != <span class="tok-null">null</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3193"></span>
-<span class="line" id="L3194">    <span class="tok-comment">// Iterate backwards to the end of the previous token, stopping if a</span>
+<span class="line" id="L3192">    <span class="tok-comment">// skip it because required extra newline has already been rendered.</span>
 </span>
-<span class="line" id="L3195">    <span class="tok-comment">// non-whitespace character is encountered or two newlines have been found.</span>
+<span class="line" id="L3193">    <span class="tok-kw">if</span> (mem.indexOf(<span class="tok-type">u8</span>, tree.source[prev_token_end..token_start], <span class="tok-str">&quot;//&quot;</span>) != <span class="tok-null">null</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3194">    <span class="tok-kw">if</span> (token_index &gt; <span class="tok-number">0</span> <span class="tok-kw">and</span> tree.tokens.items(.tag)[token_index - <span class="tok-number">1</span>] == .doc_comment) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3195"></span>
+<span class="line" id="L3196">    <span class="tok-comment">// Iterate backwards to the end of the previous token, stopping if a</span>
 </span>
-<span class="line" id="L3196">    <span class="tok-kw">var</span> i = token_start - <span class="tok-number">1</span>;</span>
-<span class="line" id="L3197">    <span class="tok-kw">var</span> newlines: <span class="tok-type">u2</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3198">    <span class="tok-kw">while</span> (std.ascii.isWhitespace(tree.source[i])) : (i -= <span class="tok-number">1</span>) {</span>
-<span class="line" id="L3199">        <span class="tok-kw">if</span> (tree.source[i] == <span class="tok-str">'\n'</span>) newlines += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3200">        <span class="tok-kw">if</span> (newlines == <span class="tok-number">2</span>) <span class="tok-kw">return</span> ais.insertNewline();</span>
-<span class="line" id="L3201">        <span class="tok-kw">if</span> (i == prev_token_end) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3202">    }</span>
-<span class="line" id="L3203">}</span>
-<span class="line" id="L3204"></span>
-<span class="line" id="L3205"><span class="tok-comment">/// end_token is the token one past the last doc comment token. This function</span></span>
-<span class="line" id="L3206"><span class="tok-comment">/// searches backwards from there.</span></span>
-<span class="line" id="L3207"><span class="tok-kw">fn</span> <span class="tok-fn">renderDocComments</span>(r: *Render, end_token: Ast.TokenIndex) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3208">    <span class="tok-kw">const</span> tree = r.tree;</span>
-<span class="line" id="L3209">    <span class="tok-comment">// Search backwards for the first doc comment.</span>
+<span class="line" id="L3197">    <span class="tok-comment">// non-whitespace character is encountered or two newlines have been found.</span>
 </span>
-<span class="line" id="L3210">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
-<span class="line" id="L3211">    <span class="tok-kw">if</span> (end_token == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3212">    <span class="tok-kw">var</span> tok = end_token - <span class="tok-number">1</span>;</span>
-<span class="line" id="L3213">    <span class="tok-kw">while</span> (token_tags[tok] == .doc_comment) {</span>
-<span class="line" id="L3214">        <span class="tok-kw">if</span> (tok == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L3215">        tok -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L3216">    } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3217">        tok += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3218">    }</span>
-<span class="line" id="L3219">    <span class="tok-kw">const</span> first_tok = tok;</span>
-<span class="line" id="L3220">    <span class="tok-kw">if</span> (first_tok == end_token) <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3221"></span>
-<span class="line" id="L3222">    <span class="tok-kw">if</span> (first_tok != <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3223">        <span class="tok-kw">const</span> prev_token_tag = token_tags[first_tok - <span class="tok-number">1</span>];</span>
-<span class="line" id="L3224"></span>
-<span class="line" id="L3225">        <span class="tok-comment">// Prevent accidental use of `renderDocComments` for a function argument doc comment</span>
+<span class="line" id="L3198">    <span class="tok-kw">var</span> i = token_start - <span class="tok-number">1</span>;</span>
+<span class="line" id="L3199">    <span class="tok-kw">var</span> newlines: <span class="tok-type">u2</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3200">    <span class="tok-kw">while</span> (std.ascii.isWhitespace(tree.source[i])) : (i -= <span class="tok-number">1</span>) {</span>
+<span class="line" id="L3201">        <span class="tok-kw">if</span> (tree.source[i] == <span class="tok-str">'\n'</span>) newlines += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3202">        <span class="tok-kw">if</span> (newlines == <span class="tok-number">2</span>) <span class="tok-kw">return</span> ais.insertNewline();</span>
+<span class="line" id="L3203">        <span class="tok-kw">if</span> (i == prev_token_end) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3204">    }</span>
+<span class="line" id="L3205">}</span>
+<span class="line" id="L3206"></span>
+<span class="line" id="L3207"><span class="tok-comment">/// end_token is the token one past the last doc comment token. This function</span></span>
+<span class="line" id="L3208"><span class="tok-comment">/// searches backwards from there.</span></span>
+<span class="line" id="L3209"><span class="tok-kw">fn</span> <span class="tok-fn">renderDocComments</span>(r: *Render, end_token: Ast.TokenIndex) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3210">    <span class="tok-kw">const</span> tree = r.tree;</span>
+<span class="line" id="L3211">    <span class="tok-comment">// Search backwards for the first doc comment.</span>
 </span>
-<span class="line" id="L3226">        assert(prev_token_tag != .l_paren);</span>
-<span class="line" id="L3227"></span>
-<span class="line" id="L3228">        <span class="tok-kw">if</span> (prev_token_tag != .l_brace) {</span>
-<span class="line" id="L3229">            <span class="tok-kw">try</span> renderExtraNewlineToken(r, first_tok);</span>
-<span class="line" id="L3230">        }</span>
-<span class="line" id="L3231">    }</span>
-<span class="line" id="L3232"></span>
-<span class="line" id="L3233">    <span class="tok-kw">while</span> (token_tags[tok] == .doc_comment) : (tok += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L3234">        <span class="tok-kw">try</span> renderToken(r, tok, .newline);</span>
-<span class="line" id="L3235">    }</span>
-<span class="line" id="L3236">}</span>
-<span class="line" id="L3237"></span>
-<span class="line" id="L3238"><span class="tok-comment">/// start_token is first container doc comment token.</span></span>
-<span class="line" id="L3239"><span class="tok-kw">fn</span> <span class="tok-fn">renderContainerDocComments</span>(r: *Render, start_token: Ast.TokenIndex) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3240">    <span class="tok-kw">const</span> tree = r.tree;</span>
-<span class="line" id="L3241">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
-<span class="line" id="L3242">    <span class="tok-kw">var</span> tok = start_token;</span>
-<span class="line" id="L3243">    <span class="tok-kw">while</span> (token_tags[tok] == .container_doc_comment) : (tok += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L3244">        <span class="tok-kw">try</span> renderToken(r, tok, .newline);</span>
-<span class="line" id="L3245">    }</span>
-<span class="line" id="L3246">    <span class="tok-comment">// Render extra newline if there is one between final container doc comment and</span>
+<span class="line" id="L3212">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
+<span class="line" id="L3213">    <span class="tok-kw">if</span> (end_token == <span class="tok-number">0</span>) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3214">    <span class="tok-kw">var</span> tok = end_token - <span class="tok-number">1</span>;</span>
+<span class="line" id="L3215">    <span class="tok-kw">while</span> (token_tags[tok] == .doc_comment) {</span>
+<span class="line" id="L3216">        <span class="tok-kw">if</span> (tok == <span class="tok-number">0</span>) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L3217">        tok -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L3218">    } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3219">        tok += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3220">    }</span>
+<span class="line" id="L3221">    <span class="tok-kw">const</span> first_tok = tok;</span>
+<span class="line" id="L3222">    <span class="tok-kw">if</span> (first_tok == end_token) <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3223"></span>
+<span class="line" id="L3224">    <span class="tok-kw">if</span> (first_tok != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3225">        <span class="tok-kw">const</span> prev_token_tag = token_tags[first_tok - <span class="tok-number">1</span>];</span>
+<span class="line" id="L3226"></span>
+<span class="line" id="L3227">        <span class="tok-comment">// Prevent accidental use of `renderDocComments` for a function argument doc comment</span>
 </span>
-<span class="line" id="L3247">    <span class="tok-comment">// the next token. If the next token is a doc comment, that code path</span>
+<span class="line" id="L3228">        assert(prev_token_tag != .l_paren);</span>
+<span class="line" id="L3229"></span>
+<span class="line" id="L3230">        <span class="tok-kw">if</span> (prev_token_tag != .l_brace) {</span>
+<span class="line" id="L3231">            <span class="tok-kw">try</span> renderExtraNewlineToken(r, first_tok);</span>
+<span class="line" id="L3232">        }</span>
+<span class="line" id="L3233">    }</span>
+<span class="line" id="L3234"></span>
+<span class="line" id="L3235">    <span class="tok-kw">while</span> (token_tags[tok] == .doc_comment) : (tok += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L3236">        <span class="tok-kw">try</span> renderToken(r, tok, .newline);</span>
+<span class="line" id="L3237">    }</span>
+<span class="line" id="L3238">}</span>
+<span class="line" id="L3239"></span>
+<span class="line" id="L3240"><span class="tok-comment">/// start_token is first container doc comment token.</span></span>
+<span class="line" id="L3241"><span class="tok-kw">fn</span> <span class="tok-fn">renderContainerDocComments</span>(r: *Render, start_token: Ast.TokenIndex) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3242">    <span class="tok-kw">const</span> tree = r.tree;</span>
+<span class="line" id="L3243">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
+<span class="line" id="L3244">    <span class="tok-kw">var</span> tok = start_token;</span>
+<span class="line" id="L3245">    <span class="tok-kw">while</span> (token_tags[tok] == .container_doc_comment) : (tok += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L3246">        <span class="tok-kw">try</span> renderToken(r, tok, .newline);</span>
+<span class="line" id="L3247">    }</span>
+<span class="line" id="L3248">    <span class="tok-comment">// Render extra newline if there is one between final container doc comment and</span>
 </span>
-<span class="line" id="L3248">    <span class="tok-comment">// will have its own logic to insert a newline.</span>
+<span class="line" id="L3249">    <span class="tok-comment">// the next token. If the next token is a doc comment, that code path</span>
 </span>
-<span class="line" id="L3249">    <span class="tok-kw">if</span> (token_tags[tok] != .doc_comment) {</span>
-<span class="line" id="L3250">        <span class="tok-kw">try</span> renderExtraNewlineToken(r, tok);</span>
-<span class="line" id="L3251">    }</span>
-<span class="line" id="L3252">}</span>
-<span class="line" id="L3253"></span>
-<span class="line" id="L3254"><span class="tok-kw">fn</span> <span class="tok-fn">discardAllParams</span>(r: *Render, fn_proto_node: Ast.Node.Index) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3255">    <span class="tok-kw">const</span> tree = &amp;r.tree;</span>
-<span class="line" id="L3256">    <span class="tok-kw">const</span> ais = r.ais;</span>
-<span class="line" id="L3257">    <span class="tok-kw">var</span> buf: [<span class="tok-number">1</span>]Ast.Node.Index = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L3258">    <span class="tok-kw">const</span> fn_proto = tree.fullFnProto(&amp;buf, fn_proto_node).?;</span>
-<span class="line" id="L3259">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
-<span class="line" id="L3260">    <span class="tok-kw">var</span> it = fn_proto.iterate(tree);</span>
-<span class="line" id="L3261">    <span class="tok-kw">while</span> (it.next()) |param| {</span>
-<span class="line" id="L3262">        <span class="tok-kw">const</span> name_ident = param.name_token.?;</span>
-<span class="line" id="L3263">        assert(token_tags[name_ident] == .identifier);</span>
-<span class="line" id="L3264">        <span class="tok-kw">const</span> w = ais.writer();</span>
-<span class="line" id="L3265">        <span class="tok-kw">try</span> w.writeAll(<span class="tok-str">&quot;_ = &quot;</span>);</span>
-<span class="line" id="L3266">        <span class="tok-kw">try</span> w.writeAll(tokenSliceForRender(r.tree, name_ident));</span>
-<span class="line" id="L3267">        <span class="tok-kw">try</span> w.writeAll(<span class="tok-str">&quot;;\n&quot;</span>);</span>
-<span class="line" id="L3268">    }</span>
-<span class="line" id="L3269">}</span>
-<span class="line" id="L3270"></span>
-<span class="line" id="L3271"><span class="tok-kw">fn</span> <span class="tok-fn">tokenSliceForRender</span>(tree: Ast, token_index: Ast.TokenIndex) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
-<span class="line" id="L3272">    <span class="tok-kw">var</span> ret = tree.tokenSlice(token_index);</span>
-<span class="line" id="L3273">    <span class="tok-kw">switch</span> (tree.tokens.items(.tag)[token_index]) {</span>
-<span class="line" id="L3274">        .multiline_string_literal_line =&gt; {</span>
-<span class="line" id="L3275">            <span class="tok-kw">if</span> (ret[ret.len - <span class="tok-number">1</span>] == <span class="tok-str">'\n'</span>) ret.len -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L3276">        },</span>
-<span class="line" id="L3277">        .container_doc_comment, .doc_comment =&gt; {</span>
-<span class="line" id="L3278">            ret = mem.trimRight(<span class="tok-type">u8</span>, ret, &amp;std.ascii.whitespace);</span>
-<span class="line" id="L3279">        },</span>
-<span class="line" id="L3280">        <span class="tok-kw">else</span> =&gt; {},</span>
-<span class="line" id="L3281">    }</span>
-<span class="line" id="L3282">    <span class="tok-kw">return</span> ret;</span>
-<span class="line" id="L3283">}</span>
-<span class="line" id="L3284"></span>
-<span class="line" id="L3285"><span class="tok-kw">fn</span> <span class="tok-fn">hasSameLineComment</span>(tree: Ast, token_index: Ast.TokenIndex) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L3286">    <span class="tok-kw">const</span> token_starts = tree.tokens.items(.start);</span>
-<span class="line" id="L3287">    <span class="tok-kw">const</span> between_source = tree.source[token_starts[token_index]..token_starts[token_index + <span class="tok-number">1</span>]];</span>
-<span class="line" id="L3288">    <span class="tok-kw">for</span> (between_source) |byte| <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L3289">        <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">false</span>,</span>
-<span class="line" id="L3290">        <span class="tok-str">'/'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">true</span>,</span>
-<span class="line" id="L3291">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L3292">    };</span>
-<span class="line" id="L3293">    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L3294">}</span>
-<span class="line" id="L3295"></span>
-<span class="line" id="L3296"><span class="tok-comment">/// Returns `true` if and only if there are any tokens or line comments between</span></span>
-<span class="line" id="L3297"><span class="tok-comment">/// start_token and end_token.</span></span>
-<span class="line" id="L3298"><span class="tok-kw">fn</span> <span class="tok-fn">anythingBetween</span>(tree: Ast, start_token: Ast.TokenIndex, end_token: Ast.TokenIndex) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L3299">    <span class="tok-kw">if</span> (start_token + <span class="tok-number">1</span> != end_token) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
-<span class="line" id="L3300">    <span class="tok-kw">const</span> token_starts = tree.tokens.items(.start);</span>
-<span class="line" id="L3301">    <span class="tok-kw">const</span> between_source = tree.source[token_starts[start_token]..token_starts[start_token + <span class="tok-number">1</span>]];</span>
-<span class="line" id="L3302">    <span class="tok-kw">for</span> (between_source) |byte| <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L3303">        <span class="tok-str">'/'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">true</span>,</span>
-<span class="line" id="L3304">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L3305">    };</span>
-<span class="line" id="L3306">    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L3307">}</span>
-<span class="line" id="L3308"></span>
-<span class="line" id="L3309"><span class="tok-kw">fn</span> <span class="tok-fn">writeFixingWhitespace</span>(writer: std.ArrayList(<span class="tok-type">u8</span>).Writer, slice: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Error!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3310">    <span class="tok-kw">for</span> (slice) |byte| <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L3311">        <span class="tok-str">'\t'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot; &quot;</span> ** <span class="tok-number">4</span>),</span>
-<span class="line" id="L3312">        <span class="tok-str">'\r'</span> =&gt; {},</span>
-<span class="line" id="L3313">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> writer.writeByte(byte),</span>
-<span class="line" id="L3314">    };</span>
-<span class="line" id="L3315">}</span>
-<span class="line" id="L3316"></span>
-<span class="line" id="L3317"><span class="tok-kw">fn</span> <span class="tok-fn">nodeIsBlock</span>(tag: Ast.Node.Tag) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L3318">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
-<span class="line" id="L3319">        .block,</span>
-<span class="line" id="L3320">        .block_semicolon,</span>
-<span class="line" id="L3321">        .block_two,</span>
-<span class="line" id="L3322">        .block_two_semicolon,</span>
-<span class="line" id="L3323">        =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L3324">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L3325">    };</span>
-<span class="line" id="L3326">}</span>
-<span class="line" id="L3327"></span>
-<span class="line" id="L3328"><span class="tok-kw">fn</span> <span class="tok-fn">nodeIsIfForWhileSwitch</span>(tag: Ast.Node.Tag) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L3329">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
-<span class="line" id="L3330">        .@&quot;if&quot;,</span>
-<span class="line" id="L3331">        .if_simple,</span>
-<span class="line" id="L3332">        .@&quot;for&quot;,</span>
-<span class="line" id="L3333">        .for_simple,</span>
-<span class="line" id="L3334">        .@&quot;while&quot;,</span>
-<span class="line" id="L3335">        .while_simple,</span>
-<span class="line" id="L3336">        .while_cont,</span>
-<span class="line" id="L3337">        .@&quot;switch&quot;,</span>
-<span class="line" id="L3338">        .switch_comma,</span>
-<span class="line" id="L3339">        =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L3340">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L3341">    };</span>
-<span class="line" id="L3342">}</span>
-<span class="line" id="L3343"></span>
-<span class="line" id="L3344"><span class="tok-kw">fn</span> <span class="tok-fn">nodeCausesSliceOpSpace</span>(tag: Ast.Node.Tag) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L3345">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
-<span class="line" id="L3346">        .@&quot;catch&quot;,</span>
-<span class="line" id="L3347">        .add,</span>
-<span class="line" id="L3348">        .add_wrap,</span>
-<span class="line" id="L3349">        .array_cat,</span>
-<span class="line" id="L3350">        .array_mult,</span>
-<span class="line" id="L3351">        .assign,</span>
-<span class="line" id="L3352">        .assign_bit_and,</span>
-<span class="line" id="L3353">        .assign_bit_or,</span>
-<span class="line" id="L3354">        .assign_shl,</span>
-<span class="line" id="L3355">        .assign_shr,</span>
-<span class="line" id="L3356">        .assign_bit_xor,</span>
-<span class="line" id="L3357">        .assign_div,</span>
-<span class="line" id="L3358">        .assign_sub,</span>
-<span class="line" id="L3359">        .assign_sub_wrap,</span>
-<span class="line" id="L3360">        .assign_mod,</span>
-<span class="line" id="L3361">        .assign_add,</span>
-<span class="line" id="L3362">        .assign_add_wrap,</span>
-<span class="line" id="L3363">        .assign_mul,</span>
-<span class="line" id="L3364">        .assign_mul_wrap,</span>
-<span class="line" id="L3365">        .bang_equal,</span>
-<span class="line" id="L3366">        .bit_and,</span>
-<span class="line" id="L3367">        .bit_or,</span>
-<span class="line" id="L3368">        .shl,</span>
-<span class="line" id="L3369">        .shr,</span>
-<span class="line" id="L3370">        .bit_xor,</span>
-<span class="line" id="L3371">        .bool_and,</span>
-<span class="line" id="L3372">        .bool_or,</span>
-<span class="line" id="L3373">        .div,</span>
-<span class="line" id="L3374">        .equal_equal,</span>
-<span class="line" id="L3375">        .error_union,</span>
-<span class="line" id="L3376">        .greater_or_equal,</span>
-<span class="line" id="L3377">        .greater_than,</span>
-<span class="line" id="L3378">        .less_or_equal,</span>
-<span class="line" id="L3379">        .less_than,</span>
-<span class="line" id="L3380">        .merge_error_sets,</span>
-<span class="line" id="L3381">        .mod,</span>
-<span class="line" id="L3382">        .mul,</span>
-<span class="line" id="L3383">        .mul_wrap,</span>
-<span class="line" id="L3384">        .sub,</span>
-<span class="line" id="L3385">        .sub_wrap,</span>
-<span class="line" id="L3386">        .@&quot;orelse&quot;,</span>
-<span class="line" id="L3387">        =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L3388"></span>
-<span class="line" id="L3389">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L3390">    };</span>
-<span class="line" id="L3391">}</span>
-<span class="line" id="L3392"></span>
-<span class="line" id="L3393"><span class="tok-comment">// Returns the number of nodes in `exprs` that are on the same line as `rtoken`.</span>
+<span class="line" id="L3250">    <span class="tok-comment">// will have its own logic to insert a newline.</span>
 </span>
-<span class="line" id="L3394"><span class="tok-kw">fn</span> <span class="tok-fn">rowSize</span>(tree: Ast, exprs: []<span class="tok-kw">const</span> Ast.Node.Index, rtoken: Ast.TokenIndex) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L3395">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
-<span class="line" id="L3396"></span>
-<span class="line" id="L3397">    <span class="tok-kw">const</span> first_token = tree.firstToken(exprs[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L3398">    <span class="tok-kw">if</span> (tree.tokensOnSameLine(first_token, rtoken)) {</span>
-<span class="line" id="L3399">        <span class="tok-kw">const</span> maybe_comma = rtoken - <span class="tok-number">1</span>;</span>
-<span class="line" id="L3400">        <span class="tok-kw">if</span> (token_tags[maybe_comma] == .comma)</span>
-<span class="line" id="L3401">            <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
-<span class="line" id="L3402">        <span class="tok-kw">return</span> exprs.len; <span class="tok-comment">// no newlines</span>
+<span class="line" id="L3251">    <span class="tok-kw">if</span> (token_tags[tok] != .doc_comment) {</span>
+<span class="line" id="L3252">        <span class="tok-kw">try</span> renderExtraNewlineToken(r, tok);</span>
+<span class="line" id="L3253">    }</span>
+<span class="line" id="L3254">}</span>
+<span class="line" id="L3255"></span>
+<span class="line" id="L3256"><span class="tok-kw">fn</span> <span class="tok-fn">discardAllParams</span>(r: *Render, fn_proto_node: Ast.Node.Index) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3257">    <span class="tok-kw">const</span> tree = &amp;r.tree;</span>
+<span class="line" id="L3258">    <span class="tok-kw">const</span> ais = r.ais;</span>
+<span class="line" id="L3259">    <span class="tok-kw">var</span> buf: [<span class="tok-number">1</span>]Ast.Node.Index = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L3260">    <span class="tok-kw">const</span> fn_proto = tree.fullFnProto(&amp;buf, fn_proto_node).?;</span>
+<span class="line" id="L3261">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
+<span class="line" id="L3262">    <span class="tok-kw">var</span> it = fn_proto.iterate(tree);</span>
+<span class="line" id="L3263">    <span class="tok-kw">while</span> (it.next()) |param| {</span>
+<span class="line" id="L3264">        <span class="tok-kw">const</span> name_ident = param.name_token.?;</span>
+<span class="line" id="L3265">        assert(token_tags[name_ident] == .identifier);</span>
+<span class="line" id="L3266">        <span class="tok-kw">const</span> w = ais.writer();</span>
+<span class="line" id="L3267">        <span class="tok-kw">try</span> w.writeAll(<span class="tok-str">&quot;_ = &quot;</span>);</span>
+<span class="line" id="L3268">        <span class="tok-kw">try</span> w.writeAll(tokenSliceForRender(r.tree, name_ident));</span>
+<span class="line" id="L3269">        <span class="tok-kw">try</span> w.writeAll(<span class="tok-str">&quot;;\n&quot;</span>);</span>
+<span class="line" id="L3270">    }</span>
+<span class="line" id="L3271">}</span>
+<span class="line" id="L3272"></span>
+<span class="line" id="L3273"><span class="tok-kw">fn</span> <span class="tok-fn">tokenSliceForRender</span>(tree: Ast, token_index: Ast.TokenIndex) []<span class="tok-kw">const</span> <span class="tok-type">u8</span> {</span>
+<span class="line" id="L3274">    <span class="tok-kw">var</span> ret = tree.tokenSlice(token_index);</span>
+<span class="line" id="L3275">    <span class="tok-kw">switch</span> (tree.tokens.items(.tag)[token_index]) {</span>
+<span class="line" id="L3276">        .multiline_string_literal_line =&gt; {</span>
+<span class="line" id="L3277">            <span class="tok-kw">if</span> (ret[ret.len - <span class="tok-number">1</span>] == <span class="tok-str">'\n'</span>) ret.len -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L3278">        },</span>
+<span class="line" id="L3279">        .container_doc_comment, .doc_comment =&gt; {</span>
+<span class="line" id="L3280">            ret = mem.trimRight(<span class="tok-type">u8</span>, ret, &amp;std.ascii.whitespace);</span>
+<span class="line" id="L3281">        },</span>
+<span class="line" id="L3282">        <span class="tok-kw">else</span> =&gt; {},</span>
+<span class="line" id="L3283">    }</span>
+<span class="line" id="L3284">    <span class="tok-kw">return</span> ret;</span>
+<span class="line" id="L3285">}</span>
+<span class="line" id="L3286"></span>
+<span class="line" id="L3287"><span class="tok-kw">fn</span> <span class="tok-fn">hasSameLineComment</span>(tree: Ast, token_index: Ast.TokenIndex) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L3288">    <span class="tok-kw">const</span> token_starts = tree.tokens.items(.start);</span>
+<span class="line" id="L3289">    <span class="tok-kw">const</span> between_source = tree.source[token_starts[token_index]..token_starts[token_index + <span class="tok-number">1</span>]];</span>
+<span class="line" id="L3290">    <span class="tok-kw">for</span> (between_source) |byte| <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L3291">        <span class="tok-str">'\n'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">false</span>,</span>
+<span class="line" id="L3292">        <span class="tok-str">'/'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">true</span>,</span>
+<span class="line" id="L3293">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L3294">    };</span>
+<span class="line" id="L3295">    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L3296">}</span>
+<span class="line" id="L3297"></span>
+<span class="line" id="L3298"><span class="tok-comment">/// Returns `true` if and only if there are any tokens or line comments between</span></span>
+<span class="line" id="L3299"><span class="tok-comment">/// start_token and end_token.</span></span>
+<span class="line" id="L3300"><span class="tok-kw">fn</span> <span class="tok-fn">anythingBetween</span>(tree: Ast, start_token: Ast.TokenIndex, end_token: Ast.TokenIndex) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L3301">    <span class="tok-kw">if</span> (start_token + <span class="tok-number">1</span> != end_token) <span class="tok-kw">return</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L3302">    <span class="tok-kw">const</span> token_starts = tree.tokens.items(.start);</span>
+<span class="line" id="L3303">    <span class="tok-kw">const</span> between_source = tree.source[token_starts[start_token]..token_starts[start_token + <span class="tok-number">1</span>]];</span>
+<span class="line" id="L3304">    <span class="tok-kw">for</span> (between_source) |byte| <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L3305">        <span class="tok-str">'/'</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">true</span>,</span>
+<span class="line" id="L3306">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L3307">    };</span>
+<span class="line" id="L3308">    <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L3309">}</span>
+<span class="line" id="L3310"></span>
+<span class="line" id="L3311"><span class="tok-kw">fn</span> <span class="tok-fn">writeFixingWhitespace</span>(writer: std.ArrayList(<span class="tok-type">u8</span>).Writer, slice: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) Error!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3312">    <span class="tok-kw">for</span> (slice) |byte| <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L3313">        <span class="tok-str">'\t'</span> =&gt; <span class="tok-kw">try</span> writer.writeAll(<span class="tok-str">&quot; &quot;</span> ** <span class="tok-number">4</span>),</span>
+<span class="line" id="L3314">        <span class="tok-str">'\r'</span> =&gt; {},</span>
+<span class="line" id="L3315">        <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> writer.writeByte(byte),</span>
+<span class="line" id="L3316">    };</span>
+<span class="line" id="L3317">}</span>
+<span class="line" id="L3318"></span>
+<span class="line" id="L3319"><span class="tok-kw">fn</span> <span class="tok-fn">nodeIsBlock</span>(tag: Ast.Node.Tag) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L3320">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
+<span class="line" id="L3321">        .block,</span>
+<span class="line" id="L3322">        .block_semicolon,</span>
+<span class="line" id="L3323">        .block_two,</span>
+<span class="line" id="L3324">        .block_two_semicolon,</span>
+<span class="line" id="L3325">        =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L3326">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L3327">    };</span>
+<span class="line" id="L3328">}</span>
+<span class="line" id="L3329"></span>
+<span class="line" id="L3330"><span class="tok-kw">fn</span> <span class="tok-fn">nodeIsIfForWhileSwitch</span>(tag: Ast.Node.Tag) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L3331">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
+<span class="line" id="L3332">        .@&quot;if&quot;,</span>
+<span class="line" id="L3333">        .if_simple,</span>
+<span class="line" id="L3334">        .@&quot;for&quot;,</span>
+<span class="line" id="L3335">        .for_simple,</span>
+<span class="line" id="L3336">        .@&quot;while&quot;,</span>
+<span class="line" id="L3337">        .while_simple,</span>
+<span class="line" id="L3338">        .while_cont,</span>
+<span class="line" id="L3339">        .@&quot;switch&quot;,</span>
+<span class="line" id="L3340">        .switch_comma,</span>
+<span class="line" id="L3341">        =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L3342">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L3343">    };</span>
+<span class="line" id="L3344">}</span>
+<span class="line" id="L3345"></span>
+<span class="line" id="L3346"><span class="tok-kw">fn</span> <span class="tok-fn">nodeCausesSliceOpSpace</span>(tag: Ast.Node.Tag) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L3347">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (tag) {</span>
+<span class="line" id="L3348">        .@&quot;catch&quot;,</span>
+<span class="line" id="L3349">        .add,</span>
+<span class="line" id="L3350">        .add_wrap,</span>
+<span class="line" id="L3351">        .array_cat,</span>
+<span class="line" id="L3352">        .array_mult,</span>
+<span class="line" id="L3353">        .assign,</span>
+<span class="line" id="L3354">        .assign_bit_and,</span>
+<span class="line" id="L3355">        .assign_bit_or,</span>
+<span class="line" id="L3356">        .assign_shl,</span>
+<span class="line" id="L3357">        .assign_shr,</span>
+<span class="line" id="L3358">        .assign_bit_xor,</span>
+<span class="line" id="L3359">        .assign_div,</span>
+<span class="line" id="L3360">        .assign_sub,</span>
+<span class="line" id="L3361">        .assign_sub_wrap,</span>
+<span class="line" id="L3362">        .assign_mod,</span>
+<span class="line" id="L3363">        .assign_add,</span>
+<span class="line" id="L3364">        .assign_add_wrap,</span>
+<span class="line" id="L3365">        .assign_mul,</span>
+<span class="line" id="L3366">        .assign_mul_wrap,</span>
+<span class="line" id="L3367">        .bang_equal,</span>
+<span class="line" id="L3368">        .bit_and,</span>
+<span class="line" id="L3369">        .bit_or,</span>
+<span class="line" id="L3370">        .shl,</span>
+<span class="line" id="L3371">        .shr,</span>
+<span class="line" id="L3372">        .bit_xor,</span>
+<span class="line" id="L3373">        .bool_and,</span>
+<span class="line" id="L3374">        .bool_or,</span>
+<span class="line" id="L3375">        .div,</span>
+<span class="line" id="L3376">        .equal_equal,</span>
+<span class="line" id="L3377">        .error_union,</span>
+<span class="line" id="L3378">        .greater_or_equal,</span>
+<span class="line" id="L3379">        .greater_than,</span>
+<span class="line" id="L3380">        .less_or_equal,</span>
+<span class="line" id="L3381">        .less_than,</span>
+<span class="line" id="L3382">        .merge_error_sets,</span>
+<span class="line" id="L3383">        .mod,</span>
+<span class="line" id="L3384">        .mul,</span>
+<span class="line" id="L3385">        .mul_wrap,</span>
+<span class="line" id="L3386">        .sub,</span>
+<span class="line" id="L3387">        .sub_wrap,</span>
+<span class="line" id="L3388">        .@&quot;orelse&quot;,</span>
+<span class="line" id="L3389">        =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L3390"></span>
+<span class="line" id="L3391">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L3392">    };</span>
+<span class="line" id="L3393">}</span>
+<span class="line" id="L3394"></span>
+<span class="line" id="L3395"><span class="tok-comment">// Returns the number of nodes in `exprs` that are on the same line as `rtoken`.</span>
 </span>
-<span class="line" id="L3403">    }</span>
-<span class="line" id="L3404"></span>
-<span class="line" id="L3405">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">1</span>;</span>
-<span class="line" id="L3406">    <span class="tok-kw">for</span> (exprs, <span class="tok-number">0</span>..) |expr, i| {</span>
-<span class="line" id="L3407">        <span class="tok-kw">if</span> (i + <span class="tok-number">1</span> &lt; exprs.len) {</span>
-<span class="line" id="L3408">            <span class="tok-kw">const</span> expr_last_token = tree.lastToken(expr) + <span class="tok-number">1</span>;</span>
-<span class="line" id="L3409">            <span class="tok-kw">if</span> (!tree.tokensOnSameLine(expr_last_token, tree.firstToken(exprs[i + <span class="tok-number">1</span>]))) <span class="tok-kw">return</span> count;</span>
-<span class="line" id="L3410">            count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3411">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3412">            <span class="tok-kw">return</span> count;</span>
-<span class="line" id="L3413">        }</span>
-<span class="line" id="L3414">    }</span>
-<span class="line" id="L3415">    <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L3416">}</span>
-<span class="line" id="L3417"></span>
-<span class="line" id="L3418"><span class="tok-comment">/// Automatically inserts indentation of written data by keeping</span></span>
-<span class="line" id="L3419"><span class="tok-comment">/// track of the current indentation level</span></span>
-<span class="line" id="L3420"><span class="tok-kw">fn</span> <span class="tok-fn">AutoIndentingStream</span>(<span class="tok-kw">comptime</span> UnderlyingWriter: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L3421">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L3422">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L3423">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = UnderlyingWriter.Error;</span>
-<span class="line" id="L3424">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = std.io.Writer(*Self, WriteError, write);</span>
-<span class="line" id="L3425"></span>
-<span class="line" id="L3426">        underlying_writer: UnderlyingWriter,</span>
+<span class="line" id="L3396"><span class="tok-kw">fn</span> <span class="tok-fn">rowSize</span>(tree: Ast, exprs: []<span class="tok-kw">const</span> Ast.Node.Index, rtoken: Ast.TokenIndex) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L3397">    <span class="tok-kw">const</span> token_tags = tree.tokens.items(.tag);</span>
+<span class="line" id="L3398"></span>
+<span class="line" id="L3399">    <span class="tok-kw">const</span> first_token = tree.firstToken(exprs[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L3400">    <span class="tok-kw">if</span> (tree.tokensOnSameLine(first_token, rtoken)) {</span>
+<span class="line" id="L3401">        <span class="tok-kw">const</span> maybe_comma = rtoken - <span class="tok-number">1</span>;</span>
+<span class="line" id="L3402">        <span class="tok-kw">if</span> (token_tags[maybe_comma] == .comma)</span>
+<span class="line" id="L3403">            <span class="tok-kw">return</span> <span class="tok-number">1</span>;</span>
+<span class="line" id="L3404">        <span class="tok-kw">return</span> exprs.len; <span class="tok-comment">// no newlines</span>
+</span>
+<span class="line" id="L3405">    }</span>
+<span class="line" id="L3406"></span>
+<span class="line" id="L3407">    <span class="tok-kw">var</span> count: <span class="tok-type">usize</span> = <span class="tok-number">1</span>;</span>
+<span class="line" id="L3408">    <span class="tok-kw">for</span> (exprs, <span class="tok-number">0</span>..) |expr, i| {</span>
+<span class="line" id="L3409">        <span class="tok-kw">if</span> (i + <span class="tok-number">1</span> &lt; exprs.len) {</span>
+<span class="line" id="L3410">            <span class="tok-kw">const</span> expr_last_token = tree.lastToken(expr) + <span class="tok-number">1</span>;</span>
+<span class="line" id="L3411">            <span class="tok-kw">if</span> (!tree.tokensOnSameLine(expr_last_token, tree.firstToken(exprs[i + <span class="tok-number">1</span>]))) <span class="tok-kw">return</span> count;</span>
+<span class="line" id="L3412">            count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3413">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3414">            <span class="tok-kw">return</span> count;</span>
+<span class="line" id="L3415">        }</span>
+<span class="line" id="L3416">    }</span>
+<span class="line" id="L3417">    <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L3418">}</span>
+<span class="line" id="L3419"></span>
+<span class="line" id="L3420"><span class="tok-comment">/// Automatically inserts indentation of written data by keeping</span></span>
+<span class="line" id="L3421"><span class="tok-comment">/// track of the current indentation level</span></span>
+<span class="line" id="L3422"><span class="tok-kw">fn</span> <span class="tok-fn">AutoIndentingStream</span>(<span class="tok-kw">comptime</span> UnderlyingWriter: <span class="tok-type">type</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L3423">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L3424">        <span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L3425">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> WriteError = UnderlyingWriter.Error;</span>
+<span class="line" id="L3426">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Writer = std.io.Writer(*Self, WriteError, write);</span>
 <span class="line" id="L3427"></span>
-<span class="line" id="L3428">        <span class="tok-comment">/// Offset into the source at which formatting has been disabled with</span></span>
-<span class="line" id="L3429">        <span class="tok-comment">/// a `zig fmt: off` comment.</span></span>
-<span class="line" id="L3430">        <span class="tok-comment">///</span></span>
-<span class="line" id="L3431">        <span class="tok-comment">/// If non-null, the AutoIndentingStream will not write any bytes</span></span>
-<span class="line" id="L3432">        <span class="tok-comment">/// to the underlying writer. It will however continue to track the</span></span>
-<span class="line" id="L3433">        <span class="tok-comment">/// indentation level.</span></span>
-<span class="line" id="L3434">        disabled_offset: ?<span class="tok-type">usize</span> = <span class="tok-null">null</span>,</span>
-<span class="line" id="L3435"></span>
-<span class="line" id="L3436">        indent_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3437">        indent_delta: <span class="tok-type">usize</span>,</span>
-<span class="line" id="L3438">        current_line_empty: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
-<span class="line" id="L3439">        <span class="tok-comment">/// automatically popped when applied</span></span>
-<span class="line" id="L3440">        indent_one_shot_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3441">        <span class="tok-comment">/// the most recently applied indent</span></span>
-<span class="line" id="L3442">        applied_indent: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3443">        <span class="tok-comment">/// not used until the next line</span></span>
-<span class="line" id="L3444">        indent_next_line: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
-<span class="line" id="L3445"></span>
-<span class="line" id="L3446">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(self: *Self) Writer {</span>
-<span class="line" id="L3447">            <span class="tok-kw">return</span> .{ .context = self };</span>
-<span class="line" id="L3448">        }</span>
-<span class="line" id="L3449"></span>
-<span class="line" id="L3450">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(self: *Self, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L3451">            <span class="tok-kw">if</span> (bytes.len == <span class="tok-number">0</span>)</span>
-<span class="line" id="L3452">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3453"></span>
-<span class="line" id="L3454">            <span class="tok-kw">try</span> self.applyIndent();</span>
-<span class="line" id="L3455">            <span class="tok-kw">return</span> self.writeNoIndent(bytes);</span>
-<span class="line" id="L3456">        }</span>
-<span class="line" id="L3457"></span>
-<span class="line" id="L3458">        <span class="tok-comment">// Change the indent delta without changing the final indentation level</span>
+<span class="line" id="L3428">        underlying_writer: UnderlyingWriter,</span>
+<span class="line" id="L3429"></span>
+<span class="line" id="L3430">        <span class="tok-comment">/// Offset into the source at which formatting has been disabled with</span></span>
+<span class="line" id="L3431">        <span class="tok-comment">/// a `zig fmt: off` comment.</span></span>
+<span class="line" id="L3432">        <span class="tok-comment">///</span></span>
+<span class="line" id="L3433">        <span class="tok-comment">/// If non-null, the AutoIndentingStream will not write any bytes</span></span>
+<span class="line" id="L3434">        <span class="tok-comment">/// to the underlying writer. It will however continue to track the</span></span>
+<span class="line" id="L3435">        <span class="tok-comment">/// indentation level.</span></span>
+<span class="line" id="L3436">        disabled_offset: ?<span class="tok-type">usize</span> = <span class="tok-null">null</span>,</span>
+<span class="line" id="L3437"></span>
+<span class="line" id="L3438">        indent_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3439">        indent_delta: <span class="tok-type">usize</span>,</span>
+<span class="line" id="L3440">        current_line_empty: <span class="tok-type">bool</span> = <span class="tok-null">true</span>,</span>
+<span class="line" id="L3441">        <span class="tok-comment">/// automatically popped when applied</span></span>
+<span class="line" id="L3442">        indent_one_shot_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3443">        <span class="tok-comment">/// the most recently applied indent</span></span>
+<span class="line" id="L3444">        applied_indent: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3445">        <span class="tok-comment">/// not used until the next line</span></span>
+<span class="line" id="L3446">        indent_next_line: <span class="tok-type">usize</span> = <span class="tok-number">0</span>,</span>
+<span class="line" id="L3447"></span>
+<span class="line" id="L3448">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">writer</span>(self: *Self) Writer {</span>
+<span class="line" id="L3449">            <span class="tok-kw">return</span> .{ .context = self };</span>
+<span class="line" id="L3450">        }</span>
+<span class="line" id="L3451"></span>
+<span class="line" id="L3452">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">write</span>(self: *Self, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L3453">            <span class="tok-kw">if</span> (bytes.len == <span class="tok-number">0</span>)</span>
+<span class="line" id="L3454">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3455"></span>
+<span class="line" id="L3456">            <span class="tok-kw">try</span> self.applyIndent();</span>
+<span class="line" id="L3457">            <span class="tok-kw">return</span> self.writeNoIndent(bytes);</span>
+<span class="line" id="L3458">        }</span>
+<span class="line" id="L3459"></span>
+<span class="line" id="L3460">        <span class="tok-comment">// Change the indent delta without changing the final indentation level</span>
 </span>
-<span class="line" id="L3459">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">setIndentDelta</span>(self: *Self, new_indent_delta: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
-<span class="line" id="L3460">            <span class="tok-kw">if</span> (self.indent_delta == new_indent_delta) {</span>
-<span class="line" id="L3461">                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L3462">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (self.indent_delta &gt; new_indent_delta) {</span>
-<span class="line" id="L3463">                assert(self.indent_delta % new_indent_delta == <span class="tok-number">0</span>);</span>
-<span class="line" id="L3464">                self.indent_count = self.indent_count * (self.indent_delta / new_indent_delta);</span>
-<span class="line" id="L3465">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L3466">                <span class="tok-comment">// assert that the current indentation (in spaces) in a multiple of the new delta</span>
+<span class="line" id="L3461">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">setIndentDelta</span>(self: *Self, new_indent_delta: <span class="tok-type">usize</span>) <span class="tok-type">void</span> {</span>
+<span class="line" id="L3462">            <span class="tok-kw">if</span> (self.indent_delta == new_indent_delta) {</span>
+<span class="line" id="L3463">                <span class="tok-kw">return</span>;</span>
+<span class="line" id="L3464">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (self.indent_delta &gt; new_indent_delta) {</span>
+<span class="line" id="L3465">                assert(self.indent_delta % new_indent_delta == <span class="tok-number">0</span>);</span>
+<span class="line" id="L3466">                self.indent_count = self.indent_count * (self.indent_delta / new_indent_delta);</span>
+<span class="line" id="L3467">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L3468">                <span class="tok-comment">// assert that the current indentation (in spaces) in a multiple of the new delta</span>
 </span>
-<span class="line" id="L3467">                assert((self.indent_count * self.indent_delta) % new_indent_delta == <span class="tok-number">0</span>);</span>
-<span class="line" id="L3468">                self.indent_count = self.indent_count / (new_indent_delta / self.indent_delta);</span>
-<span class="line" id="L3469">            }</span>
-<span class="line" id="L3470">            self.indent_delta = new_indent_delta;</span>
-<span class="line" id="L3471">        }</span>
-<span class="line" id="L3472"></span>
-<span class="line" id="L3473">        <span class="tok-kw">fn</span> <span class="tok-fn">writeNoIndent</span>(self: *Self, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
-<span class="line" id="L3474">            <span class="tok-kw">if</span> (bytes.len == <span class="tok-number">0</span>)</span>
-<span class="line" id="L3475">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L3476"></span>
-<span class="line" id="L3477">            <span class="tok-kw">if</span> (self.disabled_offset == <span class="tok-null">null</span>) <span class="tok-kw">try</span> self.underlying_writer.writeAll(bytes);</span>
-<span class="line" id="L3478">            <span class="tok-kw">if</span> (bytes[bytes.len - <span class="tok-number">1</span>] == <span class="tok-str">'\n'</span>)</span>
-<span class="line" id="L3479">                self.resetLine();</span>
-<span class="line" id="L3480">            <span class="tok-kw">return</span> bytes.len;</span>
-<span class="line" id="L3481">        }</span>
-<span class="line" id="L3482"></span>
-<span class="line" id="L3483">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">insertNewline</span>(self: *Self) WriteError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3484">            _ = <span class="tok-kw">try</span> self.writeNoIndent(<span class="tok-str">&quot;\n&quot;</span>);</span>
-<span class="line" id="L3485">        }</span>
-<span class="line" id="L3486"></span>
-<span class="line" id="L3487">        <span class="tok-kw">fn</span> <span class="tok-fn">resetLine</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L3488">            self.current_line_empty = <span class="tok-null">true</span>;</span>
-<span class="line" id="L3489">            self.indent_next_line = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3490">        }</span>
-<span class="line" id="L3491"></span>
-<span class="line" id="L3492">        <span class="tok-comment">/// Insert a newline unless the current line is blank</span></span>
-<span class="line" id="L3493">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">maybeInsertNewline</span>(self: *Self) WriteError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3494">            <span class="tok-kw">if</span> (!self.current_line_empty)</span>
-<span class="line" id="L3495">                <span class="tok-kw">try</span> self.insertNewline();</span>
-<span class="line" id="L3496">        }</span>
-<span class="line" id="L3497"></span>
-<span class="line" id="L3498">        <span class="tok-comment">/// Push default indentation</span></span>
-<span class="line" id="L3499">        <span class="tok-comment">/// Doesn't actually write any indentation.</span></span>
-<span class="line" id="L3500">        <span class="tok-comment">/// Just primes the stream to be able to write the correct indentation if it needs to.</span></span>
-<span class="line" id="L3501">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushIndent</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L3502">            self.indent_count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3503">        }</span>
-<span class="line" id="L3504"></span>
-<span class="line" id="L3505">        <span class="tok-comment">/// Push an indent that is automatically popped after being applied</span></span>
-<span class="line" id="L3506">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushIndentOneShot</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L3507">            self.indent_one_shot_count += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3508">            self.pushIndent();</span>
-<span class="line" id="L3509">        }</span>
-<span class="line" id="L3510"></span>
-<span class="line" id="L3511">        <span class="tok-comment">/// Turns all one-shot indents into regular indents</span></span>
-<span class="line" id="L3512">        <span class="tok-comment">/// Returns number of indents that must now be manually popped</span></span>
-<span class="line" id="L3513">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lockOneShotIndent</span>(self: *Self) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L3514">            <span class="tok-kw">const</span> locked_count = self.indent_one_shot_count;</span>
-<span class="line" id="L3515">            self.indent_one_shot_count = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3516">            <span class="tok-kw">return</span> locked_count;</span>
-<span class="line" id="L3517">        }</span>
-<span class="line" id="L3518"></span>
-<span class="line" id="L3519">        <span class="tok-comment">/// Push an indent that should not take effect until the next line</span></span>
-<span class="line" id="L3520">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushIndentNextLine</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L3521">            self.indent_next_line += <span class="tok-number">1</span>;</span>
-<span class="line" id="L3522">            self.pushIndent();</span>
-<span class="line" id="L3523">        }</span>
-<span class="line" id="L3524"></span>
-<span class="line" id="L3525">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">popIndent</span>(self: *Self) <span class="tok-type">void</span> {</span>
-<span class="line" id="L3526">            assert(self.indent_count != <span class="tok-number">0</span>);</span>
-<span class="line" id="L3527">            self.indent_count -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L3528"></span>
-<span class="line" id="L3529">            <span class="tok-kw">if</span> (self.indent_next_line &gt; <span class="tok-number">0</span>)</span>
-<span class="line" id="L3530">                self.indent_next_line -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L3531">        }</span>
-<span class="line" id="L3532"></span>
-<span class="line" id="L3533">        <span class="tok-comment">/// Writes ' ' bytes if the current line is empty</span></span>
-<span class="line" id="L3534">        <span class="tok-kw">fn</span> <span class="tok-fn">applyIndent</span>(self: *Self) WriteError!<span class="tok-type">void</span> {</span>
-<span class="line" id="L3535">            <span class="tok-kw">const</span> current_indent = self.currentIndent();</span>
-<span class="line" id="L3536">            <span class="tok-kw">if</span> (self.current_line_empty <span class="tok-kw">and</span> current_indent &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3537">                <span class="tok-kw">if</span> (self.disabled_offset == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L3538">                    <span class="tok-kw">try</span> self.underlying_writer.writeByteNTimes(<span class="tok-str">' '</span>, current_indent);</span>
-<span class="line" id="L3539">                }</span>
-<span class="line" id="L3540">                self.applied_indent = current_indent;</span>
-<span class="line" id="L3541">            }</span>
-<span class="line" id="L3542"></span>
-<span class="line" id="L3543">            self.indent_count -= self.indent_one_shot_count;</span>
-<span class="line" id="L3544">            self.indent_one_shot_count = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3545">            self.current_line_empty = <span class="tok-null">false</span>;</span>
-<span class="line" id="L3546">        }</span>
-<span class="line" id="L3547"></span>
-<span class="line" id="L3548">        <span class="tok-comment">/// Checks to see if the most recent indentation exceeds the currently pushed indents</span></span>
-<span class="line" id="L3549">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isLineOverIndented</span>(self: *Self) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L3550">            <span class="tok-kw">if</span> (self.current_line_empty) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
-<span class="line" id="L3551">            <span class="tok-kw">return</span> self.applied_indent &gt; self.currentIndent();</span>
-<span class="line" id="L3552">        }</span>
-<span class="line" id="L3553"></span>
-<span class="line" id="L3554">        <span class="tok-kw">fn</span> <span class="tok-fn">currentIndent</span>(self: *Self) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L3555">            <span class="tok-kw">var</span> indent_current: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L3556">            <span class="tok-kw">if</span> (self.indent_count &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L3557">                <span class="tok-kw">const</span> indent_count = self.indent_count - self.indent_next_line;</span>
-<span class="line" id="L3558">                indent_current = indent_count * self.indent_delta;</span>
-<span class="line" id="L3559">            }</span>
-<span class="line" id="L3560">            <span class="tok-kw">return</span> indent_current;</span>
-<span class="line" id="L3561">        }</span>
-<span class="line" id="L3562">    };</span>
-<span class="line" id="L3563">}</span>
-<span class="line" id="L3564"></span>
+<span class="line" id="L3469">                assert((self.indent_count * self.indent_delta) % new_indent_delta == <span class="tok-number">0</span>);</span>
+<span class="line" id="L3470">                self.indent_count = self.indent_count / (new_indent_delta / self.indent_delta);</span>
+<span class="line" id="L3471">            }</span>
+<span class="line" id="L3472">            self.indent_delta = new_indent_delta;</span>
+<span class="line" id="L3473">        }</span>
+<span class="line" id="L3474"></span>
+<span class="line" id="L3475">        <span class="tok-kw">fn</span> <span class="tok-fn">writeNoIndent</span>(self: *Self, bytes: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) WriteError!<span class="tok-type">usize</span> {</span>
+<span class="line" id="L3476">            <span class="tok-kw">if</span> (bytes.len == <span class="tok-number">0</span>)</span>
+<span class="line" id="L3477">                <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L3478"></span>
+<span class="line" id="L3479">            <span class="tok-kw">if</span> (self.disabled_offset == <span class="tok-null">null</span>) <span class="tok-kw">try</span> self.underlying_writer.writeAll(bytes);</span>
+<span class="line" id="L3480">            <span class="tok-kw">if</span> (bytes[bytes.len - <span class="tok-number">1</span>] == <span class="tok-str">'\n'</span>)</span>
+<span class="line" id="L3481">                self.resetLine();</span>
+<span class="line" id="L3482">            <span class="tok-kw">return</span> bytes.len;</span>
+<span class="line" id="L3483">        }</span>
+<span class="line" id="L3484"></span>
+<span class="line" id="L3485">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">insertNewline</span>(self: *Self) WriteError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3486">            _ = <span class="tok-kw">try</span> self.writeNoIndent(<span class="tok-str">&quot;\n&quot;</span>);</span>
+<span class="line" id="L3487">        }</span>
+<span class="line" id="L3488"></span>
+<span class="line" id="L3489">        <span class="tok-kw">fn</span> <span class="tok-fn">resetLine</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L3490">            self.current_line_empty = <span class="tok-null">true</span>;</span>
+<span class="line" id="L3491">            self.indent_next_line = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3492">        }</span>
+<span class="line" id="L3493"></span>
+<span class="line" id="L3494">        <span class="tok-comment">/// Insert a newline unless the current line is blank</span></span>
+<span class="line" id="L3495">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">maybeInsertNewline</span>(self: *Self) WriteError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3496">            <span class="tok-kw">if</span> (!self.current_line_empty)</span>
+<span class="line" id="L3497">                <span class="tok-kw">try</span> self.insertNewline();</span>
+<span class="line" id="L3498">        }</span>
+<span class="line" id="L3499"></span>
+<span class="line" id="L3500">        <span class="tok-comment">/// Push default indentation</span></span>
+<span class="line" id="L3501">        <span class="tok-comment">/// Doesn't actually write any indentation.</span></span>
+<span class="line" id="L3502">        <span class="tok-comment">/// Just primes the stream to be able to write the correct indentation if it needs to.</span></span>
+<span class="line" id="L3503">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushIndent</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L3504">            self.indent_count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3505">        }</span>
+<span class="line" id="L3506"></span>
+<span class="line" id="L3507">        <span class="tok-comment">/// Push an indent that is automatically popped after being applied</span></span>
+<span class="line" id="L3508">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushIndentOneShot</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L3509">            self.indent_one_shot_count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3510">            self.pushIndent();</span>
+<span class="line" id="L3511">        }</span>
+<span class="line" id="L3512"></span>
+<span class="line" id="L3513">        <span class="tok-comment">/// Turns all one-shot indents into regular indents</span></span>
+<span class="line" id="L3514">        <span class="tok-comment">/// Returns number of indents that must now be manually popped</span></span>
+<span class="line" id="L3515">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">lockOneShotIndent</span>(self: *Self) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L3516">            <span class="tok-kw">const</span> locked_count = self.indent_one_shot_count;</span>
+<span class="line" id="L3517">            self.indent_one_shot_count = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3518">            <span class="tok-kw">return</span> locked_count;</span>
+<span class="line" id="L3519">        }</span>
+<span class="line" id="L3520"></span>
+<span class="line" id="L3521">        <span class="tok-comment">/// Push an indent that should not take effect until the next line</span></span>
+<span class="line" id="L3522">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">pushIndentNextLine</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L3523">            self.indent_next_line += <span class="tok-number">1</span>;</span>
+<span class="line" id="L3524">            self.pushIndent();</span>
+<span class="line" id="L3525">        }</span>
+<span class="line" id="L3526"></span>
+<span class="line" id="L3527">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">popIndent</span>(self: *Self) <span class="tok-type">void</span> {</span>
+<span class="line" id="L3528">            assert(self.indent_count != <span class="tok-number">0</span>);</span>
+<span class="line" id="L3529">            self.indent_count -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L3530"></span>
+<span class="line" id="L3531">            <span class="tok-kw">if</span> (self.indent_next_line &gt; <span class="tok-number">0</span>)</span>
+<span class="line" id="L3532">                self.indent_next_line -= <span class="tok-number">1</span>;</span>
+<span class="line" id="L3533">        }</span>
+<span class="line" id="L3534"></span>
+<span class="line" id="L3535">        <span class="tok-comment">/// Writes ' ' bytes if the current line is empty</span></span>
+<span class="line" id="L3536">        <span class="tok-kw">fn</span> <span class="tok-fn">applyIndent</span>(self: *Self) WriteError!<span class="tok-type">void</span> {</span>
+<span class="line" id="L3537">            <span class="tok-kw">const</span> current_indent = self.currentIndent();</span>
+<span class="line" id="L3538">            <span class="tok-kw">if</span> (self.current_line_empty <span class="tok-kw">and</span> current_indent &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3539">                <span class="tok-kw">if</span> (self.disabled_offset == <span class="tok-null">null</span>) {</span>
+<span class="line" id="L3540">                    <span class="tok-kw">try</span> self.underlying_writer.writeByteNTimes(<span class="tok-str">' '</span>, current_indent);</span>
+<span class="line" id="L3541">                }</span>
+<span class="line" id="L3542">                self.applied_indent = current_indent;</span>
+<span class="line" id="L3543">            }</span>
+<span class="line" id="L3544"></span>
+<span class="line" id="L3545">            self.indent_count -= self.indent_one_shot_count;</span>
+<span class="line" id="L3546">            self.indent_one_shot_count = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3547">            self.current_line_empty = <span class="tok-null">false</span>;</span>
+<span class="line" id="L3548">        }</span>
+<span class="line" id="L3549"></span>
+<span class="line" id="L3550">        <span class="tok-comment">/// Checks to see if the most recent indentation exceeds the currently pushed indents</span></span>
+<span class="line" id="L3551">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">isLineOverIndented</span>(self: *Self) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L3552">            <span class="tok-kw">if</span> (self.current_line_empty) <span class="tok-kw">return</span> <span class="tok-null">false</span>;</span>
+<span class="line" id="L3553">            <span class="tok-kw">return</span> self.applied_indent &gt; self.currentIndent();</span>
+<span class="line" id="L3554">        }</span>
+<span class="line" id="L3555"></span>
+<span class="line" id="L3556">        <span class="tok-kw">fn</span> <span class="tok-fn">currentIndent</span>(self: *Self) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L3557">            <span class="tok-kw">var</span> indent_current: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L3558">            <span class="tok-kw">if</span> (self.indent_count &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L3559">                <span class="tok-kw">const</span> indent_count = self.indent_count - self.indent_next_line;</span>
+<span class="line" id="L3560">                indent_current = indent_count * self.indent_delta;</span>
+<span class="line" id="L3561">            }</span>
+<span class="line" id="L3562">            <span class="tok-kw">return</span> indent_current;</span>
+<span class="line" id="L3563">        }</span>
+<span class="line" id="L3564">    };</span>
+<span class="line" id="L3565">}</span>
+<span class="line" id="L3566"></span>
 </code></pre></body>
 </html>
