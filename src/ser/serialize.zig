@@ -39,7 +39,7 @@ pub fn serialize(
         }
 
         // Process default SBs.
-        inline for (st) |sb| {
+        for (st) |sb| {
             if (sb.is(T)) {
                 break :blk sb;
             }
