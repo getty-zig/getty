@@ -135,7 +135,7 @@ pub fn is_attributes(
         const A = Attributes(T, attributes);
         var a = A{};
 
-        inline for (std.meta.fields(@TypeOf(attributes))) |field| {
+        for (std.meta.fields(@TypeOf(attributes))) |field| {
             @field(a, field.name) = @field(attributes, field.name);
         }
 
