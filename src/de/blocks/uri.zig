@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const UriVisitor = @import("../impls/visitor/uri.zig");
@@ -75,8 +76,7 @@ test "deserialize - std.Uri" {
         const Test = @TypeOf(t);
 
         if (@hasField(Test, "want_err")) {
-            try testing.expectError(
-                t.name,
+            try require.equalError(
                 t.want_err,
                 testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
@@ -85,29 +85,29 @@ test "deserialize - std.Uri" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try testing.expectEqualStrings(t.name, t.want.scheme, result.value.scheme);
-            try testing.expectEqual(t.name, t.want.port, result.value.port);
-            try testing.expectEqualStrings(t.name, t.want.path, result.value.path);
+            try require.equal(t.want.scheme, result.value.scheme);
+            try require.equal(t.want.port, result.value.port);
+            try require.equal(t.want.path, result.value.path);
 
             if (t.want.host) |host| {
-                try testing.expect(t.name, result.value.host != null);
-                try testing.expectEqualStrings(t.name, host, result.value.host.?);
+                try require.notNull(result.value.host);
+                try require.equal(host, result.value.host.?);
             }
             if (t.want.user) |user| {
-                try testing.expect(t.name, result.value.user != null);
-                try testing.expectEqualStrings(t.name, user, result.value.user.?);
+                try require.notNull(result.value.user);
+                try require.equal(user, result.value.user.?);
             }
             if (t.want.password) |password| {
-                try testing.expect(t.name, result.value.password != null);
-                try testing.expectEqualStrings(t.name, password, result.value.password.?);
+                try require.notNull(result.value.password);
+                try require.equal(password, result.value.password.?);
             }
             if (t.want.query) |query| {
-                try testing.expect(t.name, result.value.query != null);
-                try testing.expectEqualStrings(t.name, query, result.value.query.?);
+                try require.notNull(result.value.query);
+                try require.equal(query, result.value.query.?);
             }
             if (t.want.fragment) |fragment| {
-                try testing.expect(t.name, result.value.fragment != null);
-                try testing.expectEqualStrings(t.name, fragment, result.value.fragment.?);
+                try require.notNull(result.value.fragment);
+                try require.equal(fragment, result.value.fragment.?);
             }
         }
     }

@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const IndexedSetVisitor = @import("../impls/visitor/indexed_set.zig").Visitor;
@@ -128,8 +129,8 @@ test "deserialize - std.IndexedSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-        try testing.expect(t.name, t.want.eql(result.value));
+        try require.equal(t.want.count(), result.value.count());
+        try require.isTrue(t.want.eql(result.value));
     }
 }
 
@@ -208,7 +209,7 @@ test "deserialize - std.EnumSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-        try testing.expect(t.name, t.want.eql(result.value));
+        try require.equal(t.want.count(), result.value.count());
+        try require.isTrue(t.want.eql(result.value));
     }
 }

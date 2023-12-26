@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const LinearFifoVisitor = @import("../impls/visitor/linear_fifo.zig").Visitor;
@@ -177,10 +178,9 @@ test "deserialize - std.LinearFifo (dynamic)" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.readableLength(), result.value.readableLength());
-
+        try require.equal(t.want.readableLength(), result.value.readableLength());
         for (0..t.want.readableLength()) |i| {
-            try testing.expectEqual(t.name, t.want.peekItem(i), result.value.peekItem(i));
+            try require.equal(t.want.peekItem(i), result.value.peekItem(i));
         }
     }
 }

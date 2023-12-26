@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const IntVisitor = @import("../impls/visitor/int.zig").Visitor;
@@ -184,7 +185,7 @@ test "deserialize - integer" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try testing.expectEqual(t.name, t.want, result.value);
+            try require.equal(t.want, result.value);
         }
     }
 }
@@ -220,8 +221,7 @@ test "deserialize - integer (from string)" {
         const Want = if (@hasField(Test, "Want")) t.Want else @TypeOf(t.want);
 
         if (@hasField(Test, "want_err")) {
-            try testing.expectError(
-                t.name,
+            try require.equalError(
                 t.want_err,
                 testing.deserializeErr(Self, Want, t.tokens),
             );
@@ -229,7 +229,7 @@ test "deserialize - integer (from string)" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try testing.expectEqual(t.name, t.want, result.value);
+            try require.equal(t.want, result.value);
         }
     }
 }

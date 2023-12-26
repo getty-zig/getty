@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const BufSetVisitor = @import("../impls/visitor/buf_set.zig").Visitor;
@@ -76,11 +77,10 @@ test "deserialize - std.BufSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-
+        try require.equalf(t.want.count(), result.value.count(), "Test case: \"{s}\"", .{t.name});
         var it = t.want.iterator();
         while (it.next()) |key_ptr| {
-            try testing.expect(t.name, result.value.contains(key_ptr.*));
+            try require.isTruef(result.value.contains(key_ptr.*), "Test case: \"{s}\"", .{t.name});
         }
     }
 }

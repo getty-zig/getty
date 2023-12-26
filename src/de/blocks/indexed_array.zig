@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const IndexedArrayVisitor = @import("../impls/visitor/indexed_array.zig").Visitor;
@@ -154,7 +155,7 @@ test "deserialize - std.IndexedArray" {
         defer result.deinit();
 
         for (t.want.values, 0..) |want, i| {
-            try testing.expectEqual(t.name, want, result.value.values[i]);
+            try require.equal(want, result.value.values[i]);
         }
     }
 }
@@ -242,7 +243,7 @@ test "deserialize - std.EnumArray" {
         defer result.deinit();
 
         for (t.want.values, 0..) |want, i| {
-            try testing.expectEqual(t.name, want, result.value.values[i]);
+            try require.equal(want, result.value.values[i]);
         }
     }
 }

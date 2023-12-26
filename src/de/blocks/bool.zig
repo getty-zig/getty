@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const BoolVisitor = @import("../impls/visitor/bool.zig");
@@ -58,6 +59,6 @@ test "deserialize - bool" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});
     }
 }

@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const PriorityDequeueVisitor = @import("../impls/visitor/priority_dequeue.zig").Visitor;
@@ -82,8 +83,7 @@ test "deserialize - std.PriorityDequeue" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        // Check that the deques' lengths match.
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try require.equal(t.want.count(), result.value.count());
 
         var want_it = want_it: {
             var mut = t.want;
@@ -97,9 +97,7 @@ test "deserialize - std.PriorityDequeue" {
 
         while (want_it.next()) |elem| {
             const got_elem = got_it.next();
-
-            // Check that the deques' elements match.
-            try testing.expectEqual(t.name, elem, got_elem.?);
+            try require.equal(elem, got_elem.?);
         }
     }
 }

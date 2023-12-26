@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const SegmentedListVisitor = @import("../impls/visitor/segmented_list.zig").Visitor;
@@ -78,10 +79,10 @@ test "deserialize - std.SegmentedList" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.len, result.value.len);
+        try require.equal(t.want.len, result.value.len);
 
         for (0..t.want.len) |i| {
-            try testing.expectEqual(t.name, t.want.at(i).*, result.value.at(i).*);
+            try require.equal(t.want.at(i).*, result.value.at(i).*);
         }
     }
 }

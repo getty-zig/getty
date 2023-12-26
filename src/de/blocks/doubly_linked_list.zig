@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const DoublyLinkedListVisitor = @import("../impls/visitor/doubly_linked_list.zig").Visitor;
@@ -134,27 +135,27 @@ test "deserialize - std.DoublyLinkedList (recursive)" {
     var result = try testing.deserialize(null, Self, Parent, tokens);
     defer result.deinit();
 
-    try std.testing.expectEqual(expected.len, result.value.len);
+    try require.equal(expected.len, result.value.len);
 
     var it = expected.first;
     while (it) |node| : (it = node.next) {
         var got_node = result.value.popFirst();
 
         // Sanity node check.
-        try std.testing.expect(got_node != null);
+        try require.notNull(got_node);
 
         // Check that the inner lists' lengths match.
-        try std.testing.expectEqual(node.data.len, got_node.?.data.len);
+        try require.equal(node.data.len, got_node.?.data.len);
 
         var inner_it = node.data.first;
         while (inner_it) |inner_node| : (inner_it = inner_node.next) {
             const got_inner_node = got_node.?.data.popFirst();
 
             // Sanity inner node check.
-            try std.testing.expect(got_inner_node != null);
+            try require.notNull(got_inner_node);
 
             // Check that the inner lists' data match.
-            try std.testing.expectEqual(inner_node.data, got_inner_node.?.data);
+            try require.equal(inner_node.data, got_inner_node.?.data);
         }
     }
 }

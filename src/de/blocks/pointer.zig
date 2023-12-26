@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const blocks = @import("../blocks.zig");
@@ -157,7 +158,7 @@ test "deserialize - pointer" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.*, result.value.*);
+        try require.equal(t.want, result.value);
     }
 }
 
@@ -251,8 +252,5 @@ test "deserialize - pointer (recursive)" {
     var result = try testing.deserialize(null, Self, Want, &.{.{ .I32 = 1 }});
     defer result.deinit();
 
-    try std.testing.expectEqual(Want, @TypeOf(result.value));
-    try std.testing.expectEqual(*i32, @TypeOf(result.value.*));
-    try std.testing.expectEqual(i32, @TypeOf(result.value.*.*));
-    try std.testing.expectEqual(want, result.value.*.*);
+    try require.equal(want, result.value.*.*);
 }

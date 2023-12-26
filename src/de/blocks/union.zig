@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const Content = @import("../content.zig").Content;
@@ -526,8 +527,7 @@ test "deserialize - union, attributes (tag, untagged)" {
         const Test = @TypeOf(t);
 
         if (@hasField(Test, "want_err")) {
-            try testing.expectError(
-                t.name,
+            try require.equalError(
                 t.want_err,
                 testing.deserializeErr(@This(), Want, t.tokens),
             );
@@ -537,14 +537,14 @@ test "deserialize - union, attributes (tag, untagged)" {
 
             if (@typeInfo(@TypeOf(t.want)).Union.tag_type) |_| {
                 switch (t.want) {
-                    .String => |want| try testing.expectEqualSlices(t.name, u8, want, result.value.String),
-                    else => |want| try testing.expectEqual(t.name, want, result.value),
+                    .String => |want| try require.equal(want, result.value.String),
+                    else => |want| try require.equal(want, result.value),
                 }
             } else {
                 if (comptime std.mem.eql(u8, t.tag, "String")) {
-                    try testing.expectEqualSlices(t.name, u8, result.value.want, result.value.String);
+                    try require.equal(result.value.want, result.value.String);
                 } else {
-                    try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));
+                    try require.equal(t.want, @field(result.value, t.tag));
                 }
             }
         }
@@ -606,8 +606,7 @@ fn runTest(t: anytype, comptime Want: type) !void {
     const Test = @TypeOf(t);
 
     if (@hasField(Test, "want_err")) {
-        try testing.expectError(
-            t.name,
+        try require.equalError(
             t.want_err,
             testing.deserializeErr(@This(), Want, t.tokens),
         );
@@ -616,9 +615,9 @@ fn runTest(t: anytype, comptime Want: type) !void {
         defer result.deinit();
 
         if (t.tagged) {
-            try testing.expectEqual(t.name, t.want, result.value);
+            try require.equal(t.want, result.value);
         } else {
-            try testing.expectEqual(t.name, t.want, @field(result.value, t.tag));
+            try require.equal(t.want, @field(result.value, t.tag));
         }
     }
 }

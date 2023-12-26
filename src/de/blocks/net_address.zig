@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const NetAddressVisitor = @import("../impls/visitor/net_address.zig").Visitor;
@@ -73,7 +74,7 @@ test "deserialize - std.net.Address" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try testing.expect(t.name, std.net.Address.eql(t.want, result.value));
+            try require.isTrue(std.net.Address.eql(t.want, result.value));
         }
     }
 }

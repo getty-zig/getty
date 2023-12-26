@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const BufMapVisitor = @import("../impls/visitor/buf_map.zig").Visitor;
@@ -79,11 +80,10 @@ test "deserialize - std.BufMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-
+        try require.equalf(t.want.count(), result.value.count(), "Test case: \"{s}\"", .{t.name});
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqualStrings(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equalf(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?, "Test case: \"{s}\"", .{t.name});
         }
     }
 }

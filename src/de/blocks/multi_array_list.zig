@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const MultiArrayListVisitor = @import("../impls/visitor/multi_array_list.zig").Visitor;
@@ -99,11 +100,10 @@ test "deserialize - std.MultiArrayList" {
         var result = try testing.deserialize(t.name, Self, List, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.len, result.value.len);
-        try testing.expectEqual(t.name, t.want.capacity, result.value.capacity);
-
+        try require.equal(t.want.len, result.value.len);
+        try require.equal(t.want.capacity, result.value.capacity);
         for (0..t.want.len) |i| {
-            try testing.expectEqual(t.name, t.want.get(i), result.value.get(i));
+            try require.equal(t.want.get(i), result.value.get(i));
         }
     }
 }

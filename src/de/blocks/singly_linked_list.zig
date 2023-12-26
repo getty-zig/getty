@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const SinglyLinkedListVisitor = @import("../impls/visitor/singly_linked_list.zig").Visitor;
@@ -78,18 +79,13 @@ test "deserialize - std.SinglyLinkedList" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        // Check that the lists' lengths match.
-        try testing.expectEqual(t.name, t.want.len(), result.value.len());
+        try require.equal(t.want.len(), result.value.len());
 
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
             const got_node = result.value.popFirst();
-
-            // Sanity node check.
-            try testing.expect(t.name, got_node != null);
-
-            // Check that the lists' data match.
-            try testing.expectEqual(t.name, node.data, got_node.?.data);
+            try require.notNull(got_node);
+            try require.equal(node.data, got_node.?.data);
         }
     }
 }
@@ -136,27 +132,19 @@ test "deserialize - std.SinglyLinkedList (recursive)" {
     defer result.deinit();
 
     // Check that the lists' lengths match.
-    try std.testing.expectEqual(expected.len(), result.value.len());
+    try require.equal(expected.len(), result.value.len());
 
     var it = expected.first;
     while (it) |node| : (it = node.next) {
         var got_node = result.value.popFirst();
-
-        // Sanity node check.
-        try std.testing.expect(got_node != null);
-
-        // Check that the inner lists' lengths match.
-        try std.testing.expectEqual(node.data.len(), got_node.?.data.len());
+        try require.notNull(got_node);
+        try require.equal(node.data.len(), got_node.?.data.len());
 
         var inner_it = node.data.first;
         while (inner_it) |inner_node| : (inner_it = inner_node.next) {
             const got_inner_node = got_node.?.data.popFirst();
-
-            // Sanity inner node check.
-            try std.testing.expect(got_inner_node != null);
-
-            // Check that the inner lists' data match.
-            try std.testing.expectEqual(inner_node.data, got_inner_node.?.data);
+            try require.notNull(got_inner_node != null);
+            try require.equal(inner_node.data, got_inner_node.?.data);
         }
     }
 }

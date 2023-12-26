@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const BitSetVisitor = @import("../impls/visitor/bit_set.zig").Visitor;
@@ -131,7 +132,7 @@ test "deserialize - std.IntegerBitSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equal(t.want, result.value);
     }
 }
 
@@ -463,6 +464,6 @@ test "deserialize - std.ArrayBitSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equal(t.want, result.value);
     }
 }

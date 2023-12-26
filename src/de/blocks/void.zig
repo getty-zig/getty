@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const VoidVisitor = @import("../impls/visitor/void.zig");
@@ -43,5 +44,5 @@ test "deserialize - void" {
     var result = try testing.deserialize(null, Self, void, &.{.{ .Void = {} }});
     defer result.deinit();
 
-    try std.testing.expectEqual({}, result.value);
+    try require.equal({}, result.value);
 }

@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const ArrayListVisitor = @import("../impls/visitor/array_list_aligned.zig").Visitor;
@@ -119,9 +120,9 @@ test "deserialize - std.ArrayList (recursive)" {
     var result = try testing.deserialize(null, Self, Parent, tokens);
     defer result.deinit();
 
-    try std.testing.expectEqual(want.capacity, result.value.capacity);
+    try require.equal(want.capacity, result.value.capacity);
     for (result.value.items, 0..) |l, i| {
-        try std.testing.expectEqual(want.items[i].capacity, l.capacity);
-        try std.testing.expectEqualSlices(isize, want.items[i].items, l.items);
+        try require.equal(want.items[i].capacity, l.capacity);
+        try require.equal(want.items[i].items, l.items);
     }
 }

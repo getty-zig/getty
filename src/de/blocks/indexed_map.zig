@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const IndexedMapVisitor = @import("../impls/visitor/indexed_map.zig").Visitor;
@@ -125,13 +126,13 @@ test "deserialize - std.IndexedMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try require.equal(t.want.count(), result.value.count());
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
-            try testing.expect(t.name, result.value.contains(kv.key));
-            try testing.expectEqual(t.name, kv.value.*, result.value.get(kv.key).?);
+            try require.isTrue(result.value.contains(kv.key));
+            try require.equal(kv.value.*, result.value.get(kv.key).?);
         }
     }
 }
@@ -187,13 +188,13 @@ test "deserialize - std.EnumMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
+        try require.equal(t.want.count(), result.value.count());
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
-            try testing.expect(t.name, result.value.contains(kv.key));
-            try testing.expectEqual(t.name, kv.value.*, result.value.get(kv.key).?);
+            try require.isTrue(result.value.contains(kv.key));
+            try require.equal(kv.value.*, result.value.get(kv.key).?);
         }
     }
 }

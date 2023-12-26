@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const StructVisitor = @import("../impls/visitor/struct.zig").Visitor;
@@ -71,8 +72,7 @@ test "deserialize - struct" {
     };
 
     inline for (tests) |t| {
-        const Want = @TypeOf(t.want);
-        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+        var result = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
         defer result.deinit();
 
         try testing.expectEqual(t.name, t.want, result.value);
@@ -259,19 +259,14 @@ test "deserialize - struct, attributes" {
     };
 
     inline for (tests) |t| {
-        const Test = @TypeOf(t);
-
-        if (@hasField(Test, "want_err")) {
-            const Want = t.Want;
-
+        if (@hasField(@TypeOf(t), "want_err")) {
             try testing.expectError(
                 t.name,
                 t.want_err,
-                testing.deserializeErr(Self, Want, t.tokens),
+                testing.deserializeErr(Self, t.Want, t.tokens),
             );
         } else {
-            const Want = @TypeOf(t.want);
-            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            var result = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
             defer result.deinit();
 
             try testing.expectEqual(t.name, t.want, result.value);

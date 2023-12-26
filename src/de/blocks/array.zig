@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const ArrayVisitor = @import("../impls/visitor/array.zig").Visitor;
@@ -88,8 +89,6 @@ test "deserialize - array" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        for (t.want, 0..) |want, i| {
-            try testing.expectEqual(t.name, want, result.value[i]);
-        }
+        try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});
     }
 }

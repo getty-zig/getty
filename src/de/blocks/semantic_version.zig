@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const SemanticVersionVisitor = @import("../impls/visitor/semantic_version.zig");
@@ -102,8 +103,7 @@ test "deserialize - std.SemanticVersion" {
         const Test = @TypeOf(t);
 
         if (@hasField(Test, "want_err")) {
-            try testing.expectError(
-                t.name,
+            try require.equalError(
                 t.want_err,
                 testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
             );
@@ -113,18 +113,18 @@ test "deserialize - std.SemanticVersion" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try testing.expectEqual(t.name, t.want.major, result.value.major);
-            try testing.expectEqual(t.name, t.want.minor, result.value.minor);
-            try testing.expectEqual(t.name, t.want.patch, result.value.patch);
+            try require.equal(t.want.major, result.value.major);
+            try require.equal(t.want.minor, result.value.minor);
+            try require.equal(t.want.patch, result.value.patch);
 
             if (t.want.pre) |pre| {
-                try testing.expect(t.name, result.value.pre != null);
-                try testing.expectEqualStrings(t.name, pre, result.value.pre.?);
+                try require.notNull(result.value.pre);
+                try require.equal(pre, result.value.pre.?);
             }
 
             if (t.want.build) |build| {
-                try testing.expect(t.name, result.value.build != null);
-                try testing.expectEqualStrings(t.name, build, result.value.build.?);
+                try require.notNull(result.value.build);
+                try require.equal(build, result.value.build.?);
             }
         }
     }

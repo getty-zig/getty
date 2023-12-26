@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const OptionalVisitor = @import("../impls/visitor/optional.zig").Visitor;
@@ -56,6 +57,6 @@ test "deserialize - optional" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equal(t.want, result.value);
     }
 }

@@ -1,4 +1,6 @@
+const require = @import("protest").require;
 const std = @import("std");
+
 const test_ally = std.testing.allocator;
 
 const DynamicBitSetVisitor = @import("../impls/visitor/dynamic_bit_set.zig").Visitor;
@@ -132,8 +134,8 @@ test "deserialize - std.DynamicBitSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, want.capacity(), result.value.capacity());
-        try testing.expect(t.name, want.eql(result.value));
+        try require.equalf(want.capacity(), result.value.capacity(), "Test case: \"{s}\"", .{t.name});
+        try require.isTruef(want.eql(result.value), "Test case: \"{s}\"", .{t.name});
     }
 }
 
@@ -231,7 +233,7 @@ test "deserialize - std.DynamicBitSetUnmanaged" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, want.capacity(), result.value.capacity());
-        try testing.expect(t.name, want.eql(result.value));
+        try require.equalf(want.capacity(), result.value.capacity(), "Test case: \"{s}\"", .{t.name});
+        try require.isTruef(want.eql(result.value), "Test case: \"{s}\"", .{t.name});
     }
 }

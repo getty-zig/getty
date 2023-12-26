@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const BoundedArrayVisitor = @import("../impls/visitor/bounded_array.zig").Visitor;
@@ -108,9 +109,9 @@ test "deserialize - std.BoundedArray (recursive)" {
     var result = try testing.deserialize(null, Self, Parent, tokens);
     defer result.deinit();
 
-    try std.testing.expectEqual(expected.capacity(), result.value.capacity());
+    try require.equal(expected.capacity(), result.value.capacity());
     for (result.value.slice(), 0..) |l, i| {
-        try std.testing.expectEqual(expected.get(i).capacity(), l.capacity());
-        try std.testing.expectEqualSlices(i32, expected.get(i).slice(), l.slice());
+        try require.equal(expected.get(i).capacity(), l.capacity());
+        try require.equal(expected.get(i).slice(), l.slice());
     }
 }

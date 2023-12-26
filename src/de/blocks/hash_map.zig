@@ -1,4 +1,6 @@
+const require = @import("protest").require;
 const std = @import("std");
+
 const test_ally = std.testing.allocator;
 
 const HashMapVisitor = @import("../impls/visitor/hash_map.zig").Visitor;
@@ -185,11 +187,10 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-
+        try require.equal(t.want.count(), result.value.count());
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equal(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }
@@ -262,11 +263,10 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-
+        try require.equal(t.want.count(), result.value.count());
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equal(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }
@@ -323,11 +323,10 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.count(), result.value.count());
-
+        try require.equal(t.want.count(), result.value.count());
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try testing.expectEqual(t.name, t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equal(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
         }
     }
 }

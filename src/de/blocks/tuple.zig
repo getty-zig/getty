@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const testing = @import("../testing.zig");

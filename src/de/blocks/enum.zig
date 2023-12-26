@@ -1,3 +1,4 @@
+const require = @import("protest").require;
 const std = @import("std");
 
 const EnumVisitor = @import("../impls/visitor/enum.zig").Visitor;
@@ -83,7 +84,7 @@ test "deserialize - enum" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});
     }
 }
 
@@ -128,7 +129,7 @@ test "deserialize - enum, attributes (rename)" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});
     }
 }
 
@@ -184,7 +185,7 @@ test "deserialize - enum, attributes (skip)" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try testing.expectEqual(t.name, t.want, result.value);
+            try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});
         }
     }
 }
@@ -218,6 +219,6 @@ test "deserialize - enum, attributes (aliases)" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});
     }
 }
