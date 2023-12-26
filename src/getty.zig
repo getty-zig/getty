@@ -10,9 +10,13 @@ pub const Serializer = @import("ser/interfaces/serializer.zig").Serializer;
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-/// `deserialize` converts formatted data from the `getty.Deserializer` `d`
-/// into a value of type `T`.
+/// Deserializes data from the `getty.Deserializer` `d` into a managed value of
+/// type `T`.
 pub const deserialize = @import("de/deserialize.zig").deserialize;
+
+/// Deserializes data from the `getty.Deserializer` `d` into an umanaged value
+/// of type `T`.
+pub const deserializeLeaky = @import("de/deserialize.zig").deserializeLeaky;
 
 /// `serialize` converts the value `v` into formatted data using the
 /// `getty.Serializer` `s`.
