@@ -905,841 +905,990 @@
 <span class="line" id="L744">            windowsDestroyPipe(g_hChildStd_ERR_Rd, g_hChildStd_ERR_Wr);</span>
 <span class="line" id="L745">        };</span>
 <span class="line" id="L746"></span>
-<span class="line" id="L747">        <span class="tok-kw">const</span> cmd_line = <span class="tok-kw">try</span> windowsCreateCommandLine(self.allocator, self.argv);</span>
-<span class="line" id="L748">        <span class="tok-kw">defer</span> self.allocator.free(cmd_line);</span>
-<span class="line" id="L749"></span>
-<span class="line" id="L750">        <span class="tok-kw">var</span> siStartInfo = windows.STARTUPINFOW{</span>
-<span class="line" id="L751">            .cb = <span class="tok-builtin">@sizeOf</span>(windows.STARTUPINFOW),</span>
-<span class="line" id="L752">            .hStdError = g_hChildStd_ERR_Wr,</span>
-<span class="line" id="L753">            .hStdOutput = g_hChildStd_OUT_Wr,</span>
-<span class="line" id="L754">            .hStdInput = g_hChildStd_IN_Rd,</span>
-<span class="line" id="L755">            .dwFlags = windows.STARTF_USESTDHANDLES,</span>
-<span class="line" id="L756"></span>
-<span class="line" id="L757">            .lpReserved = <span class="tok-null">null</span>,</span>
-<span class="line" id="L758">            .lpDesktop = <span class="tok-null">null</span>,</span>
-<span class="line" id="L759">            .lpTitle = <span class="tok-null">null</span>,</span>
-<span class="line" id="L760">            .dwX = <span class="tok-number">0</span>,</span>
-<span class="line" id="L761">            .dwY = <span class="tok-number">0</span>,</span>
-<span class="line" id="L762">            .dwXSize = <span class="tok-number">0</span>,</span>
-<span class="line" id="L763">            .dwYSize = <span class="tok-number">0</span>,</span>
-<span class="line" id="L764">            .dwXCountChars = <span class="tok-number">0</span>,</span>
-<span class="line" id="L765">            .dwYCountChars = <span class="tok-number">0</span>,</span>
-<span class="line" id="L766">            .dwFillAttribute = <span class="tok-number">0</span>,</span>
-<span class="line" id="L767">            .wShowWindow = <span class="tok-number">0</span>,</span>
-<span class="line" id="L768">            .cbReserved2 = <span class="tok-number">0</span>,</span>
-<span class="line" id="L769">            .lpReserved2 = <span class="tok-null">null</span>,</span>
-<span class="line" id="L770">        };</span>
-<span class="line" id="L771">        <span class="tok-kw">var</span> piProcInfo: windows.PROCESS_INFORMATION = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L772"></span>
-<span class="line" id="L773">        <span class="tok-kw">const</span> cwd_w = <span class="tok-kw">if</span> (self.cwd) |cwd| <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, cwd) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L774">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (cwd_w) |cwd| self.allocator.free(cwd);</span>
-<span class="line" id="L775">        <span class="tok-kw">const</span> cwd_w_ptr = <span class="tok-kw">if</span> (cwd_w) |cwd| cwd.ptr <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L776"></span>
-<span class="line" id="L777">        <span class="tok-kw">const</span> maybe_envp_buf = <span class="tok-kw">if</span> (self.env_map) |env_map| <span class="tok-kw">try</span> createWindowsEnvBlock(self.allocator, env_map) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L778">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (maybe_envp_buf) |envp_buf| self.allocator.free(envp_buf);</span>
-<span class="line" id="L779">        <span class="tok-kw">const</span> envp_ptr = <span class="tok-kw">if</span> (maybe_envp_buf) |envp_buf| envp_buf.ptr <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L747">        <span class="tok-kw">var</span> siStartInfo = windows.STARTUPINFOW{</span>
+<span class="line" id="L748">            .cb = <span class="tok-builtin">@sizeOf</span>(windows.STARTUPINFOW),</span>
+<span class="line" id="L749">            .hStdError = g_hChildStd_ERR_Wr,</span>
+<span class="line" id="L750">            .hStdOutput = g_hChildStd_OUT_Wr,</span>
+<span class="line" id="L751">            .hStdInput = g_hChildStd_IN_Rd,</span>
+<span class="line" id="L752">            .dwFlags = windows.STARTF_USESTDHANDLES,</span>
+<span class="line" id="L753"></span>
+<span class="line" id="L754">            .lpReserved = <span class="tok-null">null</span>,</span>
+<span class="line" id="L755">            .lpDesktop = <span class="tok-null">null</span>,</span>
+<span class="line" id="L756">            .lpTitle = <span class="tok-null">null</span>,</span>
+<span class="line" id="L757">            .dwX = <span class="tok-number">0</span>,</span>
+<span class="line" id="L758">            .dwY = <span class="tok-number">0</span>,</span>
+<span class="line" id="L759">            .dwXSize = <span class="tok-number">0</span>,</span>
+<span class="line" id="L760">            .dwYSize = <span class="tok-number">0</span>,</span>
+<span class="line" id="L761">            .dwXCountChars = <span class="tok-number">0</span>,</span>
+<span class="line" id="L762">            .dwYCountChars = <span class="tok-number">0</span>,</span>
+<span class="line" id="L763">            .dwFillAttribute = <span class="tok-number">0</span>,</span>
+<span class="line" id="L764">            .wShowWindow = <span class="tok-number">0</span>,</span>
+<span class="line" id="L765">            .cbReserved2 = <span class="tok-number">0</span>,</span>
+<span class="line" id="L766">            .lpReserved2 = <span class="tok-null">null</span>,</span>
+<span class="line" id="L767">        };</span>
+<span class="line" id="L768">        <span class="tok-kw">var</span> piProcInfo: windows.PROCESS_INFORMATION = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L769"></span>
+<span class="line" id="L770">        <span class="tok-kw">const</span> cwd_w = <span class="tok-kw">if</span> (self.cwd) |cwd| <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, cwd) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L771">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (cwd_w) |cwd| self.allocator.free(cwd);</span>
+<span class="line" id="L772">        <span class="tok-kw">const</span> cwd_w_ptr = <span class="tok-kw">if</span> (cwd_w) |cwd| cwd.ptr <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L773"></span>
+<span class="line" id="L774">        <span class="tok-kw">const</span> maybe_envp_buf = <span class="tok-kw">if</span> (self.env_map) |env_map| <span class="tok-kw">try</span> createWindowsEnvBlock(self.allocator, env_map) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L775">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (maybe_envp_buf) |envp_buf| self.allocator.free(envp_buf);</span>
+<span class="line" id="L776">        <span class="tok-kw">const</span> envp_ptr = <span class="tok-kw">if</span> (maybe_envp_buf) |envp_buf| envp_buf.ptr <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L777"></span>
+<span class="line" id="L778">        <span class="tok-kw">const</span> app_name_utf8 = self.argv[<span class="tok-number">0</span>];</span>
+<span class="line" id="L779">        <span class="tok-kw">const</span> app_name_is_absolute = fs.path.isAbsolute(app_name_utf8);</span>
 <span class="line" id="L780"></span>
-<span class="line" id="L781">        <span class="tok-kw">const</span> app_name_utf8 = self.argv[<span class="tok-number">0</span>];</span>
-<span class="line" id="L782">        <span class="tok-kw">const</span> app_name_is_absolute = fs.path.isAbsolute(app_name_utf8);</span>
-<span class="line" id="L783"></span>
-<span class="line" id="L784">        <span class="tok-comment">// the cwd set in ChildProcess is in effect when choosing the executable path</span>
+<span class="line" id="L781">        <span class="tok-comment">// the cwd set in ChildProcess is in effect when choosing the executable path</span>
 </span>
-<span class="line" id="L785">        <span class="tok-comment">// to match posix semantics</span>
+<span class="line" id="L782">        <span class="tok-comment">// to match posix semantics</span>
 </span>
-<span class="line" id="L786">        <span class="tok-kw">var</span> cwd_path_w_needs_free = <span class="tok-null">false</span>;</span>
-<span class="line" id="L787">        <span class="tok-kw">const</span> cwd_path_w = x: {</span>
-<span class="line" id="L788">            <span class="tok-comment">// If the app name is absolute, then we need to use its dirname as the cwd</span>
+<span class="line" id="L783">        <span class="tok-kw">var</span> cwd_path_w_needs_free = <span class="tok-null">false</span>;</span>
+<span class="line" id="L784">        <span class="tok-kw">const</span> cwd_path_w = x: {</span>
+<span class="line" id="L785">            <span class="tok-comment">// If the app name is absolute, then we need to use its dirname as the cwd</span>
 </span>
-<span class="line" id="L789">            <span class="tok-kw">if</span> (app_name_is_absolute) {</span>
-<span class="line" id="L790">                cwd_path_w_needs_free = <span class="tok-null">true</span>;</span>
-<span class="line" id="L791">                <span class="tok-kw">const</span> dir = fs.path.dirname(app_name_utf8).?;</span>
-<span class="line" id="L792">                <span class="tok-kw">break</span> :x <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, dir);</span>
-<span class="line" id="L793">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (self.cwd) |cwd| {</span>
-<span class="line" id="L794">                cwd_path_w_needs_free = <span class="tok-null">true</span>;</span>
-<span class="line" id="L795">                <span class="tok-kw">break</span> :x <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, cwd);</span>
-<span class="line" id="L796">            } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L797">                <span class="tok-kw">break</span> :x &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{}; <span class="tok-comment">// empty for cwd</span>
+<span class="line" id="L786">            <span class="tok-kw">if</span> (app_name_is_absolute) {</span>
+<span class="line" id="L787">                cwd_path_w_needs_free = <span class="tok-null">true</span>;</span>
+<span class="line" id="L788">                <span class="tok-kw">const</span> dir = fs.path.dirname(app_name_utf8).?;</span>
+<span class="line" id="L789">                <span class="tok-kw">break</span> :x <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, dir);</span>
+<span class="line" id="L790">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (self.cwd) |cwd| {</span>
+<span class="line" id="L791">                cwd_path_w_needs_free = <span class="tok-null">true</span>;</span>
+<span class="line" id="L792">                <span class="tok-kw">break</span> :x <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, cwd);</span>
+<span class="line" id="L793">            } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L794">                <span class="tok-kw">break</span> :x &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{}; <span class="tok-comment">// empty for cwd</span>
 </span>
-<span class="line" id="L798">            }</span>
-<span class="line" id="L799">        };</span>
-<span class="line" id="L800">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (cwd_path_w_needs_free) self.allocator.free(cwd_path_w);</span>
-<span class="line" id="L801"></span>
-<span class="line" id="L802">        <span class="tok-comment">// If the app name has more than just a filename, then we need to separate that</span>
+<span class="line" id="L795">            }</span>
+<span class="line" id="L796">        };</span>
+<span class="line" id="L797">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (cwd_path_w_needs_free) self.allocator.free(cwd_path_w);</span>
+<span class="line" id="L798"></span>
+<span class="line" id="L799">        <span class="tok-comment">// If the app name has more than just a filename, then we need to separate that</span>
 </span>
-<span class="line" id="L803">        <span class="tok-comment">// into the basename and dirname and use the dirname as an addition to the cwd</span>
+<span class="line" id="L800">        <span class="tok-comment">// into the basename and dirname and use the dirname as an addition to the cwd</span>
 </span>
-<span class="line" id="L804">        <span class="tok-comment">// path. This is because NtQueryDirectoryFile cannot accept FileName params with</span>
+<span class="line" id="L801">        <span class="tok-comment">// path. This is because NtQueryDirectoryFile cannot accept FileName params with</span>
 </span>
-<span class="line" id="L805">        <span class="tok-comment">// path separators.</span>
+<span class="line" id="L802">        <span class="tok-comment">// path separators.</span>
 </span>
-<span class="line" id="L806">        <span class="tok-kw">const</span> app_basename_utf8 = fs.path.basename(app_name_utf8);</span>
-<span class="line" id="L807">        <span class="tok-comment">// If the app name is absolute, then the cwd will already have the app's dirname in it,</span>
+<span class="line" id="L803">        <span class="tok-kw">const</span> app_basename_utf8 = fs.path.basename(app_name_utf8);</span>
+<span class="line" id="L804">        <span class="tok-comment">// If the app name is absolute, then the cwd will already have the app's dirname in it,</span>
 </span>
-<span class="line" id="L808">        <span class="tok-comment">// so only populate app_dirname if app name is a relative path with &gt; 0 path separators.</span>
+<span class="line" id="L805">        <span class="tok-comment">// so only populate app_dirname if app name is a relative path with &gt; 0 path separators.</span>
 </span>
-<span class="line" id="L809">        <span class="tok-kw">const</span> maybe_app_dirname_utf8 = <span class="tok-kw">if</span> (!app_name_is_absolute) fs.path.dirname(app_name_utf8) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L810">        <span class="tok-kw">const</span> app_dirname_w: ?[:<span class="tok-number">0</span>]<span class="tok-type">u16</span> = x: {</span>
-<span class="line" id="L811">            <span class="tok-kw">if</span> (maybe_app_dirname_utf8) |app_dirname_utf8| {</span>
-<span class="line" id="L812">                <span class="tok-kw">break</span> :x <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, app_dirname_utf8);</span>
-<span class="line" id="L813">            }</span>
-<span class="line" id="L814">            <span class="tok-kw">break</span> :x <span class="tok-null">null</span>;</span>
-<span class="line" id="L815">        };</span>
-<span class="line" id="L816">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (app_dirname_w != <span class="tok-null">null</span>) self.allocator.free(app_dirname_w.?);</span>
+<span class="line" id="L806">        <span class="tok-kw">const</span> maybe_app_dirname_utf8 = <span class="tok-kw">if</span> (!app_name_is_absolute) fs.path.dirname(app_name_utf8) <span class="tok-kw">else</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L807">        <span class="tok-kw">const</span> app_dirname_w: ?[:<span class="tok-number">0</span>]<span class="tok-type">u16</span> = x: {</span>
+<span class="line" id="L808">            <span class="tok-kw">if</span> (maybe_app_dirname_utf8) |app_dirname_utf8| {</span>
+<span class="line" id="L809">                <span class="tok-kw">break</span> :x <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, app_dirname_utf8);</span>
+<span class="line" id="L810">            }</span>
+<span class="line" id="L811">            <span class="tok-kw">break</span> :x <span class="tok-null">null</span>;</span>
+<span class="line" id="L812">        };</span>
+<span class="line" id="L813">        <span class="tok-kw">defer</span> <span class="tok-kw">if</span> (app_dirname_w != <span class="tok-null">null</span>) self.allocator.free(app_dirname_w.?);</span>
+<span class="line" id="L814"></span>
+<span class="line" id="L815">        <span class="tok-kw">const</span> app_name_w = <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, app_basename_utf8);</span>
+<span class="line" id="L816">        <span class="tok-kw">defer</span> self.allocator.free(app_name_w);</span>
 <span class="line" id="L817"></span>
-<span class="line" id="L818">        <span class="tok-kw">const</span> app_name_w = <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, app_basename_utf8);</span>
-<span class="line" id="L819">        <span class="tok-kw">defer</span> self.allocator.free(app_name_w);</span>
-<span class="line" id="L820"></span>
-<span class="line" id="L821">        <span class="tok-kw">const</span> cmd_line_w = <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(self.allocator, cmd_line);</span>
-<span class="line" id="L822">        <span class="tok-kw">defer</span> self.allocator.free(cmd_line_w);</span>
-<span class="line" id="L823"></span>
-<span class="line" id="L824">        run: {</span>
-<span class="line" id="L825">            <span class="tok-kw">const</span> PATH: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> = std.os.getenvW(unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;PATH&quot;</span>)) <span class="tok-kw">orelse</span> &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{};</span>
-<span class="line" id="L826">            <span class="tok-kw">const</span> PATHEXT: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> = std.os.getenvW(unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;PATHEXT&quot;</span>)) <span class="tok-kw">orelse</span> &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{};</span>
-<span class="line" id="L827"></span>
-<span class="line" id="L828">            <span class="tok-kw">var</span> app_buf = std.ArrayListUnmanaged(<span class="tok-type">u16</span>){};</span>
-<span class="line" id="L829">            <span class="tok-kw">defer</span> app_buf.deinit(self.allocator);</span>
-<span class="line" id="L830"></span>
-<span class="line" id="L831">            <span class="tok-kw">try</span> app_buf.appendSlice(self.allocator, app_name_w);</span>
-<span class="line" id="L832"></span>
-<span class="line" id="L833">            <span class="tok-kw">var</span> dir_buf = std.ArrayListUnmanaged(<span class="tok-type">u16</span>){};</span>
-<span class="line" id="L834">            <span class="tok-kw">defer</span> dir_buf.deinit(self.allocator);</span>
-<span class="line" id="L835"></span>
-<span class="line" id="L836">            <span class="tok-kw">if</span> (cwd_path_w.len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L837">                <span class="tok-kw">try</span> dir_buf.appendSlice(self.allocator, cwd_path_w);</span>
-<span class="line" id="L838">            }</span>
-<span class="line" id="L839">            <span class="tok-kw">if</span> (app_dirname_w) |app_dir| {</span>
-<span class="line" id="L840">                <span class="tok-kw">if</span> (dir_buf.items.len &gt; <span class="tok-number">0</span>) <span class="tok-kw">try</span> dir_buf.append(self.allocator, fs.path.sep);</span>
-<span class="line" id="L841">                <span class="tok-kw">try</span> dir_buf.appendSlice(self.allocator, app_dir);</span>
-<span class="line" id="L842">            }</span>
-<span class="line" id="L843">            <span class="tok-kw">if</span> (dir_buf.items.len &gt; <span class="tok-number">0</span>) {</span>
-<span class="line" id="L844">                <span class="tok-comment">// Need to normalize the path, openDirW can't handle things like double backslashes</span>
+<span class="line" id="L818">        <span class="tok-kw">const</span> cmd_line_w = argvToCommandLineWindows(self.allocator, self.argv) <span class="tok-kw">catch</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L819">            <span class="tok-comment">// argv[0] contains unsupported characters that will never resolve to a valid exe.</span>
 </span>
-<span class="line" id="L845">                <span class="tok-kw">const</span> normalized_len = windows.normalizePath(<span class="tok-type">u16</span>, dir_buf.items) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BadPathName;</span>
-<span class="line" id="L846">                dir_buf.shrinkRetainingCapacity(normalized_len);</span>
-<span class="line" id="L847">            }</span>
-<span class="line" id="L848"></span>
-<span class="line" id="L849">            windowsCreateProcessPathExt(self.allocator, &amp;dir_buf, &amp;app_buf, PATHEXT, cmd_line_w.ptr, envp_ptr, cwd_w_ptr, &amp;siStartInfo, &amp;piProcInfo) <span class="tok-kw">catch</span> |no_path_err| {</span>
-<span class="line" id="L850">                <span class="tok-kw">const</span> original_err = <span class="tok-kw">switch</span> (no_path_err) {</span>
-<span class="line" id="L851">                    <span class="tok-kw">error</span>.FileNotFound, <span class="tok-kw">error</span>.InvalidExe, <span class="tok-kw">error</span>.AccessDenied =&gt; |e| e,</span>
-<span class="line" id="L852">                    <span class="tok-kw">error</span>.UnrecoverableInvalidExe =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidExe,</span>
-<span class="line" id="L853">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
-<span class="line" id="L854">                };</span>
-<span class="line" id="L855"></span>
-<span class="line" id="L856">                <span class="tok-comment">// If the app name had path separators, that disallows PATH searching,</span>
+<span class="line" id="L820">            <span class="tok-kw">error</span>.InvalidArg0 =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
+<span class="line" id="L821">            <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L822">        };</span>
+<span class="line" id="L823">        <span class="tok-kw">defer</span> self.allocator.free(cmd_line_w);</span>
+<span class="line" id="L824"></span>
+<span class="line" id="L825">        run: {</span>
+<span class="line" id="L826">            <span class="tok-kw">const</span> PATH: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> = std.os.getenvW(unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;PATH&quot;</span>)) <span class="tok-kw">orelse</span> &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{};</span>
+<span class="line" id="L827">            <span class="tok-kw">const</span> PATHEXT: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span> = std.os.getenvW(unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;PATHEXT&quot;</span>)) <span class="tok-kw">orelse</span> &amp;[_:<span class="tok-number">0</span>]<span class="tok-type">u16</span>{};</span>
+<span class="line" id="L828"></span>
+<span class="line" id="L829">            <span class="tok-kw">var</span> app_buf = std.ArrayListUnmanaged(<span class="tok-type">u16</span>){};</span>
+<span class="line" id="L830">            <span class="tok-kw">defer</span> app_buf.deinit(self.allocator);</span>
+<span class="line" id="L831"></span>
+<span class="line" id="L832">            <span class="tok-kw">try</span> app_buf.appendSlice(self.allocator, app_name_w);</span>
+<span class="line" id="L833"></span>
+<span class="line" id="L834">            <span class="tok-kw">var</span> dir_buf = std.ArrayListUnmanaged(<span class="tok-type">u16</span>){};</span>
+<span class="line" id="L835">            <span class="tok-kw">defer</span> dir_buf.deinit(self.allocator);</span>
+<span class="line" id="L836"></span>
+<span class="line" id="L837">            <span class="tok-kw">if</span> (cwd_path_w.len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L838">                <span class="tok-kw">try</span> dir_buf.appendSlice(self.allocator, cwd_path_w);</span>
+<span class="line" id="L839">            }</span>
+<span class="line" id="L840">            <span class="tok-kw">if</span> (app_dirname_w) |app_dir| {</span>
+<span class="line" id="L841">                <span class="tok-kw">if</span> (dir_buf.items.len &gt; <span class="tok-number">0</span>) <span class="tok-kw">try</span> dir_buf.append(self.allocator, fs.path.sep);</span>
+<span class="line" id="L842">                <span class="tok-kw">try</span> dir_buf.appendSlice(self.allocator, app_dir);</span>
+<span class="line" id="L843">            }</span>
+<span class="line" id="L844">            <span class="tok-kw">if</span> (dir_buf.items.len &gt; <span class="tok-number">0</span>) {</span>
+<span class="line" id="L845">                <span class="tok-comment">// Need to normalize the path, openDirW can't handle things like double backslashes</span>
 </span>
-<span class="line" id="L857">                <span class="tok-comment">// and there's no need to search the PATH if the app name is absolute.</span>
+<span class="line" id="L846">                <span class="tok-kw">const</span> normalized_len = windows.normalizePath(<span class="tok-type">u16</span>, dir_buf.items) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.BadPathName;</span>
+<span class="line" id="L847">                dir_buf.shrinkRetainingCapacity(normalized_len);</span>
+<span class="line" id="L848">            }</span>
+<span class="line" id="L849"></span>
+<span class="line" id="L850">            windowsCreateProcessPathExt(self.allocator, &amp;dir_buf, &amp;app_buf, PATHEXT, cmd_line_w.ptr, envp_ptr, cwd_w_ptr, &amp;siStartInfo, &amp;piProcInfo) <span class="tok-kw">catch</span> |no_path_err| {</span>
+<span class="line" id="L851">                <span class="tok-kw">const</span> original_err = <span class="tok-kw">switch</span> (no_path_err) {</span>
+<span class="line" id="L852">                    <span class="tok-kw">error</span>.FileNotFound, <span class="tok-kw">error</span>.InvalidExe, <span class="tok-kw">error</span>.AccessDenied =&gt; |e| e,</span>
+<span class="line" id="L853">                    <span class="tok-kw">error</span>.UnrecoverableInvalidExe =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidExe,</span>
+<span class="line" id="L854">                    <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L855">                };</span>
+<span class="line" id="L856"></span>
+<span class="line" id="L857">                <span class="tok-comment">// If the app name had path separators, that disallows PATH searching,</span>
 </span>
-<span class="line" id="L858">                <span class="tok-comment">// We still search the path if the cwd is absolute because of the</span>
+<span class="line" id="L858">                <span class="tok-comment">// and there's no need to search the PATH if the app name is absolute.</span>
 </span>
-<span class="line" id="L859">                <span class="tok-comment">// &quot;cwd set in ChildProcess is in effect when choosing the executable path</span>
+<span class="line" id="L859">                <span class="tok-comment">// We still search the path if the cwd is absolute because of the</span>
 </span>
-<span class="line" id="L860">                <span class="tok-comment">// to match posix semantics&quot; behavior--we don't want to skip searching</span>
+<span class="line" id="L860">                <span class="tok-comment">// &quot;cwd set in ChildProcess is in effect when choosing the executable path</span>
 </span>
-<span class="line" id="L861">                <span class="tok-comment">// the PATH just because we were trying to set the cwd of the child process.</span>
+<span class="line" id="L861">                <span class="tok-comment">// to match posix semantics&quot; behavior--we don't want to skip searching</span>
 </span>
-<span class="line" id="L862">                <span class="tok-kw">if</span> (app_dirname_w != <span class="tok-null">null</span> <span class="tok-kw">or</span> app_name_is_absolute) {</span>
-<span class="line" id="L863">                    <span class="tok-kw">return</span> original_err;</span>
-<span class="line" id="L864">                }</span>
-<span class="line" id="L865"></span>
-<span class="line" id="L866">                <span class="tok-kw">var</span> it = mem.tokenizeScalar(<span class="tok-type">u16</span>, PATH, <span class="tok-str">';'</span>);</span>
-<span class="line" id="L867">                <span class="tok-kw">while</span> (it.next()) |search_path| {</span>
-<span class="line" id="L868">                    dir_buf.clearRetainingCapacity();</span>
-<span class="line" id="L869">                    <span class="tok-kw">try</span> dir_buf.appendSlice(self.allocator, search_path);</span>
-<span class="line" id="L870">                    <span class="tok-comment">// Need to normalize the path, some PATH values can contain things like double</span>
+<span class="line" id="L862">                <span class="tok-comment">// the PATH just because we were trying to set the cwd of the child process.</span>
 </span>
-<span class="line" id="L871">                    <span class="tok-comment">// backslashes which openDirW can't handle</span>
+<span class="line" id="L863">                <span class="tok-kw">if</span> (app_dirname_w != <span class="tok-null">null</span> <span class="tok-kw">or</span> app_name_is_absolute) {</span>
+<span class="line" id="L864">                    <span class="tok-kw">return</span> original_err;</span>
+<span class="line" id="L865">                }</span>
+<span class="line" id="L866"></span>
+<span class="line" id="L867">                <span class="tok-kw">var</span> it = mem.tokenizeScalar(<span class="tok-type">u16</span>, PATH, <span class="tok-str">';'</span>);</span>
+<span class="line" id="L868">                <span class="tok-kw">while</span> (it.next()) |search_path| {</span>
+<span class="line" id="L869">                    dir_buf.clearRetainingCapacity();</span>
+<span class="line" id="L870">                    <span class="tok-kw">try</span> dir_buf.appendSlice(self.allocator, search_path);</span>
+<span class="line" id="L871">                    <span class="tok-comment">// Need to normalize the path, some PATH values can contain things like double</span>
 </span>
-<span class="line" id="L872">                    <span class="tok-kw">const</span> normalized_len = windows.normalizePath(<span class="tok-type">u16</span>, dir_buf.items) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L873">                    dir_buf.shrinkRetainingCapacity(normalized_len);</span>
-<span class="line" id="L874"></span>
-<span class="line" id="L875">                    <span class="tok-kw">if</span> (windowsCreateProcessPathExt(self.allocator, &amp;dir_buf, &amp;app_buf, PATHEXT, cmd_line_w.ptr, envp_ptr, cwd_w_ptr, &amp;siStartInfo, &amp;piProcInfo)) {</span>
-<span class="line" id="L876">                        <span class="tok-kw">break</span> :run;</span>
-<span class="line" id="L877">                    } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L878">                        <span class="tok-kw">error</span>.FileNotFound, <span class="tok-kw">error</span>.AccessDenied, <span class="tok-kw">error</span>.InvalidExe =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L879">                        <span class="tok-kw">error</span>.UnrecoverableInvalidExe =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidExe,</span>
-<span class="line" id="L880">                        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
-<span class="line" id="L881">                    }</span>
-<span class="line" id="L882">                } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L883">                    <span class="tok-kw">return</span> original_err;</span>
-<span class="line" id="L884">                }</span>
-<span class="line" id="L885">            };</span>
-<span class="line" id="L886">        }</span>
-<span class="line" id="L887"></span>
-<span class="line" id="L888">        <span class="tok-kw">if</span> (g_hChildStd_IN_Wr) |h| {</span>
-<span class="line" id="L889">            self.stdin = File{ .handle = h };</span>
-<span class="line" id="L890">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L891">            self.stdin = <span class="tok-null">null</span>;</span>
-<span class="line" id="L892">        }</span>
-<span class="line" id="L893">        <span class="tok-kw">if</span> (g_hChildStd_OUT_Rd) |h| {</span>
-<span class="line" id="L894">            self.stdout = File{ .handle = h };</span>
-<span class="line" id="L895">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L896">            self.stdout = <span class="tok-null">null</span>;</span>
-<span class="line" id="L897">        }</span>
-<span class="line" id="L898">        <span class="tok-kw">if</span> (g_hChildStd_ERR_Rd) |h| {</span>
-<span class="line" id="L899">            self.stderr = File{ .handle = h };</span>
-<span class="line" id="L900">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L901">            self.stderr = <span class="tok-null">null</span>;</span>
-<span class="line" id="L902">        }</span>
-<span class="line" id="L903"></span>
-<span class="line" id="L904">        self.id = piProcInfo.hProcess;</span>
-<span class="line" id="L905">        self.thread_handle = piProcInfo.hThread;</span>
-<span class="line" id="L906">        self.term = <span class="tok-null">null</span>;</span>
-<span class="line" id="L907"></span>
-<span class="line" id="L908">        <span class="tok-kw">if</span> (self.stdin_behavior == StdIo.Pipe) {</span>
-<span class="line" id="L909">            os.close(g_hChildStd_IN_Rd.?);</span>
-<span class="line" id="L910">        }</span>
-<span class="line" id="L911">        <span class="tok-kw">if</span> (self.stderr_behavior == StdIo.Pipe) {</span>
-<span class="line" id="L912">            os.close(g_hChildStd_ERR_Wr.?);</span>
-<span class="line" id="L913">        }</span>
-<span class="line" id="L914">        <span class="tok-kw">if</span> (self.stdout_behavior == StdIo.Pipe) {</span>
-<span class="line" id="L915">            os.close(g_hChildStd_OUT_Wr.?);</span>
-<span class="line" id="L916">        }</span>
-<span class="line" id="L917">    }</span>
-<span class="line" id="L918"></span>
-<span class="line" id="L919">    <span class="tok-kw">fn</span> <span class="tok-fn">setUpChildIo</span>(stdio: StdIo, pipe_fd: <span class="tok-type">i32</span>, std_fileno: <span class="tok-type">i32</span>, dev_null_fd: <span class="tok-type">i32</span>) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L920">        <span class="tok-kw">switch</span> (stdio) {</span>
-<span class="line" id="L921">            .Pipe =&gt; <span class="tok-kw">try</span> os.dup2(pipe_fd, std_fileno),</span>
-<span class="line" id="L922">            .Close =&gt; os.close(std_fileno),</span>
-<span class="line" id="L923">            .Inherit =&gt; {},</span>
-<span class="line" id="L924">            .Ignore =&gt; <span class="tok-kw">try</span> os.dup2(dev_null_fd, std_fileno),</span>
-<span class="line" id="L925">        }</span>
-<span class="line" id="L926">    }</span>
-<span class="line" id="L927">};</span>
-<span class="line" id="L928"></span>
-<span class="line" id="L929"><span class="tok-comment">/// Expects `app_buf` to contain exactly the app name, and `dir_buf` to contain exactly the dir path.</span></span>
-<span class="line" id="L930"><span class="tok-comment">/// After return, `app_buf` will always contain exactly the app name and `dir_buf` will always contain exactly the dir path.</span></span>
-<span class="line" id="L931"><span class="tok-comment">/// Note: `app_buf` should not contain any leading path separators.</span></span>
-<span class="line" id="L932"><span class="tok-comment">/// Note: If the dir is the cwd, dir_buf should be empty (len = 0).</span></span>
-<span class="line" id="L933"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcessPathExt</span>(</span>
-<span class="line" id="L934">    allocator: mem.Allocator,</span>
-<span class="line" id="L935">    dir_buf: *std.ArrayListUnmanaged(<span class="tok-type">u16</span>),</span>
-<span class="line" id="L936">    app_buf: *std.ArrayListUnmanaged(<span class="tok-type">u16</span>),</span>
-<span class="line" id="L937">    pathext: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>,</span>
-<span class="line" id="L938">    cmd_line: [*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>,</span>
-<span class="line" id="L939">    envp_ptr: ?[*]<span class="tok-type">u16</span>,</span>
-<span class="line" id="L940">    cwd_ptr: ?[*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>,</span>
-<span class="line" id="L941">    lpStartupInfo: *windows.STARTUPINFOW,</span>
-<span class="line" id="L942">    lpProcessInformation: *windows.PROCESS_INFORMATION,</span>
-<span class="line" id="L943">) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L944">    <span class="tok-kw">const</span> app_name_len = app_buf.items.len;</span>
-<span class="line" id="L945">    <span class="tok-kw">const</span> dir_path_len = dir_buf.items.len;</span>
-<span class="line" id="L946"></span>
-<span class="line" id="L947">    <span class="tok-kw">if</span> (app_name_len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L948"></span>
-<span class="line" id="L949">    <span class="tok-kw">defer</span> app_buf.shrinkRetainingCapacity(app_name_len);</span>
-<span class="line" id="L950">    <span class="tok-kw">defer</span> dir_buf.shrinkRetainingCapacity(dir_path_len);</span>
-<span class="line" id="L951"></span>
-<span class="line" id="L952">    <span class="tok-comment">// The name of the game here is to avoid CreateProcessW calls at all costs,</span>
+<span class="line" id="L872">                    <span class="tok-comment">// backslashes which openDirW can't handle</span>
 </span>
-<span class="line" id="L953">    <span class="tok-comment">// and only ever try calling it when we have a real candidate for execution.</span>
+<span class="line" id="L873">                    <span class="tok-kw">const</span> normalized_len = windows.normalizePath(<span class="tok-type">u16</span>, dir_buf.items) <span class="tok-kw">catch</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L874">                    dir_buf.shrinkRetainingCapacity(normalized_len);</span>
+<span class="line" id="L875"></span>
+<span class="line" id="L876">                    <span class="tok-kw">if</span> (windowsCreateProcessPathExt(self.allocator, &amp;dir_buf, &amp;app_buf, PATHEXT, cmd_line_w.ptr, envp_ptr, cwd_w_ptr, &amp;siStartInfo, &amp;piProcInfo)) {</span>
+<span class="line" id="L877">                        <span class="tok-kw">break</span> :run;</span>
+<span class="line" id="L878">                    } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L879">                        <span class="tok-kw">error</span>.FileNotFound, <span class="tok-kw">error</span>.AccessDenied, <span class="tok-kw">error</span>.InvalidExe =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L880">                        <span class="tok-kw">error</span>.UnrecoverableInvalidExe =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidExe,</span>
+<span class="line" id="L881">                        <span class="tok-kw">else</span> =&gt; |e| <span class="tok-kw">return</span> e,</span>
+<span class="line" id="L882">                    }</span>
+<span class="line" id="L883">                } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L884">                    <span class="tok-kw">return</span> original_err;</span>
+<span class="line" id="L885">                }</span>
+<span class="line" id="L886">            };</span>
+<span class="line" id="L887">        }</span>
+<span class="line" id="L888"></span>
+<span class="line" id="L889">        <span class="tok-kw">if</span> (g_hChildStd_IN_Wr) |h| {</span>
+<span class="line" id="L890">            self.stdin = File{ .handle = h };</span>
+<span class="line" id="L891">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L892">            self.stdin = <span class="tok-null">null</span>;</span>
+<span class="line" id="L893">        }</span>
+<span class="line" id="L894">        <span class="tok-kw">if</span> (g_hChildStd_OUT_Rd) |h| {</span>
+<span class="line" id="L895">            self.stdout = File{ .handle = h };</span>
+<span class="line" id="L896">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L897">            self.stdout = <span class="tok-null">null</span>;</span>
+<span class="line" id="L898">        }</span>
+<span class="line" id="L899">        <span class="tok-kw">if</span> (g_hChildStd_ERR_Rd) |h| {</span>
+<span class="line" id="L900">            self.stderr = File{ .handle = h };</span>
+<span class="line" id="L901">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L902">            self.stderr = <span class="tok-null">null</span>;</span>
+<span class="line" id="L903">        }</span>
+<span class="line" id="L904"></span>
+<span class="line" id="L905">        self.id = piProcInfo.hProcess;</span>
+<span class="line" id="L906">        self.thread_handle = piProcInfo.hThread;</span>
+<span class="line" id="L907">        self.term = <span class="tok-null">null</span>;</span>
+<span class="line" id="L908"></span>
+<span class="line" id="L909">        <span class="tok-kw">if</span> (self.stdin_behavior == StdIo.Pipe) {</span>
+<span class="line" id="L910">            os.close(g_hChildStd_IN_Rd.?);</span>
+<span class="line" id="L911">        }</span>
+<span class="line" id="L912">        <span class="tok-kw">if</span> (self.stderr_behavior == StdIo.Pipe) {</span>
+<span class="line" id="L913">            os.close(g_hChildStd_ERR_Wr.?);</span>
+<span class="line" id="L914">        }</span>
+<span class="line" id="L915">        <span class="tok-kw">if</span> (self.stdout_behavior == StdIo.Pipe) {</span>
+<span class="line" id="L916">            os.close(g_hChildStd_OUT_Wr.?);</span>
+<span class="line" id="L917">        }</span>
+<span class="line" id="L918">    }</span>
+<span class="line" id="L919"></span>
+<span class="line" id="L920">    <span class="tok-kw">fn</span> <span class="tok-fn">setUpChildIo</span>(stdio: StdIo, pipe_fd: <span class="tok-type">i32</span>, std_fileno: <span class="tok-type">i32</span>, dev_null_fd: <span class="tok-type">i32</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L921">        <span class="tok-kw">switch</span> (stdio) {</span>
+<span class="line" id="L922">            .Pipe =&gt; <span class="tok-kw">try</span> os.dup2(pipe_fd, std_fileno),</span>
+<span class="line" id="L923">            .Close =&gt; os.close(std_fileno),</span>
+<span class="line" id="L924">            .Inherit =&gt; {},</span>
+<span class="line" id="L925">            .Ignore =&gt; <span class="tok-kw">try</span> os.dup2(dev_null_fd, std_fileno),</span>
+<span class="line" id="L926">        }</span>
+<span class="line" id="L927">    }</span>
+<span class="line" id="L928">};</span>
+<span class="line" id="L929"></span>
+<span class="line" id="L930"><span class="tok-comment">/// Expects `app_buf` to contain exactly the app name, and `dir_buf` to contain exactly the dir path.</span></span>
+<span class="line" id="L931"><span class="tok-comment">/// After return, `app_buf` will always contain exactly the app name and `dir_buf` will always contain exactly the dir path.</span></span>
+<span class="line" id="L932"><span class="tok-comment">/// Note: `app_buf` should not contain any leading path separators.</span></span>
+<span class="line" id="L933"><span class="tok-comment">/// Note: If the dir is the cwd, dir_buf should be empty (len = 0).</span></span>
+<span class="line" id="L934"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcessPathExt</span>(</span>
+<span class="line" id="L935">    allocator: mem.Allocator,</span>
+<span class="line" id="L936">    dir_buf: *std.ArrayListUnmanaged(<span class="tok-type">u16</span>),</span>
+<span class="line" id="L937">    app_buf: *std.ArrayListUnmanaged(<span class="tok-type">u16</span>),</span>
+<span class="line" id="L938">    pathext: [:<span class="tok-number">0</span>]<span class="tok-kw">const</span> <span class="tok-type">u16</span>,</span>
+<span class="line" id="L939">    cmd_line: [*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>,</span>
+<span class="line" id="L940">    envp_ptr: ?[*]<span class="tok-type">u16</span>,</span>
+<span class="line" id="L941">    cwd_ptr: ?[*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>,</span>
+<span class="line" id="L942">    lpStartupInfo: *windows.STARTUPINFOW,</span>
+<span class="line" id="L943">    lpProcessInformation: *windows.PROCESS_INFORMATION,</span>
+<span class="line" id="L944">) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L945">    <span class="tok-kw">const</span> app_name_len = app_buf.items.len;</span>
+<span class="line" id="L946">    <span class="tok-kw">const</span> dir_path_len = dir_buf.items.len;</span>
+<span class="line" id="L947"></span>
+<span class="line" id="L948">    <span class="tok-kw">if</span> (app_name_len == <span class="tok-number">0</span>) <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L949"></span>
+<span class="line" id="L950">    <span class="tok-kw">defer</span> app_buf.shrinkRetainingCapacity(app_name_len);</span>
+<span class="line" id="L951">    <span class="tok-kw">defer</span> dir_buf.shrinkRetainingCapacity(dir_path_len);</span>
+<span class="line" id="L952"></span>
+<span class="line" id="L953">    <span class="tok-comment">// The name of the game here is to avoid CreateProcessW calls at all costs,</span>
 </span>
-<span class="line" id="L954">    <span class="tok-comment">// Secondarily, we want to minimize the number of syscalls used when checking</span>
+<span class="line" id="L954">    <span class="tok-comment">// and only ever try calling it when we have a real candidate for execution.</span>
 </span>
-<span class="line" id="L955">    <span class="tok-comment">// for each PATHEXT-appended version of the app name.</span>
+<span class="line" id="L955">    <span class="tok-comment">// Secondarily, we want to minimize the number of syscalls used when checking</span>
 </span>
-<span class="line" id="L956">    <span class="tok-comment">//</span>
+<span class="line" id="L956">    <span class="tok-comment">// for each PATHEXT-appended version of the app name.</span>
 </span>
-<span class="line" id="L957">    <span class="tok-comment">// An overview of the technique used:</span>
+<span class="line" id="L957">    <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L958">    <span class="tok-comment">// - Open the search directory for iteration (either cwd or a path from PATH)</span>
+<span class="line" id="L958">    <span class="tok-comment">// An overview of the technique used:</span>
 </span>
-<span class="line" id="L959">    <span class="tok-comment">// - Use NtQueryDirectoryFile with a wildcard filename of `&lt;app name&gt;*` to</span>
+<span class="line" id="L959">    <span class="tok-comment">// - Open the search directory for iteration (either cwd or a path from PATH)</span>
 </span>
-<span class="line" id="L960">    <span class="tok-comment">//   check if anything that could possibly match either the unappended version</span>
+<span class="line" id="L960">    <span class="tok-comment">// - Use NtQueryDirectoryFile with a wildcard filename of `&lt;app name&gt;*` to</span>
 </span>
-<span class="line" id="L961">    <span class="tok-comment">//   of the app name or any of the versions with a PATHEXT value appended exists.</span>
+<span class="line" id="L961">    <span class="tok-comment">//   check if anything that could possibly match either the unappended version</span>
 </span>
-<span class="line" id="L962">    <span class="tok-comment">// - If the wildcard NtQueryDirectoryFile call found nothing, we can exit early</span>
+<span class="line" id="L962">    <span class="tok-comment">//   of the app name or any of the versions with a PATHEXT value appended exists.</span>
 </span>
-<span class="line" id="L963">    <span class="tok-comment">//   without needing to use PATHEXT at all.</span>
+<span class="line" id="L963">    <span class="tok-comment">// - If the wildcard NtQueryDirectoryFile call found nothing, we can exit early</span>
 </span>
-<span class="line" id="L964">    <span class="tok-comment">//</span>
+<span class="line" id="L964">    <span class="tok-comment">//   without needing to use PATHEXT at all.</span>
 </span>
-<span class="line" id="L965">    <span class="tok-comment">// This allows us to use a &lt;open dir, NtQueryDirectoryFile, close dir&gt; sequence</span>
+<span class="line" id="L965">    <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L966">    <span class="tok-comment">// for any directory that doesn't contain any possible matches, instead of having</span>
+<span class="line" id="L966">    <span class="tok-comment">// This allows us to use a &lt;open dir, NtQueryDirectoryFile, close dir&gt; sequence</span>
 </span>
-<span class="line" id="L967">    <span class="tok-comment">// to use a separate look up for each individual filename combination (unappended +</span>
+<span class="line" id="L967">    <span class="tok-comment">// for any directory that doesn't contain any possible matches, instead of having</span>
 </span>
-<span class="line" id="L968">    <span class="tok-comment">// each PATHEXT appended). For directories where the wildcard *does* match something,</span>
+<span class="line" id="L968">    <span class="tok-comment">// to use a separate look up for each individual filename combination (unappended +</span>
 </span>
-<span class="line" id="L969">    <span class="tok-comment">// we iterate the matches and take note of any that are either the unappended version,</span>
+<span class="line" id="L969">    <span class="tok-comment">// each PATHEXT appended). For directories where the wildcard *does* match something,</span>
 </span>
-<span class="line" id="L970">    <span class="tok-comment">// or a version with a supported PATHEXT appended. We then try calling CreateProcessW</span>
+<span class="line" id="L970">    <span class="tok-comment">// we iterate the matches and take note of any that are either the unappended version,</span>
 </span>
-<span class="line" id="L971">    <span class="tok-comment">// with the found versions in the appropriate order.</span>
+<span class="line" id="L971">    <span class="tok-comment">// or a version with a supported PATHEXT appended. We then try calling CreateProcessW</span>
 </span>
-<span class="line" id="L972"></span>
-<span class="line" id="L973">    <span class="tok-kw">var</span> dir = dir: {</span>
-<span class="line" id="L974">        <span class="tok-comment">// needs to be null-terminated</span>
+<span class="line" id="L972">    <span class="tok-comment">// with the found versions in the appropriate order.</span>
 </span>
-<span class="line" id="L975">        <span class="tok-kw">try</span> dir_buf.append(allocator, <span class="tok-number">0</span>);</span>
-<span class="line" id="L976">        <span class="tok-kw">defer</span> dir_buf.shrinkRetainingCapacity(dir_path_len);</span>
-<span class="line" id="L977">        <span class="tok-kw">const</span> dir_path_z = dir_buf.items[<span class="tok-number">0</span> .. dir_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L978">        <span class="tok-kw">const</span> prefixed_path = <span class="tok-kw">try</span> windows.wToPrefixedFileW(<span class="tok-null">null</span>, dir_path_z);</span>
-<span class="line" id="L979">        <span class="tok-kw">break</span> :dir fs.cwd().openDirW(prefixed_path.span().ptr, .{ .iterate = <span class="tok-null">true</span> }) <span class="tok-kw">catch</span></span>
-<span class="line" id="L980">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L981">    };</span>
-<span class="line" id="L982">    <span class="tok-kw">defer</span> dir.close();</span>
-<span class="line" id="L983"></span>
-<span class="line" id="L984">    <span class="tok-comment">// Add wildcard and null-terminator</span>
+<span class="line" id="L973"></span>
+<span class="line" id="L974">    <span class="tok-kw">var</span> dir = dir: {</span>
+<span class="line" id="L975">        <span class="tok-comment">// needs to be null-terminated</span>
 </span>
-<span class="line" id="L985">    <span class="tok-kw">try</span> app_buf.append(allocator, <span class="tok-str">'*'</span>);</span>
-<span class="line" id="L986">    <span class="tok-kw">try</span> app_buf.append(allocator, <span class="tok-number">0</span>);</span>
-<span class="line" id="L987">    <span class="tok-kw">const</span> app_name_wildcard = app_buf.items[<span class="tok-number">0</span> .. app_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L988"></span>
-<span class="line" id="L989">    <span class="tok-comment">// This 2048 is arbitrary, we just want it to be large enough to get multiple FILE_DIRECTORY_INFORMATION entries</span>
+<span class="line" id="L976">        <span class="tok-kw">try</span> dir_buf.append(allocator, <span class="tok-number">0</span>);</span>
+<span class="line" id="L977">        <span class="tok-kw">defer</span> dir_buf.shrinkRetainingCapacity(dir_path_len);</span>
+<span class="line" id="L978">        <span class="tok-kw">const</span> dir_path_z = dir_buf.items[<span class="tok-number">0</span> .. dir_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L979">        <span class="tok-kw">const</span> prefixed_path = <span class="tok-kw">try</span> windows.wToPrefixedFileW(<span class="tok-null">null</span>, dir_path_z);</span>
+<span class="line" id="L980">        <span class="tok-kw">break</span> :dir fs.cwd().openDirW(prefixed_path.span().ptr, .{ .iterate = <span class="tok-null">true</span> }) <span class="tok-kw">catch</span></span>
+<span class="line" id="L981">            <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L982">    };</span>
+<span class="line" id="L983">    <span class="tok-kw">defer</span> dir.close();</span>
+<span class="line" id="L984"></span>
+<span class="line" id="L985">    <span class="tok-comment">// Add wildcard and null-terminator</span>
 </span>
-<span class="line" id="L990">    <span class="tok-comment">// returned per NtQueryDirectoryFile call.</span>
+<span class="line" id="L986">    <span class="tok-kw">try</span> app_buf.append(allocator, <span class="tok-str">'*'</span>);</span>
+<span class="line" id="L987">    <span class="tok-kw">try</span> app_buf.append(allocator, <span class="tok-number">0</span>);</span>
+<span class="line" id="L988">    <span class="tok-kw">const</span> app_name_wildcard = app_buf.items[<span class="tok-number">0</span> .. app_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L989"></span>
+<span class="line" id="L990">    <span class="tok-comment">// This 2048 is arbitrary, we just want it to be large enough to get multiple FILE_DIRECTORY_INFORMATION entries</span>
 </span>
-<span class="line" id="L991">    <span class="tok-kw">var</span> file_information_buf: [<span class="tok-number">2048</span>]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(os.windows.FILE_DIRECTORY_INFORMATION)) = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L992">    <span class="tok-kw">const</span> file_info_maximum_single_entry_size = <span class="tok-builtin">@sizeOf</span>(windows.FILE_DIRECTORY_INFORMATION) + (windows.NAME_MAX * <span class="tok-number">2</span>);</span>
-<span class="line" id="L993">    <span class="tok-kw">if</span> (file_information_buf.len &lt; file_info_maximum_single_entry_size) {</span>
-<span class="line" id="L994">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;file_information_buf must be large enough to contain at least one maximum size FILE_DIRECTORY_INFORMATION entry&quot;</span>);</span>
-<span class="line" id="L995">    }</span>
-<span class="line" id="L996">    <span class="tok-kw">var</span> io_status: windows.IO_STATUS_BLOCK = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L997"></span>
-<span class="line" id="L998">    <span class="tok-kw">const</span> num_supported_pathext = <span class="tok-builtin">@typeInfo</span>(CreateProcessSupportedExtension).Enum.fields.len;</span>
-<span class="line" id="L999">    <span class="tok-kw">var</span> pathext_seen = [_]<span class="tok-type">bool</span>{<span class="tok-null">false</span>} ** num_supported_pathext;</span>
-<span class="line" id="L1000">    <span class="tok-kw">var</span> any_pathext_seen = <span class="tok-null">false</span>;</span>
-<span class="line" id="L1001">    <span class="tok-kw">var</span> unappended_exists = <span class="tok-null">false</span>;</span>
-<span class="line" id="L1002"></span>
-<span class="line" id="L1003">    <span class="tok-comment">// Fully iterate the wildcard matches via NtQueryDirectoryFile and take note of all versions</span>
+<span class="line" id="L991">    <span class="tok-comment">// returned per NtQueryDirectoryFile call.</span>
 </span>
-<span class="line" id="L1004">    <span class="tok-comment">// of the app_name we should try to spawn.</span>
+<span class="line" id="L992">    <span class="tok-kw">var</span> file_information_buf: [<span class="tok-number">2048</span>]<span class="tok-type">u8</span> <span class="tok-kw">align</span>(<span class="tok-builtin">@alignOf</span>(os.windows.FILE_DIRECTORY_INFORMATION)) = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L993">    <span class="tok-kw">const</span> file_info_maximum_single_entry_size = <span class="tok-builtin">@sizeOf</span>(windows.FILE_DIRECTORY_INFORMATION) + (windows.NAME_MAX * <span class="tok-number">2</span>);</span>
+<span class="line" id="L994">    <span class="tok-kw">if</span> (file_information_buf.len &lt; file_info_maximum_single_entry_size) {</span>
+<span class="line" id="L995">        <span class="tok-builtin">@compileError</span>(<span class="tok-str">&quot;file_information_buf must be large enough to contain at least one maximum size FILE_DIRECTORY_INFORMATION entry&quot;</span>);</span>
+<span class="line" id="L996">    }</span>
+<span class="line" id="L997">    <span class="tok-kw">var</span> io_status: windows.IO_STATUS_BLOCK = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L998"></span>
+<span class="line" id="L999">    <span class="tok-kw">const</span> num_supported_pathext = <span class="tok-builtin">@typeInfo</span>(CreateProcessSupportedExtension).Enum.fields.len;</span>
+<span class="line" id="L1000">    <span class="tok-kw">var</span> pathext_seen = [_]<span class="tok-type">bool</span>{<span class="tok-null">false</span>} ** num_supported_pathext;</span>
+<span class="line" id="L1001">    <span class="tok-kw">var</span> any_pathext_seen = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1002">    <span class="tok-kw">var</span> unappended_exists = <span class="tok-null">false</span>;</span>
+<span class="line" id="L1003"></span>
+<span class="line" id="L1004">    <span class="tok-comment">// Fully iterate the wildcard matches via NtQueryDirectoryFile and take note of all versions</span>
 </span>
-<span class="line" id="L1005">    <span class="tok-comment">// Note: This is necessary because the order of the files returned is filesystem-dependent:</span>
+<span class="line" id="L1005">    <span class="tok-comment">// of the app_name we should try to spawn.</span>
 </span>
-<span class="line" id="L1006">    <span class="tok-comment">//       On NTFS, `blah.exe*` will always return `blah.exe` first if it exists.</span>
+<span class="line" id="L1006">    <span class="tok-comment">// Note: This is necessary because the order of the files returned is filesystem-dependent:</span>
 </span>
-<span class="line" id="L1007">    <span class="tok-comment">//       On FAT32, it's possible for something like `blah.exe.obj` to be returned first.</span>
+<span class="line" id="L1007">    <span class="tok-comment">//       On NTFS, `blah.exe*` will always return `blah.exe` first if it exists.</span>
 </span>
-<span class="line" id="L1008">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
-<span class="line" id="L1009">        <span class="tok-kw">const</span> app_name_len_bytes = math.cast(<span class="tok-type">u16</span>, app_name_wildcard.len * <span class="tok-number">2</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
-<span class="line" id="L1010">        <span class="tok-kw">var</span> app_name_unicode_string = windows.UNICODE_STRING{</span>
-<span class="line" id="L1011">            .Length = app_name_len_bytes,</span>
-<span class="line" id="L1012">            .MaximumLength = app_name_len_bytes,</span>
-<span class="line" id="L1013">            .Buffer = <span class="tok-builtin">@constCast</span>(app_name_wildcard.ptr),</span>
-<span class="line" id="L1014">        };</span>
-<span class="line" id="L1015">        <span class="tok-kw">const</span> rc = windows.ntdll.NtQueryDirectoryFile(</span>
-<span class="line" id="L1016">            dir.fd,</span>
-<span class="line" id="L1017">            <span class="tok-null">null</span>,</span>
+<span class="line" id="L1008">    <span class="tok-comment">//       On FAT32, it's possible for something like `blah.exe.obj` to be returned first.</span>
+</span>
+<span class="line" id="L1009">    <span class="tok-kw">while</span> (<span class="tok-null">true</span>) {</span>
+<span class="line" id="L1010">        <span class="tok-kw">const</span> app_name_len_bytes = math.cast(<span class="tok-type">u16</span>, app_name_wildcard.len * <span class="tok-number">2</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.NameTooLong;</span>
+<span class="line" id="L1011">        <span class="tok-kw">var</span> app_name_unicode_string = windows.UNICODE_STRING{</span>
+<span class="line" id="L1012">            .Length = app_name_len_bytes,</span>
+<span class="line" id="L1013">            .MaximumLength = app_name_len_bytes,</span>
+<span class="line" id="L1014">            .Buffer = <span class="tok-builtin">@constCast</span>(app_name_wildcard.ptr),</span>
+<span class="line" id="L1015">        };</span>
+<span class="line" id="L1016">        <span class="tok-kw">const</span> rc = windows.ntdll.NtQueryDirectoryFile(</span>
+<span class="line" id="L1017">            dir.fd,</span>
 <span class="line" id="L1018">            <span class="tok-null">null</span>,</span>
 <span class="line" id="L1019">            <span class="tok-null">null</span>,</span>
-<span class="line" id="L1020">            &amp;io_status,</span>
-<span class="line" id="L1021">            &amp;file_information_buf,</span>
-<span class="line" id="L1022">            file_information_buf.len,</span>
-<span class="line" id="L1023">            .FileDirectoryInformation,</span>
-<span class="line" id="L1024">            windows.FALSE, <span class="tok-comment">// single result</span>
+<span class="line" id="L1020">            <span class="tok-null">null</span>,</span>
+<span class="line" id="L1021">            &amp;io_status,</span>
+<span class="line" id="L1022">            &amp;file_information_buf,</span>
+<span class="line" id="L1023">            file_information_buf.len,</span>
+<span class="line" id="L1024">            .FileDirectoryInformation,</span>
+<span class="line" id="L1025">            windows.FALSE, <span class="tok-comment">// single result</span>
 </span>
-<span class="line" id="L1025">            &amp;app_name_unicode_string,</span>
-<span class="line" id="L1026">            windows.FALSE, <span class="tok-comment">// restart iteration</span>
+<span class="line" id="L1026">            &amp;app_name_unicode_string,</span>
+<span class="line" id="L1027">            windows.FALSE, <span class="tok-comment">// restart iteration</span>
 </span>
-<span class="line" id="L1027">        );</span>
-<span class="line" id="L1028"></span>
-<span class="line" id="L1029">        <span class="tok-comment">// If we get nothing with the wildcard, then we can just bail out</span>
+<span class="line" id="L1028">        );</span>
+<span class="line" id="L1029"></span>
+<span class="line" id="L1030">        <span class="tok-comment">// If we get nothing with the wildcard, then we can just bail out</span>
 </span>
-<span class="line" id="L1030">        <span class="tok-comment">// as we know appending PATHEXT will not yield anything.</span>
+<span class="line" id="L1031">        <span class="tok-comment">// as we know appending PATHEXT will not yield anything.</span>
 </span>
-<span class="line" id="L1031">        <span class="tok-kw">switch</span> (rc) {</span>
-<span class="line" id="L1032">            .SUCCESS =&gt; {},</span>
-<span class="line" id="L1033">            .NO_SUCH_FILE =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
-<span class="line" id="L1034">            .NO_MORE_FILES =&gt; <span class="tok-kw">break</span>,</span>
-<span class="line" id="L1035">            .ACCESS_DENIED =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AccessDenied,</span>
-<span class="line" id="L1036">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> windows.unexpectedStatus(rc),</span>
-<span class="line" id="L1037">        }</span>
-<span class="line" id="L1038"></span>
-<span class="line" id="L1039">        <span class="tok-comment">// According to the docs, this can only happen if there is not enough room in the</span>
+<span class="line" id="L1032">        <span class="tok-kw">switch</span> (rc) {</span>
+<span class="line" id="L1033">            .SUCCESS =&gt; {},</span>
+<span class="line" id="L1034">            .NO_SUCH_FILE =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.FileNotFound,</span>
+<span class="line" id="L1035">            .NO_MORE_FILES =&gt; <span class="tok-kw">break</span>,</span>
+<span class="line" id="L1036">            .ACCESS_DENIED =&gt; <span class="tok-kw">return</span> <span class="tok-kw">error</span>.AccessDenied,</span>
+<span class="line" id="L1037">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> windows.unexpectedStatus(rc),</span>
+<span class="line" id="L1038">        }</span>
+<span class="line" id="L1039"></span>
+<span class="line" id="L1040">        <span class="tok-comment">// According to the docs, this can only happen if there is not enough room in the</span>
 </span>
-<span class="line" id="L1040">        <span class="tok-comment">// buffer to write at least one complete FILE_DIRECTORY_INFORMATION entry.</span>
+<span class="line" id="L1041">        <span class="tok-comment">// buffer to write at least one complete FILE_DIRECTORY_INFORMATION entry.</span>
 </span>
-<span class="line" id="L1041">        <span class="tok-comment">// Therefore, this condition should not be possible to hit with the buffer size we use.</span>
+<span class="line" id="L1042">        <span class="tok-comment">// Therefore, this condition should not be possible to hit with the buffer size we use.</span>
 </span>
-<span class="line" id="L1042">        std.debug.assert(io_status.Information != <span class="tok-number">0</span>);</span>
-<span class="line" id="L1043"></span>
-<span class="line" id="L1044">        <span class="tok-kw">var</span> it = windows.FileInformationIterator(windows.FILE_DIRECTORY_INFORMATION){ .buf = &amp;file_information_buf };</span>
-<span class="line" id="L1045">        <span class="tok-kw">while</span> (it.next()) |info| {</span>
-<span class="line" id="L1046">            <span class="tok-comment">// Skip directories</span>
+<span class="line" id="L1043">        std.debug.assert(io_status.Information != <span class="tok-number">0</span>);</span>
+<span class="line" id="L1044"></span>
+<span class="line" id="L1045">        <span class="tok-kw">var</span> it = windows.FileInformationIterator(windows.FILE_DIRECTORY_INFORMATION){ .buf = &amp;file_information_buf };</span>
+<span class="line" id="L1046">        <span class="tok-kw">while</span> (it.next()) |info| {</span>
+<span class="line" id="L1047">            <span class="tok-comment">// Skip directories</span>
 </span>
-<span class="line" id="L1047">            <span class="tok-kw">if</span> (info.FileAttributes &amp; windows.FILE_ATTRIBUTE_DIRECTORY != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1048">            <span class="tok-kw">const</span> filename = <span class="tok-builtin">@as</span>([*]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(&amp;info.FileName))[<span class="tok-number">0</span> .. info.FileNameLength / <span class="tok-number">2</span>];</span>
-<span class="line" id="L1049">            <span class="tok-comment">// Because all results start with the app_name since we're using the wildcard `app_name*`,</span>
+<span class="line" id="L1048">            <span class="tok-kw">if</span> (info.FileAttributes &amp; windows.FILE_ATTRIBUTE_DIRECTORY != <span class="tok-number">0</span>) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1049">            <span class="tok-kw">const</span> filename = <span class="tok-builtin">@as</span>([*]<span class="tok-type">u16</span>, <span class="tok-builtin">@ptrCast</span>(&amp;info.FileName))[<span class="tok-number">0</span> .. info.FileNameLength / <span class="tok-number">2</span>];</span>
+<span class="line" id="L1050">            <span class="tok-comment">// Because all results start with the app_name since we're using the wildcard `app_name*`,</span>
 </span>
-<span class="line" id="L1050">            <span class="tok-comment">// if the length is equal to app_name then this is an exact match</span>
+<span class="line" id="L1051">            <span class="tok-comment">// if the length is equal to app_name then this is an exact match</span>
 </span>
-<span class="line" id="L1051">            <span class="tok-kw">if</span> (filename.len == app_name_len) {</span>
-<span class="line" id="L1052">                <span class="tok-comment">// Note: We can't break early here because it's possible that the unappended version</span>
+<span class="line" id="L1052">            <span class="tok-kw">if</span> (filename.len == app_name_len) {</span>
+<span class="line" id="L1053">                <span class="tok-comment">// Note: We can't break early here because it's possible that the unappended version</span>
 </span>
-<span class="line" id="L1053">                <span class="tok-comment">//       fails to spawn, in which case we still want to try the PATHEXT appended versions.</span>
+<span class="line" id="L1054">                <span class="tok-comment">//       fails to spawn, in which case we still want to try the PATHEXT appended versions.</span>
 </span>
-<span class="line" id="L1054">                unappended_exists = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1055">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (windowsCreateProcessSupportsExtension(filename[app_name_len..])) |pathext_ext| {</span>
-<span class="line" id="L1056">                pathext_seen[<span class="tok-builtin">@intFromEnum</span>(pathext_ext)] = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1057">                any_pathext_seen = <span class="tok-null">true</span>;</span>
-<span class="line" id="L1058">            }</span>
-<span class="line" id="L1059">        }</span>
-<span class="line" id="L1060">    }</span>
-<span class="line" id="L1061"></span>
-<span class="line" id="L1062">    <span class="tok-kw">const</span> unappended_err = unappended: {</span>
-<span class="line" id="L1063">        <span class="tok-kw">if</span> (unappended_exists) {</span>
-<span class="line" id="L1064">            <span class="tok-kw">if</span> (dir_path_len != <span class="tok-number">0</span>) <span class="tok-kw">switch</span> (dir_buf.items[dir_buf.items.len - <span class="tok-number">1</span>]) {</span>
-<span class="line" id="L1065">                <span class="tok-str">'/'</span>, <span class="tok-str">'\\'</span> =&gt; {},</span>
-<span class="line" id="L1066">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> dir_buf.append(allocator, fs.path.sep),</span>
-<span class="line" id="L1067">            };</span>
-<span class="line" id="L1068">            <span class="tok-kw">try</span> dir_buf.appendSlice(allocator, app_buf.items[<span class="tok-number">0</span>..app_name_len]);</span>
-<span class="line" id="L1069">            <span class="tok-kw">try</span> dir_buf.append(allocator, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1070">            <span class="tok-kw">const</span> full_app_name = dir_buf.items[<span class="tok-number">0</span> .. dir_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L1071"></span>
-<span class="line" id="L1072">            <span class="tok-kw">if</span> (windowsCreateProcess(full_app_name.ptr, cmd_line, envp_ptr, cwd_ptr, lpStartupInfo, lpProcessInformation)) |_| {</span>
-<span class="line" id="L1073">                <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1074">            } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L1075">                <span class="tok-kw">error</span>.FileNotFound,</span>
-<span class="line" id="L1076">                <span class="tok-kw">error</span>.AccessDenied,</span>
-<span class="line" id="L1077">                =&gt; <span class="tok-kw">break</span> :unappended err,</span>
-<span class="line" id="L1078">                <span class="tok-kw">error</span>.InvalidExe =&gt; {</span>
-<span class="line" id="L1079">                    <span class="tok-comment">// On InvalidExe, if the extension of the app name is .exe then</span>
+<span class="line" id="L1055">                unappended_exists = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1056">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (windowsCreateProcessSupportsExtension(filename[app_name_len..])) |pathext_ext| {</span>
+<span class="line" id="L1057">                pathext_seen[<span class="tok-builtin">@intFromEnum</span>(pathext_ext)] = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1058">                any_pathext_seen = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1059">            }</span>
+<span class="line" id="L1060">        }</span>
+<span class="line" id="L1061">    }</span>
+<span class="line" id="L1062"></span>
+<span class="line" id="L1063">    <span class="tok-kw">const</span> unappended_err = unappended: {</span>
+<span class="line" id="L1064">        <span class="tok-kw">if</span> (unappended_exists) {</span>
+<span class="line" id="L1065">            <span class="tok-kw">if</span> (dir_path_len != <span class="tok-number">0</span>) <span class="tok-kw">switch</span> (dir_buf.items[dir_buf.items.len - <span class="tok-number">1</span>]) {</span>
+<span class="line" id="L1066">                <span class="tok-str">'/'</span>, <span class="tok-str">'\\'</span> =&gt; {},</span>
+<span class="line" id="L1067">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> dir_buf.append(allocator, fs.path.sep),</span>
+<span class="line" id="L1068">            };</span>
+<span class="line" id="L1069">            <span class="tok-kw">try</span> dir_buf.appendSlice(allocator, app_buf.items[<span class="tok-number">0</span>..app_name_len]);</span>
+<span class="line" id="L1070">            <span class="tok-kw">try</span> dir_buf.append(allocator, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1071">            <span class="tok-kw">const</span> full_app_name = dir_buf.items[<span class="tok-number">0</span> .. dir_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L1072"></span>
+<span class="line" id="L1073">            <span class="tok-kw">if</span> (windowsCreateProcess(full_app_name.ptr, cmd_line, envp_ptr, cwd_ptr, lpStartupInfo, lpProcessInformation)) |_| {</span>
+<span class="line" id="L1074">                <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1075">            } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1076">                <span class="tok-kw">error</span>.FileNotFound,</span>
+<span class="line" id="L1077">                <span class="tok-kw">error</span>.AccessDenied,</span>
+<span class="line" id="L1078">                =&gt; <span class="tok-kw">break</span> :unappended err,</span>
+<span class="line" id="L1079">                <span class="tok-kw">error</span>.InvalidExe =&gt; {</span>
+<span class="line" id="L1080">                    <span class="tok-comment">// On InvalidExe, if the extension of the app name is .exe then</span>
 </span>
-<span class="line" id="L1080">                    <span class="tok-comment">// it's treated as an unrecoverable error. Otherwise, it'll be</span>
+<span class="line" id="L1081">                    <span class="tok-comment">// it's treated as an unrecoverable error. Otherwise, it'll be</span>
 </span>
-<span class="line" id="L1081">                    <span class="tok-comment">// skipped as normal.</span>
+<span class="line" id="L1082">                    <span class="tok-comment">// skipped as normal.</span>
 </span>
-<span class="line" id="L1082">                    <span class="tok-kw">const</span> app_name = app_buf.items[<span class="tok-number">0</span>..app_name_len];</span>
-<span class="line" id="L1083">                    <span class="tok-kw">const</span> ext_start = std.mem.lastIndexOfScalar(<span class="tok-type">u16</span>, app_name, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">break</span> :unappended err;</span>
-<span class="line" id="L1084">                    <span class="tok-kw">const</span> ext = app_name[ext_start..];</span>
-<span class="line" id="L1085">                    <span class="tok-kw">if</span> (windows.eqlIgnoreCaseWTF16(ext, unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;.EXE&quot;</span>))) {</span>
-<span class="line" id="L1086">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecoverableInvalidExe;</span>
-<span class="line" id="L1087">                    }</span>
-<span class="line" id="L1088">                    <span class="tok-kw">break</span> :unappended err;</span>
-<span class="line" id="L1089">                },</span>
-<span class="line" id="L1090">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
-<span class="line" id="L1091">            }</span>
-<span class="line" id="L1092">        }</span>
-<span class="line" id="L1093">        <span class="tok-kw">break</span> :unappended <span class="tok-kw">error</span>.FileNotFound;</span>
-<span class="line" id="L1094">    };</span>
-<span class="line" id="L1095"></span>
-<span class="line" id="L1096">    <span class="tok-kw">if</span> (!any_pathext_seen) <span class="tok-kw">return</span> unappended_err;</span>
-<span class="line" id="L1097"></span>
-<span class="line" id="L1098">    <span class="tok-comment">// Now try any PATHEXT appended versions that we've seen</span>
+<span class="line" id="L1083">                    <span class="tok-kw">const</span> app_name = app_buf.items[<span class="tok-number">0</span>..app_name_len];</span>
+<span class="line" id="L1084">                    <span class="tok-kw">const</span> ext_start = std.mem.lastIndexOfScalar(<span class="tok-type">u16</span>, app_name, <span class="tok-str">'.'</span>) <span class="tok-kw">orelse</span> <span class="tok-kw">break</span> :unappended err;</span>
+<span class="line" id="L1085">                    <span class="tok-kw">const</span> ext = app_name[ext_start..];</span>
+<span class="line" id="L1086">                    <span class="tok-kw">if</span> (windows.eqlIgnoreCaseWTF16(ext, unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;.EXE&quot;</span>))) {</span>
+<span class="line" id="L1087">                        <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecoverableInvalidExe;</span>
+<span class="line" id="L1088">                    }</span>
+<span class="line" id="L1089">                    <span class="tok-kw">break</span> :unappended err;</span>
+<span class="line" id="L1090">                },</span>
+<span class="line" id="L1091">                <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
+<span class="line" id="L1092">            }</span>
+<span class="line" id="L1093">        }</span>
+<span class="line" id="L1094">        <span class="tok-kw">break</span> :unappended <span class="tok-kw">error</span>.FileNotFound;</span>
+<span class="line" id="L1095">    };</span>
+<span class="line" id="L1096"></span>
+<span class="line" id="L1097">    <span class="tok-kw">if</span> (!any_pathext_seen) <span class="tok-kw">return</span> unappended_err;</span>
+<span class="line" id="L1098"></span>
+<span class="line" id="L1099">    <span class="tok-comment">// Now try any PATHEXT appended versions that we've seen</span>
 </span>
-<span class="line" id="L1099">    <span class="tok-kw">var</span> ext_it = mem.tokenizeScalar(<span class="tok-type">u16</span>, pathext, <span class="tok-str">';'</span>);</span>
-<span class="line" id="L1100">    <span class="tok-kw">while</span> (ext_it.next()) |ext| {</span>
-<span class="line" id="L1101">        <span class="tok-kw">const</span> ext_enum = windowsCreateProcessSupportsExtension(ext) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1102">        <span class="tok-kw">if</span> (!pathext_seen[<span class="tok-builtin">@intFromEnum</span>(ext_enum)]) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1103"></span>
-<span class="line" id="L1104">        dir_buf.shrinkRetainingCapacity(dir_path_len);</span>
-<span class="line" id="L1105">        <span class="tok-kw">if</span> (dir_path_len != <span class="tok-number">0</span>) <span class="tok-kw">switch</span> (dir_buf.items[dir_buf.items.len - <span class="tok-number">1</span>]) {</span>
-<span class="line" id="L1106">            <span class="tok-str">'/'</span>, <span class="tok-str">'\\'</span> =&gt; {},</span>
-<span class="line" id="L1107">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> dir_buf.append(allocator, fs.path.sep),</span>
-<span class="line" id="L1108">        };</span>
-<span class="line" id="L1109">        <span class="tok-kw">try</span> dir_buf.appendSlice(allocator, app_buf.items[<span class="tok-number">0</span>..app_name_len]);</span>
-<span class="line" id="L1110">        <span class="tok-kw">try</span> dir_buf.appendSlice(allocator, ext);</span>
-<span class="line" id="L1111">        <span class="tok-kw">try</span> dir_buf.append(allocator, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1112">        <span class="tok-kw">const</span> full_app_name = dir_buf.items[<span class="tok-number">0</span> .. dir_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
-<span class="line" id="L1113"></span>
-<span class="line" id="L1114">        <span class="tok-kw">if</span> (windowsCreateProcess(full_app_name.ptr, cmd_line, envp_ptr, cwd_ptr, lpStartupInfo, lpProcessInformation)) |_| {</span>
-<span class="line" id="L1115">            <span class="tok-kw">return</span>;</span>
-<span class="line" id="L1116">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
-<span class="line" id="L1117">            <span class="tok-kw">error</span>.FileNotFound =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1118">            <span class="tok-kw">error</span>.AccessDenied =&gt; <span class="tok-kw">continue</span>,</span>
-<span class="line" id="L1119">            <span class="tok-kw">error</span>.InvalidExe =&gt; {</span>
-<span class="line" id="L1120">                <span class="tok-comment">// On InvalidExe, if the extension of the app name is .exe then</span>
+<span class="line" id="L1100">    <span class="tok-kw">var</span> ext_it = mem.tokenizeScalar(<span class="tok-type">u16</span>, pathext, <span class="tok-str">';'</span>);</span>
+<span class="line" id="L1101">    <span class="tok-kw">while</span> (ext_it.next()) |ext| {</span>
+<span class="line" id="L1102">        <span class="tok-kw">const</span> ext_enum = windowsCreateProcessSupportsExtension(ext) <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1103">        <span class="tok-kw">if</span> (!pathext_seen[<span class="tok-builtin">@intFromEnum</span>(ext_enum)]) <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1104"></span>
+<span class="line" id="L1105">        dir_buf.shrinkRetainingCapacity(dir_path_len);</span>
+<span class="line" id="L1106">        <span class="tok-kw">if</span> (dir_path_len != <span class="tok-number">0</span>) <span class="tok-kw">switch</span> (dir_buf.items[dir_buf.items.len - <span class="tok-number">1</span>]) {</span>
+<span class="line" id="L1107">            <span class="tok-str">'/'</span>, <span class="tok-str">'\\'</span> =&gt; {},</span>
+<span class="line" id="L1108">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">try</span> dir_buf.append(allocator, fs.path.sep),</span>
+<span class="line" id="L1109">        };</span>
+<span class="line" id="L1110">        <span class="tok-kw">try</span> dir_buf.appendSlice(allocator, app_buf.items[<span class="tok-number">0</span>..app_name_len]);</span>
+<span class="line" id="L1111">        <span class="tok-kw">try</span> dir_buf.appendSlice(allocator, ext);</span>
+<span class="line" id="L1112">        <span class="tok-kw">try</span> dir_buf.append(allocator, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1113">        <span class="tok-kw">const</span> full_app_name = dir_buf.items[<span class="tok-number">0</span> .. dir_buf.items.len - <span class="tok-number">1</span> :<span class="tok-number">0</span>];</span>
+<span class="line" id="L1114"></span>
+<span class="line" id="L1115">        <span class="tok-kw">if</span> (windowsCreateProcess(full_app_name.ptr, cmd_line, envp_ptr, cwd_ptr, lpStartupInfo, lpProcessInformation)) |_| {</span>
+<span class="line" id="L1116">            <span class="tok-kw">return</span>;</span>
+<span class="line" id="L1117">        } <span class="tok-kw">else</span> |err| <span class="tok-kw">switch</span> (err) {</span>
+<span class="line" id="L1118">            <span class="tok-kw">error</span>.FileNotFound =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1119">            <span class="tok-kw">error</span>.AccessDenied =&gt; <span class="tok-kw">continue</span>,</span>
+<span class="line" id="L1120">            <span class="tok-kw">error</span>.InvalidExe =&gt; {</span>
+<span class="line" id="L1121">                <span class="tok-comment">// On InvalidExe, if the extension of the app name is .exe then</span>
 </span>
-<span class="line" id="L1121">                <span class="tok-comment">// it's treated as an unrecoverable error. Otherwise, it'll be</span>
+<span class="line" id="L1122">                <span class="tok-comment">// it's treated as an unrecoverable error. Otherwise, it'll be</span>
 </span>
-<span class="line" id="L1122">                <span class="tok-comment">// skipped as normal.</span>
+<span class="line" id="L1123">                <span class="tok-comment">// skipped as normal.</span>
 </span>
-<span class="line" id="L1123">                <span class="tok-kw">if</span> (windows.eqlIgnoreCaseWTF16(ext, unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;.EXE&quot;</span>))) {</span>
-<span class="line" id="L1124">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecoverableInvalidExe;</span>
-<span class="line" id="L1125">                }</span>
-<span class="line" id="L1126">                <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1127">            },</span>
-<span class="line" id="L1128">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
-<span class="line" id="L1129">        }</span>
-<span class="line" id="L1130">    }</span>
-<span class="line" id="L1131"></span>
-<span class="line" id="L1132">    <span class="tok-kw">return</span> unappended_err;</span>
-<span class="line" id="L1133">}</span>
-<span class="line" id="L1134"></span>
-<span class="line" id="L1135"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcess</span>(app_name: [*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>, cmd_line: [*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>, envp_ptr: ?[*]<span class="tok-type">u16</span>, cwd_ptr: ?[*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>, lpStartupInfo: *windows.STARTUPINFOW, lpProcessInformation: *windows.PROCESS_INFORMATION) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1136">    <span class="tok-comment">// TODO the docs for environment pointer say:</span>
+<span class="line" id="L1124">                <span class="tok-kw">if</span> (windows.eqlIgnoreCaseWTF16(ext, unicode.utf8ToUtf16LeStringLiteral(<span class="tok-str">&quot;.EXE&quot;</span>))) {</span>
+<span class="line" id="L1125">                    <span class="tok-kw">return</span> <span class="tok-kw">error</span>.UnrecoverableInvalidExe;</span>
+<span class="line" id="L1126">                }</span>
+<span class="line" id="L1127">                <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1128">            },</span>
+<span class="line" id="L1129">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> err,</span>
+<span class="line" id="L1130">        }</span>
+<span class="line" id="L1131">    }</span>
+<span class="line" id="L1132"></span>
+<span class="line" id="L1133">    <span class="tok-kw">return</span> unappended_err;</span>
+<span class="line" id="L1134">}</span>
+<span class="line" id="L1135"></span>
+<span class="line" id="L1136"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcess</span>(app_name: [*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>, cmd_line: [*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>, envp_ptr: ?[*]<span class="tok-type">u16</span>, cwd_ptr: ?[*:<span class="tok-number">0</span>]<span class="tok-type">u16</span>, lpStartupInfo: *windows.STARTUPINFOW, lpProcessInformation: *windows.PROCESS_INFORMATION) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1137">    <span class="tok-comment">// TODO the docs for environment pointer say:</span>
 </span>
-<span class="line" id="L1137">    <span class="tok-comment">// &gt; A pointer to the environment block for the new process. If this parameter</span>
+<span class="line" id="L1138">    <span class="tok-comment">// &gt; A pointer to the environment block for the new process. If this parameter</span>
 </span>
-<span class="line" id="L1138">    <span class="tok-comment">// &gt; is NULL, the new process uses the environment of the calling process.</span>
+<span class="line" id="L1139">    <span class="tok-comment">// &gt; is NULL, the new process uses the environment of the calling process.</span>
 </span>
-<span class="line" id="L1139">    <span class="tok-comment">// &gt; ...</span>
+<span class="line" id="L1140">    <span class="tok-comment">// &gt; ...</span>
 </span>
-<span class="line" id="L1140">    <span class="tok-comment">// &gt; An environment block can contain either Unicode or ANSI characters. If</span>
+<span class="line" id="L1141">    <span class="tok-comment">// &gt; An environment block can contain either Unicode or ANSI characters. If</span>
 </span>
-<span class="line" id="L1141">    <span class="tok-comment">// &gt; the environment block pointed to by lpEnvironment contains Unicode</span>
+<span class="line" id="L1142">    <span class="tok-comment">// &gt; the environment block pointed to by lpEnvironment contains Unicode</span>
 </span>
-<span class="line" id="L1142">    <span class="tok-comment">// &gt; characters, be sure that dwCreationFlags includes CREATE_UNICODE_ENVIRONMENT.</span>
+<span class="line" id="L1143">    <span class="tok-comment">// &gt; characters, be sure that dwCreationFlags includes CREATE_UNICODE_ENVIRONMENT.</span>
 </span>
-<span class="line" id="L1143">    <span class="tok-comment">// &gt; If this parameter is NULL and the environment block of the parent process</span>
+<span class="line" id="L1144">    <span class="tok-comment">// &gt; If this parameter is NULL and the environment block of the parent process</span>
 </span>
-<span class="line" id="L1144">    <span class="tok-comment">// &gt; contains Unicode characters, you must also ensure that dwCreationFlags</span>
+<span class="line" id="L1145">    <span class="tok-comment">// &gt; contains Unicode characters, you must also ensure that dwCreationFlags</span>
 </span>
-<span class="line" id="L1145">    <span class="tok-comment">// &gt; includes CREATE_UNICODE_ENVIRONMENT.</span>
+<span class="line" id="L1146">    <span class="tok-comment">// &gt; includes CREATE_UNICODE_ENVIRONMENT.</span>
 </span>
-<span class="line" id="L1146">    <span class="tok-comment">// This seems to imply that we have to somehow know whether our process parent passed</span>
+<span class="line" id="L1147">    <span class="tok-comment">// This seems to imply that we have to somehow know whether our process parent passed</span>
 </span>
-<span class="line" id="L1147">    <span class="tok-comment">// CREATE_UNICODE_ENVIRONMENT if we want to pass NULL for the environment parameter.</span>
+<span class="line" id="L1148">    <span class="tok-comment">// CREATE_UNICODE_ENVIRONMENT if we want to pass NULL for the environment parameter.</span>
 </span>
-<span class="line" id="L1148">    <span class="tok-comment">// Since we do not know this information that would imply that we must not pass NULL</span>
+<span class="line" id="L1149">    <span class="tok-comment">// Since we do not know this information that would imply that we must not pass NULL</span>
 </span>
-<span class="line" id="L1149">    <span class="tok-comment">// for the parameter.</span>
+<span class="line" id="L1150">    <span class="tok-comment">// for the parameter.</span>
 </span>
-<span class="line" id="L1150">    <span class="tok-comment">// However this would imply that programs compiled with -DUNICODE could not pass</span>
+<span class="line" id="L1151">    <span class="tok-comment">// However this would imply that programs compiled with -DUNICODE could not pass</span>
 </span>
-<span class="line" id="L1151">    <span class="tok-comment">// environment variables to programs that were not, which seems unlikely.</span>
+<span class="line" id="L1152">    <span class="tok-comment">// environment variables to programs that were not, which seems unlikely.</span>
 </span>
-<span class="line" id="L1152">    <span class="tok-comment">// More investigation is needed.</span>
+<span class="line" id="L1153">    <span class="tok-comment">// More investigation is needed.</span>
 </span>
-<span class="line" id="L1153">    <span class="tok-kw">return</span> windows.CreateProcessW(</span>
-<span class="line" id="L1154">        app_name,</span>
-<span class="line" id="L1155">        cmd_line,</span>
-<span class="line" id="L1156">        <span class="tok-null">null</span>,</span>
+<span class="line" id="L1154">    <span class="tok-kw">return</span> windows.CreateProcessW(</span>
+<span class="line" id="L1155">        app_name,</span>
+<span class="line" id="L1156">        cmd_line,</span>
 <span class="line" id="L1157">        <span class="tok-null">null</span>,</span>
-<span class="line" id="L1158">        windows.TRUE,</span>
-<span class="line" id="L1159">        windows.CREATE_UNICODE_ENVIRONMENT,</span>
-<span class="line" id="L1160">        <span class="tok-builtin">@as</span>(?*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrCast</span>(envp_ptr)),</span>
-<span class="line" id="L1161">        cwd_ptr,</span>
-<span class="line" id="L1162">        lpStartupInfo,</span>
-<span class="line" id="L1163">        lpProcessInformation,</span>
-<span class="line" id="L1164">    );</span>
-<span class="line" id="L1165">}</span>
-<span class="line" id="L1166"></span>
-<span class="line" id="L1167"><span class="tok-comment">// Should be kept in sync with `windowsCreateProcessSupportsExtension`</span>
+<span class="line" id="L1158">        <span class="tok-null">null</span>,</span>
+<span class="line" id="L1159">        windows.TRUE,</span>
+<span class="line" id="L1160">        windows.CREATE_UNICODE_ENVIRONMENT,</span>
+<span class="line" id="L1161">        <span class="tok-builtin">@as</span>(?*<span class="tok-type">anyopaque</span>, <span class="tok-builtin">@ptrCast</span>(envp_ptr)),</span>
+<span class="line" id="L1162">        cwd_ptr,</span>
+<span class="line" id="L1163">        lpStartupInfo,</span>
+<span class="line" id="L1164">        lpProcessInformation,</span>
+<span class="line" id="L1165">    );</span>
+<span class="line" id="L1166">}</span>
+<span class="line" id="L1167"></span>
+<span class="line" id="L1168"><span class="tok-comment">// Should be kept in sync with `windowsCreateProcessSupportsExtension`</span>
 </span>
-<span class="line" id="L1168"><span class="tok-kw">const</span> CreateProcessSupportedExtension = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L1169">    bat,</span>
-<span class="line" id="L1170">    cmd,</span>
-<span class="line" id="L1171">    com,</span>
-<span class="line" id="L1172">    exe,</span>
-<span class="line" id="L1173">};</span>
-<span class="line" id="L1174"></span>
-<span class="line" id="L1175"><span class="tok-comment">/// Case-insensitive UTF-16 lookup</span></span>
-<span class="line" id="L1176"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcessSupportsExtension</span>(ext: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>) ?CreateProcessSupportedExtension {</span>
-<span class="line" id="L1177">    <span class="tok-kw">if</span> (ext.len != <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1178">    <span class="tok-kw">const</span> State = <span class="tok-kw">enum</span> {</span>
-<span class="line" id="L1179">        start,</span>
-<span class="line" id="L1180">        dot,</span>
-<span class="line" id="L1181">        b,</span>
-<span class="line" id="L1182">        ba,</span>
-<span class="line" id="L1183">        c,</span>
-<span class="line" id="L1184">        cm,</span>
-<span class="line" id="L1185">        co,</span>
-<span class="line" id="L1186">        e,</span>
-<span class="line" id="L1187">        ex,</span>
-<span class="line" id="L1188">    };</span>
-<span class="line" id="L1189">    <span class="tok-kw">var</span> state: State = .start;</span>
-<span class="line" id="L1190">    <span class="tok-kw">for</span> (ext) |c| <span class="tok-kw">switch</span> (state) {</span>
-<span class="line" id="L1191">        .start =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1192">            <span class="tok-str">'.'</span> =&gt; state = .dot,</span>
-<span class="line" id="L1193">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1194">        },</span>
-<span class="line" id="L1195">        .dot =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1196">            <span class="tok-str">'b'</span>, <span class="tok-str">'B'</span> =&gt; state = .b,</span>
-<span class="line" id="L1197">            <span class="tok-str">'c'</span>, <span class="tok-str">'C'</span> =&gt; state = .c,</span>
-<span class="line" id="L1198">            <span class="tok-str">'e'</span>, <span class="tok-str">'E'</span> =&gt; state = .e,</span>
-<span class="line" id="L1199">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1200">        },</span>
-<span class="line" id="L1201">        .b =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1202">            <span class="tok-str">'a'</span>, <span class="tok-str">'A'</span> =&gt; state = .ba,</span>
-<span class="line" id="L1203">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1204">        },</span>
-<span class="line" id="L1205">        .c =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1206">            <span class="tok-str">'m'</span>, <span class="tok-str">'M'</span> =&gt; state = .cm,</span>
-<span class="line" id="L1207">            <span class="tok-str">'o'</span>, <span class="tok-str">'O'</span> =&gt; state = .co,</span>
-<span class="line" id="L1208">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1209">        },</span>
-<span class="line" id="L1210">        .e =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1211">            <span class="tok-str">'x'</span>, <span class="tok-str">'X'</span> =&gt; state = .ex,</span>
-<span class="line" id="L1212">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1213">        },</span>
-<span class="line" id="L1214">        .ba =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1215">            <span class="tok-str">'t'</span>, <span class="tok-str">'T'</span> =&gt; <span class="tok-kw">return</span> .bat,</span>
-<span class="line" id="L1216">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1217">        },</span>
-<span class="line" id="L1218">        .cm =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1219">            <span class="tok-str">'d'</span>, <span class="tok-str">'D'</span> =&gt; <span class="tok-kw">return</span> .cmd,</span>
-<span class="line" id="L1220">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1221">        },</span>
-<span class="line" id="L1222">        .co =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1223">            <span class="tok-str">'m'</span>, <span class="tok-str">'M'</span> =&gt; <span class="tok-kw">return</span> .com,</span>
-<span class="line" id="L1224">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1225">        },</span>
-<span class="line" id="L1226">        .ex =&gt; <span class="tok-kw">switch</span> (c) {</span>
-<span class="line" id="L1227">            <span class="tok-str">'e'</span>, <span class="tok-str">'E'</span> =&gt; <span class="tok-kw">return</span> .exe,</span>
-<span class="line" id="L1228">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
-<span class="line" id="L1229">        },</span>
-<span class="line" id="L1230">    };</span>
-<span class="line" id="L1231">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
-<span class="line" id="L1232">}</span>
-<span class="line" id="L1233"></span>
-<span class="line" id="L1234"><span class="tok-kw">test</span> <span class="tok-str">&quot;windowsCreateProcessSupportsExtension&quot;</span> {</span>
-<span class="line" id="L1235">    <span class="tok-kw">try</span> std.testing.expectEqual(CreateProcessSupportedExtension.exe, windowsCreateProcessSupportsExtension(&amp;[_]<span class="tok-type">u16</span>{ <span class="tok-str">'.'</span>, <span class="tok-str">'e'</span>, <span class="tok-str">'X'</span>, <span class="tok-str">'e'</span> }).?);</span>
-<span class="line" id="L1236">    <span class="tok-kw">try</span> std.testing.expect(windowsCreateProcessSupportsExtension(&amp;[_]<span class="tok-type">u16</span>{ <span class="tok-str">'.'</span>, <span class="tok-str">'e'</span>, <span class="tok-str">'X'</span>, <span class="tok-str">'e'</span>, <span class="tok-str">'c'</span> }) == <span class="tok-null">null</span>);</span>
-<span class="line" id="L1237">}</span>
-<span class="line" id="L1238"></span>
-<span class="line" id="L1239"><span class="tok-comment">/// Caller must dealloc.</span></span>
-<span class="line" id="L1240"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateCommandLine</span>(allocator: mem.Allocator, argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) ![:<span class="tok-number">0</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1241">    <span class="tok-kw">var</span> buf = std.ArrayList(<span class="tok-type">u8</span>).init(allocator);</span>
-<span class="line" id="L1242">    <span class="tok-kw">defer</span> buf.deinit();</span>
-<span class="line" id="L1243"></span>
-<span class="line" id="L1244">    <span class="tok-kw">for</span> (argv, <span class="tok-number">0</span>..) |arg, arg_i| {</span>
-<span class="line" id="L1245">        <span class="tok-kw">if</span> (arg_i != <span class="tok-number">0</span>) <span class="tok-kw">try</span> buf.append(<span class="tok-str">' '</span>);</span>
-<span class="line" id="L1246">        <span class="tok-kw">if</span> (mem.indexOfAny(<span class="tok-type">u8</span>, arg, <span class="tok-str">&quot; \t\n\&quot;&quot;</span>) == <span class="tok-null">null</span>) {</span>
-<span class="line" id="L1247">            <span class="tok-kw">try</span> buf.appendSlice(arg);</span>
-<span class="line" id="L1248">            <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L1249">        }</span>
-<span class="line" id="L1250">        <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
-<span class="line" id="L1251">        <span class="tok-kw">var</span> backslash_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1252">        <span class="tok-kw">for</span> (arg) |byte| {</span>
-<span class="line" id="L1253">            <span class="tok-kw">switch</span> (byte) {</span>
-<span class="line" id="L1254">                <span class="tok-str">'\\'</span> =&gt; backslash_count += <span class="tok-number">1</span>,</span>
-<span class="line" id="L1255">                <span class="tok-str">'&quot;'</span> =&gt; {</span>
-<span class="line" id="L1256">                    <span class="tok-kw">try</span> buf.appendNTimes(<span class="tok-str">'\\'</span>, backslash_count * <span class="tok-number">2</span> + <span class="tok-number">1</span>);</span>
-<span class="line" id="L1257">                    <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
-<span class="line" id="L1258">                    backslash_count = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1259">                },</span>
-<span class="line" id="L1260">                <span class="tok-kw">else</span> =&gt; {</span>
-<span class="line" id="L1261">                    <span class="tok-kw">try</span> buf.appendNTimes(<span class="tok-str">'\\'</span>, backslash_count);</span>
-<span class="line" id="L1262">                    <span class="tok-kw">try</span> buf.append(byte);</span>
-<span class="line" id="L1263">                    backslash_count = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1264">                },</span>
-<span class="line" id="L1265">            }</span>
-<span class="line" id="L1266">        }</span>
-<span class="line" id="L1267">        <span class="tok-kw">try</span> buf.appendNTimes(<span class="tok-str">'\\'</span>, backslash_count * <span class="tok-number">2</span>);</span>
-<span class="line" id="L1268">        <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
-<span class="line" id="L1269">    }</span>
-<span class="line" id="L1270"></span>
-<span class="line" id="L1271">    <span class="tok-kw">return</span> buf.toOwnedSliceSentinel(<span class="tok-number">0</span>);</span>
-<span class="line" id="L1272">}</span>
-<span class="line" id="L1273"></span>
-<span class="line" id="L1274"><span class="tok-kw">fn</span> <span class="tok-fn">windowsDestroyPipe</span>(rd: ?windows.HANDLE, wr: ?windows.HANDLE) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1275">    <span class="tok-kw">if</span> (rd) |h| os.close(h);</span>
-<span class="line" id="L1276">    <span class="tok-kw">if</span> (wr) |h| os.close(h);</span>
-<span class="line" id="L1277">}</span>
-<span class="line" id="L1278"></span>
-<span class="line" id="L1279"><span class="tok-kw">fn</span> <span class="tok-fn">windowsMakePipeIn</span>(rd: *?windows.HANDLE, wr: *?windows.HANDLE, sattr: *<span class="tok-kw">const</span> windows.SECURITY_ATTRIBUTES) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1280">    <span class="tok-kw">var</span> rd_h: windows.HANDLE = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1281">    <span class="tok-kw">var</span> wr_h: windows.HANDLE = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1282">    <span class="tok-kw">try</span> windows.CreatePipe(&amp;rd_h, &amp;wr_h, sattr);</span>
-<span class="line" id="L1283">    <span class="tok-kw">errdefer</span> windowsDestroyPipe(rd_h, wr_h);</span>
-<span class="line" id="L1284">    <span class="tok-kw">try</span> windows.SetHandleInformation(wr_h, windows.HANDLE_FLAG_INHERIT, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1285">    rd.* = rd_h;</span>
-<span class="line" id="L1286">    wr.* = wr_h;</span>
-<span class="line" id="L1287">}</span>
-<span class="line" id="L1288"></span>
-<span class="line" id="L1289"><span class="tok-kw">var</span> pipe_name_counter = std.atomic.Value(<span class="tok-type">u32</span>).init(<span class="tok-number">1</span>);</span>
-<span class="line" id="L1290"></span>
-<span class="line" id="L1291"><span class="tok-kw">fn</span> <span class="tok-fn">windowsMakeAsyncPipe</span>(rd: *?windows.HANDLE, wr: *?windows.HANDLE, sattr: *<span class="tok-kw">const</span> windows.SECURITY_ATTRIBUTES) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1292">    <span class="tok-kw">var</span> tmp_bufw: [<span class="tok-number">128</span>]<span class="tok-type">u16</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1293"></span>
-<span class="line" id="L1294">    <span class="tok-comment">// Anonymous pipes are built upon Named pipes.</span>
+<span class="line" id="L1169"><span class="tok-kw">const</span> CreateProcessSupportedExtension = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L1170">    bat,</span>
+<span class="line" id="L1171">    cmd,</span>
+<span class="line" id="L1172">    com,</span>
+<span class="line" id="L1173">    exe,</span>
+<span class="line" id="L1174">};</span>
+<span class="line" id="L1175"></span>
+<span class="line" id="L1176"><span class="tok-comment">/// Case-insensitive UTF-16 lookup</span></span>
+<span class="line" id="L1177"><span class="tok-kw">fn</span> <span class="tok-fn">windowsCreateProcessSupportsExtension</span>(ext: []<span class="tok-kw">const</span> <span class="tok-type">u16</span>) ?CreateProcessSupportedExtension {</span>
+<span class="line" id="L1178">    <span class="tok-kw">if</span> (ext.len != <span class="tok-number">4</span>) <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1179">    <span class="tok-kw">const</span> State = <span class="tok-kw">enum</span> {</span>
+<span class="line" id="L1180">        start,</span>
+<span class="line" id="L1181">        dot,</span>
+<span class="line" id="L1182">        b,</span>
+<span class="line" id="L1183">        ba,</span>
+<span class="line" id="L1184">        c,</span>
+<span class="line" id="L1185">        cm,</span>
+<span class="line" id="L1186">        co,</span>
+<span class="line" id="L1187">        e,</span>
+<span class="line" id="L1188">        ex,</span>
+<span class="line" id="L1189">    };</span>
+<span class="line" id="L1190">    <span class="tok-kw">var</span> state: State = .start;</span>
+<span class="line" id="L1191">    <span class="tok-kw">for</span> (ext) |c| <span class="tok-kw">switch</span> (state) {</span>
+<span class="line" id="L1192">        .start =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1193">            <span class="tok-str">'.'</span> =&gt; state = .dot,</span>
+<span class="line" id="L1194">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1195">        },</span>
+<span class="line" id="L1196">        .dot =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1197">            <span class="tok-str">'b'</span>, <span class="tok-str">'B'</span> =&gt; state = .b,</span>
+<span class="line" id="L1198">            <span class="tok-str">'c'</span>, <span class="tok-str">'C'</span> =&gt; state = .c,</span>
+<span class="line" id="L1199">            <span class="tok-str">'e'</span>, <span class="tok-str">'E'</span> =&gt; state = .e,</span>
+<span class="line" id="L1200">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1201">        },</span>
+<span class="line" id="L1202">        .b =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1203">            <span class="tok-str">'a'</span>, <span class="tok-str">'A'</span> =&gt; state = .ba,</span>
+<span class="line" id="L1204">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1205">        },</span>
+<span class="line" id="L1206">        .c =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1207">            <span class="tok-str">'m'</span>, <span class="tok-str">'M'</span> =&gt; state = .cm,</span>
+<span class="line" id="L1208">            <span class="tok-str">'o'</span>, <span class="tok-str">'O'</span> =&gt; state = .co,</span>
+<span class="line" id="L1209">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1210">        },</span>
+<span class="line" id="L1211">        .e =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1212">            <span class="tok-str">'x'</span>, <span class="tok-str">'X'</span> =&gt; state = .ex,</span>
+<span class="line" id="L1213">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1214">        },</span>
+<span class="line" id="L1215">        .ba =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1216">            <span class="tok-str">'t'</span>, <span class="tok-str">'T'</span> =&gt; <span class="tok-kw">return</span> .bat,</span>
+<span class="line" id="L1217">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1218">        },</span>
+<span class="line" id="L1219">        .cm =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1220">            <span class="tok-str">'d'</span>, <span class="tok-str">'D'</span> =&gt; <span class="tok-kw">return</span> .cmd,</span>
+<span class="line" id="L1221">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1222">        },</span>
+<span class="line" id="L1223">        .co =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1224">            <span class="tok-str">'m'</span>, <span class="tok-str">'M'</span> =&gt; <span class="tok-kw">return</span> .com,</span>
+<span class="line" id="L1225">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1226">        },</span>
+<span class="line" id="L1227">        .ex =&gt; <span class="tok-kw">switch</span> (c) {</span>
+<span class="line" id="L1228">            <span class="tok-str">'e'</span>, <span class="tok-str">'E'</span> =&gt; <span class="tok-kw">return</span> .exe,</span>
+<span class="line" id="L1229">            <span class="tok-kw">else</span> =&gt; <span class="tok-kw">return</span> <span class="tok-null">null</span>,</span>
+<span class="line" id="L1230">        },</span>
+<span class="line" id="L1231">    };</span>
+<span class="line" id="L1232">    <span class="tok-kw">return</span> <span class="tok-null">null</span>;</span>
+<span class="line" id="L1233">}</span>
+<span class="line" id="L1234"></span>
+<span class="line" id="L1235"><span class="tok-kw">test</span> <span class="tok-str">&quot;windowsCreateProcessSupportsExtension&quot;</span> {</span>
+<span class="line" id="L1236">    <span class="tok-kw">try</span> std.testing.expectEqual(CreateProcessSupportedExtension.exe, windowsCreateProcessSupportsExtension(&amp;[_]<span class="tok-type">u16</span>{ <span class="tok-str">'.'</span>, <span class="tok-str">'e'</span>, <span class="tok-str">'X'</span>, <span class="tok-str">'e'</span> }).?);</span>
+<span class="line" id="L1237">    <span class="tok-kw">try</span> std.testing.expect(windowsCreateProcessSupportsExtension(&amp;[_]<span class="tok-type">u16</span>{ <span class="tok-str">'.'</span>, <span class="tok-str">'e'</span>, <span class="tok-str">'X'</span>, <span class="tok-str">'e'</span>, <span class="tok-str">'c'</span> }) == <span class="tok-null">null</span>);</span>
+<span class="line" id="L1238">}</span>
+<span class="line" id="L1239"></span>
+<span class="line" id="L1240"><span class="tok-kw">pub</span> <span class="tok-kw">const</span> ArgvToCommandLineError = <span class="tok-kw">error</span>{ OutOfMemory, InvalidUtf8, InvalidArg0 };</span>
+<span class="line" id="L1241"></span>
+<span class="line" id="L1242"><span class="tok-comment">/// Serializes `argv` to a Windows command-line string suitable for passing to a child process and</span></span>
+<span class="line" id="L1243"><span class="tok-comment">/// parsing by the `CommandLineToArgvW` algorithm. The caller owns the returned slice.</span></span>
+<span class="line" id="L1244"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">argvToCommandLineWindows</span>(</span>
+<span class="line" id="L1245">    allocator: mem.Allocator,</span>
+<span class="line" id="L1246">    argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>,</span>
+<span class="line" id="L1247">) ArgvToCommandLineError![:<span class="tok-number">0</span>]<span class="tok-type">u16</span> {</span>
+<span class="line" id="L1248">    <span class="tok-kw">var</span> buf = std.ArrayList(<span class="tok-type">u8</span>).init(allocator);</span>
+<span class="line" id="L1249">    <span class="tok-kw">defer</span> buf.deinit();</span>
+<span class="line" id="L1250"></span>
+<span class="line" id="L1251">    <span class="tok-kw">if</span> (argv.len != <span class="tok-number">0</span>) {</span>
+<span class="line" id="L1252">        <span class="tok-kw">const</span> arg0 = argv[<span class="tok-number">0</span>];</span>
+<span class="line" id="L1253"></span>
+<span class="line" id="L1254">        <span class="tok-comment">// The first argument must be quoted if it contains spaces or ASCII control characters</span>
 </span>
-<span class="line" id="L1295">    <span class="tok-comment">// https://docs.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-createpipe</span>
+<span class="line" id="L1255">        <span class="tok-comment">// (excluding DEL). It also follows special quoting rules where backslashes have no special</span>
 </span>
-<span class="line" id="L1296">    <span class="tok-comment">// Asynchronous (overlapped) read and write operations are not supported by anonymous pipes.</span>
+<span class="line" id="L1256">        <span class="tok-comment">// interpretation, which makes it impossible to pass certain first arguments containing</span>
 </span>
-<span class="line" id="L1297">    <span class="tok-comment">// https://docs.microsoft.com/en-us/windows/win32/ipc/anonymous-pipe-operations</span>
+<span class="line" id="L1257">        <span class="tok-comment">// double quotes to a child process without characters from the first argument leaking into</span>
 </span>
-<span class="line" id="L1298">    <span class="tok-kw">const</span> pipe_path = blk: {</span>
-<span class="line" id="L1299">        <span class="tok-kw">var</span> tmp_buf: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
-<span class="line" id="L1300">        <span class="tok-comment">// Forge a random path for the pipe.</span>
+<span class="line" id="L1258">        <span class="tok-comment">// subsequent ones (which could have security implications).</span>
 </span>
-<span class="line" id="L1301">        <span class="tok-kw">const</span> pipe_path = std.fmt.bufPrintZ(</span>
-<span class="line" id="L1302">            &amp;tmp_buf,</span>
-<span class="line" id="L1303">            <span class="tok-str">&quot;\\\\.\\pipe\\zig-childprocess-{d}-{d}&quot;</span>,</span>
-<span class="line" id="L1304">            .{ windows.kernel32.GetCurrentProcessId(), pipe_name_counter.fetchAdd(<span class="tok-number">1</span>, .Monotonic) },</span>
-<span class="line" id="L1305">        ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1306">        <span class="tok-kw">const</span> len = std.unicode.utf8ToUtf16Le(&amp;tmp_bufw, pipe_path) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L1307">        tmp_bufw[len] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1308">        <span class="tok-kw">break</span> :blk tmp_bufw[<span class="tok-number">0</span>..len :<span class="tok-number">0</span>];</span>
-<span class="line" id="L1309">    };</span>
-<span class="line" id="L1310"></span>
-<span class="line" id="L1311">    <span class="tok-comment">// Create the read handle that can be used with overlapped IO ops.</span>
+<span class="line" id="L1259">        <span class="tok-comment">//</span>
 </span>
-<span class="line" id="L1312">    <span class="tok-kw">const</span> read_handle = windows.kernel32.CreateNamedPipeW(</span>
-<span class="line" id="L1313">        pipe_path.ptr,</span>
-<span class="line" id="L1314">        windows.PIPE_ACCESS_INBOUND | windows.FILE_FLAG_OVERLAPPED,</span>
-<span class="line" id="L1315">        windows.PIPE_TYPE_BYTE,</span>
-<span class="line" id="L1316">        <span class="tok-number">1</span>,</span>
-<span class="line" id="L1317">        <span class="tok-number">4096</span>,</span>
-<span class="line" id="L1318">        <span class="tok-number">4096</span>,</span>
-<span class="line" id="L1319">        <span class="tok-number">0</span>,</span>
-<span class="line" id="L1320">        sattr,</span>
-<span class="line" id="L1321">    );</span>
-<span class="line" id="L1322">    <span class="tok-kw">if</span> (read_handle == windows.INVALID_HANDLE_VALUE) {</span>
-<span class="line" id="L1323">        <span class="tok-kw">switch</span> (windows.kernel32.GetLastError()) {</span>
-<span class="line" id="L1324">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> windows.unexpectedError(err),</span>
-<span class="line" id="L1325">        }</span>
-<span class="line" id="L1326">    }</span>
-<span class="line" id="L1327">    <span class="tok-kw">errdefer</span> os.close(read_handle);</span>
+<span class="line" id="L1260">        <span class="tok-comment">// Empty arguments technically don't need quotes, but we quote them anyway for maximum</span>
+</span>
+<span class="line" id="L1261">        <span class="tok-comment">// compatibility with different implementations of the 'CommandLineToArgvW' algorithm.</span>
+</span>
+<span class="line" id="L1262">        <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L1263">        <span class="tok-comment">// Double quotes are illegal in paths on Windows, so for the sake of simplicity we reject</span>
+</span>
+<span class="line" id="L1264">        <span class="tok-comment">// all first arguments containing double quotes, even ones that we could theoretically</span>
+</span>
+<span class="line" id="L1265">        <span class="tok-comment">// serialize in unquoted form.</span>
+</span>
+<span class="line" id="L1266">        <span class="tok-kw">var</span> needs_quotes = arg0.len == <span class="tok-number">0</span>;</span>
+<span class="line" id="L1267">        <span class="tok-kw">for</span> (arg0) |c| {</span>
+<span class="line" id="L1268">            <span class="tok-kw">if</span> (c &lt;= <span class="tok-str">' '</span>) {</span>
+<span class="line" id="L1269">                needs_quotes = <span class="tok-null">true</span>;</span>
+<span class="line" id="L1270">            } <span class="tok-kw">else</span> <span class="tok-kw">if</span> (c == <span class="tok-str">'&quot;'</span>) {</span>
+<span class="line" id="L1271">                <span class="tok-kw">return</span> <span class="tok-kw">error</span>.InvalidArg0;</span>
+<span class="line" id="L1272">            }</span>
+<span class="line" id="L1273">        }</span>
+<span class="line" id="L1274">        <span class="tok-kw">if</span> (needs_quotes) {</span>
+<span class="line" id="L1275">            <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
+<span class="line" id="L1276">            <span class="tok-kw">try</span> buf.appendSlice(arg0);</span>
+<span class="line" id="L1277">            <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
+<span class="line" id="L1278">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1279">            <span class="tok-kw">try</span> buf.appendSlice(arg0);</span>
+<span class="line" id="L1280">        }</span>
+<span class="line" id="L1281"></span>
+<span class="line" id="L1282">        <span class="tok-kw">for</span> (argv[<span class="tok-number">1</span>..]) |arg| {</span>
+<span class="line" id="L1283">            <span class="tok-kw">try</span> buf.append(<span class="tok-str">' '</span>);</span>
+<span class="line" id="L1284"></span>
+<span class="line" id="L1285">            <span class="tok-comment">// Subsequent arguments must be quoted if they contain spaces, tabs or double quotes,</span>
+</span>
+<span class="line" id="L1286">            <span class="tok-comment">// or if they are empty. For simplicity and for maximum compatibility with different</span>
+</span>
+<span class="line" id="L1287">            <span class="tok-comment">// implementations of the 'CommandLineToArgvW' algorithm, we also quote all ASCII</span>
+</span>
+<span class="line" id="L1288">            <span class="tok-comment">// control characters (again, excluding DEL).</span>
+</span>
+<span class="line" id="L1289">            needs_quotes = <span class="tok-kw">for</span> (arg) |c| {</span>
+<span class="line" id="L1290">                <span class="tok-kw">if</span> (c &lt;= <span class="tok-str">' '</span> <span class="tok-kw">or</span> c == <span class="tok-str">'&quot;'</span>) {</span>
+<span class="line" id="L1291">                    <span class="tok-kw">break</span> <span class="tok-null">true</span>;</span>
+<span class="line" id="L1292">                }</span>
+<span class="line" id="L1293">            } <span class="tok-kw">else</span> arg.len == <span class="tok-number">0</span>;</span>
+<span class="line" id="L1294">            <span class="tok-kw">if</span> (!needs_quotes) {</span>
+<span class="line" id="L1295">                <span class="tok-kw">try</span> buf.appendSlice(arg);</span>
+<span class="line" id="L1296">                <span class="tok-kw">continue</span>;</span>
+<span class="line" id="L1297">            }</span>
+<span class="line" id="L1298"></span>
+<span class="line" id="L1299">            <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
+<span class="line" id="L1300">            <span class="tok-kw">var</span> backslash_count: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1301">            <span class="tok-kw">for</span> (arg) |byte| {</span>
+<span class="line" id="L1302">                <span class="tok-kw">switch</span> (byte) {</span>
+<span class="line" id="L1303">                    <span class="tok-str">'\\'</span> =&gt; {</span>
+<span class="line" id="L1304">                        backslash_count += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1305">                    },</span>
+<span class="line" id="L1306">                    <span class="tok-str">'&quot;'</span> =&gt; {</span>
+<span class="line" id="L1307">                        <span class="tok-kw">try</span> buf.appendNTimes(<span class="tok-str">'\\'</span>, backslash_count * <span class="tok-number">2</span> + <span class="tok-number">1</span>);</span>
+<span class="line" id="L1308">                        <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
+<span class="line" id="L1309">                        backslash_count = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1310">                    },</span>
+<span class="line" id="L1311">                    <span class="tok-kw">else</span> =&gt; {</span>
+<span class="line" id="L1312">                        <span class="tok-kw">try</span> buf.appendNTimes(<span class="tok-str">'\\'</span>, backslash_count);</span>
+<span class="line" id="L1313">                        <span class="tok-kw">try</span> buf.append(byte);</span>
+<span class="line" id="L1314">                        backslash_count = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1315">                    },</span>
+<span class="line" id="L1316">                }</span>
+<span class="line" id="L1317">            }</span>
+<span class="line" id="L1318">            <span class="tok-kw">try</span> buf.appendNTimes(<span class="tok-str">'\\'</span>, backslash_count * <span class="tok-number">2</span>);</span>
+<span class="line" id="L1319">            <span class="tok-kw">try</span> buf.append(<span class="tok-str">'&quot;'</span>);</span>
+<span class="line" id="L1320">        }</span>
+<span class="line" id="L1321">    }</span>
+<span class="line" id="L1322"></span>
+<span class="line" id="L1323">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> unicode.utf8ToUtf16LeWithNull(allocator, buf.items);</span>
+<span class="line" id="L1324">}</span>
+<span class="line" id="L1325"></span>
+<span class="line" id="L1326"><span class="tok-kw">test</span> <span class="tok-str">&quot;argvToCommandLineWindows&quot;</span> {</span>
+<span class="line" id="L1327">    <span class="tok-kw">const</span> t = testArgvToCommandLineWindows;</span>
 <span class="line" id="L1328"></span>
-<span class="line" id="L1329">    <span class="tok-kw">var</span> sattr_copy = sattr.*;</span>
-<span class="line" id="L1330">    <span class="tok-kw">const</span> write_handle = windows.kernel32.CreateFileW(</span>
-<span class="line" id="L1331">        pipe_path.ptr,</span>
-<span class="line" id="L1332">        windows.GENERIC_WRITE,</span>
-<span class="line" id="L1333">        <span class="tok-number">0</span>,</span>
-<span class="line" id="L1334">        &amp;sattr_copy,</span>
-<span class="line" id="L1335">        windows.OPEN_EXISTING,</span>
-<span class="line" id="L1336">        windows.FILE_ATTRIBUTE_NORMAL,</span>
-<span class="line" id="L1337">        <span class="tok-null">null</span>,</span>
-<span class="line" id="L1338">    );</span>
-<span class="line" id="L1339">    <span class="tok-kw">if</span> (write_handle == windows.INVALID_HANDLE_VALUE) {</span>
-<span class="line" id="L1340">        <span class="tok-kw">switch</span> (windows.kernel32.GetLastError()) {</span>
-<span class="line" id="L1341">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> windows.unexpectedError(err),</span>
-<span class="line" id="L1342">        }</span>
-<span class="line" id="L1343">    }</span>
-<span class="line" id="L1344">    <span class="tok-kw">errdefer</span> os.close(write_handle);</span>
-<span class="line" id="L1345"></span>
-<span class="line" id="L1346">    <span class="tok-kw">try</span> windows.SetHandleInformation(read_handle, windows.HANDLE_FLAG_INHERIT, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1347"></span>
-<span class="line" id="L1348">    rd.* = read_handle;</span>
-<span class="line" id="L1349">    wr.* = write_handle;</span>
-<span class="line" id="L1350">}</span>
-<span class="line" id="L1351"></span>
-<span class="line" id="L1352"><span class="tok-kw">fn</span> <span class="tok-fn">destroyPipe</span>(pipe: [<span class="tok-number">2</span>]os.fd_t) <span class="tok-type">void</span> {</span>
-<span class="line" id="L1353">    os.close(pipe[<span class="tok-number">0</span>]);</span>
-<span class="line" id="L1354">    <span class="tok-kw">if</span> (pipe[<span class="tok-number">0</span>] != pipe[<span class="tok-number">1</span>]) os.close(pipe[<span class="tok-number">1</span>]);</span>
-<span class="line" id="L1355">}</span>
-<span class="line" id="L1356"></span>
-<span class="line" id="L1357"><span class="tok-comment">// Child of fork calls this to report an error to the fork parent.</span>
-</span>
-<span class="line" id="L1358"><span class="tok-comment">// Then the child exits.</span>
-</span>
-<span class="line" id="L1359"><span class="tok-kw">fn</span> <span class="tok-fn">forkChildErrReport</span>(fd: <span class="tok-type">i32</span>, err: ChildProcess.SpawnError) <span class="tok-type">noreturn</span> {</span>
-<span class="line" id="L1360">    writeIntFd(fd, <span class="tok-builtin">@as</span>(ErrInt, <span class="tok-builtin">@intFromError</span>(err))) <span class="tok-kw">catch</span> {};</span>
-<span class="line" id="L1361">    <span class="tok-comment">// If we're linking libc, some naughty applications may have registered atexit handlers</span>
-</span>
-<span class="line" id="L1362">    <span class="tok-comment">// which we really do not want to run in the fork child. I caught LLVM doing this and</span>
-</span>
-<span class="line" id="L1363">    <span class="tok-comment">// it caused a deadlock instead of doing an exit syscall. In the words of Avril Lavigne,</span>
-</span>
-<span class="line" id="L1364">    <span class="tok-comment">// &quot;Why'd you have to go and make things so complicated?&quot;</span>
-</span>
-<span class="line" id="L1365">    <span class="tok-kw">if</span> (builtin.link_libc) {</span>
-<span class="line" id="L1366">        <span class="tok-comment">// The _exit(2) function does nothing but make the exit syscall, unlike exit(3)</span>
-</span>
-<span class="line" id="L1367">        std.c._exit(<span class="tok-number">1</span>);</span>
-<span class="line" id="L1368">    }</span>
-<span class="line" id="L1369">    os.exit(<span class="tok-number">1</span>);</span>
-<span class="line" id="L1370">}</span>
-<span class="line" id="L1371"></span>
-<span class="line" id="L1372"><span class="tok-kw">const</span> ErrInt = std.meta.Int(.unsigned, <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">anyerror</span>) * <span class="tok-number">8</span>);</span>
-<span class="line" id="L1373"></span>
-<span class="line" id="L1374"><span class="tok-kw">fn</span> <span class="tok-fn">writeIntFd</span>(fd: <span class="tok-type">i32</span>, value: ErrInt) !<span class="tok-type">void</span> {</span>
-<span class="line" id="L1375">    <span class="tok-kw">const</span> file = File{</span>
-<span class="line" id="L1376">        .handle = fd,</span>
-<span class="line" id="L1377">        .capable_io_mode = .blocking,</span>
-<span class="line" id="L1378">        .intended_io_mode = .blocking,</span>
-<span class="line" id="L1379">    };</span>
-<span class="line" id="L1380">    file.writer().writeInt(<span class="tok-type">u64</span>, <span class="tok-builtin">@intCast</span>(value), .little) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources;</span>
-<span class="line" id="L1381">}</span>
-<span class="line" id="L1382"></span>
-<span class="line" id="L1383"><span class="tok-kw">fn</span> <span class="tok-fn">readIntFd</span>(fd: <span class="tok-type">i32</span>) !ErrInt {</span>
-<span class="line" id="L1384">    <span class="tok-kw">const</span> file = File{</span>
-<span class="line" id="L1385">        .handle = fd,</span>
-<span class="line" id="L1386">        .capable_io_mode = .blocking,</span>
-<span class="line" id="L1387">        .intended_io_mode = .blocking,</span>
-<span class="line" id="L1388">    };</span>
-<span class="line" id="L1389">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(ErrInt, <span class="tok-builtin">@intCast</span>(file.reader().readInt(<span class="tok-type">u64</span>, .little) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources));</span>
-<span class="line" id="L1390">}</span>
+<span class="line" id="L1329">    <span class="tok-kw">try</span> t(&amp;.{</span>
+<span class="line" id="L1330">        <span class="tok-str">\\C:\Program Files\zig\zig.exe</span></span>
+
+<span class="line" id="L1331">        ,</span>
+<span class="line" id="L1332">        <span class="tok-str">\\run</span></span>
+
+<span class="line" id="L1333">        ,</span>
+<span class="line" id="L1334">        <span class="tok-str">\\.\src\main.zig</span></span>
+
+<span class="line" id="L1335">        ,</span>
+<span class="line" id="L1336">        <span class="tok-str">\\-target</span></span>
+
+<span class="line" id="L1337">        ,</span>
+<span class="line" id="L1338">        <span class="tok-str">\\x86_64-windows-gnu</span></span>
+
+<span class="line" id="L1339">        ,</span>
+<span class="line" id="L1340">        <span class="tok-str">\\-O</span></span>
+
+<span class="line" id="L1341">        ,</span>
+<span class="line" id="L1342">        <span class="tok-str">\\ReleaseSafe</span></span>
+
+<span class="line" id="L1343">        ,</span>
+<span class="line" id="L1344">        <span class="tok-str">\\--</span></span>
+
+<span class="line" id="L1345">        ,</span>
+<span class="line" id="L1346">        <span class="tok-str">\\--emoji=🗿</span></span>
+
+<span class="line" id="L1347">        ,</span>
+<span class="line" id="L1348">        <span class="tok-str">\\--eval=new Regex(&quot;Dwayne \&quot;The Rock\&quot; Johnson&quot;)</span></span>
+
+<span class="line" id="L1349">        ,</span>
+<span class="line" id="L1350">    },</span>
+<span class="line" id="L1351">        <span class="tok-str">\\&quot;C:\Program Files\zig\zig.exe&quot; run .\src\main.zig -target x86_64-windows-gnu -O ReleaseSafe -- --emoji=🗿 &quot;--eval=new Regex(\&quot;Dwayne \\\&quot;The Rock\\\&quot; Johnson\&quot;)&quot;</span></span>
+
+<span class="line" id="L1352">    );</span>
+<span class="line" id="L1353"></span>
+<span class="line" id="L1354">    <span class="tok-kw">try</span> t(&amp;.{}, <span class="tok-str">&quot;&quot;</span>);</span>
+<span class="line" id="L1355">    <span class="tok-kw">try</span> t(&amp;.{<span class="tok-str">&quot;&quot;</span>}, <span class="tok-str">&quot;\&quot;\&quot;&quot;</span>);</span>
+<span class="line" id="L1356">    <span class="tok-kw">try</span> t(&amp;.{<span class="tok-str">&quot; &quot;</span>}, <span class="tok-str">&quot;\&quot; \&quot;&quot;</span>);</span>
+<span class="line" id="L1357">    <span class="tok-kw">try</span> t(&amp;.{<span class="tok-str">&quot;\t&quot;</span>}, <span class="tok-str">&quot;\&quot;\t\&quot;&quot;</span>);</span>
+<span class="line" id="L1358">    <span class="tok-kw">try</span> t(&amp;.{<span class="tok-str">&quot;\x07&quot;</span>}, <span class="tok-str">&quot;\&quot;\x07\&quot;&quot;</span>);</span>
+<span class="line" id="L1359">    <span class="tok-kw">try</span> t(&amp;.{<span class="tok-str">&quot;🦎&quot;</span>}, <span class="tok-str">&quot;🦎&quot;</span>);</span>
+<span class="line" id="L1360"></span>
+<span class="line" id="L1361">    <span class="tok-kw">try</span> t(</span>
+<span class="line" id="L1362">        &amp;.{ <span class="tok-str">&quot;zig&quot;</span>, <span class="tok-str">&quot;aa aa&quot;</span>, <span class="tok-str">&quot;bb\tbb&quot;</span>, <span class="tok-str">&quot;cc\ncc&quot;</span>, <span class="tok-str">&quot;dd\r\ndd&quot;</span>, <span class="tok-str">&quot;ee\x7Fee&quot;</span> },</span>
+<span class="line" id="L1363">        <span class="tok-str">&quot;zig \&quot;aa aa\&quot; \&quot;bb\tbb\&quot; \&quot;cc\ncc\&quot; \&quot;dd\r\ndd\&quot; ee\x7Fee&quot;</span>,</span>
+<span class="line" id="L1364">    );</span>
+<span class="line" id="L1365"></span>
+<span class="line" id="L1366">    <span class="tok-kw">try</span> t(</span>
+<span class="line" id="L1367">        &amp;.{ <span class="tok-str">&quot;\\\\foo bar\\foo bar\\&quot;</span>, <span class="tok-str">&quot;\\\\zig zag\\zig zag\\&quot;</span> },</span>
+<span class="line" id="L1368">        <span class="tok-str">&quot;\&quot;\\\\foo bar\\foo bar\\\&quot; \&quot;\\\\zig zag\\zig zag\\\\\&quot;&quot;</span>,</span>
+<span class="line" id="L1369">    );</span>
+<span class="line" id="L1370"></span>
+<span class="line" id="L1371">    <span class="tok-kw">try</span> std.testing.expectError(</span>
+<span class="line" id="L1372">        <span class="tok-kw">error</span>.InvalidArg0,</span>
+<span class="line" id="L1373">        argvToCommandLineWindows(std.testing.allocator, &amp;.{<span class="tok-str">&quot;\&quot;quotes\&quot;quotes\&quot;&quot;</span>}),</span>
+<span class="line" id="L1374">    );</span>
+<span class="line" id="L1375">    <span class="tok-kw">try</span> std.testing.expectError(</span>
+<span class="line" id="L1376">        <span class="tok-kw">error</span>.InvalidArg0,</span>
+<span class="line" id="L1377">        argvToCommandLineWindows(std.testing.allocator, &amp;.{<span class="tok-str">&quot;quotes\&quot;quotes&quot;</span>}),</span>
+<span class="line" id="L1378">    );</span>
+<span class="line" id="L1379">    <span class="tok-kw">try</span> std.testing.expectError(</span>
+<span class="line" id="L1380">        <span class="tok-kw">error</span>.InvalidArg0,</span>
+<span class="line" id="L1381">        argvToCommandLineWindows(std.testing.allocator, &amp;.{<span class="tok-str">&quot;q u o t e s \&quot; q u o t e s&quot;</span>}),</span>
+<span class="line" id="L1382">    );</span>
+<span class="line" id="L1383">}</span>
+<span class="line" id="L1384"></span>
+<span class="line" id="L1385"><span class="tok-kw">fn</span> <span class="tok-fn">testArgvToCommandLineWindows</span>(argv: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>, expected_cmd_line: []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1386">    <span class="tok-kw">const</span> cmd_line_w = <span class="tok-kw">try</span> argvToCommandLineWindows(std.testing.allocator, argv);</span>
+<span class="line" id="L1387">    <span class="tok-kw">defer</span> std.testing.allocator.free(cmd_line_w);</span>
+<span class="line" id="L1388"></span>
+<span class="line" id="L1389">    <span class="tok-kw">const</span> cmd_line = <span class="tok-kw">try</span> unicode.utf16leToUtf8Alloc(std.testing.allocator, cmd_line_w);</span>
+<span class="line" id="L1390">    <span class="tok-kw">defer</span> std.testing.allocator.free(cmd_line);</span>
 <span class="line" id="L1391"></span>
-<span class="line" id="L1392"><span class="tok-comment">/// Caller must free result.</span></span>
-<span class="line" id="L1393"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createWindowsEnvBlock</span>(allocator: mem.Allocator, env_map: *<span class="tok-kw">const</span> EnvMap) ![]<span class="tok-type">u16</span> {</span>
-<span class="line" id="L1394">    <span class="tok-comment">// count bytes needed</span>
+<span class="line" id="L1392">    <span class="tok-kw">try</span> std.testing.expectEqualStrings(expected_cmd_line, cmd_line);</span>
+<span class="line" id="L1393">}</span>
+<span class="line" id="L1394"></span>
+<span class="line" id="L1395"><span class="tok-kw">fn</span> <span class="tok-fn">windowsDestroyPipe</span>(rd: ?windows.HANDLE, wr: ?windows.HANDLE) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1396">    <span class="tok-kw">if</span> (rd) |h| os.close(h);</span>
+<span class="line" id="L1397">    <span class="tok-kw">if</span> (wr) |h| os.close(h);</span>
+<span class="line" id="L1398">}</span>
+<span class="line" id="L1399"></span>
+<span class="line" id="L1400"><span class="tok-kw">fn</span> <span class="tok-fn">windowsMakePipeIn</span>(rd: *?windows.HANDLE, wr: *?windows.HANDLE, sattr: *<span class="tok-kw">const</span> windows.SECURITY_ATTRIBUTES) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1401">    <span class="tok-kw">var</span> rd_h: windows.HANDLE = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1402">    <span class="tok-kw">var</span> wr_h: windows.HANDLE = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1403">    <span class="tok-kw">try</span> windows.CreatePipe(&amp;rd_h, &amp;wr_h, sattr);</span>
+<span class="line" id="L1404">    <span class="tok-kw">errdefer</span> windowsDestroyPipe(rd_h, wr_h);</span>
+<span class="line" id="L1405">    <span class="tok-kw">try</span> windows.SetHandleInformation(wr_h, windows.HANDLE_FLAG_INHERIT, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1406">    rd.* = rd_h;</span>
+<span class="line" id="L1407">    wr.* = wr_h;</span>
+<span class="line" id="L1408">}</span>
+<span class="line" id="L1409"></span>
+<span class="line" id="L1410"><span class="tok-kw">var</span> pipe_name_counter = std.atomic.Value(<span class="tok-type">u32</span>).init(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1411"></span>
+<span class="line" id="L1412"><span class="tok-kw">fn</span> <span class="tok-fn">windowsMakeAsyncPipe</span>(rd: *?windows.HANDLE, wr: *?windows.HANDLE, sattr: *<span class="tok-kw">const</span> windows.SECURITY_ATTRIBUTES) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1413">    <span class="tok-kw">var</span> tmp_bufw: [<span class="tok-number">128</span>]<span class="tok-type">u16</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1414"></span>
+<span class="line" id="L1415">    <span class="tok-comment">// Anonymous pipes are built upon Named pipes.</span>
 </span>
-<span class="line" id="L1395">    <span class="tok-kw">const</span> max_chars_needed = x: {</span>
-<span class="line" id="L1396">        <span class="tok-kw">var</span> max_chars_needed: <span class="tok-type">usize</span> = <span class="tok-number">4</span>; <span class="tok-comment">// 4 for the final 4 null bytes</span>
+<span class="line" id="L1416">    <span class="tok-comment">// https://docs.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-createpipe</span>
 </span>
-<span class="line" id="L1397">        <span class="tok-kw">var</span> it = env_map.iterator();</span>
-<span class="line" id="L1398">        <span class="tok-kw">while</span> (it.next()) |pair| {</span>
-<span class="line" id="L1399">            <span class="tok-comment">// +1 for '='</span>
+<span class="line" id="L1417">    <span class="tok-comment">// Asynchronous (overlapped) read and write operations are not supported by anonymous pipes.</span>
 </span>
-<span class="line" id="L1400">            <span class="tok-comment">// +1 for null byte</span>
+<span class="line" id="L1418">    <span class="tok-comment">// https://docs.microsoft.com/en-us/windows/win32/ipc/anonymous-pipe-operations</span>
 </span>
-<span class="line" id="L1401">            max_chars_needed += pair.key_ptr.len + pair.value_ptr.len + <span class="tok-number">2</span>;</span>
-<span class="line" id="L1402">        }</span>
-<span class="line" id="L1403">        <span class="tok-kw">break</span> :x max_chars_needed;</span>
-<span class="line" id="L1404">    };</span>
-<span class="line" id="L1405">    <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u16</span>, max_chars_needed);</span>
-<span class="line" id="L1406">    <span class="tok-kw">errdefer</span> allocator.free(result);</span>
-<span class="line" id="L1407"></span>
-<span class="line" id="L1408">    <span class="tok-kw">var</span> it = env_map.iterator();</span>
-<span class="line" id="L1409">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1410">    <span class="tok-kw">while</span> (it.next()) |pair| {</span>
-<span class="line" id="L1411">        i += <span class="tok-kw">try</span> unicode.utf8ToUtf16Le(result[i..], pair.key_ptr.*);</span>
-<span class="line" id="L1412">        result[i] = <span class="tok-str">'='</span>;</span>
-<span class="line" id="L1413">        i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1414">        i += <span class="tok-kw">try</span> unicode.utf8ToUtf16Le(result[i..], pair.value_ptr.*);</span>
-<span class="line" id="L1415">        result[i] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1416">        i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1417">    }</span>
-<span class="line" id="L1418">    result[i] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1419">    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1420">    result[i] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1421">    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1422">    result[i] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1423">    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1424">    result[i] = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1425">    i += <span class="tok-number">1</span>;</span>
-<span class="line" id="L1426">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> allocator.realloc(result, i);</span>
-<span class="line" id="L1427">}</span>
-<span class="line" id="L1428"></span>
-<span class="line" id="L1429"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createNullDelimitedEnvMap</span>(arena: mem.Allocator, env_map: *<span class="tok-kw">const</span> EnvMap) ![:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span> {</span>
-<span class="line" id="L1430">    <span class="tok-kw">const</span> envp_count = env_map.count();</span>
-<span class="line" id="L1431">    <span class="tok-kw">const</span> envp_buf = <span class="tok-kw">try</span> arena.allocSentinel(?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, envp_count, <span class="tok-null">null</span>);</span>
-<span class="line" id="L1432">    {</span>
-<span class="line" id="L1433">        <span class="tok-kw">var</span> it = env_map.iterator();</span>
-<span class="line" id="L1434">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L1435">        <span class="tok-kw">while</span> (it.next()) |pair| : (i += <span class="tok-number">1</span>) {</span>
-<span class="line" id="L1436">            <span class="tok-kw">const</span> env_buf = <span class="tok-kw">try</span> arena.allocSentinel(<span class="tok-type">u8</span>, pair.key_ptr.len + pair.value_ptr.len + <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L1437">            <span class="tok-builtin">@memcpy</span>(env_buf[<span class="tok-number">0</span>..pair.key_ptr.len], pair.key_ptr.*);</span>
-<span class="line" id="L1438">            env_buf[pair.key_ptr.len] = <span class="tok-str">'='</span>;</span>
-<span class="line" id="L1439">            <span class="tok-builtin">@memcpy</span>(env_buf[pair.key_ptr.len + <span class="tok-number">1</span> ..][<span class="tok-number">0</span>..pair.value_ptr.len], pair.value_ptr.*);</span>
-<span class="line" id="L1440">            envp_buf[i] = env_buf.ptr;</span>
-<span class="line" id="L1441">        }</span>
-<span class="line" id="L1442">        assert(i == envp_count);</span>
-<span class="line" id="L1443">    }</span>
-<span class="line" id="L1444">    <span class="tok-kw">return</span> envp_buf;</span>
-<span class="line" id="L1445">}</span>
-<span class="line" id="L1446"></span>
-<span class="line" id="L1447"><span class="tok-kw">test</span> <span class="tok-str">&quot;createNullDelimitedEnvMap&quot;</span> {</span>
-<span class="line" id="L1448">    <span class="tok-kw">const</span> testing = std.testing;</span>
-<span class="line" id="L1449">    <span class="tok-kw">const</span> allocator = testing.allocator;</span>
-<span class="line" id="L1450">    <span class="tok-kw">var</span> envmap = EnvMap.init(allocator);</span>
-<span class="line" id="L1451">    <span class="tok-kw">defer</span> envmap.deinit();</span>
-<span class="line" id="L1452"></span>
-<span class="line" id="L1453">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;HOME&quot;</span>, <span class="tok-str">&quot;/home/ifreund&quot;</span>);</span>
-<span class="line" id="L1454">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;WAYLAND_DISPLAY&quot;</span>, <span class="tok-str">&quot;wayland-1&quot;</span>);</span>
-<span class="line" id="L1455">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;DISPLAY&quot;</span>, <span class="tok-str">&quot;:1&quot;</span>);</span>
-<span class="line" id="L1456">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;DEBUGINFOD_URLS&quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
-<span class="line" id="L1457">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;XCURSOR_SIZE&quot;</span>, <span class="tok-str">&quot;24&quot;</span>);</span>
-<span class="line" id="L1458"></span>
-<span class="line" id="L1459">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(allocator);</span>
-<span class="line" id="L1460">    <span class="tok-kw">defer</span> arena.deinit();</span>
-<span class="line" id="L1461">    <span class="tok-kw">const</span> environ = <span class="tok-kw">try</span> createNullDelimitedEnvMap(arena.allocator(), &amp;envmap);</span>
-<span class="line" id="L1462"></span>
-<span class="line" id="L1463">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), environ.len);</span>
-<span class="line" id="L1464"></span>
-<span class="line" id="L1465">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (.{</span>
-<span class="line" id="L1466">        <span class="tok-str">&quot;HOME=/home/ifreund&quot;</span>,</span>
-<span class="line" id="L1467">        <span class="tok-str">&quot;WAYLAND_DISPLAY=wayland-1&quot;</span>,</span>
-<span class="line" id="L1468">        <span class="tok-str">&quot;DISPLAY=:1&quot;</span>,</span>
-<span class="line" id="L1469">        <span class="tok-str">&quot;DEBUGINFOD_URLS= &quot;</span>,</span>
-<span class="line" id="L1470">        <span class="tok-str">&quot;XCURSOR_SIZE=24&quot;</span>,</span>
-<span class="line" id="L1471">    }) |target| {</span>
-<span class="line" id="L1472">        <span class="tok-kw">for</span> (environ) |variable| {</span>
-<span class="line" id="L1473">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, mem.span(variable <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>), target)) <span class="tok-kw">break</span>;</span>
-<span class="line" id="L1474">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L1475">            <span class="tok-kw">try</span> testing.expect(<span class="tok-null">false</span>); <span class="tok-comment">// Environment variable not found</span>
+<span class="line" id="L1419">    <span class="tok-kw">const</span> pipe_path = blk: {</span>
+<span class="line" id="L1420">        <span class="tok-kw">var</span> tmp_buf: [<span class="tok-number">128</span>]<span class="tok-type">u8</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L1421">        <span class="tok-comment">// Forge a random path for the pipe.</span>
 </span>
-<span class="line" id="L1476">        }</span>
-<span class="line" id="L1477">    }</span>
-<span class="line" id="L1478">}</span>
-<span class="line" id="L1479"></span>
+<span class="line" id="L1422">        <span class="tok-kw">const</span> pipe_path = std.fmt.bufPrintZ(</span>
+<span class="line" id="L1423">            &amp;tmp_buf,</span>
+<span class="line" id="L1424">            <span class="tok-str">&quot;\\\\.\\pipe\\zig-childprocess-{d}-{d}&quot;</span>,</span>
+<span class="line" id="L1425">            .{ windows.kernel32.GetCurrentProcessId(), pipe_name_counter.fetchAdd(<span class="tok-number">1</span>, .Monotonic) },</span>
+<span class="line" id="L1426">        ) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1427">        <span class="tok-kw">const</span> len = std.unicode.utf8ToUtf16Le(&amp;tmp_bufw, pipe_path) <span class="tok-kw">catch</span> <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L1428">        tmp_bufw[len] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1429">        <span class="tok-kw">break</span> :blk tmp_bufw[<span class="tok-number">0</span>..len :<span class="tok-number">0</span>];</span>
+<span class="line" id="L1430">    };</span>
+<span class="line" id="L1431"></span>
+<span class="line" id="L1432">    <span class="tok-comment">// Create the read handle that can be used with overlapped IO ops.</span>
+</span>
+<span class="line" id="L1433">    <span class="tok-kw">const</span> read_handle = windows.kernel32.CreateNamedPipeW(</span>
+<span class="line" id="L1434">        pipe_path.ptr,</span>
+<span class="line" id="L1435">        windows.PIPE_ACCESS_INBOUND | windows.FILE_FLAG_OVERLAPPED,</span>
+<span class="line" id="L1436">        windows.PIPE_TYPE_BYTE,</span>
+<span class="line" id="L1437">        <span class="tok-number">1</span>,</span>
+<span class="line" id="L1438">        <span class="tok-number">4096</span>,</span>
+<span class="line" id="L1439">        <span class="tok-number">4096</span>,</span>
+<span class="line" id="L1440">        <span class="tok-number">0</span>,</span>
+<span class="line" id="L1441">        sattr,</span>
+<span class="line" id="L1442">    );</span>
+<span class="line" id="L1443">    <span class="tok-kw">if</span> (read_handle == windows.INVALID_HANDLE_VALUE) {</span>
+<span class="line" id="L1444">        <span class="tok-kw">switch</span> (windows.kernel32.GetLastError()) {</span>
+<span class="line" id="L1445">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> windows.unexpectedError(err),</span>
+<span class="line" id="L1446">        }</span>
+<span class="line" id="L1447">    }</span>
+<span class="line" id="L1448">    <span class="tok-kw">errdefer</span> os.close(read_handle);</span>
+<span class="line" id="L1449"></span>
+<span class="line" id="L1450">    <span class="tok-kw">var</span> sattr_copy = sattr.*;</span>
+<span class="line" id="L1451">    <span class="tok-kw">const</span> write_handle = windows.kernel32.CreateFileW(</span>
+<span class="line" id="L1452">        pipe_path.ptr,</span>
+<span class="line" id="L1453">        windows.GENERIC_WRITE,</span>
+<span class="line" id="L1454">        <span class="tok-number">0</span>,</span>
+<span class="line" id="L1455">        &amp;sattr_copy,</span>
+<span class="line" id="L1456">        windows.OPEN_EXISTING,</span>
+<span class="line" id="L1457">        windows.FILE_ATTRIBUTE_NORMAL,</span>
+<span class="line" id="L1458">        <span class="tok-null">null</span>,</span>
+<span class="line" id="L1459">    );</span>
+<span class="line" id="L1460">    <span class="tok-kw">if</span> (write_handle == windows.INVALID_HANDLE_VALUE) {</span>
+<span class="line" id="L1461">        <span class="tok-kw">switch</span> (windows.kernel32.GetLastError()) {</span>
+<span class="line" id="L1462">            <span class="tok-kw">else</span> =&gt; |err| <span class="tok-kw">return</span> windows.unexpectedError(err),</span>
+<span class="line" id="L1463">        }</span>
+<span class="line" id="L1464">    }</span>
+<span class="line" id="L1465">    <span class="tok-kw">errdefer</span> os.close(write_handle);</span>
+<span class="line" id="L1466"></span>
+<span class="line" id="L1467">    <span class="tok-kw">try</span> windows.SetHandleInformation(read_handle, windows.HANDLE_FLAG_INHERIT, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1468"></span>
+<span class="line" id="L1469">    rd.* = read_handle;</span>
+<span class="line" id="L1470">    wr.* = write_handle;</span>
+<span class="line" id="L1471">}</span>
+<span class="line" id="L1472"></span>
+<span class="line" id="L1473"><span class="tok-kw">fn</span> <span class="tok-fn">destroyPipe</span>(pipe: [<span class="tok-number">2</span>]os.fd_t) <span class="tok-type">void</span> {</span>
+<span class="line" id="L1474">    os.close(pipe[<span class="tok-number">0</span>]);</span>
+<span class="line" id="L1475">    <span class="tok-kw">if</span> (pipe[<span class="tok-number">0</span>] != pipe[<span class="tok-number">1</span>]) os.close(pipe[<span class="tok-number">1</span>]);</span>
+<span class="line" id="L1476">}</span>
+<span class="line" id="L1477"></span>
+<span class="line" id="L1478"><span class="tok-comment">// Child of fork calls this to report an error to the fork parent.</span>
+</span>
+<span class="line" id="L1479"><span class="tok-comment">// Then the child exits.</span>
+</span>
+<span class="line" id="L1480"><span class="tok-kw">fn</span> <span class="tok-fn">forkChildErrReport</span>(fd: <span class="tok-type">i32</span>, err: ChildProcess.SpawnError) <span class="tok-type">noreturn</span> {</span>
+<span class="line" id="L1481">    writeIntFd(fd, <span class="tok-builtin">@as</span>(ErrInt, <span class="tok-builtin">@intFromError</span>(err))) <span class="tok-kw">catch</span> {};</span>
+<span class="line" id="L1482">    <span class="tok-comment">// If we're linking libc, some naughty applications may have registered atexit handlers</span>
+</span>
+<span class="line" id="L1483">    <span class="tok-comment">// which we really do not want to run in the fork child. I caught LLVM doing this and</span>
+</span>
+<span class="line" id="L1484">    <span class="tok-comment">// it caused a deadlock instead of doing an exit syscall. In the words of Avril Lavigne,</span>
+</span>
+<span class="line" id="L1485">    <span class="tok-comment">// &quot;Why'd you have to go and make things so complicated?&quot;</span>
+</span>
+<span class="line" id="L1486">    <span class="tok-kw">if</span> (builtin.link_libc) {</span>
+<span class="line" id="L1487">        <span class="tok-comment">// The _exit(2) function does nothing but make the exit syscall, unlike exit(3)</span>
+</span>
+<span class="line" id="L1488">        std.c._exit(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1489">    }</span>
+<span class="line" id="L1490">    os.exit(<span class="tok-number">1</span>);</span>
+<span class="line" id="L1491">}</span>
+<span class="line" id="L1492"></span>
+<span class="line" id="L1493"><span class="tok-kw">const</span> ErrInt = std.meta.Int(.unsigned, <span class="tok-builtin">@sizeOf</span>(<span class="tok-type">anyerror</span>) * <span class="tok-number">8</span>);</span>
+<span class="line" id="L1494"></span>
+<span class="line" id="L1495"><span class="tok-kw">fn</span> <span class="tok-fn">writeIntFd</span>(fd: <span class="tok-type">i32</span>, value: ErrInt) !<span class="tok-type">void</span> {</span>
+<span class="line" id="L1496">    <span class="tok-kw">const</span> file = File{</span>
+<span class="line" id="L1497">        .handle = fd,</span>
+<span class="line" id="L1498">        .capable_io_mode = .blocking,</span>
+<span class="line" id="L1499">        .intended_io_mode = .blocking,</span>
+<span class="line" id="L1500">    };</span>
+<span class="line" id="L1501">    file.writer().writeInt(<span class="tok-type">u64</span>, <span class="tok-builtin">@intCast</span>(value), .little) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources;</span>
+<span class="line" id="L1502">}</span>
+<span class="line" id="L1503"></span>
+<span class="line" id="L1504"><span class="tok-kw">fn</span> <span class="tok-fn">readIntFd</span>(fd: <span class="tok-type">i32</span>) !ErrInt {</span>
+<span class="line" id="L1505">    <span class="tok-kw">const</span> file = File{</span>
+<span class="line" id="L1506">        .handle = fd,</span>
+<span class="line" id="L1507">        .capable_io_mode = .blocking,</span>
+<span class="line" id="L1508">        .intended_io_mode = .blocking,</span>
+<span class="line" id="L1509">    };</span>
+<span class="line" id="L1510">    <span class="tok-kw">return</span> <span class="tok-builtin">@as</span>(ErrInt, <span class="tok-builtin">@intCast</span>(file.reader().readInt(<span class="tok-type">u64</span>, .little) <span class="tok-kw">catch</span> <span class="tok-kw">return</span> <span class="tok-kw">error</span>.SystemResources));</span>
+<span class="line" id="L1511">}</span>
+<span class="line" id="L1512"></span>
+<span class="line" id="L1513"><span class="tok-comment">/// Caller must free result.</span></span>
+<span class="line" id="L1514"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createWindowsEnvBlock</span>(allocator: mem.Allocator, env_map: *<span class="tok-kw">const</span> EnvMap) ![]<span class="tok-type">u16</span> {</span>
+<span class="line" id="L1515">    <span class="tok-comment">// count bytes needed</span>
+</span>
+<span class="line" id="L1516">    <span class="tok-kw">const</span> max_chars_needed = x: {</span>
+<span class="line" id="L1517">        <span class="tok-kw">var</span> max_chars_needed: <span class="tok-type">usize</span> = <span class="tok-number">4</span>; <span class="tok-comment">// 4 for the final 4 null bytes</span>
+</span>
+<span class="line" id="L1518">        <span class="tok-kw">var</span> it = env_map.iterator();</span>
+<span class="line" id="L1519">        <span class="tok-kw">while</span> (it.next()) |pair| {</span>
+<span class="line" id="L1520">            <span class="tok-comment">// +1 for '='</span>
+</span>
+<span class="line" id="L1521">            <span class="tok-comment">// +1 for null byte</span>
+</span>
+<span class="line" id="L1522">            max_chars_needed += pair.key_ptr.len + pair.value_ptr.len + <span class="tok-number">2</span>;</span>
+<span class="line" id="L1523">        }</span>
+<span class="line" id="L1524">        <span class="tok-kw">break</span> :x max_chars_needed;</span>
+<span class="line" id="L1525">    };</span>
+<span class="line" id="L1526">    <span class="tok-kw">const</span> result = <span class="tok-kw">try</span> allocator.alloc(<span class="tok-type">u16</span>, max_chars_needed);</span>
+<span class="line" id="L1527">    <span class="tok-kw">errdefer</span> allocator.free(result);</span>
+<span class="line" id="L1528"></span>
+<span class="line" id="L1529">    <span class="tok-kw">var</span> it = env_map.iterator();</span>
+<span class="line" id="L1530">    <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1531">    <span class="tok-kw">while</span> (it.next()) |pair| {</span>
+<span class="line" id="L1532">        i += <span class="tok-kw">try</span> unicode.utf8ToUtf16Le(result[i..], pair.key_ptr.*);</span>
+<span class="line" id="L1533">        result[i] = <span class="tok-str">'='</span>;</span>
+<span class="line" id="L1534">        i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1535">        i += <span class="tok-kw">try</span> unicode.utf8ToUtf16Le(result[i..], pair.value_ptr.*);</span>
+<span class="line" id="L1536">        result[i] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1537">        i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1538">    }</span>
+<span class="line" id="L1539">    result[i] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1540">    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1541">    result[i] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1542">    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1543">    result[i] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1544">    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1545">    result[i] = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1546">    i += <span class="tok-number">1</span>;</span>
+<span class="line" id="L1547">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> allocator.realloc(result, i);</span>
+<span class="line" id="L1548">}</span>
+<span class="line" id="L1549"></span>
+<span class="line" id="L1550"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">createNullDelimitedEnvMap</span>(arena: mem.Allocator, env_map: *<span class="tok-kw">const</span> EnvMap) ![:<span class="tok-null">null</span>]?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span> {</span>
+<span class="line" id="L1551">    <span class="tok-kw">const</span> envp_count = env_map.count();</span>
+<span class="line" id="L1552">    <span class="tok-kw">const</span> envp_buf = <span class="tok-kw">try</span> arena.allocSentinel(?[*:<span class="tok-number">0</span>]<span class="tok-type">u8</span>, envp_count, <span class="tok-null">null</span>);</span>
+<span class="line" id="L1553">    {</span>
+<span class="line" id="L1554">        <span class="tok-kw">var</span> it = env_map.iterator();</span>
+<span class="line" id="L1555">        <span class="tok-kw">var</span> i: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L1556">        <span class="tok-kw">while</span> (it.next()) |pair| : (i += <span class="tok-number">1</span>) {</span>
+<span class="line" id="L1557">            <span class="tok-kw">const</span> env_buf = <span class="tok-kw">try</span> arena.allocSentinel(<span class="tok-type">u8</span>, pair.key_ptr.len + pair.value_ptr.len + <span class="tok-number">1</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L1558">            <span class="tok-builtin">@memcpy</span>(env_buf[<span class="tok-number">0</span>..pair.key_ptr.len], pair.key_ptr.*);</span>
+<span class="line" id="L1559">            env_buf[pair.key_ptr.len] = <span class="tok-str">'='</span>;</span>
+<span class="line" id="L1560">            <span class="tok-builtin">@memcpy</span>(env_buf[pair.key_ptr.len + <span class="tok-number">1</span> ..][<span class="tok-number">0</span>..pair.value_ptr.len], pair.value_ptr.*);</span>
+<span class="line" id="L1561">            envp_buf[i] = env_buf.ptr;</span>
+<span class="line" id="L1562">        }</span>
+<span class="line" id="L1563">        assert(i == envp_count);</span>
+<span class="line" id="L1564">    }</span>
+<span class="line" id="L1565">    <span class="tok-kw">return</span> envp_buf;</span>
+<span class="line" id="L1566">}</span>
+<span class="line" id="L1567"></span>
+<span class="line" id="L1568"><span class="tok-kw">test</span> <span class="tok-str">&quot;createNullDelimitedEnvMap&quot;</span> {</span>
+<span class="line" id="L1569">    <span class="tok-kw">const</span> testing = std.testing;</span>
+<span class="line" id="L1570">    <span class="tok-kw">const</span> allocator = testing.allocator;</span>
+<span class="line" id="L1571">    <span class="tok-kw">var</span> envmap = EnvMap.init(allocator);</span>
+<span class="line" id="L1572">    <span class="tok-kw">defer</span> envmap.deinit();</span>
+<span class="line" id="L1573"></span>
+<span class="line" id="L1574">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;HOME&quot;</span>, <span class="tok-str">&quot;/home/ifreund&quot;</span>);</span>
+<span class="line" id="L1575">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;WAYLAND_DISPLAY&quot;</span>, <span class="tok-str">&quot;wayland-1&quot;</span>);</span>
+<span class="line" id="L1576">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;DISPLAY&quot;</span>, <span class="tok-str">&quot;:1&quot;</span>);</span>
+<span class="line" id="L1577">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;DEBUGINFOD_URLS&quot;</span>, <span class="tok-str">&quot; &quot;</span>);</span>
+<span class="line" id="L1578">    <span class="tok-kw">try</span> envmap.put(<span class="tok-str">&quot;XCURSOR_SIZE&quot;</span>, <span class="tok-str">&quot;24&quot;</span>);</span>
+<span class="line" id="L1579"></span>
+<span class="line" id="L1580">    <span class="tok-kw">var</span> arena = std.heap.ArenaAllocator.init(allocator);</span>
+<span class="line" id="L1581">    <span class="tok-kw">defer</span> arena.deinit();</span>
+<span class="line" id="L1582">    <span class="tok-kw">const</span> environ = <span class="tok-kw">try</span> createNullDelimitedEnvMap(arena.allocator(), &amp;envmap);</span>
+<span class="line" id="L1583"></span>
+<span class="line" id="L1584">    <span class="tok-kw">try</span> testing.expectEqual(<span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">5</span>), environ.len);</span>
+<span class="line" id="L1585"></span>
+<span class="line" id="L1586">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (.{</span>
+<span class="line" id="L1587">        <span class="tok-str">&quot;HOME=/home/ifreund&quot;</span>,</span>
+<span class="line" id="L1588">        <span class="tok-str">&quot;WAYLAND_DISPLAY=wayland-1&quot;</span>,</span>
+<span class="line" id="L1589">        <span class="tok-str">&quot;DISPLAY=:1&quot;</span>,</span>
+<span class="line" id="L1590">        <span class="tok-str">&quot;DEBUGINFOD_URLS= &quot;</span>,</span>
+<span class="line" id="L1591">        <span class="tok-str">&quot;XCURSOR_SIZE=24&quot;</span>,</span>
+<span class="line" id="L1592">    }) |target| {</span>
+<span class="line" id="L1593">        <span class="tok-kw">for</span> (environ) |variable| {</span>
+<span class="line" id="L1594">            <span class="tok-kw">if</span> (mem.eql(<span class="tok-type">u8</span>, mem.span(variable <span class="tok-kw">orelse</span> <span class="tok-kw">continue</span>), target)) <span class="tok-kw">break</span>;</span>
+<span class="line" id="L1595">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L1596">            <span class="tok-kw">try</span> testing.expect(<span class="tok-null">false</span>); <span class="tok-comment">// Environment variable not found</span>
+</span>
+<span class="line" id="L1597">        }</span>
+<span class="line" id="L1598">    }</span>
+<span class="line" id="L1599">}</span>
+<span class="line" id="L1600"></span>
 </code></pre></body>
 </html>
