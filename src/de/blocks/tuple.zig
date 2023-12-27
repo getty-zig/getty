@@ -84,8 +84,6 @@ test "deserialize - tuple" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        inline for (0..std.meta.fields(Want).len) |i| {
-            try testing.expectEqual(t.name, t.want[i], result.value[i]);
-        }
+        try require.equal(t.want, result.value);
     }
 }
