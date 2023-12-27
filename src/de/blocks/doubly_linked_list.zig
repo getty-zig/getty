@@ -84,7 +84,7 @@ test "deserialize - std.DoublyLinkedList" {
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
             const got_node = result.value.popFirst();
-            try require.notNull(got_node);
+            try require.notNullf(got_node, "Test case: {s}", .{t.name});
             try require.equalf(node.data, got_node.?.data, "Test case: {s}", .{t.name});
         }
     }

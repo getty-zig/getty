@@ -90,23 +90,23 @@ test "deserialize - std.Uri" {
             try require.equalf(t.want.path, result.value.path, "Test case: {s}", .{t.name});
 
             if (t.want.host) |host| {
-                try require.notNull(result.value.host);
+                try require.notNullf(result.value.host, "Test case: {s}", .{t.name});
                 try require.equalf(host, result.value.host.?, "Test case: {s}", .{t.name});
             }
             if (t.want.user) |user| {
-                try require.notNull(result.value.user);
+                try require.notNullf(result.value.user, "Test case: {s}", .{t.name});
                 try require.equalf(user, result.value.user.?, "Test case: {s}", .{t.name});
             }
             if (t.want.password) |password| {
-                try require.notNull(result.value.password);
+                try require.notNullf(result.value.password, "Test case: {s}", .{t.name});
                 try require.equalf(password, result.value.password.?, "Test case: {s}", .{t.name});
             }
             if (t.want.query) |query| {
-                try require.notNull(result.value.query);
+                try require.notNullf(result.value.query, "Test case: {s}", .{t.name});
                 try require.equalf(query, result.value.query.?, "Test case: {s}", .{t.name});
             }
             if (t.want.fragment) |fragment| {
-                try require.notNull(result.value.fragment);
+                try require.notNullf(result.value.fragment, "Test case: {s}", .{t.name});
                 try require.equalf(fragment, result.value.fragment.?, "Test case: {s}", .{t.name});
             }
         }

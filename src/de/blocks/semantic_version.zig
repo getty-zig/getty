@@ -118,12 +118,12 @@ test "deserialize - std.SemanticVersion" {
             try require.equalf(t.want.patch, result.value.patch, "Test case: {s}", .{t.name});
 
             if (t.want.pre) |pre| {
-                try require.notNull(result.value.pre);
+                try require.notNullf(result.value.pre, "Test case: {s}", .{t.name});
                 try require.equalf(pre, result.value.pre.?, "Test case: {s}", .{t.name});
             }
 
             if (t.want.build) |build| {
-                try require.notNull(result.value.build);
+                try require.notNullf(result.value.build, "Test case: {s}", .{t.name});
                 try require.equalf(build, result.value.build.?, "Test case: {s}", .{t.name});
             }
         }
