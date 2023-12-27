@@ -103,9 +103,11 @@ test "deserialize - std.SemanticVersion" {
         const Test = @TypeOf(t);
 
         if (@hasField(Test, "want_err")) {
-            try require.equalError(
+            try require.equalErrorf(
                 t.want_err,
                 testing.deserializeErr(Self, std.SemanticVersion, t.tokens),
+                "Test case: {s}",
+                .{t.name},
             );
         } else {
             const Want = @TypeOf(t.want);

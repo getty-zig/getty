@@ -260,9 +260,11 @@ test "deserialize - struct, attributes" {
 
     inline for (tests) |t| {
         if (@hasField(@TypeOf(t), "want_err")) {
-            try require.equalError(
+            try require.equalErrorf(
                 t.want_err,
                 testing.deserializeErr(Self, t.Want, t.tokens),
+                "Test case: {s}",
+                .{t.name},
             );
         } else {
             var result = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);

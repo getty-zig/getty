@@ -176,9 +176,11 @@ test "deserialize - integer" {
         const Want = if (@hasField(Test, "Want")) t.Want else @TypeOf(t.want);
 
         if (@hasField(Test, "want_err")) {
-            try require.equalError(
+            try require.equalErrorf(
                 t.want_err,
                 testing.deserializeErr(Self, Want, t.tokens),
+                "Test case: {s}",
+                .{t.name},
             );
         } else {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
@@ -220,9 +222,11 @@ test "deserialize - integer (from string)" {
         const Want = if (@hasField(Test, "Want")) t.Want else @TypeOf(t.want);
 
         if (@hasField(Test, "want_err")) {
-            try require.equalError(
+            try require.equalErrorf(
                 t.want_err,
                 testing.deserializeErr(Self, Want, t.tokens),
+                "Test case: {s}",
+                .{t.name},
             );
         } else {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);

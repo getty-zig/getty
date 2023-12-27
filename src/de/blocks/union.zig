@@ -527,10 +527,7 @@ test "deserialize - union, attributes (tag, untagged)" {
         const Test = @TypeOf(t);
 
         if (@hasField(Test, "want_err")) {
-            try require.equalError(
-                t.want_err,
-                testing.deserializeErr(@This(), Want, t.tokens),
-            );
+            try require.equalErrorf(t.want_err, testing.deserializeErr(@This(), Want, t.tokens), "Test case: {s}", .{t.name});
         } else {
             var result = try testing.deserialize(t.name, @This(), Want, t.tokens);
             defer result.deinit();
@@ -606,10 +603,7 @@ fn runTest(t: anytype, comptime Want: type) !void {
     const Test = @TypeOf(t);
 
     if (@hasField(Test, "want_err")) {
-        try require.equalError(
-            t.want_err,
-            testing.deserializeErr(@This(), Want, t.tokens),
-        );
+        try require.equalErrorf(t.want_err, testing.deserializeErr(@This(), Want, t.tokens), "Test case: {s}", .{t.name});
     } else {
         var result = try testing.deserialize(t.name, @This(), Want, t.tokens);
         defer result.deinit();
