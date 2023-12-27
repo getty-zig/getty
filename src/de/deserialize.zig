@@ -1,5 +1,5 @@
+const require = @import("protest").require;
 const std = @import("std");
-const expectEqual = std.testing.expectEqual;
 
 const attributes = @import("../attributes.zig");
 const blocks = @import("blocks.zig");
@@ -194,7 +194,7 @@ test "deserialize - success, normal" {
         var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // User DB
@@ -209,7 +209,7 @@ test "deserialize - success, normal" {
         var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // Deserializer DB
@@ -224,7 +224,7 @@ test "deserialize - success, normal" {
         var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // Type DB
@@ -239,7 +239,7 @@ test "deserialize - success, normal" {
         var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected_custom, result.value);
+        try require.equal(expected_custom, result.value);
     }
 }
 
@@ -287,7 +287,7 @@ test "deserialize - success, attributes" {
         var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // Deserializer DB
@@ -304,7 +304,7 @@ test "deserialize - success, attributes" {
         var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // Type DB
@@ -321,7 +321,7 @@ test "deserialize - success, attributes" {
         var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected_custom, result.value);
+        try require.equal(expected_custom, result.value);
     }
 }
 
@@ -379,7 +379,7 @@ test "deserialize - priority" {
         var result = deserialize(std.testing.allocator, Point, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // Type DB > Deserializer DB
@@ -406,7 +406,7 @@ test "deserialize - priority" {
         var result = deserialize(std.testing.allocator, PointCustom, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 
     // User DB > Type DB
@@ -433,6 +433,6 @@ test "deserialize - priority" {
         var result = deserialize(std.testing.allocator, PointInvalidCustom, d.deserializer()) catch return error.UnexpectedTestError;
         defer result.deinit();
 
-        try expectEqual(expected, result.value);
+        try require.equal(expected, result.value);
     }
 }

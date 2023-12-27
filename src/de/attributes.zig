@@ -1,6 +1,5 @@
+const require = @import("protest").require;
 const std = @import("std");
-
-const expectEqual = std.testing.expectEqual;
 
 const dt = @import("tuples.zig").dt;
 const has_attributes = @import("../attributes.zig").has_attributes;
@@ -72,13 +71,13 @@ test "getAttributes - fail" {
 
     const expected: ?void = null;
 
-    try expectEqual(expected, comptime getAttributes(bool, De));
-    try expectEqual(expected, comptime getAttributes(i32, De));
-    try expectEqual(expected, comptime getAttributes([5]i32, De));
-    try expectEqual(expected, comptime getAttributes(struct {}, De));
-    try expectEqual(expected, comptime getAttributes(union(enum) { foo, bar }, De));
-    try expectEqual(expected, comptime getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), De));
-    try expectEqual(expected, comptime getAttributes(struct {
+    try require.equal(expected, comptime getAttributes(bool, De));
+    try require.equal(expected, comptime getAttributes(i32, De));
+    try require.equal(expected, comptime getAttributes([5]i32, De));
+    try require.equal(expected, comptime getAttributes(struct {}, De));
+    try require.equal(expected, comptime getAttributes(union(enum) { foo, bar }, De));
+    try require.equal(expected, comptime getAttributes(std.meta.Tuple(&.{ struct {}, union(enum) { foo, bar } }), De));
+    try require.equal(expected, comptime getAttributes(struct {
         pub fn is(comptime _: bool) type {
             return true;
         }
@@ -87,7 +86,7 @@ test "getAttributes - fail" {
     }, De));
 
     inline for (dt) |block| {
-        try expectEqual(expected, comptime getAttributes(block, De));
+        try require.equal(expected, comptime getAttributes(block, De));
     }
 }
 
@@ -115,7 +114,7 @@ test "getAttributes - success" {
         const D = t.Deserializer(block, null);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, comptime getAttributes(Point, De));
+        try require.equal(expected, comptime getAttributes(Point, De));
     }
 
     // Deserializer DB
@@ -123,7 +122,7 @@ test "getAttributes - success" {
         const D = t.Deserializer(null, block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, comptime getAttributes(Point, De));
+        try require.equal(expected, comptime getAttributes(Point, De));
     }
 
     // Type DB
@@ -139,7 +138,7 @@ test "getAttributes - success" {
             };
         };
 
-        try expectEqual(expected, comptime getAttributes(PointCustom, De));
+        try require.equal(expected, comptime getAttributes(PointCustom, De));
     }
 }
 
@@ -188,7 +187,7 @@ test "getAttributes - priority" {
         const D = t.Deserializer(user_block, null);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, comptime getAttributes(PointInvalidCustom, De));
+        try require.equal(expected, comptime getAttributes(PointInvalidCustom, De));
     }
 
     // User DB > Deserializer DB
@@ -211,7 +210,7 @@ test "getAttributes - priority" {
         const D = t.Deserializer(user_block, serializer_block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, comptime getAttributes(Point, De));
+        try require.equal(expected, comptime getAttributes(Point, De));
     }
 
     // Type DB > Deserializer DB
@@ -227,6 +226,6 @@ test "getAttributes - priority" {
         const D = t.Deserializer(null, serializer_block);
         const De = D.@"getty.Deserializer";
 
-        try expectEqual(expected, comptime getAttributes(PointCustom, De));
+        try require.equal(expected, comptime getAttributes(PointCustom, De));
     }
 }
