@@ -1,7 +1,7 @@
 const builtin = @import("builtin");
+const require = @import("protest").require;
 const std = @import("std");
 
-const expectEqual = std.testing.expectEqual;
 const test_ally = std.testing.allocator;
 
 const DeserializerInterface = @import("interfaces/deserializer.zig").Deserializer;
@@ -58,7 +58,7 @@ pub fn deserializeErr(
 
     result.value = try block.deserialize(arena_ally, Want, deserializer, visitor);
 
-    try std.testing.expect(d.remaining() == 0);
+    try require.equal(@as(usize, 0), d.remaining());
 
     return result;
 }
@@ -98,7 +98,7 @@ pub fn deserializeErrWithLifetime(
 
     const got = try block.deserialize(ally, Want, deserializer, visitor);
 
-    try std.testing.expect(d.remaining() == 0);
+    try require.equal(@as(usize, 0), d.remaining());
 
     return got;
 }
@@ -174,7 +174,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
             },
         );
 
-        const Error = err.Error || error{TestExpectedEqual};
+        const Error = err.Error || error{ StreamTooLong, AssertionError };
 
         const De = Self.@"getty.Deserializer";
 
@@ -211,7 +211,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     var m = Map{ .de = self, .len = v.len, .end = .MapEnd };
                     const value = try visitor.visitMap(ally, De, m.mapAccess());
 
-                    try expectEqual(@as(usize, 0), m.len.?);
+                    try require.equal(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.MapEnd);
 
                     break :blk value;
@@ -227,7 +227,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     var s = Seq{ .de = self, .len = v.len, .end = .SeqEnd };
                     const value = try visitor.visitSeq(ally, De, s.seqAccess());
 
-                    try expectEqual(@as(usize, 0), s.len.?);
+                    try require.equal(@as(usize, 0), s.len.?);
                     try self.assertNextToken(.SeqEnd);
 
                     break :blk value;
@@ -236,7 +236,7 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
                     var m = Map{ .de = self, .len = v.len, .end = .StructEnd };
                     const value = try visitor.visitMap(ally, De, m.mapAccess());
 
-                    try expectEqual(@as(usize, 0), m.len.?);
+                    try require.equal(@as(usize, 0), m.len.?);
                     try self.assertNextToken(.StructEnd);
 
                     break :blk value;
@@ -263,9 +263,9 @@ pub fn Deserializer(comptime user_dbt: anytype, comptime deserializer_dbt: anyty
 
                 if (token_tag == expected_tag) {
                     switch (token) {
-                        .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
-                        .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
-                        .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
+                        .MapEnd => try require.equal(@field(expected, "MapEnd"), @field(token, "MapEnd")),
+                        .SeqEnd => try require.equal(@field(expected, "SeqEnd"), @field(token, "SeqEnd")),
+                        .StructEnd => try require.equal(@field(expected, "StructEnd"), @field(token, "StructEnd")),
                         else => |v| std.debug.panic("unexpected token: {s}", .{@tagName(v)}),
                     }
                 } else {
