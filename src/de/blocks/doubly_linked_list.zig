@@ -79,17 +79,13 @@ test "deserialize - std.DoublyLinkedList" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.len, result.value.len);
+        try require.equal(t.want.len, result.value.len);
 
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
             const got_node = result.value.popFirst();
-
-            // Sanity node check.
-            try testing.expect(t.name, got_node != null);
-
-            // Check that the lists' data match.
-            try testing.expectEqual(t.name, node.data, got_node.?.data);
+            try require.notNull(got_node);
+            try require.equal(node.data, got_node.?.data);
         }
     }
 }

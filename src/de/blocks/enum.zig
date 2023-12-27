@@ -174,15 +174,12 @@ test "deserialize - enum, attributes (skip)" {
     inline for (tests) |t| {
         const Test = @TypeOf(t);
         if (@hasField(Test, "want_err")) {
-            const DontWant = @TypeOf(t.dont_want);
-            try testing.expectError(
-                t.name,
+            try require.equalError(
                 t.want_err,
-                testing.deserializeErr(Self, DontWant, t.tokens),
+                testing.deserializeErr(Self, @TypeOf(t.dont_want), t.tokens),
             );
         } else {
-            const Want = @TypeOf(t.want);
-            var result = try testing.deserialize(t.name, Self, Want, t.tokens);
+            var result = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
             defer result.deinit();
 
             try require.equalf(t.want, result.value, "Test case: \"{s}\"", .{t.name});

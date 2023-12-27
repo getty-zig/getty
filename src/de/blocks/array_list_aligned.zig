@@ -71,13 +71,12 @@ test "deserialize - std.ArrayList" {
         defer t.want.deinit();
 
         const Want = @TypeOf(t.want);
-        const Child = std.meta.Child(Want.Slice);
 
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqual(t.name, t.want.capacity, result.value.capacity);
-        try testing.expectEqualSlices(t.name, Child, t.want.items, result.value.items);
+        try require.equal(t.want.capacity, result.value.capacity);
+        try require.equal(t.want.items, result.value.items);
     }
 }
 

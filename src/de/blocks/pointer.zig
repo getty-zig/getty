@@ -241,7 +241,7 @@ test "deserialize - pointer, string" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try testing.expectEqualStrings(t.name, t.want, result.value);
+        try require.equal(t.want, result.value);
     }
 }
 

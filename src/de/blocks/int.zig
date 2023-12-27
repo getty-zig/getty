@@ -176,8 +176,7 @@ test "deserialize - integer" {
         const Want = if (@hasField(Test, "Want")) t.Want else @TypeOf(t.want);
 
         if (@hasField(Test, "want_err")) {
-            try testing.expectError(
-                t.name,
+            try require.equalError(
                 t.want_err,
                 testing.deserializeErr(Self, Want, t.tokens),
             );
