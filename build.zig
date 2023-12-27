@@ -25,35 +25,6 @@ pub fn build(b: *std.build.Builder) void {
         const test_ser_step = b.step("test-ser", "Run serialization tests");
         const test_de_step = b.step("test-de", "Run deserialization tests");
 
-        // Allow a test filter to be specified.
-        //
-        // ## Examples
-        //
-        // ```
-        // $ zig build test -- "serialize - array"
-        // ```
-        if (b.args) |args| {
-            switch (args.len) {
-                0 => unreachable, // UNREACHABLE: b.args is null if no arguments are given.
-                1 => {
-                    const cmd = b.addSystemCommand(&[_][]const u8{
-                        "zig",
-                        "test",
-                        "--main-pkg-path",
-                        "src/",
-                        package_path,
-                        "--test-filter",
-                        args[0],
-                    });
-
-                    test_all_step.dependOn(&cmd.step);
-
-                    return;
-                },
-                else => |len| std.debug.panic("expected 1 argument, found {}", .{len}),
-            }
-        }
-
         // Serialization tests.
         const t_ser = b.addTest(.{
             .name = "serialization test",
