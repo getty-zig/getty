@@ -1,5 +1,5 @@
+const require = @import("protest").require;
 const std = @import("std");
-const expectEqual = std.testing.expectEqual;
 
 const attributes = @import("../attributes.zig");
 const blocks = @import("blocks.zig");
@@ -115,7 +115,7 @@ test "serialize - success, normal" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // User SB
@@ -128,7 +128,7 @@ test "serialize - success, normal" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // Serializer SB
@@ -141,7 +141,7 @@ test "serialize - success, normal" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // Type SB
@@ -154,7 +154,7 @@ test "serialize - success, normal" {
         });
 
         serialize(null, v_attrs, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 }
 
@@ -199,7 +199,7 @@ test "serialize - success, attributes" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // Serializer SB
@@ -212,7 +212,7 @@ test "serialize - success, attributes" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // Type SB
@@ -225,7 +225,7 @@ test "serialize - success, attributes" {
         });
 
         serialize(null, v_attrs, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 }
 
@@ -281,7 +281,7 @@ test "serialize - priority" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // Type SB > Serializer SB
@@ -304,7 +304,7 @@ test "serialize - priority" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 
     // User SB > Type SB
@@ -327,6 +327,6 @@ test "serialize - priority" {
         });
 
         serialize(null, v, s.serializer()) catch return error.UnexpectedTestError;
-        try expectEqual(expected, s.remaining());
+        try require.equal(expected, s.remaining());
     }
 }

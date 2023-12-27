@@ -1,8 +1,6 @@
+const require = @import("protest").require;
 const builtin = @import("builtin");
 const std = @import("std");
-const expect = std.testing.expect;
-const expectEqual = std.testing.expectEqual;
-const expectEqualSlices = std.testing.expectEqualSlices;
 
 const err = @import("error.zig");
 const serialize = @import("serialize.zig").serialize;
@@ -15,14 +13,14 @@ const Token = @import("../testing.zig").Token;
 pub fn run(ally: ?std.mem.Allocator, comptime serialize_fn: anytype, input: anytype, expected: []const Token) !void {
     var s = DefaultSerializer.init(expected);
     serialize_fn(ally, input, s.serializer()) catch return error.UnexpectedTestError;
-    try expect(s.remaining() == 0);
+    try require.equal(@as(usize, 0), s.remaining());
 }
 
 pub fn runErr(ally: ?std.mem.Allocator, comptime serialize_fn: anytype, e: anytype, input: anytype, expected: []const Token) !void {
     comptime std.debug.assert(@typeInfo(@TypeOf(e)) == .ErrorSet);
 
     var s = DefaultSerializer.init(expected);
-    try std.testing.expectError(e, serialize_fn(ally, input, s.serializer()));
+    try require.equalError(e, serialize_fn(ally, input, s.serializer()));
 }
 
 pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) type {
@@ -75,7 +73,7 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
         );
 
         const Ok = void;
-        const Error = err.Error || std.mem.Allocator.Error || error{TestExpectedEqual};
+        const Error = err.Error || std.mem.Allocator.Error || error{ StreamTooLong, AssertionError };
 
         fn serializeBool(self: *Self, v: bool) Error!Ok {
             try assertNextToken(self, Token{ .Bool = v });
@@ -242,42 +240,42 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
 
                 if (token_tag == expected_tag) {
                     switch (token) {
-                        .Bool => try expectEqual(@field(token, "Bool"), @field(expected, "Bool")),
-                        .ComptimeFloat => try expectEqual(@field(token, "ComptimeFloat"), @field(expected, "ComptimeFloat")),
-                        .ComptimeInt => try expectEqual(@field(token, "ComptimeInt"), @field(expected, "ComptimeInt")),
-                        .Enum => try expectEqual(@field(token, "Enum"), @field(expected, "Enum")),
-                        .F16 => try expectEqual(@field(token, "F16"), @field(expected, "F16")),
-                        .F32 => try expectEqual(@field(token, "F32"), @field(expected, "F32")),
-                        .F64 => try expectEqual(@field(token, "F64"), @field(expected, "F64")),
-                        .F128 => try expectEqual(@field(token, "F128"), @field(expected, "F128")),
-                        .I8 => try expectEqual(@field(token, "I8"), @field(expected, "I8")),
-                        .I16 => try expectEqual(@field(token, "I16"), @field(expected, "I16")),
-                        .I32 => try expectEqual(@field(token, "I32"), @field(expected, "I32")),
-                        .I64 => try expectEqual(@field(token, "I64"), @field(expected, "I64")),
-                        .I128 => try expectEqual(@field(token, "I128"), @field(expected, "I128")),
-                        .Map => try expectEqual(@field(token, "Map"), @field(expected, "Map")),
-                        .MapEnd => try expectEqual(@field(token, "MapEnd"), @field(expected, "MapEnd")),
-                        .Null => try expectEqual(@field(token, "Null"), @field(expected, "Null")),
-                        .Seq => try expectEqual(@field(token, "Seq"), @field(expected, "Seq")),
-                        .SeqEnd => try expectEqual(@field(token, "SeqEnd"), @field(expected, "SeqEnd")),
-                        .Some => try expectEqual(@field(token, "Some"), @field(expected, "Some")),
-                        .String => try expectEqualSlices(u8, @field(token, "String"), @field(expected, "String")),
-                        .StringZ => try expectEqualSlices(u8, @field(token, "StringZ"), @field(expected, "StringZ")),
+                        .Bool => try require.equal(@field(expected, "Bool"), @field(token, "Bool")),
+                        .ComptimeFloat => try require.equal(@field(expected, "ComptimeFloat"), @field(token, "ComptimeFloat")),
+                        .ComptimeInt => try require.equal(@field(expected, "ComptimeInt"), @field(token, "ComptimeInt")),
+                        .Enum => try require.equal(@field(expected, "Enum"), @field(token, "Enum")),
+                        .F16 => try require.equal(@field(expected, "F16"), @field(token, "F16")),
+                        .F32 => try require.equal(@field(expected, "F32"), @field(token, "F32")),
+                        .F64 => try require.equal(@field(expected, "F64"), @field(token, "F64")),
+                        .F128 => try require.equal(@field(expected, "F128"), @field(token, "F128")),
+                        .I8 => try require.equal(@field(expected, "I8"), @field(token, "I8")),
+                        .I16 => try require.equal(@field(expected, "I16"), @field(token, "I16")),
+                        .I32 => try require.equal(@field(expected, "I32"), @field(token, "I32")),
+                        .I64 => try require.equal(@field(expected, "I64"), @field(token, "I64")),
+                        .I128 => try require.equal(@field(expected, "I128"), @field(token, "I128")),
+                        .Map => try require.equal(@field(expected, "Map"), @field(token, "Map")),
+                        .MapEnd => try require.equal(@field(expected, "MapEnd"), @field(token, "MapEnd")),
+                        .Null => try require.equal(@field(expected, "Null"), @field(token, "Null")),
+                        .Seq => try require.equal(@field(expected, "Seq"), @field(token, "Seq")),
+                        .SeqEnd => try require.equal(@field(expected, "SeqEnd"), @field(token, "SeqEnd")),
+                        .Some => try require.equal(@field(expected, "Some"), @field(token, "Some")),
+                        .String => try require.equal(@field(expected, "String"), @field(token, "String")),
+                        .StringZ => try require.equal(@field(expected, "StringZ"), @field(token, "StringZ")),
                         .Struct => {
                             const tok = @field(token, "Struct");
                             const e = @field(expected, "Struct");
 
-                            try expectEqualSlices(u8, tok.name, e.name);
-                            try expectEqual(tok.len, e.len);
+                            try require.equal(e.name, tok.name);
+                            try require.equal(tok.len, e.len);
                         },
-                        .StructEnd => try expectEqual(@field(token, "StructEnd"), @field(expected, "StructEnd")),
-                        .U8 => try expectEqual(@field(token, "U8"), @field(expected, "U8")),
-                        .U16 => try expectEqual(@field(token, "U16"), @field(expected, "U16")),
-                        .U32 => try expectEqual(@field(token, "U32"), @field(expected, "U32")),
-                        .U64 => try expectEqual(@field(token, "U64"), @field(expected, "U64")),
-                        .U128 => try expectEqual(@field(token, "U128"), @field(expected, "U128")),
+                        .StructEnd => try require.equal(@field(expected, "StructEnd"), @field(token, "StructEnd")),
+                        .U8 => try require.equal(@field(expected, "U8"), @field(token, "U8")),
+                        .U16 => try require.equal(@field(expected, "U16"), @field(token, "U16")),
+                        .U32 => try require.equal(@field(expected, "U32"), @field(token, "U32")),
+                        .U64 => try require.equal(@field(expected, "U64"), @field(token, "U64")),
+                        .U128 => try require.equal(@field(expected, "U128"), @field(token, "U128")),
                         .Union => @panic("TODO: unions"),
-                        .Void => try expectEqual(@field(token, "Void"), @field(expected, "Void")),
+                        .Void => try require.equal(@field(expected, "Void"), @field(token, "Void")),
                     }
                 } else {
                     @panic("expected Token::{} but serialized as {}");

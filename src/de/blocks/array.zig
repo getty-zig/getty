@@ -38,9 +38,6 @@ pub fn Visitor(
     return ArrayVisitor(T);
 }
 
-// TODO: Cannot use expectEqualSlices to compare elements due to some TODO
-// issue in the compiler regarding const pointers or something when you try to
-// get the child element from the array.
 test "deserialize - array" {
     const tests = .{
         .{
