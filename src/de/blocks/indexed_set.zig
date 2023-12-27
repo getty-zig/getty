@@ -129,7 +129,7 @@ test "deserialize - std.IndexedSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
         try require.isTrue(t.want.eql(result.value));
     }
 }
@@ -209,7 +209,7 @@ test "deserialize - std.EnumSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
         try require.isTrue(t.want.eql(result.value));
     }
 }

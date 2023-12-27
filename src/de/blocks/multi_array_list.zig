@@ -100,10 +100,10 @@ test "deserialize - std.MultiArrayList" {
         var result = try testing.deserialize(t.name, Self, List, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.len, result.value.len);
-        try require.equal(t.want.capacity, result.value.capacity);
+        try require.equalf(t.want.len, result.value.len, "Test case: {s}", .{t.name});
+        try require.equalf(t.want.capacity, result.value.capacity, "Test case: {s}", .{t.name});
         for (0..t.want.len) |i| {
-            try require.equal(t.want.get(i), result.value.get(i));
+            try require.equalf(t.want.get(i), result.value.get(i), "Test case: {s}", .{t.name});
         }
     }
 }

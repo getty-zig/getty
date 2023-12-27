@@ -75,8 +75,8 @@ test "deserialize - std.ArrayList" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.capacity, result.value.capacity);
-        try require.equal(t.want.items, result.value.items);
+        try require.equalf(t.want.capacity, result.value.capacity, "Test case: {s}", .{t.name});
+        try require.equalf(t.want.items, result.value.items, "Test case: {s}", .{t.name});
     }
 }
 

@@ -75,7 +75,7 @@ test "deserialize - struct" {
         var result = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: {s}", .{t.name});
     }
 }
 
@@ -268,7 +268,7 @@ test "deserialize - struct, attributes" {
             var result = try testing.deserialize(t.name, Self, @TypeOf(t.want), t.tokens);
             defer result.deinit();
 
-            try require.equal(t.want, result.value);
+            try require.equalf(t.want, result.value, "Test case: {s}", .{t.name});
         }
     }
 }

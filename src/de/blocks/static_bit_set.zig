@@ -132,7 +132,7 @@ test "deserialize - std.IntegerBitSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: {s}", .{t.name});
     }
 }
 
@@ -464,6 +464,6 @@ test "deserialize - std.ArrayBitSet" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want, result.value);
+        try require.equalf(t.want, result.value, "Test case: {s}", .{t.name});
     }
 }

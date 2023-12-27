@@ -187,10 +187,10 @@ test "deserialize - std.AutoHashMap, std.AutoArrayHashMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try require.equal(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equalf(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?, "Test case: {s}", .{t.name});
         }
     }
 }
@@ -263,10 +263,10 @@ test "deserialize - std.StringHashMap, std.StringArrayHashMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try require.equal(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equalf(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?, "Test case: {s}", .{t.name});
         }
     }
 }
@@ -323,10 +323,10 @@ test "deserialize - std.StringHashMapUnmanaged, std.StringArrayHashMapUnmanaged"
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
         var it = t.want.iterator();
         while (it.next()) |kv| {
-            try require.equal(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?);
+            try require.equalf(t.want.get(kv.key_ptr.*).?, result.value.get(kv.key_ptr.*).?, "Test case: {s}", .{t.name});
         }
     }
 }

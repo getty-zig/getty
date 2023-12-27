@@ -113,18 +113,18 @@ test "deserialize - std.SemanticVersion" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try require.equal(t.want.major, result.value.major);
-            try require.equal(t.want.minor, result.value.minor);
-            try require.equal(t.want.patch, result.value.patch);
+            try require.equalf(t.want.major, result.value.major, "Test case: {s}", .{t.name});
+            try require.equalf(t.want.minor, result.value.minor, "Test case: {s}", .{t.name});
+            try require.equalf(t.want.patch, result.value.patch, "Test case: {s}", .{t.name});
 
             if (t.want.pre) |pre| {
                 try require.notNull(result.value.pre);
-                try require.equal(pre, result.value.pre.?);
+                try require.equalf(pre, result.value.pre.?, "Test case: {s}", .{t.name});
             }
 
             if (t.want.build) |build| {
                 try require.notNull(result.value.build);
-                try require.equal(build, result.value.build.?);
+                try require.equalf(build, result.value.build.?, "Test case: {s}", .{t.name});
             }
         }
     }

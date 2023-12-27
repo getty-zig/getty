@@ -79,13 +79,13 @@ test "deserialize - std.SinglyLinkedList" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.len(), result.value.len());
+        try require.equalf(t.want.len(), result.value.len(), "Test case: {s}", .{t.name});
 
         var it = t.want.first;
         while (it) |node| : (it = node.next) {
             const got_node = result.value.popFirst();
             try require.notNull(got_node);
-            try require.equal(node.data, got_node.?.data);
+            try require.equalf(node.data, got_node.?.data, "Test case: {s}", .{t.name});
         }
     }
 }

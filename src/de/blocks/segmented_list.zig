@@ -79,10 +79,10 @@ test "deserialize - std.SegmentedList" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.len, result.value.len);
+        try require.equalf(t.want.len, result.value.len, "Test case: {s}", .{t.name});
 
         for (0..t.want.len) |i| {
-            try require.equal(t.want.at(i).*, result.value.at(i).*);
+            try require.equalf(t.want.at(i).*, result.value.at(i).*, "Test case: {s}", .{t.name});
         }
     }
 }

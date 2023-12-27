@@ -537,14 +537,14 @@ test "deserialize - union, attributes (tag, untagged)" {
 
             if (@typeInfo(@TypeOf(t.want)).Union.tag_type) |_| {
                 switch (t.want) {
-                    .String => |want| try require.equal(want, result.value.String),
-                    else => |want| try require.equal(want, result.value),
+                    .String => |want| try require.equalf(want, result.value.String, "Test case: {s}", .{t.name}),
+                    else => |want| try require.equalf(want, result.value, "Test case: {s}", .{t.name}),
                 }
             } else {
                 if (comptime std.mem.eql(u8, t.tag, "String")) {
-                    try require.equal(result.value.want, result.value.String);
+                    try require.equalf(result.value.want, result.value.String, "Test case: {s}", .{t.name});
                 } else {
-                    try require.equal(t.want, @field(result.value, t.tag));
+                    try require.equalf(t.want, @field(result.value, t.tag), "Test case: {s}", .{t.name});
                 }
             }
         }
@@ -615,9 +615,9 @@ fn runTest(t: anytype, comptime Want: type) !void {
         defer result.deinit();
 
         if (t.tagged) {
-            try require.equal(t.want, result.value);
+            try require.equalf(t.want, result.value, "Test case: {s}", .{t.name});
         } else {
-            try require.equal(t.want, @field(result.value, t.tag));
+            try require.equalf(t.want, @field(result.value, t.tag), "Test case: {s}", .{t.name});
         }
     }
 }

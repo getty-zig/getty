@@ -155,7 +155,7 @@ test "deserialize - std.IndexedArray" {
         defer result.deinit();
 
         for (t.want.values, 0..) |want, i| {
-            try require.equal(want, result.value.values[i]);
+            try require.equalf(want, result.value.values[i], "Test case: {s}", .{t.name});
         }
     }
 }
@@ -243,7 +243,7 @@ test "deserialize - std.EnumArray" {
         defer result.deinit();
 
         for (t.want.values, 0..) |want, i| {
-            try require.equal(want, result.value.values[i]);
+            try require.equalf(want, result.value.values[i], "Test case: {s}", .{t.name});
         }
     }
 }

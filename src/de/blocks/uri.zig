@@ -85,29 +85,29 @@ test "deserialize - std.Uri" {
             var result = try testing.deserialize(t.name, Self, Want, t.tokens);
             defer result.deinit();
 
-            try require.equal(t.want.scheme, result.value.scheme);
-            try require.equal(t.want.port, result.value.port);
-            try require.equal(t.want.path, result.value.path);
+            try require.equalf(t.want.scheme, result.value.scheme, "Test case: {s}", .{t.name});
+            try require.equalf(t.want.port, result.value.port, "Test case: {s}", .{t.name});
+            try require.equalf(t.want.path, result.value.path, "Test case: {s}", .{t.name});
 
             if (t.want.host) |host| {
                 try require.notNull(result.value.host);
-                try require.equal(host, result.value.host.?);
+                try require.equalf(host, result.value.host.?, "Test case: {s}", .{t.name});
             }
             if (t.want.user) |user| {
                 try require.notNull(result.value.user);
-                try require.equal(user, result.value.user.?);
+                try require.equalf(user, result.value.user.?, "Test case: {s}", .{t.name});
             }
             if (t.want.password) |password| {
                 try require.notNull(result.value.password);
-                try require.equal(password, result.value.password.?);
+                try require.equalf(password, result.value.password.?, "Test case: {s}", .{t.name});
             }
             if (t.want.query) |query| {
                 try require.notNull(result.value.query);
-                try require.equal(query, result.value.query.?);
+                try require.equalf(query, result.value.query.?, "Test case: {s}", .{t.name});
             }
             if (t.want.fragment) |fragment| {
                 try require.notNull(result.value.fragment);
-                try require.equal(fragment, result.value.fragment.?);
+                try require.equalf(fragment, result.value.fragment.?, "Test case: {s}", .{t.name});
             }
         }
     }

@@ -126,13 +126,13 @@ test "deserialize - std.IndexedMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
             try require.isTrue(result.value.contains(kv.key));
-            try require.equal(kv.value.*, result.value.get(kv.key).?);
+            try require.equalf(kv.value.*, result.value.get(kv.key).?, "Test case: {s}", .{t.name});
         }
     }
 }
@@ -188,13 +188,13 @@ test "deserialize - std.EnumMap" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.count(), result.value.count());
+        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
 
         var mut = t.want;
         var it = mut.iterator();
         while (it.next()) |kv| {
             try require.isTrue(result.value.contains(kv.key));
-            try require.equal(kv.value.*, result.value.get(kv.key).?);
+            try require.equalf(kv.value.*, result.value.get(kv.key).?, "Test case: {s}", .{t.name});
         }
     }
 }

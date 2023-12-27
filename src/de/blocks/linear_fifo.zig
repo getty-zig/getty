@@ -78,9 +78,9 @@ test "deserialize - std.LinearFifo (static)" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.readableLength(), result.value.readableLength());
+        try require.equalf(t.want.readableLength(), result.value.readableLength(), "Test case: {s}", .{t.name});
         for (0..t.want.readableLength()) |i| {
-            try require.equal(t.want.peekItem(i), result.value.peekItem(i));
+            try require.equalf(t.want.peekItem(i), result.value.peekItem(i), "Test case: {s}", .{t.name});
         }
     }
 }
@@ -127,9 +127,9 @@ test "deserialize - std.LinearFifo (slice)" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.readableLength(), result.value.readableLength());
+        try require.equalf(t.want.readableLength(), result.value.readableLength(), "Test case: {s}", .{t.name});
         for (0..t.want.readableLength()) |i| {
-            try require.equal(t.want.peekItem(i), result.value.peekItem(i));
+            try require.equalf(t.want.peekItem(i), result.value.peekItem(i), "Test case: {s}", .{t.name});
         }
     }
 }
@@ -176,9 +176,9 @@ test "deserialize - std.LinearFifo (dynamic)" {
         var result = try testing.deserialize(t.name, Self, Want, t.tokens);
         defer result.deinit();
 
-        try require.equal(t.want.readableLength(), result.value.readableLength());
+        try require.equalf(t.want.readableLength(), result.value.readableLength(), "Test case: {s}", .{t.name});
         for (0..t.want.readableLength()) |i| {
-            try require.equal(t.want.peekItem(i), result.value.peekItem(i));
+            try require.equalf(t.want.peekItem(i), result.value.peekItem(i), "Test case: {s}", .{t.name});
         }
     }
 }
