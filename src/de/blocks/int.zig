@@ -200,7 +200,7 @@ test "deserialize - integer (from string)" {
         },
         .{
             .name = "unsigned",
-            .tokens = &.{.{ .String = "256" }},
+            .tokens = &.{.{ .String = "255" }},
             .want = @as(u8, std.math.maxInt(u8)),
         },
         .{
