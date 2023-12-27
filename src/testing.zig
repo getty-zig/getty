@@ -43,8 +43,3 @@ pub const Token = union(enum) {
     Enum,
     Union,
 };
-
-pub fn logErr(comptime name: []const u8, err: anyerror) anyerror {
-    std.log.err("test case \"{s}\" failed", .{name});
-    return err;
-}

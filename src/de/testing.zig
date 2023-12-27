@@ -25,7 +25,7 @@ pub fn deserialize(
 ) !Result(Want) {
     return deserializeErr(block, Want, input) catch |e| {
         if (test_case) |t| {
-            return testing.logErr(t, e);
+            try require.failf(@errorName(e), "Test case: \"{s}\"", .{t});
         }
 
         return e;
@@ -73,7 +73,7 @@ pub fn deserializeWithLifetime(
 ) !Want {
     return deserializeErrWithLifetime(ally, block, Want, input, lifetime) catch |e| {
         if (test_case) |t| {
-            return testing.logErr(t, e);
+            try require.failf(@errorName(e), "Test case: \"{s}\"", .{t});
         }
 
         return e;
