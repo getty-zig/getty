@@ -3,7 +3,7 @@ const std = @import("std");
 const package_name = "getty";
 const package_path = "src/getty.zig";
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -13,8 +13,8 @@ pub fn build(b: *std.build.Builder) void {
 
     // Export Getty as a module.
     _ = b.addModule(package_name, .{
-        .source_file = .{ .path = package_path },
-        .dependencies = &.{
+        .root_source_file = .{ .path = package_path },
+        .imports = &.{
             .{ .name = "protest", .module = protest_module },
         },
     });
@@ -28,24 +28,22 @@ pub fn build(b: *std.build.Builder) void {
         // Serialization tests.
         const t_ser = b.addTest(.{
             .name = "serialization test",
-            .root_source_file = .{ .path = "src/ser/ser.zig" },
+            .root_source_file = .{ .path = "src/ser_test.zig" },
             .target = target,
             .optimize = optimize,
-            .main_pkg_path = .{ .path = "src/" },
         });
-        t_ser.addModule("protest", protest_module);
+        t_ser.root_module.addImport("protest", protest_module);
         test_ser_step.dependOn(&b.addRunArtifact(t_ser).step);
         test_all_step.dependOn(test_ser_step);
 
         // Deserialization tests.
         const t_de = b.addTest(.{
             .name = "deserialization test",
-            .root_source_file = .{ .path = "src/de/de.zig" },
+            .root_source_file = .{ .path = "src/de_test.zig" },
             .target = target,
             .optimize = optimize,
-            .main_pkg_path = .{ .path = "src/" },
         });
-        t_de.addModule("protest", protest_module);
+        t_de.root_module.addImport("protest", protest_module);
         test_de_step.dependOn(&b.addRunArtifact(t_de).step);
         test_all_step.dependOn(test_de_step);
     }
