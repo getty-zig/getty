@@ -1,7 +1,7 @@
 const require = @import("protest").require;
 const std = @import("std");
 
-const isString = @import("../../helpers.zig").isString;
+const isString = @import("helpers").isString;
 const SliceVisitor = @import("../impls/visitor/slice.zig").Visitor;
 const testing = @import("../testing.zig");
 

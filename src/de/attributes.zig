@@ -2,8 +2,8 @@ const require = @import("protest").require;
 const std = @import("std");
 
 const dt = @import("tuples.zig").dt;
-const has_attributes = @import("../attributes.zig").has_attributes;
-const has_block = @import("../block.zig").has_block;
+const has_attributes = @import("attr").has_attributes;
+const has_block = @import("block").has_block;
 const t = @import("testing.zig");
 
 /// Returns deserialization attributes for `T`. If none exist, `null` is returned.

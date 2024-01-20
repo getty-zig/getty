@@ -1,7 +1,7 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-const isString = @import("../../helpers.zig").isString;
+const isString = @import("helpers").isString;
 const StringLifetime = @import("../lifetime.zig").StringLifetime;
 
 /// A `Visitor` deserializes values from Getty's data model into Zig.

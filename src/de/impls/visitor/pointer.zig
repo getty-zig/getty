@@ -2,7 +2,7 @@ const std = @import("std");
 
 const blocks = @import("../../blocks.zig");
 const find_db = @import("../../find.zig").find_db;
-const has_attributes = @import("../../../attributes.zig").has_attributes;
+const has_attributes = @import("attr").has_attributes;
 const StringLifetime = @import("../../lifetime.zig").StringLifetime;
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 const VisitStringReturn = @import("../../interfaces/visitor.zig").VisitStringReturn;

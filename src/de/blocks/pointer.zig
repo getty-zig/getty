@@ -3,9 +3,9 @@ const std = @import("std");
 
 const blocks = @import("../blocks.zig");
 const find_db = @import("../find.zig").find_db;
-const has_attributes = @import("../../attributes.zig").has_attributes;
+const has_attributes = @import("attr").has_attributes;
 const Ignored = @import("../impls/seed/ignored.zig").Ignored;
-const isString = @import("../../helpers.zig").isString;
+const isString = @import("helpers").isString;
 const PointerVisitor = @import("../impls/visitor/pointer.zig").Visitor;
 const testing = @import("../testing.zig");
 const VisitorInterface = @import("../interfaces/visitor.zig").Visitor;

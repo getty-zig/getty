@@ -39,7 +39,7 @@ pub fn build(b: *std.Build) void {
     {
         const test_all_step = b.step("test", "Run tests");
         const test_ser_step = b.step("test-ser", "Run serialization tests");
-        //const test_de_step = b.step("test-de", "Run deserialization tests");
+        const test_de_step = b.step("test-de", "Run deserialization tests");
 
         // Serialization tests.
         const t_ser = b.addTest(.{
@@ -55,15 +55,17 @@ pub fn build(b: *std.Build) void {
         test_all_step.dependOn(test_ser_step);
 
         // Deserialization tests.
-        //const t_de = b.addTest(.{
-        //.name = "deserialization test",
-        //.root_source_file = .{ .path = "src/de/de.zig" },
-        //.target = target,
-        //.optimize = optimize,
-        //});
-        //t_de.root_module.addImport("protest", protest_module);
-        //test_de_step.dependOn(&b.addRunArtifact(t_de).step);
-        //test_all_step.dependOn(test_de_step);
+        const t_de = b.addTest(.{
+            .name = "deserialization test",
+            .root_source_file = .{ .path = "src/de/de.zig" },
+            .target = target,
+            .optimize = optimize,
+        });
+        inline for (imports) |imp| {
+            t_de.root_module.addImport(imp.name, imp.module);
+        }
+        test_de_step.dependOn(&b.addRunArtifact(t_de).step);
+        test_all_step.dependOn(test_de_step);
     }
 
     // Documentation.

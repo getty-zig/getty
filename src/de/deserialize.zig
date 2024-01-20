@@ -1,7 +1,7 @@
 const require = @import("protest").require;
 const std = @import("std");
 
-const attributes = @import("../attributes.zig");
+const attributes = @import("attr");
 const blocks = @import("blocks.zig");
 const find_db = @import("find.zig").find_db;
 const Ignored = @import("impls/seed/ignored.zig").Ignored;

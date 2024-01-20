@@ -1,5 +1,5 @@
 const dt = @import("tuples.zig").dt;
-const has_block = @import("../block.zig").has_block;
+const has_block = @import("block").has_block;
 
 /// Returns the highest priority Deserialization Block for a type.
 pub fn find_db(
