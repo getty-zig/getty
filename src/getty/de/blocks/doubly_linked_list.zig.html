@@ -112,172 +112,167 @@
     </style>
 </head>
 <body>
-<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> DoublyLinkedListVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/doubly_linked_list.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L7"></span>
-<span class="line" id="L8"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L10">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L11">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L12">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;linked_list.DoublyLinkedList&quot;</span>);</span>
-<span class="line" id="L14">}</span>
-<span class="line" id="L15"></span>
-<span class="line" id="L16"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L17"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L18">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L19">    ally: std.mem.Allocator,</span>
-<span class="line" id="L20">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L21">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L22">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L23">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L24">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L25">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L26">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L27">    _ = T;</span>
-<span class="line" id="L28"></span>
-<span class="line" id="L29">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeSeq(ally, visitor);</span>
-<span class="line" id="L30">}</span>
-<span class="line" id="L31"></span>
-<span class="line" id="L32"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L33"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L34">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L35">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L36">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L37">    <span class="tok-kw">return</span> DoublyLinkedListVisitor(T);</span>
-<span class="line" id="L38">}</span>
-<span class="line" id="L39"></span>
-<span class="line" id="L40"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DoublyLinkedList&quot;</span> {</span>
-<span class="line" id="L41">    <span class="tok-kw">const</span> List = std.DoublyLinkedList(<span class="tok-type">i32</span>);</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43">    <span class="tok-kw">var</span> one = List.Node{ .data = <span class="tok-number">1</span> };</span>
-<span class="line" id="L44">    <span class="tok-kw">var</span> two = List.Node{ .data = <span class="tok-number">2</span> };</span>
-<span class="line" id="L45">    <span class="tok-kw">var</span> three = List.Node{ .data = <span class="tok-number">3</span> };</span>
-<span class="line" id="L46"></span>
-<span class="line" id="L47">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L48">        .{</span>
-<span class="line" id="L49">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
-<span class="line" id="L50">            .tokens = &amp;.{</span>
-<span class="line" id="L51">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L52">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L53">            },</span>
-<span class="line" id="L54">            .want = List{},</span>
-<span class="line" id="L55">        },</span>
-<span class="line" id="L56">        .{</span>
-<span class="line" id="L57">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
-<span class="line" id="L58">            .tokens = &amp;.{</span>
-<span class="line" id="L59">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L60">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L61">                .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L62">                .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L63">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L64">            },</span>
-<span class="line" id="L65">            .want = blk: {</span>
-<span class="line" id="L66">                <span class="tok-kw">var</span> want = List{};</span>
-<span class="line" id="L67">                want.append(&amp;one);</span>
-<span class="line" id="L68">                want.append(&amp;two);</span>
-<span class="line" id="L69">                want.append(&amp;three);</span>
-<span class="line" id="L70">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L71">            },</span>
-<span class="line" id="L72">        },</span>
-<span class="line" id="L73">    };</span>
-<span class="line" id="L74"></span>
-<span class="line" id="L75">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L76">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L77"></span>
-<span class="line" id="L78">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L79">        <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L80"></span>
-<span class="line" id="L81">        <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want.len, result.value.len);</span>
-<span class="line" id="L82"></span>
-<span class="line" id="L83">        <span class="tok-kw">var</span> it = t.want.first;</span>
-<span class="line" id="L84">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L85">            <span class="tok-kw">const</span> got_node = result.value.popFirst();</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87">            <span class="tok-comment">// Sanity node check.</span>
-</span>
-<span class="line" id="L88">            <span class="tok-kw">try</span> testing.expect(t.name, got_node != <span class="tok-null">null</span>);</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">            <span class="tok-comment">// Check that the lists' data match.</span>
-</span>
-<span class="line" id="L91">            <span class="tok-kw">try</span> testing.expectEqual(t.name, node.data, got_node.?.data);</span>
-<span class="line" id="L92">        }</span>
-<span class="line" id="L93">    }</span>
-<span class="line" id="L94">}</span>
-<span class="line" id="L95"></span>
-<span class="line" id="L96"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DoublyLinkedList (recursive)&quot;</span> {</span>
-<span class="line" id="L97">    <span class="tok-kw">const</span> Child = std.DoublyLinkedList(<span class="tok-type">i32</span>);</span>
-<span class="line" id="L98">    <span class="tok-kw">const</span> Parent = std.DoublyLinkedList(Child);</span>
-<span class="line" id="L99"></span>
-<span class="line" id="L100">    <span class="tok-kw">var</span> expected = Parent{};</span>
-<span class="line" id="L101">    <span class="tok-kw">const</span> a = Child{};</span>
-<span class="line" id="L102">    <span class="tok-kw">var</span> b = Child{};</span>
-<span class="line" id="L103">    <span class="tok-kw">var</span> c = Child{};</span>
-<span class="line" id="L104"></span>
-<span class="line" id="L105">    <span class="tok-kw">var</span> child_one = Child.Node{ .data = <span class="tok-number">1</span> };</span>
-<span class="line" id="L106">    <span class="tok-kw">var</span> child_two = Child.Node{ .data = <span class="tok-number">2</span> };</span>
-<span class="line" id="L107">    <span class="tok-kw">var</span> child_three = Child.Node{ .data = <span class="tok-number">3</span> };</span>
-<span class="line" id="L108">    b.append(&amp;child_one);</span>
-<span class="line" id="L109">    c.append(&amp;child_two);</span>
-<span class="line" id="L110">    c.append(&amp;child_three);</span>
-<span class="line" id="L111"></span>
-<span class="line" id="L112">    <span class="tok-kw">var</span> parent_one = Parent.Node{ .data = a };</span>
-<span class="line" id="L113">    <span class="tok-kw">var</span> parent_two = Parent.Node{ .data = b };</span>
-<span class="line" id="L114">    <span class="tok-kw">var</span> parent_three = Parent.Node{ .data = c };</span>
-<span class="line" id="L115"></span>
-<span class="line" id="L116">    expected.append(&amp;parent_one);</span>
-<span class="line" id="L117">    expected.append(&amp;parent_two);</span>
-<span class="line" id="L118">    expected.append(&amp;parent_three);</span>
-<span class="line" id="L119"></span>
-<span class="line" id="L120">    <span class="tok-kw">const</span> tokens = &amp;.{</span>
-<span class="line" id="L121">        .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L122">        .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> require = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;protest&quot;</span>).require;</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
+<span class="line" id="L3"></span>
+<span class="line" id="L4"><span class="tok-kw">const</span> DoublyLinkedListVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/doubly_linked_list.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L8"></span>
+<span class="line" id="L9"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L11">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L12">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L13">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L14">    <span class="tok-kw">return</span> <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;linked_list.DoublyLinkedList&quot;</span>);</span>
+<span class="line" id="L15">}</span>
+<span class="line" id="L16"></span>
+<span class="line" id="L17"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L19">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L20">    ally: std.mem.Allocator,</span>
+<span class="line" id="L21">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L22">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L23">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L24">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L25">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L26">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L27">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L28">    _ = T;</span>
+<span class="line" id="L29"></span>
+<span class="line" id="L30">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeSeq(ally, visitor);</span>
+<span class="line" id="L31">}</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L34"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L35">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L36">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L37">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L38">    <span class="tok-kw">return</span> DoublyLinkedListVisitor(T);</span>
+<span class="line" id="L39">}</span>
+<span class="line" id="L40"></span>
+<span class="line" id="L41"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DoublyLinkedList&quot;</span> {</span>
+<span class="line" id="L42">    <span class="tok-kw">const</span> List = std.DoublyLinkedList(<span class="tok-type">i32</span>);</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44">    <span class="tok-kw">var</span> one = List.Node{ .data = <span class="tok-number">1</span> };</span>
+<span class="line" id="L45">    <span class="tok-kw">var</span> two = List.Node{ .data = <span class="tok-number">2</span> };</span>
+<span class="line" id="L46">    <span class="tok-kw">var</span> three = List.Node{ .data = <span class="tok-number">3</span> };</span>
+<span class="line" id="L47"></span>
+<span class="line" id="L48">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L49">        .{</span>
+<span class="line" id="L50">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
+<span class="line" id="L51">            .tokens = &amp;.{</span>
+<span class="line" id="L52">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L53">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L54">            },</span>
+<span class="line" id="L55">            .want = List{},</span>
+<span class="line" id="L56">        },</span>
+<span class="line" id="L57">        .{</span>
+<span class="line" id="L58">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
+<span class="line" id="L59">            .tokens = &amp;.{</span>
+<span class="line" id="L60">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L61">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L62">                .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L63">                .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L64">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L65">            },</span>
+<span class="line" id="L66">            .want = blk: {</span>
+<span class="line" id="L67">                <span class="tok-kw">var</span> want = List{};</span>
+<span class="line" id="L68">                want.append(&amp;one);</span>
+<span class="line" id="L69">                want.append(&amp;two);</span>
+<span class="line" id="L70">                want.append(&amp;three);</span>
+<span class="line" id="L71">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L72">            },</span>
+<span class="line" id="L73">        },</span>
+<span class="line" id="L74">    };</span>
+<span class="line" id="L75"></span>
+<span class="line" id="L76">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L77">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L78"></span>
+<span class="line" id="L79">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L80">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L81"></span>
+<span class="line" id="L82">        <span class="tok-kw">try</span> require.equalf(t.want.len, result.value.len, <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L83"></span>
+<span class="line" id="L84">        <span class="tok-kw">var</span> it = t.want.first;</span>
+<span class="line" id="L85">        <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L86">            <span class="tok-kw">const</span> got_node = result.value.popFirst();</span>
+<span class="line" id="L87">            <span class="tok-kw">try</span> require.notNullf(got_node, <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L88">            <span class="tok-kw">try</span> require.equalf(node.data, got_node.?.data, <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L89">        }</span>
+<span class="line" id="L90">    }</span>
+<span class="line" id="L91">}</span>
+<span class="line" id="L92"></span>
+<span class="line" id="L93"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DoublyLinkedList (recursive)&quot;</span> {</span>
+<span class="line" id="L94">    <span class="tok-kw">const</span> Child = std.DoublyLinkedList(<span class="tok-type">i32</span>);</span>
+<span class="line" id="L95">    <span class="tok-kw">const</span> Parent = std.DoublyLinkedList(Child);</span>
+<span class="line" id="L96"></span>
+<span class="line" id="L97">    <span class="tok-kw">var</span> expected = Parent{};</span>
+<span class="line" id="L98">    <span class="tok-kw">const</span> a = Child{};</span>
+<span class="line" id="L99">    <span class="tok-kw">var</span> b = Child{};</span>
+<span class="line" id="L100">    <span class="tok-kw">var</span> c = Child{};</span>
+<span class="line" id="L101"></span>
+<span class="line" id="L102">    <span class="tok-kw">var</span> child_one = Child.Node{ .data = <span class="tok-number">1</span> };</span>
+<span class="line" id="L103">    <span class="tok-kw">var</span> child_two = Child.Node{ .data = <span class="tok-number">2</span> };</span>
+<span class="line" id="L104">    <span class="tok-kw">var</span> child_three = Child.Node{ .data = <span class="tok-number">3</span> };</span>
+<span class="line" id="L105">    b.append(&amp;child_one);</span>
+<span class="line" id="L106">    c.append(&amp;child_two);</span>
+<span class="line" id="L107">    c.append(&amp;child_three);</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109">    <span class="tok-kw">var</span> parent_one = Parent.Node{ .data = a };</span>
+<span class="line" id="L110">    <span class="tok-kw">var</span> parent_two = Parent.Node{ .data = b };</span>
+<span class="line" id="L111">    <span class="tok-kw">var</span> parent_three = Parent.Node{ .data = c };</span>
+<span class="line" id="L112"></span>
+<span class="line" id="L113">    expected.append(&amp;parent_one);</span>
+<span class="line" id="L114">    expected.append(&amp;parent_two);</span>
+<span class="line" id="L115">    expected.append(&amp;parent_three);</span>
+<span class="line" id="L116"></span>
+<span class="line" id="L117">    <span class="tok-kw">const</span> tokens = &amp;.{</span>
+<span class="line" id="L118">        .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L119">        .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L120">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L121">        .{ .Seq = .{ .len = <span class="tok-number">1</span> } },</span>
+<span class="line" id="L122">        .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L123">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L124">        .{ .Seq = .{ .len = <span class="tok-number">1</span> } },</span>
-<span class="line" id="L125">        .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L126">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L127">        .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L128">        .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L129">        .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L130">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L131">        .{ .SeqEnd = {} },</span>
-<span class="line" id="L132">    };</span>
+<span class="line" id="L124">        .{ .Seq = .{ .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L125">        .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L126">        .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L127">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L128">        .{ .SeqEnd = {} },</span>
+<span class="line" id="L129">    };</span>
+<span class="line" id="L130"></span>
+<span class="line" id="L131">    <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, Self, Parent, tokens);</span>
+<span class="line" id="L132">    <span class="tok-kw">defer</span> result.deinit();</span>
 <span class="line" id="L133"></span>
-<span class="line" id="L134">    <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(<span class="tok-null">null</span>, Self, Parent, tokens);</span>
-<span class="line" id="L135">    <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L136"></span>
-<span class="line" id="L137">    <span class="tok-kw">try</span> std.testing.expectEqual(expected.len, result.value.len);</span>
-<span class="line" id="L138"></span>
-<span class="line" id="L139">    <span class="tok-kw">var</span> it = expected.first;</span>
-<span class="line" id="L140">    <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
-<span class="line" id="L141">        <span class="tok-kw">var</span> got_node = result.value.popFirst();</span>
+<span class="line" id="L134">    <span class="tok-kw">try</span> require.equal(expected.len, result.value.len);</span>
+<span class="line" id="L135"></span>
+<span class="line" id="L136">    <span class="tok-kw">var</span> it = expected.first;</span>
+<span class="line" id="L137">    <span class="tok-kw">while</span> (it) |node| : (it = node.next) {</span>
+<span class="line" id="L138">        <span class="tok-kw">var</span> got_node = result.value.popFirst();</span>
+<span class="line" id="L139"></span>
+<span class="line" id="L140">        <span class="tok-comment">// Sanity node check.</span>
+</span>
+<span class="line" id="L141">        <span class="tok-kw">try</span> require.notNull(got_node);</span>
 <span class="line" id="L142"></span>
-<span class="line" id="L143">        <span class="tok-comment">// Sanity node check.</span>
+<span class="line" id="L143">        <span class="tok-comment">// Check that the inner lists' lengths match.</span>
 </span>
-<span class="line" id="L144">        <span class="tok-kw">try</span> std.testing.expect(got_node != <span class="tok-null">null</span>);</span>
+<span class="line" id="L144">        <span class="tok-kw">try</span> require.equal(node.data.len, got_node.?.data.len);</span>
 <span class="line" id="L145"></span>
-<span class="line" id="L146">        <span class="tok-comment">// Check that the inner lists' lengths match.</span>
+<span class="line" id="L146">        <span class="tok-kw">var</span> inner_it = node.data.first;</span>
+<span class="line" id="L147">        <span class="tok-kw">while</span> (inner_it) |inner_node| : (inner_it = inner_node.next) {</span>
+<span class="line" id="L148">            <span class="tok-kw">const</span> got_inner_node = got_node.?.data.popFirst();</span>
+<span class="line" id="L149"></span>
+<span class="line" id="L150">            <span class="tok-comment">// Sanity inner node check.</span>
 </span>
-<span class="line" id="L147">        <span class="tok-kw">try</span> std.testing.expectEqual(node.data.len, got_node.?.data.len);</span>
-<span class="line" id="L148"></span>
-<span class="line" id="L149">        <span class="tok-kw">var</span> inner_it = node.data.first;</span>
-<span class="line" id="L150">        <span class="tok-kw">while</span> (inner_it) |inner_node| : (inner_it = inner_node.next) {</span>
-<span class="line" id="L151">            <span class="tok-kw">const</span> got_inner_node = got_node.?.data.popFirst();</span>
+<span class="line" id="L151">            <span class="tok-kw">try</span> require.notNull(got_inner_node);</span>
 <span class="line" id="L152"></span>
-<span class="line" id="L153">            <span class="tok-comment">// Sanity inner node check.</span>
+<span class="line" id="L153">            <span class="tok-comment">// Check that the inner lists' data match.</span>
 </span>
-<span class="line" id="L154">            <span class="tok-kw">try</span> std.testing.expect(got_inner_node != <span class="tok-null">null</span>);</span>
-<span class="line" id="L155"></span>
-<span class="line" id="L156">            <span class="tok-comment">// Check that the inner lists' data match.</span>
-</span>
-<span class="line" id="L157">            <span class="tok-kw">try</span> std.testing.expectEqual(inner_node.data, got_inner_node.?.data);</span>
-<span class="line" id="L158">        }</span>
-<span class="line" id="L159">    }</span>
-<span class="line" id="L160">}</span>
-<span class="line" id="L161"></span>
+<span class="line" id="L154">            <span class="tok-kw">try</span> require.equal(inner_node.data, got_inner_node.?.data);</span>
+<span class="line" id="L155">        }</span>
+<span class="line" id="L156">    }</span>
+<span class="line" id="L157">}</span>
+<span class="line" id="L158"></span>
 </code></pre></body>
 </html>

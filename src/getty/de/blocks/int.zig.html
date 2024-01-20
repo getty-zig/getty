@@ -112,241 +112,244 @@
     </style>
 </head>
 <body>
-<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> IntVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/int.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L7"></span>
-<span class="line" id="L8"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L10">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L11">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L12">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L13">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
-<span class="line" id="L14">        .Int, .ComptimeInt =&gt; <span class="tok-null">true</span>,</span>
-<span class="line" id="L15">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
-<span class="line" id="L16">    };</span>
-<span class="line" id="L17">}</span>
-<span class="line" id="L18"></span>
-<span class="line" id="L19"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L20"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L21">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L22">    ally: std.mem.Allocator,</span>
-<span class="line" id="L23">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L24">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L25">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L26">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L27">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L28">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L29">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L30">    _ = T;</span>
-<span class="line" id="L31"></span>
-<span class="line" id="L32">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeInt(ally, visitor);</span>
-<span class="line" id="L33">}</span>
-<span class="line" id="L34"></span>
-<span class="line" id="L35"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L37">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L38">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L39">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L40">    <span class="tok-kw">return</span> IntVisitor(T);</span>
-<span class="line" id="L41">}</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - integer&quot;</span> {</span>
-<span class="line" id="L44">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L45">        .{</span>
-<span class="line" id="L46">            .name = <span class="tok-str">&quot;i8&quot;</span>,</span>
-<span class="line" id="L47">            .tokens = &amp;.{.{ .I8 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L48">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L49">        },</span>
-<span class="line" id="L50">        .{</span>
-<span class="line" id="L51">            .name = <span class="tok-str">&quot;i16&quot;</span>,</span>
-<span class="line" id="L52">            .tokens = &amp;.{.{ .I16 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L53">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i16</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L54">        },</span>
-<span class="line" id="L55">        .{</span>
-<span class="line" id="L56">            .name = <span class="tok-str">&quot;i32&quot;</span>,</span>
-<span class="line" id="L57">            .tokens = &amp;.{.{ .I32 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L58">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L59">        },</span>
-<span class="line" id="L60">        .{</span>
-<span class="line" id="L61">            .name = <span class="tok-str">&quot;i64&quot;</span>,</span>
-<span class="line" id="L62">            .tokens = &amp;.{.{ .I64 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L63">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L64">        },</span>
-<span class="line" id="L65">        .{</span>
-<span class="line" id="L66">            .name = <span class="tok-str">&quot;i128&quot;</span>,</span>
-<span class="line" id="L67">            .tokens = &amp;.{.{ .I128 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L68">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i128</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L69">        },</span>
-<span class="line" id="L70">        .{</span>
-<span class="line" id="L71">            .name = <span class="tok-str">&quot;isize&quot;</span>,</span>
-<span class="line" id="L72">            .tokens = &amp;.{.{ .I128 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L73">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L74">        },</span>
-<span class="line" id="L75">        .{</span>
-<span class="line" id="L76">            .name = <span class="tok-str">&quot;u8&quot;</span>,</span>
-<span class="line" id="L77">            .tokens = &amp;.{.{ .U8 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L78">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L79">        },</span>
-<span class="line" id="L80">        .{</span>
-<span class="line" id="L81">            .name = <span class="tok-str">&quot;u16&quot;</span>,</span>
-<span class="line" id="L82">            .tokens = &amp;.{.{ .U16 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L83">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L84">        },</span>
-<span class="line" id="L85">        .{</span>
-<span class="line" id="L86">            .name = <span class="tok-str">&quot;u32&quot;</span>,</span>
-<span class="line" id="L87">            .tokens = &amp;.{.{ .U32 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L88">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L89">        },</span>
-<span class="line" id="L90">        .{</span>
-<span class="line" id="L91">            .name = <span class="tok-str">&quot;u64&quot;</span>,</span>
-<span class="line" id="L92">            .tokens = &amp;.{.{ .U64 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L93">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L94">        },</span>
-<span class="line" id="L95">        .{</span>
-<span class="line" id="L96">            .name = <span class="tok-str">&quot;u128&quot;</span>,</span>
-<span class="line" id="L97">            .tokens = &amp;.{.{ .U128 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L98">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u128</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L99">        },</span>
-<span class="line" id="L100">        .{</span>
-<span class="line" id="L101">            .name = <span class="tok-str">&quot;usize&quot;</span>,</span>
-<span class="line" id="L102">            .tokens = &amp;.{.{ .U128 = <span class="tok-number">0</span> }},</span>
-<span class="line" id="L103">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>),</span>
-<span class="line" id="L104">        },</span>
-<span class="line" id="L105">        .{</span>
-<span class="line" id="L106">            .name = <span class="tok-str">&quot;i32 -&gt; i8&quot;</span>,</span>
-<span class="line" id="L107">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">i8</span>) }},</span>
-<span class="line" id="L108">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
-<span class="line" id="L109">        },</span>
-<span class="line" id="L110">        .{</span>
-<span class="line" id="L111">            .name = <span class="tok-str">&quot;i32 -&gt; u8&quot;</span>,</span>
-<span class="line" id="L112">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">u8</span>) }},</span>
-<span class="line" id="L113">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
-<span class="line" id="L114">        },</span>
-<span class="line" id="L115">        .{</span>
-<span class="line" id="L116">            .name = <span class="tok-str">&quot;i32 -&gt; u32&quot;</span>,</span>
-<span class="line" id="L117">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">i32</span>) }},</span>
-<span class="line" id="L118">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, std.math.maxInt(<span class="tok-type">i32</span>)),</span>
-<span class="line" id="L119">        },</span>
-<span class="line" id="L120">        .{</span>
-<span class="line" id="L121">            .name = <span class="tok-str">&quot;u32 -&gt; u8&quot;</span>,</span>
-<span class="line" id="L122">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u8</span>) }},</span>
-<span class="line" id="L123">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
-<span class="line" id="L124">        },</span>
-<span class="line" id="L125">        .{</span>
-<span class="line" id="L126">            .name = <span class="tok-str">&quot;u32 -&gt; i8&quot;</span>,</span>
-<span class="line" id="L127">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">i8</span>) }},</span>
-<span class="line" id="L128">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
-<span class="line" id="L129">        },</span>
-<span class="line" id="L130">        .{</span>
-<span class="line" id="L131">            .name = <span class="tok-str">&quot;u32 -&gt; i32&quot;</span>,</span>
-<span class="line" id="L132">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">i32</span>) }},</span>
-<span class="line" id="L133">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, std.math.maxInt(<span class="tok-type">i32</span>)),</span>
-<span class="line" id="L134">        },</span>
-<span class="line" id="L135">        .{</span>
-<span class="line" id="L136">            .name = <span class="tok-str">&quot;i32 -&gt; i8 (fail)&quot;</span>,</span>
-<span class="line" id="L137">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">i32</span>) }},</span>
-<span class="line" id="L138">            .Want = <span class="tok-type">i8</span>,</span>
-<span class="line" id="L139">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
-<span class="line" id="L140">        },</span>
-<span class="line" id="L141">        .{</span>
-<span class="line" id="L142">            .name = <span class="tok-str">&quot;i32 -&gt; u8 (fail)&quot;</span>,</span>
-<span class="line" id="L143">            .tokens = &amp;.{.{ .I32 = std.math.minInt(<span class="tok-type">i32</span>) }},</span>
-<span class="line" id="L144">            .Want = <span class="tok-type">u8</span>,</span>
-<span class="line" id="L145">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
-<span class="line" id="L146">        },</span>
-<span class="line" id="L147">        .{</span>
-<span class="line" id="L148">            .name = <span class="tok-str">&quot;i32 -&gt; u32 (fail)&quot;</span>,</span>
-<span class="line" id="L149">            .tokens = &amp;.{.{ .I32 = std.math.minInt(<span class="tok-type">i32</span>) }},</span>
-<span class="line" id="L150">            .Want = <span class="tok-type">u32</span>,</span>
-<span class="line" id="L151">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
-<span class="line" id="L152">        },</span>
-<span class="line" id="L153">        .{</span>
-<span class="line" id="L154">            .name = <span class="tok-str">&quot;u32 -&gt; u8 (fail)&quot;</span>,</span>
-<span class="line" id="L155">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u32</span>) }},</span>
-<span class="line" id="L156">            .Want = <span class="tok-type">u8</span>,</span>
-<span class="line" id="L157">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
-<span class="line" id="L158">        },</span>
-<span class="line" id="L159">        .{</span>
-<span class="line" id="L160">            .name = <span class="tok-str">&quot;u32 -&gt; i8 (fail)&quot;</span>,</span>
-<span class="line" id="L161">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u32</span>) }},</span>
-<span class="line" id="L162">            .Want = <span class="tok-type">i8</span>,</span>
-<span class="line" id="L163">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
-<span class="line" id="L164">        },</span>
-<span class="line" id="L165">        .{</span>
-<span class="line" id="L166">            .name = <span class="tok-str">&quot;u32 -&gt; i32 (fail)&quot;</span>,</span>
-<span class="line" id="L167">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u32</span>) }},</span>
-<span class="line" id="L168">            .Want = <span class="tok-type">i32</span>,</span>
-<span class="line" id="L169">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
-<span class="line" id="L170">        },</span>
-<span class="line" id="L171">    };</span>
-<span class="line" id="L172"></span>
-<span class="line" id="L173">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L174">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
-<span class="line" id="L175">        <span class="tok-kw">const</span> Want = <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;Want&quot;</span>)) t.Want <span class="tok-kw">else</span> <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L176"></span>
-<span class="line" id="L177">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
-<span class="line" id="L178">            <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L179">                t.name,</span>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> require = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;protest&quot;</span>).require;</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
+<span class="line" id="L3"></span>
+<span class="line" id="L4"><span class="tok-kw">const</span> IntVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/int.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L8"></span>
+<span class="line" id="L9"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L11">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L12">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L13">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L14">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(T)) {</span>
+<span class="line" id="L15">        .Int, .ComptimeInt =&gt; <span class="tok-null">true</span>,</span>
+<span class="line" id="L16">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L17">    };</span>
+<span class="line" id="L18">}</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L21"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L22">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L23">    ally: std.mem.Allocator,</span>
+<span class="line" id="L24">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L25">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L26">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L27">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L28">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L29">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L30">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L31">    _ = T;</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeInt(ally, visitor);</span>
+<span class="line" id="L34">}</span>
+<span class="line" id="L35"></span>
+<span class="line" id="L36"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L38">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L39">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L40">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L41">    <span class="tok-kw">return</span> IntVisitor(T);</span>
+<span class="line" id="L42">}</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - integer&quot;</span> {</span>
+<span class="line" id="L45">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L46">        .{</span>
+<span class="line" id="L47">            .name = <span class="tok-str">&quot;i8&quot;</span>,</span>
+<span class="line" id="L48">            .tokens = &amp;.{.{ .I8 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L49">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L50">        },</span>
+<span class="line" id="L51">        .{</span>
+<span class="line" id="L52">            .name = <span class="tok-str">&quot;i16&quot;</span>,</span>
+<span class="line" id="L53">            .tokens = &amp;.{.{ .I16 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L54">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i16</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L55">        },</span>
+<span class="line" id="L56">        .{</span>
+<span class="line" id="L57">            .name = <span class="tok-str">&quot;i32&quot;</span>,</span>
+<span class="line" id="L58">            .tokens = &amp;.{.{ .I32 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L59">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L60">        },</span>
+<span class="line" id="L61">        .{</span>
+<span class="line" id="L62">            .name = <span class="tok-str">&quot;i64&quot;</span>,</span>
+<span class="line" id="L63">            .tokens = &amp;.{.{ .I64 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L64">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i64</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L65">        },</span>
+<span class="line" id="L66">        .{</span>
+<span class="line" id="L67">            .name = <span class="tok-str">&quot;i128&quot;</span>,</span>
+<span class="line" id="L68">            .tokens = &amp;.{.{ .I128 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L69">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i128</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L70">        },</span>
+<span class="line" id="L71">        .{</span>
+<span class="line" id="L72">            .name = <span class="tok-str">&quot;isize&quot;</span>,</span>
+<span class="line" id="L73">            .tokens = &amp;.{.{ .I128 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L74">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">isize</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L75">        },</span>
+<span class="line" id="L76">        .{</span>
+<span class="line" id="L77">            .name = <span class="tok-str">&quot;u8&quot;</span>,</span>
+<span class="line" id="L78">            .tokens = &amp;.{.{ .U8 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L79">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L80">        },</span>
+<span class="line" id="L81">        .{</span>
+<span class="line" id="L82">            .name = <span class="tok-str">&quot;u16&quot;</span>,</span>
+<span class="line" id="L83">            .tokens = &amp;.{.{ .U16 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L84">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u16</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L85">        },</span>
+<span class="line" id="L86">        .{</span>
+<span class="line" id="L87">            .name = <span class="tok-str">&quot;u32&quot;</span>,</span>
+<span class="line" id="L88">            .tokens = &amp;.{.{ .U32 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L89">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L90">        },</span>
+<span class="line" id="L91">        .{</span>
+<span class="line" id="L92">            .name = <span class="tok-str">&quot;u64&quot;</span>,</span>
+<span class="line" id="L93">            .tokens = &amp;.{.{ .U64 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L94">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u64</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L95">        },</span>
+<span class="line" id="L96">        .{</span>
+<span class="line" id="L97">            .name = <span class="tok-str">&quot;u128&quot;</span>,</span>
+<span class="line" id="L98">            .tokens = &amp;.{.{ .U128 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L99">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u128</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L100">        },</span>
+<span class="line" id="L101">        .{</span>
+<span class="line" id="L102">            .name = <span class="tok-str">&quot;usize&quot;</span>,</span>
+<span class="line" id="L103">            .tokens = &amp;.{.{ .U128 = <span class="tok-number">0</span> }},</span>
+<span class="line" id="L104">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">usize</span>, <span class="tok-number">0</span>),</span>
+<span class="line" id="L105">        },</span>
+<span class="line" id="L106">        .{</span>
+<span class="line" id="L107">            .name = <span class="tok-str">&quot;i32 -&gt; i8&quot;</span>,</span>
+<span class="line" id="L108">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">i8</span>) }},</span>
+<span class="line" id="L109">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
+<span class="line" id="L110">        },</span>
+<span class="line" id="L111">        .{</span>
+<span class="line" id="L112">            .name = <span class="tok-str">&quot;i32 -&gt; u8&quot;</span>,</span>
+<span class="line" id="L113">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">u8</span>) }},</span>
+<span class="line" id="L114">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
+<span class="line" id="L115">        },</span>
+<span class="line" id="L116">        .{</span>
+<span class="line" id="L117">            .name = <span class="tok-str">&quot;i32 -&gt; u32&quot;</span>,</span>
+<span class="line" id="L118">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">i32</span>) }},</span>
+<span class="line" id="L119">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u32</span>, std.math.maxInt(<span class="tok-type">i32</span>)),</span>
+<span class="line" id="L120">        },</span>
+<span class="line" id="L121">        .{</span>
+<span class="line" id="L122">            .name = <span class="tok-str">&quot;u32 -&gt; u8&quot;</span>,</span>
+<span class="line" id="L123">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u8</span>) }},</span>
+<span class="line" id="L124">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
+<span class="line" id="L125">        },</span>
+<span class="line" id="L126">        .{</span>
+<span class="line" id="L127">            .name = <span class="tok-str">&quot;u32 -&gt; i8&quot;</span>,</span>
+<span class="line" id="L128">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">i8</span>) }},</span>
+<span class="line" id="L129">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
+<span class="line" id="L130">        },</span>
+<span class="line" id="L131">        .{</span>
+<span class="line" id="L132">            .name = <span class="tok-str">&quot;u32 -&gt; i32&quot;</span>,</span>
+<span class="line" id="L133">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">i32</span>) }},</span>
+<span class="line" id="L134">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i32</span>, std.math.maxInt(<span class="tok-type">i32</span>)),</span>
+<span class="line" id="L135">        },</span>
+<span class="line" id="L136">        .{</span>
+<span class="line" id="L137">            .name = <span class="tok-str">&quot;i32 -&gt; i8 (fail)&quot;</span>,</span>
+<span class="line" id="L138">            .tokens = &amp;.{.{ .I32 = std.math.maxInt(<span class="tok-type">i32</span>) }},</span>
+<span class="line" id="L139">            .Want = <span class="tok-type">i8</span>,</span>
+<span class="line" id="L140">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
+<span class="line" id="L141">        },</span>
+<span class="line" id="L142">        .{</span>
+<span class="line" id="L143">            .name = <span class="tok-str">&quot;i32 -&gt; u8 (fail)&quot;</span>,</span>
+<span class="line" id="L144">            .tokens = &amp;.{.{ .I32 = std.math.minInt(<span class="tok-type">i32</span>) }},</span>
+<span class="line" id="L145">            .Want = <span class="tok-type">u8</span>,</span>
+<span class="line" id="L146">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
+<span class="line" id="L147">        },</span>
+<span class="line" id="L148">        .{</span>
+<span class="line" id="L149">            .name = <span class="tok-str">&quot;i32 -&gt; u32 (fail)&quot;</span>,</span>
+<span class="line" id="L150">            .tokens = &amp;.{.{ .I32 = std.math.minInt(<span class="tok-type">i32</span>) }},</span>
+<span class="line" id="L151">            .Want = <span class="tok-type">u32</span>,</span>
+<span class="line" id="L152">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
+<span class="line" id="L153">        },</span>
+<span class="line" id="L154">        .{</span>
+<span class="line" id="L155">            .name = <span class="tok-str">&quot;u32 -&gt; u8 (fail)&quot;</span>,</span>
+<span class="line" id="L156">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u32</span>) }},</span>
+<span class="line" id="L157">            .Want = <span class="tok-type">u8</span>,</span>
+<span class="line" id="L158">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
+<span class="line" id="L159">        },</span>
+<span class="line" id="L160">        .{</span>
+<span class="line" id="L161">            .name = <span class="tok-str">&quot;u32 -&gt; i8 (fail)&quot;</span>,</span>
+<span class="line" id="L162">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u32</span>) }},</span>
+<span class="line" id="L163">            .Want = <span class="tok-type">i8</span>,</span>
+<span class="line" id="L164">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
+<span class="line" id="L165">        },</span>
+<span class="line" id="L166">        .{</span>
+<span class="line" id="L167">            .name = <span class="tok-str">&quot;u32 -&gt; i32 (fail)&quot;</span>,</span>
+<span class="line" id="L168">            .tokens = &amp;.{.{ .U32 = std.math.maxInt(<span class="tok-type">u32</span>) }},</span>
+<span class="line" id="L169">            .Want = <span class="tok-type">i32</span>,</span>
+<span class="line" id="L170">            .want_err = <span class="tok-kw">error</span>.Overflow,</span>
+<span class="line" id="L171">        },</span>
+<span class="line" id="L172">    };</span>
+<span class="line" id="L173"></span>
+<span class="line" id="L174">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L175">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L176">        <span class="tok-kw">const</span> Want = <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;Want&quot;</span>)) t.Want <span class="tok-kw">else</span> <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L177"></span>
+<span class="line" id="L178">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L179">            <span class="tok-kw">try</span> require.equalErrorf(</span>
 <span class="line" id="L180">                t.want_err,</span>
 <span class="line" id="L181">                testing.deserializeErr(Self, Want, t.tokens),</span>
-<span class="line" id="L182">            );</span>
-<span class="line" id="L183">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L184">            <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L185">            <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L186"></span>
-<span class="line" id="L187">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
-<span class="line" id="L188">        }</span>
-<span class="line" id="L189">    }</span>
-<span class="line" id="L190">}</span>
-<span class="line" id="L191"></span>
-<span class="line" id="L192"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - integer (from string)&quot;</span> {</span>
-<span class="line" id="L193">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L194">        .{</span>
-<span class="line" id="L195">            .name = <span class="tok-str">&quot;signed&quot;</span>,</span>
-<span class="line" id="L196">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;127&quot;</span> }},</span>
-<span class="line" id="L197">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
-<span class="line" id="L198">        },</span>
-<span class="line" id="L199">        .{</span>
-<span class="line" id="L200">            .name = <span class="tok-str">&quot;unsigned&quot;</span>,</span>
-<span class="line" id="L201">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;255&quot;</span> }},</span>
-<span class="line" id="L202">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
-<span class="line" id="L203">        },</span>
-<span class="line" id="L204">        .{</span>
-<span class="line" id="L205">            .name = <span class="tok-str">&quot;overflow&quot;</span>,</span>
-<span class="line" id="L206">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;128&quot;</span> }},</span>
-<span class="line" id="L207">            .Want = <span class="tok-type">i8</span>,</span>
-<span class="line" id="L208">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
-<span class="line" id="L209">        },</span>
-<span class="line" id="L210">        .{</span>
-<span class="line" id="L211">            .name = <span class="tok-str">&quot;underflow&quot;</span>,</span>
-<span class="line" id="L212">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;-1&quot;</span> }},</span>
-<span class="line" id="L213">            .Want = <span class="tok-type">u8</span>,</span>
-<span class="line" id="L214">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
-<span class="line" id="L215">        },</span>
-<span class="line" id="L216">    };</span>
-<span class="line" id="L217"></span>
-<span class="line" id="L218">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L219">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
-<span class="line" id="L220">        <span class="tok-kw">const</span> Want = <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;Want&quot;</span>)) t.Want <span class="tok-kw">else</span> <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L221"></span>
-<span class="line" id="L222">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
-<span class="line" id="L223">            <span class="tok-kw">try</span> testing.expectError(</span>
-<span class="line" id="L224">                t.name,</span>
-<span class="line" id="L225">                t.want_err,</span>
-<span class="line" id="L226">                testing.deserializeErr(Self, Want, t.tokens),</span>
-<span class="line" id="L227">            );</span>
-<span class="line" id="L228">        } <span class="tok-kw">else</span> {</span>
-<span class="line" id="L229">            <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L230">            <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L231"></span>
-<span class="line" id="L232">            <span class="tok-kw">try</span> testing.expectEqual(t.name, t.want, result.value);</span>
-<span class="line" id="L233">        }</span>
-<span class="line" id="L234">    }</span>
-<span class="line" id="L235">}</span>
-<span class="line" id="L236"></span>
+<span class="line" id="L182">                <span class="tok-str">&quot;Test case: {s}&quot;</span>,</span>
+<span class="line" id="L183">                .{t.name},</span>
+<span class="line" id="L184">            );</span>
+<span class="line" id="L185">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L186">            <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L187">            <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L188"></span>
+<span class="line" id="L189">            <span class="tok-kw">try</span> require.equalf(t.want, result.value, <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L190">        }</span>
+<span class="line" id="L191">    }</span>
+<span class="line" id="L192">}</span>
+<span class="line" id="L193"></span>
+<span class="line" id="L194"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - integer (from string)&quot;</span> {</span>
+<span class="line" id="L195">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L196">        .{</span>
+<span class="line" id="L197">            .name = <span class="tok-str">&quot;signed&quot;</span>,</span>
+<span class="line" id="L198">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;127&quot;</span> }},</span>
+<span class="line" id="L199">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">i8</span>, std.math.maxInt(<span class="tok-type">i8</span>)),</span>
+<span class="line" id="L200">        },</span>
+<span class="line" id="L201">        .{</span>
+<span class="line" id="L202">            .name = <span class="tok-str">&quot;unsigned&quot;</span>,</span>
+<span class="line" id="L203">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;255&quot;</span> }},</span>
+<span class="line" id="L204">            .want = <span class="tok-builtin">@as</span>(<span class="tok-type">u8</span>, std.math.maxInt(<span class="tok-type">u8</span>)),</span>
+<span class="line" id="L205">        },</span>
+<span class="line" id="L206">        .{</span>
+<span class="line" id="L207">            .name = <span class="tok-str">&quot;overflow&quot;</span>,</span>
+<span class="line" id="L208">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;128&quot;</span> }},</span>
+<span class="line" id="L209">            .Want = <span class="tok-type">i8</span>,</span>
+<span class="line" id="L210">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
+<span class="line" id="L211">        },</span>
+<span class="line" id="L212">        .{</span>
+<span class="line" id="L213">            .name = <span class="tok-str">&quot;underflow&quot;</span>,</span>
+<span class="line" id="L214">            .tokens = &amp;.{.{ .String = <span class="tok-str">&quot;-1&quot;</span> }},</span>
+<span class="line" id="L215">            .Want = <span class="tok-type">u8</span>,</span>
+<span class="line" id="L216">            .want_err = <span class="tok-kw">error</span>.InvalidValue,</span>
+<span class="line" id="L217">        },</span>
+<span class="line" id="L218">    };</span>
+<span class="line" id="L219"></span>
+<span class="line" id="L220">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L221">        <span class="tok-kw">const</span> Test = <span class="tok-builtin">@TypeOf</span>(t);</span>
+<span class="line" id="L222">        <span class="tok-kw">const</span> Want = <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;Want&quot;</span>)) t.Want <span class="tok-kw">else</span> <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L223"></span>
+<span class="line" id="L224">        <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(Test, <span class="tok-str">&quot;want_err&quot;</span>)) {</span>
+<span class="line" id="L225">            <span class="tok-kw">try</span> require.equalErrorf(</span>
+<span class="line" id="L226">                t.want_err,</span>
+<span class="line" id="L227">                testing.deserializeErr(Self, Want, t.tokens),</span>
+<span class="line" id="L228">                <span class="tok-str">&quot;Test case: {s}&quot;</span>,</span>
+<span class="line" id="L229">                .{t.name},</span>
+<span class="line" id="L230">            );</span>
+<span class="line" id="L231">        } <span class="tok-kw">else</span> {</span>
+<span class="line" id="L232">            <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L233">            <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L234"></span>
+<span class="line" id="L235">            <span class="tok-kw">try</span> require.equalf(t.want, result.value, <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L236">        }</span>
+<span class="line" id="L237">    }</span>
+<span class="line" id="L238">}</span>
+<span class="line" id="L239"></span>
 </code></pre></body>
 </html>

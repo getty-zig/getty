@@ -112,265 +112,266 @@
     </style>
 </head>
 <body>
-<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"></span>
-<span class="line" id="L3"><span class="tok-kw">const</span> IndexedArrayVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/indexed_array.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L4"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L5"></span>
-<span class="line" id="L6"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
-<span class="line" id="L7"></span>
-<span class="line" id="L8"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L9"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L10">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L11">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L12">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L13">    <span class="tok-kw">const</span> is_indexed_array = <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;enums.IndexedArray&quot;</span>);</span>
-<span class="line" id="L14">    <span class="tok-kw">const</span> is_enum_array = <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;enums.EnumArray&quot;</span>);</span>
-<span class="line" id="L15"></span>
-<span class="line" id="L16">    <span class="tok-kw">return</span> is_indexed_array <span class="tok-kw">or</span> is_enum_array;</span>
-<span class="line" id="L17">}</span>
-<span class="line" id="L18"></span>
-<span class="line" id="L19"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L20"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L21">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L22">    ally: std.mem.Allocator,</span>
-<span class="line" id="L23">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L24">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L25">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L26">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L27">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L28">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L29">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L30">    _ = T;</span>
-<span class="line" id="L31"></span>
-<span class="line" id="L32">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeSeq(ally, visitor);</span>
-<span class="line" id="L33">}</span>
-<span class="line" id="L34"></span>
-<span class="line" id="L35"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L37">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L38">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L39">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L40">    <span class="tok-kw">return</span> IndexedArrayVisitor(T);</span>
-<span class="line" id="L41">}</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43"><span class="tok-kw">fn</span> <span class="tok-fn">StringIndexer</span>(<span class="tok-kw">comptime</span> str_keys: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">type</span> {</span>
-<span class="line" id="L44">    <span class="tok-kw">if</span> (str_keys.len == <span class="tok-number">0</span>) {</span>
-<span class="line" id="L45">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L46">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = []<span class="tok-kw">const</span> <span class="tok-type">u8</span>;</span>
-<span class="line" id="L47">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = <span class="tok-number">0</span>;</span>
-<span class="line" id="L48">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(k: Key) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L49">                _ = k;</span>
-<span class="line" id="L50">                <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L51">            }</span>
-<span class="line" id="L52">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) Key {</span>
-<span class="line" id="L53">                _ = i;</span>
-<span class="line" id="L54">                <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L55">            }</span>
-<span class="line" id="L56">        };</span>
-<span class="line" id="L57">    }</span>
-<span class="line" id="L58"></span>
-<span class="line" id="L59">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L60">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = []<span class="tok-kw">const</span> <span class="tok-type">u8</span>;</span>
-<span class="line" id="L61">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = str_keys.len;</span>
-<span class="line" id="L62">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(k: Key) <span class="tok-type">usize</span> {</span>
-<span class="line" id="L63">            <span class="tok-kw">for</span> (str_keys, <span class="tok-number">0</span>..) |key, i| {</span>
-<span class="line" id="L64">                <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, k, key)) {</span>
-<span class="line" id="L65">                    <span class="tok-kw">return</span> i;</span>
-<span class="line" id="L66">                }</span>
-<span class="line" id="L67">            }</span>
-<span class="line" id="L68">            <span class="tok-kw">unreachable</span>;</span>
-<span class="line" id="L69">        }</span>
-<span class="line" id="L70">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) Key {</span>
-<span class="line" id="L71">            <span class="tok-kw">return</span> str_keys[i];</span>
-<span class="line" id="L72">        }</span>
-<span class="line" id="L73">    };</span>
-<span class="line" id="L74">}</span>
-<span class="line" id="L75"></span>
-<span class="line" id="L76"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.IndexedArray&quot;</span> {</span>
-<span class="line" id="L77">    <span class="tok-kw">const</span> Color = StringIndexer(&amp;.{ <span class="tok-str">&quot;red&quot;</span>, <span class="tok-str">&quot;yellow&quot;</span>, <span class="tok-str">&quot;blue&quot;</span> });</span>
-<span class="line" id="L78">    <span class="tok-kw">const</span> Size = StringIndexer(&amp;.{ <span class="tok-str">&quot;small&quot;</span>, <span class="tok-str">&quot;medium&quot;</span>, <span class="tok-str">&quot;large&quot;</span> });</span>
-<span class="line" id="L79"></span>
-<span class="line" id="L80">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L81">        .{</span>
-<span class="line" id="L82">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
-<span class="line" id="L83">            .tokens = &amp;.{</span>
-<span class="line" id="L84">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L85">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L86">            },</span>
-<span class="line" id="L87">            .want = std.enums.IndexedArray(StringIndexer(&amp;.{}), <span class="tok-type">u32</span>, <span class="tok-null">null</span>).initUndefined(),</span>
-<span class="line" id="L88">        },</span>
-<span class="line" id="L89">        .{</span>
-<span class="line" id="L90">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
-<span class="line" id="L91">            .tokens = &amp;.{</span>
-<span class="line" id="L92">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L93">                .{ .U32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L94">                .{ .U32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L95">                .{ .U32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L96">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L97">            },</span>
-<span class="line" id="L98">            .want = blk: {</span>
-<span class="line" id="L99">                <span class="tok-kw">var</span> want = std.enums.IndexedArray(Color, <span class="tok-type">u32</span>, <span class="tok-null">null</span>).initUndefined();</span>
-<span class="line" id="L100">                want.set(<span class="tok-str">&quot;red&quot;</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L101">                want.set(<span class="tok-str">&quot;yellow&quot;</span>, <span class="tok-number">3</span>);</span>
-<span class="line" id="L102">                want.set(<span class="tok-str">&quot;blue&quot;</span>, <span class="tok-number">2</span>);</span>
-<span class="line" id="L103">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L104">            },</span>
-<span class="line" id="L105">        },</span>
-<span class="line" id="L106">        .{</span>
-<span class="line" id="L107">            .name = <span class="tok-str">&quot;nested&quot;</span>,</span>
-<span class="line" id="L108">            .tokens = &amp;.{</span>
-<span class="line" id="L109">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> require = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;protest&quot;</span>).require;</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
+<span class="line" id="L3"></span>
+<span class="line" id="L4"><span class="tok-kw">const</span> IndexedArrayVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/indexed_array.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L5"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
+<span class="line" id="L6"></span>
+<span class="line" id="L7"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L8"></span>
+<span class="line" id="L9"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L11">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L12">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L13">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L14">    <span class="tok-kw">const</span> is_indexed_array = <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;enums.IndexedArray&quot;</span>);</span>
+<span class="line" id="L15">    <span class="tok-kw">const</span> is_enum_array = <span class="tok-kw">comptime</span> std.mem.startsWith(<span class="tok-type">u8</span>, <span class="tok-builtin">@typeName</span>(T), <span class="tok-str">&quot;enums.EnumArray&quot;</span>);</span>
+<span class="line" id="L16"></span>
+<span class="line" id="L17">    <span class="tok-kw">return</span> is_indexed_array <span class="tok-kw">or</span> is_enum_array;</span>
+<span class="line" id="L18">}</span>
+<span class="line" id="L19"></span>
+<span class="line" id="L20"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L21"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L22">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L23">    ally: std.mem.Allocator,</span>
+<span class="line" id="L24">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L25">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L26">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L27">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L28">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L29">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L30">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L31">    _ = T;</span>
+<span class="line" id="L32"></span>
+<span class="line" id="L33">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeSeq(ally, visitor);</span>
+<span class="line" id="L34">}</span>
+<span class="line" id="L35"></span>
+<span class="line" id="L36"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L37"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L38">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L39">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L40">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L41">    <span class="tok-kw">return</span> IndexedArrayVisitor(T);</span>
+<span class="line" id="L42">}</span>
+<span class="line" id="L43"></span>
+<span class="line" id="L44"><span class="tok-kw">fn</span> <span class="tok-fn">StringIndexer</span>(<span class="tok-kw">comptime</span> str_keys: []<span class="tok-kw">const</span> []<span class="tok-kw">const</span> <span class="tok-type">u8</span>) <span class="tok-type">type</span> {</span>
+<span class="line" id="L45">    <span class="tok-kw">if</span> (str_keys.len == <span class="tok-number">0</span>) {</span>
+<span class="line" id="L46">        <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L47">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = []<span class="tok-kw">const</span> <span class="tok-type">u8</span>;</span>
+<span class="line" id="L48">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L49">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(k: Key) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L50">                _ = k;</span>
+<span class="line" id="L51">                <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L52">            }</span>
+<span class="line" id="L53">            <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) Key {</span>
+<span class="line" id="L54">                _ = i;</span>
+<span class="line" id="L55">                <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L56">            }</span>
+<span class="line" id="L57">        };</span>
+<span class="line" id="L58">    }</span>
+<span class="line" id="L59"></span>
+<span class="line" id="L60">    <span class="tok-kw">return</span> <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L61">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> Key = []<span class="tok-kw">const</span> <span class="tok-type">u8</span>;</span>
+<span class="line" id="L62">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> count: <span class="tok-type">comptime_int</span> = str_keys.len;</span>
+<span class="line" id="L63">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">indexOf</span>(k: Key) <span class="tok-type">usize</span> {</span>
+<span class="line" id="L64">            <span class="tok-kw">for</span> (str_keys, <span class="tok-number">0</span>..) |key, i| {</span>
+<span class="line" id="L65">                <span class="tok-kw">if</span> (std.mem.eql(<span class="tok-type">u8</span>, k, key)) {</span>
+<span class="line" id="L66">                    <span class="tok-kw">return</span> i;</span>
+<span class="line" id="L67">                }</span>
+<span class="line" id="L68">            }</span>
+<span class="line" id="L69">            <span class="tok-kw">unreachable</span>;</span>
+<span class="line" id="L70">        }</span>
+<span class="line" id="L71">        <span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">keyForIndex</span>(i: <span class="tok-type">usize</span>) Key {</span>
+<span class="line" id="L72">            <span class="tok-kw">return</span> str_keys[i];</span>
+<span class="line" id="L73">        }</span>
+<span class="line" id="L74">    };</span>
+<span class="line" id="L75">}</span>
+<span class="line" id="L76"></span>
+<span class="line" id="L77"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.IndexedArray&quot;</span> {</span>
+<span class="line" id="L78">    <span class="tok-kw">const</span> Color = StringIndexer(&amp;.{ <span class="tok-str">&quot;red&quot;</span>, <span class="tok-str">&quot;yellow&quot;</span>, <span class="tok-str">&quot;blue&quot;</span> });</span>
+<span class="line" id="L79">    <span class="tok-kw">const</span> Size = StringIndexer(&amp;.{ <span class="tok-str">&quot;small&quot;</span>, <span class="tok-str">&quot;medium&quot;</span>, <span class="tok-str">&quot;large&quot;</span> });</span>
+<span class="line" id="L80"></span>
+<span class="line" id="L81">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L82">        .{</span>
+<span class="line" id="L83">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
+<span class="line" id="L84">            .tokens = &amp;.{</span>
+<span class="line" id="L85">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L86">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L87">            },</span>
+<span class="line" id="L88">            .want = std.enums.IndexedArray(StringIndexer(&amp;.{}), <span class="tok-type">u32</span>, <span class="tok-null">null</span>).initUndefined(),</span>
+<span class="line" id="L89">        },</span>
+<span class="line" id="L90">        .{</span>
+<span class="line" id="L91">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
+<span class="line" id="L92">            .tokens = &amp;.{</span>
+<span class="line" id="L93">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L94">                .{ .U32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L95">                .{ .U32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L96">                .{ .U32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L97">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L98">            },</span>
+<span class="line" id="L99">            .want = blk: {</span>
+<span class="line" id="L100">                <span class="tok-kw">var</span> want = std.enums.IndexedArray(Color, <span class="tok-type">u32</span>, <span class="tok-null">null</span>).initUndefined();</span>
+<span class="line" id="L101">                want.set(<span class="tok-str">&quot;red&quot;</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L102">                want.set(<span class="tok-str">&quot;yellow&quot;</span>, <span class="tok-number">3</span>);</span>
+<span class="line" id="L103">                want.set(<span class="tok-str">&quot;blue&quot;</span>, <span class="tok-number">2</span>);</span>
+<span class="line" id="L104">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L105">            },</span>
+<span class="line" id="L106">        },</span>
+<span class="line" id="L107">        .{</span>
+<span class="line" id="L108">            .name = <span class="tok-str">&quot;nested&quot;</span>,</span>
+<span class="line" id="L109">            .tokens = &amp;.{</span>
 <span class="line" id="L110">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L111">                .{ .U32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L111">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L112">                .{ .U32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L113">                .{ .U32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L114">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L115">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L116">                .{ .U32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L113">                .{ .U32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L114">                .{ .U32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L115">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L116">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L117">                .{ .U32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L118">                .{ .U32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L119">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L120">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L121">                .{ .U32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L122">                .{ .U32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L123">                .{ .U32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L124">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L119">                .{ .U32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L120">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L121">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L122">                .{ .U32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L123">                .{ .U32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L124">                .{ .U32 = <span class="tok-number">3</span> },</span>
 <span class="line" id="L125">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L126">            },</span>
-<span class="line" id="L127">            .want = blk: {</span>
-<span class="line" id="L128">                <span class="tok-kw">const</span> SubArray = std.enums.IndexedArray(Size, <span class="tok-type">u32</span>, <span class="tok-null">null</span>);</span>
-<span class="line" id="L129">                <span class="tok-kw">const</span> sa_1 = res: {</span>
-<span class="line" id="L130">                    <span class="tok-kw">var</span> arr = SubArray.initFill(<span class="tok-number">2</span>);</span>
-<span class="line" id="L131">                    arr.set(<span class="tok-str">&quot;large&quot;</span>, <span class="tok-number">3</span>);</span>
-<span class="line" id="L132">                    <span class="tok-kw">break</span> :res arr;</span>
-<span class="line" id="L133">                };</span>
-<span class="line" id="L134">                <span class="tok-kw">const</span> sa_2 = SubArray.initFill(<span class="tok-number">0</span>);</span>
-<span class="line" id="L135">                <span class="tok-kw">const</span> sa_3 = res: {</span>
-<span class="line" id="L136">                    <span class="tok-kw">var</span> arr = SubArray.initUndefined();</span>
-<span class="line" id="L137">                    arr.set(<span class="tok-str">&quot;small&quot;</span>, <span class="tok-number">0</span>);</span>
-<span class="line" id="L138">                    arr.set(<span class="tok-str">&quot;medium&quot;</span>, <span class="tok-number">1</span>);</span>
-<span class="line" id="L139">                    arr.set(<span class="tok-str">&quot;large&quot;</span>, <span class="tok-number">3</span>);</span>
-<span class="line" id="L140">                    <span class="tok-kw">break</span> :res arr;</span>
-<span class="line" id="L141">                };</span>
-<span class="line" id="L142">                <span class="tok-kw">var</span> want = std.enums.IndexedArray(Color, SubArray, <span class="tok-null">null</span>).initUndefined();</span>
-<span class="line" id="L143">                want.set(<span class="tok-str">&quot;red&quot;</span>, sa_1);</span>
-<span class="line" id="L144">                want.set(<span class="tok-str">&quot;yellow&quot;</span>, sa_2);</span>
-<span class="line" id="L145">                want.set(<span class="tok-str">&quot;blue&quot;</span>, sa_3);</span>
-<span class="line" id="L146">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L147">            },</span>
-<span class="line" id="L148">        },</span>
-<span class="line" id="L149">    };</span>
-<span class="line" id="L150"></span>
-<span class="line" id="L151">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L152">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L153">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L154">        <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L155"></span>
-<span class="line" id="L156">        <span class="tok-kw">for</span> (t.want.values, <span class="tok-number">0</span>..) |want, i| {</span>
-<span class="line" id="L157">            <span class="tok-kw">try</span> testing.expectEqual(t.name, want, result.value.values[i]);</span>
-<span class="line" id="L158">        }</span>
-<span class="line" id="L159">    }</span>
-<span class="line" id="L160">}</span>
-<span class="line" id="L161"></span>
-<span class="line" id="L162"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.EnumArray&quot;</span> {</span>
-<span class="line" id="L163">    <span class="tok-kw">const</span> Color = <span class="tok-kw">enum</span> { red, yellow, blue };</span>
-<span class="line" id="L164">    <span class="tok-kw">const</span> Size = <span class="tok-kw">enum</span> { small, medium, large };</span>
-<span class="line" id="L165"></span>
-<span class="line" id="L166">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L167">        <span class="tok-comment">// std.EnumIndexer, which is used internally by std.EnumArray,</span>
+<span class="line" id="L126">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L127">            },</span>
+<span class="line" id="L128">            .want = blk: {</span>
+<span class="line" id="L129">                <span class="tok-kw">const</span> SubArray = std.enums.IndexedArray(Size, <span class="tok-type">u32</span>, <span class="tok-null">null</span>);</span>
+<span class="line" id="L130">                <span class="tok-kw">const</span> sa_1 = res: {</span>
+<span class="line" id="L131">                    <span class="tok-kw">var</span> arr = SubArray.initFill(<span class="tok-number">2</span>);</span>
+<span class="line" id="L132">                    arr.set(<span class="tok-str">&quot;large&quot;</span>, <span class="tok-number">3</span>);</span>
+<span class="line" id="L133">                    <span class="tok-kw">break</span> :res arr;</span>
+<span class="line" id="L134">                };</span>
+<span class="line" id="L135">                <span class="tok-kw">const</span> sa_2 = SubArray.initFill(<span class="tok-number">0</span>);</span>
+<span class="line" id="L136">                <span class="tok-kw">const</span> sa_3 = res: {</span>
+<span class="line" id="L137">                    <span class="tok-kw">var</span> arr = SubArray.initUndefined();</span>
+<span class="line" id="L138">                    arr.set(<span class="tok-str">&quot;small&quot;</span>, <span class="tok-number">0</span>);</span>
+<span class="line" id="L139">                    arr.set(<span class="tok-str">&quot;medium&quot;</span>, <span class="tok-number">1</span>);</span>
+<span class="line" id="L140">                    arr.set(<span class="tok-str">&quot;large&quot;</span>, <span class="tok-number">3</span>);</span>
+<span class="line" id="L141">                    <span class="tok-kw">break</span> :res arr;</span>
+<span class="line" id="L142">                };</span>
+<span class="line" id="L143">                <span class="tok-kw">var</span> want = std.enums.IndexedArray(Color, SubArray, <span class="tok-null">null</span>).initUndefined();</span>
+<span class="line" id="L144">                want.set(<span class="tok-str">&quot;red&quot;</span>, sa_1);</span>
+<span class="line" id="L145">                want.set(<span class="tok-str">&quot;yellow&quot;</span>, sa_2);</span>
+<span class="line" id="L146">                want.set(<span class="tok-str">&quot;blue&quot;</span>, sa_3);</span>
+<span class="line" id="L147">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L148">            },</span>
+<span class="line" id="L149">        },</span>
+<span class="line" id="L150">    };</span>
+<span class="line" id="L151"></span>
+<span class="line" id="L152">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L153">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L154">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L155">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L156"></span>
+<span class="line" id="L157">        <span class="tok-kw">for</span> (t.want.values, <span class="tok-number">0</span>..) |want, i| {</span>
+<span class="line" id="L158">            <span class="tok-kw">try</span> require.equalf(want, result.value.values[i], <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L159">        }</span>
+<span class="line" id="L160">    }</span>
+<span class="line" id="L161">}</span>
+<span class="line" id="L162"></span>
+<span class="line" id="L163"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.EnumArray&quot;</span> {</span>
+<span class="line" id="L164">    <span class="tok-kw">const</span> Color = <span class="tok-kw">enum</span> { red, yellow, blue };</span>
+<span class="line" id="L165">    <span class="tok-kw">const</span> Size = <span class="tok-kw">enum</span> { small, medium, large };</span>
+<span class="line" id="L166"></span>
+<span class="line" id="L167">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L168">        <span class="tok-comment">// std.EnumIndexer, which is used internally by std.EnumArray,</span>
 </span>
-<span class="line" id="L168">        <span class="tok-comment">// fails to compile on an empty enum due to field access occuring</span>
+<span class="line" id="L169">        <span class="tok-comment">// fails to compile on an empty enum due to field access occuring</span>
 </span>
-<span class="line" id="L169">        <span class="tok-comment">// before checking field length.</span>
+<span class="line" id="L170">        <span class="tok-comment">// before checking field length.</span>
 </span>
-<span class="line" id="L170">        <span class="tok-comment">// .{</span>
+<span class="line" id="L171">        <span class="tok-comment">// .{</span>
 </span>
-<span class="line" id="L171">        <span class="tok-comment">//     .name = &quot;empty&quot;,</span>
+<span class="line" id="L172">        <span class="tok-comment">//     .name = &quot;empty&quot;,</span>
 </span>
-<span class="line" id="L172">        <span class="tok-comment">//     .tokens = &amp;.{</span>
+<span class="line" id="L173">        <span class="tok-comment">//     .tokens = &amp;.{</span>
 </span>
-<span class="line" id="L173">        <span class="tok-comment">//         .{ .Seq = .{ .len = 0 } },</span>
+<span class="line" id="L174">        <span class="tok-comment">//         .{ .Seq = .{ .len = 0 } },</span>
 </span>
-<span class="line" id="L174">        <span class="tok-comment">//         .{ .SeqEnd = {} },</span>
+<span class="line" id="L175">        <span class="tok-comment">//         .{ .SeqEnd = {} },</span>
 </span>
-<span class="line" id="L175">        <span class="tok-comment">//     },</span>
+<span class="line" id="L176">        <span class="tok-comment">//     },</span>
 </span>
-<span class="line" id="L176">        <span class="tok-comment">//     .want = std.enums.EnumArray(enum {}, u32).initUndefined(),</span>
+<span class="line" id="L177">        <span class="tok-comment">//     .want = std.enums.EnumArray(enum {}, u32).initUndefined(),</span>
 </span>
-<span class="line" id="L177">        <span class="tok-comment">// },</span>
+<span class="line" id="L178">        <span class="tok-comment">// },</span>
 </span>
-<span class="line" id="L178">        .{</span>
-<span class="line" id="L179">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
-<span class="line" id="L180">            .tokens = &amp;.{</span>
-<span class="line" id="L181">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L182">                .{ .U32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L183">                .{ .U32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L184">                .{ .U32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L185">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L186">            },</span>
-<span class="line" id="L187">            .want = std.enums.EnumArray(Color, <span class="tok-type">u32</span>).init(.{</span>
-<span class="line" id="L188">                .red = <span class="tok-number">1</span>,</span>
-<span class="line" id="L189">                .yellow = <span class="tok-number">3</span>,</span>
-<span class="line" id="L190">                .blue = <span class="tok-number">2</span>,</span>
-<span class="line" id="L191">            }),</span>
-<span class="line" id="L192">        },</span>
-<span class="line" id="L193">        .{</span>
-<span class="line" id="L194">            .name = <span class="tok-str">&quot;nested&quot;</span>,</span>
-<span class="line" id="L195">            .tokens = &amp;.{</span>
-<span class="line" id="L196">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L179">        .{</span>
+<span class="line" id="L180">            .name = <span class="tok-str">&quot;non-empty&quot;</span>,</span>
+<span class="line" id="L181">            .tokens = &amp;.{</span>
+<span class="line" id="L182">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L183">                .{ .U32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L184">                .{ .U32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L185">                .{ .U32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L186">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L187">            },</span>
+<span class="line" id="L188">            .want = std.enums.EnumArray(Color, <span class="tok-type">u32</span>).init(.{</span>
+<span class="line" id="L189">                .red = <span class="tok-number">1</span>,</span>
+<span class="line" id="L190">                .yellow = <span class="tok-number">3</span>,</span>
+<span class="line" id="L191">                .blue = <span class="tok-number">2</span>,</span>
+<span class="line" id="L192">            }),</span>
+<span class="line" id="L193">        },</span>
+<span class="line" id="L194">        .{</span>
+<span class="line" id="L195">            .name = <span class="tok-str">&quot;nested&quot;</span>,</span>
+<span class="line" id="L196">            .tokens = &amp;.{</span>
 <span class="line" id="L197">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L198">                .{ .U32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L198">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L199">                .{ .U32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L200">                .{ .U32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L201">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L202">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L203">                .{ .U32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L200">                .{ .U32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L201">                .{ .U32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L202">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L203">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L204">                .{ .U32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L205">                .{ .U32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L206">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L207">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L208">                .{ .U32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L209">                .{ .U32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L210">                .{ .U32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L211">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L206">                .{ .U32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L207">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L208">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L209">                .{ .U32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L210">                .{ .U32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L211">                .{ .U32 = <span class="tok-number">3</span> },</span>
 <span class="line" id="L212">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L213">            },</span>
-<span class="line" id="L214">            .want = blk: {</span>
-<span class="line" id="L215">                <span class="tok-kw">const</span> SubArray = std.enums.EnumArray(Size, <span class="tok-type">u32</span>);</span>
-<span class="line" id="L216">                <span class="tok-kw">const</span> sa_1 = SubArray.init(.{</span>
-<span class="line" id="L217">                    .small = <span class="tok-number">2</span>,</span>
-<span class="line" id="L218">                    .medium = <span class="tok-number">2</span>,</span>
-<span class="line" id="L219">                    .large = <span class="tok-number">3</span>,</span>
-<span class="line" id="L220">                });</span>
-<span class="line" id="L221">                <span class="tok-kw">const</span> sa_2 = SubArray.initFill(<span class="tok-number">0</span>);</span>
-<span class="line" id="L222">                <span class="tok-kw">const</span> sa_3 = res: {</span>
-<span class="line" id="L223">                    <span class="tok-kw">var</span> arr = SubArray.initUndefined();</span>
-<span class="line" id="L224">                    arr.set(.small, <span class="tok-number">0</span>);</span>
-<span class="line" id="L225">                    arr.set(.medium, <span class="tok-number">1</span>);</span>
-<span class="line" id="L226">                    arr.set(.large, <span class="tok-number">3</span>);</span>
-<span class="line" id="L227">                    <span class="tok-kw">break</span> :res arr;</span>
-<span class="line" id="L228">                };</span>
-<span class="line" id="L229">                <span class="tok-kw">const</span> want = std.enums.EnumArray(Color, SubArray).init(.{</span>
-<span class="line" id="L230">                    .red = sa_1,</span>
-<span class="line" id="L231">                    .yellow = sa_2,</span>
-<span class="line" id="L232">                    .blue = sa_3,</span>
-<span class="line" id="L233">                });</span>
-<span class="line" id="L234">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L235">            },</span>
-<span class="line" id="L236">        },</span>
-<span class="line" id="L237">    };</span>
-<span class="line" id="L238"></span>
-<span class="line" id="L239">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L240">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
-<span class="line" id="L241">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L242">        <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L243"></span>
-<span class="line" id="L244">        <span class="tok-kw">for</span> (t.want.values, <span class="tok-number">0</span>..) |want, i| {</span>
-<span class="line" id="L245">            <span class="tok-kw">try</span> testing.expectEqual(t.name, want, result.value.values[i]);</span>
-<span class="line" id="L246">        }</span>
-<span class="line" id="L247">    }</span>
-<span class="line" id="L248">}</span>
-<span class="line" id="L249"></span>
+<span class="line" id="L213">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L214">            },</span>
+<span class="line" id="L215">            .want = blk: {</span>
+<span class="line" id="L216">                <span class="tok-kw">const</span> SubArray = std.enums.EnumArray(Size, <span class="tok-type">u32</span>);</span>
+<span class="line" id="L217">                <span class="tok-kw">const</span> sa_1 = SubArray.init(.{</span>
+<span class="line" id="L218">                    .small = <span class="tok-number">2</span>,</span>
+<span class="line" id="L219">                    .medium = <span class="tok-number">2</span>,</span>
+<span class="line" id="L220">                    .large = <span class="tok-number">3</span>,</span>
+<span class="line" id="L221">                });</span>
+<span class="line" id="L222">                <span class="tok-kw">const</span> sa_2 = SubArray.initFill(<span class="tok-number">0</span>);</span>
+<span class="line" id="L223">                <span class="tok-kw">const</span> sa_3 = res: {</span>
+<span class="line" id="L224">                    <span class="tok-kw">var</span> arr = SubArray.initUndefined();</span>
+<span class="line" id="L225">                    arr.set(.small, <span class="tok-number">0</span>);</span>
+<span class="line" id="L226">                    arr.set(.medium, <span class="tok-number">1</span>);</span>
+<span class="line" id="L227">                    arr.set(.large, <span class="tok-number">3</span>);</span>
+<span class="line" id="L228">                    <span class="tok-kw">break</span> :res arr;</span>
+<span class="line" id="L229">                };</span>
+<span class="line" id="L230">                <span class="tok-kw">const</span> want = std.enums.EnumArray(Color, SubArray).init(.{</span>
+<span class="line" id="L231">                    .red = sa_1,</span>
+<span class="line" id="L232">                    .yellow = sa_2,</span>
+<span class="line" id="L233">                    .blue = sa_3,</span>
+<span class="line" id="L234">                });</span>
+<span class="line" id="L235">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L236">            },</span>
+<span class="line" id="L237">        },</span>
+<span class="line" id="L238">    };</span>
+<span class="line" id="L239"></span>
+<span class="line" id="L240">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L241">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(t.want);</span>
+<span class="line" id="L242">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L243">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L244"></span>
+<span class="line" id="L245">        <span class="tok-kw">for</span> (t.want.values, <span class="tok-number">0</span>..) |want, i| {</span>
+<span class="line" id="L246">            <span class="tok-kw">try</span> require.equalf(want, result.value.values[i], <span class="tok-str">&quot;Test case: {s}&quot;</span>, .{t.name});</span>
+<span class="line" id="L247">        }</span>
+<span class="line" id="L248">    }</span>
+<span class="line" id="L249">}</span>
+<span class="line" id="L250"></span>
 </code></pre></body>
 </html>

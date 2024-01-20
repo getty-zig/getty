@@ -112,84 +112,84 @@
     </style>
 </head>
 <body>
-<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
-<span class="line" id="L2"><span class="tok-kw">const</span> test_ally = std.testing.allocator;</span>
+<pre><code><span class="line" id="L1"><span class="tok-kw">const</span> require = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;protest&quot;</span>).require;</span>
+<span class="line" id="L2"><span class="tok-kw">const</span> std = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;std&quot;</span>);</span>
 <span class="line" id="L3"></span>
-<span class="line" id="L4"><span class="tok-kw">const</span> DynamicBitSetVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/dynamic_bit_set.zig&quot;</span>).Visitor;</span>
-<span class="line" id="L5"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
-<span class="line" id="L6"></span>
-<span class="line" id="L7"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L4"><span class="tok-kw">const</span> test_ally = std.testing.allocator;</span>
+<span class="line" id="L5"></span>
+<span class="line" id="L6"><span class="tok-kw">const</span> DynamicBitSetVisitor = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../impls/visitor/dynamic_bit_set.zig&quot;</span>).Visitor;</span>
+<span class="line" id="L7"><span class="tok-kw">const</span> testing = <span class="tok-builtin">@import</span>(<span class="tok-str">&quot;../testing.zig&quot;</span>);</span>
 <span class="line" id="L8"></span>
-<span class="line" id="L9"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
-<span class="line" id="L10"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
-<span class="line" id="L11">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L12">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L13">) <span class="tok-type">bool</span> {</span>
-<span class="line" id="L14">    <span class="tok-kw">return</span> T == std.DynamicBitSet <span class="tok-kw">or</span> T == std.DynamicBitSetUnmanaged;</span>
-<span class="line" id="L15">}</span>
-<span class="line" id="L16"></span>
-<span class="line" id="L17"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
-<span class="line" id="L18"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
-<span class="line" id="L19">    <span class="tok-comment">/// A memory allocator.</span></span>
-<span class="line" id="L20">    ally: std.mem.Allocator,</span>
-<span class="line" id="L21">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L22">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L23">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
-<span class="line" id="L24">    deserializer: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L25">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
-<span class="line" id="L26">    visitor: <span class="tok-kw">anytype</span>,</span>
-<span class="line" id="L27">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
-<span class="line" id="L28">    _ = T;</span>
-<span class="line" id="L29"></span>
-<span class="line" id="L30">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeSeq(ally, visitor);</span>
-<span class="line" id="L31">}</span>
-<span class="line" id="L32"></span>
-<span class="line" id="L33"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
-<span class="line" id="L34"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
-<span class="line" id="L35">    <span class="tok-comment">/// The type being deserialized into.</span></span>
-<span class="line" id="L36">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
-<span class="line" id="L37">) <span class="tok-type">type</span> {</span>
-<span class="line" id="L38">    <span class="tok-kw">return</span> DynamicBitSetVisitor(T);</span>
-<span class="line" id="L39">}</span>
-<span class="line" id="L40"></span>
-<span class="line" id="L41"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DynamicBitSet&quot;</span> {</span>
-<span class="line" id="L42">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L43">        .{</span>
-<span class="line" id="L44">            .name = <span class="tok-str">&quot;zero-sized&quot;</span>,</span>
-<span class="line" id="L45">            .tokens = &amp;.{</span>
-<span class="line" id="L46">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L47">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L48">            },</span>
-<span class="line" id="L49">            .want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">0</span>),</span>
-<span class="line" id="L50">        },</span>
-<span class="line" id="L51">        .{</span>
-<span class="line" id="L52">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
-<span class="line" id="L53">            .tokens = &amp;.{</span>
-<span class="line" id="L54">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L55">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L56">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L9"><span class="tok-kw">const</span> Self = <span class="tok-builtin">@This</span>();</span>
+<span class="line" id="L10"></span>
+<span class="line" id="L11"><span class="tok-comment">/// Specifies all types that can be deserialized by this block.</span></span>
+<span class="line" id="L12"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">is</span>(</span>
+<span class="line" id="L13">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L14">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L15">) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L16">    <span class="tok-kw">return</span> T == std.DynamicBitSet <span class="tok-kw">or</span> T == std.DynamicBitSetUnmanaged;</span>
+<span class="line" id="L17">}</span>
+<span class="line" id="L18"></span>
+<span class="line" id="L19"><span class="tok-comment">/// Specifies the deserialization process for types relevant to this block.</span></span>
+<span class="line" id="L20"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">deserialize</span>(</span>
+<span class="line" id="L21">    <span class="tok-comment">/// A memory allocator.</span></span>
+<span class="line" id="L22">    ally: std.mem.Allocator,</span>
+<span class="line" id="L23">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L24">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L25">    <span class="tok-comment">/// A `getty.Deserializer` interface value.</span></span>
+<span class="line" id="L26">    deserializer: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L27">    <span class="tok-comment">/// A `getty.de.Visitor` interface value.</span></span>
+<span class="line" id="L28">    visitor: <span class="tok-kw">anytype</span>,</span>
+<span class="line" id="L29">) !<span class="tok-builtin">@TypeOf</span>(visitor).Value {</span>
+<span class="line" id="L30">    _ = T;</span>
+<span class="line" id="L31"></span>
+<span class="line" id="L32">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> deserializer.deserializeSeq(ally, visitor);</span>
+<span class="line" id="L33">}</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35"><span class="tok-comment">/// Returns a type that implements `getty.de.Visitor`.</span></span>
+<span class="line" id="L36"><span class="tok-kw">pub</span> <span class="tok-kw">fn</span> <span class="tok-fn">Visitor</span>(</span>
+<span class="line" id="L37">    <span class="tok-comment">/// The type being deserialized into.</span></span>
+<span class="line" id="L38">    <span class="tok-kw">comptime</span> T: <span class="tok-type">type</span>,</span>
+<span class="line" id="L39">) <span class="tok-type">type</span> {</span>
+<span class="line" id="L40">    <span class="tok-kw">return</span> DynamicBitSetVisitor(T);</span>
+<span class="line" id="L41">}</span>
+<span class="line" id="L42"></span>
+<span class="line" id="L43"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DynamicBitSet&quot;</span> {</span>
+<span class="line" id="L44">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L45">        .{</span>
+<span class="line" id="L46">            .name = <span class="tok-str">&quot;zero-sized&quot;</span>,</span>
+<span class="line" id="L47">            .tokens = &amp;.{</span>
+<span class="line" id="L48">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L49">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L50">            },</span>
+<span class="line" id="L51">            .want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">0</span>),</span>
+<span class="line" id="L52">        },</span>
+<span class="line" id="L53">        .{</span>
+<span class="line" id="L54">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
+<span class="line" id="L55">            .tokens = &amp;.{</span>
+<span class="line" id="L56">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L57">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L58">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L59">            },</span>
-<span class="line" id="L60">            .want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">3</span>),</span>
-<span class="line" id="L61">        },</span>
-<span class="line" id="L62">        .{</span>
-<span class="line" id="L63">            .name = <span class="tok-str">&quot;full&quot;</span>,</span>
-<span class="line" id="L64">            .tokens = &amp;.{</span>
-<span class="line" id="L65">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L66">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L67">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L58">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L59">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L60">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L61">            },</span>
+<span class="line" id="L62">            .want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">3</span>),</span>
+<span class="line" id="L63">        },</span>
+<span class="line" id="L64">        .{</span>
+<span class="line" id="L65">            .name = <span class="tok-str">&quot;full&quot;</span>,</span>
+<span class="line" id="L66">            .tokens = &amp;.{</span>
+<span class="line" id="L67">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L68">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L69">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L70">            },</span>
-<span class="line" id="L71">            .want = <span class="tok-kw">try</span> std.DynamicBitSet.initFull(test_ally, <span class="tok-number">3</span>),</span>
-<span class="line" id="L72">        },</span>
-<span class="line" id="L73">        .{</span>
-<span class="line" id="L74">            .name = <span class="tok-str">&quot;mixed (LSB set)&quot;</span>,</span>
-<span class="line" id="L75">            .tokens = &amp;.{</span>
-<span class="line" id="L76">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
-<span class="line" id="L77">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L78">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L69">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L70">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L71">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L72">            },</span>
+<span class="line" id="L73">            .want = <span class="tok-kw">try</span> std.DynamicBitSet.initFull(test_ally, <span class="tok-number">3</span>),</span>
+<span class="line" id="L74">        },</span>
+<span class="line" id="L75">        .{</span>
+<span class="line" id="L76">            .name = <span class="tok-str">&quot;mixed (LSB set)&quot;</span>,</span>
+<span class="line" id="L77">            .tokens = &amp;.{</span>
+<span class="line" id="L78">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
 <span class="line" id="L79">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L80">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L81">                .{ .I32 = <span class="tok-number">0</span> },</span>
@@ -198,24 +198,24 @@
 <span class="line" id="L84">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L85">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L86">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L87">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L88">            },</span>
-<span class="line" id="L89">            .want = blk: {</span>
-<span class="line" id="L90">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
-<span class="line" id="L91">                want.set(<span class="tok-number">0</span>);</span>
-<span class="line" id="L92">                want.set(<span class="tok-number">2</span>);</span>
-<span class="line" id="L93">                want.set(<span class="tok-number">4</span>);</span>
-<span class="line" id="L94">                want.set(<span class="tok-number">6</span>);</span>
-<span class="line" id="L95">                want.set(<span class="tok-number">8</span>);</span>
-<span class="line" id="L96">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L97">            },</span>
-<span class="line" id="L98">        },</span>
-<span class="line" id="L99">        .{</span>
-<span class="line" id="L100">            .name = <span class="tok-str">&quot;mixed (LSB unset)&quot;</span>,</span>
-<span class="line" id="L101">            .tokens = &amp;.{</span>
-<span class="line" id="L102">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
-<span class="line" id="L103">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L104">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L87">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L88">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L89">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L90">            },</span>
+<span class="line" id="L91">            .want = blk: {</span>
+<span class="line" id="L92">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
+<span class="line" id="L93">                want.set(<span class="tok-number">0</span>);</span>
+<span class="line" id="L94">                want.set(<span class="tok-number">2</span>);</span>
+<span class="line" id="L95">                want.set(<span class="tok-number">4</span>);</span>
+<span class="line" id="L96">                want.set(<span class="tok-number">6</span>);</span>
+<span class="line" id="L97">                want.set(<span class="tok-number">8</span>);</span>
+<span class="line" id="L98">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L99">            },</span>
+<span class="line" id="L100">        },</span>
+<span class="line" id="L101">        .{</span>
+<span class="line" id="L102">            .name = <span class="tok-str">&quot;mixed (LSB unset)&quot;</span>,</span>
+<span class="line" id="L103">            .tokens = &amp;.{</span>
+<span class="line" id="L104">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
 <span class="line" id="L105">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L106">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L107">                .{ .I32 = <span class="tok-number">1</span> },</span>
@@ -224,71 +224,71 @@
 <span class="line" id="L110">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L111">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L112">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L113">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L114">            },</span>
-<span class="line" id="L115">            .want = blk: {</span>
-<span class="line" id="L116">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
-<span class="line" id="L117">                want.set(<span class="tok-number">1</span>);</span>
-<span class="line" id="L118">                want.set(<span class="tok-number">3</span>);</span>
-<span class="line" id="L119">                want.set(<span class="tok-number">5</span>);</span>
-<span class="line" id="L120">                want.set(<span class="tok-number">7</span>);</span>
-<span class="line" id="L121">                want.set(<span class="tok-number">9</span>);</span>
-<span class="line" id="L122">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L123">            },</span>
-<span class="line" id="L124">        },</span>
-<span class="line" id="L125">    };</span>
-<span class="line" id="L126"></span>
-<span class="line" id="L127">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L128">        <span class="tok-kw">var</span> want = t.want;</span>
-<span class="line" id="L129">        <span class="tok-kw">defer</span> want.deinit();</span>
-<span class="line" id="L130"></span>
-<span class="line" id="L131">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(want);</span>
-<span class="line" id="L132">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L133">        <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L134"></span>
-<span class="line" id="L135">        <span class="tok-kw">try</span> testing.expectEqual(t.name, want.capacity(), result.value.capacity());</span>
-<span class="line" id="L136">        <span class="tok-kw">try</span> testing.expect(t.name, want.eql(result.value));</span>
-<span class="line" id="L137">    }</span>
-<span class="line" id="L138">}</span>
-<span class="line" id="L139"></span>
-<span class="line" id="L140"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DynamicBitSetUnmanaged&quot;</span> {</span>
-<span class="line" id="L141">    <span class="tok-kw">const</span> tests = .{</span>
-<span class="line" id="L142">        .{</span>
-<span class="line" id="L143">            .name = <span class="tok-str">&quot;zero-sized&quot;</span>,</span>
-<span class="line" id="L144">            .tokens = &amp;.{</span>
-<span class="line" id="L145">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
-<span class="line" id="L146">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L147">            },</span>
-<span class="line" id="L148">            .want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">0</span>),</span>
-<span class="line" id="L149">        },</span>
-<span class="line" id="L150">        .{</span>
-<span class="line" id="L151">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
-<span class="line" id="L152">            .tokens = &amp;.{</span>
-<span class="line" id="L153">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L154">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L155">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L113">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L114">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L115">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L116">            },</span>
+<span class="line" id="L117">            .want = blk: {</span>
+<span class="line" id="L118">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSet.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
+<span class="line" id="L119">                want.set(<span class="tok-number">1</span>);</span>
+<span class="line" id="L120">                want.set(<span class="tok-number">3</span>);</span>
+<span class="line" id="L121">                want.set(<span class="tok-number">5</span>);</span>
+<span class="line" id="L122">                want.set(<span class="tok-number">7</span>);</span>
+<span class="line" id="L123">                want.set(<span class="tok-number">9</span>);</span>
+<span class="line" id="L124">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L125">            },</span>
+<span class="line" id="L126">        },</span>
+<span class="line" id="L127">    };</span>
+<span class="line" id="L128"></span>
+<span class="line" id="L129">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L130">        <span class="tok-kw">var</span> want = t.want;</span>
+<span class="line" id="L131">        <span class="tok-kw">defer</span> want.deinit();</span>
+<span class="line" id="L132"></span>
+<span class="line" id="L133">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(want);</span>
+<span class="line" id="L134">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L135">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L136"></span>
+<span class="line" id="L137">        <span class="tok-kw">try</span> require.equalf(want.capacity(), result.value.capacity(), <span class="tok-str">&quot;Test case: \&quot;{s}\&quot;&quot;</span>, .{t.name});</span>
+<span class="line" id="L138">        <span class="tok-kw">try</span> require.isTruef(want.eql(result.value), <span class="tok-str">&quot;Test case: \&quot;{s}\&quot;&quot;</span>, .{t.name});</span>
+<span class="line" id="L139">    }</span>
+<span class="line" id="L140">}</span>
+<span class="line" id="L141"></span>
+<span class="line" id="L142"><span class="tok-kw">test</span> <span class="tok-str">&quot;deserialize - std.DynamicBitSetUnmanaged&quot;</span> {</span>
+<span class="line" id="L143">    <span class="tok-kw">const</span> tests = .{</span>
+<span class="line" id="L144">        .{</span>
+<span class="line" id="L145">            .name = <span class="tok-str">&quot;zero-sized&quot;</span>,</span>
+<span class="line" id="L146">            .tokens = &amp;.{</span>
+<span class="line" id="L147">                .{ .Seq = .{ .len = <span class="tok-number">0</span> } },</span>
+<span class="line" id="L148">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L149">            },</span>
+<span class="line" id="L150">            .want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">0</span>),</span>
+<span class="line" id="L151">        },</span>
+<span class="line" id="L152">        .{</span>
+<span class="line" id="L153">            .name = <span class="tok-str">&quot;empty&quot;</span>,</span>
+<span class="line" id="L154">            .tokens = &amp;.{</span>
+<span class="line" id="L155">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L156">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L157">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L158">            },</span>
-<span class="line" id="L159">            .want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">3</span>),</span>
-<span class="line" id="L160">        },</span>
-<span class="line" id="L161">        .{</span>
-<span class="line" id="L162">            .name = <span class="tok-str">&quot;full&quot;</span>,</span>
-<span class="line" id="L163">            .tokens = &amp;.{</span>
-<span class="line" id="L164">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
-<span class="line" id="L165">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L166">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L157">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L158">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L159">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L160">            },</span>
+<span class="line" id="L161">            .want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">3</span>),</span>
+<span class="line" id="L162">        },</span>
+<span class="line" id="L163">        .{</span>
+<span class="line" id="L164">            .name = <span class="tok-str">&quot;full&quot;</span>,</span>
+<span class="line" id="L165">            .tokens = &amp;.{</span>
+<span class="line" id="L166">                .{ .Seq = .{ .len = <span class="tok-number">3</span> } },</span>
 <span class="line" id="L167">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L168">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L169">            },</span>
-<span class="line" id="L170">            .want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initFull(test_ally, <span class="tok-number">3</span>),</span>
-<span class="line" id="L171">        },</span>
-<span class="line" id="L172">        .{</span>
-<span class="line" id="L173">            .name = <span class="tok-str">&quot;mixed (LSB set)&quot;</span>,</span>
-<span class="line" id="L174">            .tokens = &amp;.{</span>
-<span class="line" id="L175">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
-<span class="line" id="L176">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L177">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L168">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L169">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L170">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L171">            },</span>
+<span class="line" id="L172">            .want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initFull(test_ally, <span class="tok-number">3</span>),</span>
+<span class="line" id="L173">        },</span>
+<span class="line" id="L174">        .{</span>
+<span class="line" id="L175">            .name = <span class="tok-str">&quot;mixed (LSB set)&quot;</span>,</span>
+<span class="line" id="L176">            .tokens = &amp;.{</span>
+<span class="line" id="L177">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
 <span class="line" id="L178">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L179">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L180">                .{ .I32 = <span class="tok-number">0</span> },</span>
@@ -297,24 +297,24 @@
 <span class="line" id="L183">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L184">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L185">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L186">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L187">            },</span>
-<span class="line" id="L188">            .want = blk: {</span>
-<span class="line" id="L189">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
-<span class="line" id="L190">                want.set(<span class="tok-number">0</span>);</span>
-<span class="line" id="L191">                want.set(<span class="tok-number">2</span>);</span>
-<span class="line" id="L192">                want.set(<span class="tok-number">4</span>);</span>
-<span class="line" id="L193">                want.set(<span class="tok-number">6</span>);</span>
-<span class="line" id="L194">                want.set(<span class="tok-number">8</span>);</span>
-<span class="line" id="L195">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L196">            },</span>
-<span class="line" id="L197">        },</span>
-<span class="line" id="L198">        .{</span>
-<span class="line" id="L199">            .name = <span class="tok-str">&quot;mixed (LSB unset)&quot;</span>,</span>
-<span class="line" id="L200">            .tokens = &amp;.{</span>
-<span class="line" id="L201">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
-<span class="line" id="L202">                .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L203">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L186">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L187">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L188">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L189">            },</span>
+<span class="line" id="L190">            .want = blk: {</span>
+<span class="line" id="L191">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
+<span class="line" id="L192">                want.set(<span class="tok-number">0</span>);</span>
+<span class="line" id="L193">                want.set(<span class="tok-number">2</span>);</span>
+<span class="line" id="L194">                want.set(<span class="tok-number">4</span>);</span>
+<span class="line" id="L195">                want.set(<span class="tok-number">6</span>);</span>
+<span class="line" id="L196">                want.set(<span class="tok-number">8</span>);</span>
+<span class="line" id="L197">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L198">            },</span>
+<span class="line" id="L199">        },</span>
+<span class="line" id="L200">        .{</span>
+<span class="line" id="L201">            .name = <span class="tok-str">&quot;mixed (LSB unset)&quot;</span>,</span>
+<span class="line" id="L202">            .tokens = &amp;.{</span>
+<span class="line" id="L203">                .{ .Seq = .{ .len = <span class="tok-number">10</span> } },</span>
 <span class="line" id="L204">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L205">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L206">                .{ .I32 = <span class="tok-number">1</span> },</span>
@@ -323,32 +323,34 @@
 <span class="line" id="L209">                .{ .I32 = <span class="tok-number">0</span> },</span>
 <span class="line" id="L210">                .{ .I32 = <span class="tok-number">1</span> },</span>
 <span class="line" id="L211">                .{ .I32 = <span class="tok-number">0</span> },</span>
-<span class="line" id="L212">                .{ .SeqEnd = {} },</span>
-<span class="line" id="L213">            },</span>
-<span class="line" id="L214">            .want = blk: {</span>
-<span class="line" id="L215">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
-<span class="line" id="L216">                want.set(<span class="tok-number">1</span>);</span>
-<span class="line" id="L217">                want.set(<span class="tok-number">3</span>);</span>
-<span class="line" id="L218">                want.set(<span class="tok-number">5</span>);</span>
-<span class="line" id="L219">                want.set(<span class="tok-number">7</span>);</span>
-<span class="line" id="L220">                want.set(<span class="tok-number">9</span>);</span>
-<span class="line" id="L221">                <span class="tok-kw">break</span> :blk want;</span>
-<span class="line" id="L222">            },</span>
-<span class="line" id="L223">        },</span>
-<span class="line" id="L224">    };</span>
-<span class="line" id="L225"></span>
-<span class="line" id="L226">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
-<span class="line" id="L227">        <span class="tok-kw">var</span> want = t.want;</span>
-<span class="line" id="L228">        <span class="tok-kw">defer</span> want.deinit(test_ally);</span>
-<span class="line" id="L229"></span>
-<span class="line" id="L230">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(want);</span>
-<span class="line" id="L231">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
-<span class="line" id="L232">        <span class="tok-kw">defer</span> result.deinit();</span>
-<span class="line" id="L233"></span>
-<span class="line" id="L234">        <span class="tok-kw">try</span> testing.expectEqual(t.name, want.capacity(), result.value.capacity());</span>
-<span class="line" id="L235">        <span class="tok-kw">try</span> testing.expect(t.name, want.eql(result.value));</span>
-<span class="line" id="L236">    }</span>
-<span class="line" id="L237">}</span>
-<span class="line" id="L238"></span>
+<span class="line" id="L212">                .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L213">                .{ .I32 = <span class="tok-number">0</span> },</span>
+<span class="line" id="L214">                .{ .SeqEnd = {} },</span>
+<span class="line" id="L215">            },</span>
+<span class="line" id="L216">            .want = blk: {</span>
+<span class="line" id="L217">                <span class="tok-kw">var</span> want = <span class="tok-kw">try</span> std.DynamicBitSetUnmanaged.initEmpty(test_ally, <span class="tok-number">10</span>);</span>
+<span class="line" id="L218">                want.set(<span class="tok-number">1</span>);</span>
+<span class="line" id="L219">                want.set(<span class="tok-number">3</span>);</span>
+<span class="line" id="L220">                want.set(<span class="tok-number">5</span>);</span>
+<span class="line" id="L221">                want.set(<span class="tok-number">7</span>);</span>
+<span class="line" id="L222">                want.set(<span class="tok-number">9</span>);</span>
+<span class="line" id="L223">                <span class="tok-kw">break</span> :blk want;</span>
+<span class="line" id="L224">            },</span>
+<span class="line" id="L225">        },</span>
+<span class="line" id="L226">    };</span>
+<span class="line" id="L227"></span>
+<span class="line" id="L228">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (tests) |t| {</span>
+<span class="line" id="L229">        <span class="tok-kw">var</span> want = t.want;</span>
+<span class="line" id="L230">        <span class="tok-kw">defer</span> want.deinit(test_ally);</span>
+<span class="line" id="L231"></span>
+<span class="line" id="L232">        <span class="tok-kw">const</span> Want = <span class="tok-builtin">@TypeOf</span>(want);</span>
+<span class="line" id="L233">        <span class="tok-kw">var</span> result = <span class="tok-kw">try</span> testing.deserialize(t.name, Self, Want, t.tokens);</span>
+<span class="line" id="L234">        <span class="tok-kw">defer</span> result.deinit();</span>
+<span class="line" id="L235"></span>
+<span class="line" id="L236">        <span class="tok-kw">try</span> require.equalf(want.capacity(), result.value.capacity(), <span class="tok-str">&quot;Test case: \&quot;{s}\&quot;&quot;</span>, .{t.name});</span>
+<span class="line" id="L237">        <span class="tok-kw">try</span> require.isTruef(want.eql(result.value), <span class="tok-str">&quot;Test case: \&quot;{s}\&quot;&quot;</span>, .{t.name});</span>
+<span class="line" id="L238">    }</span>
+<span class="line" id="L239">}</span>
+<span class="line" id="L240"></span>
 </code></pre></body>
 </html>
