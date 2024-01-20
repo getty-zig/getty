@@ -78,6 +78,9 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
+        inline for (imports) |imp| {
+            doc_obj.root_module.addImport(imp.name, imp.module);
+        }
 
         const install_docs = b.addInstallDirectory(.{
             .source_dir = doc_obj.getEmittedDocs(),
