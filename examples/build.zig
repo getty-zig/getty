@@ -1,8 +1,5 @@
 const std = @import("std");
 
-const module_name = "getty";
-const module_path = "../src/getty.zig";
-
 const examples = .{
     "bool-serializer",
     "bool-deserializer",
@@ -10,9 +7,12 @@ const examples = .{
     "seq-deserializer",
 };
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    const target_optimize = .{ .target = target, .optimize = optimize };
+
+    const getty_module = b.dependency("getty", target_optimize).module("getty");
 
     inline for (examples) |e| {
         const example_path = e ++ "/main.zig";
@@ -26,12 +26,7 @@ pub fn build(b: *std.build.Builder) void {
             .target = target,
             .optimize = optimize,
         });
-        const module = b.addModule(module_name, .{
-            .source_file = .{ .path = module_path },
-        });
-
-        exe.addModule(module_name, module);
-
+        exe.root_module.addImport("getty", getty_module);
         const run_cmd = b.addRunArtifact(exe);
         run_cmd.step.dependOn(b.getInstallStep());
         const run_step = b.step(run_name, run_desc);
