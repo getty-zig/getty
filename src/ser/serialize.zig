@@ -1,10 +1,10 @@
 const require = @import("protest").require;
 const std = @import("std");
 
-const attributes = @import("../attributes.zig");
+const attributes = @import("attr");
 const blocks = @import("blocks.zig");
 const st = @import("tuples.zig").st;
-const has_block = @import("../block.zig").has_block;
+const has_block = @import("block").has_block;
 const t = @import("testing.zig");
 
 /// Serializes the value `v` using the `getty.Serializer` `s`.

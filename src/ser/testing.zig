@@ -8,7 +8,7 @@ const MapInterface = @import("interfaces/map.zig").Map;
 const SerializerInterface = @import("interfaces/serializer.zig").Serializer;
 const SeqInterface = @import("interfaces/seq.zig").Seq;
 const StructureInterface = @import("interfaces/structure.zig").Structure;
-const Token = @import("../testing.zig").Token;
+const Token = @import("testing").Token;
 
 pub fn run(ally: ?std.mem.Allocator, comptime serialize_fn: anytype, input: anytype, expected: []const Token) !void {
     var s = DefaultSerializer.init(expected);

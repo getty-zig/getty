@@ -2,7 +2,7 @@
 
 const std = @import("std");
 
-const isString = @import("../../helpers.zig").isString;
+const isString = @import("helpers").isString;
 const t = @import("../testing.zig");
 
 /// Specifies all types that can be serialized by this block.

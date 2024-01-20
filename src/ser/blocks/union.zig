@@ -5,7 +5,7 @@ const std = @import("std");
 const getAttributes = @import("../attributes.zig").getAttributes;
 const getty_serialize = @import("../serialize.zig").serialize;
 const t = @import("../testing.zig");
-const Tag = @import("../../attributes.zig").Tag;
+const Tag = @import("attr").Tag;
 
 /// Specifies all types that can be serialized by this block.
 pub fn is(
