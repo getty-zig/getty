@@ -121,7 +121,7 @@ pub fn main() !void {
 
     ```sh
     # Latest version
-    zig fetch --save git+https://github.com/getty-zig/getty.git#master
+    zig fetch --save git+https://github.com/getty-zig/getty.git#main
 
     # Specific version
     zig fetch --save git+https://github.com/getty-zig/getty.git#<COMMIT>
