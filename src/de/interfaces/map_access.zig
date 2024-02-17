@@ -25,42 +25,42 @@ pub fn MapAccess(
 
             pub const Err = E;
 
-            pub fn nextKeySeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+            pub fn nextKeySeed(self: Self, arena: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 if (methods.nextKeySeed) |func| {
-                    return try func(self.impl, ally, seed);
+                    return try func(self.impl, arena, seed);
                 }
 
                 @compileError("nextKeySeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextValueSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+            pub fn nextValueSeed(self: Self, arena: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.nextValueSeed) |func| {
-                    return try func(self.impl, ally, seed);
+                    return try func(self.impl, arena, seed);
                 }
 
                 @compileError("nextValueSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextKey(self: Self, ally: std.mem.Allocator, comptime Key: type) E!?Key {
+            pub fn nextKey(self: Self, arena: std.mem.Allocator, comptime Key: type) E!?Key {
                 if (methods.nextKey) |func| {
-                    return try func(self.impl, ally, Key);
+                    return try func(self.impl, arena, Key);
                 }
 
                 var seed = DefaultSeed(Key){};
                 const ds = seed.seed();
 
-                return try self.nextKeySeed(ally, ds);
+                return try self.nextKeySeed(arena, ds);
             }
 
-            pub fn nextValue(self: Self, ally: std.mem.Allocator, comptime Value: type) E!Value {
+            pub fn nextValue(self: Self, arena: std.mem.Allocator, comptime Value: type) E!Value {
                 if (methods.nextValue) |func| {
-                    return try func(self.impl, ally, Value);
+                    return try func(self.impl, arena, Value);
                 }
 
                 var seed = DefaultSeed(Value){};
                 const ds = seed.seed();
 
-                return try self.nextValueSeed(ally, ds);
+                return try self.nextValueSeed(arena, ds);
             }
         };
 
@@ -73,9 +73,9 @@ pub fn MapAccess(
 
 fn NextKeySeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+        fn func(impl: Impl, arena: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -86,9 +86,9 @@ fn NextKeySeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+        fn func(impl: Impl, arena: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -99,9 +99,9 @@ fn NextValueSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextKeyFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Key: type) E!?Key {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Key: type) E!?Key {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -112,9 +112,9 @@ fn NextKeyFn(comptime Impl: type, comptime E: type) type {
 
 fn NextValueFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Value: type) E!Value {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Value: type) E!Value {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }

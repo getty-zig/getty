@@ -33,15 +33,15 @@ pub fn Visitor(
 
             pub const Value = T;
 
-            pub fn visitBool(self: Self, ally: std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!T {
+            pub fn visitBool(self: Self, arena: std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!T {
                 if (methods.visitBool) |func| {
-                    return try func(self.impl, ally, Deserializer, input);
+                    return try func(self.impl, arena, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitFloat(self: Self, ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
+            pub fn visitFloat(self: Self, arena: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
                 if (methods.visitFloat) |func| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
@@ -50,13 +50,13 @@ pub fn Visitor(
                         }
                     }
 
-                    return try func(self.impl, ally, Deserializer, input);
+                    return try func(self.impl, arena, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitInt(self: Self, ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
+            pub fn visitInt(self: Self, arena: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
                 if (methods.visitInt) |func| {
                     comptime {
                         switch (@typeInfo(@TypeOf(input))) {
@@ -65,23 +65,23 @@ pub fn Visitor(
                         }
                     }
 
-                    return try func(self.impl, ally, Deserializer, input);
+                    return try func(self.impl, arena, Deserializer, input);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitMap(self: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!T {
+            pub fn visitMap(self: Self, arena: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!T {
                 if (methods.visitMap) |func| {
-                    return try func(self.impl, ally, Deserializer, map);
+                    return try func(self.impl, arena, Deserializer, map);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitNull(self: Self, ally: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
+            pub fn visitNull(self: Self, arena: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
                 if (methods.visitNull) |func| {
-                    return try func(self.impl, ally, Deserializer);
+                    return try func(self.impl, arena, Deserializer);
                 }
 
                 return error.Unsupported;
@@ -92,17 +92,17 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire sequence. Note
             /// that this implies that `seq` must be able to identify
             /// the end of a sequence when it is encountered.
-            pub fn visitSeq(self: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!T {
+            pub fn visitSeq(self: Self, arena: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!T {
                 if (methods.visitSeq) |func| {
-                    return try func(self.impl, ally, Deserializer, seq);
+                    return try func(self.impl, arena, Deserializer, seq);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitSome(self: Self, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!T {
+            pub fn visitSome(self: Self, arena: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!T {
                 if (methods.visitSome) |func| {
-                    return try func(self.impl, ally, deserializer);
+                    return try func(self.impl, arena, deserializer);
                 }
 
                 return error.Unsupported;
@@ -113,7 +113,7 @@ pub fn Visitor(
             /// The visitor is responsible for visiting the entire slice.
             pub fn visitString(
                 self: Self,
-                ally: std.mem.Allocator,
+                arena: std.mem.Allocator,
                 comptime Deserializer: type,
                 input: anytype,
                 lifetime: StringLifetime,
@@ -125,23 +125,23 @@ pub fn Visitor(
                         }
                     }
 
-                    return try func(self.impl, ally, Deserializer, input, lifetime);
+                    return try func(self.impl, arena, Deserializer, input, lifetime);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitUnion(self: Self, ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!T {
+            pub fn visitUnion(self: Self, arena: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!T {
                 if (methods.visitUnion) |func| {
-                    return try func(self.impl, ally, Deserializer, ua, va);
+                    return try func(self.impl, arena, Deserializer, ua, va);
                 }
 
                 return error.Unsupported;
             }
 
-            pub fn visitVoid(self: Self, ally: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
+            pub fn visitVoid(self: Self, arena: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
                 if (methods.visitVoid) |func| {
-                    return try func(self.impl, ally, Deserializer);
+                    return try func(self.impl, arena, Deserializer);
                 }
 
                 return error.Unsupported;
@@ -165,9 +165,9 @@ pub fn VisitStringReturn(comptime T: type) type {
 
 fn VisitAnyFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Deserializer: type, input: anytype) Deserializer.Err!T {
             _ = impl;
-            _ = ally;
+            _ = arena;
             _ = input;
 
             unreachable;
@@ -179,9 +179,9 @@ fn VisitAnyFn(comptime Impl: type, comptime T: type) type {
 
 fn VisitBoolFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!T {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Deserializer: type, input: bool) Deserializer.Err!T {
             _ = impl;
-            _ = ally;
+            _ = arena;
             _ = input;
 
             unreachable;
@@ -193,9 +193,9 @@ fn VisitBoolFn(comptime Impl: type, comptime T: type) type {
 
 fn VisitNothingFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Deserializer: type) Deserializer.Err!T {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -205,9 +205,9 @@ fn VisitNothingFn(comptime Impl: type, comptime T: type) type {
 }
 fn VisitSomeFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!T {
+        fn func(impl: Impl, arena: std.mem.Allocator, deserializer: anytype) @TypeOf(deserializer).Err!T {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -220,14 +220,14 @@ fn VisitStringFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
         fn func(
             impl: Impl,
-            ally: std.mem.Allocator,
+            arena: std.mem.Allocator,
             comptime Deserializer: type,
             input: anytype,
             lifeitime: StringLifetime,
         ) Deserializer.Err!VisitStringReturn(T) {
             _ = lifeitime;
             _ = impl;
-            _ = ally;
+            _ = arena;
             _ = input;
 
             unreachable;
@@ -239,9 +239,9 @@ fn VisitStringFn(comptime Impl: type, comptime T: type) type {
 
 fn VisitUnionFn(comptime Impl: type, comptime T: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!T {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Deserializer: type, ua: anytype, va: anytype) Deserializer.Err!T {
             _ = impl;
-            _ = ally;
+            _ = arena;
             _ = ua;
             _ = va;
 

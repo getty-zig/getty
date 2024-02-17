@@ -23,23 +23,23 @@ pub fn SeqAccess(
 
             pub const Err = E;
 
-            pub fn nextElementSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+            pub fn nextElementSeed(self: Self, arena: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
                 if (methods.nextElementSeed) |func| {
-                    return try func(self.impl, ally, seed);
+                    return try func(self.impl, arena, seed);
                 }
 
                 @compileError("nextElementSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn nextElement(self: Self, ally: std.mem.Allocator, comptime Elem: type) E!?Elem {
+            pub fn nextElement(self: Self, arena: std.mem.Allocator, comptime Elem: type) E!?Elem {
                 if (methods.nextElement) |func| {
-                    return try func(self.impl, ally, Elem);
+                    return try func(self.impl, arena, Elem);
                 }
 
                 var seed = DefaultSeed(Elem){};
                 const ds = seed.seed();
 
-                return try self.nextElementSeed(ally, ds);
+                return try self.nextElementSeed(arena, ds);
             }
         };
 
@@ -52,9 +52,9 @@ pub fn SeqAccess(
 
 fn NextElementSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
+        fn func(impl: Impl, arena: std.mem.Allocator, seed: anytype) E!?@TypeOf(seed).Value {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -65,9 +65,9 @@ fn NextElementSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn NextElementFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime Elem: type) E!?Elem {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime Elem: type) E!?Elem {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }

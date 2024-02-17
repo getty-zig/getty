@@ -23,23 +23,23 @@ pub fn UnionAccess(
 
             pub const Err = E;
 
-            pub fn variantSeed(self: Self, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+            pub fn variantSeed(self: Self, arena: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
                 if (methods.variantSeed) |func| {
-                    return try func(self.impl, ally, seed);
+                    return try func(self.impl, arena, seed);
                 }
 
                 @compileError("variantSeed is not implemented by type: " ++ @typeName(Impl));
             }
 
-            pub fn variant(self: Self, ally: std.mem.Allocator, comptime Variant: type) E!Variant {
+            pub fn variant(self: Self, arena: std.mem.Allocator, comptime Variant: type) E!Variant {
                 if (methods.variant) |func| {
-                    return try func(self.impl, ally, Variant);
+                    return try func(self.impl, arena, Variant);
                 }
 
                 var ds = DefaultSeed(Variant){};
                 const seed = ds.seed();
 
-                return try self.variantSeed(ally, seed);
+                return try self.variantSeed(arena, seed);
             }
         };
 
@@ -52,9 +52,9 @@ pub fn UnionAccess(
 
 fn VariantSeedFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
+        fn func(impl: Impl, arena: std.mem.Allocator, seed: anytype) E!@TypeOf(seed).Value {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
@@ -65,9 +65,9 @@ fn VariantSeedFn(comptime Impl: type, comptime E: type) type {
 
 fn VariantFn(comptime Impl: type, comptime E: type) type {
     const Lambda = struct {
-        fn func(impl: Impl, ally: std.mem.Allocator, comptime T: type) E!T {
+        fn func(impl: Impl, arena: std.mem.Allocator, comptime T: type) E!T {
             _ = impl;
-            _ = ally;
+            _ = arena;
 
             unreachable;
         }
