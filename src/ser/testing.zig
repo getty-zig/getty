@@ -278,10 +278,10 @@ pub fn Serializer(comptime user_sbt: anytype, comptime serializer_sbt: anytype) 
                         .Void => try require.equal(@field(expected, "Void"), @field(token, "Void")),
                     }
                 } else {
-                    @panic("expected Token::{} but serialized as {}");
+                    std.debug.panic("expected token {} but serialized as {}", .{ token_tag, expected_tag });
                 }
             } else {
-                @panic("expected end of tokens, but {} was serialized");
+                std.debug.panic("expected end of tokens, but {} was serialized", .{expected});
             }
         }
     };
