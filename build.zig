@@ -38,6 +38,32 @@ pub fn build(b: *std.Build) void {
     // Tests.
     {
         const test_all_step = b.step("test", "Run tests");
+
+        // Allow a test filter to be specified.
+        //
+        // ## Example
+        //
+        // ```
+        // $ zig build test -- "serialize - array"
+        // ```
+        if (b.args) |args| {
+            std.debug.assert(args.len != 0); // b.args would be null if no arguments were given.
+
+            for (args) |arg| {
+                const t_filter = b.addTest(.{
+                    .name = "filtered test",
+                    .root_source_file = .{ .path = "src/getty.zig" },
+                    .filter = arg,
+                    .target = target,
+                    .optimize = optimize,
+                });
+                inline for (imports) |imp| t_filter.root_module.addImport(imp.name, imp.module);
+                test_all_step.dependOn(&b.addRunArtifact(t_filter).step);
+            }
+
+            return;
+        }
+
         const test_ser_step = b.step("test-ser", "Run serialization tests");
         const test_de_step = b.step("test-de", "Run deserialization tests");
 
@@ -48,9 +74,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        inline for (imports) |imp| {
-            t_ser.root_module.addImport(imp.name, imp.module);
-        }
+        inline for (imports) |imp| t_ser.root_module.addImport(imp.name, imp.module);
         test_ser_step.dependOn(&b.addRunArtifact(t_ser).step);
         test_all_step.dependOn(test_ser_step);
 
@@ -61,9 +85,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        inline for (imports) |imp| {
-            t_de.root_module.addImport(imp.name, imp.module);
-        }
+        inline for (imports) |imp| t_de.root_module.addImport(imp.name, imp.module);
         test_de_step.dependOn(&b.addRunArtifact(t_de).step);
         test_all_step.dependOn(test_de_step);
     }
@@ -78,9 +100,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
         });
-        inline for (imports) |imp| {
-            doc_obj.root_module.addImport(imp.name, imp.module);
-        }
+        inline for (imports) |imp| doc_obj.root_module.addImport(imp.name, imp.module);
 
         const install_docs = b.addInstallDirectory(.{
             .source_dir = doc_obj.getEmittedDocs(),
