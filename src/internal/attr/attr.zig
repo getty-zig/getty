@@ -241,11 +241,11 @@ fn FieldAttributes(comptime Field: type) type {
         // Overrides ContainerAttributes.case.
         rename: ?[]const u8 = null,
 
-        // Skip this field during serialization and deserialziation.
+        // Skip this field during serialization and deserialization.
         skip: bool = false,
 
         // Call a function to determine whether to skip serializing this field.
-        //skip_ser_if: ?[]const u8 = null,
+        skip_ser_if: ?fn (anytype) bool = null,
 
         // Serialize this field using a function that is different from the
         // normal serialization implementation.
