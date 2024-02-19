@@ -29,48 +29,44 @@ pub fn serialize(
     const attributes = comptime getAttributes(T, @TypeOf(serializer));
 
     // The number of fields that will be serialized.
-    //
-    // length is initially set to the number of fields in the struct, but is
-    // decremented for any field that has the "skip" attribute set.
-    var length: usize = comptime blk: {
-        var len: usize = fields.len;
+    const length = length: {
+        var len: usize = 0;
 
-        if (attributes) |attrs| {
-            for (std.meta.fields(@TypeOf(attrs))) |field| {
-                const attr = @field(attrs, field.name);
+        inline for (fields) |field| {
+            const attrs = comptime blk: {
+                if (attributes) |attrs| {
+                    if (@hasField(@TypeOf(attrs), field.name)) {
+                        const a = @field(attrs, field.name);
+                        const A = @TypeOf(a);
 
-                const skipped = @hasField(@TypeOf(attr), "skip") and attr.skip;
-                if (skipped) {
-                    len -= 1;
-                    continue;
+                        break :blk @as(?A, a);
+                    }
                 }
+
+                break :blk null;
+            };
+
+            skip: {
+                if (attrs) |a| {
+                    const skipped = @hasField(@TypeOf(a), "skip") and a.skip;
+                    if (skipped) {
+                        break :skip;
+                    }
+
+                    const skip_if = @hasField(@TypeOf(a), "skip_ser_if");
+                    if (skip_if and a.skip_ser_if(@field(value, field.name))) {
+                        break :skip;
+                    }
+                }
+
+                len += 1;
             }
         }
 
-        break :blk len;
+        std.debug.assert(len <= fields.len);
+
+        break :length len;
     };
-
-    inline for (fields) |field| {
-        const attrs = comptime blk: {
-            if (attributes) |attrs| {
-                if (@hasField(@TypeOf(attrs), field.name)) {
-                    const a = @field(attrs, field.name);
-                    const A = @TypeOf(a);
-
-                    break :blk @as(?A, a);
-                }
-            }
-
-            break :blk null;
-        };
-
-        if (attrs) |a| {
-            const skip_if = @hasField(@TypeOf(a), "skip_ser_if");
-            if (skip_if and a.skip_ser_if(@field(value, field.name))) {
-                length -= 1;
-            }
-        }
-    }
 
     var s = try serializer.serializeStruct(@typeName(T), length);
     const st = s.structure();
@@ -244,6 +240,64 @@ test "serialize - struct, attributes (skip_ser_if)" {
         .{ .String = "d" },
         .{ .Some = {} },
         .{ .I32 = 4 },
+        .{ .StructEnd = {} },
+    });
+}
+
+test "serialize - struct, attributes (skip, skip_ser_if)" {
+    const T = struct {
+        a: i32,
+        b: i32,
+        c: ?i32,
+        d: ?i32,
+        e: ?i32,
+        f: ?i32,
+
+        pub const @"getty.sb" = struct {
+            pub const attributes = .{
+                .a = .{
+                    .skip = true,
+                    .skip_ser_if = isNull,
+                },
+                .b = .{
+                    .skip = false,
+                    .skip_ser_if = isNull,
+                },
+                .c = .{
+                    .skip = true,
+                    .skip_ser_if = isNull,
+                },
+                .d = .{
+                    .skip = true,
+                    .skip_ser_if = isNull,
+                },
+                .e = .{
+                    .skip = false,
+                    .skip_ser_if = isNull,
+                },
+                .f = .{
+                    .skip = false,
+                    .skip_ser_if = isNull,
+                },
+            };
+        };
+    };
+    const v = T{
+        .a = 1,
+        .b = 2,
+        .c = null,
+        .d = 4,
+        .e = null,
+        .f = 6,
+    };
+
+    try t.run(null, serialize, v, &.{
+        .{ .Struct = .{ .name = @typeName(T), .len = 2 } },
+        .{ .String = "b" },
+        .{ .I32 = 2 },
+        .{ .String = "f" },
+        .{ .Some = {} },
+        .{ .I32 = 6 },
         .{ .StructEnd = {} },
     });
 }
