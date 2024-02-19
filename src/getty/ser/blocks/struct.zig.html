@@ -144,164 +144,291 @@
 <span class="line" id="L30"></span>
 <span class="line" id="L31">    <span class="tok-comment">// The number of fields that will be serialized.</span>
 </span>
-<span class="line" id="L32">    <span class="tok-comment">//</span>
-</span>
-<span class="line" id="L33">    <span class="tok-comment">// length is initially set to the number of fields in the struct, but is</span>
-</span>
-<span class="line" id="L34">    <span class="tok-comment">// decremented for any field that has the &quot;skip&quot; attribute set.</span>
-</span>
-<span class="line" id="L35">    <span class="tok-kw">const</span> length: <span class="tok-type">usize</span> = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L36">        <span class="tok-kw">var</span> len: <span class="tok-type">usize</span> = fields.len;</span>
-<span class="line" id="L37"></span>
-<span class="line" id="L38">        <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L39">            <span class="tok-kw">for</span> (std.meta.fields(<span class="tok-builtin">@TypeOf</span>(attrs))) |field| {</span>
-<span class="line" id="L40">                <span class="tok-kw">const</span> attr = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
-<span class="line" id="L41">                <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attr), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> attr.skip;</span>
-<span class="line" id="L42"></span>
-<span class="line" id="L43">                <span class="tok-kw">if</span> (skipped) len -= <span class="tok-number">1</span>;</span>
-<span class="line" id="L44">            }</span>
-<span class="line" id="L45">        }</span>
-<span class="line" id="L46"></span>
-<span class="line" id="L47">        <span class="tok-kw">break</span> :blk len;</span>
-<span class="line" id="L48">    };</span>
-<span class="line" id="L49"></span>
-<span class="line" id="L50">    <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeStruct(<span class="tok-builtin">@typeName</span>(T), length);</span>
-<span class="line" id="L51">    <span class="tok-kw">const</span> st = s.structure();</span>
-<span class="line" id="L52"></span>
-<span class="line" id="L53">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
-<span class="line" id="L54">        <span class="tok-kw">const</span> attrs = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L55">            <span class="tok-kw">if</span> (attributes) |attrs| {</span>
-<span class="line" id="L56">                <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
-<span class="line" id="L57">                    <span class="tok-kw">const</span> a = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
-<span class="line" id="L58">                    <span class="tok-kw">const</span> A = <span class="tok-builtin">@TypeOf</span>(a);</span>
-<span class="line" id="L59"></span>
-<span class="line" id="L60">                    <span class="tok-kw">break</span> :blk <span class="tok-builtin">@as</span>(?A, a);</span>
-<span class="line" id="L61">                }</span>
-<span class="line" id="L62">            }</span>
-<span class="line" id="L63"></span>
-<span class="line" id="L64">            <span class="tok-kw">break</span> :blk <span class="tok-null">null</span>;</span>
-<span class="line" id="L65">        };</span>
-<span class="line" id="L66"></span>
-<span class="line" id="L67">        <span class="tok-kw">if</span> (attrs) |a| {</span>
-<span class="line" id="L68">            <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> a.skip;</span>
-<span class="line" id="L69">            <span class="tok-kw">if</span> (skipped) <span class="tok-kw">continue</span>;</span>
-<span class="line" id="L70">        }</span>
-<span class="line" id="L71"></span>
-<span class="line" id="L72">        <span class="tok-comment">// The name that will be used when serializing field.</span>
-</span>
-<span class="line" id="L73">        <span class="tok-comment">//</span>
-</span>
-<span class="line" id="L74">        <span class="tok-comment">// Initially, name is set to field's name. But field has the &quot;rename&quot;</span>
-</span>
-<span class="line" id="L75">        <span class="tok-comment">// attribute set, name is set to the attribute's value.</span>
-</span>
-<span class="line" id="L76">        <span class="tok-kw">const</span> name = <span class="tok-kw">comptime</span> blk: {</span>
-<span class="line" id="L77">            <span class="tok-kw">var</span> n = field.name;</span>
-<span class="line" id="L78"></span>
-<span class="line" id="L79">            <span class="tok-kw">if</span> (attrs) |a| {</span>
-<span class="line" id="L80">                <span class="tok-kw">const</span> renamed = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;rename&quot;</span>);</span>
-<span class="line" id="L81">                <span class="tok-kw">if</span> (renamed) n = a.rename;</span>
-<span class="line" id="L82">            }</span>
-<span class="line" id="L83"></span>
-<span class="line" id="L84">            <span class="tok-kw">break</span> :blk n;</span>
-<span class="line" id="L85">        };</span>
-<span class="line" id="L86"></span>
-<span class="line" id="L87">        <span class="tok-kw">try</span> st.serializeField(name, <span class="tok-builtin">@field</span>(value, field.name));</span>
-<span class="line" id="L88">    }</span>
-<span class="line" id="L89"></span>
-<span class="line" id="L90">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> st.end();</span>
-<span class="line" id="L91">}</span>
+<span class="line" id="L32">    <span class="tok-kw">const</span> length = length: {</span>
+<span class="line" id="L33">        <span class="tok-kw">var</span> len: <span class="tok-type">usize</span> = <span class="tok-number">0</span>;</span>
+<span class="line" id="L34"></span>
+<span class="line" id="L35">        <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
+<span class="line" id="L36">            <span class="tok-kw">const</span> attrs = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L37">                <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L38">                    <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
+<span class="line" id="L39">                        <span class="tok-kw">const</span> a = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L40">                        <span class="tok-kw">const</span> A = <span class="tok-builtin">@TypeOf</span>(a);</span>
+<span class="line" id="L41"></span>
+<span class="line" id="L42">                        <span class="tok-kw">break</span> :blk <span class="tok-builtin">@as</span>(?A, a);</span>
+<span class="line" id="L43">                    }</span>
+<span class="line" id="L44">                }</span>
+<span class="line" id="L45"></span>
+<span class="line" id="L46">                <span class="tok-kw">break</span> :blk <span class="tok-null">null</span>;</span>
+<span class="line" id="L47">            };</span>
+<span class="line" id="L48"></span>
+<span class="line" id="L49">            skip: {</span>
+<span class="line" id="L50">                <span class="tok-kw">if</span> (attrs) |a| {</span>
+<span class="line" id="L51">                    <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> a.skip;</span>
+<span class="line" id="L52">                    <span class="tok-kw">if</span> (skipped) {</span>
+<span class="line" id="L53">                        <span class="tok-kw">break</span> :skip;</span>
+<span class="line" id="L54">                    }</span>
+<span class="line" id="L55"></span>
+<span class="line" id="L56">                    <span class="tok-kw">const</span> skip_if = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;skip_ser_if&quot;</span>);</span>
+<span class="line" id="L57">                    <span class="tok-kw">if</span> (skip_if <span class="tok-kw">and</span> a.skip_ser_if(<span class="tok-builtin">@field</span>(value, field.name))) {</span>
+<span class="line" id="L58">                        <span class="tok-kw">break</span> :skip;</span>
+<span class="line" id="L59">                    }</span>
+<span class="line" id="L60">                }</span>
+<span class="line" id="L61"></span>
+<span class="line" id="L62">                len += <span class="tok-number">1</span>;</span>
+<span class="line" id="L63">            }</span>
+<span class="line" id="L64">        }</span>
+<span class="line" id="L65"></span>
+<span class="line" id="L66">        std.debug.assert(len &lt;= fields.len);</span>
+<span class="line" id="L67"></span>
+<span class="line" id="L68">        <span class="tok-kw">break</span> :length len;</span>
+<span class="line" id="L69">    };</span>
+<span class="line" id="L70"></span>
+<span class="line" id="L71">    <span class="tok-kw">var</span> s = <span class="tok-kw">try</span> serializer.serializeStruct(<span class="tok-builtin">@typeName</span>(T), length);</span>
+<span class="line" id="L72">    <span class="tok-kw">const</span> st = s.structure();</span>
+<span class="line" id="L73"></span>
+<span class="line" id="L74">    <span class="tok-kw">inline</span> <span class="tok-kw">for</span> (fields) |field| {</span>
+<span class="line" id="L75">        <span class="tok-kw">const</span> attrs = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L76">            <span class="tok-kw">if</span> (attributes) |attrs| {</span>
+<span class="line" id="L77">                <span class="tok-kw">if</span> (<span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(attrs), field.name)) {</span>
+<span class="line" id="L78">                    <span class="tok-kw">const</span> a = <span class="tok-builtin">@field</span>(attrs, field.name);</span>
+<span class="line" id="L79">                    <span class="tok-kw">const</span> A = <span class="tok-builtin">@TypeOf</span>(a);</span>
+<span class="line" id="L80"></span>
+<span class="line" id="L81">                    <span class="tok-kw">break</span> :blk <span class="tok-builtin">@as</span>(?A, a);</span>
+<span class="line" id="L82">                }</span>
+<span class="line" id="L83">            }</span>
+<span class="line" id="L84"></span>
+<span class="line" id="L85">            <span class="tok-kw">break</span> :blk <span class="tok-null">null</span>;</span>
+<span class="line" id="L86">        };</span>
+<span class="line" id="L87"></span>
+<span class="line" id="L88">        <span class="tok-kw">var</span> skip: <span class="tok-type">bool</span> = <span class="tok-null">undefined</span>;</span>
+<span class="line" id="L89">        <span class="tok-kw">if</span> (attrs) |a| {</span>
+<span class="line" id="L90">            <span class="tok-kw">const</span> skipped = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;skip&quot;</span>) <span class="tok-kw">and</span> a.skip;</span>
+<span class="line" id="L91">            <span class="tok-kw">if</span> (skipped) <span class="tok-kw">continue</span>;</span>
 <span class="line" id="L92"></span>
-<span class="line" id="L93"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct&quot;</span> {</span>
-<span class="line" id="L94">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> { a: <span class="tok-type">i32</span>, b: <span class="tok-type">i32</span>, c: <span class="tok-type">i32</span>, d: <span class="tok-type">i32</span> };</span>
-<span class="line" id="L95">    <span class="tok-kw">const</span> v = T{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span>, .d = <span class="tok-number">4</span> };</span>
-<span class="line" id="L96"></span>
-<span class="line" id="L97">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
-<span class="line" id="L98">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">4</span> } },</span>
-<span class="line" id="L99">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L100">        .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L101">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L102">        .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L103">        .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L104">        .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L105">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
-<span class="line" id="L106">        .{ .I32 = <span class="tok-number">4</span> },</span>
-<span class="line" id="L107">        .{ .StructEnd = {} },</span>
-<span class="line" id="L108">    });</span>
-<span class="line" id="L109">}</span>
-<span class="line" id="L110"></span>
-<span class="line" id="L111"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct (void)&quot;</span> {</span>
-<span class="line" id="L112">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> { a: <span class="tok-type">void</span>, b: <span class="tok-type">void</span> };</span>
-<span class="line" id="L113">    <span class="tok-kw">const</span> v = T{ .a = {}, .b = {} };</span>
-<span class="line" id="L114"></span>
-<span class="line" id="L115">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
-<span class="line" id="L116">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L117">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L118">        .{ .Void = {} },</span>
-<span class="line" id="L119">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L120">        .{ .Void = {} },</span>
-<span class="line" id="L121">        .{ .StructEnd = {} },</span>
-<span class="line" id="L122">    });</span>
-<span class="line" id="L123">}</span>
-<span class="line" id="L124"></span>
-<span class="line" id="L125"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct, attributes (rename)&quot;</span> {</span>
-<span class="line" id="L126">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L127">        a: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L128">        b: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L129">        c: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L130">        d: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L131"></span>
-<span class="line" id="L132">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L133">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L134">                .a = .{ .rename = <span class="tok-str">&quot;d&quot;</span> },</span>
-<span class="line" id="L135">                .b = .{ .rename = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L136">                .c = .{ .rename = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L137">                .d = .{ .rename = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L138">            };</span>
-<span class="line" id="L139">        };</span>
-<span class="line" id="L140">    };</span>
-<span class="line" id="L141">    <span class="tok-kw">const</span> v = T{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span>, .d = <span class="tok-number">4</span> };</span>
-<span class="line" id="L142"></span>
-<span class="line" id="L143">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
-<span class="line" id="L144">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">4</span> } },</span>
-<span class="line" id="L145">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
-<span class="line" id="L146">        .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L147">        .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
-<span class="line" id="L148">        .{ .I32 = <span class="tok-number">2</span> },</span>
-<span class="line" id="L149">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
-<span class="line" id="L150">        .{ .I32 = <span class="tok-number">3</span> },</span>
-<span class="line" id="L151">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
-<span class="line" id="L152">        .{ .I32 = <span class="tok-number">4</span> },</span>
-<span class="line" id="L153">        .{ .StructEnd = {} },</span>
-<span class="line" id="L154">    });</span>
-<span class="line" id="L155">}</span>
-<span class="line" id="L156"></span>
-<span class="line" id="L157"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct, attributes (skip)&quot;</span> {</span>
-<span class="line" id="L158">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L159">        a: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L160">        b: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L161">        c: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L162">        d: <span class="tok-type">i32</span>,</span>
-<span class="line" id="L163"></span>
-<span class="line" id="L164">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
-<span class="line" id="L165">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
-<span class="line" id="L166">                .b = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L167">                .c = .{ .skip = <span class="tok-null">true</span> },</span>
-<span class="line" id="L168">            };</span>
-<span class="line" id="L169">        };</span>
-<span class="line" id="L170">    };</span>
-<span class="line" id="L171"></span>
+<span class="line" id="L93">            <span class="tok-kw">const</span> skip_if = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;skip_ser_if&quot;</span>);</span>
+<span class="line" id="L94">            <span class="tok-kw">if</span> (skip_if <span class="tok-kw">and</span> a.skip_ser_if(<span class="tok-builtin">@field</span>(value, field.name))) {</span>
+<span class="line" id="L95">                skip = <span class="tok-null">true</span>;</span>
+<span class="line" id="L96">            }</span>
+<span class="line" id="L97">        }</span>
+<span class="line" id="L98"></span>
+<span class="line" id="L99">        <span class="tok-comment">// This is needed because we can't call skip_ser_if at compile-time, so</span>
+</span>
+<span class="line" id="L100">        <span class="tok-comment">// we can't continue the inlined loop.</span>
+</span>
+<span class="line" id="L101">        <span class="tok-kw">if</span> (!skip) {</span>
+<span class="line" id="L102">            <span class="tok-comment">// The name that will be used when serializing field.</span>
+</span>
+<span class="line" id="L103">            <span class="tok-comment">//</span>
+</span>
+<span class="line" id="L104">            <span class="tok-comment">// Initially, name is set to field's name. But field has the &quot;rename&quot;</span>
+</span>
+<span class="line" id="L105">            <span class="tok-comment">// attribute set, name is set to the attribute's value.</span>
+</span>
+<span class="line" id="L106">            <span class="tok-kw">const</span> name = <span class="tok-kw">comptime</span> blk: {</span>
+<span class="line" id="L107">                <span class="tok-kw">var</span> n = field.name;</span>
+<span class="line" id="L108"></span>
+<span class="line" id="L109">                <span class="tok-kw">if</span> (attrs) |a| {</span>
+<span class="line" id="L110">                    <span class="tok-kw">const</span> renamed = <span class="tok-builtin">@hasField</span>(<span class="tok-builtin">@TypeOf</span>(a), <span class="tok-str">&quot;rename&quot;</span>);</span>
+<span class="line" id="L111">                    <span class="tok-kw">if</span> (renamed) n = a.rename;</span>
+<span class="line" id="L112">                }</span>
+<span class="line" id="L113"></span>
+<span class="line" id="L114">                <span class="tok-kw">break</span> :blk n;</span>
+<span class="line" id="L115">            };</span>
+<span class="line" id="L116"></span>
+<span class="line" id="L117">            <span class="tok-kw">try</span> st.serializeField(name, <span class="tok-builtin">@field</span>(value, field.name));</span>
+<span class="line" id="L118">        }</span>
+<span class="line" id="L119">    }</span>
+<span class="line" id="L120"></span>
+<span class="line" id="L121">    <span class="tok-kw">return</span> <span class="tok-kw">try</span> st.end();</span>
+<span class="line" id="L122">}</span>
+<span class="line" id="L123"></span>
+<span class="line" id="L124"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct&quot;</span> {</span>
+<span class="line" id="L125">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> { a: <span class="tok-type">i32</span>, b: <span class="tok-type">i32</span>, c: <span class="tok-type">i32</span>, d: <span class="tok-type">i32</span> };</span>
+<span class="line" id="L126">    <span class="tok-kw">const</span> v = T{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span>, .d = <span class="tok-number">4</span> };</span>
+<span class="line" id="L127"></span>
+<span class="line" id="L128">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
+<span class="line" id="L129">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">4</span> } },</span>
+<span class="line" id="L130">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L131">        .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L132">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L133">        .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L134">        .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L135">        .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L136">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
+<span class="line" id="L137">        .{ .I32 = <span class="tok-number">4</span> },</span>
+<span class="line" id="L138">        .{ .StructEnd = {} },</span>
+<span class="line" id="L139">    });</span>
+<span class="line" id="L140">}</span>
+<span class="line" id="L141"></span>
+<span class="line" id="L142"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct (void)&quot;</span> {</span>
+<span class="line" id="L143">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> { a: <span class="tok-type">void</span>, b: <span class="tok-type">void</span> };</span>
+<span class="line" id="L144">    <span class="tok-kw">const</span> v = T{ .a = {}, .b = {} };</span>
+<span class="line" id="L145"></span>
+<span class="line" id="L146">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
+<span class="line" id="L147">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L148">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L149">        .{ .Void = {} },</span>
+<span class="line" id="L150">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L151">        .{ .Void = {} },</span>
+<span class="line" id="L152">        .{ .StructEnd = {} },</span>
+<span class="line" id="L153">    });</span>
+<span class="line" id="L154">}</span>
+<span class="line" id="L155"></span>
+<span class="line" id="L156"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct, attributes (rename)&quot;</span> {</span>
+<span class="line" id="L157">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L158">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L159">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L160">        c: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L161">        d: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L162"></span>
+<span class="line" id="L163">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L164">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L165">                .a = .{ .rename = <span class="tok-str">&quot;d&quot;</span> },</span>
+<span class="line" id="L166">                .b = .{ .rename = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L167">                .c = .{ .rename = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L168">                .d = .{ .rename = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L169">            };</span>
+<span class="line" id="L170">        };</span>
+<span class="line" id="L171">    };</span>
 <span class="line" id="L172">    <span class="tok-kw">const</span> v = T{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span>, .d = <span class="tok-number">4</span> };</span>
 <span class="line" id="L173"></span>
 <span class="line" id="L174">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
-<span class="line" id="L175">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">2</span> } },</span>
-<span class="line" id="L176">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L175">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">4</span> } },</span>
+<span class="line" id="L176">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
 <span class="line" id="L177">        .{ .I32 = <span class="tok-number">1</span> },</span>
-<span class="line" id="L178">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
-<span class="line" id="L179">        .{ .I32 = <span class="tok-number">4</span> },</span>
-<span class="line" id="L180">        .{ .StructEnd = {} },</span>
-<span class="line" id="L181">    });</span>
-<span class="line" id="L182">}</span>
-<span class="line" id="L183"></span>
+<span class="line" id="L178">        .{ .String = <span class="tok-str">&quot;c&quot;</span> },</span>
+<span class="line" id="L179">        .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L180">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L181">        .{ .I32 = <span class="tok-number">3</span> },</span>
+<span class="line" id="L182">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L183">        .{ .I32 = <span class="tok-number">4</span> },</span>
+<span class="line" id="L184">        .{ .StructEnd = {} },</span>
+<span class="line" id="L185">    });</span>
+<span class="line" id="L186">}</span>
+<span class="line" id="L187"></span>
+<span class="line" id="L188"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct, attributes (skip)&quot;</span> {</span>
+<span class="line" id="L189">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L190">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L191">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L192">        c: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L193">        d: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L194"></span>
+<span class="line" id="L195">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L196">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L197">                .b = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L198">                .c = .{ .skip = <span class="tok-null">true</span> },</span>
+<span class="line" id="L199">            };</span>
+<span class="line" id="L200">        };</span>
+<span class="line" id="L201">    };</span>
+<span class="line" id="L202"></span>
+<span class="line" id="L203">    <span class="tok-kw">const</span> v = T{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-number">3</span>, .d = <span class="tok-number">4</span> };</span>
+<span class="line" id="L204"></span>
+<span class="line" id="L205">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
+<span class="line" id="L206">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L207">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L208">        .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L209">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
+<span class="line" id="L210">        .{ .I32 = <span class="tok-number">4</span> },</span>
+<span class="line" id="L211">        .{ .StructEnd = {} },</span>
+<span class="line" id="L212">    });</span>
+<span class="line" id="L213">}</span>
+<span class="line" id="L214"></span>
+<span class="line" id="L215"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct, attributes (skip_ser_if)&quot;</span> {</span>
+<span class="line" id="L216">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L217">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L218">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L219">        c: ?<span class="tok-type">i32</span>,</span>
+<span class="line" id="L220">        d: ?<span class="tok-type">i32</span>,</span>
+<span class="line" id="L221"></span>
+<span class="line" id="L222">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L223">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L224">                .a = .{ .skip_ser_if = isNull },</span>
+<span class="line" id="L225">                .b = .{ .skip_ser_if = isNull },</span>
+<span class="line" id="L226">                .c = .{ .skip_ser_if = isNull },</span>
+<span class="line" id="L227">                .d = .{ .skip_ser_if = isNull },</span>
+<span class="line" id="L228">            };</span>
+<span class="line" id="L229">        };</span>
+<span class="line" id="L230">    };</span>
+<span class="line" id="L231"></span>
+<span class="line" id="L232">    <span class="tok-kw">const</span> v = T{ .a = <span class="tok-number">1</span>, .b = <span class="tok-number">2</span>, .c = <span class="tok-null">null</span>, .d = <span class="tok-number">4</span> };</span>
+<span class="line" id="L233"></span>
+<span class="line" id="L234">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
+<span class="line" id="L235">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">3</span> } },</span>
+<span class="line" id="L236">        .{ .String = <span class="tok-str">&quot;a&quot;</span> },</span>
+<span class="line" id="L237">        .{ .I32 = <span class="tok-number">1</span> },</span>
+<span class="line" id="L238">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L239">        .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L240">        .{ .String = <span class="tok-str">&quot;d&quot;</span> },</span>
+<span class="line" id="L241">        .{ .Some = {} },</span>
+<span class="line" id="L242">        .{ .I32 = <span class="tok-number">4</span> },</span>
+<span class="line" id="L243">        .{ .StructEnd = {} },</span>
+<span class="line" id="L244">    });</span>
+<span class="line" id="L245">}</span>
+<span class="line" id="L246"></span>
+<span class="line" id="L247"><span class="tok-kw">test</span> <span class="tok-str">&quot;serialize - struct, attributes (skip, skip_ser_if)&quot;</span> {</span>
+<span class="line" id="L248">    <span class="tok-kw">const</span> T = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L249">        a: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L250">        b: <span class="tok-type">i32</span>,</span>
+<span class="line" id="L251">        c: ?<span class="tok-type">i32</span>,</span>
+<span class="line" id="L252">        d: ?<span class="tok-type">i32</span>,</span>
+<span class="line" id="L253">        e: ?<span class="tok-type">i32</span>,</span>
+<span class="line" id="L254">        f: ?<span class="tok-type">i32</span>,</span>
+<span class="line" id="L255"></span>
+<span class="line" id="L256">        <span class="tok-kw">pub</span> <span class="tok-kw">const</span> @&quot;getty.sb&quot; = <span class="tok-kw">struct</span> {</span>
+<span class="line" id="L257">            <span class="tok-kw">pub</span> <span class="tok-kw">const</span> attributes = .{</span>
+<span class="line" id="L258">                .a = .{</span>
+<span class="line" id="L259">                    .skip = <span class="tok-null">true</span>,</span>
+<span class="line" id="L260">                    .skip_ser_if = isNull,</span>
+<span class="line" id="L261">                },</span>
+<span class="line" id="L262">                .b = .{</span>
+<span class="line" id="L263">                    .skip = <span class="tok-null">false</span>,</span>
+<span class="line" id="L264">                    .skip_ser_if = isNull,</span>
+<span class="line" id="L265">                },</span>
+<span class="line" id="L266">                .c = .{</span>
+<span class="line" id="L267">                    .skip = <span class="tok-null">true</span>,</span>
+<span class="line" id="L268">                    .skip_ser_if = isNull,</span>
+<span class="line" id="L269">                },</span>
+<span class="line" id="L270">                .d = .{</span>
+<span class="line" id="L271">                    .skip = <span class="tok-null">true</span>,</span>
+<span class="line" id="L272">                    .skip_ser_if = isNull,</span>
+<span class="line" id="L273">                },</span>
+<span class="line" id="L274">                .e = .{</span>
+<span class="line" id="L275">                    .skip = <span class="tok-null">false</span>,</span>
+<span class="line" id="L276">                    .skip_ser_if = isNull,</span>
+<span class="line" id="L277">                },</span>
+<span class="line" id="L278">                .f = .{</span>
+<span class="line" id="L279">                    .skip = <span class="tok-null">false</span>,</span>
+<span class="line" id="L280">                    .skip_ser_if = isNull,</span>
+<span class="line" id="L281">                },</span>
+<span class="line" id="L282">            };</span>
+<span class="line" id="L283">        };</span>
+<span class="line" id="L284">    };</span>
+<span class="line" id="L285">    <span class="tok-kw">const</span> v = T{</span>
+<span class="line" id="L286">        .a = <span class="tok-number">1</span>,</span>
+<span class="line" id="L287">        .b = <span class="tok-number">2</span>,</span>
+<span class="line" id="L288">        .c = <span class="tok-null">null</span>,</span>
+<span class="line" id="L289">        .d = <span class="tok-number">4</span>,</span>
+<span class="line" id="L290">        .e = <span class="tok-null">null</span>,</span>
+<span class="line" id="L291">        .f = <span class="tok-number">6</span>,</span>
+<span class="line" id="L292">    };</span>
+<span class="line" id="L293"></span>
+<span class="line" id="L294">    <span class="tok-kw">try</span> t.run(<span class="tok-null">null</span>, serialize, v, &amp;.{</span>
+<span class="line" id="L295">        .{ .Struct = .{ .name = <span class="tok-builtin">@typeName</span>(T), .len = <span class="tok-number">2</span> } },</span>
+<span class="line" id="L296">        .{ .String = <span class="tok-str">&quot;b&quot;</span> },</span>
+<span class="line" id="L297">        .{ .I32 = <span class="tok-number">2</span> },</span>
+<span class="line" id="L298">        .{ .String = <span class="tok-str">&quot;f&quot;</span> },</span>
+<span class="line" id="L299">        .{ .Some = {} },</span>
+<span class="line" id="L300">        .{ .I32 = <span class="tok-number">6</span> },</span>
+<span class="line" id="L301">        .{ .StructEnd = {} },</span>
+<span class="line" id="L302">    });</span>
+<span class="line" id="L303">}</span>
+<span class="line" id="L304"></span>
+<span class="line" id="L305"><span class="tok-kw">fn</span> <span class="tok-fn">isNull</span>(v: <span class="tok-kw">anytype</span>) <span class="tok-type">bool</span> {</span>
+<span class="line" id="L306">    <span class="tok-kw">return</span> <span class="tok-kw">switch</span> (<span class="tok-builtin">@typeInfo</span>(<span class="tok-builtin">@TypeOf</span>(v))) {</span>
+<span class="line" id="L307">        .Null, .Optional =&gt; v == <span class="tok-null">null</span>,</span>
+<span class="line" id="L308">        <span class="tok-kw">else</span> =&gt; <span class="tok-null">false</span>,</span>
+<span class="line" id="L309">    };</span>
+<span class="line" id="L310">}</span>
+<span class="line" id="L311"></span>
 </code></pre></body>
 </html>
