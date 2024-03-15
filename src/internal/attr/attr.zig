@@ -98,7 +98,7 @@ pub fn Attributes(comptime T: type, comptime attributes: anytype) type {
 
     return @Type(Type{
         .Struct = .{
-            .layout = .Auto,
+            .layout = .auto,
             .fields = &fields,
             .decls = &[_]Type.Declaration{},
             .is_tuple = false,
