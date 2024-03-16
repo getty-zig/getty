@@ -1,4 +1,4 @@
-//! `IndexedSet` is a _Serialization Block_ for `std.EnumSet`.
+//! `EnumSet` is a _Serialization Block_ for `std.EnumSet`.
 
 const std = @import("std");
 

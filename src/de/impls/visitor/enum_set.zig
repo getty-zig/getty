@@ -2,7 +2,7 @@ const std = @import("std");
 
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
-pub fn Visitor(comptime IndexedSet: type) type {
+pub fn Visitor(comptime EnumSet: type) type {
     return struct {
         const Self = @This();
 
@@ -12,7 +12,7 @@ pub fn Visitor(comptime IndexedSet: type) type {
             .{ .visitSeq = visitSeq },
         );
 
-        const Value = IndexedSet;
+        const Value = EnumSet;
 
         fn visitSeq(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, seq: anytype) Deserializer.Err!Value {
             var set = Value.initEmpty();
