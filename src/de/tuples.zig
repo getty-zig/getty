@@ -37,12 +37,7 @@ pub const dt = .{
     blocks.BufSet,
     blocks.DynamicBitSet,
     blocks.DynamicBitSetUnmanaged,
-
-    // Covers the following types:
-    //
-    //   - std.EnumArray
-    //   - std.IndexedArray
-    blocks.IndexedArray,
+    blocks.EnumArray,
 
     // Covers the following types:
     //

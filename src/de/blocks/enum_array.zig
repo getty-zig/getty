@@ -1,7 +1,7 @@
 const require = @import("protest").require;
 const std = @import("std");
 
-const IndexedArrayVisitor = @import("../impls/visitor/indexed_array.zig").Visitor;
+const EnumArrayVisitor = @import("../impls/visitor/enum_array.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -11,10 +11,7 @@ pub fn is(
     /// The type being deserialized into.
     comptime T: type,
 ) bool {
-    const is_indexed_array = comptime std.mem.startsWith(u8, @typeName(T), "enums.IndexedArray");
-    const is_enum_array = comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumArray");
-
-    return is_indexed_array or is_enum_array;
+    return comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumArray");
 }
 
 /// Specifies the deserialization process for types relevant to this block.
@@ -38,7 +35,7 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return IndexedArrayVisitor(T);
+    return EnumArrayVisitor(T);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {

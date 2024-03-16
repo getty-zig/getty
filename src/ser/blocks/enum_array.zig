@@ -1,7 +1,4 @@
-//! `IndexedArray` is a _Serialization Block_ for values of the following types:
-//!
-//!   - `std.EnumArray`
-//!   - `std.IndexedArray`
+//! `EnumArray` is a _Serialization Block_ for `std.EnumArray`.
 
 const std = @import("std");
 
@@ -14,10 +11,7 @@ pub fn is(
     /// The type of a value being serialized.
     comptime T: type,
 ) bool {
-    const is_indexed_array = comptime std.mem.startsWith(u8, @typeName(T), "enums.IndexedArray");
-    const is_enum_array = comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumArray");
-
-    return is_indexed_array or is_enum_array;
+    return comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumArray");
 }
 
 /// Specifies the serialization process for values relevant to this block.
@@ -63,41 +57,6 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
             return str_keys[i];
         }
     };
-}
-
-test "serialize - std.IndexedArray" {
-    const Color = StringIndexer(&.{ "red", "yellow", "blue", "green", "orange", "violet" });
-
-    // empty
-    {
-        const array = std.enums.IndexedArray(StringIndexer(&.{}), u32, null).initFill(0);
-
-        try t.run(null, serialize, array, &.{
-            .{ .Seq = .{ .len = 0 } },
-            .{ .SeqEnd = {} },
-        });
-    }
-
-    // non-empty
-    {
-        var array = std.enums.IndexedArray(Color, u32, null).initFill(0);
-
-        array.set("red", 1);
-        array.set("blue", 2);
-        array.set("yellow", 3);
-        array.set("orange", 2);
-
-        try t.run(null, serialize, array, &.{
-            .{ .Seq = .{ .len = 6 } },
-            .{ .U32 = 1 },
-            .{ .U32 = 3 },
-            .{ .U32 = 2 },
-            .{ .U32 = 0 },
-            .{ .U32 = 2 },
-            .{ .U32 = 0 },
-            .{ .SeqEnd = {} },
-        });
-    }
 }
 
 test "serialize - std.EnumArray" {

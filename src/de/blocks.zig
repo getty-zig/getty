@@ -99,10 +99,7 @@ pub const DynamicBitSet = _DynamicBitSet;
 pub const DynamicBitSetUnmanaged = _DynamicBitSet;
 
 /// Deserialization block for `std.EnumArray` values.
-pub const EnumArray = _IndexedArray;
-
-/// Deserialization block for `std.IndexedArray` values.
-pub const IndexedArray = _IndexedArray;
+pub const EnumArray = @import("blocks/enum_array.zig");
 
 /// Deserialization block for `std.EnumSet` values.
 pub const EnumSet = _IndexedSet;
@@ -201,7 +198,6 @@ const _DynamicBitSet = @import("blocks/dynamic_bit_set.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
 const _StaticBitSet = @import("blocks/static_bit_set.zig");
-const _IndexedArray = @import("blocks/indexed_array.zig");
 const _IndexedSet = @import("blocks/indexed_set.zig");
 const _IndexedMap = @import("blocks/indexed_map.zig");
 const _EnumMultiset = @import("blocks/enum_multiset.zig");
