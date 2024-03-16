@@ -62,13 +62,13 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
 test "serialize - std.EnumArray" {
     const Color = enum { red, yellow, blue, green, orange, violet };
 
-    // empty
-    // std.EnumIndexer, which is used internally by std.EnumArray,
-    // fails to compile on an empty enum due to field access occuring
-    // before checking field length.
+    // Empty std.EnumIndexer, which is used internally by std.EnumArray, fails
+    // to compile on an empty enum due to field access occuring before checking
+    // field length.
+    //
     // {
     //     var array = std.enums.EnumArray(enum {}, u32).initFill(0);
-
+    //
     //     try t.run(null, serialize, array, &.{
     //         .{ .Seq = .{ .len = 0 } },
     //         .{ .SeqEnd = {} },
