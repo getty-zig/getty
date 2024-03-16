@@ -1,7 +1,4 @@
-//! `IndexedSet` is a _Serialization Block_ for values of the following types:
-//!
-//!   - `std.EnumSet`.
-//!   - `std.IndexedSet`.
+//! `IndexedSet` is a _Serialization Block_ for `std.EnumSet`.
 
 const std = @import("std");
 
@@ -14,10 +11,7 @@ pub fn is(
     /// The type of a value being serialized.
     comptime T: type,
 ) bool {
-    const is_indexed_set = comptime std.mem.startsWith(u8, @typeName(T), "enums.IndexedSet");
-    const is_enum_set = comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumSet");
-
-    return is_indexed_set or is_enum_set;
+    return comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumSet");
 }
 
 /// Specifies the serialization process for values relevant to this block.
@@ -63,74 +57,6 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
             return str_keys[i];
         }
     };
-}
-
-test "serialize - std.IndexedSet" {
-    const Color = StringIndexer(&.{ "red", "yellow", "blue", "green", "orange", "violet", "indigo", "magenta" });
-
-    // Zero-sized
-    {
-        const want = std.enums.IndexedSet(StringIndexer(&.{}), null).initEmpty();
-
-        try t.run(null, serialize, want, &.{
-            .{ .Seq = .{ .len = 0 } },
-            .{ .SeqEnd = {} },
-        });
-    }
-
-    // Empty
-    {
-        const want = std.enums.IndexedSet(Color, null).initEmpty();
-
-        try t.run(null, serialize, want, &.{
-            .{ .Seq = .{ .len = 8 } },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .U8 = 0 },
-            .{ .SeqEnd = {} },
-        });
-    }
-
-    // Full
-    {
-        const want = std.enums.IndexedSet(Color, null).initFull();
-
-        try t.run(null, serialize, want, &.{
-            .{ .Seq = .{ .len = 8 } },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .U8 = 1 },
-            .{ .SeqEnd = {} },
-        });
-    }
-
-    // Mixed
-    {
-        const want = std.enums.IndexedSet(Color, null).initMany(&.{ "yellow", "green", "violet", "magenta" });
-
-        try t.run(null, serialize, want, &.{
-            .{ .Seq = .{ .len = 8 } },
-            .{ .U8 = 1 },
-            .{ .U8 = 0 },
-            .{ .U8 = 1 },
-            .{ .U8 = 0 },
-            .{ .U8 = 1 },
-            .{ .U8 = 0 },
-            .{ .U8 = 1 },
-            .{ .U8 = 0 },
-            .{ .SeqEnd = {} },
-        });
-    }
 }
 
 test "serialize - std.EnumSet" {

@@ -78,7 +78,7 @@ pub const EnumMap = _IndexedMap;
 pub const EnumMultiset = _EnumMultiset;
 
 /// `EnumSet` is a _Serialization Block_ for `std.EnumSet` values.
-pub const EnumSet = _IndexedSet;
+pub const EnumSet = @import("blocks/enum_set.zig");
 
 /// `HashMap` is a _Serialization Block_ for `std.HashMap` values.
 pub const HashMap = _HashMap;
@@ -88,9 +88,6 @@ pub const HashMapUnmanaged = _HashMap;
 
 /// `IndexedMap` is a _Serialization Block_ for `std.IndexedMap` values.
 pub const IndexedMap = _IndexedMap;
-
-/// `IndexedSet` is a _Serialization Block_ for `std.IndexedSet` values.
-pub const IndexedSet = _IndexedSet;
 
 pub const IntegerBitSet = @import("blocks/integer_bit_set.zig");
 pub const LinearFifo = @import("blocks/linear_fifo.zig");
@@ -150,4 +147,3 @@ const _EnumMultiset = @import("blocks/enum_multiset.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
 const _IndexedMap = @import("blocks/indexed_map.zig");
-const _IndexedSet = @import("blocks/indexed_set.zig");

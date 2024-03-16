@@ -1,7 +1,7 @@
 const require = @import("protest").require;
 const std = @import("std");
 
-const IndexedSetVisitor = @import("../impls/visitor/indexed_set.zig").Visitor;
+const EnumSetVisitor = @import("../impls/visitor/enum_set.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -11,10 +11,7 @@ pub fn is(
     /// The type being deserialized into.
     comptime T: type,
 ) bool {
-    const is_indexed_set = comptime std.mem.startsWith(u8, @typeName(T), "enums.IndexedSet");
-    const is_enum_set = comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumSEt");
-
-    return is_indexed_set or is_enum_set;
+    return comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumSet");
 }
 
 /// Specifies the deserialization process for types relevant to this block.
@@ -38,7 +35,7 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return IndexedSetVisitor(T);
+    return EnumSetVisitor(T);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {
@@ -72,66 +69,6 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
             return str_keys[i];
         }
     };
-}
-
-test "deserialize - std.IndexedSet" {
-    const Color = StringIndexer(&.{ "red", "yellow", "blue", "green", "orange", "violet", "indigo", "magenta" });
-
-    const tests = .{
-        .{
-            .name = "zero-sized",
-            .tokens = &.{
-                .{ .Seq = .{ .len = 0 } },
-                .{ .SeqEnd = {} },
-            },
-            .want = std.enums.IndexedSet(StringIndexer(&.{}), null).initEmpty(),
-        },
-        .{
-            .name = "empty",
-            .tokens = &.{
-                .{ .Seq = .{ .len = 0 } },
-                .{ .SeqEnd = {} },
-            },
-            .want = std.enums.IndexedSet(Color, null).initEmpty(),
-        },
-        .{
-            .name = "full",
-            .tokens = &.{
-                .{ .Seq = .{ .len = 8 } },
-                .{ .String = "red" },
-                .{ .String = "yellow" },
-                .{ .String = "blue" },
-                .{ .String = "green" },
-                .{ .String = "orange" },
-                .{ .String = "violet" },
-                .{ .String = "indigo" },
-                .{ .String = "magenta" },
-                .{ .SeqEnd = {} },
-            },
-            .want = std.enums.IndexedSet(Color, null).initFull(),
-        },
-        .{
-            .name = "mixed",
-            .tokens = &.{
-                .{ .Seq = .{ .len = 4 } },
-                .{ .String = "red" },
-                .{ .String = "yellow" },
-                .{ .String = "blue" },
-                .{ .String = "violet" },
-                .{ .SeqEnd = {} },
-            },
-            .want = std.enums.IndexedSet(Color, null).initMany(&.{ "red", "yellow", "blue", "violet" }),
-        },
-    };
-
-    inline for (tests) |t| {
-        const Want = @TypeOf(t.want);
-        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer result.deinit();
-
-        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
-        try require.isTrue(t.want.eql(result.value));
-    }
 }
 
 test "deserialize - std.EnumSet" {
