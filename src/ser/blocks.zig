@@ -72,7 +72,7 @@ pub const DynamicBitSetUnmanaged = @import("blocks/dynamic_bit_set_unmanaged.zig
 pub const EnumArray = @import("blocks/enum_array.zig");
 
 /// `EnumMap` is a _Serialization Block_ for `std.EnumMap` values.
-pub const EnumMap = _IndexedMap;
+pub const EnumMap = @import("blocks/enum_map.zig");
 
 /// `EnumMultiset` is a _Serialization Block_ for `std.EnumMultiset` values.
 pub const EnumMultiset = _EnumMultiset;
@@ -85,9 +85,6 @@ pub const HashMap = _HashMap;
 
 /// `HashMapUnmanaged` is a _Serialization Block_ for `std.HashMapUnmanaged` values.
 pub const HashMapUnmanaged = _HashMap;
-
-/// `IndexedMap` is a _Serialization Block_ for `std.IndexedMap` values.
-pub const IndexedMap = _IndexedMap;
 
 pub const IntegerBitSet = @import("blocks/integer_bit_set.zig");
 pub const LinearFifo = @import("blocks/linear_fifo.zig");
@@ -146,4 +143,3 @@ const _ArrayListAligned = @import("blocks/array_list_aligned.zig");
 const _EnumMultiset = @import("blocks/enum_multiset.zig");
 const _HashMap = @import("blocks/hash_map.zig");
 const _PackedIntEndian = @import("blocks/packed_int_endian.zig");
-const _IndexedMap = @import("blocks/indexed_map.zig");

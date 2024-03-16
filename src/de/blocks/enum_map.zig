@@ -1,7 +1,7 @@
 const require = @import("protest").require;
 const std = @import("std");
 
-const IndexedMapVisitor = @import("../impls/visitor/indexed_map.zig").Visitor;
+const EnumMapVisitor = @import("../impls/visitor/enum_map.zig").Visitor;
 const testing = @import("../testing.zig");
 
 const Self = @This();
@@ -11,10 +11,7 @@ pub fn is(
     /// The type being deserialized into.
     comptime T: type,
 ) bool {
-    const is_indexed_map = comptime std.mem.startsWith(u8, @typeName(T), "enums.IndexedMap");
-    const is_enum_map = comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumMap");
-
-    return is_indexed_map or is_enum_map;
+    return comptime std.mem.startsWith(u8, @typeName(T), "enums.EnumMap");
 }
 
 /// Specifies the deserialization process for types relevant to this block.
@@ -38,7 +35,7 @@ pub fn Visitor(
     /// The type being deserialized into.
     comptime T: type,
 ) type {
-    return IndexedMapVisitor(T);
+    return EnumMapVisitor(T);
 }
 
 fn StringIndexer(comptime str_keys: []const []const u8) type {
@@ -72,69 +69,6 @@ fn StringIndexer(comptime str_keys: []const []const u8) type {
             return str_keys[i];
         }
     };
-}
-
-test "deserialize - std.IndexedMap" {
-    const Color = StringIndexer(&.{ "red", "yellow", "blue" });
-
-    const tests = .{
-        // std.IndexedMap's put function directly accesses its internal
-        // dense array without checking length of the array. Since the
-        // length of the array is determined by the Indexer, this will
-        // fail to compile with "error: indexing into empty array is not
-        // allowed" on an empty index.
-        // .{
-        //     .name = "zero-sized",
-        //     .tokens = &.{
-        //         .{ .Map = .{ .len = 0 } },
-        //         .{ .MapEnd = {} },
-        //     },
-        //     .want = std.enums.IndexedMap(StringIndexer(&.{}), u32, null){},
-        // },
-        .{
-            .name = "empty",
-            .tokens = &.{
-                .{ .Map = .{ .len = 0 } },
-                .{ .MapEnd = {} },
-            },
-            .want = std.enums.IndexedMap(Color, u32, null){},
-        },
-        .{
-            .name = "non-empty",
-            .tokens = &.{
-                .{ .Map = .{ .len = 3 } },
-                .{ .String = "red" },
-                .{ .U32 = 1 },
-                .{ .String = "yellow" },
-                .{ .U32 = 3 },
-                .{ .String = "blue" },
-                .{ .U32 = 2 },
-                .{ .MapEnd = {} },
-            },
-            .want = blk: {
-                var want = std.enums.IndexedMap(Color, u32, null){};
-                want.put("red", 1);
-                want.put("yellow", 3);
-                want.put("blue", 2);
-                break :blk want;
-            },
-        },
-    };
-
-    inline for (tests) |t| {
-        const Want = @TypeOf(t.want);
-        var result = try testing.deserialize(t.name, Self, Want, t.tokens);
-        defer result.deinit();
-
-        try require.equalf(t.want.count(), result.value.count(), "Test case: {s}", .{t.name});
-
-        var mut = t.want;
-        var it = mut.iterator();
-        while (it.next()) |kv| {
-            try require.isTrue(result.value.contains(kv.key));
-            try require.equalf(kv.value.*, result.value.get(kv.key).?, "Test case: {s}", .{t.name});
-        }
-    }
 }
 
 test "deserialize - std.EnumMap" {

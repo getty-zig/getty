@@ -2,7 +2,7 @@ const std = @import("std");
 
 const VisitorInterface = @import("../../interfaces/visitor.zig").Visitor;
 
-pub fn Visitor(comptime IndexedMap: type) type {
+pub fn Visitor(comptime EnumMap: type) type {
     return struct {
         const Self = @This();
 
@@ -12,7 +12,7 @@ pub fn Visitor(comptime IndexedMap: type) type {
             .{ .visitMap = visitMap },
         );
 
-        const Value = IndexedMap;
+        const Value = EnumMap;
 
         fn visitMap(_: Self, ally: std.mem.Allocator, comptime Deserializer: type, map: anytype) Deserializer.Err!Value {
             var m = Value{};

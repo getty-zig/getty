@@ -49,13 +49,8 @@ pub const st = .{
     blocks.DynamicBitSet,
     blocks.DynamicBitSetUnmanaged,
     blocks.EnumArray,
+    blocks.EnumMap,
     blocks.EnumSet,
-
-    // Covers the following types:
-    //
-    //   - std.EnumMap
-    //   - std.IndexedMap
-    blocks.IndexedMap,
 
     // Covers the following types:
     //
