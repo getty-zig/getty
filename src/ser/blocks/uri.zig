@@ -38,11 +38,11 @@ test "serialize - std.Uri" {
             .scheme = "foo",
             .user = null,
             .password = null,
-            .host = "example.com",
+            .host = .{ .raw = "example.com" },
             .port = 8042,
-            .path = "/over/there",
-            .query = "name=ferret",
-            .fragment = "nose",
+            .path = .{ .raw = "/over/there" },
+            .query = .{ .raw = "name=ferret" },
+            .fragment = .{ .raw = "nose" },
         };
 
         t.run(std.testing.allocator, serialize, uri, &.{.{ .String = "example.com:8042/over/there#nose" }}) catch return error.UnexpectedTestError;
@@ -56,7 +56,7 @@ test "serialize - std.Uri" {
             .password = null,
             .host = null,
             .port = null,
-            .path = "example:animal:ferret:nose",
+            .path = .{ .raw = "example:animal:ferret:nose" },
             .query = null,
             .fragment = null,
         };
