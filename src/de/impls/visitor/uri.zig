@@ -30,22 +30,69 @@ fn visitString(
         .heap => used = true,
         .stack, .managed => {
             uri.scheme = try ally.dupe(u8, uri.scheme);
-            uri.path = try ally.dupe(u8, uri.path);
+
+            if (uri.user) |user| {
+                uri.user = switch (user) {
+                    .raw => |v| std.Uri.Component{
+                        .raw = try ally.dupe(u8, v),
+                    },
+                    .percent_encoded => |v| std.Uri.Component{
+                        .percent_encoded = try ally.dupe(u8, v),
+                    },
+                };
+            }
+
+            if (uri.password) |password| {
+                uri.password = switch (password) {
+                    .raw => |v| std.Uri.Component{
+                        .raw = try ally.dupe(u8, v),
+                    },
+                    .percent_encoded => |v| std.Uri.Component{
+                        .percent_encoded = try ally.dupe(u8, v),
+                    },
+                };
+            }
 
             if (uri.host) |host| {
-                uri.host = try ally.dupe(u8, host);
+                uri.host = switch (host) {
+                    .raw => |v| std.Uri.Component{
+                        .raw = try ally.dupe(u8, v),
+                    },
+                    .percent_encoded => |v| std.Uri.Component{
+                        .percent_encoded = try ally.dupe(u8, v),
+                    },
+                };
             }
-            if (uri.user) |user| {
-                uri.user = try ally.dupe(u8, user);
-            }
-            if (uri.password) |password| {
-                uri.password = try ally.dupe(u8, password);
-            }
+
+            uri.path = switch (uri.path) {
+                .raw => |v| std.Uri.Component{
+                    .raw = try ally.dupe(u8, v),
+                },
+                .percent_encoded => |v| std.Uri.Component{
+                    .percent_encoded = try ally.dupe(u8, v),
+                },
+            };
+
             if (uri.query) |query| {
-                uri.query = try ally.dupe(u8, query);
+                uri.query = switch (query) {
+                    .raw => |v| std.Uri.Component{
+                        .raw = try ally.dupe(u8, v),
+                    },
+                    .percent_encoded => |v| std.Uri.Component{
+                        .percent_encoded = try ally.dupe(u8, v),
+                    },
+                };
             }
+
             if (uri.fragment) |fragment| {
-                uri.fragment = try ally.dupe(u8, fragment);
+                uri.fragment = switch (fragment) {
+                    .raw => |v| std.Uri.Component{
+                        .raw = try ally.dupe(u8, v),
+                    },
+                    .percent_encoded => |v| std.Uri.Component{
+                        .percent_encoded = try ally.dupe(u8, v),
+                    },
+                };
             }
         },
     }
