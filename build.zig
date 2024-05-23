@@ -13,10 +13,10 @@ pub fn build(b: *std.Build) void {
     const protest_module = b.dependency("protest", target_optimize).module("protest");
 
     // Internal modules.
-    const attr_module = b.createModule(.{ .root_source_file = .{ .path = internal_dir ++ "attr/attr.zig" } });
-    const block_module = b.createModule(.{ .root_source_file = .{ .path = internal_dir ++ "block/block.zig" } });
-    const helpers_module = b.createModule(.{ .root_source_file = .{ .path = internal_dir ++ "helpers/helpers.zig" } });
-    const testing_module = b.createModule(.{ .root_source_file = .{ .path = internal_dir ++ "testing/testing.zig" } });
+    const attr_module = b.createModule(.{ .root_source_file = b.path(internal_dir ++ "attr/attr.zig") });
+    const block_module = b.createModule(.{ .root_source_file = b.path(internal_dir ++ "block/block.zig") });
+    const helpers_module = b.createModule(.{ .root_source_file = b.path(internal_dir ++ "helpers/helpers.zig") });
+    const testing_module = b.createModule(.{ .root_source_file = b.path(internal_dir ++ "testing/testing.zig") });
 
     // Package module.
     const imports = .{
@@ -31,7 +31,7 @@ pub fn build(b: *std.Build) void {
     };
 
     _ = b.addModule(package_name, .{
-        .root_source_file = .{ .path = package_path },
+        .root_source_file = b.path(package_path),
         .imports = &imports,
     });
 
@@ -52,7 +52,7 @@ pub fn build(b: *std.Build) void {
             for (args) |arg| {
                 const t_filter = b.addTest(.{
                     .name = "filtered test",
-                    .root_source_file = .{ .path = "src/getty.zig" },
+                    .root_source_file = b.path("src/getty.zig"),
                     .filter = arg,
                     .target = target,
                     .optimize = optimize,
@@ -70,7 +70,7 @@ pub fn build(b: *std.Build) void {
         // Serialization tests.
         const t_ser = b.addTest(.{
             .name = "serialization test",
-            .root_source_file = .{ .path = "src/ser/ser.zig" },
+            .root_source_file = b.path("src/ser/ser.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -81,7 +81,7 @@ pub fn build(b: *std.Build) void {
         // Deserialization tests.
         const t_de = b.addTest(.{
             .name = "deserialization test",
-            .root_source_file = .{ .path = "src/de/de.zig" },
+            .root_source_file = b.path("src/de/de.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -96,7 +96,7 @@ pub fn build(b: *std.Build) void {
 
         const doc_obj = b.addObject(.{
             .name = "docs",
-            .root_source_file = .{ .path = package_path },
+            .root_source_file = b.path(package_path),
             .target = target,
             .optimize = optimize,
         });
