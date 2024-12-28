@@ -75,6 +75,6 @@ pub fn main() anyerror!void {
     try getty.serialize(null, list, s);
 
     // std.BoundedArray
-    var arr = try std.BoundedArray(bool, 2).fromSlice(&.{ true, false });
+    const arr = try std.BoundedArray(bool, 2).fromSlice(&.{ true, false });
     try getty.serialize(null, arr, s);
 }

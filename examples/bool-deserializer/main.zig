@@ -35,7 +35,7 @@ fn Deserializer(comptime Reader: type) type {
             self.tokens.deinit();
         }
 
-        fn deserializeBool(self: *Self, ally: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
+        fn deserializeBool(self: *Self, ally: std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
             const token = try self.tokens.next();
             if (token == .true or token == .false) {
                 return try v.visitBool(ally, De, token == .true);
@@ -47,13 +47,15 @@ fn Deserializer(comptime Reader: type) type {
 }
 
 pub fn main() anyerror!void {
+    const page_ally = std.heap.page_allocator;
+
     var fbs = std.io.fixedBufferStream("true");
     const reader = fbs.reader();
 
-    var d = Deserializer(@TypeOf(reader)).init(std.heap.page_allocator, reader);
+    var d = Deserializer(@TypeOf(reader)).init(page_ally, reader);
     defer d.deinit();
 
-    const v = try getty.deserialize(null, bool, d.deserializer());
+    const v = try getty.deserialize(page_ally, bool, d.deserializer());
 
     std.debug.print("{}, {}\n", .{ v, @TypeOf(v) });
 }
