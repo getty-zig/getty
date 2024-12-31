@@ -36,7 +36,7 @@ fn Deserializer(comptime Reader: type) type {
             self.tokens.deinit();
         }
 
-        fn deserializeBool(self: *Self, ally: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
+        fn deserializeBool(self: *Self, ally: std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
             const token = try self.tokens.next();
             if (token == .true or token == .false) {
                 return try v.visitBool(ally, De, token == .true);
@@ -45,7 +45,7 @@ fn Deserializer(comptime Reader: type) type {
             return error.InvalidType;
         }
 
-        fn deserializeSeq(self: *Self, ally: ?std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
+        fn deserializeSeq(self: *Self, ally: std.mem.Allocator, v: anytype) Error!@TypeOf(v).Value {
             const token = try self.tokens.next();
             if (token == .array_begin) {
                 var sa = SeqAccess{ .de = self };
@@ -66,7 +66,7 @@ fn Deserializer(comptime Reader: type) type {
                 },
             );
 
-            fn nextElementSeed(self: *@This(), ally: ?std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
+            fn nextElementSeed(self: *@This(), ally: std.mem.Allocator, seed: anytype) Error!?@TypeOf(seed).Value {
                 // If ']' is encountered, return null
                 if (try self.de.tokens.peekNextTokenType() == .array_end) {
                     return null;
@@ -92,5 +92,5 @@ pub fn main() anyerror!void {
     const v = try getty.deserialize(page_ally, std.ArrayList(bool), d.deserializer());
     defer v.deinit();
 
-    std.debug.print("{any}, {}\n", .{ v.items, @TypeOf(v) });
+    std.debug.print("{any}, {}\n", .{ v.value, @TypeOf(v) });
 }

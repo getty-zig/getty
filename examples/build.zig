@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) void {
 
         const exe = b.addExecutable(.{
             .name = exe_name,
-            .root_source_file = .{ .path = example_path },
+            .root_source_file = b.path(example_path),
             .target = target,
             .optimize = optimize,
         });
